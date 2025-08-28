@@ -3,12 +3,13 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from 'typescript-eslint'
+import tseslint from '@typescript-eslint/eslint-plugin'
+import tsparser from '@typescript-eslint/parser'
 
-export default tseslint.config(
+export default [
   { ignores: ['dist', '**/*.d.ts', 'tests/**/*'] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    extends: [js.configs.recommended],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
@@ -20,6 +21,7 @@ export default tseslint.config(
         JSX: false,
         NodeJS: false,
       },
+      parser: tsparser,
       parserOptions: {
         project: ['./tsconfig.node.json', './tsconfig.app.json'],
         tsconfigRootDir: import.meta.dirname,
@@ -29,10 +31,12 @@ export default tseslint.config(
       },
     },
     plugins: {
+      '@typescript-eslint': tseslint,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
     },
     rules: {
+      ...tseslint.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       'prefer-const': 'error',
       '@typescript-eslint/no-empty-object-type': 'error',
@@ -75,4 +79,4 @@ export default tseslint.config(
       'react-hooks/exhaustive-deps': 'warn',
     },
   },
-)
+]
