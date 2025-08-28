@@ -41,8 +41,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { PublicFilterValues } from '../components/public/PublicAssetsFilterSheet';
-import { PublicAssetsFilterSheet } from '../components/public/PublicAssetsFilterSheet';
+// import type { PublicFilterValues } from '../components/public/PublicAssetsFilterSheet.tsx';
+// import { PublicAssetsFilterSheet } from '../components/public/PublicAssetsFilterSheet.tsx';
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' };
 type SortConfig = {
@@ -491,12 +491,12 @@ export default function PublicAssets() {
                         <Filter className='mr-2 h-4 w-4' /> Filtros
                       </Button>
                     </SheetTrigger>
-                    <PublicAssetsFilterSheet
+                    {/* <PublicAssetsFilterSheet
                       onApplyFilters={handleApplyFilters}
                       onClearFilters={handleClearFilters}
                       initialFilters={filters}
                       onClose={() => setFilterSheetOpen(false)}
-                    />
+                    /> */}
                   </Sheet>
                   <Button
                     variant='outline'
