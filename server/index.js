@@ -39,6 +39,7 @@ import {
     requestTracker
 } from './middleware/errorHandler.js'
 import { setupLogContext } from './middleware/logContext.js'
+// // import { errorMonitoringMiddleware, monitoringMiddleware, requestTimestampMiddleware } from './middleware/monitoring.js'
 import { rateLimitMiddleware } from './middleware/rate-limiter.js'
 import { lockoutManager } from './services/lockout-manager.js'
 import { logError, logHttp, logInfo, logStartup, logWarning, setupUncaughtExceptionHandling } from './utils/logger.js'
@@ -70,6 +71,10 @@ const PORT = process.env.PORT || 3001
 
 // Request tracking middleware (deve ser o primeiro)
 app.use(requestTracker)
+
+// Monitoring middleware (temporariamente desabilitado)
+// app.use(requestTimestampMiddleware)
+// app.use(monitoringMiddleware)
 
 // HTTP logging middleware
 app.use((req, res, next) => {
@@ -644,6 +649,7 @@ app.use(criticalErrorNotifier)
 app.use('/api/*', notFoundHandler)
 
 // Global error handling middleware (deve ser o último)
+// app.use(errorMonitoringMiddleware)
 app.use(errorHandler)
 
 // Inicializar WebSocket server e serviço de notificações

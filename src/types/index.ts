@@ -6,12 +6,37 @@ export interface BaseEntity {
   deletedAt?: string
 }
 
+// Tipos de usuário e permissões
+export type UserRole = 'superuser' | 'supervisor' | 'admin' | 'usuario' | 'visualizador'
+
+export type Permission = 
+  | 'superuser:access'
+  | 'permissions:manage'
+  | 'bens:create'
+  | 'bens:read'
+  | 'bens:update'
+  | 'bens:delete'
+  | 'users:create'
+  | 'users:read'
+  | 'users:update'
+  | 'users:delete'
+  | 'settings:read'
+  | 'settings:update'
+  | 'reports:generate'
+  | 'reports:manage_templates'
+
+export interface Role {
+  id: UserRole
+  name: string
+  permissions: Permission[]
+}
+
 // Usuário
 export interface User extends BaseEntity {
   name: string
   email: string
   password?: string
-  role: 'superuser' | 'supervisor' | 'admin' | 'usuario' | 'visualizador'
+  role: UserRole
   municipalityId?: string
   municipalityName?: string
   sector?: string

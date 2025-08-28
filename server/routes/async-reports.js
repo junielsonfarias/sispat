@@ -376,10 +376,10 @@ router.post('/admin/cleanup', requireAdmin, async (req, res) => {
  */
 function canGenerateReport(type, userRole) {
   const permissions = {
-    patrimony_summary: ['user', 'supervisor', 'admin', 'superuser'],
+    patrimony_summary: ['usuario', 'supervisor', 'admin', 'superuser'],
     depreciation_report: ['supervisor', 'admin', 'superuser'],
     transfer_history: ['supervisor', 'admin', 'superuser'],
-    inventory_report: ['user', 'supervisor', 'admin', 'superuser'],
+    inventory_report: ['usuario', 'supervisor', 'admin', 'superuser'],
     export_data: ['admin', 'superuser'],
     custom_report: ['admin', 'superuser']
   }
