@@ -15,7 +15,7 @@ import imoveisRoutes from './imoveis.js';
 import inventoriesRoutes from './inventories.js';
 import localsRoutes from './locals.js';
 import lockoutAdminRoutes from './lockout-admin.js';
-// // import monitoringRoutes from './monitoring.js';
+import monitoringRoutes from './monitoring.js';
 import municipalitiesRoutes from './municipalities.js';
 import notificationsRoutes from './notifications.js';
 import patrimoniosRoutes from './patrimonios.js';
@@ -80,9 +80,9 @@ export function registerRoutes(app) {
   console.log('✅ API Pública registrada');
 
   // 2. Monitoramento (temporariamente desabilitado)
-  // console.log('📊 Registrando rotas de monitoramento...');
-  // app.use('/api/monitoring', monitoringRoutes);
-  // console.log('✅ Rotas de monitoramento registradas');
+  console.log('📊 Registrando rotas de monitoramento...');
+  app.use('/api/monitoring', monitoringRoutes);
+  console.log('✅ Rotas de monitoramento registradas');
 
   // 2. Analytics Avançado
   console.log('📊 Registrando Analytics Avançado...');

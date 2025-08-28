@@ -1,5 +1,5 @@
 import { query } from '../../database/connection.js';
-import { logInfo, logWarn } from '../../utils/logger.js';
+import { logInfo, logWarning } from '../../utils/logger.js';
 
 class SystemMonitor {
   constructor() {
@@ -79,7 +79,7 @@ class SystemMonitor {
     };
 
     this.alerts.push(alert);
-    logWarn(`Alerta do sistema: ${message}`, { alert });
+    logWarning(`Alerta do sistema: ${message}`, { alert });
     
     // Em produção, enviar notificação por email/Slack
     this.sendNotification(alert);

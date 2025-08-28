@@ -1,37 +1,37 @@
 import express from 'express';
-// // import { rateLimit } from 'express-rate-limit';
+import { rateLimit } from 'express-rate-limit';
 import { query } from '../database/connection.js';
 import { validateUUID } from '../middleware/validation.js';
-// // import intelligentCache from '../services/cache/intelligentCache.js';
-// // import advancedSearch from '../services/search/advancedSearch.js';
+import intelligentCache from '../services/cache/intelligentCache.js';
+import advancedSearch from '../services/search/advancedSearch.js';
 import { logError, logInfo } from '../utils/logger.js';
 
 const router = express.Router();
 
-// Rate limiting para API pública (temporariamente desabilitado)
-// const publicApiLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutos
-//   max: 100, // Máximo 100 requisições por IP
-//   message: {
-//     error: 'Muitas requisições. Tente novamente em 15 minutos.',
-//     code: 'RATE_LIMIT_EXCEEDED'
-//   },
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
+// Rate limiting para API pública
+const publicApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // Máximo 100 requisições por IP
+  message: {
+    error: 'Muitas requisições. Tente novamente em 15 minutos.',
+    code: 'RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-// Rate limiting mais restritivo para busca (temporariamente desabilitado)
-// const searchLimiter = rateLimit({
-//   windowMs: 5 * 60 * 1000, // 5 minutos
-//   max: 30, // Máximo 30 buscas por IP
-//   message: {
-//     error: 'Muitas buscas. Tente novamente em 5 minutos.',
-//     code: 'SEARCH_RATE_LIMIT_EXCEEDED'
-//   }
-// });
+// Rate limiting mais restritivo para busca
+const searchLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 30, // Máximo 30 buscas por IP
+  message: {
+    error: 'Muitas buscas. Tente novamente em 5 minutos.',
+    code: 'SEARCH_RATE_LIMIT_EXCEEDED'
+  }
+});
 
-// Aplicar rate limiting (temporariamente desabilitado)
-// router.use(publicApiLimiter);
+// Aplicar rate limiting
+router.use(publicApiLimiter);
 
 /**
  * @swagger
@@ -360,7 +360,7 @@ router.get('/patrimonios/:id', validateUUID('id'), async (req, res) => {
  *       200:
  *         description: Resultados da busca
  */
-router.get('/search', async (req, res) => {
+router.get('/search', searchLimiter, async (req, res) => {
   try {
     const { q, strategy = 'fullText', filters = {} } = req.query;
 
@@ -371,21 +371,16 @@ router.get('/search', async (req, res) => {
       });
     }
 
-    // Usar sistema de busca avançada (temporariamente desabilitado)
-    // const searchResult = await advancedSearch.search(q, {
-    //   type: 'patrimonios',
-    //   strategy,
-    //   filters: JSON.parse(filters),
-    //   limit: 50,
-    //   useCache: true
-    // });
-
-    // Por enquanto, retornar busca simples
-    res.json({
-      success: true,
-      message: 'Busca avançada temporariamente desabilitada',
-      data: []
+    // Usar sistema de busca avançada
+    const searchResult = await advancedSearch.search(q, {
+      type: 'patrimonios',
+      strategy,
+      filters: JSON.parse(filters),
+      limit: 50,
+      useCache: true
     });
+
+    res.json(searchResult);
 
   } catch (error) {
     logError('Erro na busca pública:', error);
@@ -408,12 +403,12 @@ router.get('/search', async (req, res) => {
  */
 router.get('/municipalities', async (req, res) => {
   try {
-    // const cacheKey = 'public_municipalities';
-    // const cached = await intelligentCache.get(cacheKey);
+    const cacheKey = 'public_municipalities';
+    const cached = await intelligentCache.get(cacheKey);
     
-    // if (cached) {
-    //   return res.json(cached);
-    // }
+    if (cached) {
+      return res.json(cached);
+    }
 
     const sql = `
       SELECT 
@@ -433,7 +428,7 @@ router.get('/municipalities', async (req, res) => {
       createdAt: m.created_at
     }));
 
-    // await intelligentCache.set(cacheKey, municipalities, { ttl: 3600 });
+    await intelligentCache.set(cacheKey, municipalities, { ttl: 3600 });
     res.json(municipalities);
 
   } catch (error) {
@@ -467,12 +462,12 @@ router.get('/sectors/:municipalityId', validateUUID('municipalityId'), async (re
   try {
     const { municipalityId } = req.params;
 
-    // const cacheKey = `public_sectors_${municipalityId}`;
-    // const cached = await intelligentCache.get(cacheKey);
+    const cacheKey = `public_sectors_${municipalityId}`;
+    const cached = await intelligentCache.get(cacheKey);
     
-    // if (cached) {
-    //   return res.json(cached);
-    // }
+    if (cached) {
+      return res.json(cached);
+    }
 
     const sql = `
       SELECT 
@@ -493,7 +488,7 @@ router.get('/sectors/:municipalityId', validateUUID('municipalityId'), async (re
       parentId: s.parent_id
     }));
 
-    // await intelligentCache.set(cacheKey, sectors, { ttl: 1800 });
+    await intelligentCache.set(cacheKey, sectors, { ttl: 1800 });
     res.json(sectors);
 
   } catch (error) {
@@ -517,12 +512,12 @@ router.get('/sectors/:municipalityId', validateUUID('municipalityId'), async (re
  */
 router.get('/stats', async (req, res) => {
   try {
-    // const cacheKey = 'public_stats';
-    // const cached = await intelligentCache.get(cacheKey);
+    const cacheKey = 'public_stats';
+    const cached = await intelligentCache.get(cacheKey);
     
-    // if (cached) {
-    //   return res.json(cached);
-    // }
+    if (cached) {
+      return res.json(cached);
+    }
 
     const [
       patrimoniosCount,
@@ -546,7 +541,7 @@ router.get('/stats', async (req, res) => {
       lastUpdated: new Date().toISOString()
     };
 
-    // await intelligentCache.set(cacheKey, stats, { ttl: 1800 });
+    await intelligentCache.set(cacheKey, stats, { ttl: 1800 });
     res.json(stats);
 
   } catch (error) {
