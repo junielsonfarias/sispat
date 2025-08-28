@@ -1,51 +1,51 @@
-import { SuperuserPasswordChangeForm } from '@/components/superuser/SuperuserPasswordChangeForm'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { SuperuserPasswordChangeForm } from '@/components/superuser/SuperuserPasswordChangeForm';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useAuth } from '@/hooks/useAuth'
-import { KeyRound, LogOut, UserCircle } from 'lucide-react'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/hooks/useAuth';
+import { KeyRound, LogOut, UserCircle } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export const SuperuserHeader = () => {
-  const { user, logout } = useAuth()
-  const _navigate = useNavigate()
-  const [isPasswordDialogOpen, setPasswordDialogOpen] = useState(false)
+  const { user, logout } = useAuth();
+  const _navigate = useNavigate();
+  const [isPasswordDialogOpen, setPasswordDialogOpen] = useState(false);
 
   const handleLogout = () => {
-    logout()
-  }
+    logout();
+  };
 
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map((n) => n[0])
+      .map(n => n[0])
       .join('')
-      .toUpperCase()
-  }
+      .toUpperCase();
+  };
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6 no-print">
-        <div className="ml-auto flex items-center gap-4">
+      <header className='sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6 no-print'>
+        <div className='ml-auto flex items-center gap-4'>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar className="h-8 w-8">
+              <Button variant='ghost' size='icon' className='rounded-full'>
+                <Avatar className='h-8 w-8'>
                   <AvatarImage src={user?.avatarUrl} alt={user?.name} />
                   <AvatarFallback>
                     {user ? getInitials(user.name) : <UserCircle />}
@@ -53,15 +53,15 @@ export const SuperuserHeader = () => {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align='end'>
               <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setPasswordDialogOpen(true)}>
-                <KeyRound className="mr-2 h-4 w-4" />
+                <KeyRound className='mr-2 h-4 w-4' />
                 <span>Alterar Senha</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
+                <LogOut className='mr-2 h-4 w-4' />
                 <span>Sair</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -82,5 +82,5 @@ export const SuperuserHeader = () => {
         </DialogContent>
       </Dialog>
     </>
-  )
-}
+  );
+};

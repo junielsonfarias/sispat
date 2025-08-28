@@ -16,14 +16,14 @@ export interface CacheMiddlewareOptions {
 export function cacheMiddleware(options: CacheMiddlewareOptions = {}) {
   const {
     ttl = 300, // 5 minutos padrão
-    keyGenerator = (req) => `api:${req.method}:${req.originalUrl}`,
+    keyGenerator = req => `api:${req.method}:${req.originalUrl}`,
     condition = () => true,
     tags = [],
     skipCache = () => false,
     onlySuccessful = true,
     useRedis = true,
     useMemory = true,
-    compression = false
+    compression = false,
   } = options;
 
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -34,7 +34,7 @@ export function cacheMiddleware(options: CacheMiddlewareOptions = {}) {
 
     // Gerar chave do cache
     const cacheKey = keyGenerator(req);
-    
+
     // Gerar tags
     const cacheTags = typeof tags === 'function' ? tags(req) : tags;
 
@@ -43,7 +43,7 @@ export function cacheMiddleware(options: CacheMiddlewareOptions = {}) {
       const cachedData = await advancedCache.get(cacheKey, {
         useRedis,
         useMemory,
-        tags: cacheTags
+        tags: cacheTags,
       });
 
       if (cachedData) {
@@ -59,23 +59,27 @@ export function cacheMiddleware(options: CacheMiddlewareOptions = {}) {
 
       // Interceptar o método json para capturar a resposta
       const originalJson = res.json.bind(res);
-      res.json = function(data: any) {
+      res.json = function (data: any) {
         // Armazenar no cache apenas se for uma resposta bem-sucedida
-        if (!onlySuccessful || (res.statusCode >= 200 && res.statusCode < 300)) {
-          advancedCache.set(cacheKey, data, {
-            ttl,
-            useRedis,
-            useMemory,
-            tags: cacheTags,
-            compression
-          }).catch(error => {
-            console.error('Erro ao armazenar no cache:', error);
-          });
+        if (
+          !onlySuccessful ||
+          (res.statusCode >= 200 && res.statusCode < 300)
+        ) {
+          advancedCache
+            .set(cacheKey, data, {
+              ttl,
+              useRedis,
+              useMemory,
+              tags: cacheTags,
+              compression,
+            })
+            .catch(error => {
+              console.error('Erro ao armazenar no cache:', error);
+            });
         }
 
         return originalJson(data);
       };
-
     } catch (error) {
       console.error('Erro no middleware de cache:', error);
       res.setHeader('X-Cache', 'ERROR');
@@ -88,45 +92,49 @@ export function cacheMiddleware(options: CacheMiddlewareOptions = {}) {
 // Middleware específico para diferentes tipos de dados
 export const patrimonioCache = cacheMiddleware({
   ttl: 600, // 10 minutos
-  keyGenerator: (req) => `patrimonio:${req.method}:${req.originalUrl}`,
+  keyGenerator: req => `patrimonio:${req.method}:${req.originalUrl}`,
   tags: ['patrimonio'],
-  condition: (req) => req.method === 'GET'
+  condition: req => req.method === 'GET',
 });
 
 export const userCache = cacheMiddleware({
   ttl: 300, // 5 minutos
-  keyGenerator: (req) => `user:${req.method}:${req.originalUrl}`,
+  keyGenerator: req => `user:${req.method}:${req.originalUrl}`,
   tags: ['user'],
-  condition: (req) => req.method === 'GET'
+  condition: req => req.method === 'GET',
 });
 
 export const reportCache = cacheMiddleware({
   ttl: 1800, // 30 minutos
-  keyGenerator: (req) => `report:${req.method}:${req.originalUrl}`,
+  keyGenerator: req => `report:${req.method}:${req.originalUrl}`,
   tags: ['report'],
-  condition: (req) => req.method === 'GET',
-  compression: true // Relatórios podem ser grandes
+  condition: req => req.method === 'GET',
+  compression: true, // Relatórios podem ser grandes
 });
 
 export const dashboardCache = cacheMiddleware({
   ttl: 180, // 3 minutos
-  keyGenerator: (req) => `dashboard:${req.method}:${req.originalUrl}`,
+  keyGenerator: req => `dashboard:${req.method}:${req.originalUrl}`,
   tags: ['dashboard'],
-  condition: (req) => req.method === 'GET'
+  condition: req => req.method === 'GET',
 });
 
 // Middleware para invalidar cache baseado em mudanças
-export function cacheInvalidationMiddleware(tags: string[] | ((req: Request) => string[])) {
+export function cacheInvalidationMiddleware(
+  tags: string[] | ((req: Request) => string[])
+) {
   return async (req: Request, res: Response, next: NextFunction) => {
     // Interceptar resposta para invalidar cache após mudanças
     const originalJson = res.json.bind(res);
-    res.json = function(data: any) {
+    res.json = function (data: any) {
       // Invalidar cache apenas para operações bem-sucedidas que modificam dados
-      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && 
-          res.statusCode >= 200 && res.statusCode < 300) {
-        
+      if (
+        ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
+        res.statusCode >= 200 &&
+        res.statusCode < 300
+      ) {
         const invalidationTags = typeof tags === 'function' ? tags(req) : tags;
-        
+
         advancedCache.invalidateByTags(invalidationTags).catch(error => {
           console.error('Erro ao invalidar cache:', error);
         });
@@ -145,9 +153,9 @@ export function cacheClearMiddleware(pattern?: string) {
     try {
       if (pattern) {
         const cleared = await advancedCache.invalidateByPattern(pattern);
-        res.json({ 
+        res.json({
           message: `Cache limpo: ${cleared} entradas removidas`,
-          pattern 
+          pattern,
         });
       } else {
         await advancedCache.clear();
@@ -166,11 +174,11 @@ export function cacheStatsMiddleware() {
     try {
       const stats = await advancedCache.getStats();
       const metrics = advancedCache.getMetrics();
-      
+
       res.json({
         stats,
         metrics: metrics.slice(0, 50), // Limitar para não sobrecarregar
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Erro ao obter estatísticas:', error);
@@ -180,16 +188,18 @@ export function cacheStatsMiddleware() {
 }
 
 // Middleware para aquecimento de cache
-export function cacheWarmupMiddleware(warmupConfig: Array<{
-  key: string;
-  fetcher: () => Promise<any>;
-  options?: any;
-}>) {
+export function cacheWarmupMiddleware(
+  warmupConfig: Array<{
+    key: string;
+    fetcher: () => Promise<any>;
+    options?: any;
+  }>
+) {
   return async (req: Request, res: Response) => {
     try {
       await advancedCache.warmup(warmupConfig);
-      res.json({ 
-        message: `Cache aquecido: ${warmupConfig.length} entradas processadas` 
+      res.json({
+        message: `Cache aquecido: ${warmupConfig.length} entradas processadas`,
       });
     } catch (error) {
       console.error('Erro ao aquecer cache:', error);

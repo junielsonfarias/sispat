@@ -31,7 +31,7 @@ interface HealthStatus {
 /**
  * Endpoint de Health Check Principal
  * GET /api/health
- * 
+ *
  * Retorna o status geral da aplicação e suas dependências
  */
 export default async function handler(
@@ -44,26 +44,28 @@ export default async function handler(
 
   try {
     const startTime = Date.now();
-    
+
     // Verificar status dos serviços
     const [dbStatus, redisStatus, cacheStatus] = await Promise.allSettled([
       checkDatabaseHealth(),
       checkRedisHealth(),
-      checkCacheHealth()
+      checkCacheHealth(),
     ]);
 
     // Coletar métricas do sistema
     const metrics = await collectSystemMetrics();
-    
+
     // Determinar status geral
     const services = {
       database: dbStatus.status === 'fulfilled' ? dbStatus.value : 'unhealthy',
-      redis: redisStatus.status === 'fulfilled' ? redisStatus.value : 'unhealthy',
-      cache: cacheStatus.status === 'fulfilled' ? cacheStatus.value : 'unhealthy'
+      redis:
+        redisStatus.status === 'fulfilled' ? redisStatus.value : 'unhealthy',
+      cache:
+        cacheStatus.status === 'fulfilled' ? cacheStatus.value : 'unhealthy',
     };
 
     const overallStatus = determineOverallStatus(services);
-    
+
     const healthStatus: HealthStatus = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
@@ -71,12 +73,16 @@ export default async function handler(
       version: process.env.VERSION || process.env.VCS_REF || 'unknown',
       environment: process.env.NODE_ENV || 'development',
       services,
-      metrics
+      metrics,
     };
 
     // Definir código de status HTTP baseado na saúde
-    const statusCode = overallStatus === 'healthy' ? 200 : 
-                      overallStatus === 'degraded' ? 200 : 503;
+    const statusCode =
+      overallStatus === 'healthy'
+        ? 200
+        : overallStatus === 'degraded'
+          ? 200
+          : 503;
 
     // Adicionar headers úteis
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -84,14 +90,13 @@ export default async function handler(
     res.setHeader('X-Health-Status', overallStatus);
 
     return res.status(statusCode).json(healthStatus);
-
   } catch (error) {
     console.error('Health check error:', error);
-    
+
     return res.status(503).json({
       error: 'Health check failed',
       timestamp: new Date().toISOString(),
-      status: 'unhealthy'
+      status: 'unhealthy',
     } as any);
   }
 }
@@ -106,7 +111,7 @@ async function checkDatabaseHealth(): Promise<'healthy' | 'unhealthy'> {
     // const prisma = new PrismaClient();
     // await prisma.$queryRaw`SELECT 1`;
     // await prisma.$disconnect();
-    
+
     // Simulação para demonstração
     await new Promise(resolve => setTimeout(resolve, 10));
     return 'healthy';
@@ -126,7 +131,7 @@ async function checkRedisHealth(): Promise<'healthy' | 'unhealthy'> {
     // const client = redis.createClient(process.env.REDIS_URL);
     // await client.ping();
     // await client.quit();
-    
+
     // Simulação para demonstração
     if (process.env.REDIS_URL) {
       await new Promise(resolve => setTimeout(resolve, 5));
@@ -149,7 +154,7 @@ async function checkCacheHealth(): Promise<'healthy' | 'unhealthy'> {
     // const { advancedCache } = require('@/services/cache/advancedCache');
     // const stats = await advancedCache.getStats();
     // return stats.total.hitRate > 0 ? 'healthy' : 'unhealthy';
-    
+
     // Simulação para demonstração
     await new Promise(resolve => setTimeout(resolve, 5));
     return 'healthy';
@@ -164,12 +169,14 @@ async function checkCacheHealth(): Promise<'healthy' | 'unhealthy'> {
  */
 async function collectSystemMetrics() {
   const memoryUsage = process.memoryUsage();
-  
+
   return {
     memoryUsage: {
       used: Math.round(memoryUsage.heapUsed / 1024 / 1024), // MB
       total: Math.round(memoryUsage.heapTotal / 1024 / 1024), // MB
-      percentage: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100)
+      percentage: Math.round(
+        (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100
+      ),
     },
     cpuUsage: Math.round(process.cpuUsage().user / 1000000), // Aproximação em %
     requestCount: getRequestCount(),
@@ -177,18 +184,22 @@ async function collectSystemMetrics() {
     responseTime: {
       avg: getAverageResponseTime(),
       p95: getP95ResponseTime(),
-      p99: getP99ResponseTime()
-    }
+      p99: getP99ResponseTime(),
+    },
   };
 }
 
 /**
  * Determinar status geral baseado nos serviços
  */
-function determineOverallStatus(services: Record<string, 'healthy' | 'unhealthy'>): 'healthy' | 'unhealthy' | 'degraded' {
-  const healthyServices = Object.values(services).filter(status => status === 'healthy').length;
+function determineOverallStatus(
+  services: Record<string, 'healthy' | 'unhealthy'>
+): 'healthy' | 'unhealthy' | 'degraded' {
+  const healthyServices = Object.values(services).filter(
+    status => status === 'healthy'
+  ).length;
   const totalServices = Object.values(services).length;
-  
+
   if (healthyServices === totalServices) {
     return 'healthy';
   } else if (healthyServices === 0 || services.database === 'unhealthy') {

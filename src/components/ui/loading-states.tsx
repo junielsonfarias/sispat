@@ -22,35 +22,41 @@ export function Skeleton({ className, animate = true }: SkeletonProps) {
 
 export function SkeletonCard() {
   return (
-    <div className="p-4 space-y-3 border rounded-lg">
-      <div className="flex items-center space-x-3">
-        <Skeleton className="h-10 w-10 rounded-full" />
-        <div className="space-y-2 flex-1">
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-3 w-1/2" />
+    <div className='p-4 space-y-3 border rounded-lg'>
+      <div className='flex items-center space-x-3'>
+        <Skeleton className='h-10 w-10 rounded-full' />
+        <div className='space-y-2 flex-1'>
+          <Skeleton className='h-4 w-3/4' />
+          <Skeleton className='h-3 w-1/2' />
         </div>
       </div>
-      <Skeleton className="h-3 w-full" />
-      <Skeleton className="h-3 w-2/3" />
+      <Skeleton className='h-3 w-full' />
+      <Skeleton className='h-3 w-2/3' />
     </div>
   );
 }
 
-export function SkeletonTable({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
+export function SkeletonTable({
+  rows = 5,
+  cols = 4,
+}: {
+  rows?: number;
+  cols?: number;
+}) {
   return (
-    <div className="space-y-3">
+    <div className='space-y-3'>
       {/* Header */}
-      <div className="flex space-x-4">
+      <div className='flex space-x-4'>
         {Array.from({ length: cols }).map((_, i) => (
-          <Skeleton key={i} className="h-4 flex-1" />
+          <Skeleton key={i} className='h-4 flex-1' />
         ))}
       </div>
-      
+
       {/* Rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="flex space-x-4">
+        <div key={rowIndex} className='flex space-x-4'>
           {Array.from({ length: cols }).map((_, colIndex) => (
-            <Skeleton key={colIndex} className="h-8 flex-1" />
+            <Skeleton key={colIndex} className='h-8 flex-1' />
           ))}
         </div>
       ))}
@@ -67,17 +73,21 @@ export interface LoadingSpinnerProps {
   text?: string;
 }
 
-export function LoadingSpinner({ size = 'md', className, text }: LoadingSpinnerProps) {
+export function LoadingSpinner({
+  size = 'md',
+  className,
+  text,
+}: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-6 w-6',
-    lg: 'h-8 w-8'
+    lg: 'h-8 w-8',
   };
 
   return (
     <div className={cn('flex items-center space-x-2', className)}>
       <Loader2 className={cn('animate-spin', sizeClasses[size])} />
-      {text && <span className="text-sm text-muted-foreground">{text}</span>}
+      {text && <span className='text-sm text-muted-foreground'>{text}</span>}
     </div>
   );
 }
@@ -95,18 +105,22 @@ export function LoadingOverlay({
   children,
   loadingText = 'Carregando...',
   className,
-  blur = true
+  blur = true,
 }: LoadingOverlayProps) {
   return (
     <div className={cn('relative', className)}>
-      <div className={cn(isLoading && blur && 'blur-sm transition-all duration-200')}>
+      <div
+        className={cn(
+          isLoading && blur && 'blur-sm transition-all duration-200'
+        )}
+      >
         {children}
       </div>
-      
+
       {isLoading && (
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
-          <div className="bg-card p-6 rounded-lg shadow-lg border">
-            <LoadingSpinner size="lg" text={loadingText} />
+        <div className='absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10'>
+          <div className='bg-card p-6 rounded-lg shadow-lg border'>
+            <LoadingSpinner size='lg' text={loadingText} />
           </div>
         </div>
       )}
@@ -130,34 +144,42 @@ export function ProgressBar({
   className,
   showPercentage = true,
   color = 'default',
-  size = 'md'
+  size = 'md',
 }: ProgressBarProps) {
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
-  
+
   const colorClasses = {
     default: 'bg-primary',
     success: 'bg-green-500',
     warning: 'bg-yellow-500',
-    error: 'bg-red-500'
+    error: 'bg-red-500',
   };
 
   const sizeClasses = {
     sm: 'h-1',
     md: 'h-2',
-    lg: 'h-3'
+    lg: 'h-3',
   };
 
   return (
     <div className={cn('space-y-1', className)}>
       {showPercentage && (
-        <div className="flex justify-between text-sm text-muted-foreground">
+        <div className='flex justify-between text-sm text-muted-foreground'>
           <span>Progresso</span>
           <span>{Math.round(percentage)}%</span>
         </div>
       )}
-      <div className={cn('w-full bg-muted rounded-full overflow-hidden', sizeClasses[size])}>
+      <div
+        className={cn(
+          'w-full bg-muted rounded-full overflow-hidden',
+          sizeClasses[size]
+        )}
+      >
         <div
-          className={cn('h-full transition-all duration-300 ease-out', colorClasses[color])}
+          className={cn(
+            'h-full transition-all duration-300 ease-out',
+            colorClasses[color]
+          )}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -184,31 +206,31 @@ export function StatusIndicator({
     idle: 'Pronto',
     loading: 'Processando...',
     success: 'Concluído',
-    error: 'Erro'
-  }
+    error: 'Erro',
+  },
 }: StatusIndicatorProps) {
   const statusConfig = {
     idle: {
       icon: Clock,
       color: 'text-muted-foreground',
-      bgColor: 'bg-muted'
+      bgColor: 'bg-muted',
     },
     loading: {
       icon: Loader2,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
-      animate: true
+      animate: true,
     },
     success: {
       icon: CheckCircle,
       color: 'text-green-600',
-      bgColor: 'bg-green-100'
+      bgColor: 'bg-green-100',
     },
     error: {
       icon: AlertCircle,
       color: 'text-red-600',
-      bgColor: 'bg-red-100'
-    }
+      bgColor: 'bg-red-100',
+    },
   };
 
   const config = statusConfig[status];
@@ -218,21 +240,30 @@ export function StatusIndicator({
     <div className={cn('flex items-center space-x-2', className)}>
       <div className={cn('p-1 rounded-full', config.bgColor)}>
         <Icon
-          className={cn('h-4 w-4', config.color, config.animate && 'animate-spin')}
+          className={cn(
+            'h-4 w-4',
+            config.color,
+            config.animate && 'animate-spin'
+          )}
         />
       </div>
-      <span className={cn('text-sm', config.color)}>
-        {messages[status]}
-      </span>
+      <span className={cn('text-sm', config.color)}>{messages[status]}</span>
     </div>
   );
 }
 
 // Enhanced button with loading states
-export interface LoadingButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface LoadingButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   loadingText?: string;
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  variant?:
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   children: React.ReactNode;
 }
@@ -258,8 +289,8 @@ export function LoadingButton({
         className
       )}
     >
-      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      {loading ? (loadingText || 'Carregando...') : children}
+      {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+      {loading ? loadingText || 'Carregando...' : children}
     </button>
   );
 }
@@ -274,7 +305,7 @@ export interface PerformanceIndicatorProps {
 export function PerformanceIndicator({
   loadTime,
   itemCount,
-  className
+  className,
 }: PerformanceIndicatorProps) {
   const getPerformanceColor = (time?: number) => {
     if (!time) return 'text-muted-foreground';
@@ -286,16 +317,14 @@ export function PerformanceIndicator({
   return (
     <div className={cn('flex items-center space-x-4 text-xs', className)}>
       {loadTime !== undefined && (
-        <div className="flex items-center space-x-1">
-          <Zap className="h-3 w-3" />
-          <span className={getPerformanceColor(loadTime)}>
-            {loadTime}ms
-          </span>
+        <div className='flex items-center space-x-1'>
+          <Zap className='h-3 w-3' />
+          <span className={getPerformanceColor(loadTime)}>{loadTime}ms</span>
         </div>
       )}
-      
+
       {itemCount !== undefined && (
-        <div className="text-muted-foreground">
+        <div className='text-muted-foreground'>
           {itemCount.toLocaleString()} itens
         </div>
       )}
@@ -306,22 +335,22 @@ export function PerformanceIndicator({
 // Loading states for specific components
 export function TableLoadingState({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className="bg-muted/50 p-4">
-        <div className="flex space-x-4">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-36" />
+    <div className='border rounded-lg overflow-hidden'>
+      <div className='bg-muted/50 p-4'>
+        <div className='flex space-x-4'>
+          <Skeleton className='h-4 w-32' />
+          <Skeleton className='h-4 w-48' />
+          <Skeleton className='h-4 w-24' />
+          <Skeleton className='h-4 w-36' />
         </div>
       </div>
-      <div className="p-4 space-y-3">
+      <div className='p-4 space-y-3'>
         {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="flex space-x-4">
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-8 w-36" />
+          <div key={i} className='flex space-x-4'>
+            <Skeleton className='h-8 w-32' />
+            <Skeleton className='h-8 w-48' />
+            <Skeleton className='h-8 w-24' />
+            <Skeleton className='h-8 w-36' />
           </div>
         ))}
       </div>
@@ -331,7 +360,7 @@ export function TableLoadingState({ rows = 5 }: { rows?: number }) {
 
 export function CardLoadingState() {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
       {Array.from({ length: 6 }).map((_, i) => (
         <SkeletonCard key={i} />
       ))}
@@ -341,28 +370,28 @@ export function CardLoadingState() {
 
 export function DashboardLoadingState() {
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header */}
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-96" />
+      <div className='space-y-2'>
+        <Skeleton className='h-8 w-64' />
+        <Skeleton className='h-4 w-96' />
       </div>
-      
+
       {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="p-6 border rounded-lg space-y-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="h-3 w-32" />
+          <div key={i} className='p-6 border rounded-lg space-y-2'>
+            <Skeleton className='h-4 w-24' />
+            <Skeleton className='h-8 w-16' />
+            <Skeleton className='h-3 w-32' />
           </div>
         ))}
       </div>
-      
+
       {/* Chart area */}
-      <div className="border rounded-lg p-6">
-        <Skeleton className="h-6 w-48 mb-4" />
-        <Skeleton className="h-64 w-full" />
+      <div className='border rounded-lg p-6'>
+        <Skeleton className='h-6 w-48 mb-4' />
+        <Skeleton className='h-64 w-full' />
       </div>
     </div>
   );

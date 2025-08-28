@@ -1,12 +1,12 @@
 import express, { Application, Request, Response } from 'express';
 import { databaseMonitor, monitoredQuery } from './databaseMonitoring';
 import {
-    apiPerformanceMiddleware,
-    corsWithMetrics,
-    errorTrackingMiddleware,
-    healthCheckMiddleware,
-    performanceMiddleware,
-    slowQueryMiddleware
+  apiPerformanceMiddleware,
+  corsWithMetrics,
+  errorTrackingMiddleware,
+  healthCheckMiddleware,
+  performanceMiddleware,
+  slowQueryMiddleware,
 } from './middleware';
 import { getPrometheusMetrics } from './performanceMetrics';
 import { systemMonitor } from './systemMetrics';
@@ -28,7 +28,7 @@ const DEFAULT_CONFIG: MonitoringConfig = {
   enablePrometheusMetrics: true,
   slowQueryThreshold: 1000,
   enableSystemMetrics: true,
-  enableDatabaseMonitoring: true
+  enableDatabaseMonitoring: true,
 };
 
 // Classe para integrar monitoramento com Express
@@ -96,72 +96,89 @@ export class ExpressMonitoringIntegration {
 
     // Endpoint para métricas de banco de dados
     if (this.config.enableDatabaseMonitoring) {
-      this.app.get('/api/monitoring/database', async (req: Request, res: Response) => {
-        try {
-          const metrics = await databaseMonitor.getDatabaseMetrics();
-          const slowQueries = databaseMonitor.getSlowQueries(10);
-          const tableStats = databaseMonitor.getTableStats();
-          const alerts = databaseMonitor.getActiveAlerts();
+      this.app.get(
+        '/api/monitoring/database',
+        async (req: Request, res: Response) => {
+          try {
+            const metrics = await databaseMonitor.getDatabaseMetrics();
+            const slowQueries = databaseMonitor.getSlowQueries(10);
+            const tableStats = databaseMonitor.getTableStats();
+            const alerts = databaseMonitor.getActiveAlerts();
 
-          res.json({
-            metrics,
-            slowQueries,
-            tableStats,
-            alerts,
-            timestamp: Date.now()
-          });
-        } catch (error) {
-          console.error('Erro ao obter métricas do banco:', error);
-          res.status(500).json({ error: 'Erro interno do servidor' });
+            res.json({
+              metrics,
+              slowQueries,
+              tableStats,
+              alerts,
+              timestamp: Date.now(),
+            });
+          } catch (error) {
+            console.error('Erro ao obter métricas do banco:', error);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+          }
         }
-      });
+      );
     }
 
     // Endpoint para métricas do sistema
     if (this.config.enableSystemMetrics) {
-      this.app.get('/api/monitoring/system', async (req: Request, res: Response) => {
-        try {
-          const metrics = await systemMonitor.collectSystemMetrics();
-          const systemInfo = systemMonitor.getSystemInfo();
-          const alerts = systemMonitor.checkSystemAlerts();
+      this.app.get(
+        '/api/monitoring/system',
+        async (req: Request, res: Response) => {
+          try {
+            const metrics = await systemMonitor.collectSystemMetrics();
+            const systemInfo = systemMonitor.getSystemInfo();
+            const alerts = systemMonitor.checkSystemAlerts();
 
-          res.json({
-            metrics,
-            systemInfo,
-            alerts,
-            timestamp: Date.now()
-          });
-        } catch (error) {
-          console.error('Erro ao obter métricas do sistema:', error);
-          res.status(500).json({ error: 'Erro interno do servidor' });
+            res.json({
+              metrics,
+              systemInfo,
+              alerts,
+              timestamp: Date.now(),
+            });
+          } catch (error) {
+            console.error('Erro ao obter métricas do sistema:', error);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+          }
         }
-      });
+      );
     }
 
     // Endpoint para métricas combinadas
-    this.app.get('/api/monitoring/dashboard', async (req: Request, res: Response) => {
-      try {
-        const [databaseMetrics, systemMetrics] = await Promise.all([
-          this.config.enableDatabaseMonitoring ? databaseMonitor.getDatabaseMetrics() : null,
-          this.config.enableSystemMetrics ? systemMonitor.collectSystemMetrics() : null
-        ]);
+    this.app.get(
+      '/api/monitoring/dashboard',
+      async (req: Request, res: Response) => {
+        try {
+          const [databaseMetrics, systemMetrics] = await Promise.all([
+            this.config.enableDatabaseMonitoring
+              ? databaseMonitor.getDatabaseMetrics()
+              : null,
+            this.config.enableSystemMetrics
+              ? systemMonitor.collectSystemMetrics()
+              : null,
+          ]);
 
-        const alerts = [
-          ...(this.config.enableDatabaseMonitoring ? databaseMonitor.getActiveAlerts() : []),
-          ...(this.config.enableSystemMetrics ? systemMonitor.checkSystemAlerts() : [])
-        ];
+          const alerts = [
+            ...(this.config.enableDatabaseMonitoring
+              ? databaseMonitor.getActiveAlerts()
+              : []),
+            ...(this.config.enableSystemMetrics
+              ? systemMonitor.checkSystemAlerts()
+              : []),
+          ];
 
-        res.json({
-          database: databaseMetrics,
-          system: systemMetrics,
-          alerts,
-          timestamp: Date.now()
-        });
-      } catch (error) {
-        console.error('Erro ao obter métricas do dashboard:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+          res.json({
+            database: databaseMetrics,
+            system: systemMetrics,
+            alerts,
+            timestamp: Date.now(),
+          });
+        } catch (error) {
+          console.error('Erro ao obter métricas do dashboard:', error);
+          res.status(500).json({ error: 'Erro interno do servidor' });
+        }
       }
-    });
+    );
 
     console.log('📊 Endpoints de métricas configurados');
   }
@@ -170,7 +187,9 @@ export class ExpressMonitoringIntegration {
   private setupWebSocket(): void {
     try {
       monitoringWS.start();
-      console.log(`🔌 Servidor WebSocket iniciado na porta ${this.config.webSocketPort}`);
+      console.log(
+        `🔌 Servidor WebSocket iniciado na porta ${this.config.webSocketPort}`
+      );
     } catch (error) {
       console.error('Erro ao iniciar WebSocket:', error);
     }
@@ -202,7 +221,7 @@ export function createDatabaseWrapper(db: any) {
     async transaction<T>(callback: (client: any) => Promise<T>): Promise<T> {
       const client = await db.connect();
       const connectionId = `tx_${Date.now()}`;
-      
+
       try {
         await monitoredQuery(
           'BEGIN',
@@ -213,8 +232,13 @@ export function createDatabaseWrapper(db: any) {
 
         const wrappedClient = {
           query: async (sql: string, params: any[] = []) => {
-            return monitoredQuery(sql, () => client.query(sql, params), params, connectionId);
-          }
+            return monitoredQuery(
+              sql,
+              () => client.query(sql, params),
+              params,
+              connectionId
+            );
+          },
         };
 
         const result = await callback(wrappedClient);
@@ -238,7 +262,7 @@ export function createDatabaseWrapper(db: any) {
       } finally {
         client.release();
       }
-    }
+    },
   };
 }
 
@@ -247,8 +271,8 @@ export function createDatabaseWrapper(db: any) {
 // Exemplo com pg (node-postgres)
 export function setupPostgreSQLMonitoring(pool: any) {
   const originalQuery = pool.query.bind(pool);
-  
-  pool.query = async function(text: string, params?: any[]) {
+
+  pool.query = async function (text: string, params?: any[]) {
     return monitoredQuery(
       text,
       () => originalQuery(text, params),
@@ -266,7 +290,7 @@ export function setupPrismaMonitoring(prisma: any) {
   if (prisma.$use) {
     prisma.$use(async (params: any, next: any) => {
       const query = `${params.model}.${params.action}`;
-      
+
       return monitoredQuery(
         query,
         () => next(params),
@@ -287,12 +311,12 @@ export function setupSequelizeMonitoring(sequelize: any) {
 
   sequelize.addHook('afterQuery', (options: any, query: any) => {
     const duration = Date.now() - options._startTime;
-    
+
     // Simular monitoramento (Sequelize já tem hooks próprios)
     if (duration > 1000) {
       console.warn(`Slow Sequelize query: ${duration}ms`, {
         sql: options.sql,
-        bind: options.bind
+        bind: options.bind,
       });
     }
   });
@@ -302,12 +326,12 @@ export function setupSequelizeMonitoring(sequelize: any) {
 
 // Função para configuração completa de uma aplicação Express
 export function setupCompleteMonitoring(
-  app: Application, 
+  app: Application,
   config: Partial<MonitoringConfig> = {}
 ): ExpressMonitoringIntegration {
   const monitoring = new ExpressMonitoringIntegration(app, config);
   monitoring.setupMonitoring();
-  
+
   // Configurar graceful shutdown
   process.on('SIGTERM', () => {
     console.log('Recebido SIGTERM, parando monitoramento...');
@@ -327,13 +351,13 @@ export function setupCompleteMonitoring(
 // Exemplo de uso completo
 export function exampleUsage() {
   const app = express();
-  
+
   // Configurar monitoramento
   const monitoring = setupCompleteMonitoring(app, {
     enableWebSocket: true,
     webSocketPort: 8080,
     slowQueryThreshold: 500,
-    enableDatabaseMonitoring: true
+    enableDatabaseMonitoring: true,
   });
 
   // Exemplo de rota com monitoramento

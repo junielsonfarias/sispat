@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -6,20 +6,20 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import LogoManagement from '@/pages/admin/LogoManagement'
-import ThemeManagement from '@/pages/admin/ThemeManagement'
-import LoginCustomizationForm from '@/components/admin/LoginCustomizationForm'
+} from '@/components/ui/breadcrumb';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import LogoManagement from '@/pages/admin/LogoManagement';
+import ThemeManagement from '@/pages/admin/ThemeManagement';
+import LoginCustomizationForm from '@/components/admin/LoginCustomizationForm';
 
 export default function Personalization() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/configuracoes">Configurações</Link>
+              <Link to='/configuracoes'>Configurações</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -28,23 +28,23 @@ export default function Personalization() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <h1 className="text-2xl font-bold">Personalização</h1>
-      <Tabs defaultValue="logo" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="logo">Logos</TabsTrigger>
-          <TabsTrigger value="theme">Temas</TabsTrigger>
-          <TabsTrigger value="login">Tela de Login</TabsTrigger>
+      <h1 className='text-2xl font-bold'>Personalização</h1>
+      <Tabs defaultValue='logo' className='w-full'>
+        <TabsList className='grid w-full grid-cols-3'>
+          <TabsTrigger value='logo'>Logos</TabsTrigger>
+          <TabsTrigger value='theme'>Temas</TabsTrigger>
+          <TabsTrigger value='login'>Tela de Login</TabsTrigger>
         </TabsList>
-        <TabsContent value="logo">
+        <TabsContent value='logo'>
           <LogoManagement />
         </TabsContent>
-        <TabsContent value="theme">
+        <TabsContent value='theme'>
           <ThemeManagement />
         </TabsContent>
-        <TabsContent value="login">
+        <TabsContent value='login'>
           <LoginCustomizationForm />
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

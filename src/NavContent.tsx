@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   Building,
   Calendar,
@@ -27,17 +27,17 @@ import {
   Wrench,
   Laptop,
   Bell,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useAuth } from '@/hooks/useAuth'
-import { UserRole } from '@/types'
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { UserRole } from '@/types';
 
 interface NavItem {
-  to?: string
-  icon: React.ElementType
-  label: string
-  exact?: boolean
-  isGroupLabel?: boolean
+  to?: string;
+  icon: React.ElementType;
+  label: string;
+  exact?: boolean;
+  isGroupLabel?: boolean;
 }
 
 const supervisorAndAdminLinks: NavItem[] = [
@@ -112,7 +112,7 @@ const supervisorAndAdminLinks: NavItem[] = [
   },
   { to: '/configuracoes/seguranca', icon: ShieldCheck, label: 'Segurança' },
   { to: '/configuracoes/backup', icon: DatabaseBackup, label: 'Backup' },
-]
+];
 
 const navLinks: Record<UserRole, NavItem[]> = {
   superuser: [],
@@ -165,23 +165,23 @@ const navLinks: Record<UserRole, NavItem[]> = {
       label: 'Notificações',
     },
   ],
-}
+};
 
 const NavItemComponent = ({ item }: { item: NavItem }) => {
-  const location = useLocation()
+  const location = useLocation();
   const isActive = item.to
     ? item.exact
       ? location.pathname === item.to
       : location.pathname.startsWith(item.to)
-    : false
+    : false;
 
   if (item.isGroupLabel) {
     return (
-      <h3 className="px-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-2 mt-4 flex items-center gap-2">
-        <item.icon className="h-4 w-4" />
+      <h3 className='px-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-2 mt-4 flex items-center gap-2'>
+        <item.icon className='h-4 w-4' />
         {item.label}
       </h3>
-    )
+    );
   }
 
   return (
@@ -189,24 +189,24 @@ const NavItemComponent = ({ item }: { item: NavItem }) => {
       to={item.to!}
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-        isActive && 'bg-muted text-primary',
+        isActive && 'bg-muted text-primary'
       )}
     >
-      <item.icon className="h-4 w-4" />
+      <item.icon className='h-4 w-4' />
       {item.label}
     </NavLink>
-  )
-}
+  );
+};
 
 export const NavContent = () => {
-  const { user } = useAuth()
-  const links = user ? navLinks[user.role] || [] : []
+  const { user } = useAuth();
+  const links = user ? navLinks[user.role] || [] : [];
 
   return (
-    <nav className="grid items-start px-2 text-sm font-medium lg:px-4 py-4">
+    <nav className='grid items-start px-2 text-sm font-medium lg:px-4 py-4'>
       {links.map((item, index) => (
         <NavItemComponent key={`${item.label}-${index}`} item={item} />
       ))}
     </nav>
-  )
-}
+  );
+};

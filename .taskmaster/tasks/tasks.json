@@ -11,11 +11,7 @@
         "phase": "Fase 1 - Correções Críticas",
         "category": "Segurança",
         "dependencies": [],
-        "tags": [
-          "segurança",
-          "validação",
-          "crítico"
-        ],
+        "tags": ["segurança", "validação", "crítico"],
         "acceptanceCriteria": [
           "Todas as rotas com parâmetros UUID validados",
           "Middleware de validação implementado",
@@ -34,14 +30,8 @@
         "estimatedHours": 6,
         "phase": "Fase 1 - Correções Críticas",
         "category": "Segurança",
-        "dependencies": [
-          "1"
-        ],
-        "tags": [
-          "rate-limiting",
-          "segurança",
-          "performance"
-        ],
+        "dependencies": ["1"],
+        "tags": ["rate-limiting", "segurança", "performance"],
         "acceptanceCriteria": [
           "Rate limiting por IP implementado",
           "Diferentes limites para endpoints críticos",
@@ -60,14 +50,8 @@
         "estimatedHours": 10,
         "phase": "Fase 1 - Correções Críticas",
         "category": "Autenticação",
-        "dependencies": [
-          "1"
-        ],
-        "tags": [
-          "autenticação",
-          "segurança",
-          "lockout"
-        ],
+        "dependencies": ["1"],
+        "tags": ["autenticação", "segurança", "lockout"],
         "acceptanceCriteria": [
           "Lockout após 5 tentativas implementado",
           "Desbloqueio automático após 30 minutos",
@@ -87,11 +71,7 @@
         "phase": "Fase 1 - Correções Críticas",
         "category": "Performance",
         "dependencies": [],
-        "tags": [
-          "performance",
-          "frontend",
-          "context"
-        ],
+        "tags": ["performance", "frontend", "context"],
         "acceptanceCriteria": [
           "Auto-refresh alterado para 5 minutos",
           "Refresh manual disponível",
@@ -111,11 +91,7 @@
         "phase": "Fase 1 - Correções Críticas",
         "category": "Infraestrutura",
         "dependencies": [],
-        "tags": [
-          "error-handling",
-          "middleware",
-          "logs"
-        ],
+        "tags": ["error-handling", "middleware", "logs"],
         "acceptanceCriteria": [
           "Middleware de erro global implementado",
           "Logs estruturados de todos os erros",
@@ -134,14 +110,8 @@
         "estimatedHours": 8,
         "phase": "Fase 1 - Correções Críticas",
         "category": "Infraestrutura",
-        "dependencies": [
-          "5"
-        ],
-        "tags": [
-          "logging",
-          "monitoramento",
-          "estruturado"
-        ],
+        "dependencies": ["5"],
+        "tags": ["logging", "monitoramento", "estruturado"],
         "acceptanceCriteria": [
           "Winston implementado em todo o backend",
           "Logs estruturados em JSON",
@@ -160,15 +130,8 @@
         "estimatedHours": 6,
         "phase": "Fase 1 - Correções Críticas",
         "category": "Bug Fix",
-        "dependencies": [
-          "1"
-        ],
-        "tags": [
-          "bug",
-          "patrimônio",
-          "403",
-          "crítico"
-        ],
+        "dependencies": ["1"],
+        "tags": ["bug", "patrimônio", "403", "crítico"],
         "acceptanceCriteria": [
           "Geração de números funcionando sem erro 403",
           "Validação de permissões corrigida",
@@ -188,12 +151,7 @@
         "phase": "Fase 1 - Correções Críticas",
         "category": "UI/UX",
         "dependencies": [],
-        "tags": [
-          "ui",
-          "loading",
-          "ux",
-          "consistência"
-        ],
+        "tags": ["ui", "loading", "ux", "consistência"],
         "acceptanceCriteria": [
           "Componente de loading padronizado",
           "Estados de loading em todas as ações assíncronas",
@@ -213,12 +171,7 @@
         "phase": "Fase 1 - Correções Críticas",
         "category": "Database",
         "dependencies": [],
-        "tags": [
-          "database",
-          "performance",
-          "índices",
-          "otimização"
-        ],
+        "tags": ["database", "performance", "índices", "otimização"],
         "acceptanceCriteria": [
           "Análise de performance de queries realizada",
           "Índices compostos implementados",
@@ -238,11 +191,7 @@
         "phase": "Fase 1 - Correções Críticas",
         "category": "Infraestrutura",
         "dependencies": [],
-        "tags": [
-          "backup",
-          "automação",
-          "disaster-recovery"
-        ],
+        "tags": ["backup", "automação", "disaster-recovery"],
         "acceptanceCriteria": [
           "Backup diário automatizado funcionando",
           "Testes de restore bem-sucedidos",
@@ -261,16 +210,8 @@
         "estimatedHours": 16,
         "phase": "Fase 2 - Performance",
         "category": "Performance",
-        "dependencies": [
-          "1",
-          "5"
-        ],
-        "tags": [
-          "cache",
-          "redis",
-          "performance",
-          "sessões"
-        ],
+        "dependencies": ["1", "5"],
+        "tags": ["cache", "redis", "performance", "sessões"],
         "acceptanceCriteria": [
           "Redis configurado e funcionando",
           "Cache de sessões implementado",
@@ -290,15 +231,8 @@
         "estimatedHours": 14,
         "phase": "Fase 2 - Performance",
         "category": "Performance",
-        "dependencies": [
-          "9"
-        ],
-        "tags": [
-          "paginação",
-          "performance",
-          "ui",
-          "listagem"
-        ],
+        "dependencies": ["9"],
+        "tags": ["paginação", "performance", "ui", "listagem"],
         "acceptanceCriteria": [
           "Paginação implementada em todas as listagens",
           "Controles de navegação consistentes",
@@ -317,16 +251,8 @@
         "estimatedHours": 12,
         "phase": "Fase 2 - Performance",
         "category": "Database",
-        "dependencies": [
-          "9",
-          "11"
-        ],
-        "tags": [
-          "database",
-          "queries",
-          "otimização",
-          "performance"
-        ],
+        "dependencies": ["9", "11"],
+        "tags": ["database", "queries", "otimização", "performance"],
         "acceptanceCriteria": [
           "Todas as queries complexas analisadas",
           "Planos de execução otimizados",
@@ -346,12 +272,7 @@
         "phase": "Fase 2 - Performance",
         "category": "Frontend",
         "dependencies": [],
-        "tags": [
-          "frontend",
-          "code-splitting",
-          "performance",
-          "bundle"
-        ],
+        "tags": ["frontend", "code-splitting", "performance", "bundle"],
         "acceptanceCriteria": [
           "Code splitting implementado por rotas",
           "Lazy loading de componentes pesados",
@@ -370,15 +291,8 @@
         "estimatedHours": 18,
         "phase": "Fase 2 - Performance",
         "category": "Features",
-        "dependencies": [
-          "11"
-        ],
-        "tags": [
-          "websockets",
-          "notificações",
-          "tempo-real",
-          "ux"
-        ],
+        "dependencies": ["11"],
+        "tags": ["websockets", "notificações", "tempo-real", "ux"],
         "acceptanceCriteria": [
           "WebSocket server implementado",
           "Notificações em tempo real funcionando",
@@ -397,16 +311,8 @@
         "estimatedHours": 16,
         "phase": "Fase 2 - Performance",
         "category": "Features",
-        "dependencies": [
-          "11",
-          "15"
-        ],
-        "tags": [
-          "relatórios",
-          "assíncrono",
-          "performance",
-          "background"
-        ],
+        "dependencies": ["11", "15"],
+        "tags": ["relatórios", "assíncrono", "performance", "background"],
         "acceptanceCriteria": [
           "Relatórios gerados em background",
           "Notificação quando relatório estiver pronto",
@@ -425,15 +331,8 @@
         "estimatedHours": 14,
         "phase": "Fase 2 - Performance",
         "category": "Features",
-        "dependencies": [
-          "15"
-        ],
-        "tags": [
-          "analytics",
-          "dashboard",
-          "métricas",
-          "tempo-real"
-        ],
+        "dependencies": ["15"],
+        "tags": ["analytics", "dashboard", "métricas", "tempo-real"],
         "acceptanceCriteria": [
           "Dashboard com métricas em tempo real",
           "Gráficos interativos implementados",
@@ -453,12 +352,7 @@
         "phase": "Fase 3 - Qualidade",
         "category": "Testing",
         "dependencies": [],
-        "tags": [
-          "testes",
-          "unitários",
-          "cobertura",
-          "qualidade"
-        ],
+        "tags": ["testes", "unitários", "cobertura", "qualidade"],
         "acceptanceCriteria": [
           "80% de cobertura de código",
           "Testes para todos os componentes críticos",
@@ -477,15 +371,8 @@
         "estimatedHours": 20,
         "phase": "Fase 3 - Qualidade",
         "category": "Testing",
-        "dependencies": [
-          "18"
-        ],
-        "tags": [
-          "testes",
-          "integração",
-          "api",
-          "qualidade"
-        ],
+        "dependencies": ["18"],
+        "tags": ["testes", "integração", "api", "qualidade"],
         "acceptanceCriteria": [
           "Testes de integração para todas as APIs",
           "Testes de autenticação e autorização",
@@ -505,12 +392,7 @@
         "phase": "Fase 3 - Qualidade",
         "category": "Documentation",
         "dependencies": [],
-        "tags": [
-          "documentação",
-          "api",
-          "swagger",
-          "openapi"
-        ],
+        "tags": ["documentação", "api", "swagger", "openapi"],
         "acceptanceCriteria": [
           "Documentação OpenAPI completa",
           "Interface Swagger UI funcionando",
@@ -530,12 +412,7 @@
         "phase": "Fase 3 - Qualidade",
         "category": "Monitoring",
         "dependencies": [],
-        "tags": [
-          "monitoramento",
-          "prometheus",
-          "grafana",
-          "métricas"
-        ],
+        "tags": ["monitoramento", "prometheus", "grafana", "métricas"],
         "acceptanceCriteria": [
           "Prometheus configurado e coletando métricas",
           "Grafana com dashboards customizados",
@@ -554,15 +431,8 @@
         "estimatedHours": 18,
         "phase": "Fase 3 - Qualidade",
         "category": "Security",
-        "dependencies": [
-          "6"
-        ],
-        "tags": [
-          "auditoria",
-          "segurança",
-          "compliance",
-          "logs"
-        ],
+        "dependencies": ["6"],
+        "tags": ["auditoria", "segurança", "compliance", "logs"],
         "acceptanceCriteria": [
           "Log de todas as ações críticas",
           "Rastreabilidade completa de mudanças",
@@ -581,15 +451,8 @@
         "estimatedHours": 24,
         "phase": "Fase 3 - Qualidade",
         "category": "Security",
-        "dependencies": [
-          "3"
-        ],
-        "tags": [
-          "sso",
-          "oauth2",
-          "saml",
-          "integração"
-        ],
+        "dependencies": ["3"],
+        "tags": ["sso", "oauth2", "saml", "integração"],
         "acceptanceCriteria": [
           "OAuth2 implementado",
           "SAML configurado",
@@ -609,12 +472,7 @@
         "phase": "Fase 3 - Qualidade",
         "category": "UX",
         "dependencies": [],
-        "tags": [
-          "i18n",
-          "internacionalização",
-          "idiomas",
-          "ux"
-        ],
+        "tags": ["i18n", "internacionalização", "idiomas", "ux"],
         "acceptanceCriteria": [
           "Sistema i18n implementado",
           "Traduções para PT, EN, ES",
@@ -634,12 +492,7 @@
         "phase": "Fase 3 - Qualidade",
         "category": "UX",
         "dependencies": [],
-        "tags": [
-          "tutorial",
-          "onboarding",
-          "ux",
-          "ajuda"
-        ],
+        "tags": ["tutorial", "onboarding", "ux", "ajuda"],
         "acceptanceCriteria": [
           "Tutorial interativo implementado",
           "Guias contextuais por funcionalidade",

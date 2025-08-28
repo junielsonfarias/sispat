@@ -1,6 +1,6 @@
 /**
  * Arquitetura Modular SISPAT
- * 
+ *
  * Estrutura organizada por:
  * - Features (funcionalidades específicas)
  * - Shared (componentes compartilhados)

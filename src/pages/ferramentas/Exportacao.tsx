@@ -1,28 +1,28 @@
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Link } from 'react-router-dom';
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+} from '@/components/ui/breadcrumb';
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { ScrollArea } from '@/components/ui/scroll-area'
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Form,
   FormControl,
@@ -30,8 +30,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { SearchableSelect } from '@/components/ui/searchable-select'
+} from '@/components/ui/form';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   FileText,
   FileSpreadsheet,
@@ -39,15 +39,20 @@ import {
   Download,
   Save,
   Loader2,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { useUserReportConfigs } from '@/contexts/UserReportConfigContext'
-import { exportToCsv, exportToXlsx, exportToPdf, getColumnsWithLabels } from '@/lib/export-utils'
-import { patrimonioFields } from '@/lib/report-utils'
-import { toast } from '@/hooks/use-toast'
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { useUserReportConfigs } from '@/contexts/UserReportConfigContext';
+import {
+  exportToCsv,
+  exportToXlsx,
+  exportToPdf,
+  getColumnsWithLabels,
+} from '@/lib/export-utils';
+import { patrimonioFields } from '@/lib/report-utils';
+import { toast } from '@/hooks/use-toast';
 
-console.log('🔍 Exportacao.tsx - Componente carregado')
+console.log('🔍 Exportacao.tsx - Componente carregado');
 
 const exportSchema = z.object({
   fields: z.array(z.string()).min(1, 'Selecione pelo menos um campo'),
@@ -55,19 +60,19 @@ const exportSchema = z.object({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   configName: z.string().optional(),
-})
+});
 
-type ExportFormData = z.infer<typeof exportSchema>
+type ExportFormData = z.infer<typeof exportSchema>;
 
 export default function Exportacao() {
-  console.log('🔍 Exportacao - Função render iniciada')
-  
-  const { patrimonios, isLoading: patrimoniosLoading } = usePatrimonio()
-  const { configs, saveConfig } = useUserReportConfigs()
-  const [isLoading, setIsLoading] = useState(false)
+  console.log('🔍 Exportacao - Função render iniciada');
 
-  console.log('🔍 Exportacao - Patrimônios carregados:', patrimonios.length)
-  console.log('🔍 Exportacao - Configurações carregadas:', configs.length)
+  const { patrimonios, isLoading: patrimoniosLoading } = usePatrimonio();
+  const { configs, saveConfig } = useUserReportConfigs();
+  const [isLoading, setIsLoading] = useState(false);
+
+  console.log('🔍 Exportacao - Patrimônios carregados:', patrimonios.length);
+  console.log('🔍 Exportacao - Configurações carregadas:', configs.length);
 
   const form = useForm<ExportFormData>({
     resolver: zodResolver(exportSchema),
@@ -75,132 +80,132 @@ export default function Exportacao() {
       fields: ['numero_patrimonio', 'descricao', 'tipo', 'setor_responsavel'],
       format: 'csv',
     },
-  })
+  });
 
-  console.log('🔍 Exportacao - Form inicializado')
+  console.log('🔍 Exportacao - Form inicializado');
 
-  const configOptions = configs.map((config) => ({
+  const configOptions = configs.map(config => ({
     value: config.id,
     label: config.name,
-  }))
+  }));
 
   const handleLoadConfig = (configId: string | null) => {
-    if (!configId) return
-    const config = configs.find((c) => c.id === configId)
+    if (!configId) return;
+    const config = configs.find(c => c.id === configId);
     if (config) {
-      form.setValue('fields', config.columns)
-      form.setValue('format', config.format)
-      toast({ description: 'Configuração carregada.' })
+      form.setValue('fields', config.columns);
+      form.setValue('format', config.format);
+      toast({ description: 'Configuração carregada.' });
     }
-  }
+  };
 
   const handleSaveConfig = () => {
-    const configName = form.getValues('configName')
+    const configName = form.getValues('configName');
     if (!configName) {
       toast({
         variant: 'destructive',
         description: 'Digite um nome para a configuração.',
-      })
-      return
+      });
+      return;
     }
 
-    const fields = form.getValues('fields')
-    const format = form.getValues('format')
+    const fields = form.getValues('fields');
+    const format = form.getValues('format');
 
     saveConfig({
       name: configName,
       columns: fields,
       filters: {},
       format,
-    })
+    });
 
-    form.setValue('configName', '')
-  }
+    form.setValue('configName', '');
+  };
 
   const onSubmit = async (data: ExportFormData) => {
-    console.log('🔍 Exportacao - onSubmit iniciado com dados:', data)
-    
+    console.log('🔍 Exportacao - onSubmit iniciado com dados:', data);
+
     if (patrimonios.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Exportação Falhou',
         description: 'Não há patrimônios para exportar.',
-      })
-      return
+      });
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       // Aplicar filtros
-      let filteredData = [...patrimonios]
+      let filteredData = [...patrimonios];
 
       if (data.dateFrom) {
         filteredData = filteredData.filter(
-          (p) => p.data_aquisicao >= data.dateFrom!,
-        )
+          p => p.data_aquisicao >= data.dateFrom!
+        );
       }
 
       if (data.dateTo) {
         filteredData = filteredData.filter(
-          (p) => p.data_aquisicao <= data.dateTo!,
-        )
+          p => p.data_aquisicao <= data.dateTo!
+        );
       }
 
-      console.log('🔍 Exportacao - Dados filtrados:', filteredData.length)
+      console.log('🔍 Exportacao - Dados filtrados:', filteredData.length);
 
-      const columns = getColumnsWithLabels(data.fields)
-      const filename = `patrimonios-${new Date().toISOString().split('T')[0]}`
+      const columns = getColumnsWithLabels(data.fields);
+      const filename = `patrimonios-${new Date().toISOString().split('T')[0]}`;
 
-      console.log('🔍 Exportacao - Colunas selecionadas:', columns.length)
+      console.log('🔍 Exportacao - Colunas selecionadas:', columns.length);
 
       switch (data.format) {
         case 'csv':
-          exportToCsv(`${filename}.csv`, filteredData, columns)
-          break
+          exportToCsv(`${filename}.csv`, filteredData, columns);
+          break;
         case 'xlsx':
-          exportToXlsx(`${filename}.xlsx`, filteredData, columns)
-          break
+          exportToXlsx(`${filename}.xlsx`, filteredData, columns);
+          break;
         case 'pdf':
-          exportToPdf(`${filename}.pdf`, filteredData, columns)
-          break
+          exportToPdf(`${filename}.pdf`, filteredData, columns);
+          break;
       }
 
       toast({
         title: 'Exportação Concluída',
         description: `Arquivo exportado com sucesso.`,
-      })
+      });
     } catch (error) {
-      console.error('❌ Erro na exportação:', error)
+      console.error('❌ Erro na exportação:', error);
       toast({
         variant: 'destructive',
         title: 'Erro na Exportação',
         description: 'Ocorreu um erro ao exportar os dados.',
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  console.log('🔍 Exportacao - Renderizando JSX')
+  console.log('🔍 Exportacao - Renderizando JSX');
 
   if (patrimoniosLoading) {
-    console.log('🔍 Exportacao - Mostrando loader')
+    console.log('🔍 Exportacao - Mostrando loader');
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-6 w-6 animate-spin" />
+      <div className='flex items-center justify-center min-h-screen'>
+        <Loader2 className='h-6 w-6 animate-spin' />
       </div>
-    )
+    );
   }
 
-  console.log('🔍 Exportacao - Renderizando conteúdo principal')
+  console.log('🔍 Exportacao - Renderizando conteúdo principal');
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <Link to="/">Dashboard</Link>
+            <Link to='/'>Dashboard</Link>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -208,21 +213,21 @@ export default function Exportacao() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <h1 className="text-2xl font-bold">Exportação de Dados</h1>
-      <div className="text-sm text-muted-foreground mb-4">
+      <h1 className='text-2xl font-bold'>Exportação de Dados</h1>
+      <div className='text-sm text-muted-foreground mb-4'>
         {patrimonios.length} patrimônios disponíveis para exportação
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            <div className="lg:col-span-2 space-y-6">
+          <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 items-start'>
+            <div className='lg:col-span-2 space-y-6'>
               <Card>
                 <CardHeader>
                   <CardTitle>Configurações Salvas</CardTitle>
                   <SearchableSelect
                     options={configOptions}
                     onChange={handleLoadConfig}
-                    placeholder="Carregar uma configuração salva..."
+                    placeholder='Carregar uma configuração salva...'
                     isClearable
                   />
                 </CardHeader>
@@ -234,22 +239,22 @@ export default function Exportacao() {
                 <CardContent>
                   <FormField
                     control={form.control}
-                    name="fields"
+                    name='fields'
                     render={() => (
                       <FormItem>
-                        <ScrollArea className="h-64 w-full rounded-md border">
-                          <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {patrimonioFields.map((item) => (
+                        <ScrollArea className='h-64 w-full rounded-md border'>
+                          <div className='p-4 grid grid-cols-2 md:grid-cols-3 gap-4'>
+                            {patrimonioFields.map(item => (
                               <FormField
                                 key={item.id}
                                 control={form.control}
-                                name="fields"
+                                name='fields'
                                 render={({ field }) => (
-                                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                  <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
                                     <FormControl>
                                       <Checkbox
                                         checked={field.value?.includes(item.id)}
-                                        onCheckedChange={(checked) => {
+                                        onCheckedChange={checked => {
                                           return checked
                                             ? field.onChange([
                                                 ...field.value,
@@ -257,13 +262,13 @@ export default function Exportacao() {
                                               ])
                                             : field.onChange(
                                                 field.value?.filter(
-                                                  (value) => value !== item.id,
-                                                ),
-                                              )
+                                                  value => value !== item.id
+                                                )
+                                              );
                                         }}
                                       />
                                     </FormControl>
-                                    <FormLabel className="font-normal">
+                                    <FormLabel className='font-normal'>
                                       {item.label}
                                     </FormLabel>
                                   </FormItem>
@@ -272,7 +277,7 @@ export default function Exportacao() {
                             ))}
                           </div>
                         </ScrollArea>
-                        <FormMessage className="pt-2" />
+                        <FormMessage className='pt-2' />
                       </FormItem>
                     )}
                   />
@@ -282,27 +287,27 @@ export default function Exportacao() {
                 <CardHeader>
                   <CardTitle>Filtros</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CardContent className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <FormField
                     control={form.control}
-                    name="dateFrom"
+                    name='dateFrom'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Data de Aquisição (De)</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type='date' {...field} />
                         </FormControl>
                       </FormItem>
                     )}
                   />
                   <FormField
                     control={form.control}
-                    name="dateTo"
+                    name='dateTo'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Data de Aquisição (Até)</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type='date' {...field} />
                         </FormControl>
                       </FormItem>
                     )}
@@ -310,7 +315,7 @@ export default function Exportacao() {
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-1 space-y-6 sticky top-24">
+            <div className='lg:col-span-1 space-y-6 sticky top-24'>
               <Card>
                 <CardHeader>
                   <CardTitle>Formato do Arquivo</CardTitle>
@@ -318,91 +323,91 @@ export default function Exportacao() {
                 <CardContent>
                   <FormField
                     control={form.control}
-                    name="format"
+                    name='format'
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
                             defaultValue={field.value}
-                            className="grid grid-cols-1 gap-4"
+                            className='grid grid-cols-1 gap-4'
                           >
                             <FormItem>
                               <FormControl>
                                 <RadioGroupItem
-                                  value="csv"
-                                  id="csv"
-                                  className="peer sr-only"
+                                  value='csv'
+                                  id='csv'
+                                  className='peer sr-only'
                                 />
                               </FormControl>
                               <Label
-                                htmlFor="csv"
+                                htmlFor='csv'
                                 className={cn(
                                   'border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:bg-accent',
-                                  'peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary',
+                                  'peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary'
                                 )}
                               >
-                                <FileText className="h-8 w-8" />
+                                <FileText className='h-8 w-8' />
                                 <div>
-                                  <p className="font-semibold">CSV</p>
+                                  <p className='font-semibold'>CSV</p>
                                 </div>
                               </Label>
                             </FormItem>
                             <FormItem>
                               <FormControl>
                                 <RadioGroupItem
-                                  value="xlsx"
-                                  id="xlsx"
-                                  className="peer sr-only"
+                                  value='xlsx'
+                                  id='xlsx'
+                                  className='peer sr-only'
                                 />
                               </FormControl>
                               <Label
-                                htmlFor="xlsx"
+                                htmlFor='xlsx'
                                 className={cn(
                                   'border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:bg-accent',
-                                  'peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary',
+                                  'peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary'
                                 )}
                               >
-                                <FileSpreadsheet className="h-8 w-8" />
+                                <FileSpreadsheet className='h-8 w-8' />
                                 <div>
-                                  <p className="font-semibold">Excel (XLSX)</p>
+                                  <p className='font-semibold'>Excel (XLSX)</p>
                                 </div>
                               </Label>
                             </FormItem>
                             <FormItem>
                               <FormControl>
                                 <RadioGroupItem
-                                  value="pdf"
-                                  id="pdf"
-                                  className="peer sr-only"
+                                  value='pdf'
+                                  id='pdf'
+                                  className='peer sr-only'
                                 />
                               </FormControl>
                               <Label
-                                htmlFor="pdf"
+                                htmlFor='pdf'
                                 className={cn(
                                   'border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:bg-accent',
-                                  'peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary',
+                                  'peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary'
                                 )}
                               >
-                                <FileDigit className="h-8 w-8" />
+                                <FileDigit className='h-8 w-8' />
                                 <div>
-                                  <p className="font-semibold">PDF</p>
+                                  <p className='font-semibold'>PDF</p>
                                 </div>
                               </Label>
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
-                        <FormMessage className="pt-2" />
+                        <FormMessage className='pt-2' />
                       </FormItem>
                     )}
                   />
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type='submit' className='w-full' disabled={isLoading}>
                     {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                     ) : (
-                      <Download className="mr-2 h-4 w-4" />
+                      <Download className='mr-2 h-4 w-4' />
                     )}
                     {isLoading ? 'Exportando...' : 'Iniciar Exportação'}
                   </Button>
@@ -412,16 +417,16 @@ export default function Exportacao() {
                 <CardHeader>
                   <CardTitle>Salvar Configuração</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className='space-y-2'>
                   <FormField
                     control={form.control}
-                    name="configName"
+                    name='configName'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Nome da Configuração</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Ex: Relatório Mensal"
+                            placeholder='Ex: Relatório Mensal'
                             {...field}
                           />
                         </FormControl>
@@ -431,12 +436,12 @@ export default function Exportacao() {
                 </CardContent>
                 <CardFooter>
                   <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
+                    type='button'
+                    variant='secondary'
+                    className='w-full'
                     onClick={handleSaveConfig}
                   >
-                    <Save className="mr-2 h-4 w-4" /> Salvar
+                    <Save className='mr-2 h-4 w-4' /> Salvar
                   </Button>
                 </CardFooter>
               </Card>
@@ -445,5 +450,5 @@ export default function Exportacao() {
         </form>
       </Form>
     </div>
-  )
+  );
 }

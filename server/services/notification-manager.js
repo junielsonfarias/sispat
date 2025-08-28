@@ -2,9 +2,9 @@
  * Gerenciador de Notificações
  */
 
-import { getRow, getRows, query } from '../database/connection.js'
-import { logError, logInfo } from '../utils/logger.js'
-import { websocketServer } from './websocket-server.js'
+import { getRow, getRows, query } from '../database/connection.js';
+import { logError, logInfo } from '../utils/logger.js';
+import { websocketServer } from './websocket-server.js';
 
 class NotificationManager {
   constructor() {
@@ -16,15 +16,15 @@ class NotificationManager {
       USER: 'user',
       MAINTENANCE: 'maintenance',
       REPORT: 'report',
-      SECURITY: 'security'
-    }
+      SECURITY: 'security',
+    };
 
     this.priorities = {
       LOW: 'low',
       MEDIUM: 'medium',
       HIGH: 'high',
-      CRITICAL: 'critical'
-    }
+      CRITICAL: 'critical',
+    };
   }
 
   /**
@@ -48,33 +48,33 @@ class NotificationManager {
           action_url VARCHAR(500),
           action_label VARCHAR(100)
         )
-      `)
+      `);
 
       await query(`
         CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)
-      `)
+      `);
 
       await query(`
         CREATE INDEX IF NOT EXISTS idx_notifications_municipality_id ON notifications(municipality_id)
-      `)
+      `);
 
       await query(`
         CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type)
-      `)
+      `);
 
       await query(`
         CREATE INDEX IF NOT EXISTS idx_notifications_read_at ON notifications(read_at)
-      `)
+      `);
 
       await query(`
         CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC)
-      `)
+      `);
 
-      logInfo('Notification system initialized')
-      return true
+      logInfo('Notification system initialized');
+      return true;
     } catch (error) {
-      logError('Failed to initialize notification system', error)
-      return false
+      logError('Failed to initialize notification system', error);
+      return false;
     }
   }
 
@@ -92,20 +92,31 @@ class NotificationManager {
       data = {},
       expiresAt = null,
       actionUrl = null,
-      actionLabel = null
-    } = options
+      actionLabel = null,
+    } = options;
 
     try {
-      const notification = await getRow(`
+      const notification = await getRow(
+        `
         INSERT INTO notifications (
           user_id, municipality_id, type, priority, title, message, 
           data, expires_at, action_url, action_label
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING *
-      `, [
-        userId, municipalityId, type, priority, title, message,
-        JSON.stringify(data), expiresAt, actionUrl, actionLabel
-      ])
+      `,
+        [
+          userId,
+          municipalityId,
+          type,
+          priority,
+          title,
+          message,
+          JSON.stringify(data),
+          expiresAt,
+          actionUrl,
+          actionLabel,
+        ]
+      );
 
       // Enviar via WebSocket se o usuário estiver online
       if (userId) {
@@ -118,8 +129,8 @@ class NotificationManager {
           data,
           actionUrl,
           actionLabel,
-          createdAt: notification.created_at
-        })
+          createdAt: notification.created_at,
+        });
       }
 
       logInfo('Notification created', {
@@ -127,13 +138,13 @@ class NotificationManager {
         userId,
         type,
         priority,
-        title
-      })
+        title,
+      });
 
-      return notification
+      return notification;
     } catch (error) {
-      logError('Failed to create notification', error)
-      throw error
+      logError('Failed to create notification', error);
+      throw error;
     }
   }
 
@@ -148,17 +159,20 @@ class NotificationManager {
       priority: this.priorities.LOW,
       title: 'Patrimônio cadastrado',
       message: `O patrimônio "${patrimonio.descricao_bem}" foi cadastrado com sucesso.`,
-      data: { patrimonioId: patrimonio.id, numeroPatrimonio: patrimonio.numero_patrimonio },
+      data: {
+        patrimonioId: patrimonio.id,
+        numeroPatrimonio: patrimonio.numero_patrimonio,
+      },
       actionUrl: `/patrimonios/${patrimonio.id}`,
-      actionLabel: 'Ver patrimônio'
-    })
+      actionLabel: 'Ver patrimônio',
+    });
   }
 
   /**
    * Notificação para transferência de patrimônio
    */
   async notifyPatrimonioTransfer(transfer, affectedUsers = []) {
-    const notifications = []
+    const notifications = [];
 
     for (const userId of affectedUsers) {
       const notification = await this.createNotification({
@@ -170,19 +184,19 @@ class NotificationManager {
         message: `O patrimônio "${transfer.patrimonio_descricao}" foi transferido para outro setor.`,
         data: { transferId: transfer.id, patrimonioId: transfer.patrimonio_id },
         actionUrl: `/transferencias/${transfer.id}`,
-        actionLabel: 'Ver transferência'
-      })
-      notifications.push(notification)
+        actionLabel: 'Ver transferência',
+      });
+      notifications.push(notification);
     }
 
-    return notifications
+    return notifications;
   }
 
   /**
    * Notificação de inventário iniciado
    */
   async notifyInventoryStarted(inventory, users = []) {
-    const notifications = []
+    const notifications = [];
 
     for (const userId of users) {
       const notification = await this.createNotification({
@@ -194,19 +208,19 @@ class NotificationManager {
         message: `Um novo inventário foi iniciado: "${inventory.name}".`,
         data: { inventoryId: inventory.id },
         actionUrl: `/inventarios/${inventory.id}`,
-        actionLabel: 'Participar do inventário'
-      })
-      notifications.push(notification)
+        actionLabel: 'Participar do inventário',
+      });
+      notifications.push(notification);
     }
 
-    return notifications
+    return notifications;
   }
 
   /**
    * Notificação de manutenção agendada
    */
   async notifyMaintenanceScheduled(maintenance, users = []) {
-    const notifications = []
+    const notifications = [];
 
     for (const userId of users) {
       const notification = await this.createNotification({
@@ -219,19 +233,19 @@ class NotificationManager {
         data: { maintenanceId: maintenance.id },
         expiresAt: maintenance.scheduled_date,
         actionUrl: `/manutencao/${maintenance.id}`,
-        actionLabel: 'Ver detalhes'
-      })
-      notifications.push(notification)
+        actionLabel: 'Ver detalhes',
+      });
+      notifications.push(notification);
     }
 
-    return notifications
+    return notifications;
   }
 
   /**
    * Notificação de segurança
    */
   async notifySecurityAlert(alert, users = []) {
-    const notifications = []
+    const notifications = [];
 
     for (const userId of users) {
       const notification = await this.createNotification({
@@ -243,12 +257,12 @@ class NotificationManager {
         message: alert.message,
         data: alert.data || {},
         actionUrl: alert.actionUrl,
-        actionLabel: 'Ver detalhes'
-      })
-      notifications.push(notification)
+        actionLabel: 'Ver detalhes',
+      });
+      notifications.push(notification);
     }
 
-    return notifications
+    return notifications;
   }
 
   /**
@@ -261,9 +275,9 @@ class NotificationManager {
         SELECT id, municipality_id 
         FROM users 
         WHERE created_at >= NOW() - INTERVAL '30 days'
-      `)
+      `);
 
-      const notifications = []
+      const notifications = [];
 
       for (const user of activeUsers) {
         const created = await this.createNotification({
@@ -275,9 +289,9 @@ class NotificationManager {
           message: notification.message,
           data: notification.data || {},
           actionUrl: notification.actionUrl,
-          actionLabel: notification.actionLabel
-        })
-        notifications.push(created)
+          actionLabel: notification.actionLabel,
+        });
+        notifications.push(created);
       }
 
       // Broadcast via WebSocket
@@ -288,18 +302,18 @@ class NotificationManager {
         message: notification.message,
         data: notification.data || {},
         actionUrl: notification.actionUrl,
-        actionLabel: notification.actionLabel
-      })
+        actionLabel: notification.actionLabel,
+      });
 
       logInfo('System notification broadcasted', {
         title: notification.title,
-        usersNotified: notifications.length
-      })
+        usersNotified: notifications.length,
+      });
 
-      return notifications
+      return notifications;
     } catch (error) {
-      logError('Failed to broadcast system notification', error)
-      throw error
+      logError('Failed to broadcast system notification', error);
+      throw error;
     }
   }
 
@@ -307,42 +321,40 @@ class NotificationManager {
    * Obter notificações do usuário
    */
   async getUserNotifications(userId, options = {}) {
-    const {
-      limit = 20,
-      offset = 0,
-      unreadOnly = false,
-      type = null
-    } = options
+    const { limit = 20, offset = 0, unreadOnly = false, type = null } = options;
 
     try {
-      let whereClause = 'WHERE user_id = $1'
-      const params = [userId]
-      let paramIndex = 2
+      let whereClause = 'WHERE user_id = $1';
+      const params = [userId];
+      let paramIndex = 2;
 
       if (unreadOnly) {
-        whereClause += ' AND read_at IS NULL'
+        whereClause += ' AND read_at IS NULL';
       }
 
       if (type) {
-        whereClause += ` AND type = $${paramIndex}`
-        params.push(type)
-        paramIndex++
+        whereClause += ` AND type = $${paramIndex}`;
+        params.push(type);
+        paramIndex++;
       }
 
       // Excluir notificações expiradas
-      whereClause += ' AND (expires_at IS NULL OR expires_at > NOW())'
+      whereClause += ' AND (expires_at IS NULL OR expires_at > NOW())';
 
-      const notifications = await getRows(`
+      const notifications = await getRows(
+        `
         SELECT * FROM notifications
         ${whereClause}
         ORDER BY created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `, [...params, limit, offset])
+      `,
+        [...params, limit, offset]
+      );
 
-      return notifications
+      return notifications;
     } catch (error) {
-      logError('Failed to get user notifications', error)
-      throw error
+      logError('Failed to get user notifications', error);
+      throw error;
     }
   }
 
@@ -351,24 +363,27 @@ class NotificationManager {
    */
   async markAsRead(notificationId, userId) {
     try {
-      const notification = await getRow(`
+      const notification = await getRow(
+        `
         UPDATE notifications 
         SET read_at = NOW()
         WHERE id = $1 AND user_id = $2 AND read_at IS NULL
         RETURNING *
-      `, [notificationId, userId])
+      `,
+        [notificationId, userId]
+      );
 
       if (notification) {
         logInfo('Notification marked as read', {
           id: notificationId,
-          userId
-        })
+          userId,
+        });
       }
 
-      return notification
+      return notification;
     } catch (error) {
-      logError('Failed to mark notification as read', error)
-      throw error
+      logError('Failed to mark notification as read', error);
+      throw error;
     }
   }
 
@@ -377,21 +392,24 @@ class NotificationManager {
    */
   async markAllAsRead(userId) {
     try {
-      const result = await query(`
+      const result = await query(
+        `
         UPDATE notifications 
         SET read_at = NOW()
         WHERE user_id = $1 AND read_at IS NULL
-      `, [userId])
+      `,
+        [userId]
+      );
 
       logInfo('All notifications marked as read', {
         userId,
-        count: result.rowCount
-      })
+        count: result.rowCount,
+      });
 
-      return result.rowCount
+      return result.rowCount;
     } catch (error) {
-      logError('Failed to mark all notifications as read', error)
-      throw error
+      logError('Failed to mark all notifications as read', error);
+      throw error;
     }
   }
 
@@ -400,22 +418,25 @@ class NotificationManager {
    */
   async deleteNotification(notificationId, userId) {
     try {
-      const result = await query(`
+      const result = await query(
+        `
         DELETE FROM notifications 
         WHERE id = $1 AND user_id = $2
-      `, [notificationId, userId])
+      `,
+        [notificationId, userId]
+      );
 
       if (result.rowCount > 0) {
         logInfo('Notification deleted', {
           id: notificationId,
-          userId
-        })
+          userId,
+        });
       }
 
-      return result.rowCount > 0
+      return result.rowCount > 0;
     } catch (error) {
-      logError('Failed to delete notification', error)
-      throw error
+      logError('Failed to delete notification', error);
+      throw error;
     }
   }
 
@@ -427,18 +448,18 @@ class NotificationManager {
       const result = await query(`
         DELETE FROM notifications 
         WHERE expires_at IS NOT NULL AND expires_at < NOW()
-      `)
+      `);
 
       if (result.rowCount > 0) {
         logInfo('Expired notifications cleaned up', {
-          count: result.rowCount
-        })
+          count: result.rowCount,
+        });
       }
 
-      return result.rowCount
+      return result.rowCount;
     } catch (error) {
-      logError('Failed to cleanup expired notifications', error)
-      throw error
+      logError('Failed to cleanup expired notifications', error);
+      throw error;
     }
   }
 
@@ -447,15 +468,16 @@ class NotificationManager {
    */
   async getNotificationStats(municipalityId = null) {
     try {
-      let whereClause = ''
-      const params = []
+      let whereClause = '';
+      const params = [];
 
       if (municipalityId) {
-        whereClause = 'WHERE municipality_id = $1'
-        params.push(municipalityId)
+        whereClause = 'WHERE municipality_id = $1';
+        params.push(municipalityId);
       }
 
-      const stats = await getRow(`
+      const stats = await getRow(
+        `
         SELECT 
           COUNT(*) as total,
           COUNT(CASE WHEN read_at IS NULL THEN 1 END) as unread,
@@ -466,17 +488,19 @@ class NotificationManager {
           COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as last_7d
         FROM notifications
         ${whereClause}
-      `, params)
+      `,
+        params
+      );
 
-      return stats
+      return stats;
     } catch (error) {
-      logError('Failed to get notification stats', error)
-      throw error
+      logError('Failed to get notification stats', error);
+      throw error;
     }
   }
 }
 
 // Instância singleton
-export const notificationManager = new NotificationManager()
+export const notificationManager = new NotificationManager();
 
-export default notificationManager
+export default notificationManager;

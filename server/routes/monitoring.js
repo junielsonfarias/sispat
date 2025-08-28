@@ -23,19 +23,19 @@ router.use(authenticateToken);
 router.get('/health', async (req, res) => {
   try {
     const health = await systemMonitor.getSystemHealth();
-    
-    logInfo('Health check realizado', { 
-      status: health.status, 
+
+    logInfo('Health check realizado', {
+      status: health.status,
       score: health.score,
-      userId: req.user?.id 
+      userId: req.user?.id,
     });
-    
+
     res.json(health);
   } catch (error) {
     logInfo('Erro no health check', { error: error.message });
     res.status(500).json({
       error: 'Erro ao verificar saúde do sistema',
-      code: 'HEALTH_CHECK_ERROR'
+      code: 'HEALTH_CHECK_ERROR',
     });
   }
 });
@@ -55,16 +55,16 @@ router.get('/health', async (req, res) => {
 router.get('/metrics', (req, res) => {
   try {
     const metrics = systemMonitor.getMetrics();
-    
+
     res.json({
       success: true,
       data: metrics,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     res.status(500).json({
       error: 'Erro ao obter métricas',
-      code: 'METRICS_ERROR'
+      code: 'METRICS_ERROR',
     });
   }
 });
@@ -84,17 +84,17 @@ router.get('/metrics', (req, res) => {
 router.get('/alerts', (req, res) => {
   try {
     const health = systemMonitor.getSystemHealth();
-    
+
     res.json({
       success: true,
       data: health.alerts,
       count: health.alerts.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     res.status(500).json({
       error: 'Erro ao obter alertas',
-      code: 'ALERTS_ERROR'
+      code: 'ALERTS_ERROR',
     });
   }
 });
@@ -120,18 +120,18 @@ router.get('/alerts', (req, res) => {
 router.post('/alerts/:alertId/acknowledge', (req, res) => {
   try {
     const { alertId } = req.params;
-    
+
     systemMonitor.acknowledgeAlert(alertId);
-    
+
     res.json({
       success: true,
       message: 'Alerta reconhecido com sucesso',
-      alertId
+      alertId,
     });
   } catch (error) {
     res.status(500).json({
       error: 'Erro ao reconhecer alerta',
-      code: 'ACKNOWLEDGE_ERROR'
+      code: 'ACKNOWLEDGE_ERROR',
     });
   }
 });
@@ -151,16 +151,16 @@ router.post('/alerts/:alertId/acknowledge', (req, res) => {
 router.post('/metrics/clear', (req, res) => {
   try {
     systemMonitor.clearMetrics();
-    
+
     res.json({
       success: true,
       message: 'Métricas limpas com sucesso',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     res.status(500).json({
       error: 'Erro ao limpar métricas',
-      code: 'CLEAR_METRICS_ERROR'
+      code: 'CLEAR_METRICS_ERROR',
     });
   }
 });

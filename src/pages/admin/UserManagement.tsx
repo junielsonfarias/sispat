@@ -1,157 +1,184 @@
-import { UserCreateForm } from '@/components/admin/UserCreateForm'
-import { UserEditForm } from '@/components/admin/UserEditForm'
-import { UserPasswordChangeForm } from '@/components/admin/UserPasswordChangeForm'
+import { UserCreateForm } from '@/components/admin/UserCreateForm';
+import { UserEditForm } from '@/components/admin/UserEditForm';
+import { UserPasswordChangeForm } from '@/components/admin/UserPasswordChangeForm';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import { toast } from '@/hooks/use-toast'
-import { useAuth } from '@/hooks/useAuth'
-import { User } from '@/types'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { User } from '@/types';
 import {
-    Edit,
-    KeyRound,
-    MoreHorizontal,
-    PlusCircle,
-    Trash2,
-    Unlock,
-} from 'lucide-react'
-import { useMemo, useState } from 'react'
+  Edit,
+  KeyRound,
+  MoreHorizontal,
+  PlusCircle,
+  Trash2,
+  Unlock,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 export default function UserManagement() {
-  const { user: currentUser, users, deleteUser, unlockUser } = useAuth()
-  const [isCreateUserDialogOpen, setCreateUserDialogOpen] = useState(false)
-  const [isEditUserDialogOpen, setEditUserDialogOpen] = useState(false)
+  const { user: currentUser, users, deleteUser, unlockUser } = useAuth();
+  const [isCreateUserDialogOpen, setCreateUserDialogOpen] = useState(false);
+  const [isEditUserDialogOpen, setEditUserDialogOpen] = useState(false);
   const [isChangePasswordDialogOpen, setChangePasswordDialogOpen] =
-    useState(false)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+    useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const manageableUsers = useMemo(
-    () => {
-      console.log('🔍 UserManagement - Debug info:')
-      console.log('  - Current user:', currentUser ? { id: currentUser.id, name: currentUser.name, role: currentUser.role, municipalityId: currentUser.municipalityId } : 'Não autenticado')
-      console.log('  - All users:', users.map(u => ({ id: u.id, name: u.name, role: u.role, municipalityId: u.municipalityId })))
-      
-      const filtered = users.filter(
-        (u) => {
-          // Para supervisores, mostrar apenas usuários do mesmo município
-          if (currentUser?.role === 'supervisor') {
-            return u.municipalityId === currentUser.municipalityId && u.role !== 'superuser'
+  const manageableUsers = useMemo(() => {
+    console.log('🔍 UserManagement - Debug info:');
+    console.log(
+      '  - Current user:',
+      currentUser
+        ? {
+            id: currentUser.id,
+            name: currentUser.name,
+            role: currentUser.role,
+            municipalityId: currentUser.municipalityId,
           }
-          // Para outros roles, manter a lógica original
-          return u.municipalityId === currentUser?.municipalityId && u.role !== 'superuser'
-        }
-      )
-      
-      console.log('  - Filtered users:', filtered.map(u => ({ id: u.id, name: u.name, role: u.role, municipalityId: u.municipalityId })))
-      return filtered
-    },
-    [users, currentUser],
-  )
+        : 'Não autenticado'
+    );
+    console.log(
+      '  - All users:',
+      users.map(u => ({
+        id: u.id,
+        name: u.name,
+        role: u.role,
+        municipalityId: u.municipalityId,
+      }))
+    );
 
-  const handleUserCreated = () => setCreateUserDialogOpen(false)
+    const filtered = users.filter(u => {
+      // Para supervisores, mostrar apenas usuários do mesmo município
+      if (currentUser?.role === 'supervisor') {
+        return (
+          u.municipalityId === currentUser.municipalityId &&
+          u.role !== 'superuser'
+        );
+      }
+      // Para outros roles, manter a lógica original
+      return (
+        u.municipalityId === currentUser?.municipalityId &&
+        u.role !== 'superuser'
+      );
+    });
+
+    console.log(
+      '  - Filtered users:',
+      filtered.map(u => ({
+        id: u.id,
+        name: u.name,
+        role: u.role,
+        municipalityId: u.municipalityId,
+      }))
+    );
+    return filtered;
+  }, [users, currentUser]);
+
+  const handleUserCreated = () => setCreateUserDialogOpen(false);
   const handleUserUpdated = () => {
-    setEditUserDialogOpen(false)
-    setSelectedUser(null)
-  }
+    setEditUserDialogOpen(false);
+    setSelectedUser(null);
+  };
   const handlePasswordChanged = () => {
-    setChangePasswordDialogOpen(false)
-    setSelectedUser(null)
-  }
+    setChangePasswordDialogOpen(false);
+    setSelectedUser(null);
+  };
 
   const handleEditClick = (user: User) => {
-    setSelectedUser(user)
-    setEditUserDialogOpen(true)
-  }
+    setSelectedUser(user);
+    setEditUserDialogOpen(true);
+  };
 
   const handleChangePasswordClick = (user: User) => {
-    setSelectedUser(user)
-    setChangePasswordDialogOpen(true)
-  }
+    setSelectedUser(user);
+    setChangePasswordDialogOpen(true);
+  };
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      await deleteUser(userId)
-      toast({ title: 'Sucesso', description: 'Usuário excluído com sucesso!' })
+      await deleteUser(userId);
+      toast({ title: 'Sucesso', description: 'Usuário excluído com sucesso!' });
     } catch (error) {
       toast({
         title: 'Erro',
         description: 'Falha ao excluir usuário',
         variant: 'destructive',
-      })
+      });
     }
-  }
+  };
 
   const handleUnlockUser = async (user: User) => {
     try {
-      await unlockUser(user.id)
+      await unlockUser(user.id);
       toast({
         title: 'Sucesso',
         description: `Usuário ${user.name} desbloqueado.`,
-      })
+      });
     } catch (error) {
       toast({
         title: 'Erro',
         description: 'Não foi possível desbloquear o usuário.',
         variant: 'destructive',
-      })
+      });
     }
-  }
+  };
 
   const isUserLocked = (user: User) =>
-    user.lockoutUntil && user.lockoutUntil > Date.now()
+    user.lockoutUntil && user.lockoutUntil > Date.now();
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Gerenciar Usuários</h1>
+    <div className='flex flex-col gap-6'>
+      <div className='flex items-center justify-between'>
+        <h1 className='text-2xl font-bold'>Gerenciar Usuários</h1>
         <Dialog
           open={isCreateUserDialogOpen}
           onOpenChange={setCreateUserDialogOpen}
         >
           <DialogTrigger asChild>
             <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
+              <PlusCircle className='mr-2 h-4 w-4' />
               Adicionar Usuário
             </Button>
           </DialogTrigger>
@@ -181,56 +208,56 @@ export default function UserManagement() {
                 <TableHead>Email</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className='text-right'>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {manageableUsers.map((user) => (
+              {manageableUsers.map(user => (
                 <TableRow key={user.id}>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{user.role}</Badge>
+                    <Badge variant='secondary'>{user.role}</Badge>
                   </TableCell>
                   <TableCell>
                     {isUserLocked(user) ? (
-                      <Badge variant="destructive">Bloqueado</Badge>
+                      <Badge variant='destructive'>Bloqueado</Badge>
                     ) : (
-                      <Badge variant="default">Ativo</Badge>
+                      <Badge variant='default'>Ativo</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className='text-right'>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
+                        <Button variant='ghost' size='icon'>
+                          <MoreHorizontal className='h-4 w-4' />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align='end'>
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => handleEditClick(user)}>
-                          <Edit className="mr-2 h-4 w-4" /> Editar
+                          <Edit className='mr-2 h-4 w-4' /> Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleChangePasswordClick(user)}
                         >
-                          <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
+                          <KeyRound className='mr-2 h-4 w-4' /> Alterar Senha
                         </DropdownMenuItem>
                         {isUserLocked(user) && (
                           <DropdownMenuItem
                             onClick={() => handleUnlockUser(user)}
                           >
-                            <Unlock className="mr-2 h-4 w-4" /> Desbloquear
+                            <Unlock className='mr-2 h-4 w-4' /> Desbloquear
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem
-                              onSelect={(e) => e.preventDefault()}
-                              className="text-destructive"
+                              onSelect={e => e.preventDefault()}
+                              className='text-destructive'
                             >
-                              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                              <Trash2 className='mr-2 h-4 w-4' /> Excluir
                             </DropdownMenuItem>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -286,5 +313,5 @@ export default function UserManagement() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

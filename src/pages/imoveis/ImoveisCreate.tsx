@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { useState, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -13,26 +13,26 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { toast } from '@/hooks/use-toast'
-import { useAuth } from '@/hooks/useAuth'
-import { Loader2 } from 'lucide-react'
-import { ImageUpload } from '@/components/bens/ImageUpload'
-import { useImovel } from '@/contexts/ImovelContext'
-import { useImovelField } from '@/contexts/ImovelFieldContext'
-import { CurrencyInput } from '@/components/ui/currency-input'
-import { ImovelFieldConfig } from '@/types'
-import { Label } from '@/components/ui/label'
-import { useSectors } from '@/contexts/SectorContext'
-import { SearchableSelect } from '@/components/ui/searchable-select'
+} from '@/components/ui/form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { Loader2 } from 'lucide-react';
+import { ImageUpload } from '@/components/bens/ImageUpload';
+import { useImovel } from '@/contexts/ImovelContext';
+import { useImovelField } from '@/contexts/ImovelFieldContext';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { ImovelFieldConfig } from '@/types';
+import { Label } from '@/components/ui/label';
+import { useSectors } from '@/contexts/SectorContext';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 const baseSchema = z.object({
   numero_patrimonio: z.string().min(1, 'O número de patrimônio é obrigatório.'),
   denominacao: z.string().min(1, 'A denominação é obrigatória.'),
   endereco: z.string().min(1, 'O endereço é obrigatório.'),
   setor: z.string().min(1, 'O setor é obrigatório.'),
-  data_aquisicao: z.string().refine((val) => !isNaN(Date.parse(val)), {
+  data_aquisicao: z.string().refine(val => !isNaN(Date.parse(val)), {
     message: 'Data de aquisição inválida.',
   }),
   valor_aquisicao: z.coerce
@@ -42,10 +42,10 @@ const baseSchema = z.object({
   area_construida: z.coerce.number().optional(),
   fotos: z.array(z.string()).optional(),
   documentos: z.array(z.string()).optional(),
-})
+});
 
 const renderCustomField = (fieldConfig: ImovelFieldConfig, control: any) => {
-  const key = `customFields.${fieldConfig.key}`
+  const key = `customFields.${fieldConfig.key}`;
   return (
     <FormField
       key={fieldConfig.id}
@@ -61,61 +61,61 @@ const renderCustomField = (fieldConfig: ImovelFieldConfig, control: any) => {
         </FormItem>
       )}
     />
-  )
-}
+  );
+};
 
 export default function ImoveisCreate() {
-  const navigate = useNavigate()
-  const { user } = useAuth()
-  const { addImovel, imoveis } = useImovel()
-  const { fields: customFields } = useImovelField()
-  const { sectors } = useSectors()
-  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { addImovel, imoveis } = useImovel();
+  const { fields: customFields } = useImovelField();
+  const { sectors } = useSectors();
+  const [isLoading, setIsLoading] = useState(false);
 
   const sectorOptions = useMemo(() => {
-    if (!user) return []
+    if (!user) return [];
     if (user.role === 'admin' || user.role === 'supervisor') {
-      return sectors.map((s) => ({ value: s.name, label: s.name }))
+      return sectors.map(s => ({ value: s.name, label: s.name }));
     }
-    return (user.responsibleSectors || []).map((s) => ({ value: s, label: s }))
-  }, [sectors, user])
+    return (user.responsibleSectors || []).map(s => ({ value: s, label: s }));
+  }, [sectors, user]);
 
   const imovelCreateSchema = useMemo(() => {
     const customFieldSchema = customFields.reduce(
       (acc, field) => {
-        let validator: z.ZodTypeAny = z.any()
+        let validator: z.ZodTypeAny = z.any();
         if (field.required) {
-          validator = z.string().min(1, `${field.label} é obrigatório.`)
+          validator = z.string().min(1, `${field.label} é obrigatório.`);
         }
-        acc[field.key] = validator.optional()
-        return acc
+        acc[field.key] = validator.optional();
+        return acc;
       },
-      {} as Record<string, z.ZodTypeAny>,
-    )
+      {} as Record<string, z.ZodTypeAny>
+    );
 
     return baseSchema.extend({
       customFields: z.object(customFieldSchema).optional(),
-    })
-  }, [customFields])
+    });
+  }, [customFields]);
 
-  type ImovelFormValues = z.infer<typeof imovelCreateSchema>
+  type ImovelFormValues = z.infer<typeof imovelCreateSchema>;
 
   const form = useForm<ImovelFormValues>({
     resolver: zodResolver(imovelCreateSchema),
     mode: 'onTouched',
-  })
+  });
 
   const onSubmit = async (data: ImovelFormValues) => {
-    if (!user?.municipalityId) return
-    setIsLoading(true)
+    if (!user?.municipalityId) return;
+    setIsLoading(true);
 
-    if (imoveis.some((i) => i.numero_patrimonio === data.numero_patrimonio)) {
+    if (imoveis.some(i => i.numero_patrimonio === data.numero_patrimonio)) {
       form.setError('numero_patrimonio', {
         type: 'manual',
         message: 'Este número de patrimônio já existe.',
-      })
-      setIsLoading(false)
-      return
+      });
+      setIsLoading(false);
+      return;
     }
 
     try {
@@ -130,38 +130,38 @@ export default function ImoveisCreate() {
           municipalityId: user.municipalityId,
           customFields: data.customFields || {},
         },
-        user,
-      )
-      navigate('/imoveis')
+        user
+      );
+      navigate('/imoveis');
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Erro',
         description: 'Falha ao cadastrar o imóvel.',
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Cadastrar Novo Imóvel</h1>
+    <div className='flex flex-col gap-6'>
+      <h1 className='text-2xl font-bold'>Cadastrar Novo Imóvel</h1>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
           <Card>
             <CardHeader>
               <CardTitle>Informações Principais</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-6 md:grid-cols-2">
+            <CardContent className='grid gap-6 md:grid-cols-2'>
               <FormField
                 control={form.control}
-                name="numero_patrimonio"
+                name='numero_patrimonio'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Número de Patrimônio</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: IM-2024001" {...field} />
+                      <Input placeholder='Ex: IM-2024001' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -169,13 +169,13 @@ export default function ImoveisCreate() {
               />
               <FormField
                 control={form.control}
-                name="denominacao"
+                name='denominacao'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Denominação</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Ex: Edifício Sede da Prefeitura"
+                        placeholder='Ex: Edifício Sede da Prefeitura'
                         {...field}
                       />
                     </FormControl>
@@ -185,13 +185,13 @@ export default function ImoveisCreate() {
               />
               <FormField
                 control={form.control}
-                name="endereco"
+                name='endereco'
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem className='md:col-span-2'>
                     <FormLabel>Endereço Completo</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Rua, número, bairro, cidade, estado, CEP"
+                        placeholder='Rua, número, bairro, cidade, estado, CEP'
                         {...field}
                       />
                     </FormControl>
@@ -201,7 +201,7 @@ export default function ImoveisCreate() {
               />
               <FormField
                 control={form.control}
-                name="setor"
+                name='setor'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Setor</FormLabel>
@@ -210,7 +210,7 @@ export default function ImoveisCreate() {
                         options={sectorOptions}
                         value={field.value}
                         onChange={field.onChange}
-                        placeholder="Selecione um setor"
+                        placeholder='Selecione um setor'
                       />
                     </FormControl>
                     <FormMessage />
@@ -224,15 +224,15 @@ export default function ImoveisCreate() {
             <CardHeader>
               <CardTitle>Detalhes da Aquisição e Medidas</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-6 md:grid-cols-2">
+            <CardContent className='grid gap-6 md:grid-cols-2'>
               <FormField
                 control={form.control}
-                name="data_aquisicao"
+                name='data_aquisicao'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Data de Aquisição</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type='date' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -240,7 +240,7 @@ export default function ImoveisCreate() {
               />
               <FormField
                 control={form.control}
-                name="valor_aquisicao"
+                name='valor_aquisicao'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Valor de Aquisição (R$)</FormLabel>
@@ -256,12 +256,12 @@ export default function ImoveisCreate() {
               />
               <FormField
                 control={form.control}
-                name="area_terreno"
+                name='area_terreno'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Área do Terreno (m²)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type='number' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -269,12 +269,12 @@ export default function ImoveisCreate() {
               />
               <FormField
                 control={form.control}
-                name="area_construida"
+                name='area_construida'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Área Construída (m²)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type='number' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -283,15 +283,15 @@ export default function ImoveisCreate() {
             </CardContent>
           </Card>
 
-          {customFields.filter((f) => f.isCustom).length > 0 && (
+          {customFields.filter(f => f.isCustom).length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Campos Personalizados</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-6 md:grid-cols-2">
+              <CardContent className='grid gap-6 md:grid-cols-2'>
                 {customFields
-                  .filter((f) => f.isCustom)
-                  .map((field) => renderCustomField(field, form.control))}
+                  .filter(f => f.isCustom)
+                  .map(field => renderCustomField(field, form.control))}
               </CardContent>
             </Card>
           )}
@@ -300,34 +300,34 @@ export default function ImoveisCreate() {
             <CardHeader>
               <CardTitle>Mídia</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className='space-y-6'>
               <div>
                 <Label>Fotos do Imóvel</Label>
-                <ImageUpload name="fotos" control={form.control} />
+                <ImageUpload name='fotos' control={form.control} />
               </div>
               <div>
                 <Label>Documentos</Label>
-                <ImageUpload name="documentos" control={form.control} />
+                <ImageUpload name='documentos' control={form.control} />
               </div>
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-2">
+          <div className='flex justify-end gap-2'>
             <Button
-              type="button"
-              variant="outline"
+              type='button'
+              variant='outline'
               onClick={() => navigate('/imoveis')}
               disabled={isLoading}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type='submit' disabled={isLoading}>
+              {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
               Salvar Imóvel
             </Button>
           </div>
         </form>
       </Form>
     </div>
-  )
+  );
 }

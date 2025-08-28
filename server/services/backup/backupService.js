@@ -13,7 +13,7 @@ class BackupService {
       port: process.env.DB_PORT || 5432,
       database: process.env.DB_NAME || 'sispat',
       username: process.env.DB_USER || 'sispat_user',
-      password: process.env.DB_PASSWORD
+      password: process.env.DB_PASSWORD,
     };
     this.retentionDays = parseInt(process.env.BACKUP_RETENTION_DAYS) || 30;
     this.isRunning = false;
@@ -23,10 +23,10 @@ class BackupService {
     try {
       // Criar diretório de backup se não existir
       await fs.mkdir(this.backupDir, { recursive: true });
-      
+
       // Configurar agendamentos
       this.setupSchedules();
-      
+
       console.log('✅ Serviço de backup inicializado');
     } catch (error) {
       console.error('❌ Erro ao inicializar serviço de backup:', error);
@@ -35,32 +35,48 @@ class BackupService {
 
   setupSchedules() {
     // Backup diário às 02:00
-    cron.schedule('0 2 * * *', () => {
-      this.createBackup('daily');
-    }, {
-      timezone: 'America/Sao_Paulo'
-    });
+    cron.schedule(
+      '0 2 * * *',
+      () => {
+        this.createBackup('daily');
+      },
+      {
+        timezone: 'America/Sao_Paulo',
+      }
+    );
 
     // Backup semanal aos domingos às 03:00
-    cron.schedule('0 3 * * 0', () => {
-      this.createBackup('weekly');
-    }, {
-      timezone: 'America/Sao_Paulo'
-    });
+    cron.schedule(
+      '0 3 * * 0',
+      () => {
+        this.createBackup('weekly');
+      },
+      {
+        timezone: 'America/Sao_Paulo',
+      }
+    );
 
     // Backup mensal no primeiro dia do mês às 04:00
-    cron.schedule('0 4 1 * *', () => {
-      this.createBackup('monthly');
-    }, {
-      timezone: 'America/Sao_Paulo'
-    });
+    cron.schedule(
+      '0 4 1 * *',
+      () => {
+        this.createBackup('monthly');
+      },
+      {
+        timezone: 'America/Sao_Paulo',
+      }
+    );
 
     // Limpeza de backups antigos diariamente às 05:00
-    cron.schedule('0 5 * * *', () => {
-      this.cleanupOldBackups();
-    }, {
-      timezone: 'America/Sao_Paulo'
-    });
+    cron.schedule(
+      '0 5 * * *',
+      () => {
+        this.cleanupOldBackups();
+      },
+      {
+        timezone: 'America/Sao_Paulo',
+      }
+    );
 
     console.log('📅 Agendamentos de backup configurados');
   }
@@ -84,7 +100,7 @@ class BackupService {
 
       // Executar backup
       const { stdout, stderr } = await execAsync(pgDumpCmd);
-      
+
       // Salvar backup em arquivo
       await fs.writeFile(filepath, stdout);
 
@@ -105,20 +121,25 @@ class BackupService {
         size: fileSize,
         sizeBytes: stats.size,
         path: compressedFilepath,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
-      console.log(`✅ Backup ${type} concluído: ${path.basename(compressedFilepath)} (${fileSize})`);
+      console.log(
+        `✅ Backup ${type} concluído: ${path.basename(compressedFilepath)} (${fileSize})`
+      );
 
       // Notificar sucesso
-      await this.notifyBackupSuccess(type, path.basename(compressedFilepath), fileSize);
-
+      await this.notifyBackupSuccess(
+        type,
+        path.basename(compressedFilepath),
+        fileSize
+      );
     } catch (error) {
       console.error(`❌ Erro no backup ${type}:`, error);
-      
+
       // Notificar erro
       await this.notifyBackupError(type, error.message);
-      
+
       throw error;
     } finally {
       this.isRunning = false;
@@ -154,7 +175,6 @@ class BackupService {
 
       // Salvar log
       await fs.writeFile(backupLogPath, JSON.stringify(backupLog, null, 2));
-
     } catch (error) {
       console.error('❌ Erro ao registrar backup:', error);
     }
@@ -186,8 +206,9 @@ class BackupService {
       }
 
       const freedSpaceFormatted = this.formatBytes(freedSpace);
-      console.log(`✅ Limpeza concluída: ${deletedCount} arquivos removidos, ${freedSpaceFormatted} liberados`);
-
+      console.log(
+        `✅ Limpeza concluída: ${deletedCount} arquivos removidos, ${freedSpaceFormatted} liberados`
+      );
     } catch (error) {
       console.error('❌ Erro na limpeza de backups:', error);
     }
@@ -198,7 +219,7 @@ class BackupService {
       console.log(`🔄 Iniciando restauração: ${filename}`);
 
       const filepath = path.join(this.backupDir, filename);
-      
+
       // Verificar se arquivo existe
       await fs.access(filepath);
 
@@ -217,7 +238,6 @@ class BackupService {
       console.log(`✅ Restauração concluída: ${filename}`);
 
       return { success: true, message: 'Restauração concluída com sucesso' };
-
     } catch (error) {
       console.error(`❌ Erro na restauração:`, error);
       throw error;
@@ -246,13 +266,12 @@ class BackupService {
           size: this.formatBytes(stats.size),
           sizeBytes: stats.size,
           createdAt: stats.mtime,
-          type: this.getBackupType(file)
+          type: this.getBackupType(file),
         });
       }
 
       // Ordenar por data de criação (mais recente primeiro)
       return backups.sort((a, b) => b.createdAt - a.createdAt);
-
     } catch (error) {
       console.error('❌ Erro ao listar backups:', error);
       return [];
@@ -276,7 +295,9 @@ class BackupService {
 
   async notifyBackupSuccess(type, filename, size) {
     // Implementar notificação (Slack, Discord, email, etc.)
-    console.log(`📢 Backup ${type} realizado com sucesso: ${filename} (${size})`);
+    console.log(
+      `📢 Backup ${type} realizado com sucesso: ${filename} (${size})`
+    );
   }
 
   async notifyBackupError(type, error) {
@@ -287,20 +308,24 @@ class BackupService {
   async getBackupStats() {
     try {
       const backups = await this.listBackups();
-      const totalSize = backups.reduce((sum, backup) => sum + backup.sizeBytes, 0);
-      
+      const totalSize = backups.reduce(
+        (sum, backup) => sum + backup.sizeBytes,
+        0
+      );
+
       return {
         totalBackups: backups.length,
         totalSize: this.formatBytes(totalSize),
         totalSizeBytes: totalSize,
-        oldestBackup: backups.length > 0 ? backups[backups.length - 1].createdAt : null,
+        oldestBackup:
+          backups.length > 0 ? backups[backups.length - 1].createdAt : null,
         newestBackup: backups.length > 0 ? backups[0].createdAt : null,
         byType: {
           daily: backups.filter(b => b.type === 'daily').length,
           weekly: backups.filter(b => b.type === 'weekly').length,
           monthly: backups.filter(b => b.type === 'monthly').length,
-          manual: backups.filter(b => b.type === 'manual').length
-        }
+          manual: backups.filter(b => b.type === 'manual').length,
+        },
       };
     } catch (error) {
       console.error('❌ Erro ao obter estatísticas de backup:', error);

@@ -5,46 +5,46 @@ import {
   useContext,
   useCallback,
   useEffect,
-} from 'react'
-import { useAuth } from '@/hooks/useAuth'
+} from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface CustomizationSettings {
-  activeLogoUrl: string
-  secondaryLogoUrl: string
-  backgroundType: 'color' | 'image' | 'video'
-  backgroundColor: string
-  backgroundImageUrl: string
-  backgroundVideoUrl: string
-  videoLoop: boolean
-  videoMuted: boolean
-  layout: 'left' | 'center' | 'right'
-  welcomeTitle: string
-  welcomeSubtitle: string
-  primaryColor: string
-  buttonTextColor: string
-  fontFamily: string
-  browserTitle: string
-  faviconUrl: string
-  loginFooterText: string
-  systemFooterText: string
-  superUserFooterText?: string
+  activeLogoUrl: string;
+  secondaryLogoUrl: string;
+  backgroundType: 'color' | 'image' | 'video';
+  backgroundColor: string;
+  backgroundImageUrl: string;
+  backgroundVideoUrl: string;
+  videoLoop: boolean;
+  videoMuted: boolean;
+  layout: 'left' | 'center' | 'right';
+  welcomeTitle: string;
+  welcomeSubtitle: string;
+  primaryColor: string;
+  buttonTextColor: string;
+  fontFamily: string;
+  browserTitle: string;
+  faviconUrl: string;
+  loginFooterText: string;
+  systemFooterText: string;
+  superUserFooterText?: string;
 }
 
 interface CustomizationContextType {
-  settings: CustomizationSettings
+  settings: CustomizationSettings;
   getSettingsForMunicipality: (
-    municipalityId: string | null,
-  ) => CustomizationSettings
+    municipalityId: string | null
+  ) => CustomizationSettings;
   saveSettingsForMunicipality: (
     municipalityId: string,
-    settings: CustomizationSettings,
-  ) => void
-  resetSettingsForMunicipality: (municipalityId: string) => void
+    settings: CustomizationSettings
+  ) => void;
+  resetSettingsForMunicipality: (municipalityId: string) => void;
 }
 
 const CustomizationContext = createContext<CustomizationContextType | null>(
-  null,
-)
+  null
+);
 
 const defaultSettings: CustomizationSettings = {
   activeLogoUrl:
@@ -68,90 +68,91 @@ const defaultSettings: CustomizationSettings = {
   loginFooterText: '© 2025 Curling. Todos os direitos reservados.',
   systemFooterText: 'SISPAT - Desenvolvido por Curling',
   superUserFooterText: 'SISPAT Superusuário - Painel de Controle Global',
-}
+};
 
 export const CustomizationProvider = ({
   children,
 }: {
-  children: ReactNode
+  children: ReactNode;
 }) => {
-  const { user } = useAuth()
+  const { user } = useAuth();
   const [allSettings, setAllSettings] = useState<
     Record<string, CustomizationSettings>
-  >({})
+  >({});
 
   useEffect(() => {
-    const stored = localStorage.getItem('sispat_customization_settings')
+    const stored = localStorage.getItem('sispat_customization_settings');
     if (stored) {
-      setAllSettings(JSON.parse(stored))
+      setAllSettings(JSON.parse(stored));
     }
-  }, [])
+  }, []);
 
   const persist = (newSettings: Record<string, CustomizationSettings>) => {
     localStorage.setItem(
       'sispat_customization_settings',
-      JSON.stringify(newSettings),
-    )
-    setAllSettings(newSettings)
-  }
+      JSON.stringify(newSettings)
+    );
+    setAllSettings(newSettings);
+  };
 
   const getSettingsForMunicipality = useCallback(
     (municipalityId: string | null): CustomizationSettings => {
-      const globalLoginSettings = allSettings['global_login_settings'] || {}
+      const globalLoginSettings = allSettings['global_login_settings'] || {};
 
       if (!municipalityId) {
-        return { ...defaultSettings, ...globalLoginSettings }
+        return { ...defaultSettings, ...globalLoginSettings };
       }
 
-      const municipalitySettings = allSettings[municipalityId] || {}
+      const municipalitySettings = allSettings[municipalityId] || {};
       const finalSettings = {
         ...defaultSettings,
         ...globalLoginSettings,
         ...municipalitySettings,
-      }
+      };
 
       if (
         municipalitySettings.loginFooterText === undefined ||
         municipalitySettings.loginFooterText.trim() === ''
       ) {
         finalSettings.loginFooterText =
-          globalLoginSettings.loginFooterText || defaultSettings.loginFooterText
+          globalLoginSettings.loginFooterText ||
+          defaultSettings.loginFooterText;
       }
 
       if (municipalityId === 'superuser') {
-        const superuserSettings = allSettings['superuser'] || {}
+        const superuserSettings = allSettings['superuser'] || {};
         finalSettings.superUserFooterText =
           superuserSettings.superUserFooterText ||
-          defaultSettings.superUserFooterText
+          defaultSettings.superUserFooterText;
       }
 
-      return finalSettings
+      return finalSettings;
     },
-    [allSettings],
-  )
+    [allSettings]
+  );
 
   const saveSettingsForMunicipality = useCallback(
     (municipalityId: string, settings: CustomizationSettings) => {
-      const key = municipalityId
-      const newSettings = { ...allSettings, [key]: settings }
-      persist(newSettings)
+      const key = municipalityId;
+      const newSettings = { ...allSettings, [key]: settings };
+      persist(newSettings);
     },
-    [allSettings],
-  )
+    [allSettings]
+  );
 
   const resetSettingsForMunicipality = useCallback(
     (municipalityId: string) => {
-      const key = municipalityId
-      const newSettings = { ...allSettings }
-      delete newSettings[key]
-      persist(newSettings)
+      const key = municipalityId;
+      const newSettings = { ...allSettings };
+      delete newSettings[key];
+      persist(newSettings);
     },
-    [allSettings],
-  )
+    [allSettings]
+  );
 
   const settings = getSettingsForMunicipality(
-    user?.role === 'superuser' ? 'superuser' : user?.municipalityId || null,
-  )
+    user?.role === 'superuser' ? 'superuser' : user?.municipalityId || null
+  );
 
   return (
     <CustomizationContext.Provider
@@ -164,15 +165,15 @@ export const CustomizationProvider = ({
     >
       {children}
     </CustomizationContext.Provider>
-  )
-}
+  );
+};
 
 export const useCustomization = () => {
-  const context = useContext(CustomizationContext)
+  const context = useContext(CustomizationContext);
   if (!context) {
     throw new Error(
-      'useCustomization must be used within a CustomizationProvider',
-    )
+      'useCustomization must be used within a CustomizationProvider'
+    );
   }
-  return context
-}
+  return context;
+};

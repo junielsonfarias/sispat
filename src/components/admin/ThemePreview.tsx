@@ -1,12 +1,12 @@
-import { forwardRef } from 'react'
-import { Theme } from '@/types'
-import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { cn } from '@/lib/utils'
+import { forwardRef } from 'react';
+import { Theme } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 interface ThemePreviewProps {
-  theme: Theme
+  theme: Theme;
 }
 
 export const ThemePreview = forwardRef<HTMLDivElement, ThemePreviewProps>(
@@ -33,12 +33,12 @@ export const ThemePreview = forwardRef<HTMLDivElement, ThemePreviewProps>(
       '--ring': theme.colors.ring,
       '--radius': theme.borderRadius,
       fontFamily: theme.fontFamily,
-    } as React.CSSProperties
+    } as React.CSSProperties;
 
     return (
       <div
         ref={ref}
-        className="p-4 rounded-lg border bg-[hsl(var(--background))]"
+        className='p-4 rounded-lg border bg-[hsl(var(--background))]'
         style={themeStyle}
       >
         <Card
@@ -56,11 +56,11 @@ export const ThemePreview = forwardRef<HTMLDivElement, ThemePreviewProps>(
               {theme.name}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className='space-y-4'>
             <p style={{ color: 'hsl(var(--foreground))' }}>
               Este é um texto de exemplo.
             </p>
-            <div className="flex gap-2">
+            <div className='flex gap-2'>
               <Button
                 style={{
                   backgroundColor: 'hsl(var(--primary))',
@@ -84,8 +84,8 @@ export const ThemePreview = forwardRef<HTMLDivElement, ThemePreviewProps>(
           </CardContent>
         </Card>
       </div>
-    )
-  },
-)
+    );
+  }
+);
 
-ThemePreview.displayName = 'ThemePreview'
+ThemePreview.displayName = 'ThemePreview';

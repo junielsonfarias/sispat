@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useState, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -12,18 +12,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { toast } from '@/hooks/use-toast'
-import { Loader2 } from 'lucide-react'
-import { User } from '@/types'
-import { useAuth } from '@/hooks/useAuth'
+} from '@/components/ui/form';
+import { toast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import { User } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
 import {
   SearchableSelect,
   SearchableSelectOption,
-} from '@/components/ui/searchable-select'
-import { MultiSelect } from '@/components/ui/multi-select'
-import { useSectors } from '@/contexts/SectorContext'
-import { useMunicipalities } from '@/contexts/MunicipalityContext'
+} from '@/components/ui/searchable-select';
+import { MultiSelect } from '@/components/ui/multi-select';
+import { useSectors } from '@/contexts/SectorContext';
+import { useMunicipalities } from '@/contexts/MunicipalityContext';
 
 const userCreateSchema = z.object({
   name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
@@ -37,34 +37,34 @@ const userCreateSchema = z.object({
   sector: z.string().optional(),
   responsibleSectors: z.array(z.string()).optional(),
   municipalityId: z.string().min(1, { message: 'Município é obrigatório.' }),
-})
+});
 
-type UserCreateFormValues = z.infer<typeof userCreateSchema>
+type UserCreateFormValues = z.infer<typeof userCreateSchema>;
 
 interface UserCreateFormProps {
-  onSuccess: (newUser: User) => void
+  onSuccess: (newUser: User) => void;
 }
 
 const roleOptions: SearchableSelectOption[] = [
   { value: 'supervisor', label: 'Supervisor' },
   { value: 'usuario', label: 'Usuário' },
   { value: 'visualizador', label: 'Visualizador' },
-]
+];
 
 export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
-  const [isLoading, setIsLoading] = useState(false)
-  const { user: currentUser, addUser } = useAuth()
-  const { sectors } = useSectors()
-  const { municipalities } = useMunicipalities()
+  const [isLoading, setIsLoading] = useState(false);
+  const { user: currentUser, addUser } = useAuth();
+  const { sectors } = useSectors();
+  const { municipalities } = useMunicipalities();
 
   const municipalityOptions = useMemo(
     () =>
-      municipalities.map((m) => ({
+      municipalities.map(m => ({
         value: m.id,
         label: m.name,
       })),
-    [municipalities],
-  )
+    [municipalities]
+  );
 
   const form = useForm<UserCreateFormValues>({
     resolver: zodResolver(userCreateSchema),
@@ -79,55 +79,55 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
           ? currentUser.municipalityId
           : undefined,
     },
-  })
+  });
 
-  const role = form.watch('role')
-  const municipalityId = form.watch('municipalityId')
+  const role = form.watch('role');
+  const municipalityId = form.watch('municipalityId');
 
   const allSectors = useMemo(
     () =>
       sectors
-        .filter((s) => s.municipalityId === municipalityId)
-        .map((s) => ({ value: s.name, label: s.name })),
-    [sectors, municipalityId],
-  )
+        .filter(s => s.municipalityId === municipalityId)
+        .map(s => ({ value: s.name, label: s.name })),
+    [sectors, municipalityId]
+  );
 
   const onSubmit = async (data: UserCreateFormValues) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const newUser = await addUser({
         ...data,
         municipalityId: data.municipalityId,
-      })
+      });
       toast({
         title: 'Sucesso!',
         description: `Usuário ${newUser.name} criado. Um e-mail foi enviado com instruções.`,
-      })
-      onSuccess(newUser)
-      form.reset()
+      });
+      onSuccess(newUser);
+      form.reset();
     } catch (error) {
       toast({
         title: 'Erro',
         description:
           error instanceof Error ? error.message : 'Falha ao criar usuário',
         variant: 'destructive',
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
         <FormField
           control={form.control}
-          name="name"
+          name='name'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nome Completo</FormLabel>
               <FormControl>
-                <Input placeholder="Nome do usuário" {...field} />
+                <Input placeholder='Nome do usuário' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -135,14 +135,14 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         />
         <FormField
           control={form.control}
-          name="email"
+          name='email'
           render={({ field }) => (
             <FormItem>
               <FormLabel>E-mail</FormLabel>
               <FormControl>
                 <Input
-                  type="email"
-                  placeholder="email@exemplo.com"
+                  type='email'
+                  placeholder='email@exemplo.com'
                   {...field}
                 />
               </FormControl>
@@ -152,12 +152,12 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         />
         <FormField
           control={form.control}
-          name="password"
+          name='password'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Senha Provisória</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} />
+                <Input type='password' placeholder='********' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -166,7 +166,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         {currentUser?.role === 'superuser' && (
           <FormField
             control={form.control}
-            name="municipalityId"
+            name='municipalityId'
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Município</FormLabel>
@@ -175,7 +175,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
                     options={municipalityOptions}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Selecione o município"
+                    placeholder='Selecione o município'
                   />
                 </FormControl>
                 <FormMessage />
@@ -185,7 +185,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         )}
         <FormField
           control={form.control}
-          name="sector"
+          name='sector'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Setor Principal</FormLabel>
@@ -194,7 +194,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
                   options={allSectors}
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Selecione o setor principal (opcional)"
+                  placeholder='Selecione o setor principal (opcional)'
                   disabled={!municipalityId}
                   isClearable
                 />
@@ -205,7 +205,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         />
         <FormField
           control={form.control}
-          name="role"
+          name='role'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Perfil</FormLabel>
@@ -214,7 +214,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
                   options={roleOptions}
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Selecione um perfil"
+                  placeholder='Selecione um perfil'
                 />
               </FormControl>
               <FormMessage />
@@ -224,7 +224,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         {(role === 'usuario' || role === 'visualizador') && (
           <FormField
             control={form.control}
-            name="responsibleSectors"
+            name='responsibleSectors'
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Setores de Acesso</FormLabel>
@@ -233,7 +233,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
                     options={allSectors}
                     selected={field.value || []}
                     onChange={field.onChange}
-                    placeholder="Selecione os setores..."
+                    placeholder='Selecione os setores...'
                     disabled={!municipalityId}
                   />
                 </FormControl>
@@ -246,13 +246,13 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
             )}
           />
         )}
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <div className='flex justify-end'>
+          <Button type='submit' disabled={isLoading}>
+            {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
             Criar Usuário
           </Button>
         </div>
       </form>
     </Form>
-  )
-}
+  );
+};

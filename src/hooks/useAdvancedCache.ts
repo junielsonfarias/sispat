@@ -1,4 +1,8 @@
-import { advancedCache, CacheOptions, CacheStats } from '@/services/cache/advancedCache';
+import {
+  advancedCache,
+  CacheOptions,
+  CacheStats,
+} from '@/services/cache/advancedCache';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface UseAdvancedCacheOptions extends CacheOptions {
@@ -47,63 +51,68 @@ export function useAdvancedCache<T>(
 
   fetcherRef.current = fetcher;
 
-  const fetchData = useCallback(async (forceRefresh = false): Promise<void> => {
-    if (!enabled) return;
+  const fetchData = useCallback(
+    async (forceRefresh = false): Promise<void> => {
+      if (!enabled) return;
 
-    try {
-      setError(null);
+      try {
+        setError(null);
 
-      // Tentar buscar do cache primeiro
-      if (!forceRefresh) {
-        const cachedData = await advancedCache.get<T>(key, cacheOptions);
-        if (cachedData !== null) {
-          setData(cachedData);
-          setIsCached(true);
-          setIsStale(false);
-          onSuccess?.(cachedData);
-          return;
+        // Tentar buscar do cache primeiro
+        if (!forceRefresh) {
+          const cachedData = await advancedCache.get<T>(key, cacheOptions);
+          if (cachedData !== null) {
+            setData(cachedData);
+            setIsCached(true);
+            setIsStale(false);
+            onSuccess?.(cachedData);
+            return;
+          }
         }
+
+        setIsLoading(true);
+        setIsCached(false);
+
+        // Buscar dados frescos
+        const freshData = await fetcherRef.current();
+
+        // Armazenar no cache
+        await advancedCache.set(key, freshData, cacheOptions);
+
+        setData(freshData);
+        setIsStale(false);
+        onSuccess?.(freshData);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        onError?.(error);
+
+        // Se temos dados stale e staleWhileRevalidate está habilitado, manter os dados
+        if (staleWhileRevalidate && data) {
+          setIsStale(true);
+        } else {
+          setData(null);
+        }
+      } finally {
+        setIsLoading(false);
       }
+    },
+    [key, enabled, staleWhileRevalidate, data, cacheOptions, onError, onSuccess]
+  );
 
-      setIsLoading(true);
-      setIsCached(false);
-
-      // Buscar dados frescos
-      const freshData = await fetcherRef.current();
-      
-      // Armazenar no cache
-      await advancedCache.set(key, freshData, cacheOptions);
-      
-      setData(freshData);
-      setIsStale(false);
-      onSuccess?.(freshData);
-
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
-      onError?.(error);
-
-      // Se temos dados stale e staleWhileRevalidate está habilitado, manter os dados
-      if (staleWhileRevalidate && data) {
-        setIsStale(true);
+  const mutate = useCallback(
+    async (newData?: T): Promise<void> => {
+      if (newData !== undefined) {
+        // Atualização otimista
+        setData(newData);
+        await advancedCache.set(key, newData, cacheOptions);
       } else {
-        setData(null);
+        // Revalidar
+        await fetchData(true);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [key, enabled, staleWhileRevalidate, data, cacheOptions, onError, onSuccess]);
-
-  const mutate = useCallback(async (newData?: T): Promise<void> => {
-    if (newData !== undefined) {
-      // Atualização otimista
-      setData(newData);
-      await advancedCache.set(key, newData, cacheOptions);
-    } else {
-      // Revalidar
-      await fetchData(true);
-    }
-  }, [key, cacheOptions, fetchData]);
+    },
+    [key, cacheOptions, fetchData]
+  );
 
   const invalidate = useCallback(async (): Promise<void> => {
     await advancedCache.delete(key);
@@ -162,19 +171,25 @@ export function useAdvancedCache<T>(
     mutate,
     invalidate,
     refresh,
-    stats
+    stats,
   };
 }
 
 // Hook para invalidação em massa
 export function useCacheInvalidation() {
-  const invalidateByTags = useCallback(async (tags: string[]): Promise<number> => {
-    return await advancedCache.invalidateByTags(tags);
-  }, []);
+  const invalidateByTags = useCallback(
+    async (tags: string[]): Promise<number> => {
+      return await advancedCache.invalidateByTags(tags);
+    },
+    []
+  );
 
-  const invalidateByPattern = useCallback(async (pattern: string): Promise<number> => {
-    return await advancedCache.invalidateByPattern(pattern);
-  }, []);
+  const invalidateByPattern = useCallback(
+    async (pattern: string): Promise<number> => {
+      return await advancedCache.invalidateByPattern(pattern);
+    },
+    []
+  );
 
   const clearAll = useCallback(async (): Promise<void> => {
     await advancedCache.clear();
@@ -188,7 +203,7 @@ export function useCacheInvalidation() {
     invalidateByTags,
     invalidateByPattern,
     clearAll,
-    getStats
+    getStats,
   };
 }
 
@@ -197,42 +212,45 @@ export function useCacheWarmup() {
   const [isWarming, setIsWarming] = useState(false);
   const [warmupProgress, setWarmupProgress] = useState(0);
 
-  const warmup = useCallback(async (
-    keys: Array<{
-      key: string;
-      fetcher: () => Promise<any>;
-      options?: CacheOptions;
-    }>
-  ): Promise<void> => {
-    setIsWarming(true);
-    setWarmupProgress(0);
-
-    try {
-      for (let i = 0; i < keys.length; i++) {
-        const { key, fetcher, options } = keys[i];
-        
-        try {
-          const exists = await advancedCache.exists(key);
-          if (!exists) {
-            const data = await fetcher();
-            await advancedCache.set(key, data, options);
-          }
-        } catch (error) {
-          console.error(`Erro ao aquecer cache para ${key}:`, error);
-        }
-
-        setWarmupProgress(((i + 1) / keys.length) * 100);
-      }
-    } finally {
-      setIsWarming(false);
+  const warmup = useCallback(
+    async (
+      keys: Array<{
+        key: string;
+        fetcher: () => Promise<any>;
+        options?: CacheOptions;
+      }>
+    ): Promise<void> => {
+      setIsWarming(true);
       setWarmupProgress(0);
-    }
-  }, []);
+
+      try {
+        for (let i = 0; i < keys.length; i++) {
+          const { key, fetcher, options } = keys[i];
+
+          try {
+            const exists = await advancedCache.exists(key);
+            if (!exists) {
+              const data = await fetcher();
+              await advancedCache.set(key, data, options);
+            }
+          } catch (error) {
+            console.error(`Erro ao aquecer cache para ${key}:`, error);
+          }
+
+          setWarmupProgress(((i + 1) / keys.length) * 100);
+        }
+      } finally {
+        setIsWarming(false);
+        setWarmupProgress(0);
+      }
+    },
+    []
+  );
 
   return {
     warmup,
     isWarming,
-    warmupProgress
+    warmupProgress,
   };
 }
 
@@ -249,7 +267,7 @@ export function useCacheMonitor() {
       try {
         const [cacheStats, cacheMetrics] = await Promise.all([
           advancedCache.getStats(),
-          advancedCache.getMetrics()
+          advancedCache.getMetrics(),
         ]);
 
         setStats(cacheStats);
@@ -279,6 +297,6 @@ export function useCacheMonitor() {
     metrics,
     isMonitoring,
     startMonitoring,
-    stopMonitoring
+    stopMonitoring,
   };
 }

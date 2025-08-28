@@ -5,8 +5,8 @@ import {
   ActivityLog,
   ActivityLogAction,
   Note,
-} from '@/types'
-import { generateId } from '@/lib/utils'
+} from '@/types';
+import { generateId } from '@/lib/utils';
 
 let mockUsers: Record<string, User> = {
   '1': {
@@ -59,7 +59,7 @@ let mockUsers: Record<string, User> = {
     lockoutUntil: null,
     municipalityId: '1',
   },
-}
+};
 
 let mockActivityLogs: ActivityLog[] = [
   {
@@ -107,7 +107,7 @@ let mockActivityLogs: ActivityLog[] = [
     details: 'Tentativa de login falhou para o e-mail usuario@sispat.com.',
     municipalityId: '1',
   },
-]
+];
 
 let mockPatrimonios: Patrimonio[] = [
   {
@@ -305,7 +305,7 @@ let mockPatrimonios: Patrimonio[] = [
     vida_util_anos: 5,
     valor_residual: 150,
   },
-]
+];
 
 const newMockData: Patrimonio[] = [
   {
@@ -384,23 +384,23 @@ const newMockData: Patrimonio[] = [
     vida_util_anos: 5,
     valor_residual: 150,
   },
-]
+];
 
 export const getNewMockPatrimonios = (): Patrimonio[] => {
-  return JSON.parse(JSON.stringify(newMockData))
-}
+  return JSON.parse(JSON.stringify(newMockData));
+};
 
 export const getMockUsers = (): Record<string, User> =>
-  JSON.parse(JSON.stringify(mockUsers))
+  JSON.parse(JSON.stringify(mockUsers));
 export const getMockActivityLogs = (): ActivityLog[] =>
-  JSON.parse(JSON.stringify(mockActivityLogs))
+  JSON.parse(JSON.stringify(mockActivityLogs));
 export const getMockPatrimonios = (): Patrimonio[] =>
-  JSON.parse(JSON.stringify(mockPatrimonios))
+  JSON.parse(JSON.stringify(mockPatrimonios));
 
 export const logActivity = (
   user: Partial<User>,
   action: ActivityLogAction,
-  details: string,
+  details: string
 ): void => {
   const newLog: ActivityLog = {
     id: `log${mockActivityLogs.length + 1}`,
@@ -409,33 +409,33 @@ export const logActivity = (
     userName: user.name || 'System',
     action,
     details,
-  }
-  mockActivityLogs.unshift(newLog)
-}
+  };
+  mockActivityLogs.unshift(newLog);
+};
 
 interface AddUserParams {
-  name: string
-  email: string
-  role: UserRole
-  password?: string
-  responsibleSectors?: string[]
+  name: string;
+  email: string;
+  role: UserRole;
+  password?: string;
+  responsibleSectors?: string[];
 }
 
 export const addUser = async (
-  userData: AddUserParams,
+  userData: AddUserParams
 ): Promise<{ success: boolean; message: string; newUser?: User }> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(() => {
       const emailExists = Object.values(mockUsers).some(
-        (user) => user.email === userData.email,
-      )
+        user => user.email === userData.email
+      );
 
       if (emailExists) {
-        resolve({ success: false, message: 'E-mail já cadastrado.' })
-        return
+        resolve({ success: false, message: 'E-mail já cadastrado.' });
+        return;
       }
 
-      const newId = `${Object.keys(mockUsers).length + 1}`
+      const newId = `${Object.keys(mockUsers).length + 1}`;
       const newUser: User = {
         id: newId,
         name: userData.name,
@@ -447,78 +447,78 @@ export const addUser = async (
         responsibleSectors: userData.responsibleSectors || [],
         failedLoginAttempts: 0,
         lockoutUntil: null,
-      }
+      };
 
-      mockUsers[newId] = newUser
+      mockUsers[newId] = newUser;
 
       resolve({
         success: true,
         message: 'Usuário criado com sucesso!',
         newUser,
-      })
-    }, 500)
-  })
-}
+      });
+    }, 500);
+  });
+};
 
 export const updateUser = async (
   userId: string,
-  userData: Partial<User>,
+  userData: Partial<User>
 ): Promise<{ success: boolean; message: string; updatedUser?: User }> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(() => {
       if (!mockUsers[userId]) {
-        resolve({ success: false, message: 'Usuário não encontrado.' })
-        return
+        resolve({ success: false, message: 'Usuário não encontrado.' });
+        return;
       }
 
-      mockUsers[userId] = { ...mockUsers[userId], ...userData }
+      mockUsers[userId] = { ...mockUsers[userId], ...userData };
 
       resolve({
         success: true,
         message: 'Usuário atualizado com sucesso!',
         updatedUser: mockUsers[userId],
-      })
-    }, 500)
-  })
-}
+      });
+    }, 500);
+  });
+};
 
 export const deleteUser = async (
-  userId: string,
+  userId: string
 ): Promise<{ success: boolean; message: string }> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(() => {
       if (!mockUsers[userId]) {
-        resolve({ success: false, message: 'Usuário não encontrado.' })
-        return
+        resolve({ success: false, message: 'Usuário não encontrado.' });
+        return;
       }
 
-      delete mockUsers[userId]
+      delete mockUsers[userId];
 
       resolve({
         success: true,
         message: 'Usuário excluído com sucesso!',
-      })
-    }, 500)
-  })
-}
+      });
+    }, 500);
+  });
+};
 
 export const addPatrimonioNote = async (
   patrimonioId: string,
-  noteData: { text: string; userId: string; userName: string },
+  noteData: { text: string; userId: string; userName: string }
 ): Promise<{
-  success: boolean
-  message?: string
-  updatedPatrimonio?: Patrimonio
+  success: boolean;
+  message?: string;
+  updatedPatrimonio?: Patrimonio;
 }> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(() => {
       const patrimonioIndex = mockPatrimonios.findIndex(
-        (p) => p.id === patrimonioId,
-      )
+        p => p.id === patrimonioId
+      );
 
       if (patrimonioIndex === -1) {
-        resolve({ success: false, message: 'Patrimônio não encontrado.' })
-        return
+        resolve({ success: false, message: 'Patrimônio não encontrado.' });
+        return;
       }
 
       const newNote: Note = {
@@ -527,23 +527,23 @@ export const addPatrimonioNote = async (
         date: new Date(),
         userId: noteData.userId,
         userName: noteData.userName,
-      }
+      };
 
-      const updatedPatrimonio = { ...mockPatrimonios[patrimonioIndex] }
+      const updatedPatrimonio = { ...mockPatrimonios[patrimonioIndex] };
       if (!updatedPatrimonio.notes) {
-        updatedPatrimonio.notes = []
+        updatedPatrimonio.notes = [];
       }
-      updatedPatrimonio.notes.unshift(newNote)
+      updatedPatrimonio.notes.unshift(newNote);
 
-      mockPatrimonios[patrimonioIndex] = updatedPatrimonio
+      mockPatrimonios[patrimonioIndex] = updatedPatrimonio;
 
       resolve({
         success: true,
         updatedPatrimonio,
-      })
-    }, 300)
-  })
-}
+      });
+    }, 300);
+  });
+};
 
 type PatrimonioCreationData = Omit<
   Patrimonio,
@@ -555,35 +555,35 @@ type PatrimonioCreationData = Omit<
   | 'notes'
   | 'fotos'
   | 'data_aquisicao'
-> & { data_aquisicao: string; fotos: string[] }
+> & { data_aquisicao: string; fotos: string[] };
 
 export const addPatrimonio = async (
   data: PatrimonioCreationData,
-  creatingUser: User,
+  creatingUser: User
 ): Promise<{
-  success: boolean
-  message: string
-  newPatrimonio?: Patrimonio
+  success: boolean;
+  message: string;
+  newPatrimonio?: Patrimonio;
 }> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(() => {
       if (!data.descricao_bem || !data.setor_responsavel) {
         resolve({
           success: false,
           message: 'Dados inválidos. Descrição e setor são obrigatórios.',
-        })
-        return
+        });
+        return;
       }
 
       const lastPatrimonio = [...mockPatrimonios].sort((a, b) =>
-        a.numero_patrimonio.localeCompare(b.numero_patrimonio),
-      )[mockPatrimonios.length - 1]
+        a.numero_patrimonio.localeCompare(b.numero_patrimonio)
+      )[mockPatrimonios.length - 1];
       const lastNumber = lastPatrimonio
         ? parseInt(lastPatrimonio.numero_patrimonio.slice(4))
-        : 0
+        : 0;
       const newPatrimonioNumber = `2024${(lastNumber + 1)
         .toString()
-        .padStart(3, '0')}`
+        .padStart(3, '0')}`;
 
       const newPatrimonio: Patrimonio = {
         ...data,
@@ -602,21 +602,21 @@ export const addPatrimonio = async (
         ],
         entityName: 'Prefeitura de São Sebastião da Boa Vista',
         notes: [],
-      }
+      };
 
-      mockPatrimonios.push(newPatrimonio)
+      mockPatrimonios.push(newPatrimonio);
 
       logActivity(
         creatingUser,
         'PATRIMONIO_CREATE',
-        `Criou o patrimônio ${newPatrimonio.numero_patrimonio} (${newPatrimonio.descricao_bem}).`,
-      )
+        `Criou o patrimônio ${newPatrimonio.numero_patrimonio} (${newPatrimonio.descricao_bem}).`
+      );
 
       resolve({
         success: true,
         message: 'Patrimônio cadastrado com sucesso!',
         newPatrimonio,
-      })
-    }, 1000)
-  })
-}
+      });
+    }, 1000);
+  });
+};

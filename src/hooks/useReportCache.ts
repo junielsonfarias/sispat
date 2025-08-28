@@ -1,4 +1,8 @@
-import { DashboardData, reportCache, ReportMetadata } from '@/services/cache/reportCache';
+import {
+  DashboardData,
+  reportCache,
+  ReportMetadata,
+} from '@/services/cache/reportCache';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface UseReportCacheOptions {
@@ -32,7 +36,7 @@ export function useDashboardCache(
     autoRefresh = false,
     refreshInterval = 300000, // 5 minutos
     onError,
-    onSuccess
+    onSuccess,
   } = options;
 
   const [data, setData] = useState<DashboardData | null>(null);
@@ -40,45 +44,50 @@ export function useDashboardCache(
   const [error, setError] = useState<Error | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
 
-  const fetchData = useCallback(async (forceRefresh = false): Promise<void> => {
-    if (!enabled) return;
+  const fetchData = useCallback(
+    async (forceRefresh = false): Promise<void> => {
+      if (!enabled) return;
 
-    try {
-      setError(null);
-      setIsLoading(true);
+      try {
+        setError(null);
+        setIsLoading(true);
 
-      // Tentar buscar do cache primeiro
-      if (!forceRefresh) {
-        const cachedData = await reportCache.getDashboardData(userId, filters);
-        if (cachedData) {
-          setData(cachedData);
-          setIsFromCache(true);
-          setIsLoading(false);
-          onSuccess?.(cachedData);
-          return;
+        // Tentar buscar do cache primeiro
+        if (!forceRefresh) {
+          const cachedData = await reportCache.getDashboardData(
+            userId,
+            filters
+          );
+          if (cachedData) {
+            setData(cachedData);
+            setIsFromCache(true);
+            setIsLoading(false);
+            onSuccess?.(cachedData);
+            return;
+          }
         }
-      }
 
-      // Se não tem no cache ou forceRefresh, buscar dados frescos
-      if (fetcher) {
-        setIsFromCache(false);
-        const freshData = await fetcher();
-        
-        // Armazenar no cache
-        await reportCache.setDashboardData(freshData, userId, filters);
-        
-        setData(freshData);
-        onSuccess?.(freshData);
-      }
+        // Se não tem no cache ou forceRefresh, buscar dados frescos
+        if (fetcher) {
+          setIsFromCache(false);
+          const freshData = await fetcher();
 
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
-      onError?.(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId, filters, fetcher, enabled, onError, onSuccess]);
+          // Armazenar no cache
+          await reportCache.setDashboardData(freshData, userId, filters);
+
+          setData(freshData);
+          onSuccess?.(freshData);
+        }
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        onError?.(error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [userId, filters, fetcher, enabled, onError, onSuccess]
+  );
 
   const refresh = useCallback(async (): Promise<void> => {
     await fetchData(true);
@@ -110,7 +119,7 @@ export function useDashboardCache(
     error,
     isFromCache,
     refresh,
-    clear
+    clear,
   };
 }
 
@@ -121,60 +130,82 @@ export function usePdfReportCache(
   reportId: string,
   userId?: string,
   filters?: Record<string, any>,
-  generator?: () => Promise<{ buffer: Buffer; metadata: Omit<ReportMetadata, 'id' | 'generatedAt' | 'expiresAt'> }>,
+  generator?: () => Promise<{
+    buffer: Buffer;
+    metadata: Omit<ReportMetadata, 'id' | 'generatedAt' | 'expiresAt'>;
+  }>,
   options: UseReportCacheOptions = {}
 ): UseReportCacheReturn<{ buffer: Buffer; metadata: ReportMetadata }> {
-  const {
-    enabled = true,
-    onError,
-    onSuccess
-  } = options;
+  const { enabled = true, onError, onSuccess } = options;
 
-  const [data, setData] = useState<{ buffer: Buffer; metadata: ReportMetadata } | null>(null);
+  const [data, setData] = useState<{
+    buffer: Buffer;
+    metadata: ReportMetadata;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
 
-  const fetchReport = useCallback(async (forceRefresh = false): Promise<void> => {
-    if (!enabled) return;
+  const fetchReport = useCallback(
+    async (forceRefresh = false): Promise<void> => {
+      if (!enabled) return;
 
-    try {
-      setError(null);
-      setIsLoading(true);
+      try {
+        setError(null);
+        setIsLoading(true);
 
-      // Tentar buscar do cache primeiro
-      if (!forceRefresh) {
-        const cachedReport = await reportCache.getPdfReport(reportId, userId, filters);
-        if (cachedReport) {
-          setData(cachedReport);
-          setIsFromCache(true);
-          setIsLoading(false);
-          onSuccess?.(cachedReport);
-          return;
+        // Tentar buscar do cache primeiro
+        if (!forceRefresh) {
+          const cachedReport = await reportCache.getPdfReport(
+            reportId,
+            userId,
+            filters
+          );
+          if (cachedReport) {
+            setData(cachedReport);
+            setIsFromCache(true);
+            setIsLoading(false);
+            onSuccess?.(cachedReport);
+            return;
+          }
         }
-      }
 
-      // Se não tem no cache ou forceRefresh, gerar novo relatório
-      if (generator) {
-        setIsFromCache(false);
-        const { buffer, metadata } = await generator();
-        
-        // Armazenar no cache
-        await reportCache.setPdfReport(reportId, buffer, metadata, userId, filters);
-        
-        const reportData = { buffer, metadata: { ...metadata, id: reportId, generatedAt: new Date(), expiresAt: new Date(Date.now() + 3600000) } as ReportMetadata };
-        setData(reportData);
-        onSuccess?.(reportData);
-      }
+        // Se não tem no cache ou forceRefresh, gerar novo relatório
+        if (generator) {
+          setIsFromCache(false);
+          const { buffer, metadata } = await generator();
 
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
-      onError?.(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [reportId, userId, filters, generator, enabled, onError, onSuccess]);
+          // Armazenar no cache
+          await reportCache.setPdfReport(
+            reportId,
+            buffer,
+            metadata,
+            userId,
+            filters
+          );
+
+          const reportData = {
+            buffer,
+            metadata: {
+              ...metadata,
+              id: reportId,
+              generatedAt: new Date(),
+              expiresAt: new Date(Date.now() + 3600000),
+            } as ReportMetadata,
+          };
+          setData(reportData);
+          onSuccess?.(reportData);
+        }
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        onError?.(error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [reportId, userId, filters, generator, enabled, onError, onSuccess]
+  );
 
   const refresh = useCallback(async (): Promise<void> => {
     await fetchReport(true);
@@ -196,7 +227,7 @@ export function usePdfReportCache(
     error,
     isFromCache,
     refresh,
-    clear
+    clear,
   };
 }
 
@@ -208,60 +239,93 @@ export function useExportCache(
   exportId: string,
   userId?: string,
   filters?: Record<string, any>,
-  generator?: () => Promise<{ buffer: Buffer; metadata: Omit<ReportMetadata, 'id' | 'generatedAt' | 'expiresAt'> }>,
+  generator?: () => Promise<{
+    buffer: Buffer;
+    metadata: Omit<ReportMetadata, 'id' | 'generatedAt' | 'expiresAt'>;
+  }>,
   options: UseReportCacheOptions = {}
 ): UseReportCacheReturn<{ buffer: Buffer; metadata: ReportMetadata }> {
-  const {
-    enabled = true,
-    onError,
-    onSuccess
-  } = options;
+  const { enabled = true, onError, onSuccess } = options;
 
-  const [data, setData] = useState<{ buffer: Buffer; metadata: ReportMetadata } | null>(null);
+  const [data, setData] = useState<{
+    buffer: Buffer;
+    metadata: ReportMetadata;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
 
-  const fetchExport = useCallback(async (forceRefresh = false): Promise<void> => {
-    if (!enabled) return;
+  const fetchExport = useCallback(
+    async (forceRefresh = false): Promise<void> => {
+      if (!enabled) return;
 
-    try {
-      setError(null);
-      setIsLoading(true);
+      try {
+        setError(null);
+        setIsLoading(true);
 
-      // Tentar buscar do cache primeiro
-      if (!forceRefresh) {
-        const cachedExport = await reportCache.getExport(exportType, exportId, userId, filters);
-        if (cachedExport) {
-          setData(cachedExport);
-          setIsFromCache(true);
-          setIsLoading(false);
-          onSuccess?.(cachedExport);
-          return;
+        // Tentar buscar do cache primeiro
+        if (!forceRefresh) {
+          const cachedExport = await reportCache.getExport(
+            exportType,
+            exportId,
+            userId,
+            filters
+          );
+          if (cachedExport) {
+            setData(cachedExport);
+            setIsFromCache(true);
+            setIsLoading(false);
+            onSuccess?.(cachedExport);
+            return;
+          }
         }
-      }
 
-      // Se não tem no cache ou forceRefresh, gerar nova exportação
-      if (generator) {
-        setIsFromCache(false);
-        const { buffer, metadata } = await generator();
-        
-        // Armazenar no cache
-        await reportCache.setExport(exportType, exportId, buffer, metadata, userId, filters);
-        
-        const exportData = { buffer, metadata: { ...metadata, id: exportId, generatedAt: new Date(), expiresAt: new Date(Date.now() + 1800000) } as ReportMetadata };
-        setData(exportData);
-        onSuccess?.(exportData);
-      }
+        // Se não tem no cache ou forceRefresh, gerar nova exportação
+        if (generator) {
+          setIsFromCache(false);
+          const { buffer, metadata } = await generator();
 
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
-      onError?.(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [exportType, exportId, userId, filters, generator, enabled, onError, onSuccess]);
+          // Armazenar no cache
+          await reportCache.setExport(
+            exportType,
+            exportId,
+            buffer,
+            metadata,
+            userId,
+            filters
+          );
+
+          const exportData = {
+            buffer,
+            metadata: {
+              ...metadata,
+              id: exportId,
+              generatedAt: new Date(),
+              expiresAt: new Date(Date.now() + 1800000),
+            } as ReportMetadata,
+          };
+          setData(exportData);
+          onSuccess?.(exportData);
+        }
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        onError?.(error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [
+      exportType,
+      exportId,
+      userId,
+      filters,
+      generator,
+      enabled,
+      onError,
+      onSuccess,
+    ]
+  );
 
   const refresh = useCallback(async (): Promise<void> => {
     await fetchExport(true);
@@ -283,7 +347,7 @@ export function useExportCache(
     error,
     isFromCache,
     refresh,
-    clear
+    clear,
   };
 }
 
@@ -297,56 +361,63 @@ export function useAggregatedQueryCache<T>(
   userId?: string,
   options: UseReportCacheOptions = {}
 ): UseReportCacheReturn<T> {
-  const {
-    enabled = true,
-    onError,
-    onSuccess
-  } = options;
+  const { enabled = true, onError, onSuccess } = options;
 
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
 
-  const fetchQuery = useCallback(async (forceRefresh = false): Promise<void> => {
-    if (!enabled) return;
+  const fetchQuery = useCallback(
+    async (forceRefresh = false): Promise<void> => {
+      if (!enabled) return;
 
-    try {
-      setError(null);
-      setIsLoading(true);
+      try {
+        setError(null);
+        setIsLoading(true);
 
-      // Tentar buscar do cache primeiro
-      if (!forceRefresh) {
-        const cachedData = await reportCache.getAggregatedQuery<T>(queryId, parameters, userId);
-        if (cachedData) {
-          setData(cachedData);
-          setIsFromCache(true);
-          setIsLoading(false);
-          onSuccess?.(cachedData);
-          return;
+        // Tentar buscar do cache primeiro
+        if (!forceRefresh) {
+          const cachedData = await reportCache.getAggregatedQuery<T>(
+            queryId,
+            parameters,
+            userId
+          );
+          if (cachedData) {
+            setData(cachedData);
+            setIsFromCache(true);
+            setIsLoading(false);
+            onSuccess?.(cachedData);
+            return;
+          }
         }
-      }
 
-      // Se não tem no cache ou forceRefresh, executar consulta
-      if (fetcher) {
-        setIsFromCache(false);
-        const freshData = await fetcher();
-        
-        // Armazenar no cache
-        await reportCache.setAggregatedQuery(queryId, freshData, parameters, userId);
-        
-        setData(freshData);
-        onSuccess?.(freshData);
-      }
+        // Se não tem no cache ou forceRefresh, executar consulta
+        if (fetcher) {
+          setIsFromCache(false);
+          const freshData = await fetcher();
 
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
-      onError?.(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [queryId, parameters, fetcher, userId, enabled, onError, onSuccess]);
+          // Armazenar no cache
+          await reportCache.setAggregatedQuery(
+            queryId,
+            freshData,
+            parameters,
+            userId
+          );
+
+          setData(freshData);
+          onSuccess?.(freshData);
+        }
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        onError?.(error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [queryId, parameters, fetcher, userId, enabled, onError, onSuccess]
+  );
 
   const refresh = useCallback(async (): Promise<void> => {
     await fetchQuery(true);
@@ -368,7 +439,7 @@ export function useAggregatedQueryCache<T>(
     error,
     isFromCache,
     refresh,
-    clear
+    clear,
   };
 }
 
@@ -380,30 +451,37 @@ export function useReportPreGeneration() {
   const [progress, setProgress] = useState({ success: 0, failed: 0, total: 0 });
   const [errors, setErrors] = useState<string[]>([]);
 
-  const preGenerate = useCallback(async (
-    reportConfigs: Array<{
-      type: 'pdf' | 'excel' | 'csv' | 'dashboard';
-      id: string;
-      generator: () => Promise<Buffer | DashboardData>;
-      metadata?: Partial<ReportMetadata>;
-      userId?: string;
-      filters?: Record<string, any>;
-    }>
-  ): Promise<void> => {
-    setIsGenerating(true);
-    setProgress({ success: 0, failed: 0, total: reportConfigs.length });
-    setErrors([]);
+  const preGenerate = useCallback(
+    async (
+      reportConfigs: Array<{
+        type: 'pdf' | 'excel' | 'csv' | 'dashboard';
+        id: string;
+        generator: () => Promise<Buffer | DashboardData>;
+        metadata?: Partial<ReportMetadata>;
+        userId?: string;
+        filters?: Record<string, any>;
+      }>
+    ): Promise<void> => {
+      setIsGenerating(true);
+      setProgress({ success: 0, failed: 0, total: reportConfigs.length });
+      setErrors([]);
 
-    try {
-      const result = await reportCache.preGenerateReports(reportConfigs);
-      setProgress({ success: result.success, failed: result.failed, total: reportConfigs.length });
-      setErrors(result.errors);
-    } catch (error) {
-      setErrors([`Erro geral na pré-geração: ${error}`]);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, []);
+      try {
+        const result = await reportCache.preGenerateReports(reportConfigs);
+        setProgress({
+          success: result.success,
+          failed: result.failed,
+          total: reportConfigs.length,
+        });
+        setErrors(result.errors);
+      } catch (error) {
+        setErrors([`Erro geral na pré-geração: ${error}`]);
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    []
+  );
 
   const getStats = useCallback(async () => {
     return await reportCache.getReportCacheStats();
@@ -419,6 +497,6 @@ export function useReportPreGeneration() {
     errors,
     preGenerate,
     getStats,
-    cleanup
+    cleanup,
   };
 }

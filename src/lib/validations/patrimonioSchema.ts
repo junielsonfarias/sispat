@@ -1,4 +1,4 @@
-import * as z from 'zod'
+import * as z from 'zod';
 
 export const patrimonioBaseSchema = z.object({
   descricao: z
@@ -22,7 +22,7 @@ export const patrimonioBaseSchema = z.object({
     .string()
     .max(50, 'O número de série deve ter no máximo 50 caracteres.')
     .optional(),
-  data_aquisicao: z.string().refine((val) => !isNaN(Date.parse(val)), {
+  data_aquisicao: z.string().refine(val => !isNaN(Date.parse(val)), {
     message: 'Data de aquisição inválida.',
   }),
   valor_aquisicao: z.coerce
@@ -57,7 +57,7 @@ export const patrimonioBaseSchema = z.object({
     .number()
     .min(0, 'Valor residual não pode ser negativo.')
     .optional(),
-})
+});
 
 export const patrimonioEditSchema = patrimonioBaseSchema.extend({
   numero_patrimonio: z.string().min(1, 'Número de patrimônio é obrigatório.'),
@@ -66,4 +66,4 @@ export const patrimonioEditSchema = patrimonioBaseSchema.extend({
   }),
   data_baixa: z.string().optional(),
   motivo_baixa: z.string().optional(),
-})
+});

@@ -1,9 +1,9 @@
-import { Imovel, ImovelFieldConfig } from '@/types'
+import { Imovel, ImovelFieldConfig } from '@/types';
 
 type ImovelField = {
-  id: keyof Imovel | `customFields.${string}`
-  label: string
-}
+  id: keyof Imovel | `customFields.${string}`;
+  label: string;
+};
 
 export const imovelBaseFields: ImovelField[] = [
   { id: 'numero_patrimonio', label: 'Nº Patrimônio' },
@@ -15,13 +15,13 @@ export const imovelBaseFields: ImovelField[] = [
   { id: 'area_construida', label: 'Área Construída (m²)' },
   { id: 'fotos', label: 'Fotos' },
   { id: 'documentos', label: 'Documentos' },
-]
+];
 
 export const getImovelFields = (
-  customFields: ImovelFieldConfig[],
+  customFields: ImovelFieldConfig[]
 ): ImovelField[] => {
   const customFieldsMapped = customFields
-    .filter((f) => f.isCustom)
-    .map((f) => ({ id: `customFields.${f.key}` as const, label: f.label }))
-  return [...imovelBaseFields, ...customFieldsMapped]
-}
+    .filter(f => f.isCustom)
+    .map(f => ({ id: `customFields.${f.key}` as const, label: f.label }));
+  return [...imovelBaseFields, ...customFieldsMapped];
+};

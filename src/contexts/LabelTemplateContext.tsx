@@ -6,21 +6,21 @@ import {
   useCallback,
   useContext,
   useMemo,
-} from 'react'
-import { LabelTemplate } from '@/types'
-import { generateId } from '@/lib/utils'
-import { useAuth } from './AuthContext'
+} from 'react';
+import { LabelTemplate } from '@/types';
+import { generateId } from '@/lib/utils';
+import { useAuth } from './AuthContext';
 
 interface LabelTemplateContextType {
-  templates: LabelTemplate[]
-  getTemplateById: (id: string) => LabelTemplate | undefined
-  saveTemplate: (template: LabelTemplate) => void
-  deleteTemplate: (templateId: string) => void
+  templates: LabelTemplate[];
+  getTemplateById: (id: string) => LabelTemplate | undefined;
+  saveTemplate: (template: LabelTemplate) => void;
+  deleteTemplate: (templateId: string) => void;
 }
 
 const LabelTemplateContext = createContext<LabelTemplateContextType | null>(
-  null,
-)
+  null
+);
 
 const defaultTemplate: LabelTemplate = {
   id: 'default-60x40',
@@ -102,87 +102,85 @@ const defaultTemplate: LabelTemplate = {
     },
   ],
   municipalityId: '1',
-}
+};
 
-const initialTemplates = [defaultTemplate]
+const initialTemplates = [defaultTemplate];
 
 export const LabelTemplateProvider = ({
   children,
 }: {
-  children: ReactNode
+  children: ReactNode;
 }) => {
   const [allTemplates, setAllTemplates] =
-    useState<LabelTemplate[]>(initialTemplates)
-  const { user } = useAuth()
+    useState<LabelTemplate[]>(initialTemplates);
+  const { user } = useAuth();
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('sispat_label_templates')
+      const stored = localStorage.getItem('sispat_label_templates');
       if (stored) {
-        setAllTemplates(JSON.parse(stored))
+        setAllTemplates(JSON.parse(stored));
       } else {
         localStorage.setItem(
           'sispat_label_templates',
-          JSON.stringify(initialTemplates),
-        )
+          JSON.stringify(initialTemplates)
+        );
       }
     } catch (error) {
-      console.error('Failed to load label templates from localStorage', error)
-      setAllTemplates(initialTemplates)
+      console.error('Failed to load label templates from localStorage', error);
+      setAllTemplates(initialTemplates);
     }
-  }, [])
+  }, []);
 
   const templates = useMemo(() => {
-    if (user?.role === 'superuser') return allTemplates
+    if (user?.role === 'superuser') return allTemplates;
     if (user?.municipalityId) {
-      return allTemplates.filter(
-        (t) => t.municipalityId === user.municipalityId,
-      )
+      return allTemplates.filter(t => t.municipalityId === user.municipalityId);
     }
-    return []
-  }, [allTemplates, user])
+    return [];
+  }, [allTemplates, user]);
 
   const getTemplateById = useCallback(
-    (id: string) => templates.find((t) => t.id === id),
-    [templates],
-  )
+    (id: string) => templates.find(t => t.id === id),
+    [templates]
+  );
 
   const saveTemplate = useCallback(
     (template: LabelTemplate) => {
-      if (!user?.municipalityId && user?.role !== 'superuser') return
+      if (!user?.municipalityId && user?.role !== 'superuser') return;
 
-      setAllTemplates((prev) => {
-        const newTemplates = [...prev]
-        const index = newTemplates.findIndex((t) => t.id === template.id)
+      setAllTemplates(prev => {
+        const newTemplates = [...prev];
+        const index = newTemplates.findIndex(t => t.id === template.id);
         const templateToSave = {
           ...template,
           municipalityId: template.municipalityId || user?.municipalityId!,
-        }
+        };
         if (index > -1) {
-          newTemplates[index] = templateToSave
+          newTemplates[index] = templateToSave;
         } else {
-          newTemplates.push(templateToSave)
+          newTemplates.push(templateToSave);
         }
         localStorage.setItem(
           'sispat_label_templates',
-          JSON.stringify(newTemplates),
-        )
-        return newTemplates
-      })
+          JSON.stringify(newTemplates)
+        );
+        return newTemplates;
+      });
     },
-    [user],
-  )
+    [user]
+  );
 
   const deleteTemplate = useCallback((templateId: string) => {
-    setAllTemplates((prev) => {
-      const newTemplates = prev.filter((t) => t.id !== templateId)
+    setAllTemplates(prev => {
+      const newTemplates = prev.filter(t => t.id !== templateId);
       localStorage.setItem(
         'sispat_label_templates',
-        JSON.stringify(newTemplates),
-      )
-      return newTemplates
-    })
-  }, [])
+        JSON.stringify(newTemplates)
+      );
+      return newTemplates;
+    });
+  }, []);
 
   return (
     <LabelTemplateContext.Provider
@@ -190,15 +188,15 @@ export const LabelTemplateProvider = ({
     >
       {children}
     </LabelTemplateContext.Provider>
-  )
-}
+  );
+};
 
 export const useLabelTemplates = () => {
-  const context = useContext(LabelTemplateContext)
+  const context = useContext(LabelTemplateContext);
   if (!context) {
     throw new Error(
-      'useLabelTemplates must be used within a LabelTemplateProvider',
-    )
+      'useLabelTemplates must be used within a LabelTemplateProvider'
+    );
   }
-  return context
-}
+  return context;
+};

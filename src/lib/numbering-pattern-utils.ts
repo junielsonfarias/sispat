@@ -2,73 +2,73 @@ import {
   NumberingPattern,
   NumberingPatternComponent,
   Patrimonio,
-} from '@/types'
-import { format } from 'date-fns'
+} from '@/types';
+import { format } from 'date-fns';
 
 export const generatePreview = (
-  components: NumberingPatternComponent[],
+  components: NumberingPatternComponent[]
 ): string => {
-  const now = new Date()
+  const now = new Date();
   return components
-    .map((comp) => {
+    .map(comp => {
       switch (comp.type) {
         case 'text':
-          return comp.value || ''
+          return comp.value || '';
         case 'year':
-          return format(now, comp.format === 'YY' ? 'yy' : 'yyyy')
+          return format(now, comp.format === 'YY' ? 'yy' : 'yyyy');
         case 'sequence':
-          return '1'.padStart(comp.length || 4, '0')
+          return '1'.padStart(comp.length || 4, '0');
         default:
-          return ''
+          return '';
       }
     })
-    .join('')
-}
+    .join('');
+};
 
 export const generateNextAssetNumber = (
   pattern: NumberingPattern,
-  existingPatrimonios: Patrimonio[],
+  existingPatrimonios: Patrimonio[]
 ): string => {
-  const now = new Date()
-  let prefix = ''
-  let sequenceComponent: NumberingPatternComponent | undefined
+  const now = new Date();
+  let prefix = '';
+  let sequenceComponent: NumberingPatternComponent | undefined;
 
   for (const comp of pattern.components) {
     switch (comp.type) {
       case 'text':
-        prefix += comp.value || ''
-        break
+        prefix += comp.value || '';
+        break;
       case 'year':
-        prefix += format(now, comp.format === 'YY' ? 'yy' : 'yyyy')
-        break
+        prefix += format(now, comp.format === 'YY' ? 'yy' : 'yyyy');
+        break;
       case 'sequence':
-        sequenceComponent = comp
-        break
+        sequenceComponent = comp;
+        break;
     }
   }
 
   if (!sequenceComponent) {
-    return `${prefix}NO_SEQUENCE`
+    return `${prefix}NO_SEQUENCE`;
   }
 
-  const sequenceLength = sequenceComponent.length || 4
+  const sequenceLength = sequenceComponent.length || 4;
   const relevantPatrimonios = existingPatrimonios.filter(
-    (p) =>
+    p =>
       p.numero_patrimonio.startsWith(prefix) &&
-      p.municipalityId === pattern.municipalityId,
-  )
+      p.municipalityId === pattern.municipalityId
+  );
 
-  let maxSequence = 0
+  let maxSequence = 0;
   for (const p of relevantPatrimonios) {
-    const sequenceStr = p.numero_patrimonio.slice(prefix.length)
-    const sequenceNum = parseInt(sequenceStr, 10)
+    const sequenceStr = p.numero_patrimonio.slice(prefix.length);
+    const sequenceNum = parseInt(sequenceStr, 10);
     if (!isNaN(sequenceNum) && sequenceNum > maxSequence) {
-      maxSequence = sequenceNum
+      maxSequence = sequenceNum;
     }
   }
 
   const nextSequence = (maxSequence + 1)
     .toString()
-    .padStart(sequenceLength, '0')
-  return `${prefix}${nextSequence}`
-}
+    .padStart(sequenceLength, '0');
+  return `${prefix}${nextSequence}`;
+};

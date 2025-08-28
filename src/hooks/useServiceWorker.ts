@@ -41,7 +41,7 @@ export function useServiceWorker(
     onUpdate,
     onSuccess,
     onError,
-    updateCheckInterval = 60000 // 1 minuto
+    updateCheckInterval = 60000, // 1 minuto
   } = options;
 
   const [state, setState] = useState<ServiceWorkerState>({
@@ -51,10 +51,11 @@ export function useServiceWorker(
     isWaiting: false,
     isActive: false,
     hasUpdate: false,
-    error: null
+    error: null,
   });
 
-  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [registration, setRegistration] =
+    useState<ServiceWorkerRegistration | null>(null);
 
   const updateState = useCallback((updates: Partial<ServiceWorkerState>) => {
     setState(prev => ({ ...prev, ...updates }));
@@ -101,14 +102,13 @@ export function useServiceWorker(
 
       console.log('Service Worker registrado com sucesso');
       updateState({ isRegistered: true, isInstalling: false });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       console.error('Erro ao registrar Service Worker:', err);
-      updateState({ 
-        error: err.message, 
-        isInstalling: false, 
-        isRegistered: false 
+      updateState({
+        error: err.message,
+        isInstalling: false,
+        isRegistered: false,
       });
       onError?.(err);
     }
@@ -125,7 +125,7 @@ export function useServiceWorker(
           isRegistered: false,
           isActive: false,
           isWaiting: false,
-          hasUpdate: false
+          hasUpdate: false,
         });
         console.log('Service Worker desregistrado com sucesso');
       }
@@ -158,14 +158,17 @@ export function useServiceWorker(
     }
   }, [registration, updateState]);
 
-  const cacheUrls = useCallback((urls: string[]) => {
-    if (registration?.active) {
-      registration.active.postMessage({
-        type: 'CACHE_URLS',
-        payload: { urls }
-      });
-    }
-  }, [registration]);
+  const cacheUrls = useCallback(
+    (urls: string[]) => {
+      if (registration?.active) {
+        registration.active.postMessage({
+          type: 'CACHE_URLS',
+          payload: { urls },
+        });
+      }
+    },
+    [registration]
+  );
 
   const clearCache = useCallback(() => {
     if (registration?.active) {
@@ -181,16 +184,15 @@ export function useServiceWorker(
       }
 
       const messageChannel = new MessageChannel();
-      messageChannel.port1.onmessage = (event) => {
+      messageChannel.port1.onmessage = event => {
         if (event.data.type === 'CACHE_STATS') {
           resolve(event.data.payload);
         }
       };
 
-      registration.active.postMessage(
-        { type: 'GET_CACHE_STATS' },
-        [messageChannel.port2]
-      );
+      registration.active.postMessage({ type: 'GET_CACHE_STATS' }, [
+        messageChannel.port2,
+      ]);
 
       // Timeout após 5 segundos
       setTimeout(() => {
@@ -199,49 +201,52 @@ export function useServiceWorker(
     });
   }, [registration]);
 
-  const handleStateChange = useCallback((event: Event) => {
-    const worker = event.target as ServiceWorker;
-    
-    switch (worker.state) {
-      case 'installing':
-        updateState({ isInstalling: true });
-        break;
-      case 'installed':
-        updateState({ 
-          isInstalling: false,
-          isWaiting: true,
-          hasUpdate: true
-        });
-        if (registration) {
-          onUpdate?.(registration);
-        }
-        break;
-      case 'activating':
-        updateState({ isWaiting: false });
-        break;
-      case 'activated':
-        updateState({ 
-          isActive: true, 
-          hasUpdate: false,
-          isWaiting: false
-        });
-        if (registration) {
-          onSuccess?.(registration);
-        }
-        // Recarregar página para aplicar atualizações
-        if (state.hasUpdate) {
-          window.location.reload();
-        }
-        break;
-      case 'redundant':
-        updateState({ 
-          isActive: false,
-          isWaiting: false,
-          hasUpdate: false
-        });
-        break;
-    }
-  }, [updateState, registration, onUpdate, onSuccess, state.hasUpdate]);
+  const handleStateChange = useCallback(
+    (event: Event) => {
+      const worker = event.target as ServiceWorker;
+
+      switch (worker.state) {
+        case 'installing':
+          updateState({ isInstalling: true });
+          break;
+        case 'installed':
+          updateState({
+            isInstalling: false,
+            isWaiting: true,
+            hasUpdate: true,
+          });
+          if (registration) {
+            onUpdate?.(registration);
+          }
+          break;
+        case 'activating':
+          updateState({ isWaiting: false });
+          break;
+        case 'activated':
+          updateState({
+            isActive: true,
+            hasUpdate: false,
+            isWaiting: false,
+          });
+          if (registration) {
+            onSuccess?.(registration);
+          }
+          // Recarregar página para aplicar atualizações
+          if (state.hasUpdate) {
+            window.location.reload();
+          }
+          break;
+        case 'redundant':
+          updateState({
+            isActive: false,
+            isWaiting: false,
+            hasUpdate: false,
+          });
+          break;
+      }
+    },
+    [updateState, registration, onUpdate, onSuccess, state.hasUpdate]
+  );
 
   // Auto-registrar na inicialização
   useEffect(() => {
@@ -270,10 +275,16 @@ export function useServiceWorker(
       window.location.reload();
     };
 
-    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+    navigator.serviceWorker.addEventListener(
+      'controllerchange',
+      handleControllerChange
+    );
 
     return () => {
-      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+      navigator.serviceWorker.removeEventListener(
+        'controllerchange',
+        handleControllerChange
+      );
     };
   }, [state.isSupported]);
 
@@ -288,7 +299,7 @@ export function useServiceWorker(
           isRegistered: true,
           isActive: !!reg.active,
           isWaiting: !!reg.waiting,
-          hasUpdate: !!reg.waiting
+          hasUpdate: !!reg.waiting,
         });
 
         if (reg.waiting) {
@@ -307,6 +318,6 @@ export function useServiceWorker(
     cacheUrls,
     clearCache,
     getCacheStats,
-    registration
+    registration,
   };
 }

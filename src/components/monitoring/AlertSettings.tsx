@@ -1,19 +1,25 @@
 import {
-    AlertTriangle,
-    Bell,
-    CheckCircle,
-    Mail,
-    MessageSquare,
-    RotateCcw,
-    Save,
-    Settings,
-    Smartphone
+  AlertTriangle,
+  Bell,
+  CheckCircle,
+  Mail,
+  MessageSquare,
+  RotateCcw,
+  Save,
+  Settings,
+  Smartphone,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
@@ -46,7 +52,7 @@ const DEFAULT_THRESHOLDS: AlertThreshold[] = [
     critical: 90,
     enabled: true,
     description: 'Porcentagem de uso do processador',
-    unit: '%'
+    unit: '%',
   },
   {
     id: 'memory-usage',
@@ -56,7 +62,7 @@ const DEFAULT_THRESHOLDS: AlertThreshold[] = [
     critical: 95,
     enabled: true,
     description: 'Porcentagem de uso da memória RAM',
-    unit: '%'
+    unit: '%',
   },
   {
     id: 'response-time',
@@ -66,7 +72,7 @@ const DEFAULT_THRESHOLDS: AlertThreshold[] = [
     critical: 1000,
     enabled: true,
     description: 'Tempo médio de resposta das APIs',
-    unit: 'ms'
+    unit: 'ms',
   },
   {
     id: 'error-rate',
@@ -76,7 +82,7 @@ const DEFAULT_THRESHOLDS: AlertThreshold[] = [
     critical: 10,
     enabled: true,
     description: 'Porcentagem de requisições com erro',
-    unit: '%'
+    unit: '%',
   },
   {
     id: 'slow-queries',
@@ -86,8 +92,8 @@ const DEFAULT_THRESHOLDS: AlertThreshold[] = [
     critical: 10,
     enabled: true,
     description: 'Número de queries que excedem o tempo limite',
-    unit: 'queries'
-  }
+    unit: 'queries',
+  },
 ];
 
 const DEFAULT_CHANNELS: NotificationChannel[] = [
@@ -98,8 +104,8 @@ const DEFAULT_CHANNELS: NotificationChannel[] = [
     enabled: true,
     config: {
       recipients: ['admin@sispat.com'],
-      subject: 'SISPAT - Alerta de Performance'
-    }
+      subject: 'SISPAT - Alerta de Performance',
+    },
   },
   {
     id: 'webhook',
@@ -109,14 +115,16 @@ const DEFAULT_CHANNELS: NotificationChannel[] = [
     config: {
       url: '',
       method: 'POST',
-      headers: {}
-    }
-  }
+      headers: {},
+    },
+  },
 ];
 
 export function AlertSettings() {
-  const [thresholds, setThresholds] = useState<AlertThreshold[]>(DEFAULT_THRESHOLDS);
-  const [channels, setChannels] = useState<NotificationChannel[]>(DEFAULT_CHANNELS);
+  const [thresholds, setThresholds] =
+    useState<AlertThreshold[]>(DEFAULT_THRESHOLDS);
+  const [channels, setChannels] =
+    useState<NotificationChannel[]>(DEFAULT_CHANNELS);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -144,28 +152,42 @@ export function AlertSettings() {
   }, []);
 
   // Atualizar threshold
-  const updateThreshold = (id: string, field: keyof AlertThreshold, value: any) => {
-    setThresholds(prev => prev.map(threshold => 
-      threshold.id === id ? { ...threshold, [field]: value } : threshold
-    ));
+  const updateThreshold = (
+    id: string,
+    field: keyof AlertThreshold,
+    value: any
+  ) => {
+    setThresholds(prev =>
+      prev.map(threshold =>
+        threshold.id === id ? { ...threshold, [field]: value } : threshold
+      )
+    );
     setHasChanges(true);
   };
 
   // Atualizar canal de notificação
-  const updateChannel = (id: string, field: keyof NotificationChannel, value: any) => {
-    setChannels(prev => prev.map(channel => 
-      channel.id === id ? { ...channel, [field]: value } : channel
-    ));
+  const updateChannel = (
+    id: string,
+    field: keyof NotificationChannel,
+    value: any
+  ) => {
+    setChannels(prev =>
+      prev.map(channel =>
+        channel.id === id ? { ...channel, [field]: value } : channel
+      )
+    );
     setHasChanges(true);
   };
 
   // Atualizar configuração do canal
   const updateChannelConfig = (id: string, configKey: string, value: any) => {
-    setChannels(prev => prev.map(channel => 
-      channel.id === id 
-        ? { ...channel, config: { ...channel.config, [configKey]: value } }
-        : channel
-    ));
+    setChannels(prev =>
+      prev.map(channel =>
+        channel.id === id
+          ? { ...channel, config: { ...channel.config, [configKey]: value } }
+          : channel
+      )
+    );
     setHasChanges(true);
   };
 
@@ -177,14 +199,18 @@ export function AlertSettings() {
     try {
       // Validações
       const errors: string[] = [];
-      
+
       thresholds.forEach(threshold => {
         if (threshold.enabled) {
           if (threshold.warning >= threshold.critical) {
-            errors.push(`${threshold.name}: Limite de aviso deve ser menor que crítico`);
+            errors.push(
+              `${threshold.name}: Limite de aviso deve ser menor que crítico`
+            );
           }
           if (threshold.warning <= 0 || threshold.critical <= 0) {
-            errors.push(`${threshold.name}: Limites devem ser maiores que zero`);
+            errors.push(
+              `${threshold.name}: Limites devem ser maiores que zero`
+            );
           }
         }
       });
@@ -203,10 +229,9 @@ export function AlertSettings() {
 
       setHasChanges(false);
       setSaveMessage('Configurações salvas com sucesso!');
-      
+
       // Limpar mensagem após 3 segundos
       setTimeout(() => setSaveMessage(null), 3000);
-
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
       setSaveMessage('Erro ao salvar configurações. Tente novamente.');
@@ -236,41 +261,40 @@ export function AlertSettings() {
   const getChannelIcon = (type: string) => {
     switch (type) {
       case 'email':
-        return <Mail className="h-4 w-4" />;
+        return <Mail className='h-4 w-4' />;
       case 'sms':
-        return <Smartphone className="h-4 w-4" />;
+        return <Smartphone className='h-4 w-4' />;
       case 'webhook':
-        return <MessageSquare className="h-4 w-4" />;
+        return <MessageSquare className='h-4 w-4' />;
       default:
-        return <Bell className="h-4 w-4" />;
+        return <Bell className='h-4 w-4' />;
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className='flex items-center justify-between'>
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Configuração de Alertas</h2>
-          <p className="text-muted-foreground">
-            Configure limites e canais de notificação para alertas de performance
+          <h2 className='text-2xl font-bold tracking-tight'>
+            Configuração de Alertas
+          </h2>
+          <p className='text-muted-foreground'>
+            Configure limites e canais de notificação para alertas de
+            performance
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            onClick={resetToDefaults}
-            variant="outline"
-            size="sm"
-          >
-            <RotateCcw className="h-4 w-4 mr-1" />
+        <div className='flex items-center space-x-2'>
+          <Button onClick={resetToDefaults} variant='outline' size='sm'>
+            <RotateCcw className='h-4 w-4 mr-1' />
             Restaurar Padrões
           </Button>
           <Button
             onClick={saveSettings}
             disabled={!hasChanges || isSaving}
-            size="sm"
+            size='sm'
           >
-            <Save className="h-4 w-4 mr-1" />
+            <Save className='h-4 w-4 mr-1' />
             {isSaving ? 'Salvando...' : 'Salvar Alterações'}
           </Button>
         </div>
@@ -278,11 +302,13 @@ export function AlertSettings() {
 
       {/* Mensagem de status */}
       {saveMessage && (
-        <Alert variant={saveMessage.includes('Erro') ? 'destructive' : 'default'}>
+        <Alert
+          variant={saveMessage.includes('Erro') ? 'destructive' : 'default'}
+        >
           {saveMessage.includes('Erro') ? (
-            <AlertTriangle className="h-4 w-4" />
+            <AlertTriangle className='h-4 w-4' />
           ) : (
-            <CheckCircle className="h-4 w-4" />
+            <CheckCircle className='h-4 w-4' />
           )}
           <AlertDescription>{saveMessage}</AlertDescription>
         </Alert>
@@ -291,8 +317,8 @@ export function AlertSettings() {
       {/* Limites de Alerta */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Settings className="h-5 w-5 mr-2" />
+          <CardTitle className='flex items-center'>
+            <Settings className='h-5 w-5 mr-2' />
             Limites de Alerta
           </CardTitle>
           <CardDescription>
@@ -300,23 +326,30 @@ export function AlertSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
+          <div className='space-y-6'>
             {thresholds.map(threshold => (
-              <div key={threshold.id} className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
+              <div
+                key={threshold.id}
+                className='border rounded-lg p-4 space-y-4'
+              >
+                <div className='flex items-center justify-between'>
                   <div>
-                    <h4 className="font-medium">{threshold.name}</h4>
-                    <p className="text-sm text-muted-foreground">{threshold.description}</p>
+                    <h4 className='font-medium'>{threshold.name}</h4>
+                    <p className='text-sm text-muted-foreground'>
+                      {threshold.description}
+                    </p>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className='flex items-center space-x-2'>
                     <Switch
                       checked={threshold.enabled}
-                      onCheckedChange={(checked) => updateThreshold(threshold.id, 'enabled', checked)}
+                      onCheckedChange={checked =>
+                        updateThreshold(threshold.id, 'enabled', checked)
+                      }
                     />
                     <Button
                       onClick={() => testAlert(threshold.id)}
-                      variant="outline"
-                      size="sm"
+                      variant='outline'
+                      size='sm'
                       disabled={!threshold.enabled}
                     >
                       Testar
@@ -325,30 +358,42 @@ export function AlertSettings() {
                 </div>
 
                 {threshold.enabled && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div className='space-y-2'>
                       <Label htmlFor={`warning-${threshold.id}`}>
                         Limite de Aviso ({threshold.unit})
                       </Label>
                       <Input
                         id={`warning-${threshold.id}`}
-                        type="number"
+                        type='number'
                         value={threshold.warning}
-                        onChange={(e) => updateThreshold(threshold.id, 'warning', Number(e.target.value))}
-                        min="0"
+                        onChange={e =>
+                          updateThreshold(
+                            threshold.id,
+                            'warning',
+                            Number(e.target.value)
+                          )
+                        }
+                        min='0'
                         step={threshold.unit === '%' ? '1' : '10'}
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className='space-y-2'>
                       <Label htmlFor={`critical-${threshold.id}`}>
                         Limite Crítico ({threshold.unit})
                       </Label>
                       <Input
                         id={`critical-${threshold.id}`}
-                        type="number"
+                        type='number'
                         value={threshold.critical}
-                        onChange={(e) => updateThreshold(threshold.id, 'critical', Number(e.target.value))}
-                        min="0"
+                        onChange={e =>
+                          updateThreshold(
+                            threshold.id,
+                            'critical',
+                            Number(e.target.value)
+                          )
+                        }
+                        min='0'
                         step={threshold.unit === '%' ? '1' : '10'}
                       />
                     </div>
@@ -363,8 +408,8 @@ export function AlertSettings() {
       {/* Canais de Notificação */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Bell className="h-5 w-5 mr-2" />
+          <CardTitle className='flex items-center'>
+            <Bell className='h-5 w-5 mr-2' />
             Canais de Notificação
           </CardTitle>
           <CardDescription>
@@ -372,55 +417,69 @@ export function AlertSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
+          <div className='space-y-6'>
             {channels.map(channel => (
-              <div key={channel.id} className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+              <div key={channel.id} className='border rounded-lg p-4 space-y-4'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center space-x-2'>
                     {getChannelIcon(channel.type)}
                     <div>
-                      <h4 className="font-medium">{channel.name}</h4>
-                      <Badge variant={channel.enabled ? "default" : "secondary"}>
+                      <h4 className='font-medium'>{channel.name}</h4>
+                      <Badge
+                        variant={channel.enabled ? 'default' : 'secondary'}
+                      >
                         {channel.enabled ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </div>
                   </div>
                   <Switch
                     checked={channel.enabled}
-                    onCheckedChange={(checked) => updateChannel(channel.id, 'enabled', checked)}
+                    onCheckedChange={checked =>
+                      updateChannel(channel.id, 'enabled', checked)
+                    }
                   />
                 </div>
 
                 {channel.enabled && (
-                  <div className="space-y-4">
+                  <div className='space-y-4'>
                     {channel.type === 'email' && (
-                      <div className="space-y-2">
+                      <div className='space-y-2'>
                         <Label htmlFor={`email-recipients-${channel.id}`}>
                           E-mails para notificação (separados por vírgula)
                         </Label>
                         <Input
                           id={`email-recipients-${channel.id}`}
                           value={(channel.config.recipients || []).join(', ')}
-                          onChange={(e) => updateChannelConfig(
-                            channel.id, 
-                            'recipients', 
-                            e.target.value.split(',').map(email => email.trim())
-                          )}
-                          placeholder="admin@sispat.com, ops@sispat.com"
+                          onChange={e =>
+                            updateChannelConfig(
+                              channel.id,
+                              'recipients',
+                              e.target.value
+                                .split(',')
+                                .map(email => email.trim())
+                            )
+                          }
+                          placeholder='admin@sispat.com, ops@sispat.com'
                         />
                       </div>
                     )}
 
                     {channel.type === 'webhook' && (
-                      <div className="space-y-2">
+                      <div className='space-y-2'>
                         <Label htmlFor={`webhook-url-${channel.id}`}>
                           URL do Webhook
                         </Label>
                         <Input
                           id={`webhook-url-${channel.id}`}
                           value={channel.config.url || ''}
-                          onChange={(e) => updateChannelConfig(channel.id, 'url', e.target.value)}
-                          placeholder="https://hooks.slack.com/services/..."
+                          onChange={e =>
+                            updateChannelConfig(
+                              channel.id,
+                              'url',
+                              e.target.value
+                            )
+                          }
+                          placeholder='https://hooks.slack.com/services/...'
                         />
                       </div>
                     )}
@@ -438,29 +497,42 @@ export function AlertSettings() {
           <CardTitle>Resumo das Configurações</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <div>
-              <h4 className="font-medium mb-2">Alertas Ativos</h4>
-              <div className="space-y-1">
-                {thresholds.filter(t => t.enabled).map(threshold => (
-                  <div key={threshold.id} className="text-sm">
-                    <span className="font-medium">{threshold.name}:</span>{' '}
-                    <span className="text-yellow-600">{threshold.warning}{threshold.unit}</span>
-                    {' / '}
-                    <span className="text-red-600">{threshold.critical}{threshold.unit}</span>
-                  </div>
-                ))}
+              <h4 className='font-medium mb-2'>Alertas Ativos</h4>
+              <div className='space-y-1'>
+                {thresholds
+                  .filter(t => t.enabled)
+                  .map(threshold => (
+                    <div key={threshold.id} className='text-sm'>
+                      <span className='font-medium'>{threshold.name}:</span>{' '}
+                      <span className='text-yellow-600'>
+                        {threshold.warning}
+                        {threshold.unit}
+                      </span>
+                      {' / '}
+                      <span className='text-red-600'>
+                        {threshold.critical}
+                        {threshold.unit}
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
             <div>
-              <h4 className="font-medium mb-2">Canais Ativos</h4>
-              <div className="space-y-1">
-                {channels.filter(c => c.enabled).map(channel => (
-                  <div key={channel.id} className="text-sm flex items-center space-x-1">
-                    {getChannelIcon(channel.type)}
-                    <span>{channel.name}</span>
-                  </div>
-                ))}
+              <h4 className='font-medium mb-2'>Canais Ativos</h4>
+              <div className='space-y-1'>
+                {channels
+                  .filter(c => c.enabled)
+                  .map(channel => (
+                    <div
+                      key={channel.id}
+                      className='text-sm flex items-center space-x-1'
+                    >
+                      {getChannelIcon(channel.type)}
+                      <span>{channel.name}</span>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>

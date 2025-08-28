@@ -1,6 +1,6 @@
 /**
  * Padrão Repository - Abstração de Acesso a Dados
- * 
+ *
  * Fornece uma interface uniforme para acesso a dados,
  * independente da fonte (banco de dados, API, cache, etc.)
  */
@@ -36,7 +36,8 @@ export interface PaginatedResult<T> {
   };
 }
 
-export interface PaginatedRepository<T extends BaseEntity> extends Repository<T> {
+export interface PaginatedRepository<T extends BaseEntity>
+  extends Repository<T> {
   findPaginated(
     page: number,
     limit: number,
@@ -53,7 +54,9 @@ export interface PaginatedRepository<T extends BaseEntity> extends Repository<T>
 /**
  * Repository Base Abstrato
  */
-export abstract class BaseRepository<T extends BaseEntity> implements Repository<T> {
+export abstract class BaseRepository<T extends BaseEntity>
+  implements Repository<T>
+{
   protected abstract tableName: string;
   protected abstract primaryKey: string;
 
@@ -118,7 +121,9 @@ export abstract class BaseRepository<T extends BaseEntity> implements Repository
     try {
       const fields = Object.keys(data);
       const values = Object.values(data);
-      const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
+      const setClause = fields
+        .map((field, index) => `${field} = $${index + 2}`)
+        .join(', ');
 
       const sql = `
         UPDATE ${this.tableName}
@@ -157,7 +162,10 @@ export abstract class BaseRepository<T extends BaseEntity> implements Repository
       const result = await this.query(sql, [id]);
       return result.rows.length > 0;
     } catch (error) {
-      console.error(`Erro ao verificar existência de ${this.tableName}:`, error);
+      console.error(
+        `Erro ao verificar existência de ${this.tableName}:`,
+        error
+      );
       throw error;
     }
   }
@@ -194,10 +202,10 @@ export abstract class BaseRepository<T extends BaseEntity> implements Repository
 /**
  * Repository Paginado
  */
-export abstract class PaginatedBaseRepository<T extends BaseEntity> 
-  extends BaseRepository<T> 
-  implements PaginatedRepository<T> {
-  
+export abstract class PaginatedBaseRepository<T extends BaseEntity>
+  extends BaseRepository<T>
+  implements PaginatedRepository<T>
+{
   async findPaginated(
     page: number,
     limit: number,
@@ -207,7 +215,7 @@ export abstract class PaginatedBaseRepository<T extends BaseEntity>
   ): Promise<PaginatedResult<T>> {
     try {
       const offset = (page - 1) * limit;
-      
+
       // Construir query base
       let baseSql = `FROM ${this.tableName} WHERE deleted_at IS NULL`;
       const params: any[] = [];
@@ -233,11 +241,11 @@ export abstract class PaginatedBaseRepository<T extends BaseEntity>
 
       // Buscar dados
       let dataSql = `SELECT * ${baseSql}`;
-      
+
       if (sortBy) {
         dataSql += ` ORDER BY ${String(sortBy)} ${sortOrder.toUpperCase()}`;
       }
-      
+
       dataSql += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
       params.push(limit, offset);
 
@@ -249,8 +257,8 @@ export abstract class PaginatedBaseRepository<T extends BaseEntity>
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit)
-        }
+          totalPages: Math.ceil(total / limit),
+        },
       };
     } catch (error) {
       console.error(`Erro ao buscar ${this.tableName} paginado:`, error);
@@ -280,7 +288,7 @@ export class PatrimonioRepository extends PaginatedBaseRepository<any> {
         WHERE p.municipality_id = $1 AND p.deleted_at IS NULL
         ORDER BY p.created_at DESC
       `;
-      
+
       const result = await this.query(sql, [municipalityId]);
       return result.rows;
     } catch (error) {
@@ -299,7 +307,7 @@ export class PatrimonioRepository extends PaginatedBaseRepository<any> {
         WHERE p.sector_id = $1 AND p.deleted_at IS NULL
         ORDER BY p.created_at DESC
       `;
-      
+
       const result = await this.query(sql, [sectorId]);
       return result.rows;
     } catch (error) {
@@ -322,7 +330,7 @@ export class PatrimonioRepository extends PaginatedBaseRepository<any> {
           p.modelo ILIKE $1
         )
       `;
-      
+
       const params = [`%${query}%`];
 
       if (filters?.municipality) {
@@ -418,12 +426,16 @@ export class RepositoryFactory {
 // ============================================================================
 
 export function Cached(ttl: number = 300) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
     const method = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
       const cacheKey = `${target.constructor.name}_${propertyName}_${JSON.stringify(args)}`;
-      
+
       // Tentar buscar do cache
       const cached = await this.getFromCache(cacheKey);
       if (cached) {
@@ -432,10 +444,10 @@ export function Cached(ttl: number = 300) {
 
       // Executar método original
       const result = await method.apply(this, args);
-      
+
       // Salvar no cache
       await this.setInCache(cacheKey, result, ttl);
-      
+
       return result;
     };
   };
@@ -452,5 +464,5 @@ export {
   PaginatedBaseRepository,
   PatrimonioRepository,
   UserRepository,
-  RepositoryFactory
+  RepositoryFactory,
 };

@@ -11,7 +11,7 @@ const httpRequestsTotal = new promClient.Counter({
   name: 'http_requests_total',
   help: 'Total de requisições HTTP',
   labelNames: ['method', 'route', 'status_code'],
-  registers: [register]
+  registers: [register],
 });
 
 const httpRequestDuration = new promClient.Histogram({
@@ -19,7 +19,7 @@ const httpRequestDuration = new promClient.Histogram({
   help: 'Duração das requisições HTTP',
   labelNames: ['method', 'route'],
   buckets: [0.1, 0.5, 1, 2, 5, 10],
-  registers: [register]
+  registers: [register],
 });
 
 // Contadores para autenticação
@@ -27,7 +27,7 @@ const authAttemptsTotal = new promClient.Counter({
   name: 'auth_attempts_total',
   help: 'Total de tentativas de autenticação',
   labelNames: ['success', 'method'],
-  registers: [register]
+  registers: [register],
 });
 
 // Contadores para operações de banco de dados
@@ -35,7 +35,7 @@ const dbOperationsTotal = new promClient.Counter({
   name: 'db_operations_total',
   help: 'Total de operações no banco de dados',
   labelNames: ['operation', 'table', 'success'],
-  registers: [register]
+  registers: [register],
 });
 
 const dbOperationDuration = new promClient.Histogram({
@@ -43,7 +43,7 @@ const dbOperationDuration = new promClient.Histogram({
   help: 'Duração das operações no banco de dados',
   labelNames: ['operation', 'table'],
   buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
-  registers: [register]
+  registers: [register],
 });
 
 // Contadores para cache
@@ -51,34 +51,34 @@ const cacheOperationsTotal = new promClient.Counter({
   name: 'cache_operations_total',
   help: 'Total de operações de cache',
   labelNames: ['operation', 'cache_type', 'hit'],
-  registers: [register]
+  registers: [register],
 });
 
 // Gauge para usuários ativos
 const activeUsers = new promClient.Gauge({
   name: 'active_users_total',
   help: 'Número de usuários ativos',
-  registers: [register]
+  registers: [register],
 });
 
 // Gauge para patrimônios
 const totalPatrimonios = new promClient.Gauge({
   name: 'patrimonios_total',
   help: 'Total de patrimônios no sistema',
-  registers: [register]
+  registers: [register],
 });
 
 // Gauge para memória do sistema
 const systemMemoryUsage = new promClient.Gauge({
   name: 'system_memory_usage_bytes',
   help: 'Uso de memória do sistema',
-  registers: [register]
+  registers: [register],
 });
 
 const systemCpuUsage = new promClient.Gauge({
   name: 'system_cpu_usage_percent',
   help: 'Uso de CPU do sistema',
-  registers: [register]
+  registers: [register],
 });
 
 // Contadores para erros
@@ -86,7 +86,7 @@ const errorsTotal = new promClient.Counter({
   name: 'errors_total',
   help: 'Total de erros no sistema',
   labelNames: ['type', 'severity'],
-  registers: [register]
+  registers: [register],
 });
 
 // Contadores para uploads
@@ -94,7 +94,7 @@ const uploadsTotal = new promClient.Counter({
   name: 'uploads_total',
   help: 'Total de uploads de arquivos',
   labelNames: ['type', 'success'],
-  registers: [register]
+  registers: [register],
 });
 
 const uploadSize = new promClient.Histogram({
@@ -102,7 +102,7 @@ const uploadSize = new promClient.Histogram({
   help: 'Tamanho dos arquivos enviados',
   labelNames: ['type'],
   buckets: [1024, 10240, 102400, 1048576, 10485760], // 1KB, 10KB, 100KB, 1MB, 10MB
-  registers: [register]
+  registers: [register],
 });
 
 // Funções auxiliares para incrementar métricas
@@ -132,25 +132,29 @@ const metrics = {
 
   // Métricas de cache
   incrementCacheOperation: (operation, cacheType, hit) => {
-    cacheOperationsTotal.inc({ operation, cache_type: cacheType, hit: hit.toString() });
+    cacheOperationsTotal.inc({
+      operation,
+      cache_type: cacheType,
+      hit: hit.toString(),
+    });
   },
 
   // Métricas de usuários
-  setActiveUsers: (count) => {
+  setActiveUsers: count => {
     activeUsers.set(count);
   },
 
   // Métricas de patrimônios
-  setTotalPatrimonios: (count) => {
+  setTotalPatrimonios: count => {
     totalPatrimonios.set(count);
   },
 
   // Métricas do sistema
-  setSystemMemoryUsage: (bytes) => {
+  setSystemMemoryUsage: bytes => {
     systemMemoryUsage.set(bytes);
   },
 
-  setSystemCpuUsage: (percent) => {
+  setSystemCpuUsage: percent => {
     systemCpuUsage.set(percent);
   },
 
@@ -200,7 +204,7 @@ const metrics = {
   // Função para limpar métricas (útil para testes)
   clearMetrics: () => {
     register.clear();
-  }
+  },
 };
 
 module.exports = metrics;

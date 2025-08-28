@@ -9,38 +9,51 @@ export * from './websocket';
 
 // Re-exportar principais classes e funções
 export {
-    PerformanceMonitor, getPrometheusMetrics, performanceMonitor, recordCustomMetric, updateMemoryMetrics
+  PerformanceMonitor,
+  getPrometheusMetrics,
+  performanceMonitor,
+  recordCustomMetric,
+  updateMemoryMetrics,
 } from './performanceMetrics';
 
 export {
-    apiPerformanceMiddleware,
-    errorTrackingMiddleware, healthCheckMiddleware, performanceMiddleware, slowQueryMiddleware
+  apiPerformanceMiddleware,
+  errorTrackingMiddleware,
+  healthCheckMiddleware,
+  performanceMiddleware,
+  slowQueryMiddleware,
 } from './middleware';
 
 export {
-    SystemMonitor, checkAlerts, getSystemInfo, getSystemMetrics, systemMonitor
+  SystemMonitor,
+  checkAlerts,
+  getSystemInfo,
+  getSystemMetrics,
+  systemMonitor,
 } from './systemMetrics';
 
-export {
-    MonitoringWebSocketServer,
-    monitoringWS
-} from './websocket';
+export { MonitoringWebSocketServer, monitoringWS } from './websocket';
 
 export {
-    DatabaseMonitor,
-    databaseMonitor,
-    monitoredQuery,
-    setSlowQueryThreshold
+  DatabaseMonitor,
+  databaseMonitor,
+  monitoredQuery,
+  setSlowQueryThreshold,
 } from './databaseMonitoring';
 
 export {
-    FrontendMetricsCollector,
-    frontendMetrics, getMetricsSummary, initializeFrontendMetrics, useFrontendMetrics
+  FrontendMetricsCollector,
+  frontendMetrics,
+  getMetricsSummary,
+  initializeFrontendMetrics,
+  useFrontendMetrics,
 } from './frontendMetrics';
 
 export {
-    ExpressMonitoringIntegration, createDatabaseWrapper, setupCompleteMonitoring, setupPostgreSQLMonitoring,
-    setupPrismaMonitoring,
-    setupSequelizeMonitoring
+  ExpressMonitoringIntegration,
+  createDatabaseWrapper,
+  setupCompleteMonitoring,
+  setupPostgreSQLMonitoring,
+  setupPrismaMonitoring,
+  setupSequelizeMonitoring,
 } from './expressIntegration';
-

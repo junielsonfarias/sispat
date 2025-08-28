@@ -17,7 +17,7 @@ class AdvancedSearchEngine {
       fuzzy: this.fuzzySearch.bind(this),
       tag: this.tagSearch.bind(this),
       geo: this.geoSearch.bind(this),
-      semantic: this.semanticSearch.bind(this)
+      semantic: this.semanticSearch.bind(this),
     };
   }
 
@@ -31,12 +31,12 @@ class AdvancedSearchEngine {
       filters = {},
       limit = 50,
       offset = 0,
-      useCache = true
+      useCache = true,
     } = options;
 
     try {
       const cacheKey = `search:${type}:${JSON.stringify(query)}:${JSON.stringify(options)}`;
-      
+
       if (useCache) {
         const cached = await intelligentCache.get(cacheKey);
         if (cached) {
@@ -45,13 +45,25 @@ class AdvancedSearchEngine {
       }
 
       let results = [];
-      
+
       // Aplicar estratégia de busca
       if (this.searchStrategies[strategy]) {
-        results = await this.searchStrategies[strategy](query, type, filters, limit, offset);
+        results = await this.searchStrategies[strategy](
+          query,
+          type,
+          filters,
+          limit,
+          offset
+        );
       } else {
         // Busca combinada
-        results = await this.combinedSearch(query, type, filters, limit, offset);
+        results = await this.combinedSearch(
+          query,
+          type,
+          filters,
+          limit,
+          offset
+        );
       }
 
       // Aplicar filtros adicionais
@@ -72,8 +84,8 @@ class AdvancedSearchEngine {
         metadata: {
           searchTime: Date.now(),
           strategy: strategy,
-          cacheHit: false
-        }
+          cacheHit: false,
+        },
       };
 
       // Cache do resultado
@@ -81,9 +93,10 @@ class AdvancedSearchEngine {
         await intelligentCache.set(cacheKey, searchResult, { ttl: 300 });
       }
 
-      logInfo(`Busca executada: ${strategy} para "${query}" - ${results.length} resultados`);
+      logInfo(
+        `Busca executada: ${strategy} para "${query}" - ${results.length} resultados`
+      );
       return searchResult;
-
     } catch (error) {
       logError('Erro na busca avançada:', error);
       throw error;
@@ -95,7 +108,7 @@ class AdvancedSearchEngine {
    */
   async fullTextSearch(query, type, filters, limit, offset) {
     const searchTerms = this.tokenizeQuery(query);
-    
+
     let sql = '';
     let params = [];
 
@@ -172,7 +185,7 @@ class AdvancedSearchEngine {
    */
   async fuzzySearch(query, type, filters, limit, offset) {
     const searchTerms = this.tokenizeQuery(query);
-    
+
     let sql = '';
     let params = [];
 
@@ -310,11 +323,17 @@ class AdvancedSearchEngine {
     // Implementação básica - pode ser expandida com IA
     const synonyms = this.getSynonyms(query);
     const expandedQuery = [...new Set([query, ...synonyms])];
-    
+
     const results = [];
-    
+
     for (const term of expandedQuery) {
-      const termResults = await this.fullTextSearch(term, type, filters, limit, offset);
+      const termResults = await this.fullTextSearch(
+        term,
+        type,
+        filters,
+        limit,
+        offset
+      );
       results.push(...termResults);
     }
 
@@ -332,7 +351,13 @@ class AdvancedSearchEngine {
 
     for (const strategy of strategies) {
       try {
-        const results = await this.searchStrategies[strategy](query, type, filters, limit, offset);
+        const results = await this.searchStrategies[strategy](
+          query,
+          type,
+          filters,
+          limit,
+          offset
+        );
         allResults.push(...results);
       } catch (error) {
         logError(`Erro na estratégia ${strategy}:`, error);
@@ -407,10 +432,10 @@ class AdvancedSearchEngine {
    */
   getSynonyms(term) {
     const synonymMap = {
-      'computador': ['pc', 'desktop', 'notebook', 'laptop'],
-      'mesa': ['cadeira', 'mobiliário', 'escritório'],
-      'carro': ['automóvel', 'veículo', 'transporte'],
-      'edifício': ['prédio', 'construção', 'imóvel']
+      computador: ['pc', 'desktop', 'notebook', 'laptop'],
+      mesa: ['cadeira', 'mobiliário', 'escritório'],
+      carro: ['automóvel', 'veículo', 'transporte'],
+      edifício: ['prédio', 'construção', 'imóvel'],
     };
 
     return synonymMap[term.toLowerCase()] || [];
@@ -462,7 +487,6 @@ class AdvancedSearchEngine {
 
       await intelligentCache.set(cacheKey, suggestions, { ttl: 600 });
       return suggestions;
-
     } catch (error) {
       logError('Erro ao obter sugestões:', error);
       return [];

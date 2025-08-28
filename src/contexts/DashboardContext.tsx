@@ -5,33 +5,33 @@ import {
   ReactNode,
   useEffect,
   useCallback,
-} from 'react'
-import { generateId } from '@/lib/utils'
+} from 'react';
+import { generateId } from '@/lib/utils';
 
 export interface WidgetConfig {
-  id: string
+  id: string;
   component:
     | 'StatsCardsWidget'
     | 'StatusChartWidget'
     | 'TypeChartWidget'
     | 'RecentActivityWidget'
     | 'PendingTasksWidget'
-    | 'ImoveisWidget'
-  title: string
-  description: string
+    | 'ImoveisWidget';
+  title: string;
+  description: string;
 }
 
 interface DashboardContextType {
-  widgets: WidgetConfig[]
-  availableWidgets: WidgetConfig[]
-  addWidget: (component: WidgetConfig['component']) => void
-  removeWidget: (widgetId: string) => void
-  moveWidget: (dragIndex: number, hoverIndex: number) => void
+  widgets: WidgetConfig[];
+  availableWidgets: WidgetConfig[];
+  addWidget: (component: WidgetConfig['component']) => void;
+  removeWidget: (widgetId: string) => void;
+  moveWidget: (dragIndex: number, hoverIndex: number) => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
-  undefined,
-)
+  undefined
+);
 
 const ALL_WIDGETS: WidgetConfig[] = [
   {
@@ -70,78 +70,78 @@ const ALL_WIDGETS: WidgetConfig[] = [
     title: 'Pendências e Alertas',
     description: 'Bens em manutenção e inventários em andamento.',
   },
-]
+];
 
 const DEFAULT_WIDGETS: WidgetConfig[] = [
   ALL_WIDGETS[0],
   ALL_WIDGETS[1],
   ALL_WIDGETS[2],
   ALL_WIDGETS[4],
-]
+];
 
 export const DashboardProvider = ({ children }: { children: ReactNode }) => {
-  const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGETS)
+  const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGETS);
 
   useEffect(() => {
     try {
-      const savedWidgets = localStorage.getItem('dashboard-widgets')
+      const savedWidgets = localStorage.getItem('dashboard-widgets');
       if (savedWidgets) {
-        const parsedWidgets = JSON.parse(savedWidgets)
+        const parsedWidgets = JSON.parse(savedWidgets);
         const validWidgets = parsedWidgets
           .map((saved: any) => {
             const baseWidget = ALL_WIDGETS.find(
-              (w) => w.component === saved.component,
-            )
-            return baseWidget ? { ...baseWidget, id: saved.id } : null
+              w => w.component === saved.component
+            );
+            return baseWidget ? { ...baseWidget, id: saved.id } : null;
           })
-          .filter(Boolean) as WidgetConfig[]
-        setWidgets(validWidgets)
+          .filter(Boolean) as WidgetConfig[];
+        setWidgets(validWidgets);
       }
     } catch (error) {
       console.error(
         'Failed to parse dashboard widgets from localStorage',
-        error,
-      )
-      setWidgets(DEFAULT_WIDGETS)
+        error
+      );
+      setWidgets(DEFAULT_WIDGETS);
     }
-  }, [])
+  }, []);
 
   const saveWidgets = (newWidgets: WidgetConfig[]) => {
-    setWidgets(newWidgets)
-    localStorage.setItem('dashboard-widgets', JSON.stringify(newWidgets))
-  }
+    setWidgets(newWidgets);
+    localStorage.setItem('dashboard-widgets', JSON.stringify(newWidgets));
+  };
 
   const addWidget = useCallback(
     (component: WidgetConfig['component']) => {
-      const widgetToAdd = ALL_WIDGETS.find((w) => w.component === component)
-      if (widgetToAdd && !widgets.some((w) => w.component === component)) {
-        const newWidget = { ...widgetToAdd, id: generateId() }
-        saveWidgets([...widgets, newWidget])
+      const widgetToAdd = ALL_WIDGETS.find(w => w.component === component);
+      if (widgetToAdd && !widgets.some(w => w.component === component)) {
+        const newWidget = { ...widgetToAdd, id: generateId() };
+        saveWidgets([...widgets, newWidget]);
       }
     },
-    [widgets],
-  )
+    [widgets]
+  );
 
   const removeWidget = useCallback(
     (widgetId: string) => {
-      saveWidgets(widgets.filter((w) => w.id !== widgetId))
+      saveWidgets(widgets.filter(w => w.id !== widgetId));
     },
-    [widgets],
-  )
+    [widgets]
+  );
 
   const moveWidget = useCallback(
     (dragIndex: number, hoverIndex: number) => {
-      const newWidgets = [...widgets]
-      const [draggedItem] = newWidgets.splice(dragIndex, 1)
-      newWidgets.splice(hoverIndex, 0, draggedItem)
-      saveWidgets(newWidgets)
+      const newWidgets = [...widgets];
+      const [draggedItem] = newWidgets.splice(dragIndex, 1);
+      newWidgets.splice(hoverIndex, 0, draggedItem);
+      saveWidgets(newWidgets);
     },
-    [widgets],
-  )
+    [widgets]
+  );
 
   const availableWidgets = ALL_WIDGETS.filter(
-    (w) => !widgets.some((existing) => existing.component === w.component),
-  )
+    w => !widgets.some(existing => existing.component === w.component)
+  );
 
   return (
     <DashboardContext.Provider
@@ -149,13 +149,13 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     >
       {children}
     </DashboardContext.Provider>
-  )
-}
+  );
+};
 
 export const useDashboard = () => {
-  const context = useContext(DashboardContext)
+  const context = useContext(DashboardContext);
   if (context === undefined) {
-    throw new Error('useDashboard must be used within a DashboardProvider')
+    throw new Error('useDashboard must be used within a DashboardProvider');
   }
-  return context
-}
+  return context;
+};

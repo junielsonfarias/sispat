@@ -1,14 +1,14 @@
-import express from 'express'
-import { authenticateApiKey, rateLimitApi } from '../middleware/api-auth.js'
-import { logError, logInfo } from '../utils/logger.js'
-import { pool } from '../database/connection.js'
-import auditService from '../services/audit.js'
+import express from 'express';
+import { authenticateApiKey, rateLimitApi } from '../middleware/api-auth.js';
+import { logError, logInfo } from '../utils/logger.js';
+import { pool } from '../database/connection.js';
+import auditService from '../services/audit.js';
 
-const router = express.Router()
+const router = express.Router();
 
 // Middleware de autenticação por API key para todas as rotas
-router.use(authenticateApiKey)
-router.use(rateLimitApi)
+router.use(authenticateApiKey);
+router.use(rateLimitApi);
 
 // GET /api/external/health - Verificar status da API
 router.get('/health', (req, res) => {
@@ -16,23 +16,23 @@ router.get('/health', (req, res) => {
     status: 'OK',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    apiKey: req.apiKey ? req.apiKey.name : null
-  })
-})
+    apiKey: req.apiKey ? req.apiKey.name : null,
+  });
+});
 
 // GET /api/external/municipalities - Listar municípios públicos
 router.get('/municipalities', async (req, res) => {
   try {
-    const { limit = 100, offset = 0 } = req.query
+    const { limit = 100, offset = 0 } = req.query;
 
     const query = `
       SELECT id, name, state, created_at, updated_at
       FROM municipalities
       ORDER BY name
       LIMIT $1 OFFSET $2
-    `
+    `;
 
-    const result = await pool.query(query, [parseInt(limit), parseInt(offset)])
+    const result = await pool.query(query, [parseInt(limit), parseInt(offset)]);
 
     // Log de auditoria
     await auditService.logAuditEvent({
@@ -46,8 +46,8 @@ router.get('/municipalities', async (req, res) => {
       userAgent: req.get('User-Agent'),
       severity: 'info',
       category: 'api_access',
-      description: 'API externa acessou lista de municípios'
-    })
+      description: 'API externa acessou lista de municípios',
+    });
 
     res.json({
       success: true,
@@ -55,49 +55,54 @@ router.get('/municipalities', async (req, res) => {
       pagination: {
         limit: parseInt(limit),
         offset: parseInt(offset),
-        total: result.rows.length
-      }
-    })
+        total: result.rows.length,
+      },
+    });
   } catch (error) {
-    logError('Erro na API externa - municípios', error)
+    logError('Erro na API externa - municípios', error);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor'
-    })
+      error: 'Erro interno do servidor',
+    });
   }
-})
+});
 
 // GET /api/external/patrimonios - Listar patrimônios públicos
 router.get('/patrimonios', async (req, res) => {
   try {
-    const { 
-      municipalityId, 
-      limit = 100, 
+    const {
+      municipalityId,
+      limit = 100,
       offset = 0,
       search,
-      setor
-    } = req.query
+      setor,
+    } = req.query;
 
-    let whereConditions = ['deleted_at IS NULL']
-    let values = []
-    let valueIndex = 1
+    let whereConditions = ['deleted_at IS NULL'];
+    let values = [];
+    let valueIndex = 1;
 
     if (municipalityId) {
-      whereConditions.push(`municipality_id = $${valueIndex++}`)
-      values.push(municipalityId)
+      whereConditions.push(`municipality_id = $${valueIndex++}`);
+      values.push(municipalityId);
     }
 
     if (search) {
-      whereConditions.push(`(descricao ILIKE $${valueIndex++} OR numero_patrimonio ILIKE $${valueIndex++})`)
-      values.push(`%${search}%`, `%${search}%`)
+      whereConditions.push(
+        `(descricao ILIKE $${valueIndex++} OR numero_patrimonio ILIKE $${valueIndex++})`
+      );
+      values.push(`%${search}%`, `%${search}%`);
     }
 
     if (setor) {
-      whereConditions.push(`setor ILIKE $${valueIndex++}`)
-      values.push(`%${setor}%`)
+      whereConditions.push(`setor ILIKE $${valueIndex++}`);
+      values.push(`%${setor}%`);
     }
 
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(' AND ')}`
+        : '';
 
     const query = `
       SELECT 
@@ -110,11 +115,11 @@ router.get('/patrimonios', async (req, res) => {
       ${whereClause}
       ORDER BY p.numero_patrimonio
       LIMIT $${valueIndex++} OFFSET $${valueIndex++}
-    `
+    `;
 
-    values.push(parseInt(limit), parseInt(offset))
+    values.push(parseInt(limit), parseInt(offset));
 
-    const result = await pool.query(query, values)
+    const result = await pool.query(query, values);
 
     // Log de auditoria
     await auditService.logAuditEvent({
@@ -129,8 +134,8 @@ router.get('/patrimonios', async (req, res) => {
       severity: 'info',
       category: 'api_access',
       description: 'API externa acessou lista de patrimônios',
-      metadata: { filters: { municipalityId, search, setor } }
-    })
+      metadata: { filters: { municipalityId, search, setor } },
+    });
 
     res.json({
       success: true,
@@ -138,43 +143,43 @@ router.get('/patrimonios', async (req, res) => {
       pagination: {
         limit: parseInt(limit),
         offset: parseInt(offset),
-        total: result.rows.length
-      }
-    })
+        total: result.rows.length,
+      },
+    });
   } catch (error) {
-    logError('Erro na API externa - patrimônios', error)
+    logError('Erro na API externa - patrimônios', error);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor'
-    })
+      error: 'Erro interno do servidor',
+    });
   }
-})
+});
 
 // GET /api/external/imoveis - Listar imóveis públicos
 router.get('/imoveis', async (req, res) => {
   try {
-    const { 
-      municipalityId, 
-      limit = 100, 
-      offset = 0,
-      search
-    } = req.query
+    const { municipalityId, limit = 100, offset = 0, search } = req.query;
 
-    let whereConditions = []
-    let values = []
-    let valueIndex = 1
+    let whereConditions = [];
+    let values = [];
+    let valueIndex = 1;
 
     if (municipalityId) {
-      whereConditions.push(`i.municipality_id = $${valueIndex++}`)
-      values.push(municipalityId)
+      whereConditions.push(`i.municipality_id = $${valueIndex++}`);
+      values.push(municipalityId);
     }
 
     if (search) {
-      whereConditions.push(`(i.descricao ILIKE $${valueIndex++} OR i.numero_patrimonio ILIKE $${valueIndex++})`)
-      values.push(`%${search}%`, `%${search}%`)
+      whereConditions.push(
+        `(i.descricao ILIKE $${valueIndex++} OR i.numero_patrimonio ILIKE $${valueIndex++})`
+      );
+      values.push(`%${search}%`, `%${search}%`);
     }
 
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(' AND ')}`
+        : '';
 
     const query = `
       SELECT 
@@ -187,11 +192,11 @@ router.get('/imoveis', async (req, res) => {
       ${whereClause}
       ORDER BY i.numero_patrimonio
       LIMIT $${valueIndex++} OFFSET $${valueIndex++}
-    `
+    `;
 
-    values.push(parseInt(limit), parseInt(offset))
+    values.push(parseInt(limit), parseInt(offset));
 
-    const result = await pool.query(query, values)
+    const result = await pool.query(query, values);
 
     // Log de auditoria
     await auditService.logAuditEvent({
@@ -206,8 +211,8 @@ router.get('/imoveis', async (req, res) => {
       severity: 'info',
       category: 'api_access',
       description: 'API externa acessou lista de imóveis',
-      metadata: { filters: { municipalityId, search } }
-    })
+      metadata: { filters: { municipalityId, search } },
+    });
 
     res.json({
       success: true,
@@ -215,22 +220,22 @@ router.get('/imoveis', async (req, res) => {
       pagination: {
         limit: parseInt(limit),
         offset: parseInt(offset),
-        total: result.rows.length
-      }
-    })
+        total: result.rows.length,
+      },
+    });
   } catch (error) {
-    logError('Erro na API externa - imóveis', error)
+    logError('Erro na API externa - imóveis', error);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor'
-    })
+      error: 'Erro interno do servidor',
+    });
   }
-})
+});
 
 // GET /api/external/patrimonios/:id - Obter patrimônio específico
 router.get('/patrimonios/:id', async (req, res) => {
   try {
-    const { id } = req.params
+    const { id } = req.params;
 
     const query = `
       SELECT 
@@ -239,15 +244,15 @@ router.get('/patrimonios/:id', async (req, res) => {
       FROM patrimonios p
       LEFT JOIN municipalities m ON p.municipality_id = m.id
       WHERE p.id = $1 AND p.deleted_at IS NULL
-    `
+    `;
 
-    const result = await pool.query(query, [id])
+    const result = await pool.query(query, [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: 'Patrimônio não encontrado'
-      })
+        error: 'Patrimônio não encontrado',
+      });
     }
 
     // Log de auditoria
@@ -262,26 +267,26 @@ router.get('/patrimonios/:id', async (req, res) => {
       userAgent: req.get('User-Agent'),
       severity: 'info',
       category: 'api_access',
-      description: 'API externa acessou patrimônio específico'
-    })
+      description: 'API externa acessou patrimônio específico',
+    });
 
     res.json({
       success: true,
-      data: result.rows[0]
-    })
+      data: result.rows[0],
+    });
   } catch (error) {
-    logError('Erro na API externa - patrimônio específico', error)
+    logError('Erro na API externa - patrimônio específico', error);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor'
-    })
+      error: 'Erro interno do servidor',
+    });
   }
-})
+});
 
 // GET /api/external/imoveis/:id - Obter imóvel específico
 router.get('/imoveis/:id', async (req, res) => {
   try {
-    const { id } = req.params
+    const { id } = req.params;
 
     const query = `
       SELECT 
@@ -290,15 +295,15 @@ router.get('/imoveis/:id', async (req, res) => {
       FROM imoveis i
       LEFT JOIN municipalities m ON i.municipality_id = m.id
       WHERE i.id = $1
-    `
+    `;
 
-    const result = await pool.query(query, [id])
+    const result = await pool.query(query, [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: 'Imóvel não encontrado'
-      })
+        error: 'Imóvel não encontrado',
+      });
     }
 
     // Log de auditoria
@@ -313,67 +318,70 @@ router.get('/imoveis/:id', async (req, res) => {
       userAgent: req.get('User-Agent'),
       severity: 'info',
       category: 'api_access',
-      description: 'API externa acessou imóvel específico'
-    })
+      description: 'API externa acessou imóvel específico',
+    });
 
     res.json({
       success: true,
-      data: result.rows[0]
-    })
+      data: result.rows[0],
+    });
   } catch (error) {
-    logError('Erro na API externa - imóvel específico', error)
+    logError('Erro na API externa - imóvel específico', error);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor'
-    })
+      error: 'Erro interno do servidor',
+    });
   }
-})
+});
 
 // GET /api/external/stats - Estatísticas públicas
 router.get('/stats', async (req, res) => {
   try {
-    const { municipalityId } = req.query
+    const { municipalityId } = req.query;
 
-    let whereConditions = ['deleted_at IS NULL']
-    let values = []
-    let valueIndex = 1
+    let whereConditions = ['deleted_at IS NULL'];
+    let values = [];
+    let valueIndex = 1;
 
     if (municipalityId) {
-      whereConditions.push(`municipality_id = $${valueIndex++}`)
-      values.push(municipalityId)
+      whereConditions.push(`municipality_id = $${valueIndex++}`);
+      values.push(municipalityId);
     }
 
-    const whereClause = whereConditions.join(' AND ')
+    const whereClause = whereConditions.join(' AND ');
 
     const patrimoniosQuery = `
       SELECT COUNT(*) as total_patrimonios
       FROM patrimonios
       WHERE ${whereClause}
-    `
+    `;
 
     const imoveisQuery = `
       SELECT COUNT(*) as total_imoveis
       FROM imoveis
       ${municipalityId ? 'WHERE municipality_id = $1' : ''}
-    `
+    `;
 
     const municipalitiesQuery = `
       SELECT COUNT(*) as total_municipalities
       FROM municipalities
-    `
+    `;
 
-    const [patrimoniosResult, imoveisResult, municipalitiesResult] = await Promise.all([
-      pool.query(patrimoniosQuery, values),
-      pool.query(imoveisQuery, municipalityId ? [municipalityId] : []),
-      pool.query(municipalitiesQuery)
-    ])
+    const [patrimoniosResult, imoveisResult, municipalitiesResult] =
+      await Promise.all([
+        pool.query(patrimoniosQuery, values),
+        pool.query(imoveisQuery, municipalityId ? [municipalityId] : []),
+        pool.query(municipalitiesQuery),
+      ]);
 
     const stats = {
       total_patrimonios: parseInt(patrimoniosResult.rows[0].total_patrimonios),
       total_imoveis: parseInt(imoveisResult.rows[0].total_imoveis),
-      total_municipalities: parseInt(municipalitiesResult.rows[0].total_municipalities),
-      last_updated: new Date().toISOString()
-    }
+      total_municipalities: parseInt(
+        municipalitiesResult.rows[0].total_municipalities
+      ),
+      last_updated: new Date().toISOString(),
+    };
 
     // Log de auditoria
     await auditService.logAuditEvent({
@@ -387,40 +395,40 @@ router.get('/stats', async (req, res) => {
       userAgent: req.get('User-Agent'),
       severity: 'info',
       category: 'api_access',
-      description: 'API externa acessou estatísticas públicas'
-    })
+      description: 'API externa acessou estatísticas públicas',
+    });
 
     res.json({
       success: true,
-      data: stats
-    })
+      data: stats,
+    });
   } catch (error) {
-    logError('Erro na API externa - estatísticas', error)
+    logError('Erro na API externa - estatísticas', error);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor'
-    })
+      error: 'Erro interno do servidor',
+    });
   }
-})
+});
 
 // GET /api/external/search - Busca unificada
 router.get('/search', async (req, res) => {
   try {
-    const { q, type = 'all', limit = 50 } = req.query
+    const { q, type = 'all', limit = 50 } = req.query;
 
     if (!q) {
       return res.status(400).json({
         success: false,
-        error: 'Parâmetro de busca "q" é obrigatório'
-      })
+        error: 'Parâmetro de busca "q" é obrigatório',
+      });
     }
 
-    const searchTerm = `%${q}%`
+    const searchTerm = `%${q}%`;
     const results = {
       patrimonios: [],
       imoveis: [],
-      municipalities: []
-    }
+      municipalities: [],
+    };
 
     // Buscar patrimônios
     if (type === 'all' || type === 'patrimonios') {
@@ -435,9 +443,12 @@ router.get('/search', async (req, res) => {
           AND (p.descricao ILIKE $1 OR p.numero_patrimonio ILIKE $1)
         ORDER BY p.descricao
         LIMIT $2
-      `
-      const patrimoniosResult = await pool.query(patrimoniosQuery, [searchTerm, parseInt(limit)])
-      results.patrimonios = patrimoniosResult.rows
+      `;
+      const patrimoniosResult = await pool.query(patrimoniosQuery, [
+        searchTerm,
+        parseInt(limit),
+      ]);
+      results.patrimonios = patrimoniosResult.rows;
     }
 
     // Buscar imóveis
@@ -452,9 +463,12 @@ router.get('/search', async (req, res) => {
         WHERE i.descricao ILIKE $1 OR i.numero_patrimonio ILIKE $1
         ORDER BY i.descricao
         LIMIT $2
-      `
-      const imoveisResult = await pool.query(imoveisQuery, [searchTerm, parseInt(limit)])
-      results.imoveis = imoveisResult.rows
+      `;
+      const imoveisResult = await pool.query(imoveisQuery, [
+        searchTerm,
+        parseInt(limit),
+      ]);
+      results.imoveis = imoveisResult.rows;
     }
 
     // Buscar municípios
@@ -467,9 +481,12 @@ router.get('/search', async (req, res) => {
         WHERE name ILIKE $1
         ORDER BY name
         LIMIT $2
-      `
-      const municipalitiesResult = await pool.query(municipalitiesQuery, [searchTerm, parseInt(limit)])
-      results.municipalities = municipalitiesResult.rows
+      `;
+      const municipalitiesResult = await pool.query(municipalitiesQuery, [
+        searchTerm,
+        parseInt(limit),
+      ]);
+      results.municipalities = municipalitiesResult.rows;
     }
 
     // Log de auditoria
@@ -485,22 +502,26 @@ router.get('/search', async (req, res) => {
       severity: 'info',
       category: 'api_access',
       description: 'API externa realizou busca unificada',
-      metadata: { search: q, type, results_count: Object.values(results).flat().length }
-    })
+      metadata: {
+        search: q,
+        type,
+        results_count: Object.values(results).flat().length,
+      },
+    });
 
     res.json({
       success: true,
       data: results,
       search: q,
-      total_results: Object.values(results).flat().length
-    })
+      total_results: Object.values(results).flat().length,
+    });
   } catch (error) {
-    logError('Erro na API externa - busca', error)
+    logError('Erro na API externa - busca', error);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor'
-    })
+      error: 'Erro interno do servidor',
+    });
   }
-})
+});
 
-export default router
+export default router;

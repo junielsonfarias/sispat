@@ -1,87 +1,87 @@
-import { LabelPreview } from '@/components/LabelPreview'
+import { LabelPreview } from '@/components/LabelPreview';
 import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator
-} from '@/components/ui/breadcrumb'
-import { Button } from '@/components/ui/button'
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { ScrollArea } from '@/components/ui/scroll-area'
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-    SearchableSelect,
-    SearchableSelectOption,
-} from '@/components/ui/searchable-select'
+  SearchableSelect,
+  SearchableSelectOption,
+} from '@/components/ui/searchable-select';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import { useImovel } from '@/contexts/ImovelContext'
-import { useLabelTemplates } from '@/contexts/LabelTemplateContext'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { useDebounceValue } from '@/hooks/use-debounce'
-import { toast } from '@/hooks/use-toast'
-import { useAuth } from '@/hooks/useAuth'
-import { Imovel, Patrimonio } from '@/types'
-import { Printer, Search, Settings, X } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useImovel } from '@/contexts/ImovelContext';
+import { useLabelTemplates } from '@/contexts/LabelTemplateContext';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { useDebounceValue } from '@/hooks/use-debounce';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { Imovel, Patrimonio } from '@/types';
+import { Printer, Search, Settings, X } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-type Asset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
+type Asset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' };
 
 const GerarEtiquetas = () => {
-  const { patrimonios } = usePatrimonio()
-  const { imoveis } = useImovel()
-  const { templates } = useLabelTemplates()
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const [searchTerm, setSearchTerm] = useState('')
-  const debouncedSearchTerm = useDebounceValue(searchTerm, 300)
-  const [selectedItems, setSelectedItems] = useState<Asset[]>([])
+  const { patrimonios } = usePatrimonio();
+  const { imoveis } = useImovel();
+  const { templates } = useLabelTemplates();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounceValue(searchTerm, 300);
+  const [selectedItems, setSelectedItems] = useState<Asset[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
-    templates.find((t) => t.isDefault)?.id || templates[0]?.id || '',
-  )
-  const [assetType, setAssetType] = useState<'bem' | 'imovel'>('bem')
-  const printRef = useRef<HTMLDivElement>(null)
+    templates.find(t => t.isDefault)?.id || templates[0]?.id || ''
+  );
+  const [assetType, setAssetType] = useState<'bem' | 'imovel'>('bem');
+  const printRef = useRef<HTMLDivElement>(null);
 
-  const templateOptions: SearchableSelectOption[] = templates.map((t) => ({
+  const templateOptions: SearchableSelectOption[] = templates.map(t => ({
     value: t.id,
     label: t.name,
-  }))
+  }));
 
   const selectedTemplate = useMemo(
-    () => templates.find((t) => t.id === selectedTemplateId),
-    [templates, selectedTemplateId],
-  )
+    () => templates.find(t => t.id === selectedTemplateId),
+    [templates, selectedTemplateId]
+  );
 
   const combinedData: Asset[] = useMemo(() => {
     if (assetType === 'bem') {
-      return patrimonios.map((p) => ({ ...p, assetType: 'bem' }))
+      return patrimonios.map(p => ({ ...p, assetType: 'bem' }));
     } else {
-      return imoveis.map((i) => ({ ...i, assetType: 'imovel' }))
+      return imoveis.map(i => ({ ...i, assetType: 'imovel' }));
     }
-  }, [patrimonios, imoveis, assetType])
+  }, [patrimonios, imoveis, assetType]);
 
   const filteredData = useMemo(() => {
-    if (!debouncedSearchTerm) return combinedData
+    if (!debouncedSearchTerm) return combinedData;
     return combinedData.filter(
-      (p) =>
+      p =>
         (p.assetType === 'bem'
           ? (p as Patrimonio).descricao
           : (p as Imovel).denominacao
@@ -94,52 +94,52 @@ const GerarEtiquetas = () => {
           : (p as Imovel).setor
         )
           .toLowerCase()
-          .includes(debouncedSearchTerm.toLowerCase()),
-    )
-  }, [combinedData, debouncedSearchTerm])
+          .includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [combinedData, debouncedSearchTerm]);
 
   const handleSelectItem = (item: Asset, checked: boolean) => {
-    setSelectedItems((prev) =>
-      checked ? [...prev, item] : prev.filter((i) => i.id !== item.id),
-    )
-  }
+    setSelectedItems(prev =>
+      checked ? [...prev, item] : prev.filter(i => i.id !== item.id)
+    );
+  };
 
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank')
+    const printWindow = window.open('', '_blank');
     if (printWindow && printRef.current) {
       printWindow.document.write(
-        '<html><head><title>Imprimir Etiquetas</title>',
-      )
+        '<html><head><title>Imprimir Etiquetas</title>'
+      );
       document.head
         .querySelectorAll('link[rel="stylesheet"], style')
-        .forEach((el) => {
-          printWindow.document.head.appendChild(el.cloneNode(true))
-        })
-      printWindow.document.write('</head><body>')
-      printWindow.document.write(printRef.current.innerHTML)
-      printWindow.document.write('</body></html>')
-      printWindow.document.close()
+        .forEach(el => {
+          printWindow.document.head.appendChild(el.cloneNode(true));
+        });
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(printRef.current.innerHTML);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
       setTimeout(() => {
-        printWindow.focus()
-        printWindow.print()
-        printWindow.close()
-      }, 500)
-      toast({ description: 'Preparando etiquetas para impressão.' })
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }, 500);
+      toast({ description: 'Preparando etiquetas para impressão.' });
     } else {
       toast({
         variant: 'destructive',
         title: 'Erro',
         description: 'Não foi possível abrir a janela de impressão.',
-      })
+      });
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <Link to="/">Dashboard</Link>
+            <Link to='/'>Dashboard</Link>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -147,62 +147,60 @@ const GerarEtiquetas = () => {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2">
+      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 items-start'>
+        <div className='lg:col-span-2'>
           <Card>
             <CardHeader>
               <CardTitle>Selecionar Itens</CardTitle>
               <CardDescription>
                 Escolha os itens para os quais deseja gerar etiquetas.
               </CardDescription>
-              <div className="pt-4 space-y-4">
+              <div className='pt-4 space-y-4'>
                 <RadioGroup
                   value={assetType}
-                  onValueChange={(v) => {
-                    setAssetType(v as 'bem' | 'imovel')
-                    setSelectedItems([])
+                  onValueChange={v => {
+                    setAssetType(v as 'bem' | 'imovel');
+                    setSelectedItems([]);
                   }}
-                  className="flex gap-4"
+                  className='flex gap-4'
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="bem" id="bem" />
-                    <Label htmlFor="bem">Bens Móveis</Label>
+                  <div className='flex items-center space-x-2'>
+                    <RadioGroupItem value='bem' id='bem' />
+                    <Label htmlFor='bem'>Bens Móveis</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="imovel" id="imovel" />
-                    <Label htmlFor="imovel">Imóveis</Label>
+                  <div className='flex items-center space-x-2'>
+                    <RadioGroupItem value='imovel' id='imovel' />
+                    <Label htmlFor='imovel'>Imóveis</Label>
                   </div>
                 </RadioGroup>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className='relative'>
+                  <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
                   <Input
-                    placeholder="Buscar por número, descrição ou setor..."
-                    className="pl-10"
+                    placeholder='Buscar por número, descrição ou setor...'
+                    className='pl-10'
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={e => setSearchTerm(e.target.value)}
                   />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[60vh]">
+              <ScrollArea className='h-[60vh]'>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[40px]"></TableHead>
+                      <TableHead className='w-[40px]'></TableHead>
                       <TableHead>Nº Patrimônio</TableHead>
                       <TableHead>Descrição/Denominação</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredData.map((item) => (
+                    {filteredData.map(item => (
                       <TableRow key={item.id}>
                         <TableCell>
                           <Checkbox
-                            checked={selectedItems.some(
-                              (i) => i.id === item.id,
-                            )}
-                            onCheckedChange={(checked) =>
+                            checked={selectedItems.some(i => i.id === item.id)}
+                            onCheckedChange={checked =>
                               handleSelectItem(item, !!checked)
                             }
                           />
@@ -221,75 +219,75 @@ const GerarEtiquetas = () => {
             </CardContent>
           </Card>
         </div>
-        <div className="lg:col-span-1 sticky top-24">
+        <div className='lg:col-span-1 sticky top-24'>
           <Card>
             <CardHeader>
               <CardTitle>Etiquetas para Impressão</CardTitle>
               <CardDescription>
                 {selectedItems.length} etiqueta(s) selecionada(s).
               </CardDescription>
-              <div className="pt-4 space-y-2">
+              <div className='pt-4 space-y-2'>
                 <SearchableSelect
                   options={templateOptions}
                   value={selectedTemplateId}
-                  onChange={(value) =>
+                  onChange={value =>
                     setSelectedTemplateId(value || templates[0]?.id || '')
                   }
-                  placeholder="Selecione um modelo"
+                  placeholder='Selecione um modelo'
                 />
                 {user?.role === 'supervisor' && (
                   <Button
-                    variant="outline"
-                    className="w-full"
+                    variant='outline'
+                    className='w-full'
                     onClick={() => navigate('/etiquetas/templates')}
                   >
-                    <Settings className="mr-2 h-4 w-4" /> Gerenciar Modelos
+                    <Settings className='mr-2 h-4 w-4' /> Gerenciar Modelos
                   </Button>
                 )}
               </div>
             </CardHeader>
             <CardContent>
               {selectedItems.length > 0 ? (
-                <ScrollArea className="h-80 border rounded-md p-2">
-                  <div className="space-y-2">
-                    {selectedItems.map((item) => (
+                <ScrollArea className='h-80 border rounded-md p-2'>
+                  <div className='space-y-2'>
+                    {selectedItems.map(item => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between text-sm p-2 bg-muted rounded"
+                        className='flex items-center justify-between text-sm p-2 bg-muted rounded'
                       >
                         <span>{item.numero_patrimonio}</span>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
+                          variant='ghost'
+                          size='icon'
+                          className='h-6 w-6'
                           onClick={() => handleSelectItem(item, false)}
                         >
-                          <X className="h-4 w-4" />
+                          <X className='h-4 w-4' />
                         </Button>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
               ) : (
-                <div className="h-80 flex items-center justify-center text-muted-foreground">
+                <div className='h-80 flex items-center justify-center text-muted-foreground'>
                   Nenhum item selecionado.
                 </div>
               )}
             </CardContent>
             <CardFooter>
               <Button
-                className="w-full"
+                className='w-full'
                 disabled={selectedItems.length === 0 || !selectedTemplate}
                 onClick={handlePrint}
               >
-                <Printer className="mr-2 h-4 w-4" /> Imprimir Selecionadas
+                <Printer className='mr-2 h-4 w-4' /> Imprimir Selecionadas
               </Button>
             </CardFooter>
           </Card>
         </div>
       </div>
-      <div className="hidden">
-        <div ref={printRef} className="print:block">
+      <div className='hidden'>
+        <div ref={printRef} className='print:block'>
           <style>{`
             @media print {
               @page { size: A4; margin: 1cm; }
@@ -306,10 +304,10 @@ const GerarEtiquetas = () => {
               }mm; page-break-inside: avoid; border: 1px solid #ccc; overflow: hidden; }
             }
           `}</style>
-          <div className="label-sheet">
+          <div className='label-sheet'>
             {selectedTemplate &&
-              selectedItems.map((item) => (
-                <div key={item.id} className="label-container">
+              selectedItems.map(item => (
+                <div key={item.id} className='label-container'>
                   <LabelPreview asset={item} template={selectedTemplate} />
                 </div>
               ))}
@@ -317,7 +315,7 @@ const GerarEtiquetas = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default GerarEtiquetas
+export default GerarEtiquetas;

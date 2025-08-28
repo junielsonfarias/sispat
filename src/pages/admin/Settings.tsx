@@ -1,20 +1,20 @@
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
-    Building,
-    DatabaseBackup,
-    Hash,
-    Image,
-    Palette,
-    ShieldCheck,
-    Users,
-} from 'lucide-react'
-import { Link } from 'react-router-dom'
+  Building,
+  DatabaseBackup,
+  Hash,
+  Image,
+  Palette,
+  ShieldCheck,
+  Users,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const settingsLinks = [
   {
@@ -59,20 +59,20 @@ const settingsLinks = [
     title: 'Logo Global',
     description: 'Configure a logo que será usada em todo o sistema.',
   },
-]
+];
 
 export default function Settings() {
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Configurações</h1>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {settingsLinks.map((link) => (
+    <div className='flex flex-col gap-6'>
+      <h1 className='text-2xl font-bold'>Configurações</h1>
+      <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+        {settingsLinks.map(link => (
           <Link to={link.to} key={link.to}>
-            <Card className="h-full hover:border-primary transition-colors">
+            <Card className='h-full hover:border-primary transition-colors'>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className='flex items-center justify-between'>
                   <CardTitle>{link.title}</CardTitle>
-                  <link.icon className="h-6 w-6 text-muted-foreground" />
+                  <link.icon className='h-6 w-6 text-muted-foreground' />
                 </div>
               </CardHeader>
               <CardContent>
@@ -83,5 +83,5 @@ export default function Settings() {
         ))}
       </div>
     </div>
-  )
+  );
 }

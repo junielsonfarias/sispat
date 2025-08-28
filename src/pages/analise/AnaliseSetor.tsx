@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartContainer,
   ChartTooltipContent,
   ChartTooltip,
-} from '@/components/ui/chart'
+} from '@/components/ui/chart';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,7 +13,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+} from '@/components/ui/breadcrumb';
 import {
   Radar,
   RadarChart,
@@ -21,38 +21,38 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Legend,
-} from 'recharts'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { useSectors } from '@/contexts/SectorContext'
-import { MultiSelect } from '@/components/ui/multi-select'
-import { formatCurrency } from '@/lib/utils'
+} from 'recharts';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { useSectors } from '@/contexts/SectorContext';
+import { MultiSelect } from '@/components/ui/multi-select';
+import { formatCurrency } from '@/lib/utils';
 
 const AnaliseSetor = () => {
-  const { patrimonios } = usePatrimonio()
-  const { sectors } = useSectors()
-  const [selectedSectors, setSelectedSectors] = useState<string[]>([])
+  const { patrimonios } = usePatrimonio();
+  const { sectors } = useSectors();
+  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
 
   const sectorOptions = useMemo(
-    () => sectors.map((s) => ({ value: s.name, label: s.name })),
-    [sectors],
-  )
+    () => sectors.map(s => ({ value: s.name, label: s.name })),
+    [sectors]
+  );
 
   const sectorStats = useMemo(() => {
-    return selectedSectors.map((sectorName) => {
+    return selectedSectors.map(sectorName => {
       const sectorPatrimonios = patrimonios.filter(
-        (p) => p.setor_responsavel === sectorName,
-      )
+        p => p.setor_responsavel === sectorName
+      );
       const totalValue = sectorPatrimonios.reduce(
         (acc, p) => acc + (parseFloat(p.valor_aquisicao) || 0),
-        0,
-      )
+        0
+      );
       return {
         name: sectorName,
         totalBens: sectorPatrimonios.length,
         totalValue,
-      }
-    })
-  }, [selectedSectors, patrimonios])
+      };
+    });
+  }, [selectedSectors, patrimonios]);
 
   const radarData = useMemo(() => {
     const subjects = [
@@ -60,46 +60,46 @@ const AnaliseSetor = () => {
       'Valor Total',
       'Diversidade de Tipos',
       'Conservação Média',
-    ]
-    const data = subjects.map((subject) => ({ subject }))
+    ];
+    const data = subjects.map(subject => ({ subject }));
 
-    sectorStats.forEach((stat) => {
+    sectorStats.forEach(stat => {
       const sectorPatrimonios = patrimonios.filter(
-        (p) => p.setor_responsavel === stat.name,
-      )
-      const diversity = new Set(sectorPatrimonios.map((p) => p.tipo)).size
+        p => p.setor_responsavel === stat.name
+      );
+      const diversity = new Set(sectorPatrimonios.map(p => p.tipo)).size;
       const conservationMap = {
         OTIMO: 5,
         BOM: 4,
         REGULAR: 3,
         RUIM: 2,
         PESSIMO: 1,
-      }
+      };
       const totalConservation = sectorPatrimonios.reduce(
         (acc, p) => acc + (conservationMap[p.situacao_bem] || 0),
-        0,
-      )
+        0
+      );
       const avgConservation =
         sectorPatrimonios.length > 0
           ? totalConservation / sectorPatrimonios.length
-          : 0
+          : 0;
 
-      data[0][stat.name] = stat.totalBens
-      data[1][stat.name] = stat.totalValue
-      data[2][stat.name] = diversity
-      data[3][stat.name] = avgConservation
-    })
+      data[0][stat.name] = stat.totalBens;
+      data[1][stat.name] = stat.totalValue;
+      data[2][stat.name] = diversity;
+      data[3][stat.name] = avgConservation;
+    });
 
-    return data
-  }, [sectorStats, patrimonios])
+    return data;
+  }, [sectorStats, patrimonios]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/">Dashboard</Link>
+              <Link to='/'>Dashboard</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -108,26 +108,26 @@ const AnaliseSetor = () => {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Análise por Setor</h1>
-        <div className="w-96">
+      <div className='flex items-center justify-between'>
+        <h1 className='text-2xl font-bold'>Análise por Setor</h1>
+        <div className='w-96'>
           <MultiSelect
             options={sectorOptions}
             selected={selectedSectors}
             onChange={setSelectedSectors}
-            placeholder="Selecione os setores para comparar"
+            placeholder='Selecione os setores para comparar'
           />
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {sectorStats.map((stat) => (
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
+        {sectorStats.map(stat => (
           <Card key={stat.name}>
             <CardHeader>
               <CardTitle>{stat.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{stat.totalBens} bens</p>
-              <p className="text-sm text-muted-foreground">
+              <p className='text-2xl font-bold'>{stat.totalBens} bens</p>
+              <p className='text-sm text-muted-foreground'>
                 {formatCurrency(stat.totalValue)}
               </p>
             </CardContent>
@@ -139,10 +139,10 @@ const AnaliseSetor = () => {
           <CardTitle>Comparativo de Indicadores</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={{}} className="h-[400px] w-full">
-            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+          <ChartContainer config={{}} className='h-[400px] w-full'>
+            <RadarChart cx='50%' cy='50%' outerRadius='80%' data={radarData}>
               <PolarGrid />
-              <PolarAngleAxis dataKey="subject" />
+              <PolarAngleAxis dataKey='subject' />
               <PolarRadiusAxis />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Legend />
@@ -161,7 +161,7 @@ const AnaliseSetor = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default AnaliseSetor
+export default AnaliseSetor;

@@ -35,10 +35,10 @@ class IntelligentCache {
   constructor(maxSize = 1000, storagePrefix = 'sispat_cache_') {
     this.maxSize = maxSize;
     this.storagePrefix = storagePrefix;
-    
+
     // Limpar cache expirado na inicialização
     this.cleanup();
-    
+
     // Limpar cache expirado a cada 5 minutos
     setInterval(() => this.cleanup(), 5 * 60 * 1000);
   }
@@ -47,7 +47,7 @@ class IntelligentCache {
     const {
       ttl = 5 * 60 * 1000, // 5 minutos por padrão
       version,
-      persistToStorage = false
+      persistToStorage = false,
     } = options;
 
     const entry: CacheEntry<T> = {
@@ -55,7 +55,7 @@ class IntelligentCache {
       timestamp: Date.now(),
       expiresAt: Date.now() + ttl,
       key,
-      version
+      version,
     };
 
     // Limitar tamanho do cache
@@ -71,7 +71,7 @@ class IntelligentCache {
         ttl: Math.floor(ttl / 1000), // Converter para segundos
         version,
         useMemory: true,
-        useRedis: true
+        useRedis: true,
       });
     } catch (error) {
       console.warn('Falha ao armazenar no cache avançado:', error);
@@ -80,10 +80,7 @@ class IntelligentCache {
     // Persistir no localStorage se solicitado
     if (persistToStorage) {
       try {
-        localStorage.setItem(
-          this.storagePrefix + key,
-          JSON.stringify(entry)
-        );
+        localStorage.setItem(this.storagePrefix + key, JSON.stringify(entry));
       } catch (error) {
         console.warn('Falha ao persistir cache no localStorage:', error);
       }
@@ -141,7 +138,10 @@ class IntelligentCache {
     return entry.data;
   }
 
-  async getAdvanced<T>(key: string, options: CacheOptions = {}): Promise<T | null> {
+  async getAdvanced<T>(
+    key: string,
+    options: CacheOptions = {}
+  ): Promise<T | null> {
     // Primeiro tentar cache local
     const localData = this.get<T>(key, options);
     if (localData) {
@@ -152,9 +152,9 @@ class IntelligentCache {
     try {
       const advancedData = await advancedCache.get<T>(key, {
         useMemory: true,
-        useRedis: true
+        useRedis: true,
       });
-      
+
       if (advancedData) {
         // Armazenar localmente para próximas consultas
         const ttl = options.ttl || 5 * 60 * 1000;
@@ -171,7 +171,9 @@ class IntelligentCache {
   }
 
   has(key: string): boolean {
-    return this.cache.has(key) && (this.cache.get(key)?.expiresAt || 0) > Date.now();
+    return (
+      this.cache.has(key) && (this.cache.get(key)?.expiresAt || 0) > Date.now()
+    );
   }
 
   delete(key: string): void {
@@ -186,7 +188,7 @@ class IntelligentCache {
   clear(): void {
     this.cache.clear();
     this.stats = { hits: 0, misses: 0 };
-    
+
     // Limpar localStorage
     try {
       const keys = Object.keys(localStorage);
@@ -207,7 +209,7 @@ class IntelligentCache {
       misses: this.stats.misses,
       hitRate: total > 0 ? this.stats.hits / total : 0,
       size: this.cache.size,
-      totalSize: this.maxSize
+      totalSize: this.maxSize,
     };
   }
 
@@ -262,7 +264,7 @@ export function useCache<T>(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isStale, setIsStale] = useState(false);
-  
+
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
 
@@ -270,64 +272,70 @@ export function useCache<T>(
     ttl = 5 * 60 * 1000,
     staleWhileRevalidate = true,
     version,
-    persistToStorage = false
+    persistToStorage = false,
   } = options;
 
-  const fetchData = useCallback(async (forceRefresh = false) => {
-    try {
-      // Verificar cache primeiro
-      if (!forceRefresh) {
-        const cached = globalCache.get<T>(key, { version, persistToStorage });
-        if (cached) {
-          setData(cached);
-          setError(null);
-          return cached;
+  const fetchData = useCallback(
+    async (forceRefresh = false) => {
+      try {
+        // Verificar cache primeiro
+        if (!forceRefresh) {
+          const cached = globalCache.get<T>(key, { version, persistToStorage });
+          if (cached) {
+            setData(cached);
+            setError(null);
+            return cached;
+          }
         }
-      }
 
-      setIsLoading(true);
-      setError(null);
+        setIsLoading(true);
+        setError(null);
 
-      const result = await fetcherRef.current();
-      
-      // Armazenar no cache
-      globalCache.set(key, result, { ttl, version, persistToStorage });
-      
-      setData(result);
-      setIsStale(false);
-      return result;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
-      
-      // Se temos dados stale e staleWhileRevalidate está habilitado, manter os dados
-      if (staleWhileRevalidate && data) {
-        setIsStale(true);
-      } else {
-        setData(null);
+        const result = await fetcherRef.current();
+
+        // Armazenar no cache
+        globalCache.set(key, result, { ttl, version, persistToStorage });
+
+        setData(result);
+        setIsStale(false);
+        return result;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+
+        // Se temos dados stale e staleWhileRevalidate está habilitado, manter os dados
+        if (staleWhileRevalidate && data) {
+          setIsStale(true);
+        } else {
+          setData(null);
+        }
+
+        throw error;
+      } finally {
+        setIsLoading(false);
       }
-      
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [key, ttl, version, persistToStorage, staleWhileRevalidate, data]);
+    },
+    [key, ttl, version, persistToStorage, staleWhileRevalidate, data]
+  );
 
   // Carregar dados na inicialização
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const mutate = useCallback(async (newData?: T) => {
-    if (newData !== undefined) {
-      // Atualização otimista
-      setData(newData);
-      globalCache.set(key, newData, { ttl, version, persistToStorage });
-    } else {
-      // Revalidar
-      await fetchData(true);
-    }
-  }, [key, ttl, version, persistToStorage, fetchData]);
+  const mutate = useCallback(
+    async (newData?: T) => {
+      if (newData !== undefined) {
+        // Atualização otimista
+        setData(newData);
+        globalCache.set(key, newData, { ttl, version, persistToStorage });
+      } else {
+        // Revalidar
+        await fetchData(true);
+      }
+    },
+    [key, ttl, version, persistToStorage, fetchData]
+  );
 
   const invalidate = useCallback(() => {
     globalCache.delete(key);
@@ -342,14 +350,17 @@ export function useCache<T>(
     isStale,
     mutate,
     invalidate,
-    refetch: () => fetchData(true)
+    refetch: () => fetchData(true),
   };
 }
 
 // Hook para cache de lista com paginação
 export function usePaginatedCache<T>(
   baseKey: string,
-  fetcher: (page: number, pageSize: number) => Promise<{ data: T[]; total: number }>,
+  fetcher: (
+    page: number,
+    pageSize: number
+  ) => Promise<{ data: T[]; total: number }>,
   options: CacheOptions & { pageSize?: number } = {}
 ) {
   const { pageSize = 20, ...cacheOptions } = options;
@@ -358,17 +369,13 @@ export function usePaginatedCache<T>(
   const [total, setTotal] = useState(0);
 
   const pageKey = `${baseKey}_page_${currentPage}_size_${pageSize}`;
-  
+
   const {
     data: pageData,
     isLoading,
     error,
-    mutate
-  } = useCache(
-    pageKey,
-    () => fetcher(currentPage, pageSize),
-    cacheOptions
-  );
+    mutate,
+  } = useCache(pageKey, () => fetcher(currentPage, pageSize), cacheOptions);
 
   useEffect(() => {
     if (pageData) {
@@ -409,7 +416,7 @@ export function usePaginatedCache<T>(
     mutate,
     invalidateAll,
     hasNextPage: currentPage * pageSize < total,
-    hasPrevPage: currentPage > 1
+    hasPrevPage: currentPage > 1,
   };
 }
 
@@ -436,7 +443,7 @@ export function useCacheInvalidation() {
   return {
     invalidatePattern,
     invalidateAll,
-    getStats
+    getStats,
   };
 }
 
@@ -459,15 +466,10 @@ export function useSearchCache<T>(
   }, [query]);
 
   const searchKey = `${baseKey}_search_${debouncedQuery}`;
-  
-  const {
-    data,
-    isLoading,
-    error,
-    mutate
-  } = useCache(
+
+  const { data, isLoading, error, mutate } = useCache(
     searchKey,
-    () => debouncedQuery ? searchFn(debouncedQuery) : Promise.resolve([]),
+    () => (debouncedQuery ? searchFn(debouncedQuery) : Promise.resolve([])),
     { ttl: 2 * 60 * 1000, ...options } // Cache de busca mais curto
   );
 
@@ -477,7 +479,7 @@ export function useSearchCache<T>(
     results: data || [],
     isLoading: isLoading && debouncedQuery.length > 0,
     error,
-    mutate
+    mutate,
   };
 }
 

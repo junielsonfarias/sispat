@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -11,11 +11,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { toast } from '@/hooks/use-toast'
-import { useAuth } from '@/hooks/useAuth'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
-import { User } from '@/types'
+} from '@/components/ui/form';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { User } from '@/types';
 
 const passwordChangeSchema = z
   .object({
@@ -34,25 +34,25 @@ const passwordChangeSchema = z
       }),
     confirmPassword: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine(data => data.password === data.confirmPassword, {
     message: 'As senhas não coincidem.',
     path: ['confirmPassword'],
-  })
+  });
 
-type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>
+type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>;
 
 interface UserPasswordChangeFormProps {
-  user: User
-  onSuccess: () => void
+  user: User;
+  onSuccess: () => void;
 }
 
 export const UserPasswordChangeForm = ({
   user,
   onSuccess,
 }: UserPasswordChangeFormProps) => {
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const { updateUserPassword } = useAuth()
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { updateUserPassword } = useAuth();
 
   const form = useForm<PasswordChangeFormValues>({
     resolver: zodResolver(passwordChangeSchema),
@@ -60,17 +60,17 @@ export const UserPasswordChangeForm = ({
       password: '',
       confirmPassword: '',
     },
-  })
+  });
 
   const onSubmit = async (data: PasswordChangeFormValues) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await updateUserPassword(user.id, data.password)
+      await updateUserPassword(user.id, data.password);
       toast({
         title: 'Sucesso!',
         description: `Senha do usuário ${user.name} alterada.`,
-      })
-      onSuccess()
+      });
+      onSuccess();
     } catch (error) {
       toast({
         title: 'Erro',
@@ -79,39 +79,39 @@ export const UserPasswordChangeForm = ({
             ? error.message
             : 'Falha ao alterar a senha do usuário.',
         variant: 'destructive',
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
         <FormField
           control={form.control}
-          name="password"
+          name='password'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nova Senha</FormLabel>
               <FormControl>
-                <div className="relative">
+                <div className='relative'>
                   <Input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="********"
+                    placeholder='********'
                     {...field}
                   />
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    type='button'
+                    variant='ghost'
+                    size='icon'
+                    className='absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7'
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
+                      <EyeOff className='h-4 w-4' />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <Eye className='h-4 w-4' />
                     )}
                   </Button>
                 </div>
@@ -122,24 +122,24 @@ export const UserPasswordChangeForm = ({
         />
         <FormField
           control={form.control}
-          name="confirmPassword"
+          name='confirmPassword'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Confirmar Nova Senha</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} />
+                <Input type='password' placeholder='********' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <div className='flex justify-end'>
+          <Button type='submit' disabled={isLoading}>
+            {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
             Salvar Nova Senha
           </Button>
         </div>
       </form>
     </Form>
-  )
-}
+  );
+};

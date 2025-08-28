@@ -1,9 +1,9 @@
-import { useState, useEffect, ChangeEvent, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useState, useEffect, ChangeEvent, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -12,19 +12,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { toast } from '@/hooks/use-toast'
-import { useAuth } from '@/hooks/useAuth'
-import { Loader2 } from 'lucide-react'
-import { User } from '@/types'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+} from '@/components/ui/form';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { Loader2 } from 'lucide-react';
+import { User } from '@/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   SearchableSelect,
   SearchableSelectOption,
-} from '@/components/ui/searchable-select'
-import { MultiSelect } from '@/components/ui/multi-select'
-import { useSectors } from '@/contexts/SectorContext'
-import { useMunicipalities } from '@/contexts/MunicipalityContext'
+} from '@/components/ui/searchable-select';
+import { MultiSelect } from '@/components/ui/multi-select';
+import { useSectors } from '@/contexts/SectorContext';
+import { useMunicipalities } from '@/contexts/MunicipalityContext';
 
 const userEditSchema = z.object({
   name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
@@ -34,36 +34,36 @@ const userEditSchema = z.object({
   avatarUrl: z.string().optional(),
   responsibleSectors: z.array(z.string()).optional(),
   municipalityId: z.string().min(1, { message: 'Município é obrigatório.' }),
-})
+});
 
-type UserEditFormValues = z.infer<typeof userEditSchema>
+type UserEditFormValues = z.infer<typeof userEditSchema>;
 
 interface UserEditFormProps {
-  user: User
-  onSuccess: (updatedUser: User) => void
+  user: User;
+  onSuccess: (updatedUser: User) => void;
 }
 
 const roleOptions: SearchableSelectOption[] = [
   { value: 'supervisor', label: 'Supervisor' },
   { value: 'usuario', label: 'Usuário' },
   { value: 'visualizador', label: 'Visualizador' },
-]
+];
 
 export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
-  const [isLoading, setIsLoading] = useState(false)
-  const { user: currentUser, updateUser } = useAuth()
-  const { sectors } = useSectors()
-  const { municipalities } = useMunicipalities()
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false);
+  const { user: currentUser, updateUser } = useAuth();
+  const { sectors } = useSectors();
+  const { municipalities } = useMunicipalities();
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const municipalityOptions = useMemo(
     () =>
-      municipalities.map((m) => ({
+      municipalities.map(m => ({
         value: m.id,
         label: m.name,
       })),
-    [municipalities],
-  )
+    [municipalities]
+  );
 
   const form = useForm<UserEditFormValues>({
     resolver: zodResolver(userEditSchema),
@@ -76,18 +76,18 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
       responsibleSectors: user.responsibleSectors || [],
       municipalityId: user.municipalityId,
     },
-  })
+  });
 
-  const role = form.watch('role')
-  const municipalityId = form.watch('municipalityId')
+  const role = form.watch('role');
+  const municipalityId = form.watch('municipalityId');
 
   const allSectors = useMemo(
     () =>
       sectors
-        .filter((s) => s.municipalityId === municipalityId)
-        .map((s) => ({ value: s.name, label: s.name })),
-    [sectors, municipalityId],
-  )
+        .filter(s => s.municipalityId === municipalityId)
+        .map(s => ({ value: s.name, label: s.name })),
+    [sectors, municipalityId]
+  );
 
   useEffect(() => {
     form.reset({
@@ -98,68 +98,68 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
       avatarUrl: user.avatarUrl,
       responsibleSectors: user.responsibleSectors || [],
       municipalityId: user.municipalityId,
-    })
-    setAvatarPreview(user.avatarUrl)
-  }, [user, form])
+    });
+    setAvatarPreview(user.avatarUrl);
+  }, [user, form]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onloadend = () => {
-        const result = reader.result as string
-        setAvatarPreview(result)
-        form.setValue('avatarUrl', result)
-      }
-      reader.readAsDataURL(file)
+        const result = reader.result as string;
+        setAvatarPreview(result);
+        form.setValue('avatarUrl', result);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const onSubmit = async (data: UserEditFormValues) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const updatedUser = await updateUser(user.id, data)
+      const updatedUser = await updateUser(user.id, data);
       toast({
         title: 'Sucesso!',
         description: 'Usuário atualizado com sucesso.',
-      })
-      onSuccess(updatedUser)
+      });
+      onSuccess(updatedUser);
     } catch (error) {
       toast({
         title: 'Erro',
         description:
           error instanceof Error ? error.message : 'Falha ao atualizar usuário',
         variant: 'destructive',
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+        <div className='flex items-center gap-4'>
+          <Avatar className='h-16 w-16'>
             <AvatarImage src={avatarPreview || ''} />
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
-          <FormItem className="flex-grow">
+          <FormItem className='flex-grow'>
             <FormLabel>Foto de Perfil</FormLabel>
             <FormControl>
-              <Input type="file" accept="image/*" onChange={handleFileChange} />
+              <Input type='file' accept='image/*' onChange={handleFileChange} />
             </FormControl>
             <FormMessage />
           </FormItem>
         </div>
         <FormField
           control={form.control}
-          name="name"
+          name='name'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nome Completo</FormLabel>
               <FormControl>
-                <Input placeholder="Nome do usuário" {...field} />
+                <Input placeholder='Nome do usuário' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -167,14 +167,14 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
         />
         <FormField
           control={form.control}
-          name="email"
+          name='email'
           render={({ field }) => (
             <FormItem>
               <FormLabel>E-mail</FormLabel>
               <FormControl>
                 <Input
-                  type="email"
-                  placeholder="email@exemplo.com"
+                  type='email'
+                  placeholder='email@exemplo.com'
                   {...field}
                 />
               </FormControl>
@@ -185,7 +185,7 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
         {currentUser?.role === 'superuser' && (
           <FormField
             control={form.control}
-            name="municipalityId"
+            name='municipalityId'
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Município</FormLabel>
@@ -194,7 +194,7 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
                     options={municipalityOptions}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Selecione o município"
+                    placeholder='Selecione o município'
                   />
                 </FormControl>
                 <FormMessage />
@@ -204,7 +204,7 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
         )}
         <FormField
           control={form.control}
-          name="sector"
+          name='sector'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Setor Principal</FormLabel>
@@ -213,7 +213,7 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
                   options={allSectors}
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Selecione o setor principal (opcional)"
+                  placeholder='Selecione o setor principal (opcional)'
                   disabled={!municipalityId}
                   isClearable
                 />
@@ -224,7 +224,7 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
         />
         <FormField
           control={form.control}
-          name="role"
+          name='role'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Perfil</FormLabel>
@@ -233,7 +233,7 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
                   options={roleOptions}
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Selecione um perfil"
+                  placeholder='Selecione um perfil'
                 />
               </FormControl>
               <FormMessage />
@@ -243,7 +243,7 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
         {(role === 'usuario' || role === 'visualizador') && (
           <FormField
             control={form.control}
-            name="responsibleSectors"
+            name='responsibleSectors'
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Setores de Acesso</FormLabel>
@@ -252,7 +252,7 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
                     options={allSectors}
                     selected={field.value || []}
                     onChange={field.onChange}
-                    placeholder="Selecione os setores..."
+                    placeholder='Selecione os setores...'
                     disabled={!municipalityId}
                   />
                 </FormControl>
@@ -265,13 +265,13 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
             )}
           />
         )}
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <div className='flex justify-end'>
+          <Button type='submit' disabled={isLoading}>
+            {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
             Salvar Alterações
           </Button>
         </div>
       </form>
     </Form>
-  )
-}
+  );
+};

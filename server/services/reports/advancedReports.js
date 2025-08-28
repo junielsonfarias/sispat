@@ -25,14 +25,14 @@ class AdvancedReportGenerator {
       INVENTORY_REPORT: 'inventory_report',
       FINANCIAL_REPORT: 'financial_report',
       COMPARATIVE_REPORT: 'comparative_report',
-      CUSTOM_REPORT: 'custom_report'
+      CUSTOM_REPORT: 'custom_report',
     };
 
     this.exportFormats = {
       PDF: 'pdf',
       EXCEL: 'excel',
       CSV: 'csv',
-      JSON: 'json'
+      JSON: 'json',
     };
 
     this.reportsDirectory = path.join(__dirname, '../../reports');
@@ -61,29 +61,33 @@ class AdvancedReportGenerator {
         format = 'pdf',
         includeCharts = true,
         includeMetadata = true,
-        customFields = []
+        customFields = [],
       } = config;
 
       logInfo(`Gerando relatório: ${type}`, { config });
 
       // Buscar dados baseado no tipo
       const data = await this.fetchReportData(type, filters);
-      
+
       // Processar dados
-      const processedData = await this.processReportData(data, type, customFields);
-      
+      const processedData = await this.processReportData(
+        data,
+        type,
+        customFields
+      );
+
       // Gerar relatório
       const report = await this.createReport(processedData, type, {
         includeCharts,
         includeMetadata,
-        format
+        format,
       });
 
       // Salvar relatório
       const filename = await this.saveReport(report, type, format);
-      
+
       logInfo(`Relatório gerado com sucesso: ${filename}`);
-      
+
       return {
         success: true,
         filename,
@@ -93,10 +97,9 @@ class AdvancedReportGenerator {
           format,
           generatedAt: new Date().toISOString(),
           recordCount: processedData.length,
-          filters
-        }
+          filters,
+        },
       };
-
     } catch (error) {
       logError('Erro ao gerar relatório customizado:', error);
       throw error;
@@ -109,7 +112,7 @@ class AdvancedReportGenerator {
   async fetchReportData(type, filters) {
     const cacheKey = `report_data_${type}_${JSON.stringify(filters)}`;
     const cached = await intelligentCache.get(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -121,23 +124,23 @@ class AdvancedReportGenerator {
       case this.reportTypes.PATRIMONY_SUMMARY:
         sql = this.buildPatrimonySummaryQuery(filters);
         break;
-      
+
       case this.reportTypes.DEPRECIATION_REPORT:
         sql = this.buildDepreciationReportQuery(filters);
         break;
-      
+
       case this.reportTypes.TRANSFER_HISTORY:
         sql = this.buildTransferHistoryQuery(filters);
         break;
-      
+
       case this.reportTypes.INVENTORY_REPORT:
         sql = this.buildInventoryReportQuery(filters);
         break;
-      
+
       case this.reportTypes.FINANCIAL_REPORT:
         sql = this.buildFinancialReportQuery(filters);
         break;
-      
+
       default:
         throw new Error(`Tipo de relatório não suportado: ${type}`);
     }
@@ -147,7 +150,7 @@ class AdvancedReportGenerator {
 
     // Cache dos dados por 30 minutos
     await intelligentCache.set(cacheKey, data, { ttl: 1800 });
-    
+
     return data;
   }
 
@@ -403,7 +406,7 @@ class AdvancedReportGenerator {
       case this.reportTypes.DEPRECIATION_REPORT:
         processedData = this.processDepreciationData(processedData);
         break;
-      
+
       case this.reportTypes.FINANCIAL_REPORT:
         processedData = this.processFinancialData(processedData);
         break;
@@ -418,9 +421,10 @@ class AdvancedReportGenerator {
   processDepreciationData(data) {
     return data.map(item => ({
       ...item,
-      depreciacao_percentual: item.depreciacao_acumulada / item.valor_aquisicao * 100,
+      depreciacao_percentual:
+        (item.depreciacao_acumulada / item.valor_aquisicao) * 100,
       vida_util_restante: Math.max(0, item.vida_util_anos - item.anos_uso),
-      status_depreciacao: this.getDepreciationStatus(item)
+      status_depreciacao: this.getDepreciationStatus(item),
     }));
   }
 
@@ -432,12 +436,12 @@ class AdvancedReportGenerator {
       ...item,
       valor_medio_formatado: new Intl.NumberFormat('pt-BR', {
         style: 'currency',
-        currency: 'BRL'
+        currency: 'BRL',
       }).format(item.valor_medio),
       total_formatado: new Intl.NumberFormat('pt-BR', {
         style: 'currency',
-        currency: 'BRL'
-      }).format(item.valor_total)
+        currency: 'BRL',
+      }).format(item.valor_total),
     }));
   }
 
@@ -462,12 +466,12 @@ class AdvancedReportGenerator {
    */
   formatCustomField(item, field) {
     const value = item[field.field];
-    
+
     switch (field.format) {
       case 'currency':
         return new Intl.NumberFormat('pt-BR', {
           style: 'currency',
-          currency: 'BRL'
+          currency: 'BRL',
         }).format(value);
       case 'date':
         return new Date(value).toLocaleDateString('pt-BR');
@@ -483,7 +487,7 @@ class AdvancedReportGenerator {
    */
   getDepreciationStatus(item) {
     const percentual = item.depreciacao_percentual;
-    
+
     if (percentual >= 100) return 'TOTALMENTE DEPRECIADO';
     if (percentual >= 75) return 'ALTAMENTE DEPRECIADO';
     if (percentual >= 50) return 'MODERADAMENTE DEPRECIADO';
@@ -502,9 +506,11 @@ class AdvancedReportGenerator {
       format,
       generatedAt: new Date().toISOString(),
       data,
-      metadata: includeMetadata ? await this.generateMetadata(data, type) : null,
+      metadata: includeMetadata
+        ? await this.generateMetadata(data, type)
+        : null,
       charts: includeCharts ? await this.generateCharts(data, type) : null,
-      summary: this.generateSummary(data, type)
+      summary: this.generateSummary(data, type),
     };
 
     return report;
@@ -516,11 +522,17 @@ class AdvancedReportGenerator {
   async generateMetadata(data, type) {
     return {
       recordCount: data.length,
-      totalValue: data.reduce((sum, item) => sum + (item.valor_aquisicao || 0), 0),
-      averageValue: data.length > 0 ? 
-        data.reduce((sum, item) => sum + (item.valor_aquisicao || 0), 0) / data.length : 0,
+      totalValue: data.reduce(
+        (sum, item) => sum + (item.valor_aquisicao || 0),
+        0
+      ),
+      averageValue:
+        data.length > 0
+          ? data.reduce((sum, item) => sum + (item.valor_aquisicao || 0), 0) /
+            data.length
+          : 0,
       dateRange: this.getDateRange(data),
-      filters: {} // Seria preenchido com os filtros aplicados
+      filters: {}, // Seria preenchido com os filtros aplicados
     };
   }
 
@@ -535,12 +547,12 @@ class AdvancedReportGenerator {
         charts.situacao = this.createSituacaoChart(data);
         charts.valorPorTipo = this.createValorPorTipoChart(data);
         break;
-      
+
       case this.reportTypes.DEPRECIATION_REPORT:
         charts.depreciacao = this.createDepreciacaoChart(data);
         charts.valorAtual = this.createValorAtualChart(data);
         break;
-      
+
       case this.reportTypes.FINANCIAL_REPORT:
         charts.evolucaoMensal = this.createEvolucaoMensalChart(data);
         break;
@@ -554,7 +566,7 @@ class AdvancedReportGenerator {
    */
   createSituacaoChart(data) {
     const situacoes = {};
-    
+
     data.forEach(item => {
       const situacao = item.situacao_bem || 'NÃO INFORMADO';
       situacoes[situacao] = (situacoes[situacao] || 0) + 1;
@@ -564,11 +576,19 @@ class AdvancedReportGenerator {
       type: 'pie',
       data: {
         labels: Object.keys(situacoes),
-        datasets: [{
-          data: Object.values(situacoes),
-          backgroundColor: ['#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#F44336']
-        }]
-      }
+        datasets: [
+          {
+            data: Object.values(situacoes),
+            backgroundColor: [
+              '#4CAF50',
+              '#8BC34A',
+              '#FFC107',
+              '#FF9800',
+              '#F44336',
+            ],
+          },
+        ],
+      },
     };
   }
 
@@ -577,7 +597,7 @@ class AdvancedReportGenerator {
    */
   createValorPorTipoChart(data) {
     const tipos = {};
-    
+
     data.forEach(item => {
       const tipo = item.tipo || 'NÃO INFORMADO';
       tipos[tipo] = (tipos[tipo] || 0) + (item.valor_aquisicao || 0);
@@ -587,12 +607,14 @@ class AdvancedReportGenerator {
       type: 'bar',
       data: {
         labels: Object.keys(tipos),
-        datasets: [{
-          label: 'Valor Total (R$)',
-          data: Object.values(tipos),
-          backgroundColor: '#2196F3'
-        }]
-      }
+        datasets: [
+          {
+            label: 'Valor Total (R$)',
+            data: Object.values(tipos),
+            backgroundColor: '#2196F3',
+          },
+        ],
+      },
     };
   }
 
@@ -605,7 +627,7 @@ class AdvancedReportGenerator {
       '25-50%': 0,
       '50-75%': 0,
       '75-100%': 0,
-      '100%+': 0
+      '100%+': 0,
     };
 
     data.forEach(item => {
@@ -621,11 +643,19 @@ class AdvancedReportGenerator {
       type: 'doughnut',
       data: {
         labels: Object.keys(ranges),
-        datasets: [{
-          data: Object.values(ranges),
-          backgroundColor: ['#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#F44336']
-        }]
-      }
+        datasets: [
+          {
+            data: Object.values(ranges),
+            backgroundColor: [
+              '#4CAF50',
+              '#8BC34A',
+              '#FFC107',
+              '#FF9800',
+              '#F44336',
+            ],
+          },
+        ],
+      },
     };
   }
 
@@ -633,11 +663,13 @@ class AdvancedReportGenerator {
    * Criar gráfico de valor atual
    */
   createValorAtualChart(data) {
-    const valores = data.map(item => ({
-      patrimonio: item.numero_patrimonio,
-      valorAquisicao: item.valor_aquisicao,
-      valorAtual: item.valor_atual
-    })).slice(0, 20); // Limitar a 20 itens
+    const valores = data
+      .map(item => ({
+        patrimonio: item.numero_patrimonio,
+        valorAquisicao: item.valor_aquisicao,
+        valorAtual: item.valor_atual,
+      }))
+      .slice(0, 20); // Limitar a 20 itens
 
     return {
       type: 'line',
@@ -648,16 +680,16 @@ class AdvancedReportGenerator {
             label: 'Valor de Aquisição',
             data: valores.map(v => v.valorAquisicao),
             borderColor: '#2196F3',
-            fill: false
+            fill: false,
           },
           {
             label: 'Valor Atual',
             data: valores.map(v => v.valorAtual),
             borderColor: '#FF9800',
-            fill: false
-          }
-        ]
-      }
+            fill: false,
+          },
+        ],
+      },
     };
   }
 
@@ -668,14 +700,21 @@ class AdvancedReportGenerator {
     return {
       type: 'line',
       data: {
-        labels: data.map(item => new Date(item.mes).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })),
-        datasets: [{
-          label: 'Valor Total (R$)',
-          data: data.map(item => item.valor_total),
-          borderColor: '#4CAF50',
-          fill: false
-        }]
-      }
+        labels: data.map(item =>
+          new Date(item.mes).toLocaleDateString('pt-BR', {
+            month: 'short',
+            year: 'numeric',
+          })
+        ),
+        datasets: [
+          {
+            label: 'Valor Total (R$)',
+            data: data.map(item => item.valor_total),
+            borderColor: '#4CAF50',
+            fill: false,
+          },
+        ],
+      },
     };
   }
 
@@ -685,19 +724,34 @@ class AdvancedReportGenerator {
   generateSummary(data, type) {
     const summary = {
       totalRecords: data.length,
-      totalValue: data.reduce((sum, item) => sum + (item.valor_aquisicao || 0), 0),
-      averageValue: data.length > 0 ? 
-        data.reduce((sum, item) => sum + (item.valor_aquisicao || 0), 0) / data.length : 0
+      totalValue: data.reduce(
+        (sum, item) => sum + (item.valor_aquisicao || 0),
+        0
+      ),
+      averageValue:
+        data.length > 0
+          ? data.reduce((sum, item) => sum + (item.valor_aquisicao || 0), 0) /
+            data.length
+          : 0,
     };
 
     switch (type) {
       case this.reportTypes.DEPRECIATION_REPORT:
-        summary.totalDepreciacao = data.reduce((sum, item) => sum + (item.depreciacao_acumulada || 0), 0);
-        summary.valorAtualTotal = data.reduce((sum, item) => sum + (item.valor_atual || 0), 0);
+        summary.totalDepreciacao = data.reduce(
+          (sum, item) => sum + (item.depreciacao_acumulada || 0),
+          0
+        );
+        summary.valorAtualTotal = data.reduce(
+          (sum, item) => sum + (item.valor_atual || 0),
+          0
+        );
         break;
-      
+
       case this.reportTypes.FINANCIAL_REPORT:
-        summary.totalPatrimonios = data.reduce((sum, item) => sum + (item.total_patrimonios || 0), 0);
+        summary.totalPatrimonios = data.reduce(
+          (sum, item) => sum + (item.total_patrimonios || 0),
+          0
+        );
         break;
     }
 
@@ -711,7 +765,13 @@ class AdvancedReportGenerator {
     if (data.length === 0) return null;
 
     const dates = data
-      .map(item => item.created_at || item.data_aquisicao || item.data_transferencia || item.data_inventario)
+      .map(
+        item =>
+          item.created_at ||
+          item.data_aquisicao ||
+          item.data_transferencia ||
+          item.data_inventario
+      )
       .filter(date => date)
       .map(date => new Date(date));
 
@@ -719,7 +779,7 @@ class AdvancedReportGenerator {
 
     return {
       start: new Date(Math.min(...dates)).toISOString(),
-      end: new Date(Math.max(...dates)).toISOString()
+      end: new Date(Math.max(...dates)).toISOString(),
     };
   }
 
@@ -737,19 +797,19 @@ class AdvancedReportGenerator {
       case this.exportFormats.JSON:
         content = JSON.stringify(report, null, 2);
         break;
-      
+
       case this.exportFormats.CSV:
         content = this.convertToCSV(report.data);
         break;
-      
+
       case this.exportFormats.EXCEL:
         content = await this.convertToExcel(report);
         break;
-      
+
       case this.exportFormats.PDF:
         content = await this.convertToPDF(report);
         break;
-      
+
       default:
         throw new Error(`Formato não suportado: ${format}`);
     }
@@ -798,14 +858,7 @@ class AdvancedReportGenerator {
    * Agendar relatório
    */
   async scheduleReport(config) {
-    const {
-      type,
-      filters,
-      format,
-      schedule,
-      email,
-      webhook
-    } = config;
+    const { type, filters, format, schedule, email, webhook } = config;
 
     const scheduledReport = {
       id: `scheduled_${Date.now()}`,
@@ -817,7 +870,7 @@ class AdvancedReportGenerator {
       webhook,
       status: 'scheduled',
       createdAt: new Date().toISOString(),
-      nextRun: this.calculateNextRun(schedule)
+      nextRun: this.calculateNextRun(schedule),
     };
 
     // Em produção, salvar no banco de dados
@@ -831,7 +884,7 @@ class AdvancedReportGenerator {
    */
   calculateNextRun(schedule) {
     const now = new Date();
-    
+
     switch (schedule.frequency) {
       case 'daily':
         return new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -852,9 +905,9 @@ class AdvancedReportGenerator {
       reports: reports.map(report => ({
         type: report.type,
         summary: report.summary,
-        metadata: report.metadata
+        metadata: report.metadata,
       })),
-      comparison: this.compareReports(reports)
+      comparison: this.compareReports(reports),
     };
 
     return comparativeData;
@@ -867,10 +920,16 @@ class AdvancedReportGenerator {
     if (reports.length < 2) return null;
 
     const comparison = {
-      totalValueDifference: reports[1].summary.totalValue - reports[0].summary.totalValue,
-      totalValuePercentage: ((reports[1].summary.totalValue - reports[0].summary.totalValue) / reports[0].summary.totalValue) * 100,
-      recordCountDifference: reports[1].summary.totalRecords - reports[0].summary.totalRecords,
-      averageValueDifference: reports[1].summary.averageValue - reports[0].summary.averageValue
+      totalValueDifference:
+        reports[1].summary.totalValue - reports[0].summary.totalValue,
+      totalValuePercentage:
+        ((reports[1].summary.totalValue - reports[0].summary.totalValue) /
+          reports[0].summary.totalValue) *
+        100,
+      recordCountDifference:
+        reports[1].summary.totalRecords - reports[0].summary.totalRecords,
+      averageValueDifference:
+        reports[1].summary.averageValue - reports[0].summary.averageValue,
     };
 
     return comparison;

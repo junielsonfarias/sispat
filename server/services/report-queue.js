@@ -2,40 +2,45 @@
  * Sistema de Filas para Geração Assíncrona de Relatórios
  */
 
-import { EventEmitter } from 'events'
-import { getRow, getRows, query } from '../database/connection.js'
-import { logError, logInfo, logPerformance, logWarning } from '../utils/logger.js'
-import { notificationManager } from './notification-manager.js'
-import { websocketServer } from './websocket-server.js'
+import { EventEmitter } from 'events';
+import { getRow, getRows, query } from '../database/connection.js';
+import {
+  logError,
+  logInfo,
+  logPerformance,
+  logWarning,
+} from '../utils/logger.js';
+import { notificationManager } from './notification-manager.js';
+import { websocketServer } from './websocket-server.js';
 
 class ReportQueue extends EventEmitter {
   constructor() {
-    super()
-    this.workers = new Map()
-    this.activeJobs = new Map()
-    this.completedJobs = new Map()
-    this.maxWorkers = 3
-    this.maxRetries = 3
-    this.jobTimeout = 10 * 60 * 1000 // 10 minutos
-    this.cleanupInterval = 60 * 60 * 1000 // 1 hora
-    
+    super();
+    this.workers = new Map();
+    this.activeJobs = new Map();
+    this.completedJobs = new Map();
+    this.maxWorkers = 3;
+    this.maxRetries = 3;
+    this.jobTimeout = 10 * 60 * 1000; // 10 minutos
+    this.cleanupInterval = 60 * 60 * 1000; // 1 hora
+
     this.reportTypes = {
       PATRIMONY_SUMMARY: 'patrimony_summary',
       DEPRECIATION_REPORT: 'depreciation_report',
       TRANSFER_HISTORY: 'transfer_history',
       INVENTORY_REPORT: 'inventory_report',
       CUSTOM_REPORT: 'custom_report',
-      EXPORT_DATA: 'export_data'
-    }
+      EXPORT_DATA: 'export_data',
+    };
 
     this.priorities = {
       LOW: 1,
       MEDIUM: 2,
       HIGH: 3,
-      URGENT: 4
-    }
+      URGENT: 4,
+    };
 
-    this.initialize()
+    this.initialize();
   }
 
   /**
@@ -43,17 +48,17 @@ class ReportQueue extends EventEmitter {
    */
   async initialize() {
     try {
-      await this.createJobsTable()
-      await this.loadPendingJobs()
-      this.startWorkers()
-      this.startCleanupJob()
-      
+      await this.createJobsTable();
+      await this.loadPendingJobs();
+      this.startWorkers();
+      this.startCleanupJob();
+
       logInfo('Report Queue initialized', {
         maxWorkers: this.maxWorkers,
-        jobTimeout: this.jobTimeout
-      })
+        jobTimeout: this.jobTimeout,
+      });
     } catch (error) {
-      logError('Failed to initialize Report Queue', error)
+      logError('Failed to initialize Report Queue', error);
     }
   }
 
@@ -80,23 +85,23 @@ class ReportQueue extends EventEmitter {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP + INTERVAL '7 days'
       )
-    `)
+    `);
 
     await query(`
       CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status)
-    `)
+    `);
 
     await query(`
       CREATE INDEX IF NOT EXISTS idx_report_jobs_priority ON report_jobs(priority DESC)
-    `)
+    `);
 
     await query(`
       CREATE INDEX IF NOT EXISTS idx_report_jobs_user_id ON report_jobs(user_id)
-    `)
+    `);
 
     await query(`
       CREATE INDEX IF NOT EXISTS idx_report_jobs_created_at ON report_jobs(created_at DESC)
-    `)
+    `);
   }
 
   /**
@@ -108,18 +113,23 @@ class ReportQueue extends EventEmitter {
         SELECT * FROM report_jobs 
         WHERE status IN ('pending', 'processing') 
         ORDER BY priority DESC, created_at ASC
-      `)
+      `);
 
       // Resetar jobs que estavam processando
       for (const job of pendingJobs) {
         if (job.status === 'processing') {
-          await this.updateJobStatus(job.id, 'pending', null, 'Restarted after server restart')
+          await this.updateJobStatus(
+            job.id,
+            'pending',
+            null,
+            'Restarted after server restart'
+          );
         }
       }
 
-      logInfo('Loaded pending jobs', { count: pendingJobs.length })
+      logInfo('Loaded pending jobs', { count: pendingJobs.length });
     } catch (error) {
-      logError('Failed to load pending jobs', error)
+      logError('Failed to load pending jobs', error);
     }
   }
 
@@ -133,41 +143,44 @@ class ReportQueue extends EventEmitter {
       municipalityId,
       parameters = {},
       priority = this.priorities.MEDIUM,
-      expiresAt = null
-    } = options
+      expiresAt = null,
+    } = options;
 
     try {
-      const job = await getRow(`
+      const job = await getRow(
+        `
         INSERT INTO report_jobs (
           type, user_id, municipality_id, parameters, priority, expires_at
         ) VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
-      `, [
-        type,
-        userId,
-        municipalityId,
-        JSON.stringify(parameters),
-        priority,
-        expiresAt
-      ])
+      `,
+        [
+          type,
+          userId,
+          municipalityId,
+          JSON.stringify(parameters),
+          priority,
+          expiresAt,
+        ]
+      );
 
       logInfo('Job added to queue', {
         jobId: job.id,
         type,
         userId,
-        priority
-      })
+        priority,
+      });
 
       // Notificar que job foi criado
-      this.emit('job-created', job)
+      this.emit('job-created', job);
 
       // Tentar processar imediatamente se há workers disponíveis
-      this.processNextJob()
+      this.processNextJob();
 
-      return job
+      return job;
     } catch (error) {
-      logError('Failed to add job to queue', error)
-      throw error
+      logError('Failed to add job to queue', error);
+      throw error;
     }
   }
 
@@ -176,20 +189,20 @@ class ReportQueue extends EventEmitter {
    */
   startWorkers() {
     for (let i = 0; i < this.maxWorkers; i++) {
-      const workerId = `worker-${i + 1}`
+      const workerId = `worker-${i + 1}`;
       this.workers.set(workerId, {
         id: workerId,
         busy: false,
         currentJob: null,
         processedJobs: 0,
-        startedAt: new Date()
-      })
+        startedAt: new Date(),
+      });
     }
 
     // Processar jobs pendentes
     setInterval(() => {
-      this.processNextJob()
-    }, 5000) // Verificar a cada 5 segundos
+      this.processNextJob();
+    }, 5000); // Verificar a cada 5 segundos
   }
 
   /**
@@ -198,11 +211,12 @@ class ReportQueue extends EventEmitter {
   async processNextJob() {
     try {
       // Encontrar worker disponível
-      const availableWorker = Array.from(this.workers.values())
-        .find(worker => !worker.busy)
+      const availableWorker = Array.from(this.workers.values()).find(
+        worker => !worker.busy
+      );
 
       if (!availableWorker) {
-        return // Todos os workers estão ocupados
+        return; // Todos os workers estão ocupados
       }
 
       // Buscar próximo job
@@ -211,24 +225,23 @@ class ReportQueue extends EventEmitter {
         WHERE status = 'pending' 
         ORDER BY priority DESC, created_at ASC 
         LIMIT 1
-      `)
+      `);
 
       if (!job) {
-        return // Não há jobs pendentes
+        return; // Não há jobs pendentes
       }
 
       // Marcar worker como ocupado
-      availableWorker.busy = true
-      availableWorker.currentJob = job.id
+      availableWorker.busy = true;
+      availableWorker.currentJob = job.id;
 
       // Atualizar status do job
-      await this.updateJobStatus(job.id, 'processing', availableWorker.id)
+      await this.updateJobStatus(job.id, 'processing', availableWorker.id);
 
       // Processar job
-      this.processJob(job, availableWorker)
-
+      this.processJob(job, availableWorker);
     } catch (error) {
-      logError('Error processing next job', error)
+      logError('Error processing next job', error);
     }
   }
 
@@ -236,70 +249,69 @@ class ReportQueue extends EventEmitter {
    * Processar job específico
    */
   async processJob(job, worker) {
-    const startTime = Date.now()
+    const startTime = Date.now();
 
     try {
       logInfo('Processing job', {
         jobId: job.id,
         type: job.type,
-        workerId: worker.id
-      })
+        workerId: worker.id,
+      });
 
       // Configurar timeout
       const timeoutId = setTimeout(() => {
-        this.handleJobTimeout(job.id, worker.id)
-      }, this.jobTimeout)
+        this.handleJobTimeout(job.id, worker.id);
+      }, this.jobTimeout);
 
       // Processar baseado no tipo
-      let result
+      let result;
       switch (job.type) {
         case this.reportTypes.PATRIMONY_SUMMARY:
-          result = await this.generatePatrimonySummary(job)
-          break
+          result = await this.generatePatrimonySummary(job);
+          break;
         case this.reportTypes.DEPRECIATION_REPORT:
-          result = await this.generateDepreciationReport(job)
-          break
+          result = await this.generateDepreciationReport(job);
+          break;
         case this.reportTypes.TRANSFER_HISTORY:
-          result = await this.generateTransferHistory(job)
-          break
+          result = await this.generateTransferHistory(job);
+          break;
         case this.reportTypes.INVENTORY_REPORT:
-          result = await this.generateInventoryReport(job)
-          break
+          result = await this.generateInventoryReport(job);
+          break;
         case this.reportTypes.EXPORT_DATA:
-          result = await this.generateDataExport(job)
-          break
+          result = await this.generateDataExport(job);
+          break;
         default:
-          throw new Error(`Unknown report type: ${job.type}`)
+          throw new Error(`Unknown report type: ${job.type}`);
       }
 
-      clearTimeout(timeoutId)
+      clearTimeout(timeoutId);
 
       // Marcar como completo
-      await this.completeJob(job.id, result)
+      await this.completeJob(job.id, result);
 
-      const duration = Date.now() - startTime
+      const duration = Date.now() - startTime;
       logPerformance('Job completed', duration, {
         jobId: job.id,
         type: job.type,
-        workerId: worker.id
-      })
+        workerId: worker.id,
+      });
 
       // Notificar usuário
-      await this.notifyJobCompletion(job, result)
-
+      await this.notifyJobCompletion(job, result);
     } catch (error) {
       logError('Job processing failed', error, {
         jobId: job.id,
         type: job.type,
-        workerId: worker.id
-      })
+        workerId: worker.id,
+      });
 
-      await this.handleJobError(job.id, error)
+      await this.handleJobError(job.id, error);
     } finally {
       // Liberar worker
-      worker.busy = false
-      worker.currentJob = null
-      worker.processedJobs++
+      worker.busy = false;
+      worker.currentJob = null;
+      worker.processedJobs++;
     }
   }
 
@@ -307,37 +319,38 @@ class ReportQueue extends EventEmitter {
    * Gerar relatório de patrimônios
    */
   async generatePatrimonySummary(job) {
-    const { municipalityId, filters = {} } = JSON.parse(job.parameters)
+    const { municipalityId, filters = {} } = JSON.parse(job.parameters);
 
     // Simular progresso
-    await this.updateJobProgress(job.id, 10)
+    await this.updateJobProgress(job.id, 10);
 
     // Buscar dados
-    let whereClause = 'WHERE p.municipality_id = $1'
-    const params = [municipalityId]
-    let paramIndex = 2
+    let whereClause = 'WHERE p.municipality_id = $1';
+    const params = [municipalityId];
+    let paramIndex = 2;
 
     if (filters.sectorId) {
-      whereClause += ` AND p.sector_id = $${paramIndex}`
-      params.push(filters.sectorId)
-      paramIndex++
+      whereClause += ` AND p.sector_id = $${paramIndex}`;
+      params.push(filters.sectorId);
+      paramIndex++;
     }
 
     if (filters.dateFrom) {
-      whereClause += ` AND p.created_at >= $${paramIndex}`
-      params.push(filters.dateFrom)
-      paramIndex++
+      whereClause += ` AND p.created_at >= $${paramIndex}`;
+      params.push(filters.dateFrom);
+      paramIndex++;
     }
 
     if (filters.dateTo) {
-      whereClause += ` AND p.created_at <= $${paramIndex}`
-      params.push(filters.dateTo)
-      paramIndex++
+      whereClause += ` AND p.created_at <= $${paramIndex}`;
+      params.push(filters.dateTo);
+      paramIndex++;
     }
 
-    await this.updateJobProgress(job.id, 30)
+    await this.updateJobProgress(job.id, 30);
 
-    const summary = await getRow(`
+    const summary = await getRow(
+      `
       SELECT 
         COUNT(*) as total_patrimonios,
         SUM(valor_aquisicao) as valor_total,
@@ -349,11 +362,14 @@ class ReportQueue extends EventEmitter {
         COUNT(CASE WHEN situacao_bem = 'ruim' THEN 1 END) as estado_ruim
       FROM patrimonios p
       ${whereClause}
-    `, params)
+    `,
+      params
+    );
 
-    await this.updateJobProgress(job.id, 60)
+    await this.updateJobProgress(job.id, 60);
 
-    const byType = await getRows(`
+    const byType = await getRows(
+      `
       SELECT 
         tipo,
         COUNT(*) as quantidade,
@@ -362,11 +378,14 @@ class ReportQueue extends EventEmitter {
       ${whereClause}
       GROUP BY tipo
       ORDER BY quantidade DESC
-    `, params)
+    `,
+      params
+    );
 
-    await this.updateJobProgress(job.id, 80)
+    await this.updateJobProgress(job.id, 80);
 
-    const bySector = await getRows(`
+    const bySector = await getRows(
+      `
       SELECT 
         s.name as setor_nome,
         COUNT(*) as quantidade,
@@ -376,28 +395,33 @@ class ReportQueue extends EventEmitter {
       ${whereClause}
       GROUP BY s.id, s.name
       ORDER BY quantidade DESC
-    `, params)
+    `,
+      params
+    );
 
-    await this.updateJobProgress(job.id, 100)
+    await this.updateJobProgress(job.id, 100);
 
     return {
       summary,
       byType,
       bySector,
       filters,
-      generatedAt: new Date().toISOString()
-    }
+      generatedAt: new Date().toISOString(),
+    };
   }
 
   /**
    * Gerar relatório de depreciação
    */
   async generateDepreciationReport(job) {
-    const { municipalityId, year = new Date().getFullYear() } = JSON.parse(job.parameters)
+    const { municipalityId, year = new Date().getFullYear() } = JSON.parse(
+      job.parameters
+    );
 
-    await this.updateJobProgress(job.id, 20)
+    await this.updateJobProgress(job.id, 20);
 
-    const depreciationData = await getRows(`
+    const depreciationData = await getRows(
+      `
       SELECT 
         p.id,
         p.numero_patrimonio,
@@ -430,34 +454,40 @@ class ReportQueue extends EventEmitter {
         AND p.data_aquisicao IS NOT NULL
         AND p.valor_aquisicao > 0
       ORDER BY p.data_aquisicao DESC
-    `, [municipalityId])
+    `,
+      [municipalityId]
+    );
 
-    await this.updateJobProgress(job.id, 100)
+    await this.updateJobProgress(job.id, 100);
 
-    const totals = depreciationData.reduce((acc, item) => {
-      acc.valorOriginal += parseFloat(item.valor_aquisicao) || 0
-      acc.depreciacao += parseFloat(item.depreciacao_acumulada) || 0
-      acc.valorAtual += parseFloat(item.valor_atual) || 0
-      return acc
-    }, { valorOriginal: 0, depreciacao: 0, valorAtual: 0 })
+    const totals = depreciationData.reduce(
+      (acc, item) => {
+        acc.valorOriginal += parseFloat(item.valor_aquisicao) || 0;
+        acc.depreciacao += parseFloat(item.depreciacao_acumulada) || 0;
+        acc.valorAtual += parseFloat(item.valor_atual) || 0;
+        return acc;
+      },
+      { valorOriginal: 0, depreciacao: 0, valorAtual: 0 }
+    );
 
     return {
       year,
       items: depreciationData,
       totals,
-      generatedAt: new Date().toISOString()
-    }
+      generatedAt: new Date().toISOString(),
+    };
   }
 
   /**
    * Gerar histórico de transferências
    */
   async generateTransferHistory(job) {
-    const { municipalityId, dateFrom, dateTo } = JSON.parse(job.parameters)
+    const { municipalityId, dateFrom, dateTo } = JSON.parse(job.parameters);
 
-    await this.updateJobProgress(job.id, 30)
+    await this.updateJobProgress(job.id, 30);
 
-    const transfers = await getRows(`
+    const transfers = await getRows(
+      `
       SELECT 
         t.*,
         p.numero_patrimonio,
@@ -474,36 +504,42 @@ class ReportQueue extends EventEmitter {
         AND t.created_at >= $2
         AND t.created_at <= $3
       ORDER BY t.created_at DESC
-    `, [municipalityId, dateFrom, dateTo])
+    `,
+      [municipalityId, dateFrom, dateTo]
+    );
 
-    await this.updateJobProgress(job.id, 100)
+    await this.updateJobProgress(job.id, 100);
 
     return {
       transfers,
       period: { from: dateFrom, to: dateTo },
-      generatedAt: new Date().toISOString()
-    }
+      generatedAt: new Date().toISOString(),
+    };
   }
 
   /**
    * Gerar relatório de inventário
    */
   async generateInventoryReport(job) {
-    const { inventoryId } = JSON.parse(job.parameters)
+    const { inventoryId } = JSON.parse(job.parameters);
 
-    await this.updateJobProgress(job.id, 25)
+    await this.updateJobProgress(job.id, 25);
 
-    const inventory = await getRow(`
+    const inventory = await getRow(
+      `
       SELECT * FROM inventories WHERE id = $1
-    `, [inventoryId])
+    `,
+      [inventoryId]
+    );
 
     if (!inventory) {
-      throw new Error('Inventory not found')
+      throw new Error('Inventory not found');
     }
 
-    await this.updateJobProgress(job.id, 50)
+    await this.updateJobProgress(job.id, 50);
 
-    const items = await getRows(`
+    const items = await getRows(
+      `
       SELECT 
         ii.*,
         p.numero_patrimonio,
@@ -515,37 +551,47 @@ class ReportQueue extends EventEmitter {
       LEFT JOIN sectors s ON p.sector_id = s.id
       WHERE ii.inventory_id = $1
       ORDER BY ii.status, p.numero_patrimonio
-    `, [inventoryId])
+    `,
+      [inventoryId]
+    );
 
-    await this.updateJobProgress(job.id, 100)
+    await this.updateJobProgress(job.id, 100);
 
-    const summary = items.reduce((acc, item) => {
-      acc.total++
-      if (item.status === 'found') acc.found++
-      if (item.status === 'not_found') acc.notFound++
-      if (item.status === 'damaged') acc.damaged++
-      return acc
-    }, { total: 0, found: 0, notFound: 0, damaged: 0 })
+    const summary = items.reduce(
+      (acc, item) => {
+        acc.total++;
+        if (item.status === 'found') acc.found++;
+        if (item.status === 'not_found') acc.notFound++;
+        if (item.status === 'damaged') acc.damaged++;
+        return acc;
+      },
+      { total: 0, found: 0, notFound: 0, damaged: 0 }
+    );
 
     return {
       inventory,
       items,
       summary,
-      generatedAt: new Date().toISOString()
-    }
+      generatedAt: new Date().toISOString(),
+    };
   }
 
   /**
    * Gerar exportação de dados
    */
   async generateDataExport(job) {
-    const { type, municipalityId, format = 'json' } = JSON.parse(job.parameters)
+    const {
+      type,
+      municipalityId,
+      format = 'json',
+    } = JSON.parse(job.parameters);
 
-    let data
+    let data;
     switch (type) {
       case 'patrimonios':
-        await this.updateJobProgress(job.id, 30)
-        data = await getRows(`
+        await this.updateJobProgress(job.id, 30);
+        data = await getRows(
+          `
           SELECT 
             p.*,
             s.name as setor_nome,
@@ -555,104 +601,114 @@ class ReportQueue extends EventEmitter {
           LEFT JOIN locals l ON p.local_id = l.id
           WHERE p.municipality_id = $1
           ORDER BY p.created_at DESC
-        `, [municipalityId])
-        break
+        `,
+          [municipalityId]
+        );
+        break;
 
       case 'users':
-        await this.updateJobProgress(job.id, 30)
-        data = await getRows(`
+        await this.updateJobProgress(job.id, 30);
+        data = await getRows(
+          `
           SELECT 
             id, name, email, role, created_at, updated_at
           FROM users
           WHERE municipality_id = $1
           ORDER BY name
-        `, [municipalityId])
-        break
+        `,
+          [municipalityId]
+        );
+        break;
 
       default:
-        throw new Error(`Unknown export type: ${type}`)
+        throw new Error(`Unknown export type: ${type}`);
     }
 
-    await this.updateJobProgress(job.id, 80)
+    await this.updateJobProgress(job.id, 80);
 
     // Aqui você poderia converter para outros formatos (CSV, Excel, etc.)
-    let result = { data, format, type }
+    let result = { data, format, type };
 
     if (format === 'csv') {
-      result.csvData = this.convertToCSV(data)
+      result.csvData = this.convertToCSV(data);
     }
 
-    await this.updateJobProgress(job.id, 100)
+    await this.updateJobProgress(job.id, 100);
 
-    return result
+    return result;
   }
 
   /**
    * Converter dados para CSV
    */
   convertToCSV(data) {
-    if (!data.length) return ''
+    if (!data.length) return '';
 
-    const headers = Object.keys(data[0])
+    const headers = Object.keys(data[0]);
     const csv = [
       headers.join(','),
-      ...data.map(row => 
-        headers.map(header => {
-          const value = row[header]
-          return typeof value === 'string' ? `"${value}"` : value
-        }).join(',')
-      )
-    ].join('\n')
+      ...data.map(row =>
+        headers
+          .map(header => {
+            const value = row[header];
+            return typeof value === 'string' ? `"${value}"` : value;
+          })
+          .join(',')
+      ),
+    ].join('\n');
 
-    return csv
+    return csv;
   }
 
   /**
    * Atualizar status do job
    */
   async updateJobStatus(jobId, status, workerId = null, errorMessage = null) {
-    const updates = ['status = $2']
-    const params = [jobId, status]
-    let paramIndex = 3
+    const updates = ['status = $2'];
+    const params = [jobId, status];
+    let paramIndex = 3;
 
     if (workerId !== null) {
-      updates.push(`worker_id = $${paramIndex}`)
-      params.push(workerId)
-      paramIndex++
+      updates.push(`worker_id = $${paramIndex}`);
+      params.push(workerId);
+      paramIndex++;
     }
 
     if (status === 'processing') {
-      updates.push(`started_at = CURRENT_TIMESTAMP`)
+      updates.push(`started_at = CURRENT_TIMESTAMP`);
     }
 
     if (status === 'completed' || status === 'failed') {
-      updates.push(`completed_at = CURRENT_TIMESTAMP`)
+      updates.push(`completed_at = CURRENT_TIMESTAMP`);
     }
 
     if (errorMessage) {
-      updates.push(`error_message = $${paramIndex}`)
-      params.push(errorMessage)
-      paramIndex++
+      updates.push(`error_message = $${paramIndex}`);
+      params.push(errorMessage);
+      paramIndex++;
     }
 
-    await query(`
+    await query(
+      `
       UPDATE report_jobs 
       SET ${updates.join(', ')}
       WHERE id = $1
-    `, params)
+    `,
+      params
+    );
 
     // Emitir evento de atualização
-    this.emit('job-updated', { jobId, status, workerId })
+    this.emit('job-updated', { jobId, status, workerId });
 
     // Notificar via WebSocket
-    const job = await this.getJob(jobId)
+    const job = await this.getJob(jobId);
     if (job && job.user_id) {
       websocketServer.sendNotificationToUser(job.user_id, {
         type: 'job_update',
         jobId,
         status,
-        progress: job.progress
-      })
+        progress: job.progress,
+      });
     }
   }
 
@@ -660,23 +716,26 @@ class ReportQueue extends EventEmitter {
    * Atualizar progresso do job
    */
   async updateJobProgress(jobId, progress) {
-    await query(`
+    await query(
+      `
       UPDATE report_jobs 
       SET progress = $2
       WHERE id = $1
-    `, [jobId, progress])
+    `,
+      [jobId, progress]
+    );
 
     // Emitir evento de progresso
-    this.emit('job-progress', { jobId, progress })
+    this.emit('job-progress', { jobId, progress });
 
     // Notificar via WebSocket
-    const job = await this.getJob(jobId)
+    const job = await this.getJob(jobId);
     if (job && job.user_id) {
       websocketServer.sendNotificationToUser(job.user_id, {
         type: 'job_progress',
         jobId,
-        progress
-      })
+        progress,
+      });
     }
   }
 
@@ -684,51 +743,60 @@ class ReportQueue extends EventEmitter {
    * Completar job
    */
   async completeJob(jobId, result) {
-    await query(`
+    await query(
+      `
       UPDATE report_jobs 
       SET status = 'completed', 
           result = $2, 
           progress = 100,
           completed_at = CURRENT_TIMESTAMP
       WHERE id = $1
-    `, [jobId, JSON.stringify(result)])
+    `,
+      [jobId, JSON.stringify(result)]
+    );
 
-    this.emit('job-completed', { jobId, result })
+    this.emit('job-completed', { jobId, result });
   }
 
   /**
    * Lidar com erro no job
    */
   async handleJobError(jobId, error) {
-    const job = await this.getJob(jobId)
-    
+    const job = await this.getJob(jobId);
+
     if (job.retry_count < this.maxRetries) {
       // Tentar novamente
-      await query(`
+      await query(
+        `
         UPDATE report_jobs 
         SET status = 'pending',
             retry_count = retry_count + 1,
             error_message = $2,
             worker_id = NULL
         WHERE id = $1
-      `, [jobId, error.message])
+      `,
+        [jobId, error.message]
+      );
 
       logWarning('Job will be retried', {
         jobId,
         retryCount: job.retry_count + 1,
-        error: error.message
-      })
+        error: error.message,
+      });
     } else {
       // Marcar como falha permanente
-      await query(`
+      await query(
+        `
         UPDATE report_jobs 
         SET status = 'failed',
             error_message = $2,
             completed_at = CURRENT_TIMESTAMP
         WHERE id = $1
-      `, [jobId, error.message])
+      `,
+        [jobId, error.message]
+      );
 
-      this.emit('job-failed', { jobId, error: error.message })
+      this.emit('job-failed', { jobId, error: error.message });
     }
   }
 
@@ -736,8 +804,8 @@ class ReportQueue extends EventEmitter {
    * Lidar com timeout do job
    */
   async handleJobTimeout(jobId, workerId) {
-    logWarning('Job timeout', { jobId, workerId })
-    await this.handleJobError(jobId, new Error('Job timeout'))
+    logWarning('Job timeout', { jobId, workerId });
+    await this.handleJobError(jobId, new Error('Job timeout'));
   }
 
   /**
@@ -754,10 +822,10 @@ class ReportQueue extends EventEmitter {
         message: `O relatório "${job.type}" foi gerado com sucesso.`,
         data: { jobId: job.id, type: job.type },
         actionUrl: `/reports/job/${job.id}`,
-        actionLabel: 'Ver relatório'
-      })
+        actionLabel: 'Ver relatório',
+      });
     } catch (error) {
-      logError('Failed to notify job completion', error)
+      logError('Failed to notify job completion', error);
     }
   }
 
@@ -765,54 +833,60 @@ class ReportQueue extends EventEmitter {
    * Obter job por ID
    */
   async getJob(jobId) {
-    return await getRow('SELECT * FROM report_jobs WHERE id = $1', [jobId])
+    return await getRow('SELECT * FROM report_jobs WHERE id = $1', [jobId]);
   }
 
   /**
    * Obter jobs do usuário
    */
   async getUserJobs(userId, options = {}) {
-    const { limit = 20, offset = 0, status = null } = options
+    const { limit = 20, offset = 0, status = null } = options;
 
-    let whereClause = 'WHERE user_id = $1'
-    const params = [userId]
+    let whereClause = 'WHERE user_id = $1';
+    const params = [userId];
 
     if (status) {
-      whereClause += ' AND status = $2'
-      params.push(status)
+      whereClause += ' AND status = $2';
+      params.push(status);
     }
 
-    return await getRows(`
+    return await getRows(
+      `
       SELECT * FROM report_jobs
       ${whereClause}
       ORDER BY created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
-    `, [...params, limit, offset])
+    `,
+      [...params, limit, offset]
+    );
   }
 
   /**
    * Cancelar job
    */
   async cancelJob(jobId, userId) {
-    const job = await this.getJob(jobId)
-    
+    const job = await this.getJob(jobId);
+
     if (!job || job.user_id !== userId) {
-      throw new Error('Job not found or not authorized')
+      throw new Error('Job not found or not authorized');
     }
 
     if (['completed', 'failed', 'cancelled'].includes(job.status)) {
-      throw new Error('Job cannot be cancelled')
+      throw new Error('Job cannot be cancelled');
     }
 
-    await query(`
+    await query(
+      `
       UPDATE report_jobs 
       SET status = 'cancelled',
           completed_at = CURRENT_TIMESTAMP
       WHERE id = $1
-    `, [jobId])
+    `,
+      [jobId]
+    );
 
-    this.emit('job-cancelled', { jobId })
-    return true
+    this.emit('job-cancelled', { jobId });
+    return true;
   }
 
   /**
@@ -822,13 +896,13 @@ class ReportQueue extends EventEmitter {
     const result = await query(`
       DELETE FROM report_jobs 
       WHERE expires_at < NOW()
-    `)
+    `);
 
     if (result.rowCount > 0) {
-      logInfo('Expired jobs cleaned up', { count: result.rowCount })
+      logInfo('Expired jobs cleaned up', { count: result.rowCount });
     }
 
-    return result.rowCount
+    return result.rowCount;
   }
 
   /**
@@ -837,33 +911,33 @@ class ReportQueue extends EventEmitter {
   startCleanupJob() {
     setInterval(async () => {
       try {
-        await this.cleanupExpiredJobs()
+        await this.cleanupExpiredJobs();
       } catch (error) {
-        logError('Cleanup job failed', error)
+        logError('Cleanup job failed', error);
       }
-    }, this.cleanupInterval)
+    }, this.cleanupInterval);
   }
 
   /**
    * Obter estatísticas da fila
    */
   getQueueStats() {
-    const workers = Array.from(this.workers.values())
-    const busyWorkers = workers.filter(w => w.busy).length
+    const workers = Array.from(this.workers.values());
+    const busyWorkers = workers.filter(w => w.busy).length;
 
     return {
       workers: {
         total: this.maxWorkers,
         busy: busyWorkers,
-        available: this.maxWorkers - busyWorkers
+        available: this.maxWorkers - busyWorkers,
       },
       activeJobs: this.activeJobs.size,
-      completedJobs: this.completedJobs.size
-    }
+      completedJobs: this.completedJobs.size,
+    };
   }
 }
 
 // Instância singleton
-export const reportQueue = new ReportQueue()
+export const reportQueue = new ReportQueue();
 
-export default reportQueue
+export default reportQueue;

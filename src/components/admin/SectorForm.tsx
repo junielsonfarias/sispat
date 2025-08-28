@@ -1,8 +1,8 @@
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -10,37 +10,37 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from '@/components/ui/form';
 import {
   SearchableSelect,
   SearchableSelectOption,
-} from '@/components/ui/searchable-select'
-import { useSectors } from '@/contexts/SectorContext'
-import { Sector } from '@/types'
-import { isCircularDependency } from '@/lib/sector-utils'
-import { toast } from '@/hooks/use-toast'
-import { MaskedInput } from '@/components/ui/masked-input'
+} from '@/components/ui/searchable-select';
+import { useSectors } from '@/contexts/SectorContext';
+import { Sector } from '@/types';
+import { isCircularDependency } from '@/lib/sector-utils';
+import { toast } from '@/hooks/use-toast';
+import { MaskedInput } from '@/components/ui/masked-input';
 
 const cnpjValidator = (cnpj: string) => {
-  if (!cnpj) return true
-  cnpj = cnpj.replace(/[^\d]+/g, '')
-  if (cnpj.length !== 14 || !!cnpj.match(/(\d)\1{13}/)) return false
-  const digits = cnpj.split('').map(Number)
+  if (!cnpj) return true;
+  cnpj = cnpj.replace(/[^\d]+/g, '');
+  if (cnpj.length !== 14 || !!cnpj.match(/(\d)\1{13}/)) return false;
+  const digits = cnpj.split('').map(Number);
   const validator = (slice: number[]) => {
-    let factor = slice.length === 12 ? 5 : 6
+    let factor = slice.length === 12 ? 5 : 6;
     const sum = slice.reduce((sum, digit) => {
-      sum += digit * factor
-      factor = factor === 2 ? 9 : factor - 1
-      return sum
-    }, 0)
-    const rest = sum % 11
-    return rest < 2 ? 0 : 11 - rest
-  }
+      sum += digit * factor;
+      factor = factor === 2 ? 9 : factor - 1;
+      return sum;
+    }, 0);
+    const rest = sum % 11;
+    return rest < 2 ? 0 : 11 - rest;
+  };
   return (
     validator(digits.slice(0, 12)) === digits[12] &&
     validator(digits.slice(0, 13)) === digits[13]
-  )
-}
+  );
+};
 
 const formSchema = z.object({
   name: z.string().min(1, 'O nome é obrigatório.'),
@@ -53,25 +53,25 @@ const formSchema = z.object({
   cnpj: z.string().optional().refine(cnpjValidator, 'CNPJ inválido.'),
   responsavel: z.string().optional(),
   parentId: z.string().nullable(),
-})
+});
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof formSchema>;
 
 interface SectorFormProps {
-  data?: Sector
-  onSave: (values: Omit<Sector, 'id' | 'municipalityId'>) => void
-  onClose: () => void
+  data?: Sector;
+  onSave: (values: Omit<Sector, 'id' | 'municipalityId'>) => void;
+  onClose: () => void;
 }
 
 export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
-  const { sectors } = useSectors()
+  const { sectors } = useSectors();
 
   const sectorOptions: SearchableSelectOption[] = sectors
-    .filter((s) => s.id !== data?.id)
-    .map((s) => ({
+    .filter(s => s.id !== data?.id)
+    .map(s => ({
       value: s.id,
       label: s.name,
-    }))
+    }));
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -84,7 +84,7 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
       responsavel: data?.responsavel || '',
       parentId: data?.parentId || null,
     },
-  })
+  });
 
   const handleSubmit = (values: FormValues) => {
     if (data && isCircularDependency(data.id, values.parentId, sectors)) {
@@ -92,21 +92,21 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
         variant: 'destructive',
         title: 'Erro de Validação',
         description: 'Um setor não pode ser filho de si mesmo.',
-      })
-      return
+      });
+      return;
     }
-    onSave(values)
-  }
+    onSave(values);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className='space-y-4'>
+        <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
           <FormField
             control={form.control}
-            name="name"
+            name='name'
             render={({ field }) => (
-              <FormItem className="sm:col-span-3">
+              <FormItem className='sm:col-span-3'>
                 <FormLabel>Nome do Setor</FormLabel>
                 <FormControl>
                   <Input {...field} />
@@ -117,7 +117,7 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
           />
           <FormField
             control={form.control}
-            name="sigla"
+            name='sigla'
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Sigla</FormLabel>
@@ -130,7 +130,7 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
           />
           <FormField
             control={form.control}
-            name="codigo"
+            name='codigo'
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Código do Setor</FormLabel>
@@ -143,12 +143,12 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
           />
           <FormField
             control={form.control}
-            name="cnpj"
+            name='cnpj'
             render={({ field }) => (
               <FormItem>
                 <FormLabel>CNPJ</FormLabel>
                 <FormControl>
-                  <MaskedInput mask="cnpj" {...field} />
+                  <MaskedInput mask='cnpj' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -157,7 +157,7 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
         </div>
         <FormField
           control={form.control}
-          name="endereco"
+          name='endereco'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Endereço</FormLabel>
@@ -170,7 +170,7 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
         />
         <FormField
           control={form.control}
-          name="responsavel"
+          name='responsavel'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nome do Responsável</FormLabel>
@@ -183,7 +183,7 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
         />
         <FormField
           control={form.control}
-          name="parentId"
+          name='parentId'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Setor Pai</FormLabel>
@@ -192,7 +192,7 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
                   options={sectorOptions}
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Nenhum (Setor Raiz)"
+                  placeholder='Nenhum (Setor Raiz)'
                   isClearable
                 />
               </FormControl>
@@ -200,13 +200,13 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
             </FormItem>
           )}
         />
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
+        <div className='flex justify-end gap-2 pt-4'>
+          <Button type='button' variant='outline' onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit">Salvar</Button>
+          <Button type='submit'>Salvar</Button>
         </div>
       </form>
     </Form>
-  )
-}
+  );
+};

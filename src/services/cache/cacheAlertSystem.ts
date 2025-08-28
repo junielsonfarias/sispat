@@ -29,7 +29,12 @@ export interface AlertRule {
   };
   severity: 'low' | 'medium' | 'high' | 'critical';
   actions: Array<{
-    type: 'notification' | 'auto_invalidate' | 'auto_cleanup' | 'email' | 'webhook';
+    type:
+      | 'notification'
+      | 'auto_invalidate'
+      | 'auto_cleanup'
+      | 'email'
+      | 'webhook';
     parameters: Record<string, any>;
   }>;
   cooldown: number; // tempo em ms antes de poder disparar novamente
@@ -52,7 +57,7 @@ class CacheAlertSystem extends EventEmitter {
   private rules: Map<string, AlertRule> = new Map();
   private monitoringInterval: NodeJS.Timeout | null = null;
   private isMonitoring = false;
-  
+
   private readonly MONITORING_INTERVAL = 30000; // 30 segundos
   private readonly MAX_ALERTS_HISTORY = 1000;
 
@@ -76,18 +81,19 @@ class CacheAlertSystem extends EventEmitter {
         metric: 'total_hit_rate',
         operator: 'lt',
         threshold: 0.7,
-        duration: 60000 // 1 minuto
+        duration: 60000, // 1 minuto
       },
       severity: 'medium',
       actions: [
         {
           type: 'notification',
           parameters: {
-            message: 'Hit rate do cache está baixo. Considere revisar estratégias de cache.'
-          }
-        }
+            message:
+              'Hit rate do cache está baixo. Considere revisar estratégias de cache.',
+          },
+        },
       ],
-      cooldown: 300000 // 5 minutos
+      cooldown: 300000, // 5 minutos
     });
 
     // Alerta para uso alto de memória Redis
@@ -101,25 +107,26 @@ class CacheAlertSystem extends EventEmitter {
         metric: 'redis_memory_usage',
         operator: 'gt',
         threshold: 200, // MB
-        duration: 30000 // 30 segundos
+        duration: 30000, // 30 segundos
       },
       severity: 'high',
       actions: [
         {
           type: 'notification',
           parameters: {
-            message: 'Redis está usando muita memória. Considere limpeza automática.'
-          }
+            message:
+              'Redis está usando muita memória. Considere limpeza automática.',
+          },
         },
         {
           type: 'auto_cleanup',
           parameters: {
             pattern: 'expired:*',
-            maxAge: 3600000 // 1 hora
-          }
-        }
+            maxAge: 3600000, // 1 hora
+          },
+        },
       ],
-      cooldown: 600000 // 10 minutos
+      cooldown: 600000, // 10 minutos
     });
 
     // Alerta para hit rate crítico do Redis
@@ -133,50 +140,51 @@ class CacheAlertSystem extends EventEmitter {
         metric: 'redis_hit_rate',
         operator: 'lt',
         threshold: 0.5,
-        duration: 120000 // 2 minutos
+        duration: 120000, // 2 minutos
       },
       severity: 'critical',
       actions: [
         {
           type: 'notification',
           parameters: {
-            message: 'Hit rate do Redis está criticamente baixo!'
-          }
+            message: 'Hit rate do Redis está criticamente baixo!',
+          },
         },
         {
           type: 'webhook',
           parameters: {
             url: '/api/alerts/cache-critical',
-            method: 'POST'
-          }
-        }
+            method: 'POST',
+          },
+        },
       ],
-      cooldown: 300000 // 5 minutos
+      cooldown: 300000, // 5 minutos
     });
 
     // Alerta para muitos erros de invalidação
     this.addRule({
       id: 'invalidation-errors',
       name: 'Erros de Invalidação Frequentes',
-      description: 'Alerta quando há mais de 5 erros de invalidação em 10 minutos',
+      description:
+        'Alerta quando há mais de 5 erros de invalidação em 10 minutos',
       enabled: true,
       type: 'error',
       conditions: {
         metric: 'invalidation_errors_count',
         operator: 'gt',
         threshold: 5,
-        duration: 600000 // 10 minutos
+        duration: 600000, // 10 minutos
       },
       severity: 'high',
       actions: [
         {
           type: 'notification',
           parameters: {
-            message: 'Muitos erros no sistema de invalidação de cache.'
-          }
-        }
+            message: 'Muitos erros no sistema de invalidação de cache.',
+          },
+        },
       ],
-      cooldown: 900000 // 15 minutos
+      cooldown: 900000, // 15 minutos
     });
 
     // Alerta para limpeza de manutenção
@@ -190,18 +198,18 @@ class CacheAlertSystem extends EventEmitter {
         metric: 'old_entries_count',
         operator: 'gt',
         threshold: 1000,
-        duration: 3600000 // 1 hora
+        duration: 3600000, // 1 hora
       },
       severity: 'low',
       actions: [
         {
           type: 'notification',
           parameters: {
-            message: 'Considere executar limpeza de manutenção no cache.'
-          }
-        }
+            message: 'Considere executar limpeza de manutenção no cache.',
+          },
+        },
       ],
-      cooldown: 86400000 // 24 horas
+      cooldown: 86400000, // 24 horas
     });
   }
 
@@ -240,18 +248,20 @@ class CacheAlertSystem extends EventEmitter {
   private async checkAlerts(): Promise<void> {
     try {
       const metrics = await this.collectMetrics();
-      
+
       for (const rule of this.rules.values()) {
         if (!rule.enabled) continue;
-        
+
         // Verificar cooldown
-        if (rule.lastTriggered && 
-            Date.now() - rule.lastTriggered.getTime() < rule.cooldown) {
+        if (
+          rule.lastTriggered &&
+          Date.now() - rule.lastTriggered.getTime() < rule.cooldown
+        ) {
           continue;
         }
 
         const shouldTrigger = await this.evaluateRule(rule, metrics);
-        
+
         if (shouldTrigger) {
           await this.triggerAlert(rule, metrics);
         }
@@ -268,7 +278,7 @@ class CacheAlertSystem extends EventEmitter {
     const cacheStats = await advancedCache.getStats();
     const invalidationStats = cacheInvalidationService.getStats();
     const reportStats = await reportCache.getReportCacheStats();
-    
+
     return {
       total_hit_rate: cacheStats.total.hitRate,
       redis_hit_rate: cacheStats.redis.hitRate,
@@ -281,7 +291,7 @@ class CacheAlertSystem extends EventEmitter {
       total_invalidations: invalidationStats.totalInvalidations,
       report_cache_size: reportStats.totalReports,
       old_entries_count: this.estimateOldEntries(cacheStats),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -297,9 +307,12 @@ class CacheAlertSystem extends EventEmitter {
   /**
    * Avalia se uma regra deve ser disparada
    */
-  private async evaluateRule(rule: AlertRule, metrics: Record<string, any>): Promise<boolean> {
+  private async evaluateRule(
+    rule: AlertRule,
+    metrics: Record<string, any>
+  ): Promise<boolean> {
     const metricValue = metrics[rule.conditions.metric];
-    
+
     if (metricValue === undefined) return false;
 
     const { operator, threshold } = rule.conditions;
@@ -336,9 +349,12 @@ class CacheAlertSystem extends EventEmitter {
   /**
    * Dispara um alerta
    */
-  private async triggerAlert(rule: AlertRule, metrics: Record<string, any>): Promise<void> {
+  private async triggerAlert(
+    rule: AlertRule,
+    metrics: Record<string, any>
+  ): Promise<void> {
     const alertId = `${rule.id}-${Date.now()}`;
-    
+
     const alert: CacheAlert = {
       id: alertId,
       type: rule.type,
@@ -349,9 +365,9 @@ class CacheAlertSystem extends EventEmitter {
       data: {
         rule: rule.id,
         metrics,
-        conditions: rule.conditions
+        conditions: rule.conditions,
       },
-      acknowledged: false
+      acknowledged: false,
     };
 
     this.alerts.set(alertId, alert);
@@ -374,12 +390,15 @@ class CacheAlertSystem extends EventEmitter {
   /**
    * Gera mensagem personalizada do alerta
    */
-  private generateAlertMessage(rule: AlertRule, metrics: Record<string, any>): string {
+  private generateAlertMessage(
+    rule: AlertRule,
+    metrics: Record<string, any>
+  ): string {
     const metricValue = metrics[rule.conditions.metric];
-    const {threshold} = rule.conditions;
-    
+    const { threshold } = rule.conditions;
+
     let baseMessage = rule.description;
-    
+
     // Personalizar mensagem baseada na métrica
     switch (rule.conditions.metric) {
       case 'total_hit_rate':
@@ -524,8 +543,9 @@ class CacheAlertSystem extends EventEmitter {
    * Obtém todos os alertas
    */
   getAllAlerts(): CacheAlert[] {
-    return Array.from(this.alerts.values())
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return Array.from(this.alerts.values()).sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    );
   }
 
   /**
@@ -564,7 +584,8 @@ class CacheAlertSystem extends EventEmitter {
     const alertsByType: Record<string, number> = {};
 
     allAlerts.forEach(alert => {
-      alertsBySeverity[alert.severity] = (alertsBySeverity[alert.severity] || 0) + 1;
+      alertsBySeverity[alert.severity] =
+        (alertsBySeverity[alert.severity] || 0) + 1;
       alertsByType[alert.type] = (alertsByType[alert.type] || 0) + 1;
     });
 
@@ -574,12 +595,14 @@ class CacheAlertSystem extends EventEmitter {
 
     resolvedAlerts.forEach(alert => {
       if (alert.resolvedAt) {
-        totalResolutionTime += alert.resolvedAt.getTime() - alert.timestamp.getTime();
+        totalResolutionTime +=
+          alert.resolvedAt.getTime() - alert.timestamp.getTime();
         resolvedCount++;
       }
     });
 
-    const averageResolutionTime = resolvedCount > 0 ? totalResolutionTime / resolvedCount : 0;
+    const averageResolutionTime =
+      resolvedCount > 0 ? totalResolutionTime / resolvedCount : 0;
 
     return {
       totalAlerts: allAlerts.length,
@@ -589,7 +612,7 @@ class CacheAlertSystem extends EventEmitter {
       acknowledgedAlerts: acknowledgedAlerts.length,
       resolvedAlerts: resolvedAlerts.length,
       averageResolutionTime,
-      lastAlert: allAlerts.length > 0 ? allAlerts[0].timestamp : undefined
+      lastAlert: allAlerts.length > 0 ? allAlerts[0].timestamp : undefined,
     };
   }
 
@@ -597,8 +620,9 @@ class CacheAlertSystem extends EventEmitter {
    * Limita o histórico de alertas
    */
   private limitAlertsHistory(): void {
-    const alerts = Array.from(this.alerts.entries())
-      .sort(([,a], [,b]) => b.timestamp.getTime() - a.timestamp.getTime());
+    const alerts = Array.from(this.alerts.entries()).sort(
+      ([, a], [, b]) => b.timestamp.getTime() - a.timestamp.getTime()
+    );
 
     if (alerts.length > this.MAX_ALERTS_HISTORY) {
       const toRemove = alerts.slice(this.MAX_ALERTS_HISTORY);

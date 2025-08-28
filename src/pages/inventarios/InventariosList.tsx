@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -14,13 +14,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { PlusCircle, Trash2, Eye } from 'lucide-react'
-import { useInventory } from '@/contexts/InventoryContext'
-import { formatDate } from '@/lib/utils'
-import { useAuth } from '@/hooks/useAuth'
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { PlusCircle, Trash2, Eye } from 'lucide-react';
+import { useInventory } from '@/contexts/InventoryContext';
+import { formatDate } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,44 +31,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from '@/components/ui/alert-dialog';
 import {
   SearchableSelect,
   SearchableSelectOption,
-} from '@/components/ui/searchable-select'
+} from '@/components/ui/searchable-select';
 
 export default function InventariosList() {
-  const { inventories, deleteInventory } = useInventory()
-  const { user } = useAuth()
-  const [locationFilter, setLocationFilter] = useState<string | null>(null)
+  const { inventories, deleteInventory } = useInventory();
+  const { user } = useAuth();
+  const [locationFilter, setLocationFilter] = useState<string | null>(null);
 
   const locationOptions = useMemo(() => {
     const locations = new Set(
       inventories
-        .map((inv) => inv.locationType)
-        .filter((loc): loc is string => !!loc),
-    )
-    return Array.from(locations).map((loc) => ({ value: loc, label: loc }))
-  }, [inventories])
+        .map(inv => inv.locationType)
+        .filter((loc): loc is string => !!loc)
+    );
+    return Array.from(locations).map(loc => ({ value: loc, label: loc }));
+  }, [inventories]);
 
   const filteredInventories = useMemo(() => {
-    let data = [...inventories]
+    let data = [...inventories];
     if (locationFilter) {
-      data = data.filter((inv) => inv.locationType === locationFilter)
+      data = data.filter(inv => inv.locationType === locationFilter);
     }
     return data.sort(
       (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
-  }, [inventories, locationFilter])
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [inventories, locationFilter]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Gerenciamento de Inventários</h1>
+    <div className='flex flex-col gap-6'>
+      <div className='flex items-center justify-between'>
+        <h1 className='text-2xl font-bold'>Gerenciamento de Inventários</h1>
         <Button asChild>
-          <Link to="/inventarios/novo">
-            <PlusCircle className="mr-2 h-4 w-4" /> Novo Inventário
+          <Link to='/inventarios/novo'>
+            <PlusCircle className='mr-2 h-4 w-4' /> Novo Inventário
           </Link>
         </Button>
       </div>
@@ -78,12 +78,12 @@ export default function InventariosList() {
           <CardDescription>
             Visualize e gerencie os inventários realizados.
           </CardDescription>
-          <div className="pt-4">
+          <div className='pt-4'>
             <SearchableSelect
               options={locationOptions}
               value={locationFilter}
               onChange={setLocationFilter}
-              placeholder="Filtrar por Local do Bem..."
+              placeholder='Filtrar por Local do Bem...'
               isClearable
             />
           </div>
@@ -97,13 +97,13 @@ export default function InventariosList() {
                 <TableHead>Escopo</TableHead>
                 <TableHead>Data de Criação</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className='text-right'>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredInventories.map((inv) => (
+              {filteredInventories.map(inv => (
                 <TableRow key={inv.id}>
-                  <TableCell className="font-medium">{inv.name}</TableCell>
+                  <TableCell className='font-medium'>{inv.name}</TableCell>
                   <TableCell>{inv.sectorName}</TableCell>
                   <TableCell>
                     {inv.scope === 'location'
@@ -122,9 +122,9 @@ export default function InventariosList() {
                         : 'Em Andamento'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" asChild>
+                  <TableCell className='text-right'>
+                    <div className='flex justify-end gap-2'>
+                      <Button variant='outline' size='sm' asChild>
                         <Link
                           to={
                             inv.status === 'completed'
@@ -132,15 +132,15 @@ export default function InventariosList() {
                               : `/inventarios/${inv.id}`
                           }
                         >
-                          <Eye className="mr-2 h-4 w-4" />
+                          <Eye className='mr-2 h-4 w-4' />
                           {inv.status === 'completed' ? 'Ver' : 'Continuar'}
                         </Link>
                       </Button>
                       {user?.role === 'admin' && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                            <Button variant='destructive' size='sm'>
+                              <Trash2 className='mr-2 h-4 w-4' /> Excluir
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -170,5 +170,5 @@ export default function InventariosList() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -1,15 +1,15 @@
-import { useContext } from 'react'
+import { useContext } from 'react';
 import {
   CustomizationContext,
   CustomizationContextType,
-} from '@/contexts/CustomizationContext'
+} from '@/contexts/CustomizationContext';
 
 export const useCustomization = (): CustomizationContextType => {
-  const context = useContext(CustomizationContext)
+  const context = useContext(CustomizationContext);
   if (!context) {
     throw new Error(
-      'useCustomization must be used within a CustomizationProvider',
-    )
+      'useCustomization must be used within a CustomizationProvider'
+    );
   }
-  return context
-}
+  return context;
+};

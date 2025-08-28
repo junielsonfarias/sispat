@@ -15,14 +15,14 @@ class AdvancedAnalyticsEngine {
     this.metrics = {
       realTime: {},
       historical: {},
-      predictions: {}
+      predictions: {},
     };
-    
+
     this.alertThresholds = {
       highErrorRate: 5,
       lowSystemHealth: 80,
       highMemoryUsage: 85,
-      slowResponseTime: 2000
+      slowResponseTime: 2000,
     };
 
     this.initializeAnalytics();
@@ -45,7 +45,7 @@ class AdvancedAnalyticsEngine {
     try {
       const cacheKey = 'analytics_historical_data';
       const cached = await intelligentCache.get(cacheKey);
-      
+
       if (cached) {
         this.metrics.historical = cached;
         return;
@@ -53,7 +53,7 @@ class AdvancedAnalyticsEngine {
 
       const historicalData = await this.fetchHistoricalData();
       this.metrics.historical = historicalData;
-      
+
       await intelligentCache.set(cacheKey, historicalData, { ttl: 3600 });
       logInfo('Dados históricos carregados');
     } catch (error) {
@@ -114,7 +114,6 @@ class AdvancedAnalyticsEngine {
 
       // Verificar se há mudanças significativas
       await this.detectAnomalies(metrics);
-
     } catch (error) {
       logError('Erro ao atualizar métricas em tempo real:', error);
     }
@@ -130,14 +129,14 @@ class AdvancedAnalyticsEngine {
       systemHealth,
       errorRate,
       responseTime,
-      activeUsers
+      activeUsers,
     ] = await Promise.all([
       this.getPatrimoniosCount(),
       this.getTotalValue(),
       this.getSystemHealth(),
       this.getErrorRate(),
       this.getAverageResponseTime(),
-      this.getActiveUsers()
+      this.getActiveUsers(),
     ]);
 
     return {
@@ -147,7 +146,7 @@ class AdvancedAnalyticsEngine {
       errorRate: errorRate,
       averageResponseTime: responseTime,
       activeUsers: activeUsers,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -155,7 +154,8 @@ class AdvancedAnalyticsEngine {
    * Obter contagem de patrimônios
    */
   async getPatrimoniosCount() {
-    const sql = 'SELECT COUNT(*) as count FROM patrimonios WHERE deleted_at IS NULL';
+    const sql =
+      'SELECT COUNT(*) as count FROM patrimonios WHERE deleted_at IS NULL';
     const result = await query(sql);
     return parseInt(result.rows[0].count);
   }
@@ -164,7 +164,8 @@ class AdvancedAnalyticsEngine {
    * Obter valor total dos patrimônios
    */
   async getTotalValue() {
-    const sql = 'SELECT SUM(valor_aquisicao) as total FROM patrimonios WHERE deleted_at IS NULL';
+    const sql =
+      'SELECT SUM(valor_aquisicao) as total FROM patrimonios WHERE deleted_at IS NULL';
     const result = await query(sql);
     return parseFloat(result.rows[0].total || 0);
   }
@@ -177,11 +178,14 @@ class AdvancedAnalyticsEngine {
       const [errorRate, responseTime, memoryUsage] = await Promise.all([
         this.getErrorRate(),
         this.getAverageResponseTime(),
-        this.getMemoryUsage()
+        this.getMemoryUsage(),
       ]);
 
       // Fórmula de saúde do sistema (0-100)
-      const healthScore = Math.max(0, 100 - (errorRate * 10) - (responseTime / 100) - (memoryUsage / 10));
+      const healthScore = Math.max(
+        0,
+        100 - errorRate * 10 - responseTime / 100 - memoryUsage / 10
+      );
       return Math.round(healthScore);
     } catch (error) {
       return 50; // Valor padrão em caso de erro
@@ -234,7 +238,7 @@ class AdvancedAnalyticsEngine {
         severity: 'high',
         message: `Taxa de erro alta: ${metrics.errorRate.toFixed(2)}%`,
         value: metrics.errorRate,
-        threshold: this.alertThresholds.highErrorRate
+        threshold: this.alertThresholds.highErrorRate,
       });
     }
 
@@ -245,7 +249,7 @@ class AdvancedAnalyticsEngine {
         severity: 'critical',
         message: `Saúde do sistema baixa: ${metrics.systemHealth}%`,
         value: metrics.systemHealth,
-        threshold: this.alertThresholds.lowSystemHealth
+        threshold: this.alertThresholds.lowSystemHealth,
       });
     }
 
@@ -256,7 +260,7 @@ class AdvancedAnalyticsEngine {
         severity: 'medium',
         message: `Tempo de resposta lento: ${metrics.averageResponseTime}ms`,
         value: metrics.averageResponseTime,
-        threshold: this.alertThresholds.slowResponseTime
+        threshold: this.alertThresholds.slowResponseTime,
       });
     }
 
@@ -276,30 +280,41 @@ class AdvancedAnalyticsEngine {
     if (!historicalData || historicalData.length === 0) return;
 
     // Calcular médias históricas
-    const avgPatrimonios = historicalData.reduce((sum, day) => sum + day.total_patrimonios, 0) / historicalData.length;
-    const avgValue = historicalData.reduce((sum, day) => sum + parseFloat(day.total_value || 0), 0) / historicalData.length;
+    const avgPatrimonios =
+      historicalData.reduce((sum, day) => sum + day.total_patrimonios, 0) /
+      historicalData.length;
+    const avgValue =
+      historicalData.reduce(
+        (sum, day) => sum + parseFloat(day.total_value || 0),
+        0
+      ) / historicalData.length;
 
     const anomalies = [];
 
     // Verificar anomalia no número de patrimônios
-    const patrimoniosChange = Math.abs(currentMetrics.totalPatrimonios - avgPatrimonios) / avgPatrimonios;
-    if (patrimoniosChange > 0.2) { // 20% de variação
+    const patrimoniosChange =
+      Math.abs(currentMetrics.totalPatrimonios - avgPatrimonios) /
+      avgPatrimonios;
+    if (patrimoniosChange > 0.2) {
+      // 20% de variação
       anomalies.push({
         type: 'patrimonios_anomaly',
         message: `Variação significativa no número de patrimônios: ${patrimoniosChange.toFixed(2)}%`,
         current: currentMetrics.totalPatrimonios,
-        average: avgPatrimonios
+        average: avgPatrimonios,
       });
     }
 
     // Verificar anomalia no valor total
-    const valueChange = Math.abs(currentMetrics.totalValue - avgValue) / avgValue;
-    if (valueChange > 0.15) { // 15% de variação
+    const valueChange =
+      Math.abs(currentMetrics.totalValue - avgValue) / avgValue;
+    if (valueChange > 0.15) {
+      // 15% de variação
       anomalies.push({
         type: 'value_anomaly',
         message: `Variação significativa no valor total: ${valueChange.toFixed(2)}%`,
         current: currentMetrics.totalValue,
-        average: avgValue
+        average: avgValue,
       });
     }
 
@@ -320,8 +335,8 @@ class AdvancedAnalyticsEngine {
         data: {
           value: alert.value,
           threshold: alert.threshold,
-          message: alert.message
-        }
+          message: alert.message,
+        },
       });
 
       // Aqui você pode integrar com sistemas de notificação
@@ -339,8 +354,8 @@ class AdvancedAnalyticsEngine {
         message: anomaly.message,
         data: {
           current: anomaly.current,
-          average: anomaly.average
-        }
+          average: anomaly.average,
+        },
       });
     }
   }
@@ -352,7 +367,7 @@ class AdvancedAnalyticsEngine {
     const {
       period = '30d',
       includePredictions = true,
-      includeAnomalies = true
+      includeAnomalies = true,
     } = options;
 
     try {
@@ -362,8 +377,10 @@ class AdvancedAnalyticsEngine {
         realTimeMetrics: this.metrics.realTime,
         historicalData: this.metrics.historical,
         insights: await this.generateInsights(),
-        predictions: includePredictions ? await this.generatePredictions() : null,
-        anomalies: includeAnomalies ? await this.getRecentAnomalies() : null
+        predictions: includePredictions
+          ? await this.generatePredictions()
+          : null,
+        anomalies: includeAnomalies ? await this.getRecentAnomalies() : null,
       };
 
       return report;
@@ -385,14 +402,17 @@ class AdvancedAnalyticsEngine {
     if (historical.length >= 2) {
       const recent = historical[0];
       const previous = historical[1];
-      const growth = ((recent.total_patrimonios - previous.total_patrimonios) / previous.total_patrimonios) * 100;
-      
+      const growth =
+        ((recent.total_patrimonios - previous.total_patrimonios) /
+          previous.total_patrimonios) *
+        100;
+
       if (growth > 5) {
         insights.push({
           type: 'growth',
           message: `Crescimento significativo de ${growth.toFixed(1)}% no número de patrimônios`,
           value: growth,
-          trend: 'positive'
+          trend: 'positive',
         });
       }
     }
@@ -404,7 +424,7 @@ class AdvancedAnalyticsEngine {
         type: 'high_value',
         message: `Valor médio alto por patrimônio: R$ ${avgValue.toLocaleString('pt-BR')}`,
         value: avgValue,
-        trend: 'neutral'
+        trend: 'neutral',
       });
     }
 
@@ -414,7 +434,7 @@ class AdvancedAnalyticsEngine {
         type: 'system_health',
         message: `Saúde do sistema requer atenção: ${metrics.systemHealth}%`,
         value: metrics.systemHealth,
-        trend: 'negative'
+        trend: 'negative',
       });
     }
 
@@ -431,11 +451,11 @@ class AdvancedAnalyticsEngine {
     // Previsão simples baseada em tendência linear
     const recentData = historical.slice(0, 7);
     const trend = this.calculateTrend(recentData, 'total_patrimonios');
-    
+
     const predictions = {
       nextWeek: Math.round(recentData[0].total_patrimonios + trend * 7),
       nextMonth: Math.round(recentData[0].total_patrimonios + trend * 30),
-      confidence: this.calculateConfidence(recentData)
+      confidence: this.calculateConfidence(recentData),
     };
 
     return predictions;
@@ -449,9 +469,15 @@ class AdvancedAnalyticsEngine {
 
     const n = data.length;
     const sumX = (n * (n - 1)) / 2;
-    const sumY = data.reduce((sum, item, index) => sum + (item[field] * index), 0);
-    const sumXY = data.reduce((sum, item, index) => sum + (item[field] * index), 0);
-    const sumX2 = data.reduce((sum, item, index) => sum + (index * index), 0);
+    const sumY = data.reduce(
+      (sum, item, index) => sum + item[field] * index,
+      0
+    );
+    const sumXY = data.reduce(
+      (sum, item, index) => sum + item[field] * index,
+      0
+    );
+    const sumX2 = data.reduce((sum, item, index) => sum + index * index, 0);
 
     return (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
   }
@@ -464,7 +490,9 @@ class AdvancedAnalyticsEngine {
 
     const values = data.map(item => item.total_patrimonios);
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+    const variance =
+      values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
+      values.length;
     const stdDev = Math.sqrt(variance);
     const coefficient = stdDev / mean;
 
@@ -487,7 +515,7 @@ class AdvancedAnalyticsEngine {
     try {
       const cacheKey = 'dashboard_metrics';
       const cached = await intelligentCache.get(cacheKey);
-      
+
       if (cached) {
         return cached;
       }
@@ -496,12 +524,11 @@ class AdvancedAnalyticsEngine {
         realTime: this.metrics.realTime,
         charts: await this.getChartData(),
         insights: await this.generateInsights(),
-        alerts: await this.checkAlerts()
+        alerts: await this.checkAlerts(),
       };
 
       await intelligentCache.set(cacheKey, metrics, { ttl: 300 });
       return metrics;
-
     } catch (error) {
       logError('Erro ao obter métricas do dashboard:', error);
       throw error;
@@ -513,45 +540,51 @@ class AdvancedAnalyticsEngine {
    */
   async getChartData() {
     const historical = this.metrics.historical;
-    
+
     return {
       patrimonios: {
         labels: historical.map(item => item.date),
-        datasets: [{
-          label: 'Total de Patrimônios',
-          data: historical.map(item => item.total_patrimonios),
-          borderColor: 'rgb(75, 192, 192)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)'
-        }]
+        datasets: [
+          {
+            label: 'Total de Patrimônios',
+            data: historical.map(item => item.total_patrimonios),
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          },
+        ],
       },
       valores: {
         labels: historical.map(item => item.date),
-        datasets: [{
-          label: 'Valor Total (R$)',
-          data: historical.map(item => parseFloat(item.total_value || 0)),
-          borderColor: 'rgb(255, 99, 132)',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)'
-        }]
+        datasets: [
+          {
+            label: 'Valor Total (R$)',
+            data: historical.map(item => parseFloat(item.total_value || 0)),
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          },
+        ],
       },
       situacao: {
         labels: ['Ótimo', 'Bom', 'Regular', 'Ruim', 'Péssimo'],
-        datasets: [{
-          data: [
-            historical[0]?.otimo_count || 0,
-            historical[0]?.bom_count || 0,
-            historical[0]?.regular_count || 0,
-            historical[0]?.ruim_count || 0,
-            historical[0]?.pessimo_count || 0
-          ],
-          backgroundColor: [
-            '#4CAF50',
-            '#8BC34A',
-            '#FFC107',
-            '#FF9800',
-            '#F44336'
-          ]
-        }]
-      }
+        datasets: [
+          {
+            data: [
+              historical[0]?.otimo_count || 0,
+              historical[0]?.bom_count || 0,
+              historical[0]?.regular_count || 0,
+              historical[0]?.ruim_count || 0,
+              historical[0]?.pessimo_count || 0,
+            ],
+            backgroundColor: [
+              '#4CAF50',
+              '#8BC34A',
+              '#FFC107',
+              '#FF9800',
+              '#F44336',
+            ],
+          },
+        ],
+      },
     };
   }
 }

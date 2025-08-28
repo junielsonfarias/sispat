@@ -1,9 +1,9 @@
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -11,19 +11,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { ManutencaoTask } from '@/types'
-import { useManutencao } from '@/contexts/ManutencaoContext'
-import { useImovel } from '@/contexts/ImovelContext'
-import { useAuth } from '@/hooks/useAuth'
-import { DatePicker } from '@/components/ui/date-picker'
+} from '@/components/ui/select';
+import { ManutencaoTask } from '@/types';
+import { useManutencao } from '@/contexts/ManutencaoContext';
+import { useImovel } from '@/contexts/ImovelContext';
+import { useAuth } from '@/hooks/useAuth';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'O título é obrigatório.'),
@@ -33,22 +33,22 @@ const taskSchema = z.object({
   status: z.enum(['A Fazer', 'Em Progresso', 'Concluída']),
   dueDate: z.date(),
   assignedTo: z.string().optional(),
-})
+});
 
-type TaskFormValues = z.infer<typeof taskSchema>
+type TaskFormValues = z.infer<typeof taskSchema>;
 
 interface ManutencaoTaskFormProps {
-  task?: ManutencaoTask
-  onClose: () => void
+  task?: ManutencaoTask;
+  onClose: () => void;
 }
 
 export const ManutencaoTaskForm = ({
   task,
   onClose,
 }: ManutencaoTaskFormProps) => {
-  const { addTask, updateTask } = useManutencao()
-  const { imoveis } = useImovel()
-  const { users } = useAuth()
+  const { addTask, updateTask } = useManutencao();
+  const { imoveis } = useImovel();
+  const { users } = useAuth();
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -61,24 +61,24 @@ export const ManutencaoTaskForm = ({
       dueDate: task?.dueDate || new Date(),
       assignedTo: task?.assignedTo || '',
     },
-  })
+  });
 
   const onSubmit = (data: TaskFormValues) => {
-    const taskData = { ...data, attachments: task?.attachments || [] }
+    const taskData = { ...data, attachments: task?.attachments || [] };
     if (task) {
-      updateTask(task.id, taskData)
+      updateTask(task.id, taskData);
     } else {
-      addTask(taskData)
+      addTask(taskData);
     }
-    onClose()
-  }
+    onClose();
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
         <FormField
           control={form.control}
-          name="title"
+          name='title'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Título</FormLabel>
@@ -91,18 +91,18 @@ export const ManutencaoTaskForm = ({
         />
         <FormField
           control={form.control}
-          name="imovelId"
+          name='imovelId'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Imóvel</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um imóvel" />
+                    <SelectValue placeholder='Selecione um imóvel' />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {imoveis.map((i) => (
+                  {imoveis.map(i => (
                     <SelectItem key={i.id} value={i.id}>
                       {i.denominacao}
                     </SelectItem>
@@ -115,7 +115,7 @@ export const ManutencaoTaskForm = ({
         />
         <FormField
           control={form.control}
-          name="dueDate"
+          name='dueDate'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Prazo</FormLabel>
@@ -126,13 +126,13 @@ export const ManutencaoTaskForm = ({
             </FormItem>
           )}
         />
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>
+        <div className='flex justify-end gap-2'>
+          <Button type='button' variant='outline' onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit">Salvar</Button>
+          <Button type='submit'>Salvar</Button>
         </div>
       </form>
     </Form>
-  )
-}
+  );
+};

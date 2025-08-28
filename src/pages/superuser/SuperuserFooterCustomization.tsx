@@ -1,50 +1,50 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   useCustomization,
   CustomizationSettings,
-} from '@/contexts/CustomizationContext'
-import { toast } from '@/hooks/use-toast'
-import { Save } from 'lucide-react'
+} from '@/contexts/CustomizationContext';
+import { toast } from '@/hooks/use-toast';
+import { Save } from 'lucide-react';
 
 const SuperuserFooterCustomization = () => {
   const { getSettingsForMunicipality, saveSettingsForMunicipality } =
-    useCustomization()
+    useCustomization();
   const [settings, setSettings] = useState<CustomizationSettings>(
-    getSettingsForMunicipality('superuser'),
-  )
+    getSettingsForMunicipality('superuser')
+  );
 
   useEffect(() => {
-    setSettings(getSettingsForMunicipality('superuser'))
-  }, [getSettingsForMunicipality])
+    setSettings(getSettingsForMunicipality('superuser'));
+  }, [getSettingsForMunicipality]);
 
   const handleSave = () => {
-    saveSettingsForMunicipality('superuser', settings)
-    toast({ description: 'Rodapé do superusuário atualizado com sucesso.' })
-  }
+    saveSettingsForMunicipality('superuser', settings);
+    toast({ description: 'Rodapé do superusuário atualizado com sucesso.' });
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setSettings((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setSettings(prev => ({ ...prev, [name]: value }));
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">
+    <div className='flex flex-col gap-6'>
+      <div className='flex items-center justify-between'>
+        <h1 className='text-2xl font-bold'>
           Personalização do Rodapé do Superusuário
         </h1>
         <Button onClick={handleSave}>
-          <Save className="mr-2 h-4 w-4" /> Salvar Alterações
+          <Save className='mr-2 h-4 w-4' /> Salvar Alterações
         </Button>
       </div>
       <Card>
@@ -55,11 +55,11 @@ const SuperuserFooterCustomization = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="superUserFooterText">Texto do Rodapé</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='superUserFooterText'>Texto do Rodapé</Label>
             <Input
-              id="superUserFooterText"
-              name="superUserFooterText"
+              id='superUserFooterText'
+              name='superUserFooterText'
               value={settings.superUserFooterText || ''}
               onChange={handleChange}
             />
@@ -67,7 +67,7 @@ const SuperuserFooterCustomization = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default SuperuserFooterCustomization
+export default SuperuserFooterCustomization;

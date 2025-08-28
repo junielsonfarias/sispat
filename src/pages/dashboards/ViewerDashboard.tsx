@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
-import { Archive, CheckCircle, Building } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Pie, PieChart, Tooltip, Legend, Cell } from 'recharts'
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
+import { useMemo } from 'react';
+import { Archive, CheckCircle, Building } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Pie, PieChart, Tooltip, Legend, Cell } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import {
   Table,
   TableBody,
@@ -10,23 +10,23 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { useSectors } from '@/contexts/SectorContext'
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { useSectors } from '@/contexts/SectorContext';
 
 const ViewerDashboard = () => {
-  const { patrimonios } = usePatrimonio()
-  const { sectors } = useSectors()
+  const { patrimonios } = usePatrimonio();
+  const { sectors } = useSectors();
 
   const stats = useMemo(() => {
-    const activeCount = patrimonios.filter((p) => p.status === 'ativo').length
+    const activeCount = patrimonios.filter(p => p.status === 'ativo').length;
     return {
       totalCount: patrimonios.length,
       activeCount,
       sectorCount: sectors.length,
-    }
-  }, [patrimonios, sectors])
+    };
+  }, [patrimonios, sectors]);
 
   const statsCards = [
     {
@@ -44,29 +44,29 @@ const ViewerDashboard = () => {
       value: stats.sectorCount.toLocaleString('pt-BR'),
       icon: Building,
     },
-  ]
+  ];
 
   const distributionData = useMemo(() => {
     const counts = patrimonios.reduce(
       (acc, p) => {
-        acc[p.tipo] = (acc[p.tipo] || 0) + 1
-        return acc
+        acc[p.tipo] = (acc[p.tipo] || 0) + 1;
+        return acc;
       },
-      {} as Record<string, number>,
-    )
+      {} as Record<string, number>
+    );
     const chartColors = [
       'hsl(var(--chart-1))',
       'hsl(var(--chart-2))',
       'hsl(var(--chart-3))',
       'hsl(var(--chart-4))',
       'hsl(var(--chart-5))',
-    ]
+    ];
     return Object.entries(counts).map(([name, value], index) => ({
       name,
       value,
       fill: chartColors[index % chartColors.length],
-    }))
-  }, [patrimonios])
+    }));
+  }, [patrimonios]);
 
   const recentPatrimonios = useMemo(
     () =>
@@ -74,45 +74,45 @@ const ViewerDashboard = () => {
         .sort(
           (a, b) =>
             new Date(b.data_aquisicao).getTime() -
-            new Date(a.data_aquisicao).getTime(),
+            new Date(a.data_aquisicao).getTime()
         )
         .slice(0, 5),
-    [patrimonios],
-  )
+    [patrimonios]
+  );
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Dashboard de Consulta</h1>
-      <div className="grid gap-4 md:grid-cols-3">
-        {statsCards.map((card) => (
+    <div className='flex flex-col gap-6'>
+      <h1 className='text-2xl font-bold'>Dashboard de Consulta</h1>
+      <div className='grid gap-4 md:grid-cols-3'>
+        {statsCards.map(card => (
           <Card key={card.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+              <CardTitle className='text-sm font-medium'>
                 {card.title}
               </CardTitle>
-              <card.icon className="h-4 w-4 text-muted-foreground" />
+              <card.icon className='h-4 w-4 text-muted-foreground' />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
+              <div className='text-2xl font-bold'>{card.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
-      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+      <div className='grid gap-4 md:grid-cols-1 lg:grid-cols-3'>
+        <Card className='lg:col-span-1'>
           <CardHeader>
             <CardTitle>Distribuição Geral por Tipo</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
+            <ChartContainer config={{}} className='h-[300px] w-full'>
               <PieChart>
                 <Tooltip content={<ChartTooltipContent />} />
                 <Pie
                   data={distributionData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
+                  dataKey='value'
+                  nameKey='name'
+                  cx='50%'
+                  cy='50%'
                   outerRadius={80}
                 >
                   {distributionData.map((entry, index) => (
@@ -124,7 +124,7 @@ const ViewerDashboard = () => {
             </ChartContainer>
           </CardContent>
         </Card>
-        <Card className="lg:col-span-2">
+        <Card className='lg:col-span-2'>
           <CardHeader>
             <CardTitle>Visão Geral dos Bens (Mais Recentes)</CardTitle>
           </CardHeader>
@@ -139,9 +139,9 @@ const ViewerDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentPatrimonios.map((item) => (
+                {recentPatrimonios.map(item => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className='font-medium'>
                       {item.numero_patrimonio}
                     </TableCell>
                     <TableCell>{item.descricao}</TableCell>
@@ -163,7 +163,7 @@ const ViewerDashboard = () => {
         </Card>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ViewerDashboard
+export default ViewerDashboard;

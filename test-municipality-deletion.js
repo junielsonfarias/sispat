@@ -2,19 +2,19 @@ import fetch from 'node-fetch';
 
 async function testMunicipalityDeletion() {
   const baseUrl = 'http://localhost:3001/api';
-  
+
   try {
     // Primeiro, fazer login para obter o token
     console.log('🔐 Fazendo login...');
     const loginResponse = await fetch(`${baseUrl}/auth/login`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         email: 'junielsonfarias@gmail.com',
-        password: 'admin123'
-      })
+        password: 'admin123',
+      }),
     });
 
     if (!loginResponse.ok) {
@@ -30,12 +30,14 @@ async function testMunicipalityDeletion() {
     console.log('📋 Buscando municípios...');
     const municipalitiesResponse = await fetch(`${baseUrl}/municipalities`, {
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!municipalitiesResponse.ok) {
-      throw new Error(`Failed to fetch municipalities: ${municipalitiesResponse.status}`);
+      throw new Error(
+        `Failed to fetch municipalities: ${municipalitiesResponse.status}`
+      );
     }
 
     const municipalities = await municipalitiesResponse.json();
@@ -48,34 +50,47 @@ async function testMunicipalityDeletion() {
 
     // Pegar o primeiro município para teste
     const testMunicipality = municipalities[0];
-    console.log(`🧪 Testando exclusão do município: ${testMunicipality.name} (${testMunicipality.id})`);
+    console.log(
+      `🧪 Testando exclusão do município: ${testMunicipality.name} (${testMunicipality.id})`
+    );
 
     // Tentar exclusão normal primeiro
     console.log('🔄 Tentando exclusão normal...');
-    const deleteResponse = await fetch(`${baseUrl}/municipalities/${testMunicipality.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    console.log(`📡 Resposta da exclusão normal: ${deleteResponse.status}`);
-    
-    if (deleteResponse.status === 400) {
-      const errorData = await deleteResponse.json();
-      console.log('⚠️ Exclusão normal falhou (esperado se há dependências):', errorData);
-      
-      // Tentar exclusão forçada
-      console.log('🔨 Tentando exclusão forçada...');
-      const forceDeleteResponse = await fetch(`${baseUrl}/municipalities/${testMunicipality.id}?force=true`, {
+    const deleteResponse = await fetch(
+      `${baseUrl}/municipalities/${testMunicipality.id}`,
+      {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-      console.log(`📡 Resposta da exclusão forçada: ${forceDeleteResponse.status}`);
-      
+    console.log(`📡 Resposta da exclusão normal: ${deleteResponse.status}`);
+
+    if (deleteResponse.status === 400) {
+      const errorData = await deleteResponse.json();
+      console.log(
+        '⚠️ Exclusão normal falhou (esperado se há dependências):',
+        errorData
+      );
+
+      // Tentar exclusão forçada
+      console.log('🔨 Tentando exclusão forçada...');
+      const forceDeleteResponse = await fetch(
+        `${baseUrl}/municipalities/${testMunicipality.id}?force=true`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log(
+        `📡 Resposta da exclusão forçada: ${forceDeleteResponse.status}`
+      );
+
       if (forceDeleteResponse.ok) {
         const successData = await forceDeleteResponse.json();
         console.log('✅ Exclusão forçada realizada com sucesso:', successData);
@@ -90,7 +105,6 @@ async function testMunicipalityDeletion() {
       const errorData = await deleteResponse.json();
       console.log('❌ Exclusão falhou:', errorData);
     }
-
   } catch (error) {
     console.error('❌ Erro no teste:', error);
   }

@@ -1,193 +1,220 @@
-import { api } from '@/services/api'
-import { Municipality, User } from '@/types'
+import { api } from '@/services/api';
+import { Municipality, User } from '@/types';
 import {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
-} from 'react'
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 interface MunicipalityContextType {
-  municipalities: Municipality[]
-  isLoading: boolean
-  getMunicipalityById: (id: string) => Municipality | undefined
+  municipalities: Municipality[];
+  isLoading: boolean;
+  getMunicipalityById: (id: string) => Municipality | undefined;
   addMunicipality: (
     data: Omit<Municipality, 'id' | 'history'>,
-    user: User,
-  ) => Promise<Municipality>
+    user: User
+  ) => Promise<Municipality>;
   updateMunicipality: (
     id: string,
     data: Partial<Omit<Municipality, 'id' | 'history'>>,
-    user: User,
-  ) => Promise<void>
-  deleteMunicipality: (id: string) => Promise<void>
-  refreshMunicipalities: () => Promise<void>
+    user: User
+  ) => Promise<void>;
+  deleteMunicipality: (id: string) => Promise<void>;
+  refreshMunicipalities: () => Promise<void>;
 }
 
-const MunicipalityContext = createContext<MunicipalityContextType | null>(null)
+const MunicipalityContext = createContext<MunicipalityContextType | null>(null);
 
 export const MunicipalityProvider = ({ children }: { children: ReactNode }) => {
-  const [municipalities, setMunicipalities] = useState<Municipality[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  
-  console.log('MunicipalityProvider - Initial state:', { municipalities, isLoading })
+  const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  console.log('MunicipalityProvider - Initial state:', {
+    municipalities,
+    isLoading,
+  });
 
   const fetchMunicipalities = useCallback(async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      console.log('Fetching municipalities...')
-      
+      console.log('Fetching municipalities...');
+
       // Check if user is authenticated
-      const token = localStorage.getItem('sispat_auth_token') || sessionStorage.getItem('sispat_auth_token')
+      const token =
+        localStorage.getItem('sispat_auth_token') ||
+        sessionStorage.getItem('sispat_auth_token');
       if (!token) {
-        console.log('No auth token found, trying to fetch municipalities without auth...')
-              // Try to fetch without auth for login page
-      try {
-        const response = await fetch('/api/municipalities/public')
-        if (response.ok) {
-          const data = await response.json()
-          if (Array.isArray(data)) {
-            setMunicipalities(data)
-            console.log('Municipalities fetched without auth:', data)
-            localStorage.setItem('sispat_municipalities', JSON.stringify(data))
+        console.log(
+          'No auth token found, trying to fetch municipalities without auth...'
+        );
+        // Try to fetch without auth for login page
+        try {
+          const response = await fetch('/api/municipalities/public');
+          if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data)) {
+              setMunicipalities(data);
+              console.log('Municipalities fetched without auth:', data);
+              localStorage.setItem(
+                'sispat_municipalities',
+                JSON.stringify(data)
+              );
+            }
           }
+        } catch (error) {
+          console.log('Failed to fetch municipalities without auth:', error);
         }
-      } catch (error) {
-        console.log('Failed to fetch municipalities without auth:', error)
+        setIsLoading(false);
+        return;
       }
-        setIsLoading(false)
-        return
-      }
-      
-      const data = await api.get<Municipality[]>('/municipalities')
-      console.log('Municipalities API response:', data)
+
+      const data = await api.get<Municipality[]>('/municipalities');
+      console.log('Municipalities API response:', data);
       if (Array.isArray(data)) {
-        setMunicipalities(data)
-        console.log('Municipalities set successfully:', data)
+        setMunicipalities(data);
+        console.log('Municipalities set successfully:', data);
         // Store in localStorage for persistence
-        localStorage.setItem('sispat_municipalities', JSON.stringify(data))
+        localStorage.setItem('sispat_municipalities', JSON.stringify(data));
       } else {
-        console.error('API for municipalities did not return an array:', data)
-        setMunicipalities([])
-        localStorage.removeItem('sispat_municipalities')
+        console.error('API for municipalities did not return an array:', data);
+        setMunicipalities([]);
+        localStorage.removeItem('sispat_municipalities');
       }
     } catch (error) {
-      console.error('Failed to fetch municipalities', error)
-      setMunicipalities([])
-      localStorage.removeItem('sispat_municipalities')
+      console.error('Failed to fetch municipalities', error);
+      setMunicipalities([]);
+      localStorage.removeItem('sispat_municipalities');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     // Try to load from localStorage first
-    const cachedMunicipalities = localStorage.getItem('sispat_municipalities')
+    const cachedMunicipalities = localStorage.getItem('sispat_municipalities');
     if (cachedMunicipalities) {
       try {
-        const parsed = JSON.parse(cachedMunicipalities)
+        const parsed = JSON.parse(cachedMunicipalities);
         if (Array.isArray(parsed)) {
-          console.log('Loading municipalities from cache:', parsed)
-          setMunicipalities(parsed)
-          setIsLoading(false)
+          console.log('Loading municipalities from cache:', parsed);
+          setMunicipalities(parsed);
+          setIsLoading(false);
         }
       } catch (error) {
-        console.error('Failed to parse cached municipalities:', error)
-        localStorage.removeItem('sispat_municipalities')
+        console.error('Failed to parse cached municipalities:', error);
+        localStorage.removeItem('sispat_municipalities');
       }
     }
-    
+
     // Always fetch fresh data
-    fetchMunicipalities()
-    
+    fetchMunicipalities();
+
     // Set up auto-refresh every 5 minutes (more reasonable)
     const interval = setInterval(() => {
-      console.log('Auto-refreshing municipalities...')
-      fetchMunicipalities()
-    }, 300000) // 5 minutes
-    
-    return () => clearInterval(interval)
-  }, [])
+      console.log('Auto-refreshing municipalities...');
+      fetchMunicipalities();
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, []);
 
   const getMunicipalityById = useCallback(
-    (id: string) => municipalities.find((m) => m.id === id),
-    [municipalities],
-  )
+    (id: string) => municipalities.find(m => m.id === id),
+    [municipalities]
+  );
 
   const addMunicipality = async (
     data: Omit<Municipality, 'id' | 'history'>,
-    user: User,
+    user: User
   ): Promise<Municipality> => {
     try {
-      const newMunicipality = await api.post<Municipality>('/municipalities', data)
-      
+      const newMunicipality = await api.post<Municipality>(
+        '/municipalities',
+        data
+      );
+
       // Add to local state immediately
-      setMunicipalities(prev => [...prev, newMunicipality])
-      
+      setMunicipalities(prev => [...prev, newMunicipality]);
+
       // Update localStorage
-      const updatedMunicipalities = [...municipalities, newMunicipality]
-      localStorage.setItem('sispat_municipalities', JSON.stringify(updatedMunicipalities))
-      
+      const updatedMunicipalities = [...municipalities, newMunicipality];
+      localStorage.setItem(
+        'sispat_municipalities',
+        JSON.stringify(updatedMunicipalities)
+      );
+
       // Also refresh from server to ensure consistency
-      await fetchMunicipalities()
-      
-      return newMunicipality
+      await fetchMunicipalities();
+
+      return newMunicipality;
     } catch (error) {
-      console.error('Error adding municipality:', error)
-      throw error
+      console.error('Error adding municipality:', error);
+      throw error;
     }
-  }
+  };
 
   const updateMunicipality = async (
     id: string,
     data: Partial<Omit<Municipality, 'id' | 'history'>>,
-    user: User,
+    user: User
   ) => {
     try {
-      const updated = await api.put<Municipality>(`/municipalities/${id}`, data)
-      
+      const updated = await api.put<Municipality>(
+        `/municipalities/${id}`,
+        data
+      );
+
       // Update local state immediately
-      setMunicipalities(prev => prev.map(m => m.id === id ? updated : m))
-      
+      setMunicipalities(prev => prev.map(m => (m.id === id ? updated : m)));
+
       // Update localStorage
-      const updatedMunicipalities = municipalities.map(m => m.id === id ? updated : m)
-      localStorage.setItem('sispat_municipalities', JSON.stringify(updatedMunicipalities))
-      
+      const updatedMunicipalities = municipalities.map(m =>
+        m.id === id ? updated : m
+      );
+      localStorage.setItem(
+        'sispat_municipalities',
+        JSON.stringify(updatedMunicipalities)
+      );
+
       // Also refresh from server to ensure consistency
-      await fetchMunicipalities()
-      
+      await fetchMunicipalities();
     } catch (error) {
-      console.error('Error updating municipality:', error)
-      throw error
+      console.error('Error updating municipality:', error);
+      throw error;
     }
-  }
+  };
 
   const deleteMunicipality = async (id: string, force: boolean = false) => {
     try {
-      const endpoint = force ? `/municipalities/${id}?force=true` : `/municipalities/${id}`
-      await api.delete(endpoint)
-      
+      const endpoint = force
+        ? `/municipalities/${id}?force=true`
+        : `/municipalities/${id}`;
+      await api.delete(endpoint);
+
       // Remove from local state immediately
-      setMunicipalities(prev => prev.filter(m => m.id !== id))
-      
+      setMunicipalities(prev => prev.filter(m => m.id !== id));
+
       // Update localStorage
-      const updatedMunicipalities = municipalities.filter(m => m.id !== id)
-      localStorage.setItem('sispat_municipalities', JSON.stringify(updatedMunicipalities))
-      
+      const updatedMunicipalities = municipalities.filter(m => m.id !== id);
+      localStorage.setItem(
+        'sispat_municipalities',
+        JSON.stringify(updatedMunicipalities)
+      );
+
       // Also refresh from server to ensure consistency
-      await fetchMunicipalities()
-      
+      await fetchMunicipalities();
     } catch (error) {
-      console.error('Error deleting municipality:', error)
-      throw error
+      console.error('Error deleting municipality:', error);
+      throw error;
     }
-  }
+  };
 
   const refreshMunicipalities = async () => {
-    await fetchMunicipalities()
-  }
+    await fetchMunicipalities();
+  };
 
   return (
     <MunicipalityContext.Provider
@@ -203,15 +230,15 @@ export const MunicipalityProvider = ({ children }: { children: ReactNode }) => {
     >
       {children}
     </MunicipalityContext.Provider>
-  )
-}
+  );
+};
 
 export const useMunicipalities = () => {
-  const context = useContext(MunicipalityContext)
+  const context = useContext(MunicipalityContext);
   if (!context) {
     throw new Error(
-      'useMunicipalities must be used within a MunicipalityProvider',
-    )
+      'useMunicipalities must be used within a MunicipalityProvider'
+    );
   }
-  return context
-}
+  return context;
+};

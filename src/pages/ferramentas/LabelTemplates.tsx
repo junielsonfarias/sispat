@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -6,8 +6,8 @@ import {
   CardTitle,
   CardDescription,
   CardFooter,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,9 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { PlusCircle, Edit, Trash2, QrCode } from 'lucide-react'
-import { useLabelTemplates } from '@/contexts/LabelTemplateContext'
+} from '@/components/ui/alert-dialog';
+import { PlusCircle, Edit, Trash2, QrCode } from 'lucide-react';
+import { useLabelTemplates } from '@/contexts/LabelTemplateContext';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -28,19 +28,19 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+} from '@/components/ui/breadcrumb';
 
 export default function LabelTemplates() {
-  const { templates, deleteTemplate } = useLabelTemplates()
-  const navigate = useNavigate()
+  const { templates, deleteTemplate } = useLabelTemplates();
+  const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/gerar-etiquetas">Gerar Etiquetas</Link>
+              <Link to='/gerar-etiquetas'>Gerar Etiquetas</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -49,10 +49,10 @@ export default function LabelTemplates() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Modelos de Etiqueta</h1>
+      <div className='flex items-center justify-between'>
+        <h1 className='text-2xl font-bold'>Modelos de Etiqueta</h1>
         <Button onClick={() => navigate('/etiquetas/templates/editor/novo')}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Criar Novo Modelo
+          <PlusCircle className='mr-2 h-4 w-4' /> Criar Novo Modelo
         </Button>
       </div>
       <Card>
@@ -63,12 +63,12 @@ export default function LabelTemplates() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {templates.map((template) => (
-              <Card key={template.id} className="flex flex-col">
-                <CardHeader className="flex-grow">
-                  <div className="flex items-start gap-4">
-                    <QrCode className="h-6 w-6 text-primary mt-1" />
+          <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+            {templates.map(template => (
+              <Card key={template.id} className='flex flex-col'>
+                <CardHeader className='flex-grow'>
+                  <div className='flex items-start gap-4'>
+                    <QrCode className='h-6 w-6 text-primary mt-1' />
                     <div>
                       <CardTitle>{template.name}</CardTitle>
                       <CardDescription>
@@ -77,21 +77,21 @@ export default function LabelTemplates() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardFooter className="flex justify-end gap-2">
+                <CardFooter className='flex justify-end gap-2'>
                   <Button
-                    variant="outline"
-                    size="sm"
+                    variant='outline'
+                    size='sm'
                     onClick={() =>
                       navigate(`/etiquetas/templates/editor/${template.id}`)
                     }
                   >
-                    <Edit className="mr-2 h-4 w-4" /> Editar
+                    <Edit className='mr-2 h-4 w-4' /> Editar
                   </Button>
                   {!template.isDefault && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">
-                          <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                        <Button variant='destructive' size='sm'>
+                          <Trash2 className='mr-2 h-4 w-4' /> Excluir
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -120,5 +120,5 @@ export default function LabelTemplates() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -1,62 +1,62 @@
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { Button } from '@/components/ui/button'
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
-import { useLocals } from '@/contexts/LocalContext'
-import { useMunicipalities } from '@/contexts/MunicipalityContext'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { useSectors } from '@/contexts/SectorContext'
-import { toast } from '@/hooks/use-toast'
-import { useAuth } from '@/hooks/useAuth'
-import { format } from 'date-fns'
-import { Download, History, Loader2, Upload } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useLocals } from '@/contexts/LocalContext';
+import { useMunicipalities } from '@/contexts/MunicipalityContext';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { useSectors } from '@/contexts/SectorContext';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { format } from 'date-fns';
+import { Download, History, Loader2, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface BackupHistory {
-  date: Date
-  user: string
-  fileSize: string
+  date: Date;
+  user: string;
+  fileSize: string;
 }
 
 export default function BackupSettings() {
-  const [isBackingUp, setIsBackingUp] = useState(false)
-  const [isRestoring, setIsRestoring] = useState(false)
-  const [backupHistory, setBackupHistory] = useState<BackupHistory[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [backupHistory, setBackupHistory] = useState<BackupHistory[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { patrimonios, setPatrimonios } = usePatrimonio()
-  const { user, users } = useAuth()
-  const { sectors, setSectors } = useSectors()
-  const { locals, fetchLocals } = useLocals()
-  const { municipalities } = useMunicipalities()
+  const { patrimonios, setPatrimonios } = usePatrimonio();
+  const { user, users } = useAuth();
+  const { sectors, setSectors } = useSectors();
+  const { locals, fetchLocals } = useLocals();
+  const { municipalities } = useMunicipalities();
 
   const createBackup = () => {
-    if (!user) return
-    setIsBackingUp(true)
+    if (!user) return;
+    setIsBackingUp(true);
     try {
       const backupData = {
         patrimonios,
@@ -65,46 +65,46 @@ export default function BackupSettings() {
         locais,
         municipalities,
         createdAt: new Date(),
-      }
-      const jsonString = JSON.stringify(backupData, null, 2)
-      const blob = new Blob([jsonString], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `sispat-backup-${format(new Date(), 'yyyy-MM-dd-HH-mm')}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      };
+      const jsonString = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sispat-backup-${format(new Date(), 'yyyy-MM-dd-HH-mm')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-      setBackupHistory((prev) => [
+      setBackupHistory(prev => [
         ...prev,
         {
           date: new Date(),
           user: user.name,
           fileSize: `${(blob.size / 1024).toFixed(2)} KB`,
         },
-      ])
-      toast({ description: 'Backup criado com sucesso.' })
+      ]);
+      toast({ description: 'Backup criado com sucesso.' });
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Erro',
         description: 'Falha ao criar o backup.',
-      })
+      });
     } finally {
-      setIsBackingUp(false)
+      setIsBackingUp(false);
     }
-  }
+  };
 
   const handleRestore = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
+    const reader = new FileReader();
+    reader.onload = e => {
       try {
-        const data = JSON.parse(e.target?.result as string)
+        const data = JSON.parse(e.target?.result as string);
         if (
           !data.patrimonios ||
           !data.users ||
@@ -112,20 +112,20 @@ export default function BackupSettings() {
           !data.locais ||
           !data.municipalities
         ) {
-          throw new Error('Arquivo de backup inválido ou corrompido.')
+          throw new Error('Arquivo de backup inválido ou corrompido.');
         }
-        setIsRestoring(true)
-        setPatrimonios(data.patrimonios)
+        setIsRestoring(true);
+        setPatrimonios(data.patrimonios);
         // Note: In a real app, you'd need a setUsers in AuthContext
         // For this mock, we'll assume it exists for demonstration
         // setUsers(data.users);
-        setSectors(data.sectors)
-        setLocais(data.locais)
+        setSectors(data.sectors);
+        setLocais(data.locais);
         // setMunicipalities(data.municipalities);
         toast({
           title: 'Sucesso!',
           description: 'Dados restaurados com sucesso a partir do backup.',
-        })
+        });
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -134,24 +134,24 @@ export default function BackupSettings() {
             error instanceof Error
               ? error.message
               : 'Falha ao processar o arquivo de backup.',
-        })
+        });
       } finally {
-        setIsRestoring(false)
+        setIsRestoring(false);
         if (fileInputRef.current) {
-          fileInputRef.current.value = ''
+          fileInputRef.current.value = '';
         }
       }
-    }
-    reader.readAsText(file)
-  }
+    };
+    reader.readAsText(file);
+  };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/configuracoes">Configurações</Link>
+              <Link to='/configuracoes'>Configurações</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -160,7 +160,7 @@ export default function BackupSettings() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <h1 className="text-2xl font-bold">Backup e Restauração</h1>
+      <h1 className='text-2xl font-bold'>Backup e Restauração</h1>
       <Card>
         <CardHeader>
           <CardTitle>Backup dos Dados</CardTitle>
@@ -169,16 +169,16 @@ export default function BackupSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className='text-sm text-muted-foreground mb-4'>
             É altamente recomendável realizar backups regularmente para garantir
             a segurança dos seus dados. O arquivo de backup conterá todos os
             bens, usuários, setores e configurações.
           </p>
           <Button onClick={createBackup} disabled={isBackingUp}>
             {isBackingUp ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
             ) : (
-              <Download className="mr-2 h-4 w-4" />
+              <Download className='mr-2 h-4 w-4' />
             )}
             {isBackingUp ? 'Gerando...' : 'Criar Novo Backup'}
           </Button>
@@ -192,14 +192,14 @@ export default function BackupSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className='text-sm text-muted-foreground mb-4'>
             Atenção: A restauração substituirá todos os dados atuais do sistema.
             Esta ação não pode ser desfeita.
           </p>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" disabled={isRestoring}>
-                <Upload className="mr-2 h-4 w-4" /> Restaurar Backup
+              <Button variant='outline' disabled={isRestoring}>
+                <Upload className='mr-2 h-4 w-4' /> Restaurar Backup
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -221,10 +221,10 @@ export default function BackupSettings() {
             </AlertDialogContent>
           </AlertDialog>
           <input
-            type="file"
+            type='file'
             ref={fileInputRef}
-            className="hidden"
-            accept=".json"
+            className='hidden'
+            accept='.json'
             onChange={handleRestore}
           />
         </CardContent>
@@ -235,11 +235,11 @@ export default function BackupSettings() {
         </CardHeader>
         <CardContent>
           {backupHistory.length > 0 ? (
-            <ul className="space-y-2">
+            <ul className='space-y-2'>
               {backupHistory.map((item, index) => (
                 <li
                   key={index}
-                  className="flex justify-between items-center text-sm"
+                  className='flex justify-between items-center text-sm'
                 >
                   <span>
                     {format(item.date, 'dd/MM/yyyy HH:mm')} - {item.user}
@@ -249,13 +249,13 @@ export default function BackupSettings() {
               ))}
             </ul>
           ) : (
-            <div className="flex items-center justify-center text-muted-foreground h-24">
-              <History className="mr-2 h-5 w-5" />
+            <div className='flex items-center justify-center text-muted-foreground h-24'>
+              <History className='mr-2 h-5 w-5' />
               <p>Nenhum backup realizado ainda.</p>
             </div>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

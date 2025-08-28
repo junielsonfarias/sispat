@@ -34,7 +34,7 @@ export class MonitoringWebSocketServer {
         id: clientId,
         ws,
         subscriptions: new Set(['metrics', 'alerts']), // Subscrições padrão
-        lastPing: Date.now()
+        lastPing: Date.now(),
       };
 
       this.clients.set(clientId, client);
@@ -54,7 +54,9 @@ export class MonitoringWebSocketServer {
     this.startPeriodicUpdates();
     this.startHeartbeat();
 
-    console.log(`Servidor WebSocket de monitoramento iniciado na porta ${this.port}`);
+    console.log(
+      `Servidor WebSocket de monitoramento iniciado na porta ${this.port}`
+    );
   }
 
   // Parar servidor
@@ -81,7 +83,7 @@ export class MonitoringWebSocketServer {
 
   // Configurar handlers para um cliente
   private setupClientHandlers(client: MonitoringClient): void {
-    client.ws.on('message', (message) => {
+    client.ws.on('message', message => {
       try {
         const data = JSON.parse(message.toString());
         this.handleClientMessage(client, data);
@@ -93,15 +95,17 @@ export class MonitoringWebSocketServer {
 
     client.ws.on('close', () => {
       console.log(`Cliente de monitoramento desconectado: ${client.id}`);
-      recordCustomMetric('websocket_disconnection', 1, { client_id: client.id });
+      recordCustomMetric('websocket_disconnection', 1, {
+        client_id: client.id,
+      });
       this.clients.delete(client.id);
     });
 
-    client.ws.on('error', (error) => {
+    client.ws.on('error', error => {
       console.error(`Erro no WebSocket do cliente ${client.id}:`, error);
-      recordCustomMetric('websocket_error', 1, { 
+      recordCustomMetric('websocket_error', 1, {
         client_id: client.id,
-        error: error.message
+        error: error.message,
       });
     });
 
@@ -158,8 +162,8 @@ export class MonitoringWebSocketServer {
           api: apiMetrics,
           database: databaseMetrics,
           system: systemMetrics,
-          timestamp: Date.now()
-        }
+          timestamp: Date.now(),
+        },
       });
     } catch (error) {
       console.error('Erro ao enviar dados iniciais:', error);
@@ -180,8 +184,8 @@ export class MonitoringWebSocketServer {
           api: apiMetrics,
           database: databaseMetrics,
           system: systemMetrics,
-          timestamp: Date.now()
-        }
+          timestamp: Date.now(),
+        },
       });
     } catch (error) {
       console.error('Erro ao enviar métricas atuais:', error);
@@ -206,9 +210,9 @@ export class MonitoringWebSocketServer {
           data: {
             api: apiMetrics,
             database: databaseMetrics,
-            system: systemMetrics
+            system: systemMetrics,
           },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
 
         this.broadcast('metrics', metricsUpdate);
@@ -218,16 +222,15 @@ export class MonitoringWebSocketServer {
           const alertsUpdate: MetricUpdate = {
             type: 'alert',
             data: alerts,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           };
 
           this.broadcast('alerts', alertsUpdate);
         }
-
       } catch (error) {
         console.error('Erro nas atualizações periódicas:', error);
         recordCustomMetric('websocket_update_error', 1, {
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     }, 5000); // Atualizar a cada 5 segundos
@@ -237,10 +240,13 @@ export class MonitoringWebSocketServer {
   private startHeartbeat(): void {
     this.heartbeatInterval = setInterval(() => {
       const now = Date.now();
-      
+
       this.clients.forEach((client, clientId) => {
-        if (now - client.lastPing > 60000) { // 60 segundos sem resposta
-          console.log(`Cliente ${clientId} não respondeu ao ping, desconectando...`);
+        if (now - client.lastPing > 60000) {
+          // 60 segundos sem resposta
+          console.log(
+            `Cliente ${clientId} não respondeu ao ping, desconectando...`
+          );
           client.ws.terminate();
           this.clients.delete(clientId);
         } else {
@@ -256,7 +262,10 @@ export class MonitoringWebSocketServer {
   // Broadcast para todos os clientes subscritos a um canal
   private broadcast(channel: string, data: any): void {
     this.clients.forEach(client => {
-      if (client.subscriptions.has(channel) && client.ws.readyState === WebSocket.OPEN) {
+      if (
+        client.subscriptions.has(channel) &&
+        client.ws.readyState === WebSocket.OPEN
+      ) {
         this.sendMessage(client, data);
       }
     });
@@ -269,7 +278,10 @@ export class MonitoringWebSocketServer {
         client.ws.send(JSON.stringify(data));
       }
     } catch (error) {
-      console.error(`Erro ao enviar mensagem para cliente ${client.id}:`, error);
+      console.error(
+        `Erro ao enviar mensagem para cliente ${client.id}:`,
+        error
+      );
     }
   }
 
@@ -278,7 +290,7 @@ export class MonitoringWebSocketServer {
     this.sendMessage(client, {
       type: 'ack',
       message,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -287,7 +299,7 @@ export class MonitoringWebSocketServer {
     this.sendMessage(client, {
       type: 'error',
       message,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -303,7 +315,7 @@ export class MonitoringWebSocketServer {
     subscriptions: Record<string, number>;
   } {
     const subscriptions: Record<string, number> = {};
-    
+
     this.clients.forEach(client => {
       client.subscriptions.forEach(sub => {
         subscriptions[sub] = (subscriptions[sub] || 0) + 1;
@@ -313,7 +325,7 @@ export class MonitoringWebSocketServer {
     return {
       connectedClients: this.clients.size,
       totalConnections: this.clients.size, // Simplificado - em produção manteria histórico
-      subscriptions
+      subscriptions,
     };
   }
 }

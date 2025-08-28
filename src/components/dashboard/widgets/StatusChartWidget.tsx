@@ -1,20 +1,20 @@
-import { useMemo } from 'react'
-import { Bar, BarChart, Cell, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { Patrimonio } from '@/types'
+import { useMemo } from 'react';
+import { Bar, BarChart, Cell, Tooltip, XAxis, YAxis } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { Patrimonio } from '@/types';
 
 export const StatusChartWidget = () => {
-  const { patrimonios } = usePatrimonio()
+  const { patrimonios } = usePatrimonio();
 
   const statusChartData = useMemo(() => {
     const statusCounts = patrimonios.reduce(
       (acc, p) => {
-        acc[p.status] = (acc[p.status] || 0) + 1
-        return acc
+        acc[p.status] = (acc[p.status] || 0) + 1;
+        return acc;
       },
-      {} as Record<Patrimonio['status'], number>,
-    )
+      {} as Record<Patrimonio['status'], number>
+    );
     return [
       {
         name: 'Ativo',
@@ -36,32 +36,32 @@ export const StatusChartWidget = () => {
         value: statusCounts.baixado || 0,
         fill: 'hsl(var(--chart-4))',
       },
-    ]
-  }, [patrimonios])
+    ];
+  }, [patrimonios]);
 
   return (
-    <ChartContainer config={{}} className="h-[300px] w-full">
+    <ChartContainer config={{}} className='h-[300px] w-full'>
       <BarChart data={statusChartData}>
         <XAxis
-          dataKey="name"
-          stroke="#888888"
+          dataKey='name'
+          stroke='#888888'
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         <YAxis
-          stroke="#888888"
+          stroke='#888888'
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         <Tooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+        <Bar dataKey='value' radius={[4, 4, 0, 0]}>
           {statusChartData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.fill} />
           ))}
         </Bar>
       </BarChart>
     </ChartContainer>
-  )
-}
+  );
+};

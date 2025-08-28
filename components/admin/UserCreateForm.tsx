@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -18,10 +18,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { toast } from '@/hooks/use-toast'
-import { Loader2 } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
+} from '@/components/ui/form';
+import { toast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const userCreateSchema = z.object({
   name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
@@ -33,17 +33,17 @@ const userCreateSchema = z.object({
     required_error: 'Perfil é obrigatório.',
   }),
   sector: z.string().optional(),
-})
+});
 
-type UserCreateFormValues = z.infer<typeof userCreateSchema>
+type UserCreateFormValues = z.infer<typeof userCreateSchema>;
 
 interface UserCreateFormProps {
-  onSuccess: () => void
+  onSuccess: () => void;
 }
 
 export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
-  const [isLoading, setIsLoading] = useState(false)
-  const { addUser } = useAuth()
+  const [isLoading, setIsLoading] = useState(false);
+  const { addUser } = useAuth();
 
   const form = useForm<UserCreateFormValues>({
     resolver: zodResolver(userCreateSchema),
@@ -53,41 +53,41 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
       password: '',
       sector: '',
     },
-  })
+  });
 
   const onSubmit = async (data: UserCreateFormValues) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const newUser = await addUser(data)
+      const newUser = await addUser(data);
       toast({
         title: 'Sucesso!',
         description: `Usuário ${newUser.name} criado. Um e-mail foi enviado com instruções.`,
-      })
-      onSuccess()
-      form.reset()
+      });
+      onSuccess();
+      form.reset();
     } catch (error) {
       toast({
         title: 'Erro',
         description:
           error instanceof Error ? error.message : 'Falha ao criar usuário',
         variant: 'destructive',
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
         <FormField
           control={form.control}
-          name="name"
+          name='name'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nome Completo</FormLabel>
               <FormControl>
-                <Input placeholder="Nome do usuário" {...field} />
+                <Input placeholder='Nome do usuário' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -95,14 +95,14 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         />
         <FormField
           control={form.control}
-          name="email"
+          name='email'
           render={({ field }) => (
             <FormItem>
               <FormLabel>E-mail</FormLabel>
               <FormControl>
                 <Input
-                  type="email"
-                  placeholder="email@exemplo.com"
+                  type='email'
+                  placeholder='email@exemplo.com'
                   {...field}
                 />
               </FormControl>
@@ -112,12 +112,12 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         />
         <FormField
           control={form.control}
-          name="password"
+          name='password'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Senha Provisória</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} />
+                <Input type='password' placeholder='********' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -125,12 +125,12 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         />
         <FormField
           control={form.control}
-          name="sector"
+          name='sector'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Setor</FormLabel>
               <FormControl>
-                <Input placeholder="Setor do usuário (opcional)" {...field} />
+                <Input placeholder='Setor do usuário (opcional)' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -138,33 +138,33 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
         />
         <FormField
           control={form.control}
-          name="role"
+          name='role'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Perfil</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um perfil" />
+                    <SelectValue placeholder='Selecione um perfil' />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="usuario">Usuário</SelectItem>
-                  <SelectItem value="visualizador">Visualizador</SelectItem>
+                  <SelectItem value='admin'>Administrador</SelectItem>
+                  <SelectItem value='usuario'>Usuário</SelectItem>
+                  <SelectItem value='visualizador'>Visualizador</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <div className='flex justify-end'>
+          <Button type='submit' disabled={isLoading}>
+            {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
             Criar Usuário
           </Button>
         </div>
       </form>
     </Form>
-  )
-}
+  );
+};

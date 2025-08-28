@@ -23,7 +23,11 @@ export interface ReportMetadata {
 
 export interface DashboardData {
   totalPatrimonio: number;
-  patrimoniosPorCategoria: Array<{ categoria: string; quantidade: number; valor: number }>;
+  patrimoniosPorCategoria: Array<{
+    categoria: string;
+    quantidade: number;
+    valor: number;
+  }>;
   patrimoniosRecentes: Array<any>;
   patrimoniosPorStatus: Array<{ status: string; quantidade: number }>;
   valorTotalPorMes: Array<{ mes: string; valor: number }>;
@@ -36,14 +40,14 @@ class ReportCacheManager {
   private readonly CACHE_PREFIX = 'report';
   private readonly DASHBOARD_PREFIX = 'dashboard';
   private readonly EXPORT_PREFIX = 'export';
-  
+
   // TTL padrão para diferentes tipos de relatório
   private readonly DEFAULT_TTL = {
     pdf: 3600, // 1 hora
     excel: 1800, // 30 minutos
     csv: 1800, // 30 minutos
     dashboard: 300, // 5 minutos
-    aggregated: 600 // 10 minutos
+    aggregated: 600, // 10 minutos
   };
 
   /**
@@ -58,9 +62,9 @@ class ReportCacheManager {
     const params = {
       userId: userId || 'anonymous',
       filters: filters || {},
-      ...additionalParams
+      ...additionalParams,
     };
-    
+
     const paramsHash = Buffer.from(JSON.stringify(params)).toString('base64');
     return `${this.CACHE_PREFIX}:${type}:${paramsHash}`;
   }
@@ -73,12 +77,12 @@ class ReportCacheManager {
     filters?: Record<string, any>
   ): Promise<DashboardData | null> {
     const key = this.generateCacheKey(this.DASHBOARD_PREFIX, userId, filters);
-    
+
     return await advancedCache.get<DashboardData>(key, {
       ttl: this.DEFAULT_TTL.dashboard,
       tags: ['dashboard', 'patrimonio'],
       useRedis: true,
-      useMemory: true
+      useMemory: true,
     });
   }
 
@@ -91,13 +95,13 @@ class ReportCacheManager {
     filters?: Record<string, any>
   ): Promise<boolean> {
     const key = this.generateCacheKey(this.DASHBOARD_PREFIX, userId, filters);
-    
+
     return await advancedCache.set(key, data, {
       ttl: this.DEFAULT_TTL.dashboard,
       tags: ['dashboard', 'patrimonio'],
       useRedis: true,
       useMemory: true,
-      compression: true
+      compression: true,
     });
   }
 
@@ -110,18 +114,21 @@ class ReportCacheManager {
     filters?: Record<string, any>
   ): Promise<{ buffer: Buffer; metadata: ReportMetadata } | null> {
     const key = this.generateCacheKey('pdf', userId, filters, { reportId });
-    
-    const cached = await advancedCache.get<{ buffer: string; metadata: ReportMetadata }>(key, {
+
+    const cached = await advancedCache.get<{
+      buffer: string;
+      metadata: ReportMetadata;
+    }>(key, {
       ttl: this.DEFAULT_TTL.pdf,
       tags: ['pdf', 'report'],
       useRedis: true,
-      useMemory: false // PDFs são grandes, não armazenar em memória
+      useMemory: false, // PDFs são grandes, não armazenar em memória
     });
 
     if (cached) {
       return {
         buffer: Buffer.from(cached.buffer, 'base64'),
-        metadata: cached.metadata
+        metadata: cached.metadata,
       };
     }
 
@@ -139,18 +146,18 @@ class ReportCacheManager {
     filters?: Record<string, any>
   ): Promise<boolean> {
     const key = this.generateCacheKey('pdf', userId, filters, { reportId });
-    
+
     const reportMetadata: ReportMetadata = {
       ...metadata,
       id: reportId,
       generatedAt: new Date(),
       expiresAt: new Date(Date.now() + this.DEFAULT_TTL.pdf * 1000),
-      fileSize: buffer.length
+      fileSize: buffer.length,
     };
 
     const cacheData = {
       buffer: buffer.toString('base64'),
-      metadata: reportMetadata
+      metadata: reportMetadata,
     };
 
     return await advancedCache.set(key, cacheData, {
@@ -158,7 +165,7 @@ class ReportCacheManager {
       tags: ['pdf', 'report'],
       useRedis: true,
       useMemory: false,
-      compression: true
+      compression: true,
     });
   }
 
@@ -171,19 +178,24 @@ class ReportCacheManager {
     userId?: string,
     filters?: Record<string, any>
   ): Promise<{ buffer: Buffer; metadata: ReportMetadata } | null> {
-    const key = this.generateCacheKey(exportType, userId, filters, { exportId });
-    
-    const cached = await advancedCache.get<{ buffer: string; metadata: ReportMetadata }>(key, {
+    const key = this.generateCacheKey(exportType, userId, filters, {
+      exportId,
+    });
+
+    const cached = await advancedCache.get<{
+      buffer: string;
+      metadata: ReportMetadata;
+    }>(key, {
       ttl: this.DEFAULT_TTL[exportType],
       tags: [exportType, 'export'],
       useRedis: true,
-      useMemory: false
+      useMemory: false,
     });
 
     if (cached) {
       return {
         buffer: Buffer.from(cached.buffer, 'base64'),
-        metadata: cached.metadata
+        metadata: cached.metadata,
       };
     }
 
@@ -201,19 +213,21 @@ class ReportCacheManager {
     userId?: string,
     filters?: Record<string, any>
   ): Promise<boolean> {
-    const key = this.generateCacheKey(exportType, userId, filters, { exportId });
-    
+    const key = this.generateCacheKey(exportType, userId, filters, {
+      exportId,
+    });
+
     const exportMetadata: ReportMetadata = {
       ...metadata,
       id: exportId,
       generatedAt: new Date(),
       expiresAt: new Date(Date.now() + this.DEFAULT_TTL[exportType] * 1000),
-      fileSize: buffer.length
+      fileSize: buffer.length,
     };
 
     const cacheData = {
       buffer: buffer.toString('base64'),
-      metadata: exportMetadata
+      metadata: exportMetadata,
     };
 
     return await advancedCache.set(key, cacheData, {
@@ -221,7 +235,7 @@ class ReportCacheManager {
       tags: [exportType, 'export'],
       useRedis: true,
       useMemory: false,
-      compression: true
+      compression: true,
     });
   }
 
@@ -233,14 +247,17 @@ class ReportCacheManager {
     parameters: Record<string, any>,
     userId?: string
   ): Promise<T | null> {
-    const key = this.generateCacheKey('aggregated', userId, undefined, { queryId, parameters });
-    
+    const key = this.generateCacheKey('aggregated', userId, undefined, {
+      queryId,
+      parameters,
+    });
+
     return await advancedCache.get<T>(key, {
       ttl: this.DEFAULT_TTL.aggregated,
       tags: ['aggregated', 'query'],
       useRedis: true,
       useMemory: true,
-      compression: true
+      compression: true,
     });
   }
 
@@ -254,14 +271,17 @@ class ReportCacheManager {
     userId?: string,
     customTtl?: number
   ): Promise<boolean> {
-    const key = this.generateCacheKey('aggregated', userId, undefined, { queryId, parameters });
-    
+    const key = this.generateCacheKey('aggregated', userId, undefined, {
+      queryId,
+      parameters,
+    });
+
     return await advancedCache.set(key, data, {
       ttl: customTtl || this.DEFAULT_TTL.aggregated,
       tags: ['aggregated', 'query'],
       useRedis: true,
       useMemory: true,
-      compression: true
+      compression: true,
     });
   }
 
@@ -285,7 +305,7 @@ class ReportCacheManager {
     for (const config of reportConfigs) {
       try {
         const data = await config.generator();
-        
+
         if (config.type === 'dashboard') {
           await this.setDashboardData(
             data as DashboardData,
@@ -299,7 +319,7 @@ class ReportCacheManager {
             title: config.id,
             filters: config.filters || {},
             parameters: {},
-            ...config.metadata
+            ...config.metadata,
           } as Omit<ReportMetadata, 'id' | 'generatedAt' | 'expiresAt'>;
 
           if (config.type === 'pdf') {
@@ -321,7 +341,7 @@ class ReportCacheManager {
             );
           }
         }
-        
+
         success++;
       } catch (error) {
         failed++;
@@ -341,16 +361,16 @@ class ReportCacheManager {
     userId?: string
   ): Promise<number> {
     const tags: string[] = [];
-    
+
     // Mapear tabelas para tags de cache
     if (changedTables.includes('patrimonio')) {
       tags.push('dashboard', 'patrimonio', 'report');
     }
-    
+
     if (changedTables.includes('usuarios')) {
       tags.push('user');
     }
-    
+
     if (changedTables.includes('categorias')) {
       tags.push('dashboard', 'report');
     }
@@ -382,12 +402,14 @@ class ReportCacheManager {
   }> {
     const stats = await advancedCache.getStats();
     const metrics = advancedCache.getMetrics();
-    
-    const reportMetrics = metrics.filter(m => m.key.startsWith(this.CACHE_PREFIX));
-    
+
+    const reportMetrics = metrics.filter(m =>
+      m.key.startsWith(this.CACHE_PREFIX)
+    );
+
     const reportsByType: Record<string, number> = {};
     let totalSize = 0;
-    
+
     reportMetrics.forEach(metric => {
       const type = metric.key.split(':')[1];
       reportsByType[type] = (reportsByType[type] || 0) + 1;
@@ -399,7 +421,7 @@ class ReportCacheManager {
       reportsByType,
       totalSize,
       avgGenerationTime: 0, // Implementar se necessário
-      hitRate: stats.total.hitRate
+      hitRate: stats.total.hitRate,
     };
   }
 

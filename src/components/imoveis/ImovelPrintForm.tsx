@@ -1,58 +1,58 @@
-import { PrintImage } from '@/components/ui/optimized-image'
-import { useCustomization } from '@/contexts/CustomizationContext'
-import { useImovelField } from '@/contexts/ImovelFieldContext'
-import { useMunicipalities } from '@/contexts/MunicipalityContext'
-import { getImovelFields } from '@/lib/imovel-fields'
-import { formatCurrency, formatDate, getCloudImageUrl } from '@/lib/utils'
-import { Imovel } from '@/types'
-import { forwardRef } from 'react'
+import { PrintImage } from '@/components/ui/optimized-image';
+import { useCustomization } from '@/contexts/CustomizationContext';
+import { useImovelField } from '@/contexts/ImovelFieldContext';
+import { useMunicipalities } from '@/contexts/MunicipalityContext';
+import { getImovelFields } from '@/lib/imovel-fields';
+import { formatCurrency, formatDate, getCloudImageUrl } from '@/lib/utils';
+import { Imovel } from '@/types';
+import { forwardRef } from 'react';
 
 interface ImovelPrintFormProps {
-  imovel: Imovel
-  fieldsToPrint: string[]
+  imovel: Imovel;
+  fieldsToPrint: string[];
 }
 
 export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
   ({ imovel, fieldsToPrint }, ref) => {
-    const { settings } = useCustomization()
-    const { getMunicipalityById } = useMunicipalities()
-    const { fields: customFieldConfigs } = useImovelField()
-    const municipality = getMunicipalityById(imovel.municipalityId)
+    const { settings } = useCustomization();
+    const { getMunicipalityById } = useMunicipalities();
+    const { fields: customFieldConfigs } = useImovelField();
+    const municipality = getMunicipalityById(imovel.municipalityId);
 
-    const allFields = getImovelFields(customFieldConfigs)
+    const allFields = getImovelFields(customFieldConfigs);
 
-    const shouldPrint = (fieldId: string) => fieldsToPrint.includes(fieldId)
+    const shouldPrint = (fieldId: string) => fieldsToPrint.includes(fieldId);
 
     const DetailRow = ({
       label,
       value,
     }: {
-      label: string
-      value: React.ReactNode
+      label: string;
+      value: React.ReactNode;
     }) => (
-      <div className="grid grid-cols-3 gap-2 py-1 border-b">
-        <dt className="font-semibold text-gray-600">{label}</dt>
-        <dd className="col-span-2 text-gray-800">{value}</dd>
+      <div className='grid grid-cols-3 gap-2 py-1 border-b'>
+        <dt className='font-semibold text-gray-600'>{label}</dt>
+        <dd className='col-span-2 text-gray-800'>{value}</dd>
       </div>
-    )
+    );
 
     return (
-      <div ref={ref} className="p-4 bg-white text-black font-sans text-sm">
-        <header className="flex items-center justify-between pb-4 border-b-2 border-black">
-          <div className="flex items-center gap-4">
+      <div ref={ref} className='p-4 bg-white text-black font-sans text-sm'>
+        <header className='flex items-center justify-between pb-4 border-b-2 border-black'>
+          <div className='flex items-center gap-4'>
             <PrintImage
               src={municipality?.logoUrl || settings.activeLogoUrl}
-              alt="Logo"
-              className="h-20 w-auto"
+              alt='Logo'
+              className='h-20 w-auto'
             />
             <div>
-              <h1 className="text-xl font-bold">{municipality?.name}</h1>
-              <h2 className="text-lg">Ficha de Cadastro de Imóvel</h2>
+              <h1 className='text-xl font-bold'>{municipality?.name}</h1>
+              <h2 className='text-lg'>Ficha de Cadastro de Imóvel</h2>
             </div>
           </div>
-          <div className="text-right">
+          <div className='text-right'>
             {shouldPrint('numero_patrimonio') && (
-              <p className="font-bold text-lg">
+              <p className='font-bold text-lg'>
                 Nº: {imovel.numero_patrimonio}
               </p>
             )}
@@ -60,47 +60,47 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
           </div>
         </header>
 
-        <main className="mt-4">
+        <main className='mt-4'>
           <section>
-            <h3 className="font-bold text-base mb-2 border-b">
+            <h3 className='font-bold text-base mb-2 border-b'>
               INFORMAÇÕES DO IMÓVEL
             </h3>
             <dl>
               {shouldPrint('denominacao') && (
-                <DetailRow label="Denominação" value={imovel.denominacao} />
+                <DetailRow label='Denominação' value={imovel.denominacao} />
               )}
               {shouldPrint('endereco') && (
-                <DetailRow label="Endereço" value={imovel.endereco} />
+                <DetailRow label='Endereço' value={imovel.endereco} />
               )}
             </dl>
           </section>
 
-          <section className="mt-4">
-            <h3 className="font-bold text-base mb-2 border-b">
+          <section className='mt-4'>
+            <h3 className='font-bold text-base mb-2 border-b'>
               INFORMAÇÕES DE AQUISIÇÃO E MEDIDAS
             </h3>
             <dl>
               {shouldPrint('data_aquisicao') && (
                 <DetailRow
-                  label="Data de Aquisição"
+                  label='Data de Aquisição'
                   value={formatDate(new Date(imovel.data_aquisicao))}
                 />
               )}
               {shouldPrint('valor_aquisicao') && (
                 <DetailRow
-                  label="Valor de Aquisição"
+                  label='Valor de Aquisição'
                   value={formatCurrency(imovel.valor_aquisicao)}
                 />
               )}
               {shouldPrint('area_terreno') && (
                 <DetailRow
-                  label="Área do Terreno (m²)"
+                  label='Área do Terreno (m²)'
                   value={imovel.area_terreno.toLocaleString('pt-BR')}
                 />
               )}
               {shouldPrint('area_construida') && (
                 <DetailRow
-                  label="Área Construída (m²)"
+                  label='Área Construída (m²)'
                   value={imovel.area_construida.toLocaleString('pt-BR')}
                 />
               )}
@@ -108,18 +108,18 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
           </section>
 
           {customFieldConfigs.filter(
-            (f) => f.isCustom && shouldPrint(`customFields.${f.key}`),
+            f => f.isCustom && shouldPrint(`customFields.${f.key}`)
           ).length > 0 && (
-            <section className="mt-4">
-              <h3 className="font-bold text-base mb-2 border-b">
+            <section className='mt-4'>
+              <h3 className='font-bold text-base mb-2 border-b'>
                 CAMPOS PERSONALIZADOS
               </h3>
               <dl>
                 {customFieldConfigs
                   .filter(
-                    (f) => f.isCustom && shouldPrint(`customFields.${f.key}`),
+                    f => f.isCustom && shouldPrint(`customFields.${f.key}`)
                   )
-                  .map((field) => (
+                  .map(field => (
                     <DetailRow
                       key={field.id}
                       label={field.label}
@@ -131,15 +131,15 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
           )}
 
           {shouldPrint('fotos') && imovel.fotos.length > 0 && (
-            <section className="mt-4">
-              <h3 className="font-bold text-base mb-2 border-b">FOTOS</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <section className='mt-4'>
+              <h3 className='font-bold text-base mb-2 border-b'>FOTOS</h3>
+              <div className='grid grid-cols-2 gap-4'>
                 {imovel.fotos.map((fotoId, index) => (
                   <PrintImage
                     key={index}
                     src={getCloudImageUrl(fotoId)}
                     alt={`Foto ${index + 1}`}
-                    className="w-full h-40"
+                    className='w-full h-40'
                   />
                 ))}
               </div>
@@ -147,26 +147,26 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
           )}
         </main>
 
-        <footer className="mt-12 space-y-8">
-          <div className="grid grid-cols-2 gap-8 text-center">
+        <footer className='mt-12 space-y-8'>
+          <div className='grid grid-cols-2 gap-8 text-center'>
             <div>
-              <div className="border-t border-black w-2/3 mx-auto pt-1">
+              <div className='border-t border-black w-2/3 mx-auto pt-1'>
                 <p>Responsável pelo Setor</p>
               </div>
             </div>
             <div>
-              <div className="border-t border-black w-2/3 mx-auto pt-1">
+              <div className='border-t border-black w-2/3 mx-auto pt-1'>
                 <p>Responsável pelo Patrimônio</p>
               </div>
             </div>
           </div>
-          <p className="text-center text-xs text-gray-500">
+          <p className='text-center text-xs text-gray-500'>
             Documento gerado por SISPAT em{' '}
             {formatDate(new Date(), "dd/MM/yyyy 'às' HH:mm")}
           </p>
         </footer>
       </div>
-    )
-  },
-)
-ImovelPrintForm.displayName = 'ImovelPrintForm'
+    );
+  }
+);
+ImovelPrintForm.displayName = 'ImovelPrintForm';

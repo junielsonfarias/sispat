@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
-import { pool } from './connection.js'
-import dotenv from 'dotenv'
+import { pool } from './connection.js';
+import dotenv from 'dotenv';
 
-dotenv.config()
+dotenv.config();
 
 const createTables = async () => {
-  const client = await pool.connect()
-  
+  const client = await pool.connect();
+
   try {
-    console.log('🔄 Iniciando migração do banco de dados...')
-    
+    console.log('🔄 Iniciando migração do banco de dados...');
+
     // Create municipalities table
     await client.query(`
       CREATE TABLE IF NOT EXISTS municipalities (
@@ -20,8 +20,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela municipalities criada')
+    `);
+    console.log('✅ Tabela municipalities criada');
 
     // Create users table
     await client.query(`
@@ -38,8 +38,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela users criada')
+    `);
+    console.log('✅ Tabela users criada');
 
     // Create user_sectors table for user-sector relationships
     await client.query(`
@@ -51,8 +51,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user_id, sector_id)
       )
-    `)
-    console.log('✅ Tabela user_sectors criada')
+    `);
+    console.log('✅ Tabela user_sectors criada');
 
     // Create sectors table
     await client.query(`
@@ -66,8 +66,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela sectors criada')
+    `);
+    console.log('✅ Tabela sectors criada');
 
     // Create locals table
     await client.query(`
@@ -81,8 +81,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela locals criada')
+    `);
+    console.log('✅ Tabela locals criada');
 
     // Create patrimonios table
     await client.query(`
@@ -107,8 +107,8 @@ const createTables = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(municipality_id, numero_patrimonio)
       )
-    `)
-    console.log('✅ Tabela patrimonios criada')
+    `);
+    console.log('✅ Tabela patrimonios criada');
 
     // Create historico_movimentacao table
     await client.query(`
@@ -124,8 +124,8 @@ const createTables = async () => {
         observacoes TEXT,
         created_by UUID NOT NULL REFERENCES users(id)
       )
-    `)
-    console.log('✅ Tabela historico_movimentacao criada')
+    `);
+    console.log('✅ Tabela historico_movimentacao criada');
 
     // Create notes table
     await client.query(`
@@ -136,8 +136,8 @@ const createTables = async () => {
         created_by UUID NOT NULL REFERENCES users(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela notes criada')
+    `);
+    console.log('✅ Tabela notes criada');
 
     // Create emprestimos table
     await client.query(`
@@ -154,8 +154,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela emprestimos criada')
+    `);
+    console.log('✅ Tabela emprestimos criada');
 
     // Create transferencias table
     await client.query(`
@@ -174,8 +174,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela transferencias criada')
+    `);
+    console.log('✅ Tabela transferencias criada');
 
     // Create imoveis table
     await client.query(`
@@ -196,8 +196,8 @@ const createTables = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(municipality_id, numero_patrimonio)
       )
-    `)
-    console.log('✅ Tabela imoveis criada')
+    `);
+    console.log('✅ Tabela imoveis criada');
 
     // Create imoveis_historico table
     await client.query(`
@@ -210,8 +210,8 @@ const createTables = async () => {
         created_by UUID NOT NULL REFERENCES users(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela imoveis_historico criada')
+    `);
+    console.log('✅ Tabela imoveis_historico criada');
 
     // Create inventories table
     await client.query(`
@@ -227,8 +227,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela inventories criada')
+    `);
+    console.log('✅ Tabela inventories criada');
 
     // Create inventory_items table
     await client.query(`
@@ -242,8 +242,8 @@ const createTables = async () => {
         verified_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela inventory_items criada')
+    `);
+    console.log('✅ Tabela inventory_items criada');
 
     // Create activity_logs table
     await client.query(`
@@ -260,8 +260,8 @@ const createTables = async () => {
         municipality_id UUID REFERENCES municipalities(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela activity_logs criada')
+    `);
+    console.log('✅ Tabela activity_logs criada');
 
     // Create manutencao_tasks table
     await client.query(`
@@ -282,8 +282,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela manutencao_tasks criada')
+    `);
+    console.log('✅ Tabela manutencao_tasks criada');
 
     // Create report_templates table
     await client.query(`
@@ -298,8 +298,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela report_templates criada')
+    `);
+    console.log('✅ Tabela report_templates criada');
 
     // Create label_templates table
     await client.query(`
@@ -313,8 +313,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela label_templates criada')
+    `);
+    console.log('✅ Tabela label_templates criada');
 
     // Create themes table
     await client.query(`
@@ -329,8 +329,8 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela themes criada')
+    `);
+    console.log('✅ Tabela themes criada');
 
     // Create notifications table
     await client.query(`
@@ -343,8 +343,8 @@ const createTables = async () => {
         is_read BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
-    console.log('✅ Tabela notifications criada')
+    `);
+    console.log('✅ Tabela notifications criada');
 
     // Create indexes for better performance
     await client.query(`
@@ -359,26 +359,25 @@ const createTables = async () => {
       CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at);
       CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
       CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
-    `)
-    console.log('✅ Índices criados')
+    `);
+    console.log('✅ Índices criados');
 
-    console.log('🎉 Migração concluída com sucesso!')
-    
+    console.log('🎉 Migração concluída com sucesso!');
   } catch (error) {
-    console.error('❌ Erro durante a migração:', error)
-    throw error
+    console.error('❌ Erro durante a migração:', error);
+    throw error;
   } finally {
-    client.release()
+    client.release();
   }
-}
+};
 
 // Run migration
 createTables()
   .then(() => {
-    console.log('✅ Banco de dados configurado com sucesso!')
-    process.exit(0)
+    console.log('✅ Banco de dados configurado com sucesso!');
+    process.exit(0);
   })
-  .catch((error) => {
-    console.error('❌ Falha na configuração do banco de dados:', error)
-    process.exit(1)
-  })
+  .catch(error => {
+    console.error('❌ Falha na configuração do banco de dados:', error);
+    process.exit(1);
+  });

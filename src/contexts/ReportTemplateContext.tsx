@@ -6,21 +6,21 @@ import {
   useCallback,
   useContext,
   useMemo,
-} from 'react'
-import { ReportTemplate, ReportComponent } from '@/types'
-import { generateId } from '@/lib/utils'
-import { useAuth } from './AuthContext'
+} from 'react';
+import { ReportTemplate, ReportComponent } from '@/types';
+import { generateId } from '@/lib/utils';
+import { useAuth } from './AuthContext';
 
 interface ReportTemplateContextType {
-  templates: ReportTemplate[]
-  getTemplateById: (id: string) => ReportTemplate | undefined
-  saveTemplate: (template: Omit<ReportTemplate, 'id'> | ReportTemplate) => void
-  deleteTemplate: (templateId: string) => void
+  templates: ReportTemplate[];
+  getTemplateById: (id: string) => ReportTemplate | undefined;
+  saveTemplate: (template: Omit<ReportTemplate, 'id'> | ReportTemplate) => void;
+  deleteTemplate: (templateId: string) => void;
 }
 
 const ReportTemplateContext = createContext<ReportTemplateContextType | null>(
-  null,
-)
+  null
+);
 
 const tabularLayout: ReportComponent[] = [
   {
@@ -56,7 +56,7 @@ const tabularLayout: ReportComponent[] = [
       borderStyle: 'solid',
     },
   },
-]
+];
 
 const summaryLayout: ReportComponent[] = [
   { id: 'header', type: 'HEADER', x: 0, y: 0, w: 12, h: 1 },
@@ -84,7 +84,7 @@ const summaryLayout: ReportComponent[] = [
     h: 1,
     styles: { paddingTop: 16, fontSize: 8, textAlign: 'center' },
   },
-]
+];
 
 const defaultTemplates: ReportTemplate[] = [
   {
@@ -115,70 +115,68 @@ const defaultTemplates: ReportTemplate[] = [
     layout: summaryLayout,
     municipalityId: '1',
   },
-]
+];
 
 export const ReportTemplateProvider = ({
   children,
 }: {
-  children: ReactNode
+  children: ReactNode;
 }) => {
   const [allTemplates, setAllTemplates] =
-    useState<ReportTemplate[]>(defaultTemplates)
-  const { user } = useAuth()
+    useState<ReportTemplate[]>(defaultTemplates);
+  const { user } = useAuth();
 
   useEffect(() => {
     try {
-      const storedTemplates = localStorage.getItem('sispat_report_templates')
+      const storedTemplates = localStorage.getItem('sispat_report_templates');
       if (storedTemplates) {
-        const parsedTemplates = JSON.parse(storedTemplates)
+        const parsedTemplates = JSON.parse(storedTemplates);
         const templatesWithLayout = parsedTemplates.map((t: ReportTemplate) =>
-          t.layout ? t : { ...t, layout: tabularLayout },
-        )
-        setAllTemplates(templatesWithLayout)
+          t.layout ? t : { ...t, layout: tabularLayout }
+        );
+        setAllTemplates(templatesWithLayout);
       } else {
         localStorage.setItem(
           'sispat_report_templates',
-          JSON.stringify(defaultTemplates),
-        )
+          JSON.stringify(defaultTemplates)
+        );
       }
     } catch (error) {
-      console.error('Failed to load report templates from localStorage', error)
-      setAllTemplates(defaultTemplates)
+      console.error('Failed to load report templates from localStorage', error);
+      setAllTemplates(defaultTemplates);
     }
-  }, [])
+  }, []);
 
   const templates = useMemo(() => {
-    if (user?.role === 'superuser') return allTemplates
+    if (user?.role === 'superuser') return allTemplates;
     if (user?.municipalityId) {
-      return allTemplates.filter(
-        (t) => t.municipalityId === user.municipalityId,
-      )
+      return allTemplates.filter(t => t.municipalityId === user.municipalityId);
     }
-    return []
-  }, [allTemplates, user])
+    return [];
+  }, [allTemplates, user]);
 
   const getTemplateById = useCallback(
     (id: string) => {
-      return templates.find((t) => t.id === id)
+      return templates.find(t => t.id === id);
     },
-    [templates],
-  )
+    [templates]
+  );
 
   const saveTemplate = useCallback(
     (template: Omit<ReportTemplate, 'id'> | ReportTemplate) => {
-      if (!user?.municipalityId && user?.role !== 'superuser') return
+      if (!user?.municipalityId && user?.role !== 'superuser') return;
 
-      setAllTemplates((prevTemplates) => {
-        let newTemplates
+      setAllTemplates(prevTemplates => {
+        let newTemplates;
         if ('id' in template && template.id) {
           const existingIndex = prevTemplates.findIndex(
-            (t) => t.id === template.id,
-          )
+            t => t.id === template.id
+          );
           if (existingIndex > -1) {
-            newTemplates = [...prevTemplates]
-            newTemplates[existingIndex] = template
+            newTemplates = [...prevTemplates];
+            newTemplates[existingIndex] = template;
           } else {
-            newTemplates = [...prevTemplates, template]
+            newTemplates = [...prevTemplates, template];
           }
         } else {
           newTemplates = [
@@ -189,28 +187,28 @@ export const ReportTemplateProvider = ({
               layout: tabularLayout,
               municipalityId: user.municipalityId!,
             },
-          ]
+          ];
         }
         localStorage.setItem(
           'sispat_report_templates',
-          JSON.stringify(newTemplates),
-        )
-        return newTemplates
-      })
+          JSON.stringify(newTemplates)
+        );
+        return newTemplates;
+      });
     },
-    [user],
-  )
+    [user]
+  );
 
   const deleteTemplate = useCallback((templateId: string) => {
-    setAllTemplates((prevTemplates) => {
-      const newTemplates = prevTemplates.filter((t) => t.id !== templateId)
+    setAllTemplates(prevTemplates => {
+      const newTemplates = prevTemplates.filter(t => t.id !== templateId);
       localStorage.setItem(
         'sispat_report_templates',
-        JSON.stringify(newTemplates),
-      )
-      return newTemplates
-    })
-  }, [])
+        JSON.stringify(newTemplates)
+      );
+      return newTemplates;
+    });
+  }, []);
 
   return (
     <ReportTemplateContext.Provider
@@ -218,15 +216,15 @@ export const ReportTemplateProvider = ({
     >
       {children}
     </ReportTemplateContext.Provider>
-  )
-}
+  );
+};
 
 export const useReportTemplates = () => {
-  const context = useContext(ReportTemplateContext)
+  const context = useContext(ReportTemplateContext);
   if (!context) {
     throw new Error(
-      'useReportTemplates must be used within a ReportTemplateProvider',
-    )
+      'useReportTemplates must be used within a ReportTemplateProvider'
+    );
   }
-  return context
-}
+  return context;
+};

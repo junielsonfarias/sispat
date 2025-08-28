@@ -14,7 +14,7 @@ const publicApiLimiter = rateLimit({
   max: 100, // Máximo 100 requisições por IP
   message: {
     error: 'Muitas requisições. Tente novamente em 15 minutos.',
-    code: 'RATE_LIMIT_EXCEEDED'
+    code: 'RATE_LIMIT_EXCEEDED',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -26,8 +26,8 @@ const searchLimiter = rateLimit({
   max: 30, // Máximo 30 buscas por IP
   message: {
     error: 'Muitas buscas. Tente novamente em 5 minutos.',
-    code: 'SEARCH_RATE_LIMIT_EXCEEDED'
-  }
+    code: 'SEARCH_RATE_LIMIT_EXCEEDED',
+  },
 });
 
 // Aplicar rate limiting
@@ -63,13 +63,13 @@ router.get('/health', async (req, res) => {
       status: 'ok',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-      service: 'SISPAT Public API'
+      service: 'SISPAT Public API',
     });
   } catch (error) {
     logError('Erro no health check da API pública:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
     });
   }
 });
@@ -145,7 +145,7 @@ router.get('/patrimonios', async (req, res) => {
       sector,
       status,
       sortBy = 'created_at',
-      sortOrder = 'desc'
+      sortOrder = 'desc',
     } = req.query;
 
     // Validar parâmetros
@@ -192,17 +192,30 @@ router.get('/patrimonios', async (req, res) => {
     }
 
     // Contar total
-    const countSql = sql.replace(/SELECT.*FROM/, 'SELECT COUNT(*) as total FROM');
+    const countSql = sql.replace(
+      /SELECT.*FROM/,
+      'SELECT COUNT(*) as total FROM'
+    );
     const countResult = await query(countSql, params);
     const total = parseInt(countResult.rows[0].total);
 
     // Validar campos de ordenação para evitar SQL injection
-    const allowedSortFields = ['created_at', 'numero_patrimonio', 'descricao', 'valor_aquisicao', 'data_aquisicao'];
+    const allowedSortFields = [
+      'created_at',
+      'numero_patrimonio',
+      'descricao',
+      'valor_aquisicao',
+      'data_aquisicao',
+    ];
     const allowedSortOrders = ['ASC', 'DESC'];
-    
-    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
-    const safeSortOrder = allowedSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
-    
+
+    const safeSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : 'created_at';
+    const safeSortOrder = allowedSortOrders.includes(sortOrder.toUpperCase())
+      ? sortOrder.toUpperCase()
+      : 'DESC';
+
     // Ordenação e paginação
     sql += ` ORDER BY p.${safeSortBy} ${safeSortOrder}`;
     sql += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
@@ -224,7 +237,7 @@ router.get('/patrimonios', async (req, res) => {
       situacaoBem: p.situacao_bem,
       status: p.status,
       fotos: p.fotos ? JSON.parse(p.fotos) : [],
-      createdAt: p.created_at
+      createdAt: p.created_at,
     }));
 
     res.json({
@@ -233,15 +246,14 @@ router.get('/patrimonios', async (req, res) => {
         page: pageNum,
         limit: limitNum,
         total,
-        totalPages: Math.ceil(total / limitNum)
-      }
+        totalPages: Math.ceil(total / limitNum),
+      },
     });
-
   } catch (error) {
     logError('Erro ao buscar patrimônios públicos:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
     });
   }
 });
@@ -290,7 +302,7 @@ router.get('/patrimonios/:id', validateUUID('id'), async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({
         error: 'Patrimônio não encontrado',
-        code: 'PATRIMONIO_NOT_FOUND'
+        code: 'PATRIMONIO_NOT_FOUND',
       });
     }
 
@@ -313,20 +325,21 @@ router.get('/patrimonios/:id', validateUUID('id'), async (req, res) => {
       situacaoBem: patrimonio.situacao_bem,
       status: patrimonio.status,
       fotos: patrimonio.fotos ? JSON.parse(patrimonio.fotos) : [],
-      documentos: patrimonio.documentos ? JSON.parse(patrimonio.documentos) : [],
+      documentos: patrimonio.documentos
+        ? JSON.parse(patrimonio.documentos)
+        : [],
       setor: patrimonio.setor_nome,
       municipio: patrimonio.municipio_nome,
       createdAt: patrimonio.created_at,
-      updatedAt: patrimonio.updated_at
+      updatedAt: patrimonio.updated_at,
     };
 
     res.json(formattedPatrimonio);
-
   } catch (error) {
     logError('Erro ao buscar patrimônio público:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
     });
   }
 });
@@ -367,7 +380,7 @@ router.get('/search', searchLimiter, async (req, res) => {
     if (!q || q.trim().length < 2) {
       return res.status(400).json({
         error: 'Termo de busca deve ter pelo menos 2 caracteres',
-        code: 'INVALID_SEARCH_QUERY'
+        code: 'INVALID_SEARCH_QUERY',
       });
     }
 
@@ -377,16 +390,15 @@ router.get('/search', searchLimiter, async (req, res) => {
       strategy,
       filters: JSON.parse(filters),
       limit: 50,
-      useCache: true
+      useCache: true,
     });
 
     res.json(searchResult);
-
   } catch (error) {
     logError('Erro na busca pública:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
     });
   }
 });
@@ -405,7 +417,7 @@ router.get('/municipalities', async (req, res) => {
   try {
     const cacheKey = 'public_municipalities';
     const cached = await intelligentCache.get(cacheKey);
-    
+
     if (cached) {
       return res.json(cached);
     }
@@ -425,17 +437,16 @@ router.get('/municipalities', async (req, res) => {
       id: m.id,
       nome: m.name,
       uf: m.state,
-      createdAt: m.created_at
+      createdAt: m.created_at,
     }));
 
     await intelligentCache.set(cacheKey, municipalities, { ttl: 3600 });
     res.json(municipalities);
-
   } catch (error) {
     logError('Erro ao buscar municípios públicos:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
     });
   }
 });
@@ -458,18 +469,21 @@ router.get('/municipalities', async (req, res) => {
  *       200:
  *         description: Lista de setores
  */
-router.get('/sectors/:municipalityId', validateUUID('municipalityId'), async (req, res) => {
-  try {
-    const { municipalityId } = req.params;
+router.get(
+  '/sectors/:municipalityId',
+  validateUUID('municipalityId'),
+  async (req, res) => {
+    try {
+      const { municipalityId } = req.params;
 
-    const cacheKey = `public_sectors_${municipalityId}`;
-    const cached = await intelligentCache.get(cacheKey);
-    
-    if (cached) {
-      return res.json(cached);
-    }
+      const cacheKey = `public_sectors_${municipalityId}`;
+      const cached = await intelligentCache.get(cacheKey);
 
-    const sql = `
+      if (cached) {
+        return res.json(cached);
+      }
+
+      const sql = `
       SELECT 
         id,
         name,
@@ -480,25 +494,25 @@ router.get('/sectors/:municipalityId', validateUUID('municipalityId'), async (re
       ORDER BY name
     `;
 
-    const result = await query(sql, [municipalityId]);
-    const sectors = result.rows.map(s => ({
-      id: s.id,
-      nome: s.name,
-      codigo: s.codigo,
-      parentId: s.parent_id
-    }));
+      const result = await query(sql, [municipalityId]);
+      const sectors = result.rows.map(s => ({
+        id: s.id,
+        nome: s.name,
+        codigo: s.codigo,
+        parentId: s.parent_id,
+      }));
 
-    await intelligentCache.set(cacheKey, sectors, { ttl: 1800 });
-    res.json(sectors);
-
-  } catch (error) {
-    logError('Erro ao buscar setores públicos:', error);
-    res.status(500).json({
-      error: 'Erro interno do servidor',
-      code: 'INTERNAL_ERROR'
-    });
+      await intelligentCache.set(cacheKey, sectors, { ttl: 1800 });
+      res.json(sectors);
+    } catch (error) {
+      logError('Erro ao buscar setores públicos:', error);
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        code: 'INTERNAL_ERROR',
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -514,41 +528,40 @@ router.get('/stats', async (req, res) => {
   try {
     const cacheKey = 'public_stats';
     const cached = await intelligentCache.get(cacheKey);
-    
+
     if (cached) {
       return res.json(cached);
     }
 
-    const [
-      patrimoniosCount,
-      totalValue,
-      municipalitiesCount,
-      sectorsCount
-    ] = await Promise.all([
-      query('SELECT COUNT(*) as count FROM patrimonios WHERE deleted_at IS NULL'),
-      query('SELECT SUM(valor_aquisicao) as total FROM patrimonios WHERE deleted_at IS NULL'),
-      query('SELECT COUNT(*) as count FROM municipalities'),
-      query('SELECT COUNT(*) as count FROM sectors')
-    ]);
+    const [patrimoniosCount, totalValue, municipalitiesCount, sectorsCount] =
+      await Promise.all([
+        query(
+          'SELECT COUNT(*) as count FROM patrimonios WHERE deleted_at IS NULL'
+        ),
+        query(
+          'SELECT SUM(valor_aquisicao) as total FROM patrimonios WHERE deleted_at IS NULL'
+        ),
+        query('SELECT COUNT(*) as count FROM municipalities'),
+        query('SELECT COUNT(*) as count FROM sectors'),
+      ]);
 
     const stats = {
       patrimonios: {
         total: parseInt(patrimoniosCount.rows[0].count),
-        valorTotal: parseFloat(totalValue.rows[0].total || 0)
+        valorTotal: parseFloat(totalValue.rows[0].total || 0),
       },
       municipalities: parseInt(municipalitiesCount.rows[0].count),
       sectors: parseInt(sectorsCount.rows[0].count),
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     };
 
     await intelligentCache.set(cacheKey, stats, { ttl: 1800 });
     res.json(stats);
-
   } catch (error) {
     logError('Erro ao buscar estatísticas públicas:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
     });
   }
 });
@@ -589,7 +602,7 @@ router.post('/webhooks', async (req, res) => {
     if (!url || !events || !Array.isArray(events)) {
       return res.status(400).json({
         error: 'URL e eventos são obrigatórios',
-        code: 'INVALID_WEBHOOK_DATA'
+        code: 'INVALID_WEBHOOK_DATA',
       });
     }
 
@@ -600,21 +613,20 @@ router.post('/webhooks', async (req, res) => {
       url,
       events,
       createdAt: new Date().toISOString(),
-      status: 'active'
+      status: 'active',
     };
 
     logInfo('Webhook registrado:', webhook);
 
     res.status(201).json({
       message: 'Webhook registrado com sucesso',
-      webhook
+      webhook,
     });
-
   } catch (error) {
     logError('Erro ao registrar webhook:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
     });
   }
 });
@@ -622,11 +634,11 @@ router.post('/webhooks', async (req, res) => {
 // Middleware de erro para API pública
 router.use((error, req, res, next) => {
   logError('Erro na API pública:', error);
-  
+
   res.status(500).json({
     error: 'Erro interno do servidor',
     code: 'INTERNAL_ERROR',
-    message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    message: process.env.NODE_ENV === 'development' ? error.message : undefined,
   });
 });
 

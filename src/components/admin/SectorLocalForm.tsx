@@ -1,8 +1,8 @@
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -10,29 +10,29 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from '@/components/ui/form';
 import {
   SearchableSelect,
   SearchableSelectOption,
-} from '@/components/ui/searchable-select'
-import { useSectors } from '@/contexts/SectorContext'
-import { Sector, Local } from '@/types'
-import { isCircularDependency } from '@/lib/sector-utils'
-import { toast } from '@/hooks/use-toast'
+} from '@/components/ui/searchable-select';
+import { useSectors } from '@/contexts/SectorContext';
+import { Sector, Local } from '@/types';
+import { isCircularDependency } from '@/lib/sector-utils';
+import { toast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   name: z.string().min(1, 'O nome é obrigatório.'),
   parentId: z.string().nullable(),
-})
+});
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof formSchema>;
 
 interface SectorLocalFormProps {
-  type: 'sector' | 'local'
-  data?: Sector | Local
-  parentId?: string | null
-  onSave: (values: { name: string; parentId: string | null }) => void
-  onClose: () => void
+  type: 'sector' | 'local';
+  data?: Sector | Local;
+  parentId?: string | null;
+  onSave: (values: { name: string; parentId: string | null }) => void;
+  onClose: () => void;
 }
 
 export const SectorLocalForm = ({
@@ -42,12 +42,12 @@ export const SectorLocalForm = ({
   onSave,
   onClose,
 }: SectorLocalFormProps) => {
-  const { sectors } = useSectors()
+  const { sectors } = useSectors();
 
-  const sectorOptions: SearchableSelectOption[] = sectors.map((s) => ({
+  const sectorOptions: SearchableSelectOption[] = sectors.map(s => ({
     value: s.id,
     label: s.name,
-  }))
+  }));
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -58,7 +58,7 @@ export const SectorLocalForm = ({
           ? ((data as Sector)?.parentId ?? parentId)
           : ((data as Local)?.sectorId ?? parentId),
     },
-  })
+  });
 
   const handleSubmit = (values: FormValues) => {
     if (
@@ -70,18 +70,18 @@ export const SectorLocalForm = ({
         variant: 'destructive',
         title: 'Erro de Validação',
         description: 'Um setor não pode ser filho de si mesmo.',
-      })
-      return
+      });
+      return;
     }
-    onSave(values)
-  }
+    onSave(values);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className='space-y-4'>
         <FormField
           control={form.control}
-          name="name"
+          name='name'
           render={({ field }) => (
             <FormItem>
               <FormLabel>
@@ -96,7 +96,7 @@ export const SectorLocalForm = ({
         />
         <FormField
           control={form.control}
-          name="parentId"
+          name='parentId'
           render={({ field }) => (
             <FormItem>
               <FormLabel>{type === 'sector' ? 'Setor Pai' : 'Setor'}</FormLabel>
@@ -118,13 +118,13 @@ export const SectorLocalForm = ({
             </FormItem>
           )}
         />
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
+        <div className='flex justify-end gap-2 pt-4'>
+          <Button type='button' variant='outline' onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit">Salvar</Button>
+          <Button type='submit'>Salvar</Button>
         </div>
       </form>
     </Form>
-  )
-}
+  );
+};

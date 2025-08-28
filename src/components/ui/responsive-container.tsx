@@ -15,21 +15,21 @@ const maxWidthClasses = {
   lg: 'max-w-lg',
   xl: 'max-w-xl',
   '2xl': 'max-w-2xl',
-  full: 'max-w-full'
+  full: 'max-w-full',
 };
 
 const paddingClasses = {
   none: '',
   sm: 'px-4 py-2 sm:px-6 sm:py-3',
   md: 'px-4 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-6',
-  lg: 'px-6 py-4 sm:px-8 sm:py-6 lg:px-12 lg:py-8'
+  lg: 'px-6 py-4 sm:px-8 sm:py-6 lg:px-12 lg:py-8',
 };
 
 const spacingClasses = {
   none: '',
   sm: 'space-y-2 sm:space-y-3',
   md: 'space-y-3 sm:space-y-4 lg:space-y-6',
-  lg: 'space-y-4 sm:space-y-6 lg:space-y-8'
+  lg: 'space-y-4 sm:space-y-6 lg:space-y-8',
 };
 
 export function ResponsiveContainer({
@@ -37,16 +37,18 @@ export function ResponsiveContainer({
   className,
   maxWidth = 'full',
   padding = 'md',
-  spacing = 'md'
+  spacing = 'md',
 }: ResponsiveContainerProps) {
   return (
-    <div className={cn(
-      'w-full mx-auto',
-      maxWidthClasses[maxWidth],
-      paddingClasses[padding],
-      spacingClasses[spacing],
-      className
-    )}>
+    <div
+      className={cn(
+        'w-full mx-auto',
+        maxWidthClasses[maxWidth],
+        paddingClasses[padding],
+        spacingClasses[spacing],
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -54,7 +56,9 @@ export function ResponsiveContainer({
 
 // Hook para detectar breakpoints
 export function useBreakpoint() {
-  const [breakpoint, setBreakpoint] = React.useState<'sm' | 'md' | 'lg' | 'xl' | '2xl'>('md');
+  const [breakpoint, setBreakpoint] = React.useState<
+    'sm' | 'md' | 'lg' | 'xl' | '2xl'
+  >('md');
 
   React.useEffect(() => {
     const updateBreakpoint = () => {
@@ -76,7 +80,7 @@ export function useBreakpoint() {
     isMobile: breakpoint === 'sm',
     isTablet: breakpoint === 'md',
     isDesktop: ['lg', 'xl', '2xl'].includes(breakpoint),
-    isLarge: ['xl', '2xl'].includes(breakpoint)
+    isLarge: ['xl', '2xl'].includes(breakpoint),
   };
 }
 
@@ -96,14 +100,14 @@ interface ResponsiveGridProps {
 const gapClasses = {
   sm: 'gap-2 sm:gap-3',
   md: 'gap-3 sm:gap-4 lg:gap-6',
-  lg: 'gap-4 sm:gap-6 lg:gap-8'
+  lg: 'gap-4 sm:gap-6 lg:gap-8',
 };
 
 export function ResponsiveGrid({
   children,
   className,
   cols = { sm: 1, md: 2, lg: 3, xl: 4 },
-  gap = 'md'
+  gap = 'md',
 }: ResponsiveGridProps) {
   const gridCols = cn(
     'grid',
@@ -114,11 +118,7 @@ export function ResponsiveGrid({
     gapClasses[gap]
   );
 
-  return (
-    <div className={cn(gridCols, className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn(gridCols, className)}>{children}</div>;
 }
 
 // Componente para stack responsivo (flex column/row)
@@ -141,7 +141,7 @@ export function ResponsiveStack({
   direction = { sm: 'col', md: 'row' },
   align = 'start',
   justify = 'start',
-  gap = 'md'
+  gap = 'md',
 }: ResponsiveStackProps) {
   const flexClasses = cn(
     'flex',
@@ -152,21 +152,17 @@ export function ResponsiveStack({
       'items-start': align === 'start',
       'items-center': align === 'center',
       'items-end': align === 'end',
-      'items-stretch': align === 'stretch'
+      'items-stretch': align === 'stretch',
     },
     {
       'justify-start': justify === 'start',
       'justify-center': justify === 'center',
       'justify-end': justify === 'end',
       'justify-between': justify === 'between',
-      'justify-around': justify === 'around'
+      'justify-around': justify === 'around',
     },
     gapClasses[gap]
   );
 
-  return (
-    <div className={cn(flexClasses, className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn(flexClasses, className)}>{children}</div>;
 }

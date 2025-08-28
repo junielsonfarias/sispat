@@ -14,30 +14,30 @@ const swaggerOptions = {
       description: 'API do Sistema de Gestão Patrimonial',
       contact: {
         name: 'Equipe SISPAT',
-        email: 'suporte@sispat.com'
+        email: 'suporte@sispat.com',
       },
       license: {
         name: 'MIT',
-        url: 'https://opensource.org/licenses/MIT'
-      }
+        url: 'https://opensource.org/licenses/MIT',
+      },
     },
     servers: [
       {
         url: 'http://localhost:3001',
-        description: 'Servidor de Desenvolvimento'
+        description: 'Servidor de Desenvolvimento',
       },
       {
         url: 'https://api.sispat.com',
-        description: 'Servidor de Produção'
-      }
+        description: 'Servidor de Produção',
+      },
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          bearerFormat: 'JWT'
-        }
+          bearerFormat: 'JWT',
+        },
       },
       schemas: {
         User: {
@@ -46,9 +46,15 @@ const swaggerOptions = {
             id: { type: 'string', format: 'uuid' },
             name: { type: 'string' },
             email: { type: 'string', format: 'email' },
-            role: { 
-              type: 'string', 
-              enum: ['superuser', 'supervisor', 'usuario', 'admin', 'visualizador'] 
+            role: {
+              type: 'string',
+              enum: [
+                'superuser',
+                'supervisor',
+                'usuario',
+                'admin',
+                'visualizador',
+              ],
             },
             municipalityId: { type: 'string', format: 'uuid' },
             sector: { type: 'string' },
@@ -56,8 +62,8 @@ const swaggerOptions = {
             avatarUrl: { type: 'string', format: 'uri' },
             isActive: { type: 'boolean' },
             createdAt: { type: 'string', format: 'date-time' },
-            updatedAt: { type: 'string', format: 'date-time' }
-          }
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
         },
         Patrimonio: {
           type: 'object',
@@ -84,8 +90,8 @@ const swaggerOptions = {
             fotos: { type: 'array', items: { type: 'string' } },
             documentos: { type: 'array', items: { type: 'string' } },
             createdAt: { type: 'string', format: 'date-time' },
-            updatedAt: { type: 'string', format: 'date-time' }
-          }
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
         },
         Municipality: {
           type: 'object',
@@ -102,8 +108,8 @@ const swaggerOptions = {
             accessStartDate: { type: 'string', format: 'date' },
             accessEndDate: { type: 'string', format: 'date' },
             createdAt: { type: 'string', format: 'date-time' },
-            updatedAt: { type: 'string', format: 'date-time' }
-          }
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
         },
         Sector: {
           type: 'object',
@@ -118,8 +124,8 @@ const swaggerOptions = {
             municipalityId: { type: 'string', format: 'uuid' },
             parentId: { type: 'string', format: 'uuid' },
             createdAt: { type: 'string', format: 'date-time' },
-            updatedAt: { type: 'string', format: 'date-time' }
-          }
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
         },
         Local: {
           type: 'object',
@@ -133,8 +139,8 @@ const swaggerOptions = {
             capacity: { type: 'number' },
             isActive: { type: 'boolean' },
             createdAt: { type: 'string', format: 'date-time' },
-            updatedAt: { type: 'string', format: 'date-time' }
-          }
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
         },
         Error: {
           type: 'object',
@@ -142,8 +148,8 @@ const swaggerOptions = {
             success: { type: 'boolean' },
             error: { type: 'string' },
             message: { type: 'string' },
-            timestamp: { type: 'string', format: 'date-time' }
-          }
+            timestamp: { type: 'string', format: 'date-time' },
+          },
         },
         Success: {
           type: 'object',
@@ -151,16 +157,16 @@ const swaggerOptions = {
             success: { type: 'boolean' },
             data: { type: 'object' },
             message: { type: 'string' },
-            timestamp: { type: 'string', format: 'date-time' }
-          }
-        }
-      }
+            timestamp: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
     },
     security: [
       {
-        bearerAuth: []
-      }
-    ]
+        bearerAuth: [],
+      },
+    ],
   },
   apis: [
     './server/routes/*.js',
@@ -169,26 +175,29 @@ const swaggerOptions = {
     './server/routes/patrimonios.js',
     './server/routes/municipalities.js',
     './server/routes/sectors.js',
-    './server/routes/locals.js'
-  ]
+    './server/routes/locals.js',
+  ],
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
 
 // Rota para a documentação Swagger
 router.use('/', swaggerUi.serve);
-router.get('/', swaggerUi.setup(specs, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'SISPAT API Documentation',
-  customfavIcon: '/favicon.ico',
-  swaggerOptions: {
-    persistAuthorization: true,
-    displayRequestDuration: true,
-    filter: true,
-    showExtensions: true,
-    showCommonExtensions: true
-  }
-}));
+router.get(
+  '/',
+  swaggerUi.setup(specs, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'SISPAT API Documentation',
+    customfavIcon: '/favicon.ico',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+    },
+  })
+);
 
 // Rota para obter especificação JSON
 router.get('/json', (req, res) => {

@@ -73,7 +73,7 @@ export function registerRoutes(app) {
 
   // NOVAS FUNCIONALIDADES IMPLEMENTADAS
   console.log('🔧 Registrando novas funcionalidades...');
-  
+
   // 1. API Pública
   console.log('🌐 Registrando API Pública...');
   app.use('/api/public', publicApiRoutes);
@@ -110,7 +110,7 @@ export function registerRoutes(app) {
  */
 function logRegisteredRoutes(app) {
   const routes = [];
-  
+
   app._router.stack.forEach(middleware => {
     if (middleware.route) {
       // Rotas diretas
@@ -118,7 +118,7 @@ function logRegisteredRoutes(app) {
       methods.forEach(method => {
         routes.push({
           method: method.toUpperCase(),
-          path: middleware.route.path
+          path: middleware.route.path,
         });
       });
     } else if (middleware.name === 'router') {
@@ -129,7 +129,7 @@ function logRegisteredRoutes(app) {
           methods.forEach(method => {
             routes.push({
               method: method.toUpperCase(),
-              path: handler.route.path
+              path: handler.route.path,
             });
           });
         }
@@ -152,7 +152,8 @@ function logRegisteredRoutes(app) {
  */
 export function intelligentCacheMiddleware(req, res, next) {
   // Adicionar cache inteligente ao request
-  req.intelligentCache = require('../services/cache/intelligentCache.js').default;
+  req.intelligentCache =
+    require('../services/cache/intelligentCache.js').default;
   next();
 }
 
@@ -179,7 +180,8 @@ export function analyticsMiddleware(req, res, next) {
  */
 export function advancedReportsMiddleware(req, res, next) {
   // Adicionar relatórios avançados ao request
-  req.advancedReports = require('../services/reports/advancedReports.js').default;
+  req.advancedReports =
+    require('../services/reports/advancedReports.js').default;
   next();
 }
 
@@ -203,15 +205,15 @@ router.get('/health', async (req, res) => {
         advancedReports: 'enabled',
         publicApi: 'enabled',
         pwa: 'enabled',
-        responsive: 'enabled'
+        responsive: 'enabled',
       },
       services: {
         database: 'connected',
         cache: 'operational',
         search: 'operational',
         analytics: 'operational',
-        reports: 'operational'
-      }
+        reports: 'operational',
+      },
     };
 
     res.json(healthStatus);
@@ -219,7 +221,7 @@ router.get('/health', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -229,32 +231,36 @@ router.get('/health', async (req, res) => {
  */
 router.get('/status', async (req, res) => {
   try {
-    const intelligentCache = require('../services/cache/intelligentCache.js').default;
-    const advancedSearch = require('../services/search/advancedSearch.js').default;
-    const analytics = require('../services/analytics/advancedAnalytics.js').default;
-    const advancedReports = require('../services/reports/advancedReports.js').default;
+    const intelligentCache =
+      require('../services/cache/intelligentCache.js').default;
+    const advancedSearch =
+      require('../services/search/advancedSearch.js').default;
+    const analytics =
+      require('../services/analytics/advancedAnalytics.js').default;
+    const advancedReports =
+      require('../services/reports/advancedReports.js').default;
 
     const status = {
       cache: await intelligentCache.getStats(),
       search: {
         strategies: Object.keys(advancedSearch.searchStrategies),
-        status: 'operational'
+        status: 'operational',
       },
       analytics: {
         realTimeMetrics: analytics.metrics.realTime,
-        status: 'operational'
+        status: 'operational',
       },
       reports: {
         types: Object.keys(advancedReports.reportTypes),
         formats: Object.keys(advancedReports.exportFormats),
-        status: 'operational'
-      }
+        status: 'operational',
+      },
     };
 
     res.json(status);
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -275,49 +281,64 @@ router.get('/config', (req, res) => {
         ttl: {
           default: 300,
           hot: 1800,
-          cold: 60
-        }
+          cold: 60,
+        },
       },
       advancedSearch: {
         enabled: true,
         strategies: ['fullText', 'fuzzy', 'tag', 'geo', 'semantic'],
         cache: true,
-        suggestions: true
+        suggestions: true,
       },
       analytics: {
         enabled: true,
         realTime: true,
         historical: true,
         predictions: true,
-        alerts: true
+        alerts: true,
       },
       advancedReports: {
         enabled: true,
-        types: ['patrimony_summary', 'depreciation_report', 'transfer_history', 'inventory_report', 'financial_report', 'comparative_report', 'custom_report'],
+        types: [
+          'patrimony_summary',
+          'depreciation_report',
+          'transfer_history',
+          'inventory_report',
+          'financial_report',
+          'comparative_report',
+          'custom_report',
+        ],
         formats: ['pdf', 'excel', 'csv', 'json'],
         scheduling: true,
-        templates: true
+        templates: true,
       },
       publicApi: {
         enabled: true,
         rateLimit: {
           general: '100 requests per 15 minutes',
-          search: '30 requests per 5 minutes'
+          search: '30 requests per 5 minutes',
         },
-        endpoints: ['patrimonios', 'municipalities', 'sectors', 'search', 'stats', 'webhooks']
+        endpoints: [
+          'patrimonios',
+          'municipalities',
+          'sectors',
+          'search',
+          'stats',
+          'webhooks',
+        ],
       },
       pwa: {
         enabled: true,
         offline: true,
         pushNotifications: true,
-        backgroundSync: true
+        backgroundSync: true,
       },
       responsive: {
         enabled: true,
         breakpoints: ['mobile', 'tablet', 'desktop', 'large'],
         touchTargets: true,
-        safeAreas: true
-      }
+        safeAreas: true,
+      },
     },
     architecture: {
       pattern: 'modular',
@@ -325,8 +346,8 @@ router.get('/config', (req, res) => {
       cache: 'intelligent',
       search: 'advanced',
       analytics: 'real-time',
-      reports: 'customizable'
-    }
+      reports: 'customizable',
+    },
   };
 
   res.json(config);
@@ -341,27 +362,31 @@ router.get('/config', (req, res) => {
  */
 router.post('/test/cache', async (req, res) => {
   try {
-    const intelligentCache = require('../services/cache/intelligentCache.js').default;
-    
+    const intelligentCache =
+      require('../services/cache/intelligentCache.js').default;
+
     const testKey = 'test_key_' + Date.now();
-    const testValue = { message: 'Teste do cache inteligente', timestamp: new Date().toISOString() };
-    
+    const testValue = {
+      message: 'Teste do cache inteligente',
+      timestamp: new Date().toISOString(),
+    };
+
     await intelligentCache.set(testKey, testValue, { ttl: 60 });
     const retrieved = await intelligentCache.get(testKey);
-    
+
     res.json({
       success: true,
       test: {
         key: testKey,
         set: testValue,
         retrieved: retrieved,
-        stats: intelligentCache.getStats()
-      }
+        stats: intelligentCache.getStats(),
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -371,16 +396,17 @@ router.post('/test/cache', async (req, res) => {
  */
 router.post('/test/search', async (req, res) => {
   try {
-    const advancedSearch = require('../services/search/advancedSearch.js').default;
+    const advancedSearch =
+      require('../services/search/advancedSearch.js').default;
     const { query, strategy = 'fullText', type = 'patrimonios' } = req.body;
-    
+
     const result = await advancedSearch.search(query, {
       type,
       strategy,
       limit: 10,
-      useCache: true
+      useCache: true,
     });
-    
+
     res.json({
       success: true,
       search: {
@@ -388,13 +414,13 @@ router.post('/test/search', async (req, res) => {
         strategy,
         type,
         results: result.results.length,
-        data: result.results.slice(0, 3) // Primeiros 3 resultados
-      }
+        data: result.results.slice(0, 3), // Primeiros 3 resultados
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -404,22 +430,23 @@ router.post('/test/search', async (req, res) => {
  */
 router.get('/test/analytics', async (req, res) => {
   try {
-    const analytics = require('../services/analytics/advancedAnalytics.js').default;
-    
+    const analytics =
+      require('../services/analytics/advancedAnalytics.js').default;
+
     const metrics = await analytics.getDashboardMetrics();
-    
+
     res.json({
       success: true,
       analytics: {
         realTime: metrics.realTime,
         charts: Object.keys(metrics.charts || {}),
-        insights: metrics.insights?.length || 0
-      }
+        insights: metrics.insights?.length || 0,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -429,16 +456,17 @@ router.get('/test/analytics', async (req, res) => {
  */
 router.post('/test/reports', async (req, res) => {
   try {
-    const advancedReports = require('../services/reports/advancedReports.js').default;
+    const advancedReports =
+      require('../services/reports/advancedReports.js').default;
     const { type = 'patrimony_summary', format = 'json' } = req.body;
-    
+
     const report = await advancedReports.generateCustomReport({
       type,
       format,
       includeCharts: true,
-      includeMetadata: true
+      includeMetadata: true,
     });
-    
+
     res.json({
       success: true,
       report: {
@@ -446,13 +474,13 @@ router.post('/test/reports', async (req, res) => {
         format,
         filename: report.filename,
         downloadUrl: report.downloadUrl,
-        metadata: report.metadata
-      }
+        metadata: report.metadata,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });

@@ -1,6 +1,6 @@
 /**
  * Sistema de Cache Avançado do SISPAT
- * 
+ *
  * Este módulo integra todos os componentes do sistema de cache:
  * - Cache híbrido (Redis + Memória)
  * - Cache de relatórios
@@ -19,49 +19,66 @@ export { reportPreGeneration } from './reportPreGeneration';
 
 // Exportar middlewares
 export {
-    cacheClearMiddleware, cacheInvalidationMiddleware, cacheMiddleware, cacheStatsMiddleware,
-    cacheWarmupMiddleware, dashboardCache, patrimonioCache, reportCache as reportCacheMiddleware, userCache
+  cacheClearMiddleware,
+  cacheInvalidationMiddleware,
+  cacheMiddleware,
+  cacheStatsMiddleware,
+  cacheWarmupMiddleware,
+  dashboardCache,
+  patrimonioCache,
+  reportCache as reportCacheMiddleware,
+  userCache,
 } from './cacheMiddleware';
 
 export {
-    aggregatedQueryCacheMiddleware, csvExportCacheMiddleware, dashboardCacheMiddleware, excelExportCacheMiddleware, pdfReportCacheMiddleware, reportCacheClearMiddleware, reportCacheMiddleware, reportCacheStatsMiddleware,
-    reportPreGenerationMiddleware
+  aggregatedQueryCacheMiddleware,
+  csvExportCacheMiddleware,
+  dashboardCacheMiddleware,
+  excelExportCacheMiddleware,
+  pdfReportCacheMiddleware,
+  reportCacheClearMiddleware,
+  reportCacheMiddleware,
+  reportCacheStatsMiddleware,
+  reportPreGenerationMiddleware,
 } from './reportCacheMiddleware';
 
 // Exportar hooks React
 export {
-    useAdvancedCache,
-    useCacheInvalidation, useCacheMonitor, useCacheWarmup
+  useAdvancedCache,
+  useCacheInvalidation,
+  useCacheMonitor,
+  useCacheWarmup,
 } from '../hooks/useAdvancedCache';
 
 export {
-    useAggregatedQueryCache, useDashboardCache, useExportCache, usePdfReportCache, useReportPreGeneration
+  useAggregatedQueryCache,
+  useDashboardCache,
+  useExportCache,
+  usePdfReportCache,
+  useReportPreGeneration,
 } from '../hooks/useReportCache';
 
 // Exportar tipos
-export type {
-    CacheMetrics, CacheOptions,
-    CacheStats
-} from './advancedCache';
+export type { CacheMetrics, CacheOptions, CacheStats } from './advancedCache';
 
 export type {
-    DashboardData, ReportCacheOptions,
-    ReportMetadata
+  DashboardData,
+  ReportCacheOptions,
+  ReportMetadata,
 } from './reportCache';
 
 export type {
-    CacheEvent, CacheInvalidationRule, InvalidationStats
+  CacheEvent,
+  CacheInvalidationRule,
+  InvalidationStats,
 } from './cacheInvalidationService';
 
 export type {
-    PreGenerationConfig,
-    PreGenerationStats
+  PreGenerationConfig,
+  PreGenerationStats,
 } from './reportPreGeneration';
 
-export type {
-    AlertRule,
-    AlertStats, CacheAlert
-} from './cacheAlertSystem';
+export type { AlertRule, AlertStats, CacheAlert } from './cacheAlertSystem';
 
 // Função de inicialização do sistema de cache
 export async function initializeCacheSystem(): Promise<{
@@ -78,7 +95,7 @@ export async function initializeCacheSystem(): Promise<{
     redis: false,
     invalidation: false,
     preGeneration: false,
-    alerts: false
+    alerts: false,
   };
 
   try {
@@ -91,12 +108,17 @@ export async function initializeCacheSystem(): Promise<{
       services.redis = true;
       console.log('✅ Redis conectado com sucesso');
     } catch (error) {
-      console.warn('⚠️  Redis não disponível, usando apenas cache em memória:', error);
+      console.warn(
+        '⚠️  Redis não disponível, usando apenas cache em memória:',
+        error
+      );
     }
 
     // 2. Inicializar sistema de invalidação
     try {
-      const { cacheInvalidationService: invalidationService } = await import('./cacheInvalidationService');
+      const { cacheInvalidationService: invalidationService } = await import(
+        './cacheInvalidationService'
+      );
       invalidationService.startMonitoring();
       services.invalidation = true;
       console.log('✅ Sistema de invalidação iniciado');
@@ -106,7 +128,9 @@ export async function initializeCacheSystem(): Promise<{
 
     // 3. Inicializar pré-geração de relatórios
     try {
-      const { reportPreGeneration: preGeneration } = await import('./reportPreGeneration');
+      const { reportPreGeneration: preGeneration } = await import(
+        './reportPreGeneration'
+      );
       preGeneration.start();
       services.preGeneration = true;
       console.log('✅ Sistema de pré-geração iniciado');
@@ -116,7 +140,9 @@ export async function initializeCacheSystem(): Promise<{
 
     // 4. Inicializar sistema de alertas
     try {
-      const { cacheAlertSystem: alertSystem } = await import('./cacheAlertSystem');
+      const { cacheAlertSystem: alertSystem } = await import(
+        './cacheAlertSystem'
+      );
       alertSystem.startMonitoring();
       services.alerts = true;
       console.log('✅ Sistema de alertas iniciado');
@@ -132,23 +158,27 @@ export async function initializeCacheSystem(): Promise<{
       return {
         success: true,
         message: 'Todos os serviços de cache foram inicializados com sucesso',
-        services
+        services,
       };
     } else {
-      console.log(`⚠️  Sistema de Cache parcialmente inicializado (${successfulServices}/${totalServices} serviços)`);
+      console.log(
+        `⚠️  Sistema de Cache parcialmente inicializado (${successfulServices}/${totalServices} serviços)`
+      );
       return {
         success: false,
         message: `Sistema parcialmente inicializado: ${successfulServices}/${totalServices} serviços ativos`,
-        services
+        services,
       };
     }
-
   } catch (error) {
-    console.error('💥 Erro crítico na inicialização do sistema de cache:', error);
+    console.error(
+      '💥 Erro crítico na inicialização do sistema de cache:',
+      error
+    );
     return {
       success: false,
       message: `Erro crítico: ${error}`,
-      services
+      services,
     };
   }
 }
@@ -159,17 +189,23 @@ export async function shutdownCacheSystem(): Promise<void> {
 
   try {
     // Parar sistema de alertas
-    const { cacheAlertSystem: alertSystem } = await import('./cacheAlertSystem');
+    const { cacheAlertSystem: alertSystem } = await import(
+      './cacheAlertSystem'
+    );
     alertSystem.stopMonitoring();
     console.log('✅ Sistema de alertas parado');
 
     // Parar pré-geração
-    const { reportPreGeneration: preGeneration } = await import('./reportPreGeneration');
+    const { reportPreGeneration: preGeneration } = await import(
+      './reportPreGeneration'
+    );
     preGeneration.stop();
     console.log('✅ Sistema de pré-geração parado');
 
     // Parar sistema de invalidação
-    const { cacheInvalidationService: invalidationService } = await import('./cacheInvalidationService');
+    const { cacheInvalidationService: invalidationService } = await import(
+      './cacheInvalidationService'
+    );
     invalidationService.stopMonitoring();
     console.log('✅ Sistema de invalidação parado');
 
@@ -205,11 +241,17 @@ export async function getCacheSystemStatus(): Promise<{
   try {
     // Status dos serviços
     const { redisClient: redis } = await import('./redisClient');
-    const { cacheInvalidationService: invalidationService } = await import('./cacheInvalidationService');
-    const { reportPreGeneration: preGeneration } = await import('./reportPreGeneration');
-    const { cacheAlertSystem: alertSystem } = await import('./cacheAlertSystem');
+    const { cacheInvalidationService: invalidationService } = await import(
+      './cacheInvalidationService'
+    );
+    const { reportPreGeneration: preGeneration } = await import(
+      './reportPreGeneration'
+    );
+    const { cacheAlertSystem: alertSystem } = await import(
+      './cacheAlertSystem'
+    );
     const { advancedCache } = await import('./advancedCache');
-    
+
     const redisStatus = redis.isReady() ? 'online' : 'offline';
     const invalidationRules = invalidationService.getRules().length;
     const preGenConfigs = preGeneration.getConfigs().length;
@@ -220,7 +262,7 @@ export async function getCacheSystemStatus(): Promise<{
 
     // Determinar status geral
     let overall: 'healthy' | 'warning' | 'critical' = 'healthy';
-    
+
     if (activeAlerts > 0) {
       const criticalAlerts = alertSystem.getAlertsBySeverity('critical');
       if (criticalAlerts.length > 0) {
@@ -241,29 +283,29 @@ export async function getCacheSystemStatus(): Promise<{
       services: {
         redis: {
           status: redisStatus,
-          memory: redisStatus === 'online' ? cacheStats.redis.memoryUsage : undefined
+          memory:
+            redisStatus === 'online' ? cacheStats.redis.memoryUsage : undefined,
         },
         invalidation: {
           status: invalidationRules > 0 ? 'active' : 'inactive',
-          rules: invalidationRules
+          rules: invalidationRules,
         },
         preGeneration: {
           status: preGenConfigs > 0 ? 'active' : 'inactive',
-          configs: preGenConfigs
+          configs: preGenConfigs,
         },
         alerts: {
           status: activeAlerts >= 0 ? 'active' : 'inactive',
-          activeAlerts
-        }
+          activeAlerts,
+        },
       },
       performance: {
         totalHitRate: cacheStats.total.hitRate,
         redisHitRate: cacheStats.redis.hitRate,
-        memoryHitRate: cacheStats.memory.hitRate
+        memoryHitRate: cacheStats.memory.hitRate,
       },
-      alerts: activeAlerts
+      alerts: activeAlerts,
     };
-
   } catch (error) {
     console.error('Erro ao obter status do sistema de cache:', error);
     return {
@@ -272,14 +314,14 @@ export async function getCacheSystemStatus(): Promise<{
         redis: { status: 'offline' },
         invalidation: { status: 'inactive', rules: 0 },
         preGeneration: { status: 'inactive', configs: 0 },
-        alerts: { status: 'inactive', activeAlerts: 0 }
+        alerts: { status: 'inactive', activeAlerts: 0 },
       },
       performance: {
         totalHitRate: 0,
         redisHitRate: 0,
-        memoryHitRate: 0
+        memoryHitRate: 0,
       },
-      alerts: 0
+      alerts: 0,
     };
   }
 }
@@ -289,34 +331,49 @@ export const cacheUtils = {
   // Invalidar cache relacionado a patrimônio
   async invalidatePatrimonio(patrimonioId?: string): Promise<number> {
     const { advancedCache } = await import('./advancedCache');
-    const { cacheInvalidationService: invalidationService } = await import('./cacheInvalidationService');
-    
+    const { cacheInvalidationService: invalidationService } = await import(
+      './cacheInvalidationService'
+    );
+
     let totalInvalidated = 0;
-    
-    totalInvalidated += await advancedCache.invalidateByTags(['patrimonio', 'dashboard']);
-    
+
+    totalInvalidated += await advancedCache.invalidateByTags([
+      'patrimonio',
+      'dashboard',
+    ]);
+
     if (patrimonioId) {
-      totalInvalidated += await advancedCache.invalidateByPattern(`patrimonio:${patrimonioId}:*`);
+      totalInvalidated += await advancedCache.invalidateByPattern(
+        `patrimonio:${patrimonioId}:*`
+      );
     }
-    
+
     // Emitir evento para sistema de invalidação
-    invalidationService.emitDataChange('patrimonio', 'update', patrimonioId || 'all');
-    
+    invalidationService.emitDataChange(
+      'patrimonio',
+      'update',
+      patrimonioId || 'all'
+    );
+
     return totalInvalidated;
   },
 
   // Invalidar cache de usuário
   async invalidateUser(userId: string): Promise<number> {
     const { advancedCache } = await import('./advancedCache');
-    const { cacheInvalidationService: invalidationService } = await import('./cacheInvalidationService');
-    
+    const { cacheInvalidationService: invalidationService } = await import(
+      './cacheInvalidationService'
+    );
+
     let totalInvalidated = 0;
-    
+
     totalInvalidated += await advancedCache.invalidateByTags(['user']);
-    totalInvalidated += await advancedCache.invalidateByPattern(`user:${userId}:*`);
-    
+    totalInvalidated += await advancedCache.invalidateByPattern(
+      `user:${userId}:*`
+    );
+
     invalidationService.emitDataChange('usuarios', 'update', userId);
-    
+
     return totalInvalidated;
   },
 
@@ -333,8 +390,8 @@ export const cacheUtils = {
             // ... outros dados
           };
         },
-        options: { ttl: 300, tags: ['dashboard'] }
-      }
+        options: { ttl: 300, tags: ['dashboard'] },
+      },
     ];
 
     const { advancedCache } = await import('./advancedCache');
@@ -363,7 +420,7 @@ export const cacheUtils = {
     }
 
     return { cleared, errors };
-  }
+  },
 };
 
 // Configuração padrão para desenvolvimento
@@ -372,20 +429,20 @@ export const defaultCacheConfig = {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.REDIS_DB || '0')
+    db: parseInt(process.env.REDIS_DB || '0'),
   },
   defaultTTL: {
-    short: 300,      // 5 minutos
-    medium: 1800,    // 30 minutos
-    long: 3600,      // 1 hora
-    veryLong: 86400  // 24 horas
+    short: 300, // 5 minutos
+    medium: 1800, // 30 minutos
+    long: 3600, // 1 hora
+    veryLong: 86400, // 24 horas
   },
   monitoring: {
     alertsEnabled: true,
     preGenerationEnabled: true,
     invalidationEnabled: true,
-    metricsInterval: 30000 // 30 segundos
-  }
+    metricsInterval: 30000, // 30 segundos
+  },
 };
 
 export default {
@@ -393,5 +450,5 @@ export default {
   shutdownCacheSystem,
   getCacheSystemStatus,
   cacheUtils,
-  defaultCacheConfig
+  defaultCacheConfig,
 };

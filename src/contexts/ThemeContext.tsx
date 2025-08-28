@@ -6,19 +6,19 @@ import {
   useContext,
   ReactNode,
   useMemo,
-} from 'react'
-import { Theme } from '@/types'
-import { useAuth } from './AuthContext'
+} from 'react';
+import { Theme } from '@/types';
+import { useAuth } from './AuthContext';
 
 interface ThemeContextType {
-  themes: Theme[]
-  activeTheme: Theme | null
-  applyTheme: (themeId: string) => void
-  saveTheme: (theme: Theme) => void
-  deleteTheme: (themeId: string) => void
+  themes: Theme[];
+  activeTheme: Theme | null;
+  applyTheme: (themeId: string) => void;
+  saveTheme: (theme: Theme) => void;
+  deleteTheme: (themeId: string) => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | null>(null)
+const ThemeContext = createContext<ThemeContextType | null>(null);
 
 const defaultTheme: Omit<Theme, 'municipalityId'> = {
   id: 'default-light',
@@ -46,7 +46,7 @@ const defaultTheme: Omit<Theme, 'municipalityId'> = {
   },
   borderRadius: '0.5rem',
   fontFamily: "'Inter var', sans-serif",
-}
+};
 
 const defaultDarkTheme: Omit<Theme, 'municipalityId'> = {
   id: 'default-dark',
@@ -74,100 +74,100 @@ const defaultDarkTheme: Omit<Theme, 'municipalityId'> = {
   },
   borderRadius: '0.5rem',
   fontFamily: "'Inter var', sans-serif",
-}
+};
 
 const initialThemes: Theme[] = [
   { ...defaultTheme, municipalityId: '1' },
   { ...defaultDarkTheme, municipalityId: '1' },
-]
+];
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [allThemes, setAllThemes] = useState<Theme[]>(initialThemes)
-  const [activeTheme, setActiveTheme] = useState<Theme | null>(null)
-  const { user } = useAuth()
+  const [allThemes, setAllThemes] = useState<Theme[]>(initialThemes);
+  const [activeTheme, setActiveTheme] = useState<Theme | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    const storedThemes = localStorage.getItem('sispat_themes')
+    const storedThemes = localStorage.getItem('sispat_themes');
     if (storedThemes) {
-      setAllThemes(JSON.parse(storedThemes))
+      setAllThemes(JSON.parse(storedThemes));
     }
-  }, [])
+  }, []);
 
   const themes = useMemo(() => {
-    if (user?.role === 'superuser') return allThemes
+    if (user?.role === 'superuser') return allThemes;
     if (user?.municipalityId) {
       return allThemes.filter(
-        (t) =>
+        t =>
           t.municipalityId === user.municipalityId ||
-          t.id.startsWith('default-'),
-      )
+          t.id.startsWith('default-')
+      );
     }
-    return []
-  }, [allThemes, user])
+    return [];
+  }, [allThemes, user]);
 
   useEffect(() => {
     const activeThemeId =
       localStorage.getItem(`sispat_active_theme_${user?.municipalityId}`) ||
-      'default-light'
+      'default-light';
     const themeToApply =
-      themes.find((t) => t.id === activeThemeId) ||
-      themes.find((t) => t.id === 'default-light')
-    setActiveTheme(themeToApply || null)
-  }, [themes, user])
+      themes.find(t => t.id === activeThemeId) ||
+      themes.find(t => t.id === 'default-light');
+    setActiveTheme(themeToApply || null);
+  }, [themes, user]);
 
   useEffect(() => {
     if (activeTheme) {
-      const root = document.documentElement
+      const root = document.documentElement;
       Object.entries(activeTheme.colors).forEach(([key, value]) => {
-        const cssVarName = `--${key.replace(/([A-Z])/g, '-$1')}`.toLowerCase()
-        root.style.setProperty(cssVarName, value)
-      })
-      root.style.setProperty('--radius', activeTheme.borderRadius)
-      root.style.setProperty('--font-sans', activeTheme.fontFamily)
+        const cssVarName = `--${key.replace(/([A-Z])/g, '-$1')}`.toLowerCase();
+        root.style.setProperty(cssVarName, value);
+      });
+      root.style.setProperty('--radius', activeTheme.borderRadius);
+      root.style.setProperty('--font-sans', activeTheme.fontFamily);
     }
-  }, [activeTheme])
+  }, [activeTheme]);
 
   const applyTheme = useCallback(
     (themeId: string) => {
-      const themeToApply = themes.find((t) => t.id === themeId)
+      const themeToApply = themes.find(t => t.id === themeId);
       if (themeToApply && user?.municipalityId) {
-        setActiveTheme(themeToApply)
+        setActiveTheme(themeToApply);
         localStorage.setItem(
           `sispat_active_theme_${user.municipalityId}`,
-          themeId,
-        )
+          themeId
+        );
       }
     },
-    [themes, user],
-  )
+    [themes, user]
+  );
 
   const saveTheme = useCallback(
     (theme: Theme) => {
-      const existingIndex = allThemes.findIndex((t) => t.id === theme.id)
-      let newThemes
+      const existingIndex = allThemes.findIndex(t => t.id === theme.id);
+      let newThemes;
       if (existingIndex > -1) {
-        newThemes = [...allThemes]
-        newThemes[existingIndex] = theme
+        newThemes = [...allThemes];
+        newThemes[existingIndex] = theme;
       } else {
-        newThemes = [...allThemes, theme]
+        newThemes = [...allThemes, theme];
       }
-      setAllThemes(newThemes)
-      localStorage.setItem('sispat_themes', JSON.stringify(newThemes))
+      setAllThemes(newThemes);
+      localStorage.setItem('sispat_themes', JSON.stringify(newThemes));
     },
-    [allThemes],
-  )
+    [allThemes]
+  );
 
   const deleteTheme = useCallback(
     (themeId: string) => {
-      const newThemes = allThemes.filter((t) => t.id !== themeId)
-      setAllThemes(newThemes)
-      localStorage.setItem('sispat_themes', JSON.stringify(newThemes))
+      const newThemes = allThemes.filter(t => t.id !== themeId);
+      setAllThemes(newThemes);
+      localStorage.setItem('sispat_themes', JSON.stringify(newThemes));
       if (activeTheme?.id === themeId) {
-        applyTheme('default-light')
+        applyTheme('default-light');
       }
     },
-    [allThemes, activeTheme, applyTheme],
-  )
+    [allThemes, activeTheme, applyTheme]
+  );
 
   return (
     <ThemeContext.Provider
@@ -181,13 +181,13 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     >
       {children}
     </ThemeContext.Provider>
-  )
-}
+  );
+};
 
 export const useTheme = () => {
-  const context = useContext(ThemeContext)
+  const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider')
+    throw new Error('useTheme must be used within a ThemeProvider');
   }
-  return context
-}
+  return context;
+};

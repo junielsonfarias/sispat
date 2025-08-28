@@ -6,81 +6,85 @@ import {
   useCallback,
   useEffect,
   useMemo,
-} from 'react'
-import { Notification } from '@/types'
-import { generateId } from '@/lib/utils'
-import { useAuth } from './AuthContext'
-import { useWebSocketNotifications } from '@/hooks/useWebSocketNotifications'
+} from 'react';
+import { Notification } from '@/types';
+import { generateId } from '@/lib/utils';
+import { useAuth } from './AuthContext';
+import { useWebSocketNotifications } from '@/hooks/useWebSocketNotifications';
 
 interface NotificationContextType {
-  notifications: Notification[]
-  unreadCount: number
+  notifications: Notification[];
+  unreadCount: number;
   addNotification: (
-    notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>,
-  ) => void
-  markAsRead: (notificationId: string) => void
-  markAllAsRead: () => void
+    notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>
+  ) => void;
+  markAsRead: (notificationId: string) => void;
+  markAllAsRead: () => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | null>(null)
+const NotificationContext = createContext<NotificationContextType | null>(null);
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
-  const [allNotifications, setAllNotifications] = useState<Notification[]>([])
-  const { user } = useAuth()
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
+  const { user } = useAuth();
 
   // Callback para receber notificações do WebSocket
-  const handleWebSocketNotification = useCallback((data: any) => {
-    const newNotification: Notification = {
-      id: generateId(),
-      type: data.type || 'info',
-      title: data.title,
-      message: data.message,
-      userId: user?.id || '',
-      timestamp: new Date(),
-      isRead: false,
-      data: data.data
-    }
-    setAllNotifications(prev => {
-      const updated = [...prev, newNotification]
-      localStorage.setItem('sispat_notifications', JSON.stringify(updated))
-      return updated
-    })
-  }, [user])
+  const handleWebSocketNotification = useCallback(
+    (data: any) => {
+      const newNotification: Notification = {
+        id: generateId(),
+        type: data.type || 'info',
+        title: data.title,
+        message: data.message,
+        userId: user?.id || '',
+        timestamp: new Date(),
+        isRead: false,
+        data: data.data,
+      };
+      setAllNotifications(prev => {
+        const updated = [...prev, newNotification];
+        localStorage.setItem('sispat_notifications', JSON.stringify(updated));
+        return updated;
+      });
+    },
+    [user]
+  );
 
   // Usar WebSocket para notificações
-  const { markNotificationRead: wsMarkNotificationRead } = useWebSocketNotifications(handleWebSocketNotification)
+  const { markNotificationRead: wsMarkNotificationRead } =
+    useWebSocketNotifications(handleWebSocketNotification);
 
   useEffect(() => {
-    const stored = localStorage.getItem('sispat_notifications')
+    const stored = localStorage.getItem('sispat_notifications');
     if (stored) {
       setAllNotifications(
         JSON.parse(stored).map((n: any) => ({
           ...n,
           timestamp: new Date(n.timestamp),
-        })),
-      )
+        }))
+      );
     }
-  }, [])
+  }, []);
 
   const persist = (newNotifications: Notification[]) => {
     localStorage.setItem(
       'sispat_notifications',
-      JSON.stringify(newNotifications),
-    )
-    setAllNotifications(newNotifications)
-  }
+      JSON.stringify(newNotifications)
+    );
+    setAllNotifications(newNotifications);
+  };
 
   const userNotifications = useMemo(() => {
-    if (!user) return []
+    if (!user) return [];
     return allNotifications
-      .filter((n) => n.userId === user.id)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-  }, [allNotifications, user])
+      .filter(n => n.userId === user.id)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }, [allNotifications, user]);
 
   const unreadCount = useMemo(
-    () => userNotifications.filter((n) => !n.isRead).length,
-    [userNotifications],
-  )
+    () => userNotifications.filter(n => !n.isRead).length,
+    [userNotifications]
+  );
 
   const addNotification = useCallback(
     (notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => {
@@ -89,32 +93,32 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         id: generateId(),
         timestamp: new Date(),
         isRead: false,
-      }
-      persist([...allNotifications, newNotification])
+      };
+      persist([...allNotifications, newNotification]);
     },
-    [allNotifications],
-  )
+    [allNotifications]
+  );
 
   const markAsRead = useCallback(
     (notificationId: string) => {
-      const newNotifications = allNotifications.map((n) =>
-        n.id === notificationId ? { ...n, isRead: true } : n,
-      )
-      persist(newNotifications)
-      
+      const newNotifications = allNotifications.map(n =>
+        n.id === notificationId ? { ...n, isRead: true } : n
+      );
+      persist(newNotifications);
+
       // Sincronizar com WebSocket
-      wsMarkNotificationRead(notificationId)
+      wsMarkNotificationRead(notificationId);
     },
-    [allNotifications, wsMarkNotificationRead],
-  )
+    [allNotifications, wsMarkNotificationRead]
+  );
 
   const markAllAsRead = useCallback(() => {
-    if (!user) return
-    const newNotifications = allNotifications.map((n) =>
-      n.userId === user.id ? { ...n, isRead: true } : n,
-    )
-    persist(newNotifications)
-  }, [allNotifications, user])
+    if (!user) return;
+    const newNotifications = allNotifications.map(n =>
+      n.userId === user.id ? { ...n, isRead: true } : n
+    );
+    persist(newNotifications);
+  }, [allNotifications, user]);
 
   return (
     <NotificationContext.Provider
@@ -128,15 +132,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     >
       {children}
     </NotificationContext.Provider>
-  )
-}
+  );
+};
 
 export const useNotifications = () => {
-  const context = useContext(NotificationContext)
+  const context = useContext(NotificationContext);
   if (!context) {
     throw new Error(
-      'useNotifications must be used within a NotificationProvider',
-    )
+      'useNotifications must be used within a NotificationProvider'
+    );
   }
-  return context
-}
+  return context;
+};

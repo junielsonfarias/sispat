@@ -1,17 +1,17 @@
-import { websocketServer } from './websocket-server.js'
-import { logInfo, logWarning } from '../utils/logger.js'
+import { websocketServer } from './websocket-server.js';
+import { logInfo, logWarning } from '../utils/logger.js';
 
 class NotificationService {
   constructor() {
-    this.isInitialized = false
+    this.isInitialized = false;
   }
 
   /**
    * Inicializar o serviço de notificações
    */
   initialize() {
-    this.isInitialized = true
-    logInfo('📢 Serviço de notificações inicializado')
+    this.isInitialized = true;
+    logInfo('📢 Serviço de notificações inicializado');
   }
 
   /**
@@ -19,16 +19,16 @@ class NotificationService {
    */
   sendToUser(userId, notification) {
     if (!this.isInitialized) {
-      logWarning('Serviço de notificações não inicializado')
-      return false
+      logWarning('Serviço de notificações não inicializado');
+      return false;
     }
 
     return websocketServer.sendNotificationToUser(userId, {
       type: notification.type || 'info',
       title: notification.title,
       message: notification.message,
-      data: notification.data || {}
-    })
+      data: notification.data || {},
+    });
   }
 
   /**
@@ -36,16 +36,16 @@ class NotificationService {
    */
   sendToMunicipality(municipalityId, notification) {
     if (!this.isInitialized) {
-      logWarning('Serviço de notificações não inicializado')
-      return false
+      logWarning('Serviço de notificações não inicializado');
+      return false;
     }
 
     return websocketServer.sendNotificationToMunicipality(municipalityId, {
       type: notification.type || 'info',
       title: notification.title,
       message: notification.message,
-      data: notification.data || {}
-    })
+      data: notification.data || {},
+    });
   }
 
   /**
@@ -53,16 +53,16 @@ class NotificationService {
    */
   sendToRole(role, notification) {
     if (!this.isInitialized) {
-      logWarning('Serviço de notificações não inicializado')
-      return false
+      logWarning('Serviço de notificações não inicializado');
+      return false;
     }
 
     return websocketServer.sendNotificationToRole(role, {
       type: notification.type || 'info',
       title: notification.title,
       message: notification.message,
-      data: notification.data || {}
-    })
+      data: notification.data || {},
+    });
   }
 
   /**
@@ -70,16 +70,16 @@ class NotificationService {
    */
   broadcast(notification) {
     if (!this.isInitialized) {
-      logWarning('Serviço de notificações não inicializado')
-      return false
+      logWarning('Serviço de notificações não inicializado');
+      return false;
     }
 
     return websocketServer.broadcastNotification({
       type: notification.type || 'info',
       title: notification.title,
       message: notification.message,
-      data: notification.data || {}
-    })
+      data: notification.data || {},
+    });
   }
 
   // ===== NOTIFICAÇÕES ESPECÍFICAS DO SISTEMA =====
@@ -96,19 +96,19 @@ class NotificationService {
         patrimonioId: patrimonio.id,
         numeroPatrimonio: patrimonio.numero_patrimonio,
         createdBy: user.name,
-        action: 'patrimonio_created'
-      }
-    }
+        action: 'patrimonio_created',
+      },
+    };
 
     // Enviar para o município
-    this.sendToMunicipality(patrimonio.municipality_id, notification)
+    this.sendToMunicipality(patrimonio.municipality_id, notification);
 
     // Enviar para supervisores
     this.sendToRole('supervisor', {
       ...notification,
       title: 'Novo Patrimônio - Ação Requerida',
-      message: `Novo patrimônio cadastrado que pode requerer sua atenção: ${patrimonio.numero_patrimonio}`
-    })
+      message: `Novo patrimônio cadastrado que pode requerer sua atenção: ${patrimonio.numero_patrimonio}`,
+    });
   }
 
   /**
@@ -123,11 +123,11 @@ class NotificationService {
         patrimonioId: patrimonio.id,
         numeroPatrimonio: patrimonio.numero_patrimonio,
         updatedBy: user.name,
-        action: 'patrimonio_updated'
-      }
-    }
+        action: 'patrimonio_updated',
+      },
+    };
 
-    this.sendToMunicipality(patrimonio.municipality_id, notification)
+    this.sendToMunicipality(patrimonio.municipality_id, notification);
   }
 
   /**
@@ -141,11 +141,11 @@ class NotificationService {
       data: {
         numeroPatrimonio: patrimonio.numero_patrimonio,
         deletedBy: user.name,
-        action: 'patrimonio_deleted'
-      }
-    }
+        action: 'patrimonio_deleted',
+      },
+    };
 
-    this.sendToMunicipality(patrimonio.municipality_id, notification)
+    this.sendToMunicipality(patrimonio.municipality_id, notification);
   }
 
   /**
@@ -160,11 +160,11 @@ class NotificationService {
         userId: user.id,
         userName: user.name,
         createdBy: createdBy.name,
-        action: 'user_created'
-      }
-    }
+        action: 'user_created',
+      },
+    };
 
-    this.sendToMunicipality(user.municipality_id, notification)
+    this.sendToMunicipality(user.municipality_id, notification);
   }
 
   /**
@@ -180,11 +180,11 @@ class NotificationService {
         patrimonioId: transfer.patrimonio_id,
         numeroPatrimonio: transfer.numero_patrimonio,
         requestedBy: user.name,
-        action: 'transfer_requested'
-      }
-    }
+        action: 'transfer_requested',
+      },
+    };
 
-    this.sendToMunicipality(transfer.municipality_id, notification)
+    this.sendToMunicipality(transfer.municipality_id, notification);
   }
 
   /**
@@ -200,11 +200,11 @@ class NotificationService {
         patrimonioId: transfer.patrimonio_id,
         numeroPatrimonio: transfer.numero_patrimonio,
         approvedBy: approvedBy.name,
-        action: 'transfer_approved'
-      }
-    }
+        action: 'transfer_approved',
+      },
+    };
 
-    this.sendToMunicipality(transfer.municipality_id, notification)
+    this.sendToMunicipality(transfer.municipality_id, notification);
   }
 
   /**
@@ -221,11 +221,11 @@ class NotificationService {
         numeroPatrimonio: transfer.numero_patrimonio,
         rejectedBy: rejectedBy.name,
         reason: reason,
-        action: 'transfer_rejected'
-      }
-    }
+        action: 'transfer_rejected',
+      },
+    };
 
-    this.sendToMunicipality(transfer.municipality_id, notification)
+    this.sendToMunicipality(transfer.municipality_id, notification);
   }
 
   /**
@@ -240,11 +240,11 @@ class NotificationService {
         inventoryId: inventory.id,
         inventoryName: inventory.nome,
         startedBy: user.name,
-        action: 'inventory_started'
-      }
-    }
+        action: 'inventory_started',
+      },
+    };
 
-    this.sendToMunicipality(inventory.municipality_id, notification)
+    this.sendToMunicipality(inventory.municipality_id, notification);
   }
 
   /**
@@ -259,11 +259,11 @@ class NotificationService {
         inventoryId: inventory.id,
         inventoryName: inventory.nome,
         completedBy: user.name,
-        action: 'inventory_completed'
-      }
-    }
+        action: 'inventory_completed',
+      },
+    };
 
-    this.sendToMunicipality(inventory.municipality_id, notification)
+    this.sendToMunicipality(inventory.municipality_id, notification);
   }
 
   /**
@@ -277,11 +277,11 @@ class NotificationService {
       data: {
         backupId: backupInfo.id,
         backupSize: backupInfo.size,
-        action: 'backup_completed'
-      }
-    }
+        action: 'backup_completed',
+      },
+    };
 
-    this.sendToRole('superuser', notification)
+    this.sendToRole('superuser', notification);
   }
 
   /**
@@ -296,11 +296,11 @@ class NotificationService {
         error: error.message,
         context: context,
         timestamp: new Date().toISOString(),
-        action: 'system_error'
-      }
-    }
+        action: 'system_error',
+      },
+    };
 
-    this.sendToRole('superuser', notification)
+    this.sendToRole('superuser', notification);
   }
 
   /**
@@ -316,11 +316,11 @@ class NotificationService {
         maintenanceTitle: maintenance.titulo,
         scheduledBy: user.name,
         scheduledDate: maintenance.data_agendada,
-        action: 'maintenance_scheduled'
-      }
-    }
+        action: 'maintenance_scheduled',
+      },
+    };
 
-    this.sendToMunicipality(maintenance.municipality_id, notification)
+    this.sendToMunicipality(maintenance.municipality_id, notification);
   }
 
   /**
@@ -335,16 +335,16 @@ class NotificationService {
         userId: user.id,
         userName: user.name,
         loginInfo: loginInfo,
-        action: 'suspicious_login'
-      }
-    }
+        action: 'suspicious_login',
+      },
+    };
 
-    this.sendToRole('superuser', notification)
-    this.sendToRole('admin', notification)
+    this.sendToRole('superuser', notification);
+    this.sendToRole('admin', notification);
   }
 }
 
 // Instância singleton
-export const notificationService = new NotificationService()
+export const notificationService = new NotificationService();
 
-export default notificationService
+export default notificationService;

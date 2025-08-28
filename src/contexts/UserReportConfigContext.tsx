@@ -6,67 +6,67 @@ import {
   useCallback,
   useEffect,
   useMemo,
-} from 'react'
-import { UserReportConfig } from '@/types'
-import { generateId } from '@/lib/utils'
-import { useAuth } from './AuthContext'
-import { toast } from '@/hooks/use-toast'
+} from 'react';
+import { UserReportConfig } from '@/types';
+import { generateId } from '@/lib/utils';
+import { useAuth } from './AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface UserReportConfigContextType {
-  configs: UserReportConfig[]
-  saveConfig: (config: Omit<UserReportConfig, 'id' | 'userId'>) => void
-  deleteConfig: (configId: string) => void
+  configs: UserReportConfig[];
+  saveConfig: (config: Omit<UserReportConfig, 'id' | 'userId'>) => void;
+  deleteConfig: (configId: string) => void;
 }
 
 const UserReportConfigContext =
-  createContext<UserReportConfigContextType | null>(null)
+  createContext<UserReportConfigContextType | null>(null);
 
 export const UserReportConfigProvider = ({
   children,
 }: {
-  children: ReactNode
+  children: ReactNode;
 }) => {
-  const [allConfigs, setAllConfigs] = useState<UserReportConfig[]>([])
-  const { user } = useAuth()
+  const [allConfigs, setAllConfigs] = useState<UserReportConfig[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
-    const stored = localStorage.getItem('sispat_report_configs')
+    const stored = localStorage.getItem('sispat_report_configs');
     if (stored) {
-      setAllConfigs(JSON.parse(stored))
+      setAllConfigs(JSON.parse(stored));
     }
-  }, [])
+  }, []);
 
   const configs = useMemo(() => {
-    if (!user) return []
-    return allConfigs.filter((c) => c.userId === user.id)
-  }, [allConfigs, user])
+    if (!user) return [];
+    return allConfigs.filter(c => c.userId === user.id);
+  }, [allConfigs, user]);
 
   const persist = (newConfigs: UserReportConfig[]) => {
-    localStorage.setItem('sispat_report_configs', JSON.stringify(newConfigs))
-    setAllConfigs(newConfigs)
-  }
+    localStorage.setItem('sispat_report_configs', JSON.stringify(newConfigs));
+    setAllConfigs(newConfigs);
+  };
 
   const saveConfig = useCallback(
     (config: Omit<UserReportConfig, 'id' | 'userId'>) => {
-      if (!user) return
+      if (!user) return;
       const newConfig: UserReportConfig = {
         ...config,
         id: generateId(),
         userId: user.id,
-      }
-      persist([...allConfigs, newConfig])
-      toast({ description: 'Configuração de relatório salva.' })
+      };
+      persist([...allConfigs, newConfig]);
+      toast({ description: 'Configuração de relatório salva.' });
     },
-    [allConfigs, user],
-  )
+    [allConfigs, user]
+  );
 
   const deleteConfig = useCallback(
     (configId: string) => {
-      persist(allConfigs.filter((c) => c.id !== configId))
-      toast({ description: 'Configuração de relatório excluída.' })
+      persist(allConfigs.filter(c => c.id !== configId));
+      toast({ description: 'Configuração de relatório excluída.' });
     },
-    [allConfigs],
-  )
+    [allConfigs]
+  );
 
   return (
     <UserReportConfigContext.Provider
@@ -74,15 +74,15 @@ export const UserReportConfigProvider = ({
     >
       {children}
     </UserReportConfigContext.Provider>
-  )
-}
+  );
+};
 
 export const useUserReportConfigs = () => {
-  const context = useContext(UserReportConfigContext)
+  const context = useContext(UserReportConfigContext);
   if (!context) {
     throw new Error(
-      'useUserReportConfigs must be used within a UserReportConfigProvider',
-    )
+      'useUserReportConfigs must be used within a UserReportConfigProvider'
+    );
   }
-  return context
-}
+  return context;
+};

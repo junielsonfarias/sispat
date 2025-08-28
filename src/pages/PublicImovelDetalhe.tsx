@@ -1,102 +1,102 @@
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-    CarouselNext,
-    CarouselPrevious,
-} from '@/components/ui/carousel'
-import { useImovel } from '@/contexts/ImovelContext'
-import { useImovelField } from '@/contexts/ImovelFieldContext'
-import { useMunicipalities } from '@/contexts/MunicipalityContext'
-import { formatCurrency, formatDate, getCloudImageUrl } from '@/lib/utils'
-import { Imovel } from '@/types'
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
+import { useImovel } from '@/contexts/ImovelContext';
+import { useImovelField } from '@/contexts/ImovelFieldContext';
+import { useMunicipalities } from '@/contexts/MunicipalityContext';
+import { formatCurrency, formatDate, getCloudImageUrl } from '@/lib/utils';
+import { Imovel } from '@/types';
 import {
-    ArrowLeft,
-    Image as ImageIcon,
-    Loader2,
-    ServerCrash,
-} from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+  ArrowLeft,
+  Image as ImageIcon,
+  Loader2,
+  ServerCrash,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 
 const DetailItem = ({
   label,
   value,
 }: {
-  label: string
-  value: React.ReactNode
+  label: string;
+  value: React.ReactNode;
 }) => (
   <div>
-    <p className="text-sm font-medium text-muted-foreground">{label}</p>
-    <p className="text-md">{value}</p>
+    <p className='text-sm font-medium text-muted-foreground'>{label}</p>
+    <p className='text-md'>{value}</p>
   </div>
-)
+);
 
 export default function PublicImovelDetalhe() {
-  const { id } = useParams<{ id: string }>()
-  const { getImovelById } = useImovel()
-  const { fields: customFieldConfigs } = useImovelField()
-  const { municipalities } = useMunicipalities()
-  const [imovel, setImovel] = useState<Imovel | null | undefined>(undefined)
-  const [isLoading, setIsLoading] = useState(true)
+  const { id } = useParams<{ id: string }>();
+  const { getImovelById } = useImovel();
+  const { fields: customFieldConfigs } = useImovelField();
+  const { municipalities } = useMunicipalities();
+  const [imovel, setImovel] = useState<Imovel | null | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchImovel = async () => {
-      if (!id) return
-      
-      setIsLoading(true)
-      
+      if (!id) return;
+
+      setIsLoading(true);
+
       // Primeiro, tentar buscar localmente
-      let foundImovel = getImovelById(id)
-      
+      let foundImovel = getImovelById(id);
+
       // Se não encontrou localmente, tentar buscar na API pública
       if (!foundImovel) {
         try {
-          console.log(`🔍 Buscando imóvel ${id} na API pública...`)
-          const response = await fetch(`/api/imoveis/public/${id}`)
+          console.log(`🔍 Buscando imóvel ${id} na API pública...`);
+          const response = await fetch(`/api/imoveis/public/${id}`);
           if (response.ok) {
-            foundImovel = await response.json()
-            console.log('✅ Imóvel encontrado na API pública:', foundImovel)
+            foundImovel = await response.json();
+            console.log('✅ Imóvel encontrado na API pública:', foundImovel);
           }
         } catch (error) {
-          console.log('❌ Erro ao buscar imóvel na API pública:', error)
+          console.log('❌ Erro ao buscar imóvel na API pública:', error);
         }
       }
-      
-      setImovel(foundImovel)
-      setIsLoading(false)
-    }
 
-    fetchImovel()
-  }, [id, getImovelById])
+      setImovel(foundImovel);
+      setIsLoading(false);
+    };
+
+    fetchImovel();
+  }, [id, getImovelById]);
 
   const municipality = useMemo(() => {
-    if (!imovel) return null
-    return municipalities.find((m) => m.id === imovel.municipalityId)
-  }, [imovel, municipalities])
+    if (!imovel) return null;
+    return municipalities.find(m => m.id === imovel.municipalityId);
+  }, [imovel, municipalities]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-muted/40 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className='min-h-screen bg-muted/40 flex items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin text-primary' />
       </div>
-    )
+    );
   }
 
   if (!imovel) {
     return (
-      <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
+      <div className='min-h-screen bg-muted/40 flex items-center justify-center p-4'>
+        <Card className='w-full max-w-md text-center'>
           <CardHeader>
-            <ServerCrash className="h-12 w-12 mx-auto text-destructive mb-4" />
+            <ServerCrash className='h-12 w-12 mx-auto text-destructive mb-4' />
             <CardTitle>Imóvel não encontrado</CardTitle>
           </CardHeader>
           <CardContent>
@@ -104,60 +104,60 @@ export default function PublicImovelDetalhe() {
               O imóvel que você está procurando não foi encontrado. Verifique o
               endereço e tente novamente.
             </p>
-            <Button asChild className="mt-4">
-              <Link to="/consulta-publica">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+            <Button asChild className='mt-4'>
+              <Link to='/consulta-publica'>
+                <ArrowLeft className='mr-2 h-4 w-4' /> Voltar
               </Link>
             </Button>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-muted/40 flex flex-col items-center p-4 sm:p-6 md:p-8">
-      <div className="w-full max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+    <div className='min-h-screen bg-muted/40 flex flex-col items-center p-4 sm:p-6 md:p-8'>
+      <div className='w-full max-w-4xl mx-auto'>
+        <div className='flex items-center justify-between mb-6'>
+          <div className='flex items-center gap-4'>
             {municipality?.logoUrl && (
               <img
                 src={municipality.logoUrl}
-                alt="Logo"
-                className="h-12 w-auto"
+                alt='Logo'
+                className='h-12 w-auto'
               />
             )}
             <div>
-              <h1 className="text-2xl font-bold">
+              <h1 className='text-2xl font-bold'>
                 Consulta Pública de Patrimônio
               </h1>
-              <p className="text-muted-foreground">{municipality?.name}</p>
+              <p className='text-muted-foreground'>{municipality?.name}</p>
             </div>
           </div>
-          <Button asChild variant="outline">
-            <Link to="/consulta-publica">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para a lista
+          <Button asChild variant='outline'>
+            <Link to='/consulta-publica'>
+              <ArrowLeft className='mr-2 h-4 w-4' /> Voltar para a lista
             </Link>
           </Button>
         </div>
-        <Card className="animate-fade-in">
+        <Card className='animate-fade-in'>
           <CardHeader>
             <CardTitle>{imovel.denominacao}</CardTitle>
             <CardDescription>
               Nº de Patrimônio: {imovel.numero_patrimonio}
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-8 lg:grid-cols-5">
-            <div className="lg:col-span-3">
+          <CardContent className='grid gap-8 lg:grid-cols-5'>
+            <div className='lg:col-span-3'>
               {imovel.fotos && imovel.fotos.length > 0 ? (
-                <Carousel className="w-full">
+                <Carousel className='w-full'>
                   <CarouselContent>
                     {imovel.fotos.map((fotoId, index) => (
                       <CarouselItem key={index}>
                         <img
                           src={getCloudImageUrl(fotoId)}
                           alt={`${imovel.denominacao} - Foto ${index + 1}`}
-                          className="rounded-lg object-cover w-full aspect-video"
+                          className='rounded-lg object-cover w-full aspect-video'
                         />
                       </CarouselItem>
                     ))}
@@ -166,35 +166,35 @@ export default function PublicImovelDetalhe() {
                   <CarouselNext />
                 </Carousel>
               ) : (
-                <div className="w-full aspect-video flex items-center justify-center bg-muted rounded-lg">
-                  <div className="text-center text-muted-foreground">
-                    <ImageIcon className="mx-auto h-12 w-12" />
+                <div className='w-full aspect-video flex items-center justify-center bg-muted rounded-lg'>
+                  <div className='text-center text-muted-foreground'>
+                    <ImageIcon className='mx-auto h-12 w-12' />
                     <p>Nenhuma foto disponível</p>
                   </div>
                 </div>
               )}
             </div>
-            <div className="lg:col-span-2 space-y-4">
-              <DetailItem label="Endereço" value={imovel.endereco} />
+            <div className='lg:col-span-2 space-y-4'>
+              <DetailItem label='Endereço' value={imovel.endereco} />
               <DetailItem
-                label="Data de Aquisição"
+                label='Data de Aquisição'
                 value={formatDate(new Date(imovel.data_aquisicao))}
               />
               <DetailItem
-                label="Valor de Aquisição"
+                label='Valor de Aquisição'
                 value={formatCurrency(imovel.valor_aquisicao)}
               />
               <DetailItem
-                label="Área do Terreno"
+                label='Área do Terreno'
                 value={`${imovel.area_terreno.toLocaleString('pt-BR')} m²`}
               />
               <DetailItem
-                label="Área Construída"
+                label='Área Construída'
                 value={`${imovel.area_construida.toLocaleString('pt-BR')} m²`}
               />
               {customFieldConfigs
-                .filter((f) => f.isCustom)
-                .map((field) => (
+                .filter(f => f.isCustom)
+                .map(field => (
                   <DetailItem
                     key={field.id}
                     label={field.label}
@@ -206,5 +206,5 @@ export default function PublicImovelDetalhe() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

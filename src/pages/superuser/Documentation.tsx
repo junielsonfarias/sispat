@@ -1,20 +1,20 @@
 import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from '@/components/ui/accordion'
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { useDebounceValue } from '@/hooks/use-debounce'
-import { Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { useDebounceValue } from '@/hooks/use-debounce';
+import { Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 const documentationContent = [
   {
@@ -124,24 +124,24 @@ const documentationContent = [
       </div>
     `,
   },
-]
+];
 
 const Documentation = () => {
-  const [searchTerm, setSearchTerm] = useState('')
-  const debouncedSearchTerm = useDebounceValue(searchTerm, 300)
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounceValue(searchTerm, 300);
 
   const filteredContent = useMemo(() => {
-    if (!debouncedSearchTerm) return documentationContent
+    if (!debouncedSearchTerm) return documentationContent;
     return documentationContent.filter(
-      (item) =>
+      item =>
         item.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        item.content.toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
-    )
-  }, [debouncedSearchTerm])
+        item.content.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [debouncedSearchTerm]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Documentação do Sistema</h1>
+    <div className='flex flex-col gap-6'>
+      <h1 className='text-2xl font-bold'>Documentação do Sistema</h1>
       <Card>
         <CardHeader>
           <CardTitle>Bem-vindo à documentação do SISPAT</CardTitle>
@@ -149,19 +149,19 @@ const Documentation = () => {
             Aqui você encontrará informações detalhadas sobre as
             funcionalidades, manuais e guias.
           </CardDescription>
-          <div className="relative pt-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className='relative pt-4'>
+            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
             <Input
-              placeholder="Pesquisar na documentação..."
-              className="pl-10"
+              placeholder='Pesquisar na documentação...'
+              className='pl-10'
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" collapsible className="w-full">
-            {filteredContent.map((item) => (
+          <Accordion type='single' collapsible className='w-full'>
+            {filteredContent.map(item => (
               <AccordionItem value={item.id} key={item.id}>
                 <AccordionTrigger>{item.title}</AccordionTrigger>
                 <AccordionContent>
@@ -171,14 +171,14 @@ const Documentation = () => {
             ))}
           </Accordion>
           {filteredContent.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">
+            <p className='text-center text-muted-foreground py-8'>
               Nenhum resultado encontrado para "{debouncedSearchTerm}".
             </p>
           )}
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default Documentation
+export default Documentation;

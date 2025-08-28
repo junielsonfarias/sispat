@@ -23,22 +23,22 @@ export interface UseVirtualizedListReturn<T> {
   // Dados processados
   visibleItems: T[];
   totalCount: number;
-  
+
   // Paginação virtual
   currentPage: number;
   totalPages: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
-  
+
   // Controles
   goToPage: (page: number) => void;
   nextPage: () => void;
   prevPage: () => void;
-  
+
   // Configurações de renderização
   itemHeight: number;
   containerHeight: number;
-  
+
   // Performance metrics
   isLargeDataset: boolean;
   shouldVirtualize: boolean;
@@ -52,7 +52,7 @@ export function useVirtualizedList<T extends VirtualizedListItem>({
   searchFields = [],
   sortConfig,
   filters = {},
-  pageSize = 50
+  pageSize = 50,
 }: UseVirtualizedListOptions<T>): UseVirtualizedListReturn<T> {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -89,9 +89,9 @@ export function useVirtualizedList<T extends VirtualizedListItem>({
       filtered.sort((a, b) => {
         const aValue = a[sortConfig.field];
         const bValue = b[sortConfig.field];
-        
+
         if (aValue === bValue) return 0;
-        
+
         const comparison = aValue < bValue ? -1 : 1;
         return sortConfig.direction === 'asc' ? comparison : -comparison;
       });
@@ -120,11 +120,14 @@ export function useVirtualizedList<T extends VirtualizedListItem>({
   const hasPrevPage = currentPage > 1;
 
   // Controles de navegação
-  const goToPage = useCallback((page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  }, [totalPages]);
+  const goToPage = useCallback(
+    (page: number) => {
+      if (page >= 1 && page <= totalPages) {
+        setCurrentPage(page);
+      }
+    },
+    [totalPages]
+  );
 
   const nextPage = useCallback(() => {
     if (hasNextPage) {
@@ -156,6 +159,6 @@ export function useVirtualizedList<T extends VirtualizedListItem>({
     itemHeight,
     containerHeight,
     isLargeDataset,
-    shouldVirtualize
+    shouldVirtualize,
   };
 }

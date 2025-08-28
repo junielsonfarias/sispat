@@ -27,7 +27,7 @@ export class SystemMonitor {
       nice: cpu.times.nice,
       sys: cpu.times.sys,
       idle: cpu.times.idle,
-      irq: cpu.times.irq
+      irq: cpu.times.irq,
     }));
   }
 
@@ -38,7 +38,7 @@ export class SystemMonitor {
       nice: cpu.times.nice,
       sys: cpu.times.sys,
       idle: cpu.times.idle,
-      irq: cpu.times.irq
+      irq: cpu.times.irq,
     }));
 
     let totalUsage = 0;
@@ -48,13 +48,20 @@ export class SystemMonitor {
       const current = currentStats[i];
       const previous = this.previousCPUStats[i];
 
-      const currentTotal = current.user + current.nice + current.sys + current.idle + current.irq;
-      const previousTotal = previous.user + previous.nice + previous.sys + previous.idle + previous.irq;
+      const currentTotal =
+        current.user + current.nice + current.sys + current.idle + current.irq;
+      const previousTotal =
+        previous.user +
+        previous.nice +
+        previous.sys +
+        previous.idle +
+        previous.irq;
 
       const totalDiff = currentTotal - previousTotal;
       const idleDiff = current.idle - previous.idle;
 
-      const usage = totalDiff > 0 ? ((totalDiff - idleDiff) / totalDiff) * 100 : 0;
+      const usage =
+        totalDiff > 0 ? ((totalDiff - idleDiff) / totalDiff) * 100 : 0;
       totalUsage += usage;
     }
 
@@ -63,7 +70,12 @@ export class SystemMonitor {
   }
 
   // Obter informações de memória
-  private getMemoryInfo(): { usage: number; total: number; free: number; percentage: number } {
+  private getMemoryInfo(): {
+    usage: number;
+    total: number;
+    free: number;
+    percentage: number;
+  } {
     const totalMemory = os.totalmem();
     const freeMemory = os.freemem();
     const usedMemory = totalMemory - freeMemory;
@@ -73,7 +85,7 @@ export class SystemMonitor {
       usage: usedMemory,
       total: totalMemory,
       free: freeMemory,
-      percentage
+      percentage,
     };
   }
 
@@ -83,7 +95,7 @@ export class SystemMonitor {
     return {
       load1: loadAvg[0],
       load5: loadAvg[1],
-      load15: loadAvg[2]
+      load15: loadAvg[2],
     };
   }
 
@@ -93,7 +105,7 @@ export class SystemMonitor {
     // Por agora, retornamos valores simulados
     return {
       bytesReceived: Math.random() * 1000000,
-      bytesSent: Math.random() * 1000000
+      bytesSent: Math.random() * 1000000,
     };
   }
 
@@ -126,7 +138,7 @@ export class SystemMonitor {
       memoryUsage: memory.usage,
       memoryTotal: memory.total,
       diskUsage: 0, // Implementar se necessário
-      uptime
+      uptime,
     };
   }
 
@@ -145,7 +157,7 @@ export class SystemMonitor {
       hostname: os.hostname(),
       cpuCount: os.cpus().length,
       totalMemory: os.totalmem(),
-      nodeVersion: process.version
+      nodeVersion: process.version,
     };
   }
 
@@ -158,7 +170,7 @@ export class SystemMonitor {
       } catch (error) {
         console.error('Erro ao coletar métricas do sistema:', error);
         recordCustomMetric('system_monitoring_error', 1, {
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     }, 30000);
@@ -190,7 +202,7 @@ export class SystemMonitor {
         metric: 'cpu_usage',
         value: cpuUsage,
         threshold: 90,
-        message: `Uso de CPU crítico: ${cpuUsage.toFixed(2)}%`
+        message: `Uso de CPU crítico: ${cpuUsage.toFixed(2)}%`,
       });
     } else if (cpuUsage > 75) {
       alerts.push({
@@ -198,7 +210,7 @@ export class SystemMonitor {
         metric: 'cpu_usage',
         value: cpuUsage,
         threshold: 75,
-        message: `Uso de CPU alto: ${cpuUsage.toFixed(2)}%`
+        message: `Uso de CPU alto: ${cpuUsage.toFixed(2)}%`,
       });
     }
 
@@ -209,7 +221,7 @@ export class SystemMonitor {
         metric: 'memory_usage',
         value: memory.percentage,
         threshold: 95,
-        message: `Uso de memória crítico: ${memory.percentage.toFixed(2)}%`
+        message: `Uso de memória crítico: ${memory.percentage.toFixed(2)}%`,
       });
     } else if (memory.percentage > 80) {
       alerts.push({
@@ -217,7 +229,7 @@ export class SystemMonitor {
         metric: 'memory_usage',
         value: memory.percentage,
         threshold: 80,
-        message: `Uso de memória alto: ${memory.percentage.toFixed(2)}%`
+        message: `Uso de memória alto: ${memory.percentage.toFixed(2)}%`,
       });
     }
 
@@ -227,7 +239,7 @@ export class SystemMonitor {
         type: alert.type,
         metric: alert.metric,
         value: alert.value.toString(),
-        threshold: alert.threshold.toString()
+        threshold: alert.threshold.toString(),
       });
     });
 

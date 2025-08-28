@@ -36,7 +36,7 @@ export function usePerformanceOptimization<T extends { id: string | number }>(
     cacheTTL = 5 * 60 * 1000, // 5 minutos
     virtualizationThreshold = 100,
     itemHeight = 50,
-    containerHeight = 400
+    containerHeight = 400,
   } = options;
 
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
@@ -46,7 +46,7 @@ export function usePerformanceOptimization<T extends { id: string | number }>(
     memoryUsage: 0,
     listVirtualized: false,
     totalItems: 0,
-    visibleItems: 0
+    visibleItems: 0,
   });
 
   const renderStartTime = useRef<number>(0);
@@ -56,32 +56,28 @@ export function usePerformanceOptimization<T extends { id: string | number }>(
   const {
     data: cachedData,
     isLoading: cacheLoading,
-    mutate: updateCache
-  } = useCache(
-    cacheKey,
-    () => Promise.resolve(data),
-    { 
-      ttl: cacheTTL,
-      persistToStorage: true,
-      version: '1.0'
-    }
-  );
+    mutate: updateCache,
+  } = useCache(cacheKey, () => Promise.resolve(data), {
+    ttl: cacheTTL,
+    persistToStorage: true,
+    version: '1.0',
+  });
 
   // Dados processados com memoização
   const processedData = useMemo(() => {
     if (!enableMemoization) return data;
-    
+
     processingStartTime.current = performance.now();
-    
+
     // Simular processamento de dados
     const processed = enableCache && cachedData ? cachedData : data;
-    
+
     const processingTime = performance.now() - processingStartTime.current;
-    
+
     setMetrics(prev => ({
       ...prev,
       dataProcessingTime: processingTime,
-      totalItems: processed.length
+      totalItems: processed.length,
     }));
 
     return processed;
@@ -92,13 +88,14 @@ export function usePerformanceOptimization<T extends { id: string | number }>(
     data: processedData,
     itemHeight,
     containerHeight,
-    pageSize: 50
+    pageSize: 50,
   });
 
-  const shouldVirtualize = enableVirtualization && processedData.length > virtualizationThreshold;
-  
-  const optimizedData = shouldVirtualize 
-    ? virtualizationConfig.visibleItems 
+  const shouldVirtualize =
+    enableVirtualization && processedData.length > virtualizationThreshold;
+
+  const optimizedData = shouldVirtualize
+    ? virtualizationConfig.visibleItems
     : processedData;
 
   // Métricas de performance
@@ -108,13 +105,13 @@ export function usePerformanceOptimization<T extends { id: string | number }>(
 
   useEffect(() => {
     const renderTime = performance.now() - renderStartTime.current;
-    
+
     setMetrics(prev => ({
       ...prev,
       renderTime,
       listVirtualized: shouldVirtualize,
       visibleItems: optimizedData.length,
-      memoryUsage: getMemoryUsage()
+      memoryUsage: getMemoryUsage(),
     }));
   }, [optimizedData, shouldVirtualize]);
 
@@ -137,7 +134,7 @@ export function usePerformanceOptimization<T extends { id: string | number }>(
     if ('gc' in window && typeof (window as any).gc === 'function') {
       (window as any).gc();
     }
-    
+
     // Atualiza cache
     invalidateCache();
   }, [invalidateCache]);
@@ -146,28 +143,28 @@ export function usePerformanceOptimization<T extends { id: string | number }>(
     // Dados otimizados
     data: optimizedData,
     totalCount: processedData.length,
-    
+
     // Estados
     isLoading: cacheLoading,
     isVirtualized: shouldVirtualize,
-    
+
     // Controles de virtualização
     ...virtualizationConfig,
-    
+
     // Métricas
     metrics,
-    
+
     // Controles
     invalidateCache,
     optimize,
-    
+
     // Configuração
     options: {
       enableCache,
       enableVirtualization,
       enableMemoization,
-      virtualizationThreshold
-    }
+      virtualizationThreshold,
+    },
   };
 }
 
@@ -177,7 +174,7 @@ export function usePerformanceMonitor() {
     fps: 0,
     memoryUsage: 0,
     renderTime: 0,
-    componentCount: 0
+    componentCount: 0,
   });
 
   const frameCount = useRef(0);
@@ -187,33 +184,37 @@ export function usePerformanceMonitor() {
   const measureFPS = useCallback(() => {
     frameCount.current++;
     const now = Date.now();
-    
+
     if (now - lastTime.current >= 1000) {
-      const fps = Math.round((frameCount.current * 1000) / (now - lastTime.current));
+      const fps = Math.round(
+        (frameCount.current * 1000) / (now - lastTime.current)
+      );
       frameCount.current = 0;
       lastTime.current = now;
-      
+
       setMetrics(prev => ({
         ...prev,
         fps,
         memoryUsage: getMemoryUsage(),
-        renderTime: performance.now()
+        renderTime: performance.now(),
       }));
     }
-    
+
     animationFrame.current = requestAnimationFrame(measureFPS);
   }, []);
 
   const getMemoryUsage = useCallback(() => {
     if ('memory' in performance) {
-      return Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024);
+      return Math.round(
+        (performance as any).memory.usedJSHeapSize / 1024 / 1024
+      );
     }
     return 0;
   }, []);
 
   useEffect(() => {
     animationFrame.current = requestAnimationFrame(measureFPS);
-    
+
     return () => {
       if (animationFrame.current) {
         cancelAnimationFrame(animationFrame.current);
@@ -225,12 +226,15 @@ export function usePerformanceMonitor() {
 }
 
 // Hook para otimização de imagens
-export function useImageOptimization(src: string, options: {
-  lazy?: boolean;
-  quality?: number;
-  format?: 'webp' | 'avif' | 'auto';
-  sizes?: string;
-} = {}) {
+export function useImageOptimization(
+  src: string,
+  options: {
+    lazy?: boolean;
+    quality?: number;
+    format?: 'webp' | 'avif' | 'auto';
+    sizes?: string;
+  } = {}
+) {
   const { lazy = true, quality = 80, format = 'auto', sizes } = options;
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -240,15 +244,15 @@ export function useImageOptimization(src: string, options: {
     // Aqui você pode implementar lógica para otimização de imagens
     // Por exemplo, usar um serviço como Cloudinary ou ImageKit
     let optimized = src;
-    
+
     if (quality < 100) {
       optimized += `?q=${quality}`;
     }
-    
+
     if (format !== 'auto') {
       optimized += `&f=${format}`;
     }
-    
+
     return optimized;
   }, [src, quality, format]);
 
@@ -277,16 +281,20 @@ export function useImageOptimization(src: string, options: {
     loaded,
     error,
     load,
-    sizes
+    sizes,
   };
 }
 
 // Hook para debounce otimizado
-export function useOptimizedDebounce<T>(value: T, delay: number, options: {
-  leading?: boolean;
-  trailing?: boolean;
-  maxWait?: number;
-} = {}) {
+export function useOptimizedDebounce<T>(
+  value: T,
+  delay: number,
+  options: {
+    leading?: boolean;
+    trailing?: boolean;
+    maxWait?: number;
+  } = {}
+) {
   const { leading = false, trailing = true, maxWait } = options;
   const [debouncedValue, setDebouncedValue] = useState(value);
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -306,27 +314,33 @@ export function useOptimizedDebounce<T>(value: T, delay: number, options: {
     }
   }, [leading, invokeFunc]);
 
-  const remainingWait = useCallback((time: number) => {
-    const timeSinceLastCall = time - lastCallTime.current;
-    const timeSinceLastInvoke = time - lastInvokeTime.current;
-    const timeWaiting = delay - timeSinceLastCall;
+  const remainingWait = useCallback(
+    (time: number) => {
+      const timeSinceLastCall = time - lastCallTime.current;
+      const timeSinceLastInvoke = time - lastInvokeTime.current;
+      const timeWaiting = delay - timeSinceLastCall;
 
-    return maxWait !== undefined
-      ? Math.min(timeWaiting, maxWait - timeSinceLastInvoke)
-      : timeWaiting;
-  }, [delay, maxWait]);
+      return maxWait !== undefined
+        ? Math.min(timeWaiting, maxWait - timeSinceLastInvoke)
+        : timeWaiting;
+    },
+    [delay, maxWait]
+  );
 
-  const shouldInvoke = useCallback((time: number) => {
-    const timeSinceLastCall = time - lastCallTime.current;
-    const timeSinceLastInvoke = time - lastInvokeTime.current;
+  const shouldInvoke = useCallback(
+    (time: number) => {
+      const timeSinceLastCall = time - lastCallTime.current;
+      const timeSinceLastInvoke = time - lastInvokeTime.current;
 
-    return (
-      lastCallTime.current === 0 ||
-      timeSinceLastCall >= delay ||
-      timeSinceLastCall < 0 ||
-      (maxWait !== undefined && timeSinceLastInvoke >= maxWait)
-    );
-  }, [delay, maxWait]);
+      return (
+        lastCallTime.current === 0 ||
+        timeSinceLastCall >= delay ||
+        timeSinceLastCall < 0 ||
+        (maxWait !== undefined && timeSinceLastInvoke >= maxWait)
+      );
+    },
+    [delay, maxWait]
+  );
 
   useEffect(() => {
     const time = Date.now();
@@ -342,7 +356,7 @@ export function useOptimizedDebounce<T>(value: T, delay: number, options: {
       leadingEdge();
     } else {
       const wait = remainingWait(time);
-      
+
       timeoutRef.current = setTimeout(() => {
         if (trailing) {
           invokeFunc();
@@ -362,7 +376,15 @@ export function useOptimizedDebounce<T>(value: T, delay: number, options: {
         clearTimeout(maxTimeoutRef.current);
       }
     };
-  }, [value, shouldInvoke, remainingWait, leadingEdge, invokeFunc, trailing, maxWait]);
+  }, [
+    value,
+    shouldInvoke,
+    remainingWait,
+    leadingEdge,
+    invokeFunc,
+    trailing,
+    maxWait,
+  ]);
 
   return debouncedValue;
 }

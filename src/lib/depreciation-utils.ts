@@ -1,29 +1,29 @@
-import { Patrimonio } from '@/types'
-import { differenceInMonths } from 'date-fns'
+import { Patrimonio } from '@/types';
+import { differenceInMonths } from 'date-fns';
 
 export interface DepreciationInfo {
-  accumulatedDepreciation: number
-  bookValue: number
-  annualDepreciation: number
-  monthlyDepreciation: number
-  depreciatedMonths: number
-  remainingLifeMonths: number
-  isFullyDepreciated: boolean
-  lastDepreciationDate: Date
+  accumulatedDepreciation: number;
+  bookValue: number;
+  annualDepreciation: number;
+  monthlyDepreciation: number;
+  depreciatedMonths: number;
+  remainingLifeMonths: number;
+  isFullyDepreciated: boolean;
+  lastDepreciationDate: Date;
 }
 
 export const calculateDepreciation = (
-  patrimonio: Patrimonio,
+  patrimonio: Patrimonio
 ): DepreciationInfo => {
   const {
     valor_aquisicao,
     data_aquisicao,
     vida_util_anos = 0,
     valor_residual = 0,
-  } = patrimonio
+  } = patrimonio;
 
-  const now = new Date()
-  const lastDepreciationDate = now
+  const now = new Date();
+  const lastDepreciationDate = now;
 
   if (vida_util_anos <= 0 || valor_aquisicao <= valor_residual) {
     return {
@@ -35,31 +35,31 @@ export const calculateDepreciation = (
       remainingLifeMonths: 0,
       isFullyDepreciated: vida_util_anos <= 0,
       lastDepreciationDate,
-    }
+    };
   }
 
-  const depreciableValue = valor_aquisicao - valor_residual
-  const annualDepreciation = depreciableValue / vida_util_anos
-  const monthlyDepreciation = annualDepreciation / 12
+  const depreciableValue = valor_aquisicao - valor_residual;
+  const annualDepreciation = depreciableValue / vida_util_anos;
+  const monthlyDepreciation = annualDepreciation / 12;
 
-  const acquisitionDate = new Date(data_aquisicao)
-  const totalMonthsSinceAcquisition = differenceInMonths(now, acquisitionDate)
-  const totalMonthsOfLife = vida_util_anos * 12
+  const acquisitionDate = new Date(data_aquisicao);
+  const totalMonthsSinceAcquisition = differenceInMonths(now, acquisitionDate);
+  const totalMonthsOfLife = vida_util_anos * 12;
 
   const effectiveDepreciatedMonths = Math.max(
     0,
-    Math.min(totalMonthsSinceAcquisition, totalMonthsOfLife),
-  )
+    Math.min(totalMonthsSinceAcquisition, totalMonthsOfLife)
+  );
 
   const accumulatedDepreciation =
-    effectiveDepreciatedMonths * monthlyDepreciation
+    effectiveDepreciatedMonths * monthlyDepreciation;
 
   const bookValue = Math.max(
     valor_residual,
-    valor_aquisicao - accumulatedDepreciation,
-  )
+    valor_aquisicao - accumulatedDepreciation
+  );
 
-  const remainingLifeMonths = totalMonthsOfLife - effectiveDepreciatedMonths
+  const remainingLifeMonths = totalMonthsOfLife - effectiveDepreciatedMonths;
 
   return {
     accumulatedDepreciation,
@@ -70,5 +70,5 @@ export const calculateDepreciation = (
     remainingLifeMonths: Math.max(0, remainingLifeMonths),
     isFullyDepreciated: effectiveDepreciatedMonths >= totalMonthsOfLife,
     lastDepreciationDate,
-  }
-}
+  };
+};

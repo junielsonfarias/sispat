@@ -1,20 +1,20 @@
-import { pool } from '../database/connection.js'
-import { logInfo, logError } from '../utils/logger.js'
+import { pool } from '../database/connection.js';
+import { logInfo, logError } from '../utils/logger.js';
 
 class AuditService {
   constructor() {
-    this.isInitialized = false
+    this.isInitialized = false;
   }
 
   async initialize() {
     try {
       // Criar tabela de auditoria se não existir
-      await this.createAuditTable()
-      this.isInitialized = true
-      logInfo('🔍 Serviço de auditoria inicializado com sucesso')
+      await this.createAuditTable();
+      this.isInitialized = true;
+      logInfo('🔍 Serviço de auditoria inicializado com sucesso');
     } catch (error) {
-      logError('Erro ao inicializar serviço de auditoria', error)
-      throw error
+      logError('Erro ao inicializar serviço de auditoria', error);
+      throw error;
     }
   }
 
@@ -40,24 +40,24 @@ class AuditService {
         metadata JSONB,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
-    `
+    `;
 
-    await pool.query(createTableQuery)
-    
+    await pool.query(createTableQuery);
+
     // Criar índices separadamente para evitar erro de sintaxe
     const indexes = [
       'CREATE INDEX IF NOT EXISTS idx_audit_user_id ON audit_logs(user_id)',
       'CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action)',
       'CREATE INDEX IF NOT EXISTS idx_audit_resource ON audit_logs(resource_type, resource_id)',
       'CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at)',
-      'CREATE INDEX IF NOT EXISTS idx_audit_severity ON audit_logs(severity)'
-    ]
-    
+      'CREATE INDEX IF NOT EXISTS idx_audit_severity ON audit_logs(severity)',
+    ];
+
     for (const indexQuery of indexes) {
       try {
-        await pool.query(indexQuery)
+        await pool.query(indexQuery);
       } catch (error) {
-        logError(`Erro ao criar índice: ${indexQuery}`, error)
+        logError(`Erro ao criar índice: ${indexQuery}`, error);
       }
     }
   }
@@ -78,11 +78,11 @@ class AuditService {
     severity = 'info',
     category = 'general',
     description = null,
-    metadata = null
+    metadata = null,
   }) {
     if (!this.isInitialized) {
-      logError('Serviço de auditoria não inicializado')
-      return false
+      logError('Serviço de auditoria não inicializado');
+      return false;
     }
 
     try {
@@ -93,31 +93,41 @@ class AuditService {
           severity, category, description, metadata
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING id
-      `
+      `;
 
       const values = [
-        userId, userEmail, action, resourceType, resourceId, resourceName,
+        userId,
+        userEmail,
+        action,
+        resourceType,
+        resourceId,
+        resourceName,
         oldValues ? JSON.stringify(oldValues) : null,
         newValues ? JSON.stringify(newValues) : null,
-        ipAddress, userAgent, sessionId, municipalityId,
-        severity, category, description,
-        metadata ? JSON.stringify(metadata) : null
-      ]
+        ipAddress,
+        userAgent,
+        sessionId,
+        municipalityId,
+        severity,
+        category,
+        description,
+        metadata ? JSON.stringify(metadata) : null,
+      ];
 
-      const result = await pool.query(query, values)
-      
+      const result = await pool.query(query, values);
+
       logInfo('🔍 Evento de auditoria registrado', {
         action,
         resourceType,
         resourceId,
         severity,
-        auditId: result.rows[0].id
-      })
+        auditId: result.rows[0].id,
+      });
 
-      return result.rows[0].id
+      return result.rows[0].id;
     } catch (error) {
-      logError('Erro ao registrar evento de auditoria', error)
-      return false
+      logError('Erro ao registrar evento de auditoria', error);
+      return false;
     }
   }
 
@@ -134,59 +144,62 @@ class AuditService {
     limit = 100,
     offset = 0,
     orderBy = 'created_at',
-    orderDirection = 'DESC'
+    orderDirection = 'DESC',
   } = {}) {
     try {
-      let whereConditions = []
-      let values = []
-      let valueIndex = 1
+      let whereConditions = [];
+      let values = [];
+      let valueIndex = 1;
 
       if (userId) {
-        whereConditions.push(`user_id = $${valueIndex++}`)
-        values.push(userId)
+        whereConditions.push(`user_id = $${valueIndex++}`);
+        values.push(userId);
       }
 
       if (action) {
-        whereConditions.push(`action = $${valueIndex++}`)
-        values.push(action)
+        whereConditions.push(`action = $${valueIndex++}`);
+        values.push(action);
       }
 
       if (resourceType) {
-        whereConditions.push(`resource_type = $${valueIndex++}`)
-        values.push(resourceType)
+        whereConditions.push(`resource_type = $${valueIndex++}`);
+        values.push(resourceType);
       }
 
       if (resourceId) {
-        whereConditions.push(`resource_id = $${valueIndex++}`)
-        values.push(resourceId)
+        whereConditions.push(`resource_id = $${valueIndex++}`);
+        values.push(resourceId);
       }
 
       if (severity) {
-        whereConditions.push(`severity = $${valueIndex++}`)
-        values.push(severity)
+        whereConditions.push(`severity = $${valueIndex++}`);
+        values.push(severity);
       }
 
       if (category) {
-        whereConditions.push(`category = $${valueIndex++}`)
-        values.push(category)
+        whereConditions.push(`category = $${valueIndex++}`);
+        values.push(category);
       }
 
       if (municipalityId) {
-        whereConditions.push(`municipality_id = $${valueIndex++}`)
-        values.push(municipalityId)
+        whereConditions.push(`municipality_id = $${valueIndex++}`);
+        values.push(municipalityId);
       }
 
       if (startDate) {
-        whereConditions.push(`created_at >= $${valueIndex++}`)
-        values.push(startDate)
+        whereConditions.push(`created_at >= $${valueIndex++}`);
+        values.push(startDate);
       }
 
       if (endDate) {
-        whereConditions.push(`created_at <= $${valueIndex++}`)
-        values.push(endDate)
+        whereConditions.push(`created_at <= $${valueIndex++}`);
+        values.push(endDate);
       }
 
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
+      const whereClause =
+        whereConditions.length > 0
+          ? `WHERE ${whereConditions.join(' AND ')}`
+          : '';
 
       const query = `
         SELECT 
@@ -197,44 +210,47 @@ class AuditService {
         ${whereClause}
         ORDER BY ${orderBy} ${orderDirection}
         LIMIT $${valueIndex++} OFFSET $${valueIndex++}
-      `
+      `;
 
-      values.push(limit, offset)
+      values.push(limit, offset);
 
-      const result = await pool.query(query, values)
-      return result.rows
+      const result = await pool.query(query, values);
+      return result.rows;
     } catch (error) {
-      logError('Erro ao buscar logs de auditoria', error)
-      throw error
+      logError('Erro ao buscar logs de auditoria', error);
+      throw error;
     }
   }
 
   async getAuditStats({
     municipalityId = null,
     startDate = null,
-    endDate = null
+    endDate = null,
   } = {}) {
     try {
-      let whereConditions = []
-      let values = []
-      let valueIndex = 1
+      let whereConditions = [];
+      let values = [];
+      let valueIndex = 1;
 
       if (municipalityId) {
-        whereConditions.push(`municipality_id = $${valueIndex++}`)
-        values.push(municipalityId)
+        whereConditions.push(`municipality_id = $${valueIndex++}`);
+        values.push(municipalityId);
       }
 
       if (startDate) {
-        whereConditions.push(`created_at >= $${valueIndex++}`)
-        values.push(startDate)
+        whereConditions.push(`created_at >= $${valueIndex++}`);
+        values.push(startDate);
       }
 
       if (endDate) {
-        whereConditions.push(`created_at <= $${valueIndex++}`)
-        values.push(endDate)
+        whereConditions.push(`created_at <= $${valueIndex++}`);
+        values.push(endDate);
       }
 
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
+      const whereClause =
+        whereConditions.length > 0
+          ? `WHERE ${whereConditions.join(' AND ')}`
+          : '';
 
       const statsQuery = `
         SELECT 
@@ -248,7 +264,7 @@ class AuditService {
           COUNT(CASE WHEN severity = 'info' THEN 1 END) as info_events
         FROM audit_logs
         ${whereClause}
-      `
+      `;
 
       const actionsQuery = `
         SELECT 
@@ -260,7 +276,7 @@ class AuditService {
         GROUP BY action
         ORDER BY count DESC
         LIMIT 10
-      `
+      `;
 
       const resourcesQuery = `
         SELECT 
@@ -271,52 +287,61 @@ class AuditService {
         GROUP BY resource_type
         ORDER BY count DESC
         LIMIT 10
-      `
+      `;
 
       const [statsResult, actionsResult, resourcesResult] = await Promise.all([
         pool.query(statsQuery, values),
         pool.query(actionsQuery, values),
-        pool.query(resourcesQuery, values)
-      ])
+        pool.query(resourcesQuery, values),
+      ]);
 
       return {
         summary: statsResult.rows[0],
         topActions: actionsResult.rows,
-        topResources: resourcesResult.rows
-      }
+        topResources: resourcesResult.rows,
+      };
     } catch (error) {
-      logError('Erro ao buscar estatísticas de auditoria', error)
-      throw error
+      logError('Erro ao buscar estatísticas de auditoria', error);
+      throw error;
     }
   }
 
   async exportAuditLogs(format = 'csv', filters = {}) {
     try {
-      const logs = await this.getAuditLogs({ ...filters, limit: 10000 })
+      const logs = await this.getAuditLogs({ ...filters, limit: 10000 });
 
       if (format === 'csv') {
-        return this.convertToCSV(logs)
+        return this.convertToCSV(logs);
       } else if (format === 'json') {
-        return JSON.stringify(logs, null, 2)
+        return JSON.stringify(logs, null, 2);
       } else {
-        throw new Error('Formato não suportado')
+        throw new Error('Formato não suportado');
       }
     } catch (error) {
-      logError('Erro ao exportar logs de auditoria', error)
-      throw error
+      logError('Erro ao exportar logs de auditoria', error);
+      throw error;
     }
   }
 
   convertToCSV(logs) {
-    if (logs.length === 0) return ''
+    if (logs.length === 0) return '';
 
     const headers = [
-      'ID', 'User ID', 'User Email', 'Action', 'Resource Type', 'Resource ID',
-      'Resource Name', 'Severity', 'Category', 'Description', 'IP Address',
-      'Created At'
-    ]
+      'ID',
+      'User ID',
+      'User Email',
+      'Action',
+      'Resource Type',
+      'Resource ID',
+      'Resource Name',
+      'Severity',
+      'Category',
+      'Description',
+      'IP Address',
+      'Created At',
+    ];
 
-    const csvRows = [headers.join(',')]
+    const csvRows = [headers.join(',')];
 
     for (const log of logs) {
       const row = [
@@ -331,13 +356,13 @@ class AuditService {
         log.category,
         log.description || '',
         log.ip_address || '',
-        log.created_at
-      ].map(field => `"${String(field).replace(/"/g, '""')}"`)
+        log.created_at,
+      ].map(field => `"${String(field).replace(/"/g, '""')}"`);
 
-      csvRows.push(row.join(','))
+      csvRows.push(row.join(','));
     }
 
-    return csvRows.join('\n')
+    return csvRows.join('\n');
   }
 
   async cleanupOldLogs(retentionDays = 90) {
@@ -345,19 +370,19 @@ class AuditService {
       const query = `
         DELETE FROM audit_logs 
         WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '${retentionDays} days'
-      `
+      `;
 
-      const result = await pool.query(query)
-      
+      const result = await pool.query(query);
+
       logInfo('🧹 Limpeza de logs de auditoria concluída', {
         deletedCount: result.rowCount,
-        retentionDays
-      })
+        retentionDays,
+      });
 
-      return result.rowCount
+      return result.rowCount;
     } catch (error) {
-      logError('Erro ao limpar logs antigos de auditoria', error)
-      throw error
+      logError('Erro ao limpar logs antigos de auditoria', error);
+      throw error;
     }
   }
 
@@ -375,8 +400,8 @@ class AuditService {
       sessionId,
       severity: 'info',
       category: 'authentication',
-      description: 'Usuário fez login no sistema'
-    })
+      description: 'Usuário fez login no sistema',
+    });
   }
 
   async logUserLogout(userId, userEmail, sessionId) {
@@ -390,11 +415,19 @@ class AuditService {
       sessionId,
       severity: 'info',
       category: 'authentication',
-      description: 'Usuário fez logout do sistema'
-    })
+      description: 'Usuário fez logout do sistema',
+    });
   }
 
-  async logResourceCreated(userId, userEmail, resourceType, resourceId, resourceName, newValues, municipalityId = null) {
+  async logResourceCreated(
+    userId,
+    userEmail,
+    resourceType,
+    resourceId,
+    resourceName,
+    newValues,
+    municipalityId = null
+  ) {
     return this.logAuditEvent({
       userId,
       userEmail,
@@ -406,11 +439,20 @@ class AuditService {
       municipalityId,
       severity: 'info',
       category: 'data_management',
-      description: `Novo ${resourceType} criado`
-    })
+      description: `Novo ${resourceType} criado`,
+    });
   }
 
-  async logResourceUpdated(userId, userEmail, resourceType, resourceId, resourceName, oldValues, newValues, municipalityId = null) {
+  async logResourceUpdated(
+    userId,
+    userEmail,
+    resourceType,
+    resourceId,
+    resourceName,
+    oldValues,
+    newValues,
+    municipalityId = null
+  ) {
     return this.logAuditEvent({
       userId,
       userEmail,
@@ -423,11 +465,19 @@ class AuditService {
       municipalityId,
       severity: 'info',
       category: 'data_management',
-      description: `${resourceType} atualizado`
-    })
+      description: `${resourceType} atualizado`,
+    });
   }
 
-  async logResourceDeleted(userId, userEmail, resourceType, resourceId, resourceName, oldValues, municipalityId = null) {
+  async logResourceDeleted(
+    userId,
+    userEmail,
+    resourceType,
+    resourceId,
+    resourceName,
+    oldValues,
+    municipalityId = null
+  ) {
     return this.logAuditEvent({
       userId,
       userEmail,
@@ -439,11 +489,18 @@ class AuditService {
       municipalityId,
       severity: 'medium',
       category: 'data_management',
-      description: `${resourceType} excluído`
-    })
+      description: `${resourceType} excluído`,
+    });
   }
 
-  async logSecurityEvent(userId, userEmail, action, description, severity = 'medium', metadata = null) {
+  async logSecurityEvent(
+    userId,
+    userEmail,
+    action,
+    description,
+    severity = 'medium',
+    metadata = null
+  ) {
     return this.logAuditEvent({
       userId,
       userEmail,
@@ -454,13 +511,13 @@ class AuditService {
       severity,
       category: 'security',
       description,
-      metadata
-    })
+      metadata,
+    });
   }
 }
 
 // Instância singleton
-const auditService = new AuditService()
+const auditService = new AuditService();
 
-export { auditService }
-export default auditService
+export { auditService };
+export default auditService;

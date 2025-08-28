@@ -1,9 +1,9 @@
-import { Patrimonio } from '@/types'
+import { Patrimonio } from '@/types';
 
 type PatrimonioField = {
-  id: keyof Patrimonio
-  label: string
-}
+  id: keyof Patrimonio;
+  label: string;
+};
 
 export const patrimonioFields: PatrimonioField[] = [
   { id: 'numero_patrimonio', label: 'Nº Patrimônio' },
@@ -27,4 +27,4 @@ export const patrimonioFields: PatrimonioField[] = [
   { id: 'entityName', label: 'Nome da Entidade' },
   { id: 'fotos', label: 'Qtd. Fotos' },
   { id: 'documentos', label: 'Qtd. Documentos' },
-]
+];

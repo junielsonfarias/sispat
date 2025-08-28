@@ -1,19 +1,19 @@
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog'
-import { Camera, Loader2, SwitchCamera, VideoOff } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Camera, Loader2, SwitchCamera, VideoOff } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface CameraCaptureProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onCapture: (dataUrl: string) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCapture: (dataUrl: string) => void;
 }
 
 export const CameraCapture = ({
@@ -21,93 +21,91 @@ export const CameraCapture = ({
   onOpenChange,
   onCapture,
 }: CameraCaptureProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
-  const [currentDeviceId, setCurrentDeviceId] = useState<string | undefined>()
-  const [isLoading, setIsLoading] = useState(true)
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
 
   const startStream = useCallback(
     async (deviceId?: string) => {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
       if (stream) {
-        stream.getTracks().forEach((track) => track.stop())
+        stream.getTracks().forEach(track => track.stop());
       }
       try {
         const newStream = await navigator.mediaDevices.getUserMedia({
           video: { deviceId: deviceId ? { exact: deviceId } : undefined },
-        })
-        setStream(newStream)
+        });
+        setStream(newStream);
         if (videoRef.current) {
-          videoRef.current.srcObject = newStream
+          videoRef.current.srcObject = newStream;
         }
       } catch (_err) {
         setError(
-          'Não foi possível acessar a câmera. Verifique as permissões do seu navegador.',
-        )
+          'Não foi possível acessar a câmera. Verifique as permissões do seu navegador.'
+        );
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
-    [stream],
-  )
+    [stream]
+  );
 
   useEffect(() => {
     if (open) {
       navigator.mediaDevices
         .enumerateDevices()
-        .then((allDevices) => {
+        .then(allDevices => {
           const videoDevices = allDevices.filter(
-            (device) => device.kind === 'videoinput',
-          )
-          setDevices(videoDevices)
-          const initialDeviceId = videoDevices[0]?.deviceId
-          setCurrentDeviceId(initialDeviceId)
-          startStream(initialDeviceId)
+            device => device.kind === 'videoinput'
+          );
+          setDevices(videoDevices);
+          const initialDeviceId = videoDevices[0]?.deviceId;
+          setCurrentDeviceId(initialDeviceId);
+          startStream(initialDeviceId);
         })
         .catch(() => {
-          setError('Não foi possível listar os dispositivos de câmera.')
-        })
+          setError('Não foi possível listar os dispositivos de câmera.');
+        });
     } else if (stream) {
-      stream.getTracks().forEach((track) => track.stop())
-      setStream(null)
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
     }
 
     return () => {
       if (stream) {
-        stream.getTracks().forEach((track) => track.stop())
+        stream.getTracks().forEach(track => track.stop());
       }
-    }
-  }, [open, startStream, stream])
+    };
+  }, [open, startStream, stream]);
 
   const handleCapture = () => {
-    const video = videoRef.current
-    const canvas = canvasRef.current
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
     if (video && canvas) {
-      const context = canvas.getContext('2d')
+      const context = canvas.getContext('2d');
       if (context) {
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
-        const dataUrl = canvas.toDataURL('image/jpeg')
-        onCapture(dataUrl)
-        onOpenChange(false)
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        onCapture(dataUrl);
+        onOpenChange(false);
       }
     }
-  }
+  };
 
   const handleSwitchCamera = () => {
-    const currentIndex = devices.findIndex(
-      (d) => d.deviceId === currentDeviceId,
-    )
-    const nextIndex = (currentIndex + 1) % devices.length
-    const nextDeviceId = devices[nextIndex]?.deviceId
-    setCurrentDeviceId(nextDeviceId)
-    startStream(nextDeviceId)
-  }
+    const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
+    const nextIndex = (currentIndex + 1) % devices.length;
+    const nextDeviceId = devices[nextIndex]?.deviceId;
+    setCurrentDeviceId(nextDeviceId);
+    startStream(nextDeviceId);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -118,11 +116,11 @@ export const CameraCapture = ({
             Posicione o bem na frente da câmera e capture a foto.
           </DialogDescription>
         </DialogHeader>
-        <div className="relative aspect-video bg-muted rounded-md flex items-center justify-center">
-          {isLoading && <Loader2 className="h-8 w-8 animate-spin" />}
+        <div className='relative aspect-video bg-muted rounded-md flex items-center justify-center'>
+          {isLoading && <Loader2 className='h-8 w-8 animate-spin' />}
           {error && (
-            <div className="text-center text-destructive p-4">
-              <VideoOff className="h-8 w-8 mx-auto mb-2" />
+            <div className='text-center text-destructive p-4'>
+              <VideoOff className='h-8 w-8 mx-auto mb-2' />
               <p>{error}</p>
             </div>
           )}
@@ -135,23 +133,23 @@ export const CameraCapture = ({
             }`}
             onLoadedData={() => setIsLoading(false)}
           />
-          <canvas ref={canvasRef} className="hidden" />
+          <canvas ref={canvasRef} className='hidden' />
         </div>
         <DialogFooter>
           {devices.length > 1 && (
             <Button
-              variant="outline"
+              variant='outline'
               onClick={handleSwitchCamera}
               disabled={isLoading}
             >
-              <SwitchCamera className="mr-2 h-4 w-4" /> Trocar Câmera
+              <SwitchCamera className='mr-2 h-4 w-4' /> Trocar Câmera
             </Button>
           )}
           <Button onClick={handleCapture} disabled={isLoading || !!error}>
-            <Camera className="mr-2 h-4 w-4" /> Capturar
+            <Camera className='mr-2 h-4 w-4' /> Capturar
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};

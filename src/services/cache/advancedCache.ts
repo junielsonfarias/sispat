@@ -43,16 +43,16 @@ export interface CacheMetrics {
 class AdvancedCacheManager {
   private stats = {
     redis: { hits: 0, misses: 0 },
-    memory: { hits: 0, misses: 0 }
+    memory: { hits: 0, misses: 0 },
   };
-  
+
   private metrics = new Map<string, CacheMetrics>();
   private tags = new Map<string, Set<string>>();
 
   constructor() {
     // Conectar ao Redis na inicialização
     void this.initializeRedis();
-    
+
     // Limpar métricas antigas periodicamente
     setInterval(() => this.cleanupMetrics(), 60 * 60 * 1000); // 1 hora
   }
@@ -61,7 +61,10 @@ class AdvancedCacheManager {
     try {
       await redisClient.connect();
     } catch (error) {
-      console.warn('Redis não disponível, usando apenas cache em memória:', error);
+      console.warn(
+        'Redis não disponível, usando apenas cache em memória:',
+        error
+      );
     }
   }
 
@@ -87,12 +90,12 @@ class AdvancedCacheManager {
         if (value !== null) {
           this.stats.redis.hits++;
           this.updateMetrics(key, 'hit', this.getDataSize(value));
-          
+
           // Armazenar também no cache em memória para próximas consultas
           if (useMemory) {
             globalCache.set(key, value, { ttl: options.ttl });
           }
-          
+
           return value;
         }
         this.stats.redis.misses++;
@@ -106,18 +109,18 @@ class AdvancedCacheManager {
   }
 
   async set<T>(
-    key: string, 
-    value: T, 
+    key: string,
+    value: T,
     options: CacheOptions = {}
   ): Promise<boolean> {
-    const { 
+    const {
       ttl = 300, // 5 minutos padrão
-      useRedis = true, 
-      useMemory = true, 
+      useRedis = true,
+      useMemory = true,
       tags = [],
       version,
       compression = false,
-      priority = 'medium'
+      priority = 'medium',
     } = options;
 
     let success = true;
@@ -141,7 +144,7 @@ class AdvancedCacheManager {
     if (useRedis && redisClient.isReady()) {
       try {
         const processedValue = value;
-        
+
         // Aplicar compressão se solicitado
         if (compression && typeof value === 'string') {
           // Aqui você pode implementar compressão se necessário
@@ -232,10 +235,10 @@ class AdvancedCacheManager {
     try {
       const cache = globalCache as any;
       const keys = Array.from(cache.cache.keys());
-      const matchingKeys = keys.filter((key: string) => 
+      const matchingKeys = keys.filter((key: string) =>
         key.includes(pattern.replace('*', ''))
       );
-      
+
       for (const key of matchingKeys) {
         globalCache.delete(key);
         this.metrics.delete(key);
@@ -260,13 +263,19 @@ class AdvancedCacheManager {
     // Limpar estatísticas e métricas
     this.stats = {
       redis: { hits: 0, misses: 0 },
-      memory: { hits: 0, misses: 0 }
+      memory: { hits: 0, misses: 0 },
     };
     this.metrics.clear();
     this.tags.clear();
   }
 
-  async warmup(keys: Array<{ key: string; fetcher: () => Promise<any>; options?: CacheOptions }>): Promise<void> {
+  async warmup(
+    keys: Array<{
+      key: string;
+      fetcher: () => Promise<any>;
+      options?: CacheOptions;
+    }>
+  ): Promise<void> {
     const promises = keys.map(async ({ key, fetcher, options }) => {
       try {
         const exists = await this.exists(key);
@@ -298,7 +307,7 @@ class AdvancedCacheManager {
 
   async getStats(): Promise<CacheStats> {
     const memoryStats = globalCache.getStats();
-    
+
     let redisMemoryUsage = 0;
     if (redisClient.isReady()) {
       try {
@@ -325,19 +334,19 @@ class AdvancedCacheManager {
         hits: this.stats.redis.hits,
         misses: this.stats.redis.misses,
         hitRate: redisTotal > 0 ? this.stats.redis.hits / redisTotal : 0,
-        memoryUsage: redisMemoryUsage
+        memoryUsage: redisMemoryUsage,
       },
       memory: {
         hits: this.stats.memory.hits,
         misses: this.stats.memory.misses,
         hitRate: memoryStats.hitRate,
-        size: memoryStats.size
+        size: memoryStats.size,
       },
       total: {
         hits: totalHits,
         misses: totalMisses,
-        hitRate: grandTotal > 0 ? totalHits / grandTotal : 0
-      }
+        hitRate: grandTotal > 0 ? totalHits / grandTotal : 0,
+      },
     };
   }
 
@@ -363,14 +372,19 @@ class AdvancedCacheManager {
     }
   }
 
-  private updateMetrics(key: string, operation: 'hit' | 'miss' | 'set', size: number, ttl?: number): void {
+  private updateMetrics(
+    key: string,
+    operation: 'hit' | 'miss' | 'set',
+    size: number,
+    ttl?: number
+  ): void {
     const existing = this.metrics.get(key) || {
       key,
       hits: 0,
       misses: 0,
       lastAccess: Date.now(),
       size: 0,
-      ttl: 0
+      ttl: 0,
     };
 
     if (operation === 'hit') {

@@ -1,11 +1,11 @@
-import * as z from 'zod'
+import * as z from 'zod';
 
 export const imovelBaseSchema = z.object({
   numero_patrimonio: z.string().min(1, 'O número de patrimônio é obrigatório.'),
   denominacao: z.string().min(1, 'A denominação é obrigatória.'),
   endereco: z.string().min(1, 'O endereço é obrigatório.'),
   setor: z.string().min(1, 'O setor é obrigatório.'),
-  data_aquisicao: z.string().refine((val) => !isNaN(Date.parse(val)), {
+  data_aquisicao: z.string().refine(val => !isNaN(Date.parse(val)), {
     message: 'Data de aquisição inválida.',
   }),
   valor_aquisicao: z.coerce
@@ -27,4 +27,4 @@ export const imovelBaseSchema = z.object({
     .or(z.literal('')),
   fotos: z.array(z.string()).optional(),
   documentos: z.array(z.string()).optional(),
-})
+});

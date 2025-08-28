@@ -61,14 +61,14 @@ components/
 
 ```typescript
 // ✅ CORRETO
-const patrimonioList = []
-const fetchPatrimonios = async () => {}
-const isPatrimonioValid = (patrimonio: Patrimonio) => {}
+const patrimonioList = [];
+const fetchPatrimonios = async () => {};
+const isPatrimonioValid = (patrimonio: Patrimonio) => {};
 
 // ❌ INCORRETO
-const patrimonio_list = []
-const fetch_patrimonios = async () => {}
-const is_patrimonio_valid = (patrimonio: Patrimonio) => {}
+const patrimonio_list = [];
+const fetch_patrimonios = async () => {};
+const is_patrimonio_valid = (patrimonio: Patrimonio) => {};
 ```
 
 #### **Componentes React**
@@ -117,13 +117,13 @@ VITE_BACKEND_URL=http://localhost:3001
 ```javascript
 // server/index.js
 if (!process.env.JWT_SECRET) {
-  console.error('🚨 ERRO CRÍTICO: JWT_SECRET não encontrado')
-  process.exit(1)
+  console.error('🚨 ERRO CRÍTICO: JWT_SECRET não encontrado');
+  process.exit(1);
 }
 
 if (!process.env.DB_PASSWORD) {
-  console.error('🚨 ERRO CRÍTICO: DB_PASSWORD não configurado')
-  process.exit(1)
+  console.error('🚨 ERRO CRÍTICO: DB_PASSWORD não configurado');
+  process.exit(1);
 }
 ```
 
@@ -143,11 +143,11 @@ export default defineConfig({
         secure: false,
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {
-            console.log('proxy error', err)
-          })
+            console.log('proxy error', err);
+          });
           proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('Sending Request to the Target:', req.method, req.url)
-          })
+            console.log('Sending Request to the Target:', req.method, req.url);
+          });
         },
       },
     },
@@ -157,7 +157,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-})
+});
 ```
 
 ---
@@ -170,32 +170,27 @@ export default defineConfig({
 
 ```javascript
 // ✅ CORRETO
-import express from 'express'
-import { authenticateToken, requireSupervisor } from '../middleware/auth.js'
-import { paginationMiddleware } from '../middleware/pagination.js'
-import { patrimoniosCacheMiddleware } from '../middleware/cacheMiddleware.js'
+import express from 'express';
+import { authenticateToken, requireSupervisor } from '../middleware/auth.js';
+import { paginationMiddleware } from '../middleware/pagination.js';
+import { patrimoniosCacheMiddleware } from '../middleware/cacheMiddleware.js';
 
-const router = express.Router()
+const router = express.Router();
 
 // Rotas públicas (sem autenticação)
 router.get('/public', async (req, res) => {
   // Implementação
-})
+});
 
 // Middleware de autenticação para rotas protegidas
-router.use(authenticateToken)
+router.use(authenticateToken);
 
 // Rotas protegidas
-router.get(
-  '/',
-  patrimoniosCacheMiddleware,
-  paginationMiddleware,
-  async (req, res) => {
-    // Implementação
-  },
-)
+router.get('/', patrimoniosCacheMiddleware, paginationMiddleware, async (req, res) => {
+  // Implementação
+});
 
-export default router
+export default router;
 ```
 
 #### **Tratamento de Erros**
@@ -203,15 +198,15 @@ export default router
 ```javascript
 // ✅ CORRETO
 try {
-  const result = await someOperation()
-  res.json({ success: true, data: result })
+  const result = await someOperation();
+  res.json({ success: true, data: result });
 } catch (error) {
-  console.error('❌ Erro na operação:', error)
-  console.error('❌ Stack trace:', error.stack)
+  console.error('❌ Erro na operação:', error);
+  console.error('❌ Stack trace:', error.stack);
   res.status(500).json({
     error: 'Erro interno do servidor',
     details: error.message,
-  })
+  });
 }
 ```
 
@@ -328,28 +323,28 @@ WHERE p.municipality_id = $1 AND p.deleted_at IS NULL
 // ✅ CORRETO - Validar antes de salvar
 function validateImages(images, maxSizeInMB = 5) {
   if (!images || !Array.isArray(images)) {
-    return []
+    return [];
   }
 
-  const validImages = []
+  const validImages = [];
 
   for (let i = 0; i < images.length; i++) {
     try {
-      const image = images[i]
+      const image = images[i];
       if (typeof image === 'string' && image.startsWith('data:image')) {
-        const validated = validateAndLimitImageSize(image, maxSizeInMB)
+        const validated = validateAndLimitImageSize(image, maxSizeInMB);
         if (validated) {
-          validImages.push(validated)
+          validImages.push(validated);
         }
       } else {
-        validImages.push(image)
+        validImages.push(image);
       }
     } catch (error) {
-      console.log(`⚠️ Erro ao validar imagem ${i + 1}:`, error.message)
+      console.log(`⚠️ Erro ao validar imagem ${i + 1}:`, error.message);
     }
   }
 
-  return validImages
+  return validImages;
 }
 ```
 
@@ -365,12 +360,12 @@ function validateImages(images, maxSizeInMB = 5) {
 // ✅ OBRIGATÓRIO - Sempre implementar
 router.get('/test-connection', async (req, res) => {
   try {
-    const result = await getRow('SELECT 1 as test')
-    res.json({ success: true, message: 'Conexão OK', result })
+    const result = await getRow('SELECT 1 as test');
+    res.json({ success: true, message: 'Conexão OK', result });
   } catch (error) {
-    res.status(500).json({ error: 'Erro de conexão', details: error.message })
+    res.status(500).json({ error: 'Erro de conexão', details: error.message });
   }
-})
+});
 ```
 
 #### **Testes de Estrutura**
@@ -385,10 +380,10 @@ router.get('/test-table', async (req, res) => {
         WHERE table_schema = 'public' 
         AND table_name = 'patrimonios'
       ) as exists
-    `)
+    `);
 
     if (!tableExists.exists) {
-      return res.status(404).json({ error: 'Tabela não existe' })
+      return res.status(404).json({ error: 'Tabela não existe' });
     }
 
     const columns = await getRows(`
@@ -396,19 +391,17 @@ router.get('/test-table', async (req, res) => {
       FROM information_schema.columns 
       WHERE table_name = 'patrimonios'
       ORDER BY ordinal_position
-    `)
+    `);
 
     res.json({
       success: true,
       tableExists: tableExists.exists,
       columns: columns,
-    })
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: 'Erro ao verificar tabela', details: error.message })
+    res.status(500).json({ error: 'Erro ao verificar tabela', details: error.message });
   }
-})
+});
 ```
 
 ### **2. Comandos de Teste**
@@ -432,20 +425,20 @@ curl http://localhost:3001/api/patrimonios/test-execute-pagination
 
 ```javascript
 // ✅ OBRIGATÓRIO - Sempre incluir
-console.log('🔄 Operação iniciada')
-console.log('📋 Dados recebidos:', data)
-console.log('✅ Operação concluída')
-console.error('❌ Erro:', error)
-console.error('❌ Stack trace:', error.stack)
+console.log('🔄 Operação iniciada');
+console.log('📋 Dados recebidos:', data);
+console.log('✅ Operação concluída');
+console.error('❌ Erro:', error);
+console.error('❌ Stack trace:', error.stack);
 ```
 
 #### **Frontend**
 
 ```javascript
 // ✅ OBRIGATÓRIO - Sempre incluir
-console.log('🔄 Buscando dados...')
-console.log('✅ Dados recebidos:', data)
-console.error('❌ Erro:', error)
+console.log('🔄 Buscando dados...');
+console.log('✅ Dados recebidos:', data);
+console.error('❌ Erro:', error);
 ```
 
 ### **2. Performance Monitoring**
@@ -454,38 +447,32 @@ console.error('❌ Erro:', error)
 
 ```javascript
 // ✅ OBRIGATÓRIO - Monitorar performance
-const startTime = Date.now()
+const startTime = Date.now();
 
 // ... operação
 
-const duration = Date.now() - startTime
+const duration = Date.now() - startTime;
 logPerformance('Operação executada', duration, {
   itemCount: results.length,
   operation: 'fetch_patrimonios',
-})
+});
 ```
 
 #### **Frontend**
 
 ```javascript
 // ✅ OBRIGATÓRIO - Monitorar APIs
-const startTime = performance.now()
+const startTime = performance.now();
 
 try {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, options)
-  const duration = performance.now() - startTime
-  performanceMonitor.recordAPIMetric(
-    endpoint,
-    'GET',
-    duration,
-    response.status,
-    response.ok,
-  )
-  return handleResponse(response)
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+  const duration = performance.now() - startTime;
+  performanceMonitor.recordAPIMetric(endpoint, 'GET', duration, response.status, response.ok);
+  return handleResponse(response);
 } catch (error) {
-  const duration = performance.now() - startTime
-  performanceMonitor.recordAPIMetric(endpoint, 'GET', duration, 0, false)
-  throw error
+  const duration = performance.now() - startTime;
+  performanceMonitor.recordAPIMetric(endpoint, 'GET', duration, 0, false);
+  throw error;
 }
 ```
 
@@ -499,14 +486,11 @@ try {
 
 ```javascript
 // ✅ OBRIGATÓRIO - Todas as rotas protegidas
-router.use(authenticateToken)
+router.use(authenticateToken);
 
 // ✅ OBRIGATÓRIO - Verificar municipality_id
-if (
-  req.user.role !== 'superuser' &&
-  patrimonio.municipality_id !== req.user.municipality_id
-) {
-  return res.status(403).json({ error: 'Acesso negado' })
+if (req.user.role !== 'superuser' && patrimonio.municipality_id !== req.user.municipality_id) {
+  return res.status(403).json({ error: 'Acesso negado' });
 }
 ```
 
@@ -517,21 +501,21 @@ if (
 ```javascript
 // ✅ OBRIGATÓRIO - Sempre validar inputs
 function validatePatrimonioData(data) {
-  const errors = []
+  const errors = [];
 
   if (!data.numero_patrimonio || data.numero_patrimonio.trim().length === 0) {
-    errors.push('Número do patrimônio é obrigatório')
+    errors.push('Número do patrimônio é obrigatório');
   }
 
   if (!data.descricao || data.descricao.trim().length === 0) {
-    errors.push('Descrição é obrigatória')
+    errors.push('Descrição é obrigatória');
   }
 
   if (data.valor_aquisicao && isNaN(parseFloat(data.valor_aquisicao))) {
-    errors.push('Valor de aquisição deve ser um número válido')
+    errors.push('Valor de aquisição deve ser um número válido');
   }
 
-  return errors
+  return errors;
 }
 ```
 
@@ -541,20 +525,15 @@ function validatePatrimonioData(data) {
 // ✅ OBRIGATÓRIO - Validar uploads
 function validateFileUpload(file, maxSize = 5 * 1024 * 1024) {
   if (file.size > maxSize) {
-    throw new Error('Arquivo muito grande. Máximo 5MB.')
+    throw new Error('Arquivo muito grande. Máximo 5MB.');
   }
 
-  const allowedTypes = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'application/pdf',
-  ]
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
   if (!allowedTypes.includes(file.type)) {
-    throw new Error('Tipo de arquivo não permitido.')
+    throw new Error('Tipo de arquivo não permitido.');
   }
 
-  return true
+  return true;
 }
 ```
 
@@ -579,12 +558,7 @@ function validateFileUpload(file, maxSize = 5 * 1024 * 1024) {
  * @returns {Promise<Object>} Resultado paginado com items e metadata
  * @throws {Error} Se houver erro na query ou validação
  */
-export async function executePaginatedQuery(
-  queryFn,
-  baseQuery,
-  params,
-  tableName = 't',
-) {
+export async function executePaginatedQuery(queryFn, baseQuery, params, tableName = 't') {
   // Implementação
 }
 ```
@@ -606,7 +580,7 @@ export const PatrimonioCard = ({
   onDelete,
 }: PatrimonioCardProps) => {
   // Implementação
-}
+};
 ```
 
 ### **2. README.md**

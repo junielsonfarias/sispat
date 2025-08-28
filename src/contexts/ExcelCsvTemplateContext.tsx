@@ -6,23 +6,23 @@ import {
   useCallback,
   useEffect,
   useMemo,
-} from 'react'
-import { ExcelCsvTemplate } from '@/types'
-import { generateId } from '@/lib/utils'
-import { useAuth } from './AuthContext'
-import { toast } from '@/hooks/use-toast'
+} from 'react';
+import { ExcelCsvTemplate } from '@/types';
+import { generateId } from '@/lib/utils';
+import { useAuth } from './AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface ExcelCsvTemplateContextType {
-  templates: ExcelCsvTemplate[]
-  getTemplateById: (id: string) => ExcelCsvTemplate | undefined
+  templates: ExcelCsvTemplate[];
+  getTemplateById: (id: string) => ExcelCsvTemplate | undefined;
   saveTemplate: (
-    template: Omit<ExcelCsvTemplate, 'id'> | ExcelCsvTemplate,
-  ) => void
-  deleteTemplate: (templateId: string) => void
+    template: Omit<ExcelCsvTemplate, 'id'> | ExcelCsvTemplate
+  ) => void;
+  deleteTemplate: (templateId: string) => void;
 }
 
 const ExcelCsvTemplateContext =
-  createContext<ExcelCsvTemplateContextType | null>(null)
+  createContext<ExcelCsvTemplateContextType | null>(null);
 
 const defaultTemplates: ExcelCsvTemplate[] = [
   {
@@ -63,59 +63,60 @@ const defaultTemplates: ExcelCsvTemplate[] = [
       },
     ],
   },
-]
+];
 
 export const ExcelCsvTemplateProvider = ({
   children,
 }: {
-  children: ReactNode
+  children: ReactNode;
 }) => {
   const [allTemplates, setAllTemplates] =
-    useState<ExcelCsvTemplate[]>(defaultTemplates)
-  const { user } = useAuth()
+    useState<ExcelCsvTemplate[]>(defaultTemplates);
+  const { user } = useAuth();
 
   useEffect(() => {
-    const stored = localStorage.getItem('sispat_excel_templates')
+    const stored = localStorage.getItem('sispat_excel_templates');
     if (stored) {
-      setAllTemplates(JSON.parse(stored))
+      setAllTemplates(JSON.parse(stored));
     } else {
       localStorage.setItem(
         'sispat_excel_templates',
-        JSON.stringify(defaultTemplates),
-      )
+        JSON.stringify(defaultTemplates)
+      );
     }
-  }, [])
+  }, []);
 
   const templates = useMemo(() => {
-    if (user?.role === 'superuser') return allTemplates
+    if (user?.role === 'superuser') return allTemplates;
     if (user?.municipalityId) {
-      return allTemplates.filter(
-        (t) => t.municipalityId === user.municipalityId,
-      )
+      return allTemplates.filter(t => t.municipalityId === user.municipalityId);
     }
-    return []
-  }, [allTemplates, user])
+    return [];
+  }, [allTemplates, user]);
 
   const persist = (newTemplates: ExcelCsvTemplate[]) => {
-    localStorage.setItem('sispat_excel_templates', JSON.stringify(newTemplates))
-    setAllTemplates(newTemplates)
-  }
+    localStorage.setItem(
+      'sispat_excel_templates',
+      JSON.stringify(newTemplates)
+    );
+    setAllTemplates(newTemplates);
+  };
 
   const getTemplateById = useCallback(
-    (id: string) => templates.find((t) => t.id === id),
-    [templates],
-  )
+    (id: string) => templates.find(t => t.id === id),
+    [templates]
+  );
 
   const saveTemplate = useCallback(
     (template: Omit<ExcelCsvTemplate, 'id'> | ExcelCsvTemplate) => {
-      if (!user?.municipalityId && user?.role !== 'superuser') return
+      if (!user?.municipalityId && user?.role !== 'superuser') return;
 
-      setAllTemplates((prev) => {
-        let newTemplates
+      setAllTemplates(prev => {
+        let newTemplates;
         if ('id' in template && template.id) {
-          const index = prev.findIndex((t) => t.id === template.id)
-          newTemplates = [...prev]
-          newTemplates[index] = template
+          const index = prev.findIndex(t => t.id === template.id);
+          newTemplates = [...prev];
+          newTemplates[index] = template;
         } else {
           newTemplates = [
             ...prev,
@@ -124,24 +125,24 @@ export const ExcelCsvTemplateProvider = ({
               id: generateId(),
               municipalityId: user.municipalityId!,
             },
-          ]
+          ];
         }
-        persist(newTemplates)
-        toast({ description: 'Modelo de exportação salvo com sucesso.' })
-        return newTemplates
-      })
+        persist(newTemplates);
+        toast({ description: 'Modelo de exportação salvo com sucesso.' });
+        return newTemplates;
+      });
     },
-    [user],
-  )
+    [user]
+  );
 
   const deleteTemplate = useCallback((templateId: string) => {
-    setAllTemplates((prev) => {
-      const newTemplates = prev.filter((t) => t.id !== templateId)
-      persist(newTemplates)
-      toast({ description: 'Modelo de exportação excluído.' })
-      return newTemplates
-    })
-  }, [])
+    setAllTemplates(prev => {
+      const newTemplates = prev.filter(t => t.id !== templateId);
+      persist(newTemplates);
+      toast({ description: 'Modelo de exportação excluído.' });
+      return newTemplates;
+    });
+  }, []);
 
   return (
     <ExcelCsvTemplateContext.Provider
@@ -149,15 +150,15 @@ export const ExcelCsvTemplateProvider = ({
     >
       {children}
     </ExcelCsvTemplateContext.Provider>
-  )
-}
+  );
+};
 
 export const useExcelCsvTemplates = () => {
-  const context = useContext(ExcelCsvTemplateContext)
+  const context = useContext(ExcelCsvTemplateContext);
   if (!context) {
     throw new Error(
-      'useExcelCsvTemplates must be used within a ExcelCsvTemplateProvider',
-    )
+      'useExcelCsvTemplates must be used within a ExcelCsvTemplateProvider'
+    );
   }
-  return context
-}
+  return context;
+};

@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import {
   Area,
   AreaChart,
@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
   Legend,
-} from 'recharts'
+} from 'recharts';
 import {
   Table,
   TableBody,
@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -26,71 +26,71 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { useSectors } from '@/contexts/SectorContext'
-import { format, subMonths } from 'date-fns'
+} from '@/components/ui/breadcrumb';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { useSectors } from '@/contexts/SectorContext';
+import { format, subMonths } from 'date-fns';
 
 const AnaliseTipo = () => {
-  const { patrimonios } = usePatrimonio()
-  const { sectors } = useSectors()
+  const { patrimonios } = usePatrimonio();
+  const { sectors } = useSectors();
 
   const allTypes = useMemo(
-    () => [...new Set(patrimonios.map((p) => p.tipo))],
-    [patrimonios],
-  )
+    () => [...new Set(patrimonios.map(p => p.tipo))],
+    [patrimonios]
+  );
 
   const matrixData = useMemo(() => {
-    const matrix: Record<string, Record<string, number>> = {}
-    sectors.forEach((sector) => {
-      matrix[sector.name] = {}
-      allTypes.forEach((type) => {
-        matrix[sector.name][type] = 0
-      })
-    })
+    const matrix: Record<string, Record<string, number>> = {};
+    sectors.forEach(sector => {
+      matrix[sector.name] = {};
+      allTypes.forEach(type => {
+        matrix[sector.name][type] = 0;
+      });
+    });
 
-    patrimonios.forEach((p) => {
+    patrimonios.forEach(p => {
       if (matrix[p.setor_responsavel]) {
         matrix[p.setor_responsavel][p.tipo] =
-          (matrix[p.setor_responsavel][p.tipo] || 0) + 1
+          (matrix[p.setor_responsavel][p.tipo] || 0) + 1;
       }
-    })
+    });
 
     return Object.entries(matrix).map(([sector, types]) => ({
       sector,
       ...types,
-    }))
-  }, [patrimonios, sectors, allTypes])
+    }));
+  }, [patrimonios, sectors, allTypes]);
 
   const evolutionData = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) =>
-      subMonths(new Date(), 5 - i),
-    )
-    return months.map((month) => {
-      const monthStr = format(month, 'MMM/yy')
+      subMonths(new Date(), 5 - i)
+    );
+    return months.map(month => {
+      const monthStr = format(month, 'MMM/yy');
       const acquisitionsInMonth = patrimonios.filter(
-        (p) =>
+        p =>
           format(new Date(p.data_aquisicao), 'yyyy-MM') ===
-          format(month, 'yyyy-MM'),
-      )
+          format(month, 'yyyy-MM')
+      );
       const acquisitionsByType = acquisitionsInMonth.reduce(
         (acc, p) => {
-          acc[p.tipo] = (acc[p.tipo] || 0) + 1
-          return acc
+          acc[p.tipo] = (acc[p.tipo] || 0) + 1;
+          return acc;
         },
-        {} as Record<string, number>,
-      )
-      return { month: monthStr, ...acquisitionsByType }
-    })
-  }, [patrimonios])
+        {} as Record<string, number>
+      );
+      return { month: monthStr, ...acquisitionsByType };
+    });
+  }, [patrimonios]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/">Dashboard</Link>
+              <Link to='/'>Dashboard</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -99,8 +99,8 @@ const AnaliseTipo = () => {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <h1 className="text-2xl font-bold">Análise por Tipo de Bem</h1>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <h1 className='text-2xl font-bold'>Análise por Tipo de Bem</h1>
+      <div className='grid gap-4 lg:grid-cols-2'>
         <Card>
           <CardHeader>
             <CardTitle>Matriz Tipo-Setor</CardTitle>
@@ -110,19 +110,19 @@ const AnaliseTipo = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Setor</TableHead>
-                  {allTypes.map((type) => (
-                    <TableHead key={type} className="text-right">
+                  {allTypes.map(type => (
+                    <TableHead key={type} className='text-right'>
                       {type}
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {matrixData.map((row) => (
+                {matrixData.map(row => (
                   <TableRow key={row.sector}>
                     <TableCell>{row.sector}</TableCell>
-                    {allTypes.map((type) => (
-                      <TableCell key={type} className="text-right">
+                    {allTypes.map(type => (
+                      <TableCell key={type} className='text-right'>
                         {row[type] || 0}
                       </TableCell>
                     ))}
@@ -137,19 +137,19 @@ const AnaliseTipo = () => {
             <CardTitle>Evolução de Aquisições por Tipo</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
+            <ChartContainer config={{}} className='h-[300px] w-full'>
               <AreaChart data={evolutionData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
+                <CartesianGrid strokeDasharray='3 3' />
+                <XAxis dataKey='month' />
                 <YAxis />
                 <Tooltip content={<ChartTooltipContent />} />
                 <Legend />
                 {allTypes.map((type, index) => (
                   <Area
                     key={type}
-                    type="monotone"
+                    type='monotone'
                     dataKey={type}
-                    stackId="1"
+                    stackId='1'
                     stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
                     fill={`hsl(var(--chart-${(index % 5) + 1}))`}
                   />
@@ -160,7 +160,7 @@ const AnaliseTipo = () => {
         </Card>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AnaliseTipo
+export default AnaliseTipo;

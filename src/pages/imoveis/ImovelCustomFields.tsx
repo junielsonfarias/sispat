@@ -1,19 +1,19 @@
-import { useState } from 'react'
+import { useState } from 'react';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,45 +24,45 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { PlusCircle, Edit, Trash2, Lock } from 'lucide-react'
-import { useImovelField } from '@/contexts/ImovelFieldContext'
-import { ImovelFieldConfig } from '@/types'
-import { ImovelFormFieldEditor } from '@/components/imoveis/ImovelFormFieldEditor'
-import { Badge } from '@/components/ui/badge'
+} from '@/components/ui/alert-dialog';
+import { PlusCircle, Edit, Trash2, Lock } from 'lucide-react';
+import { useImovelField } from '@/contexts/ImovelFieldContext';
+import { ImovelFieldConfig } from '@/types';
+import { ImovelFormFieldEditor } from '@/components/imoveis/ImovelFormFieldEditor';
+import { Badge } from '@/components/ui/badge';
 
 export default function ImovelCustomFields() {
-  const { fields, addField, updateField, deleteField } = useImovelField()
-  const [isEditorOpen, setEditorOpen] = useState(false)
+  const { fields, addField, updateField, deleteField } = useImovelField();
+  const [isEditorOpen, setEditorOpen] = useState(false);
   const [editingField, setEditingField] = useState<ImovelFieldConfig | null>(
-    null,
-  )
+    null
+  );
 
   const handleEdit = (field: ImovelFieldConfig) => {
-    setEditingField(field)
-    setEditorOpen(true)
-  }
+    setEditingField(field);
+    setEditorOpen(true);
+  };
 
   const handleCreate = () => {
-    setEditingField(null)
-    setEditorOpen(true)
-  }
+    setEditingField(null);
+    setEditorOpen(true);
+  };
 
   const handleSave = (data: Omit<ImovelFieldConfig, 'id'>) => {
     if (editingField) {
-      updateField(editingField.id, data)
+      updateField(editingField.id, data);
     } else {
-      addField(data)
+      addField(data);
     }
-    setEditorOpen(false)
-  }
+    setEditorOpen(false);
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Campos Personalizados de Imóveis</h1>
+    <div className='flex flex-col gap-6'>
+      <div className='flex items-center justify-between'>
+        <h1 className='text-2xl font-bold'>Campos Personalizados de Imóveis</h1>
         <Button onClick={handleCreate}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Campo
+          <PlusCircle className='mr-2 h-4 w-4' /> Adicionar Campo
         </Button>
       </div>
       <Card>
@@ -73,42 +73,42 @@ export default function ImovelCustomFields() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {fields.map((field) => (
+          <div className='space-y-2'>
+            {fields.map(field => (
               <div
                 key={field.id}
-                className="flex items-center p-2 rounded-md border"
+                className='flex items-center p-2 rounded-md border'
               >
-                <div className="flex-grow">
-                  <p className="font-medium flex items-center gap-2">
+                <div className='flex-grow'>
+                  <p className='font-medium flex items-center gap-2'>
                     {field.label}
                     {field.isSystem && (
-                      <Lock className="h-3 w-3 text-muted-foreground" />
+                      <Lock className='h-3 w-3 text-muted-foreground' />
                     )}
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline">{field.type}</Badge>
+                  <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                    <Badge variant='outline'>{field.type}</Badge>
                     {field.required && (
-                      <Badge variant="secondary">Obrigatório</Badge>
+                      <Badge variant='secondary'>Obrigatório</Badge>
                     )}
                   </div>
                 </div>
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  variant='ghost'
+                  size='icon'
                   onClick={() => handleEdit(field)}
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit className='h-4 w-4' />
                 </Button>
                 {!field.isSystem && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
+                        variant='ghost'
+                        size='icon'
+                        className='text-destructive hover:text-destructive'
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className='h-4 w-4' />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -152,5 +152,5 @@ export default function ImovelCustomFields() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

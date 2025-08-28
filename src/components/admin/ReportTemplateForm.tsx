@@ -1,33 +1,33 @@
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { patrimonioFields } from '@/lib/report-utils'
-import { ReportTemplate } from '@/types'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
-import * as z from 'zod'
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { patrimonioFields } from '@/lib/report-utils';
+import { ReportTemplate } from '@/types';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller, useForm } from 'react-hook-form';
+import * as z from 'zod';
 
 const reportTemplateSchema = z.object({
   name: z.string().min(1, 'O nome do modelo é obrigatório.'),
   fields: z
     .array(z.string())
     .min(1, 'Selecione pelo menos um campo para o relatório.'),
-})
+});
 
-type ReportTemplateFormValues = z.infer<typeof reportTemplateSchema>
+type ReportTemplateFormValues = z.infer<typeof reportTemplateSchema>;
 
 interface ReportTemplateFormProps {
-  template?: ReportTemplate | null
-  onSave: (data: ReportTemplate) => void
+  template?: ReportTemplate | null;
+  onSave: (data: ReportTemplate) => void;
 }
 
 export const ReportTemplateForm = ({
@@ -40,7 +40,7 @@ export const ReportTemplateForm = ({
       name: template?.name || '',
       fields: template?.fields || [],
     },
-  })
+  });
 
   const onSubmit = (data: ReportTemplateFormValues) => {
     const newTemplate: ReportTemplate = {
@@ -48,22 +48,22 @@ export const ReportTemplateForm = ({
       name: data.name,
       fields: data.fields as (keyof ReportTemplate['fields'])[],
       filters: template?.filters || {},
-    }
-    onSave(newTemplate)
-  }
+    };
+    onSave(newTemplate);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
         <FormField
           control={form.control}
-          name="name"
+          name='name'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nome do Modelo</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Ex: Relatório Mensal de Ativos"
+                  placeholder='Ex: Relatório Mensal de Ativos'
                   {...field}
                 />
               </FormControl>
@@ -72,24 +72,24 @@ export const ReportTemplateForm = ({
           )}
         />
         <Controller
-          name="fields"
+          name='fields'
           control={form.control}
           render={({ field: _field }) => (
             <FormItem>
               <FormLabel>Campos do Relatório</FormLabel>
-              <ScrollArea className="h-60 w-full rounded-md border">
-                <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {patrimonioFields.map((item) => (
+              <ScrollArea className='h-60 w-full rounded-md border'>
+                <div className='p-4 grid grid-cols-2 md:grid-cols-3 gap-4'>
+                  {patrimonioFields.map(item => (
                     <FormField
                       key={item.id}
                       control={form.control}
-                      name="fields"
+                      name='fields'
                       render={({ field: innerField }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
                           <FormControl>
                             <Checkbox
                               checked={innerField.value?.includes(item.id)}
-                              onCheckedChange={(checked) => {
+                              onCheckedChange={checked => {
                                 return checked
                                   ? innerField.onChange([
                                       ...innerField.value,
@@ -97,13 +97,13 @@ export const ReportTemplateForm = ({
                                     ])
                                   : innerField.onChange(
                                       innerField.value?.filter(
-                                        (value) => value !== item.id,
-                                      ),
-                                    )
+                                        value => value !== item.id
+                                      )
+                                    );
                               }}
                             />
                           </FormControl>
-                          <FormLabel className="font-normal">
+                          <FormLabel className='font-normal'>
                             {item.label}
                           </FormLabel>
                         </FormItem>
@@ -112,14 +112,14 @@ export const ReportTemplateForm = ({
                   ))}
                 </div>
               </ScrollArea>
-              <FormMessage className="pt-2" />
+              <FormMessage className='pt-2' />
             </FormItem>
           )}
         />
-        <div className="flex justify-end">
-          <Button type="submit">Salvar Modelo</Button>
+        <div className='flex justify-end'>
+          <Button type='submit'>Salvar Modelo</Button>
         </div>
       </form>
     </Form>
-  )
-}
+  );
+};

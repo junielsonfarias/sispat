@@ -77,7 +77,7 @@ export class FrontendMetricsCollector {
         value: metric.value,
         rating: metric.rating,
         timestamp: Date.now(),
-        id: metric.id
+        id: metric.id,
       };
 
       this.metrics.push(webVital);
@@ -98,24 +98,47 @@ export class FrontendMetricsCollector {
   private collectNavigationMetrics(): void {
     if (!window.performance?.getEntriesByType) return;
 
-    const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    
+    const navigation = window.performance.getEntriesByType(
+      'navigation'
+    )[0] as PerformanceNavigationTiming;
+
     if (navigation) {
       const metrics = [
-        { type: 'dns-lookup', value: navigation.domainLookupEnd - navigation.domainLookupStart },
-        { type: 'tcp-connect', value: navigation.connectEnd - navigation.connectStart },
-        { type: 'ssl-handshake', value: navigation.connectEnd - navigation.secureConnectionStart },
-        { type: 'ttfb', value: navigation.responseStart - navigation.requestStart },
-        { type: 'download', value: navigation.responseEnd - navigation.responseStart },
-        { type: 'dom-processing', value: navigation.domComplete - navigation.domLoading },
-        { type: 'load-complete', value: navigation.loadEventEnd - navigation.loadEventStart }
+        {
+          type: 'dns-lookup',
+          value: navigation.domainLookupEnd - navigation.domainLookupStart,
+        },
+        {
+          type: 'tcp-connect',
+          value: navigation.connectEnd - navigation.connectStart,
+        },
+        {
+          type: 'ssl-handshake',
+          value: navigation.connectEnd - navigation.secureConnectionStart,
+        },
+        {
+          type: 'ttfb',
+          value: navigation.responseStart - navigation.requestStart,
+        },
+        {
+          type: 'download',
+          value: navigation.responseEnd - navigation.responseStart,
+        },
+        {
+          type: 'dom-processing',
+          value: navigation.domComplete - navigation.domLoading,
+        },
+        {
+          type: 'load-complete',
+          value: navigation.loadEventEnd - navigation.loadEventStart,
+        },
       ];
 
       metrics.forEach(metric => {
         if (metric.value > 0) {
           const navMetric: NavigationMetric = {
             ...metric,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           };
           this.navigationMetrics.push(navMetric);
           this.sendNavigationMetricToServer(navMetric);
@@ -127,7 +150,7 @@ export class FrontendMetricsCollector {
   // Configurar rastreamento de erros
   private setupErrorTracking(): void {
     // Erros JavaScript
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', event => {
       const error: ErrorMetric = {
         message: event.message,
         stack: event.error?.stack,
@@ -136,7 +159,7 @@ export class FrontendMetricsCollector {
         colno: event.colno,
         timestamp: Date.now(),
         userAgent: navigator.userAgent,
-        url: window.location.href
+        url: window.location.href,
       };
 
       this.errors.push(error);
@@ -144,13 +167,13 @@ export class FrontendMetricsCollector {
     });
 
     // Promessas rejeitadas não tratadas
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener('unhandledrejection', event => {
       const error: ErrorMetric = {
         message: `Unhandled Promise Rejection: ${event.reason}`,
         stack: event.reason?.stack,
         timestamp: Date.now(),
         userAgent: navigator.userAgent,
-        url: window.location.href
+        url: window.location.href,
       };
 
       this.errors.push(error);
@@ -158,20 +181,24 @@ export class FrontendMetricsCollector {
     });
 
     // Erros de recursos
-    window.addEventListener('error', (event) => {
-      if (event.target !== window) {
-        const target = event.target as HTMLElement;
-        const error: ErrorMetric = {
-          message: `Resource load error: ${target.tagName} - ${target.getAttribute('src') || target.getAttribute('href')}`,
-          timestamp: Date.now(),
-          userAgent: navigator.userAgent,
-          url: window.location.href
-        };
+    window.addEventListener(
+      'error',
+      event => {
+        if (event.target !== window) {
+          const target = event.target as HTMLElement;
+          const error: ErrorMetric = {
+            message: `Resource load error: ${target.tagName} - ${target.getAttribute('src') || target.getAttribute('href')}`,
+            timestamp: Date.now(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+          };
 
-        this.errors.push(error);
-        this.sendErrorToServer(error);
-      }
-    }, true);
+          this.errors.push(error);
+          this.sendErrorToServer(error);
+        }
+      },
+      true
+    );
   }
 
   // Configurar rastreamento de performance do React
@@ -179,17 +206,19 @@ export class FrontendMetricsCollector {
     // Hook para monitorar renders de componentes
     if (typeof window !== 'undefined' && (window as any).React) {
       const originalCreateElement = (window as any).React.createElement;
-      
-      (window as any).React.createElement = function(...args: any[]) {
+
+      (window as any).React.createElement = function (...args: any[]) {
         const startTime = performance.now();
         const result = originalCreateElement.apply(this, args);
         const endTime = performance.now();
-        
+
         // Log apenas se demorou mais que 16ms (60fps)
         if (endTime - startTime > 16) {
-          console.warn(`Slow component render: ${args[0]?.name || args[0]} took ${endTime - startTime}ms`);
+          console.warn(
+            `Slow component render: ${args[0]?.name || args[0]} took ${endTime - startTime}ms`
+          );
         }
-        
+
         return result;
       };
     }
@@ -200,20 +229,23 @@ export class FrontendMetricsCollector {
     if (!window.performance?.getEntriesByType) return;
 
     const resources = window.performance.getEntriesByType('resource');
-    
+
     resources.forEach(resource => {
       const entry: PerformanceEntry = {
         name: resource.name,
         entryType: resource.entryType,
         startTime: resource.startTime,
-        duration: resource.duration
+        duration: resource.duration,
       };
 
       this.performanceEntries.push(entry);
 
       // Log recursos lentos
-      if (resource.duration > 1000) { // > 1 segundo
-        console.warn(`Slow resource load: ${resource.name} took ${resource.duration}ms`);
+      if (resource.duration > 1000) {
+        // > 1 segundo
+        console.warn(
+          `Slow resource load: ${resource.name} took ${resource.duration}ms`
+        );
         this.sendSlowResourceAlert(resource);
       }
     });
@@ -230,7 +262,7 @@ export class FrontendMetricsCollector {
       name: `custom-${name}`,
       entryType: 'measure',
       startTime,
-      duration
+      duration,
     };
 
     this.performanceEntries.push(entry);
@@ -254,7 +286,7 @@ export class FrontendMetricsCollector {
       name: `async-${name}`,
       entryType: 'measure',
       startTime,
-      duration
+      duration,
     };
 
     this.performanceEntries.push(entry);
@@ -277,7 +309,7 @@ export class FrontendMetricsCollector {
       name: `event-${name}`,
       entryType: 'mark',
       startTime: performance.now(),
-      duration: 0
+      duration: 0,
     };
 
     this.performanceEntries.push(entry);
@@ -299,18 +331,22 @@ export class FrontendMetricsCollector {
       webVitals: this.metrics,
       navigation: this.navigationMetrics,
       errors: this.errors,
-      performance: this.performanceEntries
+      performance: this.performanceEntries,
     };
   }
 
   // Limpar métricas antigas
   public cleanup(): void {
-    const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 horas
-    
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 horas
+
     this.metrics = this.metrics.filter(m => m.timestamp > cutoff);
-    this.navigationMetrics = this.navigationMetrics.filter(m => m.timestamp > cutoff);
+    this.navigationMetrics = this.navigationMetrics.filter(
+      m => m.timestamp > cutoff
+    );
     this.errors = this.errors.filter(e => e.timestamp > cutoff);
-    this.performanceEntries = this.performanceEntries.filter(e => e.startTime > cutoff);
+    this.performanceEntries = this.performanceEntries.filter(
+      e => e.startTime > cutoff
+    );
   }
 
   // Enviar métrica Web Vital para servidor
@@ -371,7 +407,7 @@ export function useFrontendMetrics() {
     measureFunction: frontendMetrics.measureFunction.bind(frontendMetrics),
     measureAsync: frontendMetrics.measureAsync.bind(frontendMetrics),
     markEvent: frontendMetrics.markEvent.bind(frontendMetrics),
-    getMetrics: frontendMetrics.getMetrics.bind(frontendMetrics)
+    getMetrics: frontendMetrics.getMetrics.bind(frontendMetrics),
   };
 }
 
@@ -389,7 +425,7 @@ export function getMetricsSummary(): {
   performanceScore: number;
 } {
   const metrics = frontendMetrics.getMetrics();
-  
+
   // Calcular médias dos Web Vitals
   const webVitalAverages: Record<string, number> = {};
   metrics.webVitals.forEach(metric => {
@@ -405,17 +441,20 @@ export function getMetricsSummary(): {
   });
 
   // Contar recursos lentos
-  const slowResources = metrics.performance.filter(p => p.duration > 1000).length;
+  const slowResources = metrics.performance.filter(
+    p => p.duration > 1000
+  ).length;
 
   // Calcular score de performance (simplificado)
   const goodVitals = metrics.webVitals.filter(m => m.rating === 'good').length;
   const totalVitals = metrics.webVitals.length;
-  const performanceScore = totalVitals > 0 ? (goodVitals / totalVitals) * 100 : 0;
+  const performanceScore =
+    totalVitals > 0 ? (goodVitals / totalVitals) * 100 : 0;
 
   return {
     totalErrors: metrics.errors.length,
     averageWebVital: webVitalAverages,
     slowResources,
-    performanceScore
+    performanceScore,
   };
 }

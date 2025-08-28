@@ -6,10 +6,10 @@ import {
   useCallback,
   useMemo,
   useEffect,
-} from 'react'
-import { Version, RollbackHistoryEntry } from '@/types'
-import { toast } from 'sonner'
-import { generateId } from '@/lib/utils'
+} from 'react';
+import { Version, RollbackHistoryEntry } from '@/types';
+import { toast } from 'sonner';
+import { generateId } from '@/lib/utils';
 
 const MOCK_AVAILABLE_VERSIONS: Version[] = [
   {
@@ -98,48 +98,48 @@ const MOCK_AVAILABLE_VERSIONS: Version[] = [
       'UX: Improved loading states across the application.',
     ],
   },
-]
+];
 
 interface VersionContextType {
-  currentVersion: string
-  availableVersions: Version[]
-  latestVersion: Version | null
-  isLatestVersion: boolean
-  isUpdating: boolean
-  rollbackHistory: RollbackHistoryEntry[]
-  updateToLatest: () => void
-  rollbackToVersion: (version: string) => void
+  currentVersion: string;
+  availableVersions: Version[];
+  latestVersion: Version | null;
+  isLatestVersion: boolean;
+  isUpdating: boolean;
+  rollbackHistory: RollbackHistoryEntry[];
+  updateToLatest: () => void;
+  rollbackToVersion: (version: string) => void;
 }
 
-const VersionContext = createContext<VersionContextType | null>(null)
+const VersionContext = createContext<VersionContextType | null>(null);
 
 export const VersionProvider = ({ children }: { children: ReactNode }) => {
-  const [currentVersion, setCurrentVersion] = useState('0.0.193')
-  const [isUpdating, setIsUpdating] = useState(false)
+  const [currentVersion, setCurrentVersion] = useState('0.0.193');
+  const [isUpdating, setIsUpdating] = useState(false);
   const [rollbackHistory, setRollbackHistory] = useState<
     RollbackHistoryEntry[]
-  >([])
+  >([]);
 
   useEffect(() => {
-    const storedHistory = localStorage.getItem('sispat_rollback_history')
+    const storedHistory = localStorage.getItem('sispat_rollback_history');
     if (storedHistory) {
-      setRollbackHistory(JSON.parse(storedHistory))
+      setRollbackHistory(JSON.parse(storedHistory));
     }
-  }, [])
+  }, []);
 
-  const availableVersions = useMemo(() => MOCK_AVAILABLE_VERSIONS, [])
+  const availableVersions = useMemo(() => MOCK_AVAILABLE_VERSIONS, []);
   const latestVersion = useMemo(
     () => availableVersions[0] || null,
-    [availableVersions],
-  )
+    [availableVersions]
+  );
   const isLatestVersion = useMemo(
     () => currentVersion === latestVersion?.version,
-    [currentVersion, latestVersion],
-  )
+    [currentVersion, latestVersion]
+  );
 
   const addRollbackHistory = (
     toVersion: string,
-    status: 'success' | 'failure',
+    status: 'success' | 'failure'
   ) => {
     const newEntry: RollbackHistoryEntry = {
       id: generateId(),
@@ -147,76 +147,76 @@ export const VersionProvider = ({ children }: { children: ReactNode }) => {
       fromVersion: currentVersion,
       toVersion,
       status,
-    }
-    setRollbackHistory((prev) => {
-      const updatedHistory = [newEntry, ...prev]
+    };
+    setRollbackHistory(prev => {
+      const updatedHistory = [newEntry, ...prev];
       localStorage.setItem(
         'sispat_rollback_history',
-        JSON.stringify(updatedHistory),
-      )
-      return updatedHistory
-    })
-  }
+        JSON.stringify(updatedHistory)
+      );
+      return updatedHistory;
+    });
+  };
 
   const updateToLatest = useCallback(() => {
-    if (isLatestVersion || isUpdating || !latestVersion) return
+    if (isLatestVersion || isUpdating || !latestVersion) return;
 
-    setIsUpdating(true)
+    setIsUpdating(true);
     const toastId = toast.loading('Atualizando para a versão mais recente...', {
       description: `Instalando versão ${latestVersion.version}. A página será recarregada.`,
-    })
+    });
 
     setTimeout(() => {
-      setCurrentVersion(latestVersion.version)
-      setIsUpdating(false)
+      setCurrentVersion(latestVersion.version);
+      setIsUpdating(false);
       toast.success('Atualização concluída!', {
         id: toastId,
         description: `Sistema atualizado para a versão ${latestVersion.version}.`,
-      })
+      });
       setTimeout(() => {
-        window.location.reload()
-      }, 1500)
-    }, 3000)
-  }, [isLatestVersion, isUpdating, latestVersion])
+        window.location.reload();
+      }, 1500);
+    }, 3000);
+  }, [isLatestVersion, isUpdating, latestVersion]);
 
   const rollbackToVersion = useCallback(
     (version: string) => {
-      if (isUpdating) return
+      if (isUpdating) return;
 
-      setIsUpdating(true)
+      setIsUpdating(true);
       toast.loading(`Revertendo para a versão ${version}...`, {
         description: 'Esta ação recarregará a página.',
-      })
+      });
 
       setTimeout(() => {
-        const success = Math.random() > 0.1 // Simulate 90% success rate
+        const success = Math.random() > 0.1; // Simulate 90% success rate
         if (success) {
-          addRollbackHistory(version, 'success')
-          setCurrentVersion(version)
+          addRollbackHistory(version, 'success');
+          setCurrentVersion(version);
           sessionStorage.setItem(
             'rollback_notification',
             JSON.stringify({
               type: 'success',
               message: `Sistema revertido com sucesso para a versão ${version}.`,
-            }),
-          )
+            })
+          );
         } else {
-          addRollbackHistory(version, 'failure')
+          addRollbackHistory(version, 'failure');
           sessionStorage.setItem(
             'rollback_notification',
             JSON.stringify({
               type: 'error',
               message: `Falha ao reverter para a versão ${version}.`,
-            }),
-          )
+            })
+          );
         }
 
-        setIsUpdating(false)
-        window.location.href = '/login'
-      }, 3000)
+        setIsUpdating(false);
+        window.location.href = '/login';
+      }, 3000);
     },
-    [isUpdating, currentVersion],
-  )
+    [isUpdating, currentVersion]
+  );
 
   return (
     <VersionContext.Provider
@@ -233,13 +233,13 @@ export const VersionProvider = ({ children }: { children: ReactNode }) => {
     >
       {children}
     </VersionContext.Provider>
-  )
-}
+  );
+};
 
 export const useVersion = () => {
-  const context = useContext(VersionContext)
+  const context = useContext(VersionContext);
   if (!context) {
-    throw new Error('useVersion must be used within a VersionProvider')
+    throw new Error('useVersion must be used within a VersionProvider');
   }
-  return context
-}
+  return context;
+};

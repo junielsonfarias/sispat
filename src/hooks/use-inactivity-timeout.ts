@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback } from 'react';
 
-const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
+const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
 
 /**
  * Custom hook to handle user inactivity timeout.
@@ -9,35 +9,35 @@ const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
  */
 export const useInactivityTimeout = (
   onTimeout: () => void,
-  timeout: number = 1800000,
+  timeout: number = 1800000
 ) => {
-  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetTimer = useCallback(() => {
     if (timeoutIdRef.current) {
-      clearTimeout(timeoutIdRef.current)
+      clearTimeout(timeoutIdRef.current);
     }
-    timeoutIdRef.current = setTimeout(onTimeout, timeout)
-  }, [onTimeout, timeout])
+    timeoutIdRef.current = setTimeout(onTimeout, timeout);
+  }, [onTimeout, timeout]);
 
   const handleActivity = useCallback(() => {
-    resetTimer()
-  }, [resetTimer])
+    resetTimer();
+  }, [resetTimer]);
 
   useEffect(() => {
-    events.forEach((event) => {
-      window.addEventListener(event, handleActivity)
-    })
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity);
+    });
 
-    resetTimer()
+    resetTimer();
 
     return () => {
       if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current)
+        clearTimeout(timeoutIdRef.current);
       }
-      events.forEach((event) => {
-        window.removeEventListener(event, handleActivity)
-      })
-    }
-  }, [resetTimer, handleActivity])
-}
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [resetTimer, handleActivity]);
+};

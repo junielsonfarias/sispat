@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -14,8 +14,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -23,82 +23,82 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { calculateDepreciation } from '@/lib/depreciation-utils'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { useSectors } from '@/contexts/SectorContext'
-import { DatePickerWithRange } from '@/components/ui/date-picker'
-import { DateRange } from 'react-day-picker'
+} from '@/components/ui/breadcrumb';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { calculateDepreciation } from '@/lib/depreciation-utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { useSectors } from '@/contexts/SectorContext';
+import { DatePickerWithRange } from '@/components/ui/date-picker';
+import { DateRange } from 'react-day-picker';
 import {
   SearchableSelect,
   SearchableSelectOption,
-} from '@/components/ui/searchable-select'
-import { FileText, FileSpreadsheet, Settings } from 'lucide-react'
-import { ExportConfigDialog } from '@/components/bens/ExportConfigDialog'
-import { Patrimonio } from '@/types'
-import { exportInBatches, getColumnsWithLabels } from '@/lib/export-utils'
-import { toast } from '@/hooks/use-toast'
+} from '@/components/ui/searchable-select';
+import { FileText, FileSpreadsheet, Settings } from 'lucide-react';
+import { ExportConfigDialog } from '@/components/bens/ExportConfigDialog';
+import { Patrimonio } from '@/types';
+import { exportInBatches, getColumnsWithLabels } from '@/lib/export-utils';
+import { toast } from '@/hooks/use-toast';
 
 const RelatoriosDepreciacao = () => {
-  const { patrimonios } = usePatrimonio()
-  const { sectors } = useSectors()
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const [selectedSector, setSelectedSector] = useState<string | null>(null)
-  const [isExportDialogOpen, setExportDialogOpen] = useState(false)
+  const { patrimonios } = usePatrimonio();
+  const { sectors } = useSectors();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [selectedSector, setSelectedSector] = useState<string | null>(null);
+  const [isExportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<
     'csv' | 'pdf' | 'xlsx' | null
-  >(null)
+  >(null);
 
-  const sectorOptions: SearchableSelectOption[] = sectors.map((s) => ({
+  const sectorOptions: SearchableSelectOption[] = sectors.map(s => ({
     value: s.name,
     label: s.name,
-  }))
+  }));
 
   const filteredData = useMemo(() => {
     return patrimonios
-      .filter((p) => {
+      .filter(p => {
         const dateMatch =
           !dateRange?.from ||
           (new Date(p.data_aquisicao) >= dateRange.from &&
-            (!dateRange.to || new Date(p.data_aquisicao) <= dateRange.to))
+            (!dateRange.to || new Date(p.data_aquisicao) <= dateRange.to));
         const sectorMatch =
-          !selectedSector || p.setor_responsavel === selectedSector
-        return dateMatch && sectorMatch
+          !selectedSector || p.setor_responsavel === selectedSector;
+        return dateMatch && sectorMatch;
       })
-      .map((p) => ({ ...p, depreciationInfo: calculateDepreciation(p) }))
-  }, [patrimonios, dateRange, selectedSector])
+      .map(p => ({ ...p, depreciationInfo: calculateDepreciation(p) }));
+  }, [patrimonios, dateRange, selectedSector]);
 
   const summary = useMemo(() => {
     return filteredData.reduce(
       (acc, item) => {
-        acc.totalAcquisition += (parseFloat(item.valor_aquisicao) || 0)
+        acc.totalAcquisition += parseFloat(item.valor_aquisicao) || 0;
         acc.totalAccumulatedDepreciation +=
-          item.depreciationInfo.accumulatedDepreciation
-        acc.totalBookValue += item.depreciationInfo.bookValue
-        return acc
+          item.depreciationInfo.accumulatedDepreciation;
+        acc.totalBookValue += item.depreciationInfo.bookValue;
+        return acc;
       },
       {
         totalAcquisition: 0,
         totalAccumulatedDepreciation: 0,
         totalBookValue: 0,
-      },
-    )
-  }, [filteredData])
+      }
+    );
+  }, [filteredData]);
 
   const openExportDialog = (format: 'csv' | 'pdf' | 'xlsx') => {
-    setExportFormat(format)
-    setExportDialogOpen(true)
-  }
+    setExportFormat(format);
+    setExportDialogOpen(true);
+  };
 
   const handleConfirmExport = (
     selectedColumns: (keyof Patrimonio)[],
-    batchConfig: { enabled: boolean; size: number },
+    batchConfig: { enabled: boolean; size: number }
   ) => {
-    const columnsWithLabels = getColumnsWithLabels(selectedColumns)
+    const columnsWithLabels = getColumnsWithLabels(selectedColumns);
     const filename = `relatorio-depreciacao-${
       new Date().toISOString().split('T')[0]
-    }`
+    }`;
 
     if (batchConfig.enabled && exportFormat) {
       exportInBatches(
@@ -106,31 +106,31 @@ const RelatoriosDepreciacao = () => {
         columnsWithLabels,
         exportFormat,
         batchConfig.size,
-        filename,
-      )
+        filename
+      );
     } else {
-      toast({ description: 'Exportação iniciada.' })
+      toast({ description: 'Exportação iniciada.' });
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Breadcrumb>
         <BreadcrumbList>
-          <Link to="/">Dashboard</Link>
+          <Link to='/'>Dashboard</Link>
         </BreadcrumbList>
       </Breadcrumb>
-      <h1 className="text-2xl font-bold">Relatórios de Depreciação</h1>
+      <h1 className='text-2xl font-bold'>Relatórios de Depreciação</h1>
       <Card>
         <CardHeader>
           <CardTitle>Filtros do Relatório</CardTitle>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 pt-4'>
             <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
             <SearchableSelect
               options={sectorOptions}
               value={selectedSector}
               onChange={setSelectedSector}
-              placeholder="Filtrar por setor..."
+              placeholder='Filtrar por setor...'
               isClearable
             />
           </div>
@@ -139,52 +139,52 @@ const RelatoriosDepreciacao = () => {
       <Card>
         <CardHeader>
           <CardTitle>Resumo da Depreciação</CardTitle>
-          <div className="flex justify-end gap-2">
+          <div className='flex justify-end gap-2'>
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => openExportDialog('pdf')}
             >
-              <FileText className="mr-2 h-4 w-4" /> Exportar PDF
+              <FileText className='mr-2 h-4 w-4' /> Exportar PDF
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => openExportDialog('xlsx')}
             >
-              <FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar Excel
+              <FileSpreadsheet className='mr-2 h-4 w-4' /> Exportar Excel
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => setExportDialogOpen(true)}
             >
-              <Settings className="mr-2 h-4 w-4" /> Personalizar Colunas
+              <Settings className='mr-2 h-4 w-4' /> Personalizar Colunas
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">
+        <CardContent className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+          <div className='p-4 bg-muted rounded-lg'>
+            <p className='text-sm text-muted-foreground'>
               Valor de Aquisição Total
             </p>
-            <p className="text-2xl font-bold">
+            <p className='text-2xl font-bold'>
               {formatCurrency(summary.totalAcquisition)}
             </p>
           </div>
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">
+          <div className='p-4 bg-muted rounded-lg'>
+            <p className='text-sm text-muted-foreground'>
               Depreciação Acumulada Total
             </p>
-            <p className="text-2xl font-bold">
+            <p className='text-2xl font-bold'>
               {formatCurrency(summary.totalAccumulatedDepreciation)}
             </p>
           </div>
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">
+          <div className='p-4 bg-muted rounded-lg'>
+            <p className='text-sm text-muted-foreground'>
               Valor Contábil Total
             </p>
-            <p className="text-2xl font-bold">
+            <p className='text-2xl font-bold'>
               {formatCurrency(summary.totalBookValue)}
             </p>
           </div>
@@ -207,14 +207,14 @@ const RelatoriosDepreciacao = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((item) => (
+              {filteredData.map(item => (
                 <TableRow key={item.id}>
                   <TableCell>{item.numero_patrimonio}</TableCell>
                   <TableCell>{item.descricao}</TableCell>
                   <TableCell>{formatCurrency(item.valor_aquisicao)}</TableCell>
                   <TableCell>
                     {formatCurrency(
-                      item.depreciationInfo.accumulatedDepreciation,
+                      item.depreciationInfo.accumulatedDepreciation
                     )}
                   </TableCell>
                   <TableCell>
@@ -222,7 +222,7 @@ const RelatoriosDepreciacao = () => {
                   </TableCell>
                   <TableCell>
                     {(item.depreciationInfo.remainingLifeMonths / 12).toFixed(
-                      1,
+                      1
                     )}{' '}
                     anos
                   </TableCell>
@@ -236,15 +236,11 @@ const RelatoriosDepreciacao = () => {
         open={isExportDialogOpen}
         onOpenChange={setExportDialogOpen}
         onExport={handleConfirmExport}
-        defaultColumns={[
-          'numero_patrimonio',
-          'descricao',
-          'valor_aquisicao',
-        ]}
+        defaultColumns={['numero_patrimonio', 'descricao', 'valor_aquisicao']}
         exportFormat={exportFormat || ''}
       />
     </div>
-  )
-}
+  );
+};
 
-export default RelatoriosDepreciacao
+export default RelatoriosDepreciacao;

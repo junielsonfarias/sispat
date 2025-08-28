@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -13,26 +13,26 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { useTransfers } from '@/contexts/TransferContext'
-import { TransferenciaStatus, TransferenciaType } from '@/types'
-import { formatDate } from '@/lib/utils'
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { useTransfers } from '@/contexts/TransferContext';
+import { TransferenciaStatus, TransferenciaType } from '@/types';
+import { formatDate } from '@/lib/utils';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { DatePickerWithRange } from '@/components/ui/date-picker'
-import { DateRange } from 'react-day-picker'
-import { Button } from '@/components/ui/button'
-import { FileSpreadsheet, FileDigit, Settings } from 'lucide-react'
-import { ExportConfigDialog } from '@/components/bens/ExportConfigDialog'
-import { Patrimonio } from '@/types'
-import { exportInBatches, getColumnsWithLabels } from '@/lib/export-utils'
-import { toast } from '@/hooks/use-toast'
+} from '@/components/ui/select';
+import { DatePickerWithRange } from '@/components/ui/date-picker';
+import { DateRange } from 'react-day-picker';
+import { Button } from '@/components/ui/button';
+import { FileSpreadsheet, FileDigit, Settings } from 'lucide-react';
+import { ExportConfigDialog } from '@/components/bens/ExportConfigDialog';
+import { Patrimonio } from '@/types';
+import { exportInBatches, getColumnsWithLabels } from '@/lib/export-utils';
+import { toast } from '@/hooks/use-toast';
 
 const statusConfig: Record<
   TransferenciaStatus,
@@ -41,41 +41,43 @@ const statusConfig: Record<
   pendente: { label: 'Pendente', variant: 'secondary' },
   aprovada: { label: 'Aprovada', variant: 'default' },
   rejeitada: { label: 'Rejeitada', variant: 'destructive' },
-}
+};
 
 export default function TransferenciaReports() {
-  const { transferencias } = useTransfers()
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const [typeFilter, setTypeFilter] = useState<'all' | TransferenciaType>('all')
-  const [isExportDialogOpen, setExportDialogOpen] = useState(false)
+  const { transferencias } = useTransfers();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [typeFilter, setTypeFilter] = useState<'all' | TransferenciaType>(
+    'all'
+  );
+  const [isExportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<
     'csv' | 'pdf' | 'xlsx' | null
-  >(null)
+  >(null);
 
   const filteredData = useMemo(() => {
-    return transferencias.filter((t) => {
+    return transferencias.filter(t => {
       const dateMatch =
         !dateRange?.from ||
         (new Date(t.dataSolicitacao) >= dateRange.from &&
-          (!dateRange.to || new Date(t.dataSolicitacao) <= dateRange.to))
-      const typeMatch = typeFilter === 'all' || t.type === typeFilter
-      return dateMatch && typeMatch
-    })
-  }, [transferencias, dateRange, typeFilter])
+          (!dateRange.to || new Date(t.dataSolicitacao) <= dateRange.to));
+      const typeMatch = typeFilter === 'all' || t.type === typeFilter;
+      return dateMatch && typeMatch;
+    });
+  }, [transferencias, dateRange, typeFilter]);
 
   const openExportDialog = (format: 'csv' | 'pdf' | 'xlsx') => {
-    setExportFormat(format)
-    setExportDialogOpen(true)
-  }
+    setExportFormat(format);
+    setExportDialogOpen(true);
+  };
 
   const handleConfirmExport = (
     selectedColumns: (keyof Patrimonio)[],
-    batchConfig: { enabled: boolean; size: number },
+    batchConfig: { enabled: boolean; size: number }
   ) => {
-    const columnsWithLabels = getColumnsWithLabels(selectedColumns)
+    const columnsWithLabels = getColumnsWithLabels(selectedColumns);
     const filename = `relatorio-transferencias-${
       new Date().toISOString().split('T')[0]
-    }`
+    }`;
 
     if (batchConfig.enabled && exportFormat) {
       exportInBatches(
@@ -83,60 +85,60 @@ export default function TransferenciaReports() {
         columnsWithLabels,
         exportFormat,
         batchConfig.size,
-        filename,
-      )
+        filename
+      );
     } else {
-      toast({ description: 'Exportação iniciada.' })
+      toast({ description: 'Exportação iniciada.' });
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">
+    <div className='flex flex-col gap-6'>
+      <h1 className='text-2xl font-bold'>
         Relatório de Transferências e Doações
       </h1>
       <Card>
         <CardHeader>
           <CardTitle>Filtros</CardTitle>
-          <div className="flex gap-4 pt-4">
+          <div className='flex gap-4 pt-4'>
             <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
             <Select
               value={typeFilter}
-              onValueChange={(v) => setTypeFilter(v as any)}
+              onValueChange={v => setTypeFilter(v as any)}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className='w-[180px]'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Tipos</SelectItem>
-                <SelectItem value="transferencia">Transferência</SelectItem>
-                <SelectItem value="doacao">Doação</SelectItem>
+                <SelectItem value='all'>Todos os Tipos</SelectItem>
+                <SelectItem value='transferencia'>Transferência</SelectItem>
+                <SelectItem value='doacao'>Doação</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-end gap-2 mb-4">
+          <div className='flex justify-end gap-2 mb-4'>
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => openExportDialog('xlsx')}
             >
-              <FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar XLSX
+              <FileSpreadsheet className='mr-2 h-4 w-4' /> Exportar XLSX
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => openExportDialog('pdf')}
             >
-              <FileDigit className="mr-2 h-4 w-4" /> Exportar PDF
+              <FileDigit className='mr-2 h-4 w-4' /> Exportar PDF
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => setExportDialogOpen(true)}
             >
-              <Settings className="mr-2 h-4 w-4" /> Personalizar Colunas
+              <Settings className='mr-2 h-4 w-4' /> Personalizar Colunas
             </Button>
           </div>
           <Table>
@@ -151,12 +153,12 @@ export default function TransferenciaReports() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((t) => (
+              {filteredData.map(t => (
                 <TableRow key={t.id}>
                   <TableCell>
                     {t.patrimonioNumero} - {t.patrimonioDescricao}
                   </TableCell>
-                  <TableCell className="capitalize">{t.type}</TableCell>
+                  <TableCell className='capitalize'>{t.type}</TableCell>
                   <TableCell>{t.setorOrigem}</TableCell>
                   <TableCell>
                     {t.setorDestino || t.destinatarioExterno}
@@ -186,5 +188,5 @@ export default function TransferenciaReports() {
         exportFormat={exportFormat || ''}
       />
     </div>
-  )
+  );
 }

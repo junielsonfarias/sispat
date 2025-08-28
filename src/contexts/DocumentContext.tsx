@@ -6,61 +6,62 @@ import {
   useCallback,
   useEffect,
   useMemo,
-} from 'react'
-import { GeneralDocument } from '@/types'
-import { generateId } from '@/lib/utils'
-import { toast } from '@/hooks/use-toast'
-import { useAuth } from './AuthContext'
-import { useNotifications } from './NotificationContext'
+} from 'react';
+import { GeneralDocument } from '@/types';
+import { generateId } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from './AuthContext';
+import { useNotifications } from './NotificationContext';
 
 interface DocumentContextType {
-  documents: GeneralDocument[]
-  addDocument: (file: File, user: { id: string; name: string }) => Promise<void>
-  deleteDocument: (documentId: string) => void
+  documents: GeneralDocument[];
+  addDocument: (
+    file: File,
+    user: { id: string; name: string }
+  ) => Promise<void>;
+  deleteDocument: (documentId: string) => void;
 }
 
-const DocumentContext = createContext<DocumentContextType | null>(null)
+const DocumentContext = createContext<DocumentContextType | null>(null);
 
 export const DocumentProvider = ({ children }: { children: ReactNode }) => {
-  const [allDocuments, setAllDocuments] = useState<GeneralDocument[]>([])
-  const { user, users } = useAuth()
-  const { addNotification } = useNotifications()
+  const [allDocuments, setAllDocuments] = useState<GeneralDocument[]>([]);
+  const { user, users } = useAuth();
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
-    const stored = localStorage.getItem('sispat_general_documents')
+    const stored = localStorage.getItem('sispat_general_documents');
     if (stored) {
       setAllDocuments(
         JSON.parse(stored).map((d: any) => ({
           ...d,
           uploadedAt: new Date(d.uploadedAt),
-        })),
-      )
+        }))
+      );
     }
-  }, [])
+  }, []);
 
   const documents = useMemo(() => {
-    if (user?.role === 'superuser') return allDocuments
+    if (user?.role === 'superuser') return allDocuments;
     if (user?.municipalityId) {
-      return allDocuments.filter(
-        (d) => d.municipalityId === user.municipalityId,
-      )
+      return allDocuments.filter(d => d.municipalityId === user.municipalityId);
     }
-    return []
-  }, [allDocuments, user])
+    return [];
+  }, [allDocuments, user]);
 
   const persist = (newDocuments: GeneralDocument[]) => {
     localStorage.setItem(
       'sispat_general_documents',
-      JSON.stringify(newDocuments),
-    )
-    setAllDocuments(newDocuments)
-  }
+      JSON.stringify(newDocuments)
+    );
+    setAllDocuments(newDocuments);
+  };
 
   const addDocument = useCallback(
     async (file: File, uploadUser: { id: string; name: string }) => {
-      if (!user?.municipalityId) return
+      if (!user?.municipalityId) return;
 
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const newDocument: GeneralDocument = {
         id: generateId(),
@@ -71,36 +72,35 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
         uploadedAt: new Date(),
         uploadedBy: uploadUser,
         municipalityId: user.municipalityId,
-      }
-      persist([...allDocuments, newDocument])
+      };
+      persist([...allDocuments, newDocument]);
 
       const usersToNotify = users.filter(
-        (u) =>
-          u.municipalityId === user.municipalityId && u.id !== uploadUser.id,
-      )
+        u => u.municipalityId === user.municipalityId && u.id !== uploadUser.id
+      );
 
-      usersToNotify.forEach((u) => {
+      usersToNotify.forEach(u => {
         addNotification({
           userId: u.id,
           title: 'Novo Documento Disponível',
           description: `${uploadUser.name} adicionou o documento "${file.name}".`,
           type: 'document',
           link: '/ferramentas/documentos',
-        })
-      })
+        });
+      });
 
-      toast({ description: 'Documento enviado com sucesso.' })
+      toast({ description: 'Documento enviado com sucesso.' });
     },
-    [allDocuments, user, users, addNotification],
-  )
+    [allDocuments, user, users, addNotification]
+  );
 
   const deleteDocument = useCallback(
     (documentId: string) => {
-      persist(allDocuments.filter((d) => d.id !== documentId))
-      toast({ description: 'Documento excluído com sucesso.' })
+      persist(allDocuments.filter(d => d.id !== documentId));
+      toast({ description: 'Documento excluído com sucesso.' });
     },
-    [allDocuments],
-  )
+    [allDocuments]
+  );
 
   return (
     <DocumentContext.Provider
@@ -108,13 +108,13 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
     >
       {children}
     </DocumentContext.Provider>
-  )
-}
+  );
+};
 
 export const useDocuments = () => {
-  const context = useContext(DocumentContext)
+  const context = useContext(DocumentContext);
   if (!context) {
-    throw new Error('useDocuments must be used within a DocumentProvider')
+    throw new Error('useDocuments must be used within a DocumentProvider');
   }
-  return context
-}
+  return context;
+};

@@ -1,4 +1,10 @@
-import { collectDefaultMetrics, Counter, Gauge, Histogram, register } from 'prom-client';
+import {
+  collectDefaultMetrics,
+  Counter,
+  Gauge,
+  Histogram,
+  register,
+} from 'prom-client';
 
 // Configurar coleta de métricas padrão
 collectDefaultMetrics({
@@ -109,7 +115,7 @@ export class PerformanceMonitor {
   // Adicionar métrica
   addMetric(metric: PerformanceMetric): void {
     this.metrics.push(metric);
-    
+
     // Manter apenas as métricas mais recentes
     if (this.metrics.length > this.maxMetrics) {
       this.metrics = this.metrics.slice(-this.maxMetrics);
@@ -124,7 +130,7 @@ export class PerformanceMonitor {
 
   // Obter métricas dos últimos N minutos
   getRecentMetrics(minutes: number): PerformanceMetric[] {
-    const cutoff = Date.now() - (minutes * 60 * 1000);
+    const cutoff = Date.now() - minutes * 60 * 1000;
     return this.metrics.filter(m => m.timestamp > cutoff);
   }
 
@@ -157,11 +163,13 @@ export class PerformanceMonitor {
   // Obter métricas da API
   async getAPIMetrics(): Promise<APIMetrics> {
     const recentMetrics = this.getRecentMetrics(1); // Últimos 1 minuto
-    const responseTimeMetrics = recentMetrics.filter(m => m.name === 'http_response_time');
+    const responseTimeMetrics = recentMetrics.filter(
+      m => m.name === 'http_response_time'
+    );
     const errorMetrics = recentMetrics.filter(m => m.name === 'http_error');
 
     const stats = this.calculateStats(responseTimeMetrics);
-    
+
     return {
       requestsPerSecond: responseTimeMetrics.length / 60,
       averageResponseTime: stats.avg,
@@ -189,7 +197,7 @@ export class PerformanceMonitor {
 
   // Limpar métricas antigas
   cleanup(): void {
-    const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 horas
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 horas
     this.metrics = this.metrics.filter(m => m.timestamp > cutoff);
   }
 }
@@ -208,7 +216,11 @@ export function resetMetrics(): void {
 }
 
 // Função para registrar métricas customizadas
-export function recordCustomMetric(name: string, value: number, labels?: Record<string, string>): void {
+export function recordCustomMetric(
+  name: string,
+  value: number,
+  labels?: Record<string, string>
+): void {
   performanceMonitor.addMetric({
     name,
     value,
@@ -220,7 +232,7 @@ export function recordCustomMetric(name: string, value: number, labels?: Record<
 // Função para atualizar métricas de memória
 export function updateMemoryMetrics(): void {
   const usage = process.memoryUsage();
-  
+
   memoryUsage.set({ type: 'rss' }, usage.rss);
   memoryUsage.set({ type: 'heapUsed' }, usage.heapUsed);
   memoryUsage.set({ type: 'heapTotal' }, usage.heapTotal);

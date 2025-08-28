@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -14,8 +14,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -23,87 +23,87 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { Patrimonio } from '@/types'
-import { calculateDepreciation } from '@/lib/depreciation-utils'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
+} from '@/components/ui/breadcrumb';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { Patrimonio } from '@/types';
+import { calculateDepreciation } from '@/lib/depreciation-utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 
 type SortConfig = {
-  column: keyof Patrimonio | 'bookValue'
-  direction: 'asc' | 'desc'
-}
+  column: keyof Patrimonio | 'bookValue';
+  direction: 'asc' | 'desc';
+};
 
 const Depreciacao = () => {
-  const { patrimonios } = usePatrimonio()
+  const { patrimonios } = usePatrimonio();
   const [sorting, setSorting] = useState<SortConfig>({
     column: 'numero_patrimonio',
     direction: 'asc',
-  })
+  });
 
   const processedData = useMemo(() => {
-    const dataWithDepreciation = patrimonios.map((p) => ({
+    const dataWithDepreciation = patrimonios.map(p => ({
       ...p,
       depreciationInfo: calculateDepreciation(p),
-    }))
+    }));
 
     dataWithDepreciation.sort((a, b) => {
-      let aValue: any
-      let bValue: any
+      let aValue: any;
+      let bValue: any;
 
       if (sorting.column === 'bookValue') {
-        aValue = a.depreciationInfo.bookValue
-        bValue = b.depreciationInfo.bookValue
+        aValue = a.depreciationInfo.bookValue;
+        bValue = b.depreciationInfo.bookValue;
       } else {
-        aValue = a[sorting.column]
-        bValue = b[sorting.column]
+        aValue = a[sorting.column];
+        bValue = b[sorting.column];
       }
 
-      if (aValue < bValue) return sorting.direction === 'asc' ? -1 : 1
-      if (aValue > bValue) return sorting.direction === 'asc' ? 1 : -1
-      return 0
-    })
+      if (aValue < bValue) return sorting.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sorting.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
 
-    return dataWithDepreciation
-  }, [patrimonios, sorting])
+    return dataWithDepreciation;
+  }, [patrimonios, sorting]);
 
   const handleSort = (column: SortConfig['column']) => {
-    setSorting((prev) => ({
+    setSorting(prev => ({
       column,
       direction:
         prev.column === column && prev.direction === 'asc' ? 'desc' : 'asc',
-    }))
-  }
+    }));
+  };
 
   const SortableHeader = ({
     column,
     label,
   }: {
-    column: SortConfig['column']
-    label: string
+    column: SortConfig['column'];
+    label: string;
   }) => {
-    const isSorted = sorting.column === column
+    const isSorted = sorting.column === column;
     const Icon = isSorted
       ? sorting.direction === 'asc'
         ? ArrowUp
         : ArrowDown
-      : ChevronsUpDown
+      : ChevronsUpDown;
     return (
-      <Button variant="ghost" onClick={() => handleSort(column)}>
+      <Button variant='ghost' onClick={() => handleSort(column)}>
         {label}
-        <Icon className="ml-2 h-4 w-4" />
+        <Icon className='ml-2 h-4 w-4' />
       </Button>
-    )
-  }
+    );
+  };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/">Dashboard</Link>
+              <Link to='/'>Dashboard</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -112,7 +112,7 @@ const Depreciacao = () => {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <h1 className="text-2xl font-bold">Análise de Depreciação</h1>
+      <h1 className='text-2xl font-bold'>Análise de Depreciação</h1>
       <Card>
         <CardHeader>
           <CardTitle>Lista de Bens e Depreciação</CardTitle>
@@ -126,35 +126,35 @@ const Depreciacao = () => {
               <TableRow>
                 <TableHead>
                   <SortableHeader
-                    column="numero_patrimonio"
-                    label="Nº Patrimônio"
+                    column='numero_patrimonio'
+                    label='Nº Patrimônio'
                   />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader column="descricao" label="Descrição" />
+                  <SortableHeader column='descricao' label='Descrição' />
                 </TableHead>
                 <TableHead>
                   <SortableHeader
-                    column="valor_aquisicao"
-                    label="Valor de Aquisição"
+                    column='valor_aquisicao'
+                    label='Valor de Aquisição'
                   />
                 </TableHead>
                 <TableHead>Método</TableHead>
                 <TableHead>Vida Útil</TableHead>
                 <TableHead>Depreciação Acumulada</TableHead>
                 <TableHead>
-                  <SortableHeader column="bookValue" label="Valor Contábil" />
+                  <SortableHeader column='bookValue' label='Valor Contábil' />
                 </TableHead>
                 <TableHead>Último Cálculo</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {processedData.map((item) => (
+              {processedData.map(item => (
                 <TableRow key={item.id}>
                   <TableCell>
                     <Link
                       to={`/bens-cadastrados/ver/${item.id}`}
-                      className="text-primary hover:underline"
+                      className='text-primary hover:underline'
                     >
                       {item.numero_patrimonio}
                     </Link>
@@ -165,7 +165,7 @@ const Depreciacao = () => {
                   <TableCell>{item.vida_util_anos || 0} anos</TableCell>
                   <TableCell>
                     {formatCurrency(
-                      item.depreciationInfo.accumulatedDepreciation,
+                      item.depreciationInfo.accumulatedDepreciation
                     )}
                   </TableCell>
                   <TableCell>
@@ -181,7 +181,7 @@ const Depreciacao = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default Depreciacao
+export default Depreciacao;

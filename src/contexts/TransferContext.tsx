@@ -1,51 +1,47 @@
-import { toast } from '@/hooks/use-toast'
-import { generateId } from '@/lib/utils'
+import { toast } from '@/hooks/use-toast';
+import { generateId } from '@/lib/utils';
+import { HistoricoEntry, Transferencia, TransferenciaStatus } from '@/types';
 import {
-    HistoricoEntry,
-    Transferencia,
-    TransferenciaStatus
-} from '@/types'
-import {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
-} from 'react'
-import { useAuth } from './AuthContext'
-import { useNotifications } from './NotificationContext'
-import { usePatrimonio } from './PatrimonioContext'
-import { useSectors } from './SectorContext'
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { useAuth } from './AuthContext';
+import { useNotifications } from './NotificationContext';
+import { usePatrimonio } from './PatrimonioContext';
+import { useSectors } from './SectorContext';
 
 interface TransferContextType {
-  transferencias: Transferencia[]
+  transferencias: Transferencia[];
   addTransferencia: (
-    data: Omit<Transferencia, 'id' | 'dataSolicitacao' | 'status'>,
-  ) => void
-  createTransferencia: (formData: FormData) => Promise<void>
+    data: Omit<Transferencia, 'id' | 'dataSolicitacao' | 'status'>
+  ) => void;
+  createTransferencia: (formData: FormData) => Promise<void>;
   updateTransferenciaStatus: (
     id: string,
     status: TransferenciaStatus,
     user: { id: string; name: string },
-    comentarios?: string,
-  ) => void
+    comentarios?: string
+  ) => void;
 }
 
-const TransferContext = createContext<TransferContextType | null>(null)
+const TransferContext = createContext<TransferContextType | null>(null);
 
 export const TransferProvider = ({ children }: { children: ReactNode }) => {
   const [allTransferencias, setAllTransferencias] = useState<Transferencia[]>(
-    [],
-  )
-  const { user } = useAuth()
-  const { updatePatrimonio, getPatrimonioById } = usePatrimonio()
-  const { addNotification } = useNotifications()
-  const { sectors } = useSectors()
+    []
+  );
+  const { user } = useAuth();
+  const { updatePatrimonio, getPatrimonioById } = usePatrimonio();
+  const { addNotification } = useNotifications();
+  const { sectors } = useSectors();
 
   useEffect(() => {
-    const stored = localStorage.getItem('sispat_transferencias')
+    const stored = localStorage.getItem('sispat_transferencias');
     if (stored) {
       setAllTransferencias(
         JSON.parse(stored).map((t: any) => ({
@@ -54,28 +50,28 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
           dataAprovacao: t.dataAprovacao
             ? new Date(t.dataAprovacao)
             : undefined,
-        })),
-      )
+        }))
+      );
     }
-  }, [])
+  }, []);
 
   const transferencias = useMemo(() => {
-    if (user?.role === 'superuser') return allTransferencias
+    if (user?.role === 'superuser') return allTransferencias;
     if (user?.municipalityId) {
       return allTransferencias.filter(
-        (t) => t.municipalityId === user.municipalityId,
-      )
+        t => t.municipalityId === user.municipalityId
+      );
     }
-    return []
-  }, [allTransferencias, user])
+    return [];
+  }, [allTransferencias, user]);
 
   const persist = (newTransferencias: Transferencia[]) => {
     localStorage.setItem(
       'sispat_transferencias',
-      JSON.stringify(newTransferencias),
-    )
-    setAllTransferencias(newTransferencias)
-  }
+      JSON.stringify(newTransferencias)
+    );
+    setAllTransferencias(newTransferencias);
+  };
 
   const addTransferencia = useCallback(
     async (data: Omit<Transferencia, 'id' | 'dataSolicitacao' | 'status'>) => {
@@ -84,16 +80,16 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
         id: generateId(),
         dataSolicitacao: new Date(),
         status: 'pendente',
-      }
-      persist([...allTransferencias, newTransferencia])
-      const patrimonio = getPatrimonioById(data.patrimonioId)
+      };
+      persist([...allTransferencias, newTransferencia]);
+      const patrimonio = getPatrimonioById(data.patrimonioId);
       if (patrimonio) {
-        await updatePatrimonio({ ...patrimonio, transferencia_pendente: true })
+        await updatePatrimonio({ ...patrimonio, transferencia_pendente: true });
       }
-      toast({ description: 'Solicitação de transferência enviada.' })
+      toast({ description: 'Solicitação de transferência enviada.' });
     },
-    [allTransferencias, getPatrimonioById, updatePatrimonio],
-  )
+    [allTransferencias, getPatrimonioById, updatePatrimonio]
+  );
 
   const createTransferencia = useCallback(
     async (formData: FormData) => {
@@ -115,11 +111,11 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
         aprovadorNome: '',
         dataAprovacao: undefined,
         historico_movimentacao: [],
-      }
+      };
 
-      persist([...allTransferencias, newTransferencia])
+      persist([...allTransferencias, newTransferencia]);
 
-      const patrimonio = getPatrimonioById(newTransferencia.patrimonioId)
+      const patrimonio = getPatrimonioById(newTransferencia.patrimonioId);
       if (patrimonio) {
         await updatePatrimonio({
           ...patrimonio,
@@ -131,12 +127,14 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
               details: `Transferência solicitada para o bem ${patrimonio.numero_patrimonio}. Motivo: ${newTransferencia.motivo}`,
               user: user?.name || '',
               origem: newTransferencia.setorOrigem,
-              destino: newTransferencia.setorDestino || newTransferencia.destinatarioExterno,
+              destino:
+                newTransferencia.setorDestino ||
+                newTransferencia.destinatarioExterno,
               documentosAnexos: [],
             },
             ...patrimonio.historico_movimentacao,
           ],
-        })
+        });
 
         addNotification({
           userId: newTransferencia.solicitanteId,
@@ -144,22 +142,28 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
           description: `Sua solicitação de transferência para o bem ${patrimonio.numero_patrimonio} foi enviada para análise.`,
           type: 'transfer',
           link: `/bens-cadastrados/ver/${patrimonio.id}`,
-        })
+        });
       }
-      toast({ description: 'Solicitação de transferência criada.' })
+      toast({ description: 'Solicitação de transferência criada.' });
     },
-    [allTransferencias, getPatrimonioById, updatePatrimonio, user, addNotification],
-  )
+    [
+      allTransferencias,
+      getPatrimonioById,
+      updatePatrimonio,
+      user,
+      addNotification,
+    ]
+  );
 
   const updateTransferenciaStatus = useCallback(
     async (
       id: string,
       status: TransferenciaStatus,
       approver: { id: string; name: string },
-      comentarios?: string,
+      comentarios?: string
     ) => {
-      const transferencia = allTransferencias.find((t) => t.id === id)
-      if (!transferencia) return
+      const transferencia = allTransferencias.find(t => t.id === id);
+      if (!transferencia) return;
 
       const updatedTransferencia: Transferencia = {
         ...transferencia,
@@ -168,17 +172,17 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
         aprovadorNome: approver.name,
         dataAprovacao: new Date(),
         comentariosAprovador: comentarios,
-      }
+      };
 
       persist(
-        allTransferencias.map((t) => (t.id === id ? updatedTransferencia : t)),
-      )
+        allTransferencias.map(t => (t.id === id ? updatedTransferencia : t))
+      );
 
-      const patrimonio = getPatrimonioById(transferencia.patrimonioId)
+      const patrimonio = getPatrimonioById(transferencia.patrimonioId);
       if (patrimonio) {
         const updates: Partial<typeof patrimonio> = {
           transferencia_pendente: false,
-        }
+        };
         const historyEntry: HistoricoEntry = {
           date: new Date(),
           action:
@@ -193,16 +197,16 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
           destino:
             transferencia.setorDestino || transferencia.destinatarioExterno,
           documentosAnexos: transferencia.documentosAnexos,
-        }
+        };
 
         if (status === 'aprovada') {
           if (transferencia.type === 'transferencia') {
-            updates.setor_responsavel = transferencia.setorDestino!
+            updates.setor_responsavel = transferencia.setorDestino!;
           } else {
-            updates.status = 'baixado'
-            updates.doado = true
-            updates.motivo_baixa = `Doado para ${transferencia.destinatarioExterno}. Motivo: ${transferencia.motivo}`
-            updates.data_baixa = new Date()
+            updates.status = 'baixado';
+            updates.doado = true;
+            updates.motivo_baixa = `Doado para ${transferencia.destinatarioExterno}. Motivo: ${transferencia.motivo}`;
+            updates.data_baixa = new Date();
           }
         }
 
@@ -213,7 +217,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
             historyEntry,
             ...patrimonio.historico_movimentacao,
           ],
-        })
+        });
 
         addNotification({
           userId: transferencia.solicitanteId,
@@ -225,26 +229,31 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
           }.`,
           type: 'transfer',
           link: `/bens-cadastrados/ver/${patrimonio.id}`,
-        })
+        });
       }
-      toast({ description: `Solicitação ${status}.` })
+      toast({ description: `Solicitação ${status}.` });
     },
-    [allTransferencias, getPatrimonioById, updatePatrimonio, addNotification],
-  )
+    [allTransferencias, getPatrimonioById, updatePatrimonio, addNotification]
+  );
 
   return (
     <TransferContext.Provider
-      value={{ transferencias, addTransferencia, createTransferencia, updateTransferenciaStatus }}
+      value={{
+        transferencias,
+        addTransferencia,
+        createTransferencia,
+        updateTransferenciaStatus,
+      }}
     >
       {children}
     </TransferContext.Provider>
-  )
-}
+  );
+};
 
 export const useTransfers = () => {
-  const context = useContext(TransferContext)
+  const context = useContext(TransferContext);
   if (!context) {
-    throw new Error('useTransfers must be used within a TransferProvider')
+    throw new Error('useTransfers must be used within a TransferProvider');
   }
-  return context
-}
+  return context;
+};

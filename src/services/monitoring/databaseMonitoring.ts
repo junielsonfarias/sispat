@@ -1,9 +1,9 @@
-import { 
-  dbQueryDuration, 
-  dbConnectionsActive, 
+import {
+  dbQueryDuration,
+  dbConnectionsActive,
   dbQueriesTotal,
   recordCustomMetric,
-  DatabaseMetrics
+  DatabaseMetrics,
 } from './performanceMetrics';
 
 export interface QueryLog {
@@ -55,7 +55,7 @@ const DEFAULT_CONFIG: DatabaseMonitoringConfig = {
   maxLogSize: 1000,
   alertFrequencyThreshold: 3,
   enableExecutionPlan: false, // requer privilégios especiais
-  connectionPoolMonitoring: true
+  connectionPoolMonitoring: true,
 };
 
 // Classe principal para monitoramento de banco
@@ -64,7 +64,10 @@ export class DatabaseMonitor {
   private queryLogs: QueryLog[] = [];
   private slowQueryAlerts: Map<string, SlowQueryAlert> = new Map();
   private connections: Map<string, DatabaseConnection> = new Map();
-  private queryStats: Map<string, { count: number; totalDuration: number; errors: number }> = new Map();
+  private queryStats: Map<
+    string,
+    { count: number; totalDuration: number; errors: number }
+  > = new Map();
 
   constructor(config: Partial<DatabaseMonitoringConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -106,7 +109,7 @@ export class DatabaseMonitor {
         table,
         operation,
         status: 'success',
-        rowsAffected: this.extractRowsAffected(result)
+        rowsAffected: this.extractRowsAffected(result),
       };
 
       // Registrar métricas Prometheus
@@ -114,13 +117,17 @@ export class DatabaseMonitor {
         { operation: operation.toLowerCase(), table: table || 'unknown' },
         duration / 1000
       );
-      dbQueriesTotal.inc({ operation: operation.toLowerCase(), table: table || 'unknown', status: 'success' });
+      dbQueriesTotal.inc({
+        operation: operation.toLowerCase(),
+        table: table || 'unknown',
+        status: 'success',
+      });
 
       // Registrar métricas internas
       recordCustomMetric('db_query_duration', duration, {
         operation,
         table: table || 'unknown',
-        query_id: queryId
+        query_id: queryId,
       });
 
       // Processar query
@@ -130,7 +137,6 @@ export class DatabaseMonitor {
       this.updateQueryStats(query, duration, false);
 
       return result;
-
     } catch (error) {
       const duration = Date.now() - startTime;
       const errorMessage = (error as Error).message;
@@ -145,15 +151,19 @@ export class DatabaseMonitor {
         table,
         operation,
         status: 'error',
-        error: errorMessage
+        error: errorMessage,
       };
 
       // Registrar métricas de erro
-      dbQueriesTotal.inc({ operation: operation.toLowerCase(), table: table || 'unknown', status: 'error' });
+      dbQueriesTotal.inc({
+        operation: operation.toLowerCase(),
+        table: table || 'unknown',
+        status: 'error',
+      });
       recordCustomMetric('db_query_error', 1, {
         operation,
         table: table || 'unknown',
-        error_type: this.categorizeError(errorMessage)
+        error_type: this.categorizeError(errorMessage),
       });
 
       // Processar query com erro
@@ -163,7 +173,6 @@ export class DatabaseMonitor {
       this.updateQueryStats(query, duration, true);
 
       throw error;
-
     } finally {
       // Decrementar conexões ativas
       dbConnectionsActive.dec();
@@ -178,7 +187,10 @@ export class DatabaseMonitor {
   // Processar query após execução
   private processQuery(queryLog: QueryLog): void {
     // Adicionar ao log se necessário
-    if (this.config.logAllQueries || queryLog.duration > this.config.slowQueryThreshold) {
+    if (
+      this.config.logAllQueries ||
+      queryLog.duration > this.config.slowQueryThreshold
+    ) {
       this.addQueryLog(queryLog);
     }
 
@@ -194,7 +206,7 @@ export class DatabaseMonitor {
         query: `${queryLog.query.substring(0, 100)}...`,
         table: queryLog.table,
         operation: queryLog.operation,
-        timestamp: new Date(queryLog.timestamp).toISOString()
+        timestamp: new Date(queryLog.timestamp).toISOString(),
       });
     }
   }
@@ -208,7 +220,7 @@ export class DatabaseMonitor {
       // Incrementar frequência
       existingAlert.frequency++;
       existingAlert.timestamp = queryLog.timestamp;
-      
+
       // Alertar se atingiu o threshold
       if (existingAlert.frequency >= this.config.alertFrequencyThreshold) {
         this.triggerSlowQueryAlert(existingAlert);
@@ -223,7 +235,7 @@ export class DatabaseMonitor {
         timestamp: queryLog.timestamp,
         frequency: 1,
         table: queryLog.table,
-        suggestions: this.generateOptimizationSuggestions(queryLog)
+        suggestions: this.generateOptimizationSuggestions(queryLog),
       };
 
       this.slowQueryAlerts.set(queryHash, alert);
@@ -233,7 +245,7 @@ export class DatabaseMonitor {
     recordCustomMetric('db_slow_query_detected', 1, {
       table: queryLog.table || 'unknown',
       operation: queryLog.operation,
-      duration_range: this.getDurationRange(queryLog.duration)
+      duration_range: this.getDurationRange(queryLog.duration),
     });
   }
 
@@ -244,11 +256,15 @@ export class DatabaseMonitor {
 
     // Sugestões básicas baseadas na query
     if (query.includes('SELECT *')) {
-      suggestions.push('Evite SELECT *, especifique apenas as colunas necessárias');
+      suggestions.push(
+        'Evite SELECT *, especifique apenas as colunas necessárias'
+      );
     }
 
     if (query.includes('WHERE') && !query.includes('INDEX')) {
-      suggestions.push('Considere adicionar índices nas colunas da cláusula WHERE');
+      suggestions.push(
+        'Considere adicionar índices nas colunas da cláusula WHERE'
+      );
     }
 
     if (query.includes('ORDER BY') && !query.includes('LIMIT')) {
@@ -256,15 +272,21 @@ export class DatabaseMonitor {
     }
 
     if (query.includes('JOIN') && query.split('JOIN').length > 3) {
-      suggestions.push('Muitos JOINs podem impactar performance, considere desnormalização');
+      suggestions.push(
+        'Muitos JOINs podem impactar performance, considere desnormalização'
+      );
     }
 
     if (queryLog.duration > 5000) {
-      suggestions.push('Query muito lenta (>5s), considere dividir em queries menores');
+      suggestions.push(
+        'Query muito lenta (>5s), considere dividir em queries menores'
+      );
     }
 
     if (query.includes('LIKE') && query.includes("'%")) {
-      suggestions.push('LIKE com % no início impede uso de índices, considere full-text search');
+      suggestions.push(
+        'LIKE com % no início impede uso de índices, considere full-text search'
+      );
     }
 
     return suggestions;
@@ -272,14 +294,14 @@ export class DatabaseMonitor {
 
   // Atualizar estado da conexão
   private updateConnectionState(
-    connectionId: string, 
-    state: DatabaseConnection['state'], 
+    connectionId: string,
+    state: DatabaseConnection['state'],
     lastQuery?: string
   ): void {
     if (!this.config.connectionPoolMonitoring) return;
 
     const connection = this.connections.get(connectionId);
-    
+
     if (connection) {
       connection.state = state;
       connection.lastQuery = lastQuery || connection.lastQuery;
@@ -292,14 +314,15 @@ export class DatabaseMonitor {
         state,
         startTime: Date.now(),
         lastQuery,
-        queries: 1
+        queries: 1,
       });
     }
 
     // Atualizar métricas de conexão
-    const activeConnections = Array.from(this.connections.values())
-      .filter(conn => conn.state === 'active').length;
-    
+    const activeConnections = Array.from(this.connections.values()).filter(
+      conn => conn.state === 'active'
+    ).length;
+
     dbConnectionsActive.set(activeConnections);
   }
 
@@ -314,7 +337,11 @@ export class DatabaseMonitor {
   }
 
   // Atualizar estatísticas da query
-  private updateQueryStats(query: string, duration: number, isError: boolean): void {
+  private updateQueryStats(
+    query: string,
+    duration: number,
+    isError: boolean
+  ): void {
     const queryHash = this.hashQuery(query);
     const stats = this.queryStats.get(queryHash);
 
@@ -326,7 +353,7 @@ export class DatabaseMonitor {
       this.queryStats.set(queryHash, {
         count: 1,
         totalDuration: duration,
-        errors: isError ? 1 : 0
+        errors: isError ? 1 : 0,
       });
     }
   }
@@ -338,7 +365,7 @@ export class DatabaseMonitor {
       averageDuration: `${alert.duration}ms`,
       frequency: `${alert.frequency} occurrences`,
       table: alert.table,
-      suggestions: alert.suggestions
+      suggestions: alert.suggestions,
     });
 
     // Em produção, enviar para sistema de alertas
@@ -350,24 +377,29 @@ export class DatabaseMonitor {
   // Obter métricas do banco
   public async getDatabaseMetrics(): Promise<DatabaseMetrics> {
     const recentQueries = this.queryLogs.filter(
-      log => log.timestamp > Date.now() - (5 * 60 * 1000) // últimos 5 minutos
+      log => log.timestamp > Date.now() - 5 * 60 * 1000 // últimos 5 minutos
     );
 
-    const totalDuration = recentQueries.reduce((sum, log) => sum + log.duration, 0);
-    const averageQueryTime = recentQueries.length > 0 ? totalDuration / recentQueries.length : 0;
+    const totalDuration = recentQueries.reduce(
+      (sum, log) => sum + log.duration,
+      0
+    );
+    const averageQueryTime =
+      recentQueries.length > 0 ? totalDuration / recentQueries.length : 0;
 
     const slowQueries = recentQueries.filter(
       log => log.duration > this.config.slowQueryThreshold
     ).length;
 
-    const activeConnections = Array.from(this.connections.values())
-      .filter(conn => conn.state === 'active').length;
+    const activeConnections = Array.from(this.connections.values()).filter(
+      conn => conn.state === 'active'
+    ).length;
 
     return {
       averageQueryTime,
       slowQueries,
       activeConnections,
-      totalQueries: recentQueries.length
+      totalQueries: recentQueries.length,
     };
   }
 
@@ -387,32 +419,42 @@ export class DatabaseMonitor {
     errorRate: number;
     slowQueries: number;
   }> {
-    const tableStats = new Map<string, {
-      count: number;
-      totalDuration: number;
-      errors: number;
-      slowQueries: number;
-    }>();
+    const tableStats = new Map<
+      string,
+      {
+        count: number;
+        totalDuration: number;
+        errors: number;
+        slowQueries: number;
+      }
+    >();
 
     this.queryLogs.forEach(log => {
       const table = log.table || 'unknown';
-      const stats = tableStats.get(table) || { count: 0, totalDuration: 0, errors: 0, slowQueries: 0 };
-      
+      const stats = tableStats.get(table) || {
+        count: 0,
+        totalDuration: 0,
+        errors: 0,
+        slowQueries: 0,
+      };
+
       stats.count++;
       stats.totalDuration += log.duration;
       if (log.status === 'error') stats.errors++;
       if (log.duration > this.config.slowQueryThreshold) stats.slowQueries++;
-      
+
       tableStats.set(table, stats);
     });
 
-    return Array.from(tableStats.entries()).map(([table, stats]) => ({
-      table,
-      queryCount: stats.count,
-      avgDuration: stats.totalDuration / stats.count,
-      errorRate: (stats.errors / stats.count) * 100,
-      slowQueries: stats.slowQueries
-    })).sort((a, b) => b.queryCount - a.queryCount);
+    return Array.from(tableStats.entries())
+      .map(([table, stats]) => ({
+        table,
+        queryCount: stats.count,
+        avgDuration: stats.totalDuration / stats.count,
+        errorRate: (stats.errors / stats.count) * 100,
+        slowQueries: stats.slowQueries,
+      }))
+      .sort((a, b) => b.queryCount - a.queryCount);
   }
 
   // Obter alertas ativos
@@ -424,29 +466,32 @@ export class DatabaseMonitor {
 
   // Limpar dados antigos
   private startPeriodicCleanup(): void {
-    setInterval(() => {
-      const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 horas
-      
-      // Limpar logs antigos
-      this.queryLogs = this.queryLogs.filter(log => log.timestamp > cutoff);
-      
-      // Limpar alertas antigos
-      this.slowQueryAlerts.forEach((alert, key) => {
-        if (alert.timestamp < cutoff) {
-          this.slowQueryAlerts.delete(key);
-        }
-      });
+    setInterval(
+      () => {
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 horas
 
-      // Limpar conexões inativas há mais de 1 hora
-      const connectionCutoff = Date.now() - (60 * 60 * 1000);
-      this.connections.forEach((conn, id) => {
-        if (conn.state === 'idle' && conn.startTime < connectionCutoff) {
-          this.connections.delete(id);
-        }
-      });
+        // Limpar logs antigos
+        this.queryLogs = this.queryLogs.filter(log => log.timestamp > cutoff);
 
-      console.log('Database monitoring cleanup completed');
-    }, 60 * 60 * 1000); // Executar a cada hora
+        // Limpar alertas antigos
+        this.slowQueryAlerts.forEach((alert, key) => {
+          if (alert.timestamp < cutoff) {
+            this.slowQueryAlerts.delete(key);
+          }
+        });
+
+        // Limpar conexões inativas há mais de 1 hora
+        const connectionCutoff = Date.now() - 60 * 60 * 1000;
+        this.connections.forEach((conn, id) => {
+          if (conn.state === 'idle' && conn.startTime < connectionCutoff) {
+            this.connections.delete(id);
+          }
+        });
+
+        console.log('Database monitoring cleanup completed');
+      },
+      60 * 60 * 1000
+    ); // Executar a cada hora
   }
 
   // Métodos auxiliares
@@ -509,13 +554,14 @@ export class DatabaseMonitor {
 
   private categorizeError(errorMessage: string): string {
     const message = errorMessage.toLowerCase();
-    
+
     if (message.includes('timeout')) return 'timeout';
     if (message.includes('connection')) return 'connection';
     if (message.includes('syntax')) return 'syntax';
     if (message.includes('constraint')) return 'constraint';
-    if (message.includes('permission') || message.includes('access')) return 'permission';
-    
+    if (message.includes('permission') || message.includes('access'))
+      return 'permission';
+
     return 'other';
   }
 
@@ -549,7 +595,12 @@ export async function monitoredQuery<T>(
   parameters?: any[],
   connectionId?: string
 ): Promise<T> {
-  return databaseMonitor.monitorQuery(query, parameters || [], executor, connectionId);
+  return databaseMonitor.monitorQuery(
+    query,
+    parameters || [],
+    executor,
+    connectionId
+  );
 }
 
 // Configurar threshold de query lenta

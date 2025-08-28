@@ -53,7 +53,7 @@ class CacheInvalidationService extends EventEmitter {
     invalidationsByType: {},
     averageInvalidationTime: 0,
     lastInvalidation: null,
-    errors: []
+    errors: [],
   };
 
   private readonly MAX_ERRORS_HISTORY = 50;
@@ -72,31 +72,32 @@ class CacheInvalidationService extends EventEmitter {
     this.addRule({
       id: 'patrimonio-change',
       name: 'Invalidação por Mudança de Patrimônio',
-      description: 'Invalida cache relacionado quando patrimônio é criado, atualizado ou deletado',
+      description:
+        'Invalida cache relacionado quando patrimônio é criado, atualizado ou deletado',
       enabled: true,
       trigger: {
         type: 'data_change',
         conditions: {
           tables: ['patrimonio'],
-          operations: ['create', 'update', 'delete']
-        }
+          operations: ['create', 'update', 'delete'],
+        },
       },
       actions: [
         {
           type: 'invalidate_tags',
           parameters: {
-            tags: ['patrimonio', 'dashboard', 'report']
-          }
+            tags: ['patrimonio', 'dashboard', 'report'],
+          },
         },
         {
           type: 'warm_cache',
           parameters: {
-            keys: ['dashboard:main']
+            keys: ['dashboard:main'],
           },
-          delay: 1000 // aguardar 1 segundo antes de aquecer
-        }
+          delay: 1000, // aguardar 1 segundo antes de aquecer
+        },
       ],
-      priority: 'high'
+      priority: 'high',
     });
 
     // Invalidação por mudança de usuário
@@ -109,24 +110,24 @@ class CacheInvalidationService extends EventEmitter {
         type: 'data_change',
         conditions: {
           tables: ['usuarios'],
-          operations: ['update', 'delete']
-        }
+          operations: ['update', 'delete'],
+        },
       },
       actions: [
         {
           type: 'invalidate_tags',
           parameters: {
-            tags: ['user']
-          }
+            tags: ['user'],
+          },
         },
         {
           type: 'invalidate_pattern',
           parameters: {
-            pattern: 'user:*'
-          }
-        }
+            pattern: 'user:*',
+          },
+        },
       ],
-      priority: 'medium'
+      priority: 'medium',
     });
 
     // Limpeza automática noturna
@@ -139,18 +140,18 @@ class CacheInvalidationService extends EventEmitter {
         type: 'time_based',
         conditions: {
           schedule: '0 2 * * *', // cron: 02:00 diariamente
-          timezone: 'America/Sao_Paulo'
-        }
+          timezone: 'America/Sao_Paulo',
+        },
       },
       actions: [
         {
           type: 'invalidate_pattern',
           parameters: {
-            pattern: 'expired:*'
-          }
-        }
+            pattern: 'expired:*',
+          },
+        },
       ],
-      priority: 'low'
+      priority: 'low',
     });
 
     // Invalidação por login de usuário
@@ -163,43 +164,44 @@ class CacheInvalidationService extends EventEmitter {
         type: 'user_action',
         conditions: {
           action: 'login',
-          userRoles: ['admin', 'gestor']
-        }
+          userRoles: ['admin', 'gestor'],
+        },
       },
       actions: [
         {
           type: 'warm_cache',
           parameters: {
-            keys: ['dashboard:main', 'patrimonio:summary']
+            keys: ['dashboard:main', 'patrimonio:summary'],
           },
-          delay: 500
-        }
+          delay: 500,
+        },
       ],
-      priority: 'medium'
+      priority: 'medium',
     });
 
     // Invalidação por alta carga do sistema
     this.addRule({
       id: 'high-load-cleanup',
       name: 'Limpeza por Alta Carga',
-      description: 'Limpa cache menos importante quando sistema está sob alta carga',
+      description:
+        'Limpa cache menos importante quando sistema está sob alta carga',
       enabled: true,
       trigger: {
         type: 'system_event',
         conditions: {
           event: 'high_memory_usage',
-          threshold: 85 // 85% de uso de memória
-        }
+          threshold: 85, // 85% de uso de memória
+        },
       },
       actions: [
         {
           type: 'invalidate_tags',
           parameters: {
-            tags: ['low-priority', 'temporary']
-          }
-        }
+            tags: ['low-priority', 'temporary'],
+          },
+        },
       ],
-      priority: 'high'
+      priority: 'high',
     });
   }
 
@@ -229,7 +231,7 @@ class CacheInvalidationService extends EventEmitter {
   addRule(rule: CacheInvalidationRule): void {
     this.rules.set(rule.id, rule);
     this.updateStats();
-    
+
     console.log(`Regra de invalidação adicionada: ${rule.name} (${rule.id})`);
   }
 
@@ -255,7 +257,7 @@ class CacheInvalidationService extends EventEmitter {
     const updatedRule = { ...rule, ...updates };
     this.rules.set(ruleId, updatedRule);
     this.updateStats();
-    
+
     console.log(`Regra de invalidação atualizada: ${rule.name} (${ruleId})`);
     return true;
   }
@@ -269,8 +271,10 @@ class CacheInvalidationService extends EventEmitter {
 
     rule.enabled = enabled !== undefined ? enabled : !rule.enabled;
     this.updateStats();
-    
-    console.log(`Regra ${rule.enabled ? 'habilitada' : 'desabilitada'}: ${rule.name}`);
+
+    console.log(
+      `Regra ${rule.enabled ? 'habilitada' : 'desabilitada'}: ${rule.name}`
+    );
     return true;
   }
 
@@ -279,10 +283,12 @@ class CacheInvalidationService extends EventEmitter {
    */
   private async processEvent(event: CacheEvent): Promise<void> {
     const applicableRules = this.getApplicableRules(event);
-    
+
     if (applicableRules.length === 0) return;
 
-    console.log(`Processando evento ${event.type}, ${applicableRules.length} regras aplicáveis`);
+    console.log(
+      `Processando evento ${event.type}, ${applicableRules.length} regras aplicáveis`
+    );
 
     // Ordenar regras por prioridade
     applicableRules.sort((a, b) => {
@@ -316,34 +322,43 @@ class CacheInvalidationService extends EventEmitter {
   /**
    * Verifica se uma regra é aplicável para um evento
    */
-  private isRuleApplicable(rule: CacheInvalidationRule, event: CacheEvent): boolean {
+  private isRuleApplicable(
+    rule: CacheInvalidationRule,
+    event: CacheEvent
+  ): boolean {
     if (rule.trigger.type !== event.type) return false;
 
-    const {conditions} = rule.trigger;
+    const { conditions } = rule.trigger;
 
     switch (event.type) {
       case 'data_change': {
         const tables = conditions.tables as string[];
         const operations = conditions.operations as string[];
-        
-        return tables.includes(event.data.table) && 
-               operations.includes(event.data.operation);
+
+        return (
+          tables.includes(event.data.table) &&
+          operations.includes(event.data.operation)
+        );
       }
 
       case 'user_action': {
         const action = conditions.action as string;
         const userRoles = conditions.userRoles as string[];
-        
-        return event.data.action === action &&
-               (!userRoles || userRoles.includes(event.data.userRole));
+
+        return (
+          event.data.action === action &&
+          (!userRoles || userRoles.includes(event.data.userRole))
+        );
       }
 
       case 'system_event': {
         const systemEvent = conditions.event as string;
         const threshold = conditions.threshold as number;
-        
-        return event.data.event === systemEvent &&
-               (!threshold || event.data.value >= threshold);
+
+        return (
+          event.data.event === systemEvent &&
+          (!threshold || event.data.value >= threshold)
+        );
       }
 
       default:
@@ -354,7 +369,10 @@ class CacheInvalidationService extends EventEmitter {
   /**
    * Executa uma regra de invalidação
    */
-  private async executeRule(rule: CacheInvalidationRule, event: CacheEvent): Promise<void> {
+  private async executeRule(
+    rule: CacheInvalidationRule,
+    event: CacheEvent
+  ): Promise<void> {
     const startTime = Date.now();
 
     try {
@@ -372,8 +390,9 @@ class CacheInvalidationService extends EventEmitter {
       const executionTime = Date.now() - startTime;
       this.updateInvalidationStats(rule.id, executionTime);
 
-      console.log(`Regra executada com sucesso: ${rule.name} (${executionTime}ms)`);
-
+      console.log(
+        `Regra executada com sucesso: ${rule.name} (${executionTime}ms)`
+      );
     } catch (error) {
       this.addError(rule.id, `Erro ao executar regra: ${error}`);
       console.error(`Erro ao executar regra ${rule.name}:`, error);
@@ -433,7 +452,7 @@ class CacheInvalidationService extends EventEmitter {
         // Aquecer dados de patrimônio
         // Implementar conforme necessário
       }
-      
+
       console.log(`Cache aquecido para chave: ${key}`);
     } catch (error) {
       console.error(`Erro ao aquecer cache para ${key}:`, error);
@@ -450,12 +469,12 @@ class CacheInvalidationService extends EventEmitter {
       totalPatrimonio: 1250,
       patrimoniosPorCategoria: [
         { categoria: 'Informática', quantidade: 450, valor: 125000 },
-        { categoria: 'Mobiliário', quantidade: 300, valor: 85000 }
+        { categoria: 'Mobiliário', quantidade: 300, valor: 85000 },
       ],
       patrimoniosRecentes: [],
       patrimoniosPorStatus: [
         { status: 'Ativo', quantidade: 1100 },
-        { status: 'Manutenção', quantidade: 85 }
+        { status: 'Manutenção', quantidade: 85 },
       ],
       valorTotalPorMes: [],
       topCategorias: [],
@@ -464,21 +483,26 @@ class CacheInvalidationService extends EventEmitter {
         totalValor: 560000,
         crescimentoMensal: 2.5,
         itensVencidos: 12,
-        manutencoesPendentes: 8
-      }
+        manutencoesPendentes: 8,
+      },
     };
   }
 
   /**
    * Emite evento para processamento
    */
-  emitCacheEvent(type: string, data: Record<string, any>, source: string, userId?: string): void {
+  emitCacheEvent(
+    type: string,
+    data: Record<string, any>,
+    source: string,
+    userId?: string
+  ): void {
     const event: CacheEvent = {
       type,
       data,
       timestamp: new Date(),
       source,
-      userId
+      userId,
     };
 
     this.emit(type, event);
@@ -487,26 +511,45 @@ class CacheInvalidationService extends EventEmitter {
   /**
    * Métodos de conveniência para emitir eventos comuns
    */
-  emitDataChange(table: string, operation: string, recordId: string, userId?: string): void {
-    this.emitCacheEvent('data_change', {
-      table,
-      operation,
-      recordId
-    }, 'database', userId);
+  emitDataChange(
+    table: string,
+    operation: string,
+    recordId: string,
+    userId?: string
+  ): void {
+    this.emitCacheEvent(
+      'data_change',
+      {
+        table,
+        operation,
+        recordId,
+      },
+      'database',
+      userId
+    );
   }
 
   emitUserAction(action: string, userRole: string, userId: string): void {
-    this.emitCacheEvent('user_action', {
-      action,
-      userRole
-    }, 'user_interface', userId);
+    this.emitCacheEvent(
+      'user_action',
+      {
+        action,
+        userRole,
+      },
+      'user_interface',
+      userId
+    );
   }
 
   emitSystemEvent(event: string, value: number): void {
-    this.emitCacheEvent('system_event', {
-      event,
-      value
-    }, 'system_monitor');
+    this.emitCacheEvent(
+      'system_event',
+      {
+        event,
+        value,
+      },
+      'system_monitor'
+    );
   }
 
   /**
@@ -539,26 +582,29 @@ class CacheInvalidationService extends EventEmitter {
 
   private updateStats(): void {
     this.stats.totalRules = this.rules.size;
-    this.stats.activeRules = Array.from(this.rules.values())
-      .filter(rule => rule.enabled).length;
+    this.stats.activeRules = Array.from(this.rules.values()).filter(
+      rule => rule.enabled
+    ).length;
   }
 
   private updateInvalidationStats(ruleId: string, executionTime: number): void {
     this.stats.totalInvalidations++;
-    this.stats.invalidationsByRule[ruleId] = (this.stats.invalidationsByRule[ruleId] || 0) + 1;
+    this.stats.invalidationsByRule[ruleId] =
+      (this.stats.invalidationsByRule[ruleId] || 0) + 1;
     this.stats.lastInvalidation = new Date();
 
     // Atualizar tempo médio
     const currentAvg = this.stats.averageInvalidationTime;
     const total = this.stats.totalInvalidations;
-    this.stats.averageInvalidationTime = ((currentAvg * (total - 1)) + executionTime) / total;
+    this.stats.averageInvalidationTime =
+      (currentAvg * (total - 1) + executionTime) / total;
   }
 
   private addError(ruleId: string, error: string): void {
     this.stats.errors.unshift({
       rule: ruleId,
       error,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     if (this.stats.errors.length > this.MAX_ERRORS_HISTORY) {

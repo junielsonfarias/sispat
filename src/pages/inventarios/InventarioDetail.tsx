@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -14,12 +14,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { useInventory } from '@/contexts/InventoryContext'
-import { Inventory } from '@/types'
-import { Check, X, Loader2 } from 'lucide-react'
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { useInventory } from '@/contexts/InventoryContext';
+import { Inventory } from '@/types';
+import { Check, X, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,67 +30,67 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from '@/components/ui/alert-dialog';
 
 export default function InventarioDetail() {
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { getInventoryById, updateInventoryItemStatus, finalizeInventory } =
-    useInventory()
-  const [inventory, setInventory] = useState<Inventory | null>(null)
-  const [isFinalizing, setIsFinalizing] = useState(false)
+    useInventory();
+  const [inventory, setInventory] = useState<Inventory | null>(null);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   useEffect(() => {
     if (id) {
-      const inv = getInventoryById(id)
+      const inv = getInventoryById(id);
       if (inv) {
-        setInventory(inv)
+        setInventory(inv);
       } else {
-        navigate('/inventarios')
+        navigate('/inventarios');
       }
     }
-  }, [id, getInventoryById, navigate])
+  }, [id, getInventoryById, navigate]);
 
   const { foundCount, totalCount, progress } = useMemo(() => {
-    if (!inventory) return { foundCount: 0, totalCount: 0, progress: 0 }
-    const found = inventory.items.filter((i) => i.status === 'found').length
-    const total = inventory.items.length
+    if (!inventory) return { foundCount: 0, totalCount: 0, progress: 0 };
+    const found = inventory.items.filter(i => i.status === 'found').length;
+    const total = inventory.items.length;
     return {
       foundCount: found,
       totalCount: total,
       progress: total > 0 ? (found / total) * 100 : 0,
-    }
-  }, [inventory])
+    };
+  }, [inventory]);
 
   const handleStatusChange = (
     patrimonioId: string,
-    status: 'found' | 'not_found',
+    status: 'found' | 'not_found'
   ) => {
-    if (!id) return
-    updateInventoryItemStatus(id, patrimonioId, status)
-    setInventory(getInventoryById(id)!)
-  }
+    if (!id) return;
+    updateInventoryItemStatus(id, patrimonioId, status);
+    setInventory(getInventoryById(id)!);
+  };
 
   const handleFinalize = async () => {
-    if (!id) return
-    setIsFinalizing(true)
-    const newlyMissing = await finalizeInventory(id)
-    navigate(`/inventarios/resumo/${id}`, { state: { newlyMissing } })
-  }
+    if (!id) return;
+    setIsFinalizing(true);
+    const newlyMissing = await finalizeInventory(id);
+    navigate(`/inventarios/resumo/${id}`, { state: { newlyMissing } });
+  };
 
-  if (!inventory) return <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+  if (!inventory) return <Loader2 className='h-8 w-8 animate-spin mx-auto' />;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className='flex flex-col gap-6'>
       <Card>
         <CardHeader>
           <CardTitle>{inventory.name}</CardTitle>
           <CardDescription>Setor: {inventory.sectorName}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
-            <Progress value={progress} className="flex-1" />
-            <span className="text-sm font-medium">
+          <div className='flex items-center gap-4'>
+            <Progress value={progress} className='flex-1' />
+            <span className='text-sm font-medium'>
               {foundCount} / {totalCount} ({progress.toFixed(0)}%)
             </span>
           </div>
@@ -106,18 +106,18 @@ export default function InventarioDetail() {
               <TableRow>
                 <TableHead>Nº Patrimônio</TableHead>
                 <TableHead>Descrição</TableHead>
-                <TableHead className="text-center">Status</TableHead>
+                <TableHead className='text-center'>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inventory.items.map((item) => (
+              {inventory.items.map(item => (
                 <TableRow key={item.patrimonioId}>
                   <TableCell>{item.numero_patrimonio}</TableCell>
                   <TableCell>{item.descricao}</TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center gap-2">
+                  <TableCell className='text-center'>
+                    <div className='flex justify-center gap-2'>
                       <Button
-                        size="sm"
+                        size='sm'
                         variant={
                           item.status === 'found' ? 'default' : 'outline'
                         }
@@ -125,10 +125,10 @@ export default function InventarioDetail() {
                           handleStatusChange(item.patrimonioId, 'found')
                         }
                       >
-                        <Check className="mr-2 h-4 w-4" /> Encontrado
+                        <Check className='mr-2 h-4 w-4' /> Encontrado
                       </Button>
                       <Button
-                        size="sm"
+                        size='sm'
                         variant={
                           item.status === 'not_found'
                             ? 'destructive'
@@ -138,7 +138,7 @@ export default function InventarioDetail() {
                           handleStatusChange(item.patrimonioId, 'not_found')
                         }
                       >
-                        <X className="mr-2 h-4 w-4" /> Não Encontrado
+                        <X className='mr-2 h-4 w-4' /> Não Encontrado
                       </Button>
                     </div>
                   </TableCell>
@@ -148,7 +148,7 @@ export default function InventarioDetail() {
           </Table>
         </CardContent>
       </Card>
-      <div className="flex justify-end">
+      <div className='flex justify-end'>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button disabled={isFinalizing}>Finalizar Inventário</Button>
@@ -165,7 +165,7 @@ export default function InventarioDetail() {
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleFinalize}>
                 {isFinalizing && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 )}
                 Confirmar
               </AlertDialogAction>
@@ -174,5 +174,5 @@ export default function InventarioDetail() {
         </AlertDialog>
       </div>
     </div>
-  )
+  );
 }

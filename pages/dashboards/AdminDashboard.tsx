@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo } from 'react';
 import {
   Archive,
   DollarSign,
@@ -8,8 +8,8 @@ import {
   Building,
   AlertTriangle,
   Clock,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Bar,
   BarChart,
@@ -23,8 +23,8 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts'
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
+} from 'recharts';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import {
   Table,
   TableBody,
@@ -32,13 +32,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { useAuth } from '@/hooks/useAuth'
-import { Patrimonio } from '@/types'
-import { formatCurrency } from '@/lib/utils'
-import { subMonths, format } from 'date-fns'
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { useAuth } from '@/hooks/useAuth';
+import { Patrimonio } from '@/types';
+import { formatCurrency } from '@/lib/utils';
+import { subMonths, format } from 'date-fns';
 
 const alertsData = [
   {
@@ -59,32 +59,32 @@ const alertsData = [
     status: 'PÉSSIMO',
     icon: AlertTriangle,
   },
-]
+];
 
 const AdminDashboard = () => {
-  const { patrimonios } = usePatrimonio()
-  const { users } = useAuth()
+  const { patrimonios } = usePatrimonio();
+  const { users } = useAuth();
 
   const stats = useMemo(() => {
     const totalValue = patrimonios.reduce(
       (acc, p) => acc + p.valor_aquisicao,
-      0,
-    )
+      0
+    );
     const statusCounts = patrimonios.reduce(
       (acc, p) => {
-        acc[p.status] = (acc[p.status] || 0) + 1
-        return acc
+        acc[p.status] = (acc[p.status] || 0) + 1;
+        return acc;
       },
-      {} as Record<Patrimonio['status'], number>,
-    )
-    const oneMonthAgo = subMonths(new Date(), 1)
+      {} as Record<Patrimonio['status'], number>
+    );
+    const oneMonthAgo = subMonths(new Date(), 1);
     const baixadosLastMonth = patrimonios.filter(
-      (p) =>
+      p =>
         p.status === 'baixado' &&
         p.data_baixa &&
-        new Date(p.data_baixa) > oneMonthAgo,
-    ).length
-    const setores = new Set(patrimonios.map((p) => p.setor_responsavel))
+        new Date(p.data_baixa) > oneMonthAgo
+    ).length;
+    const setores = new Set(patrimonios.map(p => p.setor_responsavel));
 
     return {
       totalCount: patrimonios.length,
@@ -96,67 +96,66 @@ const AdminDashboard = () => {
       maintenanceCount: statusCounts.manutencao || 0,
       baixadosLastMonth,
       setoresCount: setores.size,
-    }
-  }, [patrimonios])
+    };
+  }, [patrimonios]);
 
   const evolutionData = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) =>
-      subMonths(new Date(), 5 - i),
-    )
-    return months.map((month) => {
-      const monthStr = format(month, 'MMM')
+      subMonths(new Date(), 5 - i)
+    );
+    return months.map(month => {
+      const monthStr = format(month, 'MMM');
       const aquisicoes = patrimonios.filter(
-        (p) =>
+        p =>
           format(new Date(p.data_aquisicao), 'yyyy-MM') ===
-          format(month, 'yyyy-MM'),
-      ).length
+          format(month, 'yyyy-MM')
+      ).length;
       const baixas = patrimonios.filter(
-        (p) =>
+        p =>
           p.data_baixa &&
-          format(new Date(p.data_baixa), 'yyyy-MM') ===
-            format(month, 'yyyy-MM'),
-      ).length
-      return { month: monthStr, aquisicoes, baixas }
-    })
-  }, [patrimonios])
+          format(new Date(p.data_baixa), 'yyyy-MM') === format(month, 'yyyy-MM')
+      ).length;
+      return { month: monthStr, aquisicoes, baixas };
+    });
+  }, [patrimonios]);
 
   const distributionData = useMemo(() => {
     const data = patrimonios.reduce(
       (acc, p) => {
-        acc[p.tipo] = (acc[p.tipo] || 0) + 1
-        return acc
+        acc[p.tipo] = (acc[p.tipo] || 0) + 1;
+        return acc;
       },
-      {} as Record<string, number>,
-    )
+      {} as Record<string, number>
+    );
     const chartColors = [
       'hsl(var(--chart-1))',
       'hsl(var(--chart-2))',
       'hsl(var(--chart-3))',
       'hsl(var(--chart-4))',
       'hsl(var(--chart-5))',
-    ]
+    ];
     return Object.entries(data)
       .map(([name, value], index) => ({
         name,
         value,
         fill: chartColors[index % chartColors.length],
       }))
-      .sort((a, b) => b.value - a.value)
-  }, [patrimonios])
+      .sort((a, b) => b.value - a.value);
+  }, [patrimonios]);
 
   const topSetores = useMemo(() => {
     const data = patrimonios.reduce(
       (acc, p) => {
-        acc[p.setor_responsavel] = (acc[p.setor_responsavel] || 0) + 1
-        return acc
+        acc[p.setor_responsavel] = (acc[p.setor_responsavel] || 0) + 1;
+        return acc;
       },
-      {} as Record<string, number>,
-    )
+      {} as Record<string, number>
+    );
     return Object.entries(data)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5)
-  }, [patrimonios])
+      .slice(0, 5);
+  }, [patrimonios]);
 
   const statsCards = [
     {
@@ -195,53 +194,53 @@ const AdminDashboard = () => {
       icon: Building,
       color: 'text-blue-500',
     },
-  ]
+  ];
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Dashboard Administrativo</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {statsCards.map((card) => (
+    <div className='flex flex-col gap-6'>
+      <h1 className='text-2xl font-bold'>Dashboard Administrativo</h1>
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'>
+        {statsCards.map(card => (
           <Card
             key={card.title}
-            className="hover:shadow-elevation transition-shadow duration-300"
+            className='hover:shadow-elevation transition-shadow duration-300'
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+              <CardTitle className='text-sm font-medium'>
                 {card.title}
               </CardTitle>
               <card.icon className={`h-4 w-4 ${card.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
+              <div className='text-2xl font-bold'>{card.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+        <Card className='lg:col-span-2'>
           <CardHeader>
             <CardTitle>Evolução Patrimonial (Últimos 6 meses)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
+            <ChartContainer config={{}} className='h-[300px] w-full'>
               <ComposedChart data={evolutionData}>
                 <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                <XAxis dataKey='month' tickLine={false} axisLine={false} />
                 <YAxis tickLine={false} axisLine={false} />
                 <Tooltip content={<ChartTooltipContent />} />
                 <Legend />
                 <Bar
-                  dataKey="aquisicoes"
-                  fill="hsl(var(--chart-1))"
-                  name="Aquisições"
+                  dataKey='aquisicoes'
+                  fill='hsl(var(--chart-1))'
+                  name='Aquisições'
                   radius={[4, 4, 0, 0]}
                 />
                 <Line
-                  type="monotone"
-                  dataKey="baixas"
-                  stroke="hsl(var(--chart-4))"
-                  name="Baixas"
+                  type='monotone'
+                  dataKey='baixas'
+                  stroke='hsl(var(--chart-4))'
+                  name='Baixas'
                 />
               </ComposedChart>
             </ChartContainer>
@@ -252,15 +251,15 @@ const AdminDashboard = () => {
             <CardTitle>Distribuição por Tipo</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
+            <ChartContainer config={{}} className='h-[300px] w-full'>
               <PieChart>
                 <Tooltip content={<ChartTooltipContent />} />
                 <Pie
                   data={distributionData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
+                  dataKey='value'
+                  nameKey='name'
+                  cx='50%'
+                  cy='50%'
                   outerRadius={100}
                   label
                 >
@@ -274,7 +273,7 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </div>
-      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+      <div className='grid gap-4 md:grid-cols-1 lg:grid-cols-2'>
         <Card>
           <CardHeader>
             <CardTitle>Alertas e Notificações</CardTitle>
@@ -289,9 +288,9 @@ const AdminDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {alertsData.map((alert) => (
+                {alertsData.map(alert => (
                   <TableRow key={alert.id}>
-                    <TableCell className="font-medium">{alert.id}</TableCell>
+                    <TableCell className='font-medium'>{alert.id}</TableCell>
                     <TableCell>{alert.desc}</TableCell>
                     <TableCell>
                       <Badge
@@ -300,9 +299,9 @@ const AdminDashboard = () => {
                             ? 'default'
                             : 'destructive'
                         }
-                        className="flex items-center gap-1"
+                        className='flex items-center gap-1'
                       >
-                        <alert.icon className="h-3 w-3" />
+                        <alert.icon className='h-3 w-3' />
                         {alert.status}
                       </Badge>
                     </TableCell>
@@ -317,16 +316,16 @@ const AdminDashboard = () => {
             <CardTitle>Top 5 Setores por Quantidade de Bens</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[250px] w-full">
+            <ChartContainer config={{}} className='h-[250px] w-full'>
               <BarChart
-                layout="vertical"
+                layout='vertical'
                 data={topSetores}
                 margin={{ left: 20 }}
               >
-                <XAxis type="number" hide />
+                <XAxis type='number' hide />
                 <YAxis
-                  type="category"
-                  dataKey="name"
+                  type='category'
+                  dataKey='name'
                   tickLine={false}
                   axisLine={false}
                   width={100}
@@ -336,8 +335,8 @@ const AdminDashboard = () => {
                   content={<ChartTooltipContent />}
                 />
                 <Bar
-                  dataKey="value"
-                  fill="hsl(var(--chart-2))"
+                  dataKey='value'
+                  fill='hsl(var(--chart-2))'
                   radius={[0, 4, 4, 0]}
                 />
               </BarChart>
@@ -346,7 +345,7 @@ const AdminDashboard = () => {
         </Card>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AdminDashboard
+export default AdminDashboard;

@@ -12,18 +12,18 @@ class IntelligentCacheManager {
     this.memoryCache = new NodeCache({
       stdTTL: 300, // 5 minutos
       checkperiod: 60, // Verificar a cada 1 minuto
-      maxKeys: 1000
+      maxKeys: 1000,
     });
 
     this.queryCache = new NodeCache({
       stdTTL: 600, // 10 minutos para queries
       checkperiod: 120,
-      maxKeys: 500
+      maxKeys: 500,
     });
 
     this.accessPatterns = new Map();
     this.hotKeys = new Set();
-    
+
     this.initializeCache();
   }
 
@@ -45,18 +45,18 @@ class IntelligentCacheManager {
       {
         key: 'dashboard_metrics',
         fetcher: () => this.fetchDashboardMetrics(),
-        ttl: 300
+        ttl: 300,
       },
       {
         key: 'public_patrimonios',
         fetcher: () => this.fetchPublicPatrimonios(),
-        ttl: 600
+        ttl: 600,
       },
       {
         key: 'system_config',
         fetcher: () => this.fetchSystemConfig(),
-        ttl: 1800
-      }
+        ttl: 1800,
+      },
     ];
 
     const promises = warmupData.map(async ({ key, fetcher, ttl }) => {
@@ -80,14 +80,14 @@ class IntelligentCacheManager {
    */
   async get(key, options = {}) {
     const { useQueryCache = false, fallback = null } = options;
-    
+
     try {
       // Registrar padrão de acesso
       this.recordAccessPattern(key);
 
       // Tentar cache em memória primeiro
       let value = this.memoryCache.get(key);
-      
+
       if (value !== undefined) {
         this.markAsHot(key);
         return value;
@@ -143,10 +143,10 @@ class IntelligentCacheManager {
     try {
       const keys = this.memoryCache.keys();
       const queryKeys = this.queryCache.keys();
-      
+
       const allKeys = [...keys, ...queryKeys];
-      const matchingKeys = allKeys.filter(key => 
-        key.includes(pattern) || key.match(new RegExp(pattern, 'i'))
+      const matchingKeys = allKeys.filter(
+        key => key.includes(pattern) || key.match(new RegExp(pattern, 'i'))
       );
 
       matchingKeys.forEach(key => {
@@ -155,7 +155,9 @@ class IntelligentCacheManager {
         this.hotKeys.delete(key);
       });
 
-      logInfo(`Cache invalidado: ${matchingKeys.length} chaves para padrão "${pattern}"`);
+      logInfo(
+        `Cache invalidado: ${matchingKeys.length} chaves para padrão "${pattern}"`
+      );
       return matchingKeys.length;
     } catch (error) {
       logError(`Erro ao invalidar cache para padrão "${pattern}":`, error);
@@ -176,10 +178,10 @@ class IntelligentCacheManager {
   recordAccessPattern(key) {
     const now = Date.now();
     const pattern = this.accessPatterns.get(key) || { count: 0, lastAccess: 0 };
-    
+
     pattern.count++;
     pattern.lastAccess = now;
-    
+
     this.accessPatterns.set(key, pattern);
 
     // Marcar como hot se acessado frequentemente
@@ -193,7 +195,7 @@ class IntelligentCacheManager {
    */
   markAsHot(key) {
     this.hotKeys.add(key);
-    
+
     // Aumentar TTL para chaves hot
     const value = this.memoryCache.get(key);
     if (value !== undefined) {
@@ -210,16 +212,21 @@ class IntelligentCacheManager {
         keys: this.memoryCache.keys().length,
         hits: this.memoryCache.getStats().hits,
         misses: this.memoryCache.getStats().misses,
-        hitRate: this.memoryCache.getStats().hits / (this.memoryCache.getStats().hits + this.memoryCache.getStats().misses)
+        hitRate:
+          this.memoryCache.getStats().hits /
+          (this.memoryCache.getStats().hits +
+            this.memoryCache.getStats().misses),
       },
       query: {
         keys: this.queryCache.keys().length,
         hits: this.queryCache.getStats().hits,
         misses: this.queryCache.getStats().misses,
-        hitRate: this.queryCache.getStats().hits / (this.queryCache.getStats().hits + this.queryCache.getStats().misses)
+        hitRate:
+          this.queryCache.getStats().hits /
+          (this.queryCache.getStats().hits + this.queryCache.getStats().misses),
       },
       hotKeys: this.hotKeys.size,
-      accessPatterns: this.accessPatterns.size
+      accessPatterns: this.accessPatterns.size,
     };
   }
 
@@ -268,8 +275,11 @@ class IntelligentCacheManager {
 const intelligentCache = new IntelligentCacheManager();
 
 // Limpeza automática a cada 30 minutos
-setInterval(() => {
-  intelligentCache.cleanup();
-}, 30 * 60 * 1000);
+setInterval(
+  () => {
+    intelligentCache.cleanup();
+  },
+  30 * 60 * 1000
+);
 
 export default intelligentCache;

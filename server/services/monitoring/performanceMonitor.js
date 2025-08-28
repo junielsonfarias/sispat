@@ -14,7 +14,7 @@ class PerformanceMonitor {
 
   start() {
     if (this.isMonitoring) return;
-    
+
     this.isMonitoring = true;
     this.monitoringInterval = setInterval(() => {
       this.updateMetrics();
@@ -25,7 +25,7 @@ class PerformanceMonitor {
 
   stop() {
     if (!this.isMonitoring) return;
-    
+
     this.isMonitoring = false;
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
@@ -45,11 +45,14 @@ class PerformanceMonitor {
 
       // CPU usage (aproximado)
       const cpus = os.cpus();
-      const cpuUsage = cpus.reduce((acc, cpu) => {
-        const total = Object.values(cpu.times).reduce((a, b) => a + b);
-        const idle = cpu.times.idle;
-        return acc + ((total - idle) / total);
-      }, 0) / cpus.length * 100;
+      const cpuUsage =
+        (cpus.reduce((acc, cpu) => {
+          const total = Object.values(cpu.times).reduce((a, b) => a + b);
+          const idle = cpu.times.idle;
+          return acc + (total - idle) / total;
+        }, 0) /
+          cpus.length) *
+        100;
 
       // Atualizar métricas
       metrics.setSystemMemoryUsage(usedMemory);
@@ -61,14 +64,13 @@ class PerformanceMonitor {
         memory: {
           total: this.formatBytes(totalMemory),
           used: this.formatBytes(usedMemory),
-          usage: `${memoryUsagePercent.toFixed(2)}%`
+          usage: `${memoryUsagePercent.toFixed(2)}%`,
         },
         cpu: `${cpuUsage.toFixed(2)}%`,
         requests: this.requestCount,
         errors: this.errorCount,
-        activeConnections: this.activeConnections
+        activeConnections: this.activeConnections,
       });
-
     } catch (error) {
       console.error('❌ Erro ao atualizar métricas:', error);
       metrics.incrementError('metrics_update', 'error');
@@ -100,11 +102,14 @@ class PerformanceMonitor {
     const memoryUsagePercent = (usedMemory / totalMemory) * 100;
 
     const cpus = os.cpus();
-    const cpuUsage = cpus.reduce((acc, cpu) => {
-      const total = Object.values(cpu.times).reduce((a, b) => a + b);
-      const idle = cpu.times.idle;
-      return acc + ((total - idle) / total);
-    }, 0) / cpus.length * 100;
+    const cpuUsage =
+      (cpus.reduce((acc, cpu) => {
+        const total = Object.values(cpu.times).reduce((a, b) => a + b);
+        const idle = cpu.times.idle;
+        return acc + (total - idle) / total;
+      }, 0) /
+        cpus.length) *
+      100;
 
     return {
       uptime,
@@ -116,25 +121,28 @@ class PerformanceMonitor {
           total: this.formatBytes(totalMemory),
           used: this.formatBytes(usedMemory),
           free: this.formatBytes(freeMemory),
-          usage: `${memoryUsagePercent.toFixed(2)}%`
+          usage: `${memoryUsagePercent.toFixed(2)}%`,
         },
         cpu: {
           cores: cpus.length,
           usage: `${cpuUsage.toFixed(2)}%`,
-          model: cpus[0].model
+          model: cpus[0].model,
         },
-        loadAverage: os.loadavg()
+        loadAverage: os.loadavg(),
       },
       application: {
         requests: this.requestCount,
         errors: this.errorCount,
         activeConnections: this.activeConnections,
-        errorRate: this.requestCount > 0 ? (this.errorCount / this.requestCount * 100).toFixed(2) : 0
+        errorRate:
+          this.requestCount > 0
+            ? ((this.errorCount / this.requestCount) * 100).toFixed(2)
+            : 0,
       },
       health: {
         status: this.getHealthStatus(memoryUsagePercent, cpuUsage),
-        score: this.calculateHealthScore(memoryUsagePercent, cpuUsage)
-      }
+        score: this.calculateHealthScore(memoryUsagePercent, cpuUsage),
+      },
     };
   }
 
@@ -148,8 +156,11 @@ class PerformanceMonitor {
   calculateHealthScore(memoryUsage, cpuUsage) {
     const memoryScore = Math.max(0, 100 - memoryUsage);
     const cpuScore = Math.max(0, 100 - cpuUsage);
-    const errorScore = this.requestCount > 0 ? Math.max(0, 100 - (this.errorCount / this.requestCount * 100)) : 100;
-    
+    const errorScore =
+      this.requestCount > 0
+        ? Math.max(0, 100 - (this.errorCount / this.requestCount) * 100)
+        : 100;
+
     return Math.round((memoryScore + cpuScore + errorScore) / 3);
   }
 
@@ -176,21 +187,26 @@ class PerformanceMonitor {
   // Middleware para monitorar requisições
   requestMonitorMiddleware(req, res, next) {
     const start = Date.now();
-    
+
     this.incrementRequest();
 
     // Monitorar resposta
     res.on('finish', () => {
       const duration = Date.now() - start;
-      
+
       if (res.statusCode >= 400) {
         this.incrementError();
-        metrics.incrementError('http_error', res.statusCode >= 500 ? 'critical' : 'warning');
+        metrics.incrementError(
+          'http_error',
+          res.statusCode >= 500 ? 'critical' : 'warning'
+        );
       }
 
       // Log de requisições lentas
       if (duration > 5000) {
-        console.warn(`🐌 Requisição lenta: ${req.method} ${req.path} - ${duration}ms`);
+        console.warn(
+          `🐌 Requisição lenta: ${req.method} ${req.path} - ${duration}ms`
+        );
       }
     });
 
@@ -211,11 +227,11 @@ class PerformanceMonitor {
   // Função para gerar relatório de performance
   generatePerformanceReport() {
     const stats = this.getPerformanceStats();
-    
+
     return {
       timestamp: new Date().toISOString(),
       ...stats,
-      recommendations: this.generateRecommendations(stats)
+      recommendations: this.generateRecommendations(stats),
     };
   }
 
@@ -223,19 +239,27 @@ class PerformanceMonitor {
     const recommendations = [];
 
     if (stats.system.memory.usage > 80) {
-      recommendations.push('Considere aumentar a memória do servidor ou otimizar o uso de cache');
+      recommendations.push(
+        'Considere aumentar a memória do servidor ou otimizar o uso de cache'
+      );
     }
 
     if (stats.system.cpu.usage > 80) {
-      recommendations.push('Considere escalar horizontalmente ou otimizar queries do banco de dados');
+      recommendations.push(
+        'Considere escalar horizontalmente ou otimizar queries do banco de dados'
+      );
     }
 
     if (stats.application.errorRate > 5) {
-      recommendations.push('Investigue os erros frequentes e implemente melhor tratamento de exceções');
+      recommendations.push(
+        'Investigue os erros frequentes e implemente melhor tratamento de exceções'
+      );
     }
 
     if (stats.application.requests > 1000) {
-      recommendations.push('Considere implementar rate limiting e cache mais agressivo');
+      recommendations.push(
+        'Considere implementar rate limiting e cache mais agressivo'
+      );
     }
 
     return recommendations;

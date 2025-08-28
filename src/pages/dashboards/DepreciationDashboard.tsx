@@ -1,12 +1,12 @@
-import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -14,139 +14,140 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 import {
   ChartContainer,
   ChartTooltipContent,
   ChartTooltip,
-} from '@/components/ui/chart'
-import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend } from 'recharts'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { calculateDepreciation } from '@/lib/depreciation-utils'
-import { formatCurrency } from '@/lib/utils'
-import { TrendingDown, TrendingUp, Hourglass } from 'lucide-react'
+} from '@/components/ui/chart';
+import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { usePatrimonio } from '@/contexts/PatrimonioContext';
+import { calculateDepreciation } from '@/lib/depreciation-utils';
+import { formatCurrency } from '@/lib/utils';
+import { TrendingDown, TrendingUp, Hourglass } from 'lucide-react';
 
 const DepreciationDashboard = () => {
-  const { patrimonios } = usePatrimonio()
+  const { patrimonios } = usePatrimonio();
 
   const processedData = useMemo(() => {
-    return patrimonios.map((p) => ({
+    return patrimonios.map(p => ({
       ...p,
       depreciationInfo: calculateDepreciation(p),
-    }))
-  }, [patrimonios])
+    }));
+  }, [patrimonios]);
 
   const summary = useMemo(() => {
     return processedData.reduce(
       (acc, item) => {
-        acc.totalAcquisition += (parseFloat(item.valor_aquisicao) || 0)
+        acc.totalAcquisition += parseFloat(item.valor_aquisicao) || 0;
         acc.totalAccumulatedDepreciation +=
-          item.depreciationInfo.accumulatedDepreciation
-        acc.totalBookValue += item.depreciationInfo.bookValue
+          item.depreciationInfo.accumulatedDepreciation;
+        acc.totalBookValue += item.depreciationInfo.bookValue;
         if (item.depreciationInfo.isFullyDepreciated) {
-          acc.fullyDepreciatedCount += 1
+          acc.fullyDepreciatedCount += 1;
         }
-        return acc
+        return acc;
       },
       {
         totalAcquisition: 0,
         totalAccumulatedDepreciation: 0,
         totalBookValue: 0,
         fullyDepreciatedCount: 0,
-      },
-    )
-  }, [processedData])
+      }
+    );
+  }, [processedData]);
 
   const depreciationBySector = useMemo(() => {
     const bySector = processedData.reduce(
       (acc, item) => {
-        const sector = item.setor_responsavel || 'Não Informado'
+        const sector = item.setor_responsavel || 'Não Informado';
         if (!acc[sector]) {
-          acc[sector] = { accumulated: 0, bookValue: 0 }
+          acc[sector] = { accumulated: 0, bookValue: 0 };
         }
-        acc[sector].accumulated += item.depreciationInfo.accumulatedDepreciation
-        acc[sector].bookValue += item.depreciationInfo.bookValue
-        return acc
+        acc[sector].accumulated +=
+          item.depreciationInfo.accumulatedDepreciation;
+        acc[sector].bookValue += item.depreciationInfo.bookValue;
+        return acc;
       },
-      {} as Record<string, { accumulated: number; bookValue: number }>,
-    )
+      {} as Record<string, { accumulated: number; bookValue: number }>
+    );
     return Object.entries(bySector).map(([name, values]) => ({
       name,
       ...values,
-    }))
-  }, [processedData])
+    }));
+  }, [processedData]);
 
   const nearingFullDepreciation = useMemo(() => {
     return processedData
       .filter(
-        (p) =>
+        p =>
           !p.depreciationInfo.isFullyDepreciated &&
-          p.depreciationInfo.remainingLifeMonths <= 12,
+          p.depreciationInfo.remainingLifeMonths <= 12
       )
       .sort(
         (a, b) =>
           a.depreciationInfo.remainingLifeMonths -
-          b.depreciationInfo.remainingLifeMonths,
+          b.depreciationInfo.remainingLifeMonths
       )
-      .slice(0, 5)
-  }, [processedData])
+      .slice(0, 5);
+  }, [processedData]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Dashboard de Depreciação</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className='flex flex-col gap-6'>
+      <h1 className='text-2xl font-bold'>Dashboard de Depreciação</h1>
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
+          <CardHeader className='flex flex-row items-center justify-between pb-2'>
+            <CardTitle className='text-sm font-medium'>
               Depreciação Acumulada
             </CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            <TrendingDown className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className='text-2xl font-bold'>
               {formatCurrency(summary.totalAccumulatedDepreciation)}
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
+          <CardHeader className='flex flex-row items-center justify-between pb-2'>
+            <CardTitle className='text-sm font-medium'>
               Valor Contábil Total
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className='text-2xl font-bold'>
               {formatCurrency(summary.totalBookValue)}
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
+          <CardHeader className='flex flex-row items-center justify-between pb-2'>
+            <CardTitle className='text-sm font-medium'>
               Bens Totalmente Depreciados
             </CardTitle>
-            <Hourglass className="h-4 w-4 text-muted-foreground" />
+            <Hourglass className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className='text-2xl font-bold'>
               {summary.fullyDepreciatedCount}
             </div>
           </CardContent>
         </Card>
       </div>
-      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+      <div className='grid gap-4 md:grid-cols-1 lg:grid-cols-2'>
         <Card>
           <CardHeader>
             <CardTitle>Depreciação por Setor</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
-              <BarChart data={depreciationBySector} layout="vertical">
-                <XAxis type="number" hide />
+            <ChartContainer config={{}} className='h-[300px] w-full'>
+              <BarChart data={depreciationBySector} layout='vertical'>
+                <XAxis type='number' hide />
                 <YAxis
-                  type="category"
-                  dataKey="name"
+                  type='category'
+                  dataKey='name'
                   width={100}
                   tickLine={false}
                   axisLine={false}
@@ -154,16 +155,16 @@ const DepreciationDashboard = () => {
                 <Tooltip content={<ChartTooltipContent />} />
                 <Legend />
                 <Bar
-                  dataKey="accumulated"
-                  stackId="a"
-                  fill="hsl(var(--chart-2))"
-                  name="Depreciação Acumulada"
+                  dataKey='accumulated'
+                  stackId='a'
+                  fill='hsl(var(--chart-2))'
+                  name='Depreciação Acumulada'
                 />
                 <Bar
-                  dataKey="bookValue"
-                  stackId="a"
-                  fill="hsl(var(--chart-1))"
-                  name="Valor Contábil"
+                  dataKey='bookValue'
+                  stackId='a'
+                  fill='hsl(var(--chart-1))'
+                  name='Valor Contábil'
                 />
               </BarChart>
             </ChartContainer>
@@ -183,12 +184,12 @@ const DepreciationDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {nearingFullDepreciation.map((item) => (
+                {nearingFullDepreciation.map(item => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <Link
                         to={`/bens-cadastrados/ver/${item.id}`}
-                        className="text-primary hover:underline"
+                        className='text-primary hover:underline'
                       >
                         {item.numero_patrimonio}
                       </Link>
@@ -205,7 +206,7 @@ const DepreciationDashboard = () => {
         </Card>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DepreciationDashboard
+export default DepreciationDashboard;
