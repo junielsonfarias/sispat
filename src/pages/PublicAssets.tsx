@@ -1,3 +1,7 @@
+import {
+  PublicAssetsFilterSheet,
+  PublicFilterValues,
+} from '@/components/public/PublicAssetsFilterSheet';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -41,10 +45,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  PublicAssetsFilterSheet,
-  PublicFilterValues,
-} from '../components/public/PublicAssetsFilterSheet';
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' };
 type SortConfig = {
