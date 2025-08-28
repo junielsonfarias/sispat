@@ -1,7 +1,7 @@
 import {
   PublicAssetsFilterSheet,
   PublicFilterValues,
-} from '@/components/public/PublicAssetsFilterSheet';
+} from '../components/public/PublicAssetsFilterSheet';
 import { Button } from '@/components/ui/button';
 import {
   Card,
