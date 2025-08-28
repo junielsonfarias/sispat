@@ -198,7 +198,6 @@ async function getRedisServerInfo(): Promise<{
     // await client.connect();
     // const info = await client.info('server');
     // await client.quit();
-
     // Parse das informações do servidor
     // const lines = info.split('\r\n');
     // const serverInfo = {};
@@ -208,18 +207,23 @@ async function getRedisServerInfo(): Promise<{
     //     serverInfo[key] = value;
     //   }
     // });
-
     // Simulação para demonstração
-    return {
-      version: '7.2.3',
-      mode: 'standalone',
-      role: 'master',
-    };
+    // return {
+    //   version: '7.2.3',
+    //   mode: 'standalone',
+    //   role: 'master',
+    // };
   } catch (error) {
-    // eslint-disable-next-line no-unreachable
     console.error('Failed to get Redis server info:', error);
     throw error;
   }
+
+  // Simulação para demonstração
+  return {
+    version: '7.2.3',
+    mode: 'standalone',
+    role: 'master',
+  };
 }
 
 /**

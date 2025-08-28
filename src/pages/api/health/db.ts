@@ -129,14 +129,15 @@ async function getDatabaseVersion(): Promise<string | null> {
     // const result = await prisma.$queryRaw`SELECT version() as version`;
     // await prisma.$disconnect();
     // return result[0]?.version || null;
-
     // Simulação para demonstração
-    return 'PostgreSQL 15.4';
+    // return 'PostgreSQL 15.4';
   } catch (error) {
-    // eslint-disable-next-line no-unreachable
     console.error('Failed to get database version:', error);
     return null;
   }
+
+  // Simulação para demonstração
+  return 'PostgreSQL 15.4';
 }
 
 /**
@@ -187,31 +188,26 @@ async function checkMigrationStatus(): Promise<{
     // Implementar verificação de migrações do Prisma
     // const { PrismaClient } = require('@prisma/client');
     // const prisma = new PrismaClient();
-
     // Verificar tabela de migrações
     // const migrations = await prisma.$queryRaw`
     //   SELECT * FROM _prisma_migrations
     //   ORDER BY finished_at DESC
     //   LIMIT 1
     // `;
-
     // Verificar se há migrações pendentes
     // const pendingMigrations = await prisma.$queryRaw`
     //   SELECT count(*) as pending
     //   FROM _prisma_migrations
     //   WHERE finished_at IS NULL
     // `;
-
     // await prisma.$disconnect();
-
     // Simulação para demonstração
-    return {
-      applied: true,
-      lastMigration: '20231201_initial_migration',
-      pendingCount: 0,
-    };
+    // return {
+    //   applied: true,
+    //   lastMigration: '20231201_initial_migration',
+    //   pendingCount: 0,
+    // };
   } catch (error) {
-    // eslint-disable-next-line no-unreachable
     console.error('Failed to check migration status:', error);
     return {
       applied: false,
@@ -219,6 +215,13 @@ async function checkMigrationStatus(): Promise<{
       pendingCount: -1,
     };
   }
+
+  // Simulação para demonstração
+  return {
+    applied: true,
+    lastMigration: '20231201_initial_migration',
+    pendingCount: 0,
+  };
 }
 
 /**
