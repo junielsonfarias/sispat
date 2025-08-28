@@ -1,23 +1,23 @@
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
 import {
-    SearchableSelect,
-    SearchableSelectOption,
+  SearchableSelect,
+  SearchableSelectOption,
 } from '@/components/ui/searchable-select';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Sheet, SheetTrigger } from '@/components/ui/sheet';
 import { useImovel } from '@/contexts/ImovelContext';
@@ -30,19 +30,19 @@ import { formatRelativeDate } from '@/lib/utils';
 import { Imovel, Patrimonio } from '@/types';
 import { parseISO } from 'date-fns';
 import {
-    Archive,
-    ArrowDown,
-    ArrowUp,
-    ChevronsUpDown,
-    Filter,
-    Loader2,
-    RefreshCw,
-    Search,
+  Archive,
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+  Filter,
+  Loader2,
+  RefreshCw,
+  Search,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { PublicFilterValues } from '../components/public/PublicAssetsFilterSheet.js';
-import { PublicAssetsFilterSheet } from '../components/public/PublicAssetsFilterSheet.js';
+import type { PublicFilterValues } from '../components/public/PublicAssetsFilterSheet';
+import { PublicAssetsFilterSheet } from '../components/public/PublicAssetsFilterSheet';
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' };
 type SortConfig = {
