@@ -1,0 +1,15 @@
+# Task ID: 1
+# Title: Otimização de Performance do Banco
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Otimizar performance das consultas do banco de dados PostgreSQL, especialmente nas tabelas de patrimônios e relatórios
+# Details:
+- Analisar queries mais lentas com EXPLAIN ANALYZE
+- Criar índices otimizados para consultas frequentes
+- Otimizar joins entre tabelas relacionadas
+- Implementar paginação eficiente nos listagens
+- Revisar e otimizar stored procedures se existirem
+
+# Test Strategy:
+

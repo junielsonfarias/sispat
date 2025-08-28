@@ -1,0 +1,211 @@
+# SISPAT - Sistema de Gestão Patrimonial
+
+## Visão Geral
+O SISPAT é um sistema completo e independente de gestão patrimonial para municípios e organizações públicas. O sistema permite controle total de bens, imóveis e equipamentos, com hierarquia de permissões, gestão municipal com isolamento de dados, dashboards inteligentes, controle de transferências, inventários, etiquetas personalizadas e relatórios customizáveis.
+
+## Funcionalidades Principais
+
+### Sistema de Autenticação e Usuários
+- Autenticação JWT com diferentes níveis de permissão
+- Hierarquia: superuser, supervisor, admin, usuario, visualizador
+- Gestão de perfis e senhas
+- Controle de acesso baseado em município
+- Sistema de notificações
+
+### Gestão de Patrimônio
+- Cadastro completo de bens patrimoniais
+- Categorização e classificação por tipos
+- Controle de estado, valor e depreciação
+- Histórico completo de alterações
+- Upload e gestão de documentos
+- Sistema de numeração personalizada
+- Geração e impressão de etiquetas
+
+### Gestão de Imóveis
+- Cadastro completo de imóveis
+- Sistema de geolocalização com mapas
+- Controle de manutenções e tarefas
+- Campos personalizáveis para imóveis
+- Relatórios específicos para imóveis
+- Templates de relatório customizáveis
+
+### Sistema de Inventários
+- Criação e gestão de inventários
+- Contagem e verificação de bens
+- Relatórios de divergências
+- Exportação de dados
+- Controle de responsáveis
+
+### Controle de Transferências
+- Solicitação de transferências entre setores
+- Sistema de aprovação/rejeição
+- Controle de empréstimos
+- Geração de termos de responsabilidade
+- Histórico completo de movimentações
+
+### Dashboards e Relatórios
+- Dashboards específicos por tipo de usuário
+- Widgets configuráveis (estatísticas, gráficos, atividades)
+- Sistema de templates de relatório
+- Exportação em PDF e Excel
+- Filtros avançados e buscas
+- Análises temporais e por setor
+
+### Gestão Administrativa
+- Gestão de municípios
+- Configuração de setores e locais
+- Personalização de temas e layouts
+- Configurações de sistema
+- Logs de auditoria
+- Backup e restore
+
+## Experiência do Usuário
+
+### Personas
+1. **Superuser**: Administrador geral do sistema
+2. **Supervisor**: Gestor municipal
+3. **Admin**: Administrador local
+4. **Usuario**: Operador do sistema
+5. **Visualizador**: Consulta apenas
+
+### Fluxos Principais
+- Login e navegação por dashboards específicos
+- Cadastro e edição de patrimônios/imóveis
+- Processo de transferência com aprovações
+- Criação e execução de inventários
+- Geração de relatórios e etiquetas
+- Consulta pública de patrimônios
+
+### UI/UX
+- Interface responsiva com Tailwind CSS
+- Componentes modernos com Shadcn UI
+- Design intuitivo e acessível
+- Navegação contextual por permissões
+- Feedback visual para todas as ações
+
+## Arquitetura Técnica
+
+### Frontend
+- React 19.1.1 com TypeScript
+- Vite para build e desenvolvimento
+- React Router para navegação
+- 15+ contextos para gerenciamento de estado
+- React Hook Form + Zod para formulários
+- Recharts para visualizações
+
+### Backend
+- Node.js com Express.js
+- PostgreSQL como banco principal
+- 80+ endpoints de API RESTful
+- Middleware de autenticação JWT
+- Sistema de upload de arquivos
+- Logs de auditoria completos
+
+### Banco de Dados
+- 19 tabelas principais
+- Relacionamentos complexos
+- Isolamento por município
+- Índices otimizados
+- Sistema de backup automático
+
+### Infraestrutura
+- Servidor único (full-stack)
+- Upload local de arquivos
+- Sistema de logs estruturados
+- Configuração via variáveis de ambiente
+
+## Roadmap de Desenvolvimento
+
+### Fase 1: Infraestrutura Base (Concluída)
+- Configuração do ambiente de desenvolvimento
+- Estrutura básica do projeto
+- Sistema de autenticação
+- Banco de dados inicial
+- Interface básica
+
+### Fase 2: Gestão Core (Concluída)
+- CRUD completo de patrimônios
+- Sistema de usuários e permissões
+- Gestão de municípios, setores e locais
+- Upload de arquivos
+- Logs de atividade
+
+### Fase 3: Funcionalidades Avançadas (Concluída)
+- Sistema de imóveis
+- Controle de transferências
+- Inventários
+- Dashboards
+- Sistema de relatórios
+
+### Fase 4: Personalização e Otimização (Concluída)
+- Templates de etiquetas
+- Templates de relatório
+- Temas personalizáveis
+- Campos customizáveis
+- Sistema de backup
+
+### Fase 5: Melhorias e Manutenção (Em Andamento)
+- Otimizações de performance
+- Correções de bugs
+- Melhorias de UX
+- Documentação
+- Testes automatizados
+
+## Cadeia de Dependências Lógicas
+
+### Fundação
+1. Configuração do ambiente e banco
+2. Sistema de autenticação
+3. Gestão de usuários e permissões
+4. Estrutura básica de municípios/setores
+
+### Core Business
+1. CRUD de patrimônios (base para tudo)
+2. Sistema de uploads e documentos
+3. Logs de auditoria
+4. Interface básica funcional
+
+### Funcionalidades Específicas
+1. Sistema de imóveis (extensão de patrimônios)
+2. Transferências (depende de patrimônios)
+3. Inventários (depende de patrimônios)
+4. Relatórios (depende de dados existentes)
+
+### Personalização
+1. Templates e layouts
+2. Campos customizáveis
+3. Dashboards configuráveis
+4. Temas e branding
+
+## Riscos e Mitigações
+
+### Desafios Técnicos
+- **Performance**: Otimização de queries e índices
+- **Escalabilidade**: Arquitetura preparada para crescimento
+- **Segurança**: Múltiplas camadas de proteção
+- **Backup**: Sistema automatizado de backup
+
+### MVP Funcional
+- Sistema já está funcional e em produção
+- Base sólida para melhorias incrementais
+- Foco em otimização e correções
+
+### Recursos
+- Equipe pequena mas experiente
+- Conhecimento profundo do domínio
+- Feedback direto dos usuários
+
+## Apêndice
+
+### Especificações Técnicas
+- Node.js 18+
+- PostgreSQL 14+
+- React 19+
+- TypeScript para type safety
+- Tailwind para styling consistente
+
+### Pesquisa e Validação
+- Sistema baseado em necessidades reais de municípios
+- Feedback contínuo de usuários finais
+- Análise de sistemas similares no mercado
+- Foco em usabilidade e eficiência

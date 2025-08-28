@@ -1,0 +1,257 @@
+# 🏛️ REGRAS DO PROJETO SISPAT
+
+## 📋 **VISÃO GERAL**
+Sistema de Gestão Patrimonial (SISPAT) - Aplicação full-stack com React 19.1.1 + Node.js + PostgreSQL
+
+## 🏗️ **ARQUITETURA**
+
+### **Frontend**
+- **React 19.1.1** + **TypeScript 5.9.2** + **Vite 7.1.0**
+- **Tailwind CSS** + **Shadcn UI** para interface
+- **Context API** para gerenciamento de estado
+- **React Router** para navegação
+- **React Hook Form + Zod** para formulários
+
+### **Backend**
+- **Node.js** + **Express.js**
+- **PostgreSQL** como banco de dados
+- **JWT** para autenticação
+- **Middleware** para validação e cache
+
+### **Proxy e Comunicação**
+- **Vite Proxy**: `/api` → `http://localhost:3001`
+- **Porta Frontend**: 8080
+- **Porta Backend**: 3001
+
+## 📁 **ESTRUTURA DE DIRETÓRIOS**
+
+```
+/
+├── src/                    # Frontend React
+│   ├── components/         # Componentes reutilizáveis
+│   ├── contexts/          # Context API (Auth, Patrimonio, etc.)
+│   ├── hooks/             # Custom hooks
+│   ├── pages/             # Páginas da aplicação
+│   ├── services/          # Serviços de API
+│   └── types/             # Definições TypeScript
+├── server/                # Backend Node.js
+│   ├── routes/            # Rotas da API
+│   ├── middleware/        # Middlewares (auth, cache, etc.)
+│   ├── utils/             # Utilitários (pagination, logger)
+│   └── database/          # Conexão e queries do banco
+└── docs/                  # Documentação do projeto
+```
+
+## 🔧 **CONFIGURAÇÕES OBRIGATÓRIAS**
+
+### **Variáveis de Ambiente (.env)**
+```bash
+# Banco de Dados
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=sispat_db
+DB_USER=postgres
+DB_PASSWORD=sua_senha
+
+# JWT
+JWT_SECRET=sua_chave_secreta_muito_segura
+
+# Servidor
+PORT=3001
+NODE_ENV=development
+
+# Frontend
+VITE_BACKEND_URL=http://localhost:3001
+```
+
+### **Configuração do Vite (vite.config.ts)**
+```typescript
+server: {
+  host: '::',
+  port: 8080,
+  proxy: {
+    '/api': {
+      target: 'http://localhost:3001',
+      changeOrigin: true,
+      secure: false
+    }
+  }
+}
+```
+
+## 🚀 **PADRÕES DE DESENVOLVIMENTO**
+
+### **1. Rotas Backend**
+- **Autenticação obrigatória**: Usar `authenticateToken` middleware
+- **Paginação**: Usar `paginationMiddleware` + `executePaginatedQuery`
+- **Cache**: Usar `patrimoniosCacheMiddleware` para rotas GET
+- **Validação**: Usar `validateUUID` para parâmetros UUID
+
+### **2. Context API Frontend**
+- **Ordem dos Providers**: AuthProvider → NotificationProvider → Outros
+- **Error Boundaries**: Implementar em componentes críticos
+- **Loading States**: Sempre mostrar estado de carregamento
+
+### **3. Tratamento de Erros**
+- **Backend**: Log detalhado com `logError()` + stack trace
+- **Frontend**: Toast notifications + console.error
+- **API**: Respostas padronizadas com `success` e `error`
+
+### **4. Banco de Dados**
+- **Soft Delete**: Usar `deleted_at` em vez de DELETE físico
+- **Joins**: Sempre incluir `municipality_id` para filtros
+- **JSON Fields**: Validar antes de salvar (fotos, documentos)
+
+## 🔍 **DEBUG E TESTES**
+
+### **Rotas de Debug (sem autenticação)**
+```javascript
+// Testes de conexão
+GET /api/patrimonios/test-connection
+GET /api/patrimonios/test-table
+GET /api/patrimonios/test-simple
+GET /api/patrimonios/test-main-query
+GET /api/patrimonios/test-pagination
+GET /api/patrimonios/test-build-pagination
+GET /api/patrimonios/test-main-with-pagination
+GET /api/patrimonios/test-execute-pagination
+
+// Debug de dados
+GET /api/patrimonios/debug/public-sync
+GET /api/patrimonios/debug/municipality-info
+GET /api/patrimonios/debug/check-data
+GET /api/patrimonios/debug/check-patrimonio/:numero
+```
+
+### **Comandos de Teste**
+```bash
+# Testar conexão com banco
+curl http://localhost:3001/api/patrimonios/test-connection
+
+# Testar paginação
+curl http://localhost:3001/api/patrimonios/test-execute-pagination
+
+# Verificar estrutura da tabela
+curl http://localhost:3001/api/patrimonios/test-structure
+```
+
+## 📊 **MONITORAMENTO**
+
+### **Logs Obrigatórios**
+```javascript
+// Backend
+console.log('🔄 Operação iniciada')
+console.log('📋 Dados recebidos:', data)
+console.log('✅ Operação concluída')
+console.error('❌ Erro:', error)
+
+// Frontend
+console.log('🔄 Buscando dados...')
+console.log('✅ Dados recebidos:', data)
+console.error('❌ Erro:', error)
+```
+
+### **Performance**
+- Monitorar tempo de resposta das APIs
+- Log de queries lentas (>1000ms)
+- Cache de dados frequentemente acessados
+
+## 🔒 **SEGURANÇA**
+
+### **Autenticação**
+- JWT obrigatório em todas as rotas protegidas
+- Verificação de `municipality_id` para acesso aos dados
+- Role-based access control (superuser, supervisor, user)
+
+### **Validação**
+- Sanitização de inputs
+- Validação de tipos de arquivo
+- Limite de tamanho de uploads (5MB por imagem)
+
+## 📝 **DOCUMENTAÇÃO**
+
+### **Comentários Obrigatórios**
+```javascript
+/**
+ * Função para buscar patrimônios com paginação
+ * @param {Object} params - Parâmetros de paginação
+ * @param {string} params.limit - Limite de itens por página
+ * @param {string} params.cursor - Cursor para paginação
+ * @returns {Object} Resultado paginado
+ */
+```
+
+### **README.md**
+- Instruções de instalação
+- Configuração do banco de dados
+- Comandos de desenvolvimento
+- Troubleshooting comum
+
+## 🚨 **PROBLEMAS CONHECIDOS E SOLUÇÕES**
+
+### **1. Erro addNotification não definido**
+**Solução**: Importar `useNotifications` e usar try-catch para acesso seguro
+
+### **2. Erro de porta em uso**
+**Solução**: `taskkill /f /im node.exe` e reiniciar servidores
+
+### **3. Erro 500 na API /patrimonios**
+**Solução**: Verificar `executePaginatedQuery` e `buildPaginatedQuery`
+
+### **4. Erro de importação dinâmica**
+**Solução**: Verificar se arquivos existem e estão sendo importados corretamente
+
+## 🎯 **COMANDOS DE DESENVOLVIMENTO**
+
+```bash
+# Instalação
+pnpm install
+
+# Desenvolvimento
+npm run dev      # Frontend (porta 8080)
+npm run server   # Backend (porta 3001)
+
+# Setup
+npm run setup    # Configuração inicial
+npm run db:migrate  # Migração do banco
+npm run db:seed     # Dados iniciais
+
+# Testes
+npm run test     # Testes unitários
+npm run test:e2e # Testes end-to-end
+```
+
+## 📈 **MÉTRICAS DE QUALIDADE**
+
+- **Cobertura de testes**: Mínimo 70%
+- **Performance**: Tempo de resposta < 1000ms
+- **Segurança**: Validação em todas as entradas
+- **Acessibilidade**: WCAG 2.1 AA compliance
+
+## 🔄 **WORKFLOW DE DESENVOLVIMENTO**
+
+1. **Criar branch** para nova funcionalidade
+2. **Implementar** seguindo padrões estabelecidos
+3. **Testar** com rotas de debug
+4. **Documentar** mudanças
+5. **Fazer commit** com mensagem descritiva
+6. **Criar PR** para revisão
+7. **Deploy** após aprovação
+
+## 📞 **SUPORTE E CONTATO**
+
+- **Documentação**: `/docs/`
+- **Issues**: GitHub Issues
+- **Logs**: Console do navegador e terminal do servidor
+- **Debug**: Rotas `/api/patrimonios/debug/*`
+
+---
+
+**Versão**: 1.0.0
+**Última Atualização**: 25/08/2025
+**Status**: Ativo 
+  - Use bullet points for clarity
+  - Keep descriptions concise
+  - Include both DO and DON'T examples
+  - Reference actual code over theoretical examples
+  - Use consistent formatting across rules 

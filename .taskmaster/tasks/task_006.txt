@@ -1,0 +1,55 @@
+# Task ID: 6
+# Title: Implementar Monitoramento de Performance em Tempo Real
+# Status: done
+# Dependencies: None
+# Priority: medium
+# Description: Criar sistema de monitoramento de performance em tempo real para identificar gargalos e otimizar o sistema proativamente
+# Details:
+- Implementar métricas de performance das APIs\n- Criar dashboard de monitoramento em tempo real\n- Configurar alertas para performance degradada\n- Implementar logging de queries lentas\n- Adicionar métricas de uso de memória e CPU\n- Configurar monitoramento de uptime
+
+# Test Strategy:
+
+
+# Subtasks:
+## 1. Implementar métricas de performance das APIs [done]
+### Dependencies: None
+### Description: Criar middleware para medir tempo de resposta, throughput e taxa de erro das APIs
+### Details:
+- Criar middleware de performance para Express.js\n- Implementar coleta de métricas: tempo de resposta, throughput, taxa de erro\n- Configurar armazenamento de métricas em memória/Redis\n- Criar endpoints para exposição das métricas
+
+## 2. Implementar monitoramento de queries do banco [done]
+### Dependencies: None
+### Description: Configurar logging e métricas para queries lentas do PostgreSQL
+### Details:
+- Configurar pg_stat_statements no PostgreSQL\n- Implementar middleware para log de queries lentas\n- Criar métricas de performance do banco\n- Configurar alertas para queries que excedem thresholds
+
+## 3. Criar dashboard de monitoramento em tempo real [done]
+### Dependencies: None
+### Description: Desenvolver interface para visualizar métricas de performance em tempo real
+### Details:
+- Criar componente Dashboard com gráficos em tempo real\n- Implementar WebSocket para atualizações em tempo real\n- Adicionar gráficos de linha para métricas temporais\n- Implementar cards para métricas instantâneas\n- Adicionar filtros por período e tipo de métrica
+
+## 4. Implementar sistema de alertas [done]
+### Dependencies: None
+### Description: Configurar alertas automáticos para performance degradada
+### Details:
+- Criar serviço de alertas com thresholds configuráveis\n- Implementar notificações em tempo real via WebSocket\n- Configurar alertas por email/SMS para casos críticos\n- Criar histórico de alertas e resolução\n- Implementar escalation automático
+
+## 5. Monitoramento de recursos do sistema [done]
+### Dependencies: None
+### Description: Implementar coleta de métricas de CPU, memória e I/O
+### Details:
+- Implementar coleta de métricas de sistema (CPU, RAM, Disk I/O)\n- Monitorar uso de memória da aplicação Node.js\n- Implementar health checks automáticos\n- Configurar métricas de uptime e disponibilidade\n- Criar alertas para recursos críticos
+
+## 6. Implementar métricas de frontend [done]
+### Dependencies: None
+### Description: Coletar métricas de performance do lado cliente (React)
+### Details:
+- Implementar Web Vitals (LCP, FID, CLS)\n- Monitorar tempo de carregamento de componentes\n- Coletar métricas de navegação e interação\n- Implementar error tracking no frontend\n- Configurar relatórios automáticos de performance
+
+## 7. Configurar persistência e relatórios [done]
+### Dependencies: None
+### Description: Implementar armazenamento de métricas históricas e geração de relatórios
+### Details:
+- Configurar banco de dados para métricas históricas\n- Implementar agregação de dados por período\n- Criar relatórios automáticos diários/semanais\n- Configurar retenção de dados de performance\n- Implementar exportação de relatórios (PDF/CSV)
+

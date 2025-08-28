@@ -1,0 +1,662 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "FASE 1: Configuração e Validação de Segurança",
+        "description": "Implementar validação de UUID em todas as rotas do sistema para prevenir SQL injection e ataques de manipulação de parâmetros.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 8,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "Segurança",
+        "dependencies": [],
+        "tags": [
+          "segurança",
+          "validação",
+          "crítico"
+        ],
+        "acceptanceCriteria": [
+          "Todas as rotas com parâmetros UUID validados",
+          "Middleware de validação implementado",
+          "Testes de segurança passando",
+          "Logs de tentativas de acesso inválido"
+        ],
+        "technicalDetails": "Criar middleware validateUUID que verifica formato UUID v4 em todos os parâmetros de rota. Implementar em rotas de patrimônios, usuários, setores, etc.",
+        "testStrategy": "Testes unitários para middleware, testes de integração com parâmetros inválidos"
+      },
+      {
+        "id": 2,
+        "title": "Otimizar Rate Limiting por IP",
+        "description": "Implementar rate limiting mais robusto e específico por IP para prevenir ataques DDoS e uso abusivo da API.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 6,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "Segurança",
+        "dependencies": [
+          "1"
+        ],
+        "tags": [
+          "rate-limiting",
+          "segurança",
+          "performance"
+        ],
+        "acceptanceCriteria": [
+          "Rate limiting por IP implementado",
+          "Diferentes limites para endpoints críticos",
+          "Whitelist para IPs confiáveis",
+          "Logs de tentativas bloqueadas"
+        ],
+        "technicalDetails": "Configurar express-rate-limit com Redis store, implementar limites específicos para login, uploads, relatórios",
+        "testStrategy": "Testes de carga para verificar limites, testes de bypass"
+      },
+      {
+        "id": 3,
+        "title": "Corrigir Sistema de Lockout de Usuários",
+        "description": "Melhorar o sistema de bloqueio de contas após tentativas de login falhadas, incluindo desbloqueio automático e manual.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 10,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "Autenticação",
+        "dependencies": [
+          "1"
+        ],
+        "tags": [
+          "autenticação",
+          "segurança",
+          "lockout"
+        ],
+        "acceptanceCriteria": [
+          "Lockout após 5 tentativas implementado",
+          "Desbloqueio automático após 30 minutos",
+          "Interface para admin desbloquear usuários",
+          "Notificação por email de conta bloqueada"
+        ],
+        "technicalDetails": "Melhorar middleware de autenticação, implementar job scheduler para desbloqueio automático, criar endpoint para desbloqueio manual",
+        "testStrategy": "Testes de tentativas de login falhadas, testes de desbloqueio automático e manual"
+      },
+      {
+        "id": 4,
+        "title": "Otimizar Auto-refresh do AuthContext",
+        "description": "Reduzir frequência de auto-refresh de usuários de 30 segundos para 5 minutos para melhorar performance.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 4,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "Performance",
+        "dependencies": [],
+        "tags": [
+          "performance",
+          "frontend",
+          "context"
+        ],
+        "acceptanceCriteria": [
+          "Auto-refresh alterado para 5 minutos",
+          "Refresh manual disponível",
+          "Refresh inteligente baseado em atividade",
+          "Redução de 95% nas chamadas de API"
+        ],
+        "technicalDetails": "Alterar intervalo no AuthContext, implementar refresh baseado em eventos, adicionar debounce",
+        "testStrategy": "Monitorar chamadas de API antes e depois, testes de inatividade"
+      },
+      {
+        "id": 5,
+        "title": "Implementar Middleware Global de Tratamento de Erros",
+        "description": "Criar middleware centralizado para capturar e tratar todos os erros do sistema de forma consistente.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 12,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "Infraestrutura",
+        "dependencies": [],
+        "tags": [
+          "error-handling",
+          "middleware",
+          "logs"
+        ],
+        "acceptanceCriteria": [
+          "Middleware de erro global implementado",
+          "Logs estruturados de todos os erros",
+          "Respostas de erro padronizadas",
+          "Notificações de erros críticos"
+        ],
+        "technicalDetails": "Criar middleware Express para capturar erros, implementar logging com Winston, definir códigos de erro padronizados",
+        "testStrategy": "Testes de diferentes tipos de erro, verificação de logs estruturados"
+      },
+      {
+        "id": 6,
+        "title": "Padronizar Sistema de Logging Estruturado",
+        "description": "Implementar sistema de logging consistente com níveis apropriados e estrutura JSON para facilitar análise.",
+        "status": "done",
+        "priority": "medium",
+        "estimatedHours": 8,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "Infraestrutura",
+        "dependencies": [
+          "5"
+        ],
+        "tags": [
+          "logging",
+          "monitoramento",
+          "estruturado"
+        ],
+        "acceptanceCriteria": [
+          "Winston implementado em todo o backend",
+          "Logs estruturados em JSON",
+          "Diferentes níveis de log configurados",
+          "Rotação automática de logs"
+        ],
+        "technicalDetails": "Configurar Winston com transports para arquivo e console, definir formato JSON, implementar rotação diária",
+        "testStrategy": "Verificar estrutura de logs, testes de rotação, performance de logging"
+      },
+      {
+        "id": 7,
+        "title": "Corrigir Erro 403 na Geração de Números",
+        "description": "Resolver problema específico de erro 403 ao gerar números de patrimônio, identificado no console do browser.",
+        "status": "done",
+        "priority": "critical",
+        "estimatedHours": 6,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "Bug Fix",
+        "dependencies": [
+          "1"
+        ],
+        "tags": [
+          "bug",
+          "patrimônio",
+          "403",
+          "crítico"
+        ],
+        "acceptanceCriteria": [
+          "Geração de números funcionando sem erro 403",
+          "Validação de permissões corrigida",
+          "Logs detalhados do processo",
+          "Testes de diferentes roles"
+        ],
+        "technicalDetails": "Debugar rota generate-number, verificar middleware de autenticação, corrigir validação de permissões",
+        "testStrategy": "Testes com diferentes usuários e roles, verificação de permissões por município"
+      },
+      {
+        "id": 8,
+        "title": "Implementar Loading States Consistentes",
+        "description": "Padronizar estados de carregamento em toda a aplicação para melhorar experiência do usuário.",
+        "status": "done",
+        "priority": "medium",
+        "estimatedHours": 10,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "UI/UX",
+        "dependencies": [],
+        "tags": [
+          "ui",
+          "loading",
+          "ux",
+          "consistência"
+        ],
+        "acceptanceCriteria": [
+          "Componente de loading padronizado",
+          "Estados de loading em todas as ações assíncronas",
+          "Skeleton screens para listas",
+          "Feedback visual consistente"
+        ],
+        "technicalDetails": "Criar componente Loading reutilizável, implementar skeleton screens, padronizar estados de loading em contexts",
+        "testStrategy": "Testes visuais de loading states, testes de acessibilidade"
+      },
+      {
+        "id": 9,
+        "title": "Otimizar Índices do Banco de Dados",
+        "description": "Analisar e otimizar índices existentes para melhorar performance das queries mais frequentes.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 12,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "Database",
+        "dependencies": [],
+        "tags": [
+          "database",
+          "performance",
+          "índices",
+          "otimização"
+        ],
+        "acceptanceCriteria": [
+          "Análise de performance de queries realizada",
+          "Índices compostos implementados",
+          "Queries lentas identificadas e otimizadas",
+          "Redução de 50% no tempo de resposta"
+        ],
+        "technicalDetails": "Usar EXPLAIN ANALYZE em queries críticas, criar índices compostos para filtros frequentes, otimizar joins",
+        "testStrategy": "Benchmarks de performance antes e depois, monitoramento de query time"
+      },
+      {
+        "id": 10,
+        "title": "Implementar Backup Automático Funcional",
+        "description": "Garantir que o sistema de backup automático está funcionando corretamente e testado.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 8,
+        "phase": "Fase 1 - Correções Críticas",
+        "category": "Infraestrutura",
+        "dependencies": [],
+        "tags": [
+          "backup",
+          "automação",
+          "disaster-recovery"
+        ],
+        "acceptanceCriteria": [
+          "Backup diário automatizado funcionando",
+          "Testes de restore bem-sucedidos",
+          "Notificações de backup com falha",
+          "Retenção de 30 dias configurada"
+        ],
+        "technicalDetails": "Configurar cron job para pg_dump, implementar compressão e upload para storage externo, criar scripts de restore",
+        "testStrategy": "Testes de backup e restore completos, simulação de disaster recovery"
+      },
+      {
+        "id": 11,
+        "title": "FASE 2: Implementar Sistema de Cache com Redis",
+        "description": "Implementar cache inteligente usando Redis para sessões, consultas frequentes e dados temporários.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 16,
+        "phase": "Fase 2 - Performance",
+        "category": "Performance",
+        "dependencies": [
+          "1",
+          "5"
+        ],
+        "tags": [
+          "cache",
+          "redis",
+          "performance",
+          "sessões"
+        ],
+        "acceptanceCriteria": [
+          "Redis configurado e funcionando",
+          "Cache de sessões implementado",
+          "Cache de consultas frequentes",
+          "Invalidação inteligente de cache",
+          "Redução de 70% em queries ao banco"
+        ],
+        "technicalDetails": "Configurar Redis, implementar cache em rotas de patrimônios, setores, usuários, configurar TTL apropriado",
+        "testStrategy": "Testes de cache hit/miss, benchmarks de performance, testes de invalidação"
+      },
+      {
+        "id": 12,
+        "title": "Implementar Paginação em Todas as Listagens",
+        "description": "Adicionar paginação consistente em todas as listagens para melhorar performance e experiência do usuário.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 14,
+        "phase": "Fase 2 - Performance",
+        "category": "Performance",
+        "dependencies": [
+          "9"
+        ],
+        "tags": [
+          "paginação",
+          "performance",
+          "ui",
+          "listagem"
+        ],
+        "acceptanceCriteria": [
+          "Paginação implementada em todas as listagens",
+          "Controles de navegação consistentes",
+          "Opções de itens por página",
+          "Performance melhorada em listas grandes"
+        ],
+        "technicalDetails": "Implementar cursor-based pagination no backend, criar componente Pagination reutilizável, adicionar filtros e busca",
+        "testStrategy": "Testes com grandes volumes de dados, testes de navegação, performance benchmarks"
+      },
+      {
+        "id": 13,
+        "title": "Otimizar Queries Complexas com EXPLAIN",
+        "description": "Analisar e otimizar todas as queries complexas usando EXPLAIN ANALYZE para identificar gargalos.",
+        "status": "done",
+        "priority": "high",
+        "estimatedHours": 12,
+        "phase": "Fase 2 - Performance",
+        "category": "Database",
+        "dependencies": [
+          "9",
+          "11"
+        ],
+        "tags": [
+          "database",
+          "queries",
+          "otimização",
+          "performance"
+        ],
+        "acceptanceCriteria": [
+          "Todas as queries complexas analisadas",
+          "Planos de execução otimizados",
+          "Queries N+1 eliminadas",
+          "Tempo de resposta < 100ms para 90% das queries"
+        ],
+        "technicalDetails": "Identificar queries lentas com pg_stat_statements, otimizar joins e subqueries, implementar query optimization",
+        "testStrategy": "Benchmarks de performance, monitoramento contínuo de query time"
+      },
+      {
+        "id": 14,
+        "title": "Implementar Code Splitting por Rotas",
+        "description": "Otimizar bundle do frontend implementando code splitting para reduzir tempo de carregamento inicial.",
+        "status": "done",
+        "priority": "medium",
+        "estimatedHours": 10,
+        "phase": "Fase 2 - Performance",
+        "category": "Frontend",
+        "dependencies": [],
+        "tags": [
+          "frontend",
+          "code-splitting",
+          "performance",
+          "bundle"
+        ],
+        "acceptanceCriteria": [
+          "Code splitting implementado por rotas",
+          "Lazy loading de componentes pesados",
+          "Bundle size reduzido em 40%",
+          "Tempo de carregamento inicial < 2s"
+        ],
+        "technicalDetails": "Implementar React.lazy e Suspense, configurar dynamic imports no Vite, otimizar chunks",
+        "testStrategy": "Análise de bundle size, testes de performance de carregamento"
+      },
+      {
+        "id": 15,
+        "title": "Sistema de Notificações em Tempo Real",
+        "description": "Implementar WebSockets para notificações em tempo real de transferências, aprovações e alertas do sistema.",
+        "status": "done",
+        "priority": "medium",
+        "estimatedHours": 18,
+        "phase": "Fase 2 - Performance",
+        "category": "Features",
+        "dependencies": [
+          "11"
+        ],
+        "tags": [
+          "websockets",
+          "notificações",
+          "tempo-real",
+          "ux"
+        ],
+        "acceptanceCriteria": [
+          "WebSocket server implementado",
+          "Notificações em tempo real funcionando",
+          "Dashboard de notificações",
+          "Persistência de notificações não lidas"
+        ],
+        "technicalDetails": "Implementar Socket.io, criar sistema de rooms por município, implementar notificações push",
+        "testStrategy": "Testes de conectividade WebSocket, testes de notificações em tempo real"
+      },
+      {
+        "id": 16,
+        "title": "Geração Assíncrona de Relatórios",
+        "description": "Implementar sistema de geração assíncrona de relatórios complexos para melhorar experiência do usuário.",
+        "status": "pending",
+        "priority": "medium",
+        "estimatedHours": 16,
+        "phase": "Fase 2 - Performance",
+        "category": "Features",
+        "dependencies": [
+          "11",
+          "15"
+        ],
+        "tags": [
+          "relatórios",
+          "assíncrono",
+          "performance",
+          "background"
+        ],
+        "acceptanceCriteria": [
+          "Relatórios gerados em background",
+          "Notificação quando relatório estiver pronto",
+          "Queue de processamento implementada",
+          "Download de relatórios otimizado"
+        ],
+        "technicalDetails": "Implementar Bull Queue com Redis, criar workers para geração de relatórios, sistema de notificação de conclusão",
+        "testStrategy": "Testes de geração de relatórios grandes, testes de queue processing"
+      },
+      {
+        "id": 17,
+        "title": "Dashboard de Analytics em Tempo Real",
+        "description": "Criar dashboard com métricas e analytics do sistema atualizadas em tempo real.",
+        "status": "done",
+        "priority": "low",
+        "estimatedHours": 14,
+        "phase": "Fase 2 - Performance",
+        "category": "Features",
+        "dependencies": [
+          "15"
+        ],
+        "tags": [
+          "analytics",
+          "dashboard",
+          "métricas",
+          "tempo-real"
+        ],
+        "acceptanceCriteria": [
+          "Dashboard com métricas em tempo real",
+          "Gráficos interativos implementados",
+          "Filtros por período e município",
+          "Exportação de dados de analytics"
+        ],
+        "technicalDetails": "Implementar métricas com Recharts, WebSocket para atualizações em tempo real, cache de métricas",
+        "testStrategy": "Testes de atualização em tempo real, performance de gráficos"
+      },
+      {
+        "id": 18,
+        "title": "FASE 3: Implementar Testes Unitários Completos",
+        "description": "Desenvolver suite completa de testes unitários para atingir 80% de cobertura de código.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 24,
+        "phase": "Fase 3 - Qualidade",
+        "category": "Testing",
+        "dependencies": [],
+        "tags": [
+          "testes",
+          "unitários",
+          "cobertura",
+          "qualidade"
+        ],
+        "acceptanceCriteria": [
+          "80% de cobertura de código",
+          "Testes para todos os componentes críticos",
+          "Testes para todas as funções utilitárias",
+          "Pipeline de CI/CD com testes obrigatórios"
+        ],
+        "technicalDetails": "Configurar Jest e Testing Library, criar testes para components, hooks, services e utilities",
+        "testStrategy": "Testes unitários abrangentes, configuração de coverage reports"
+      },
+      {
+        "id": 19,
+        "title": "Testes de Integração para APIs Críticas",
+        "description": "Desenvolver testes de integração para todas as APIs críticas do sistema.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 20,
+        "phase": "Fase 3 - Qualidade",
+        "category": "Testing",
+        "dependencies": [
+          "18"
+        ],
+        "tags": [
+          "testes",
+          "integração",
+          "api",
+          "qualidade"
+        ],
+        "acceptanceCriteria": [
+          "Testes de integração para todas as APIs",
+          "Testes de autenticação e autorização",
+          "Testes de fluxos completos",
+          "Database seeding para testes"
+        ],
+        "technicalDetails": "Configurar Supertest, criar fixtures de teste, implementar database seeding para testes",
+        "testStrategy": "Testes de integração end-to-end, testes de diferentes cenários de erro"
+      },
+      {
+        "id": 20,
+        "title": "Documentação OpenAPI/Swagger Completa",
+        "description": "Criar documentação completa da API usando OpenAPI/Swagger para facilitar integração e manutenção.",
+        "status": "done",
+        "priority": "medium",
+        "estimatedHours": 16,
+        "phase": "Fase 3 - Qualidade",
+        "category": "Documentation",
+        "dependencies": [],
+        "tags": [
+          "documentação",
+          "api",
+          "swagger",
+          "openapi"
+        ],
+        "acceptanceCriteria": [
+          "Documentação OpenAPI completa",
+          "Interface Swagger UI funcionando",
+          "Exemplos de request/response",
+          "Documentação de autenticação"
+        ],
+        "technicalDetails": "Implementar swagger-jsdoc e swagger-ui-express, documentar todos os endpoints com JSDoc",
+        "testStrategy": "Validação de documentação contra implementação real"
+      },
+      {
+        "id": 21,
+        "title": "Implementar Monitoramento com Prometheus",
+        "description": "Configurar sistema de monitoramento completo com Prometheus e Grafana para observabilidade.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 20,
+        "phase": "Fase 3 - Qualidade",
+        "category": "Monitoring",
+        "dependencies": [],
+        "tags": [
+          "monitoramento",
+          "prometheus",
+          "grafana",
+          "métricas"
+        ],
+        "acceptanceCriteria": [
+          "Prometheus configurado e coletando métricas",
+          "Grafana com dashboards customizados",
+          "Alertas automatizados configurados",
+          "Métricas de negócio implementadas"
+        ],
+        "technicalDetails": "Configurar prom-client no Node.js, criar dashboards no Grafana, configurar Alertmanager",
+        "testStrategy": "Testes de coleta de métricas, validação de alertas"
+      },
+      {
+        "id": 22,
+        "title": "Sistema de Auditoria Avançado",
+        "description": "Implementar sistema completo de auditoria para rastrear todas as ações críticas do sistema.",
+        "status": "pending",
+        "priority": "medium",
+        "estimatedHours": 18,
+        "phase": "Fase 3 - Qualidade",
+        "category": "Security",
+        "dependencies": [
+          "6"
+        ],
+        "tags": [
+          "auditoria",
+          "segurança",
+          "compliance",
+          "logs"
+        ],
+        "acceptanceCriteria": [
+          "Log de todas as ações críticas",
+          "Rastreabilidade completa de mudanças",
+          "Interface de consulta de auditoria",
+          "Relatórios de compliance"
+        ],
+        "technicalDetails": "Implementar middleware de auditoria, criar tabela de audit_logs, interface de consulta",
+        "testStrategy": "Testes de rastreabilidade, validação de logs de auditoria"
+      },
+      {
+        "id": 23,
+        "title": "Implementar OAuth2/SAML para SSO",
+        "description": "Adicionar suporte para Single Sign-On usando OAuth2 e SAML para integração com sistemas corporativos.",
+        "status": "pending",
+        "priority": "low",
+        "estimatedHours": 24,
+        "phase": "Fase 3 - Qualidade",
+        "category": "Security",
+        "dependencies": [
+          "3"
+        ],
+        "tags": [
+          "sso",
+          "oauth2",
+          "saml",
+          "integração"
+        ],
+        "acceptanceCriteria": [
+          "OAuth2 implementado",
+          "SAML configurado",
+          "Integração com Active Directory",
+          "Fallback para autenticação local"
+        ],
+        "technicalDetails": "Implementar Passport.js com estratégias OAuth2 e SAML, configurar providers",
+        "testStrategy": "Testes de integração com diferentes providers, testes de fallback"
+      },
+      {
+        "id": 24,
+        "title": "Interface Multilíngue (PT/EN/ES)",
+        "description": "Implementar sistema de internacionalização para suportar múltiplos idiomas.",
+        "status": "pending",
+        "priority": "low",
+        "estimatedHours": 20,
+        "phase": "Fase 3 - Qualidade",
+        "category": "UX",
+        "dependencies": [],
+        "tags": [
+          "i18n",
+          "internacionalização",
+          "idiomas",
+          "ux"
+        ],
+        "acceptanceCriteria": [
+          "Sistema i18n implementado",
+          "Traduções para PT, EN, ES",
+          "Seletor de idioma na interface",
+          "Formatação de datas e números localizada"
+        ],
+        "technicalDetails": "Implementar react-i18next, criar arquivos de tradução, configurar formatação localizada",
+        "testStrategy": "Testes de tradução, validação de formatação por locale"
+      },
+      {
+        "id": 25,
+        "title": "Sistema de Tutorial Interativo",
+        "description": "Criar sistema de onboarding e tutorial interativo para novos usuários do sistema.",
+        "status": "pending",
+        "priority": "low",
+        "estimatedHours": 16,
+        "phase": "Fase 3 - Qualidade",
+        "category": "UX",
+        "dependencies": [],
+        "tags": [
+          "tutorial",
+          "onboarding",
+          "ux",
+          "ajuda"
+        ],
+        "acceptanceCriteria": [
+          "Tutorial interativo implementado",
+          "Guias contextuais por funcionalidade",
+          "Sistema de dicas progressivas",
+          "Métricas de conclusão de tutorial"
+        ],
+        "technicalDetails": "Implementar biblioteca de tour guiado, criar steps para cada funcionalidade, sistema de progresso",
+        "testStrategy": "Testes de usabilidade, validação de fluxo de onboarding"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "created": "2024-01-15T10:00:00Z",
+      "updated": "2025-08-24T17:28:05.530Z",
+      "source": "melhorias-sispat.txt",
+      "totalTasks": 25,
+      "description": "Tasks for master context"
+    }
+  }
+}

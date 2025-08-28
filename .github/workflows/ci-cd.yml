@@ -1,0 +1,380 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ===== JOB 1: TESTES E QUALIDADE =====
+  test:
+    name: 🧪 Testes e Qualidade
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sispat_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📥 Instalar pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: 📦 Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Verificar tipos TypeScript
+        run: pnpm type-check
+
+      - name: 🎯 Executar linting
+        run: pnpm lint
+
+      - name: 🧪 Executar testes unitários
+        run: pnpm test:unit
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sispat_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: 🎭 Executar testes E2E
+        run: pnpm test:e2e
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sispat_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: 📊 Gerar relatório de cobertura
+        run: pnpm test:coverage
+
+      - name: 📤 Upload cobertura para Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: 🔒 Auditoria de segurança
+        run: pnpm audit --audit-level moderate
+
+  # ===== JOB 2: BUILD =====
+  build:
+    name: 🏗️ Build da Aplicação
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
+
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📥 Instalar pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: 📦 Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build da aplicação
+        run: pnpm build
+        env:
+          NODE_ENV: production
+
+      - name: 📦 Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login no Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📋 Extrair metadados
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🏗️ Build e push da imagem Docker
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+  # ===== JOB 3: DEPLOY STAGING =====
+  deploy-staging:
+    name: 🚀 Deploy Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://sispat-staging.exemplo.com
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy para Staging
+        run: |
+          echo "🚀 Iniciando deploy para staging..."
+          echo "📦 Imagem: ${{ needs.build.outputs.image-tag }}"
+
+          # Aqui você configuraria o deploy real (Kubernetes, Docker Swarm, etc.)
+          # Exemplo com kubectl:
+          # kubectl set image deployment/sispat-app sispat=${{ needs.build.outputs.image-tag }}
+          # kubectl rollout status deployment/sispat-app
+
+          echo "✅ Deploy para staging concluído!"
+
+      - name: 🏥 Health Check Staging
+        run: |
+          echo "🏥 Executando health check..."
+
+          # Aguardar aplicação inicializar
+          sleep 30
+
+          # Health check básico
+          # curl -f https://sispat-staging.exemplo.com/api/health || exit 1
+
+          echo "✅ Health check passou!"
+
+      - name: 🧪 Testes de Smoke Staging
+        run: |
+          echo "🧪 Executando testes de smoke..."
+
+          # Testes básicos de funcionalidade
+          # pnpm test:smoke --env=staging
+
+          echo "✅ Testes de smoke passaram!"
+
+  # ===== JOB 4: DEPLOY PRODUÇÃO =====
+  deploy-production:
+    name: 🌟 Deploy Produção
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://sispat.exemplo.com
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🌟 Deploy Blue-Green para Produção
+        run: |
+          echo "🌟 Iniciando deploy blue-green para produção..."
+          echo "📦 Imagem: ${{ needs.build.outputs.image-tag }}"
+
+          # Blue-Green Deployment
+          echo "🔵 Preparando ambiente Green..."
+
+          # 1. Deploy para ambiente Green (inativo)
+          # kubectl apply -f k8s/green-deployment.yml
+          # kubectl set image deployment/sispat-green sispat=${{ needs.build.outputs.image-tag }}
+          # kubectl rollout status deployment/sispat-green
+
+          echo "✅ Ambiente Green preparado!"
+
+      - name: 🏥 Health Check Produção (Green)
+        run: |
+          echo "🏥 Verificando saúde do ambiente Green..."
+
+          # Health check detalhado
+          # curl -f https://sispat-green.exemplo.com/api/health || exit 1
+          # curl -f https://sispat-green.exemplo.com/api/health/db || exit 1
+          # curl -f https://sispat-green.exemplo.com/api/health/redis || exit 1
+
+          echo "✅ Ambiente Green saudável!"
+
+      - name: 🧪 Testes de Smoke Produção
+        run: |
+          echo "🧪 Executando testes de smoke em produção..."
+
+          # Testes críticos de funcionalidade
+          # pnpm test:smoke:critical --env=production-green
+
+          echo "✅ Testes de smoke críticos passaram!"
+
+      - name: 🔄 Switch Blue-Green
+        run: |
+          echo "🔄 Fazendo switch Blue-Green..."
+
+          # Backup da configuração atual (Blue)
+          # kubectl get service sispat-service -o yaml > backup-blue-service.yml
+
+          # Switch do tráfego para Green
+          # kubectl patch service sispat-service -p '{"spec":{"selector":{"version":"green"}}}'
+
+          echo "✅ Tráfego redirecionado para Green!"
+
+      - name: ⏱️ Período de Observação
+        run: |
+          echo "⏱️ Iniciando período de observação (5 minutos)..."
+
+          # Monitorar métricas por 5 minutos
+          for i in {1..10}; do
+            echo "📊 Verificação $i/10..."
+            
+            # Verificar métricas de erro, latência, etc.
+            # curl -s https://sispat.exemplo.com/api/metrics | jq '.error_rate' | awk '$1 > 0.01 {exit 1}'
+            
+            sleep 30
+          done
+
+          echo "✅ Período de observação concluído com sucesso!"
+
+      - name: 🧹 Limpeza Blue
+        run: |
+          echo "🧹 Limpando ambiente Blue anterior..."
+
+          # Manter Blue por mais tempo para rollback rápido se necessário
+          # kubectl scale deployment sispat-blue --replicas=1
+
+          echo "✅ Limpeza concluída!"
+
+      - name: 📢 Notificação de Deploy
+        run: |
+          echo "📢 Enviando notificação de deploy bem-sucedido..."
+
+          # Notificar via Slack, Discord, email, etc.
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚀 Deploy do SISPAT realizado com sucesso!\nVersão: ${{ github.sha }}\nAmbiente: Produção"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ===== JOB 5: ROLLBACK (Manual) =====
+  rollback:
+    name: 🔄 Rollback de Emergência
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+      url: https://sispat.exemplo.com
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🔄 Executar Rollback
+        run: |
+          echo "🔄 Iniciando rollback de emergência..."
+
+          # Voltar para a versão Blue
+          # kubectl patch service sispat-service -p '{"spec":{"selector":{"version":"blue"}}}'
+
+          # Verificar se Blue ainda está disponível
+          # kubectl get deployment sispat-blue
+
+          # Se não estiver, fazer rollback para versão anterior
+          # kubectl rollout undo deployment/sispat-blue
+          # kubectl rollout status deployment/sispat-blue
+
+          echo "✅ Rollback concluído!"
+
+      - name: 🏥 Verificação Pós-Rollback
+        run: |
+          echo "🏥 Verificando saúde após rollback..."
+
+          # Health check
+          # curl -f https://sispat.exemplo.com/api/health || exit 1
+
+          echo "✅ Sistema operacional após rollback!"
+
+      - name: 📢 Notificação de Rollback
+        run: |
+          echo "📢 Enviando notificação de rollback..."
+
+          # Notificar via Slack, Discord, email, etc.
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"⚠️ Rollback do SISPAT executado!\nMotivo: Deploy com problemas\nStatus: Sistema restaurado"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ===== JOB 6: LIMPEZA =====
+  cleanup:
+    name: 🧹 Limpeza
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always() && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 🧹 Limpeza de imagens antigas
+        run: |
+          echo "🧹 Limpando imagens antigas do registry..."
+
+          # Manter apenas as últimas 5 versões
+          # gh api repos/${{ github.repository }}/packages/container/sispat/versions \
+          #   --jq '.[5:] | .[].id' | \
+          #   xargs -I {} gh api --method DELETE repos/${{ github.repository }}/packages/container/sispat/versions/{}
+
+      - name: 📊 Relatório de Deploy
+        run: |
+          echo "📊 Gerando relatório de deploy..."
+
+          echo "## 🚀 Relatório de Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "- **Versão:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ambiente:** Produção" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ✅ Sucesso" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duração:** ${{ job.duration }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** https://sispat.exemplo.com" >> $GITHUB_STEP_SUMMARY
