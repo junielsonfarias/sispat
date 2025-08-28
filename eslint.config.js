@@ -8,8 +8,8 @@ import tsparser from '@typescript-eslint/parser'
 
 export default [
   { ignores: ['dist', '**/*.d.ts', 'tests/**/*'] },
+  js.configs.recommended,
   {
-    extends: [js.configs.recommended],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
