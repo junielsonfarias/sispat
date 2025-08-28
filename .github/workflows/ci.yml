@@ -22,13 +22,12 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v3
       with:
-        version: latest
+        version: 8.15.0
         
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'pnpm'
         
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
@@ -76,13 +75,12 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v3
       with:
-        version: latest
+        version: 8.15.0
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'pnpm'
         
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
@@ -121,13 +119,12 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v3
       with:
-        version: latest
+        version: 8.15.0
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'pnpm'
         
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
