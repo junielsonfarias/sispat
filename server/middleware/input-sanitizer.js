@@ -43,7 +43,7 @@ function sanitizeSearchParams(params) {
         break
         
       case 'limit':
-      case 'page':
+      case 'page': {
         const num = parseInt(value)
         if (!isNaN(num) && num > 0 && num <= 1000) {
           sanitized[key] = num
@@ -51,8 +51,9 @@ function sanitizeSearchParams(params) {
           logWarning('Invalid numeric parameter', { value, key })
         }
         break
+      }
         
-      case 'status':
+      case 'status': {
         const validStatuses = ['ativo', 'inativo', 'manutencao', 'baixado', 'extraviado']
         if (validStatuses.includes(value)) {
           sanitized[key] = value
@@ -60,6 +61,7 @@ function sanitizeSearchParams(params) {
           logWarning('Invalid status value', { value, key })
         }
         break
+      }
         
       default:
         // Para outros parâmetros, sanitizar como string

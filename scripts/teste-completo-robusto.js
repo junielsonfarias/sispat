@@ -154,32 +154,31 @@ async function verificarMunicipio(token) {
   
   if (result.success && result.data?.id) {
     console.log('✅ Município criado:', result.data.name)
-      return result.data.id
-} else {
-  console.log('❌ Falha ao criar município:', result.data?.error || result.error)
-  return null
-}
-
-// Atualizar usuário com municipality_id
-if (result.success && result.data?.id) {
-  console.log('🔄 Atualizando usuário com municipality_id...')
-  const updateResult = await makeRequest(`${CONFIG.BASE_URL}/api/users/me`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      municipality_id: result.data.id
+    
+    // Atualizar usuário com municipality_id
+    console.log('🔄 Atualizando usuário com municipality_id...')
+    const updateResult = await makeRequest(`${CONFIG.BASE_URL}/api/users/me`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        municipality_id: result.data.id
+      })
     })
-  })
-  
-  if (updateResult.success) {
-    console.log('✅ Usuário atualizado com municipality_id')
+    
+    if (updateResult.success) {
+      console.log('✅ Usuário atualizado com municipality_id')
+    } else {
+      console.log('⚠️ Não foi possível atualizar usuário:', updateResult.data?.error || updateResult.error)
+    }
+    
+    return result.data.id
   } else {
-    console.log('⚠️ Não foi possível atualizar usuário:', updateResult.data?.error || updateResult.error)
+    console.log('❌ Falha ao criar município:', result.data?.error || result.error)
+    return null
   }
-}
 }
 
 // Verificar e criar setores se necessário

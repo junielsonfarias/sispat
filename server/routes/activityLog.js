@@ -1,5 +1,5 @@
 import express from 'express'
-import { getRows } from '../database/connection.js'
+import { getRows, getRow } from '../database/connection.js'
 import { authenticateToken, requireSupervisor } from '../middleware/auth.js'
 
 const router = express.Router()

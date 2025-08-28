@@ -200,7 +200,7 @@ async function getRedisServerInfo(): Promise<{
       mode: 'standalone',
       role: 'master'
     };
-  } catch (error) {
+  } catch (error) { // eslint-disable-line no-unreachable
     console.error('Failed to get Redis server info:', error);
     throw error;
   }

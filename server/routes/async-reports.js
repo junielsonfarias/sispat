@@ -7,6 +7,7 @@ import { authenticateToken, requireAdmin } from '../middleware/auth.js'
 import { reportQueue } from '../services/report-queue.js'
 import { logError, logInfo } from '../utils/logger.js'
 import { paginationMiddleware } from '../utils/pagination.js'
+import { getRows } from '../database/connection.js'
 
 const router = express.Router()
 

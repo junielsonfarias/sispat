@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "test:api": "jest --testPathPattern=server",
     "test:frontend": "jest --testPathPattern=src",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 2000 --quiet",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

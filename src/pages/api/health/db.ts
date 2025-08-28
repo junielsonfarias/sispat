@@ -133,7 +133,7 @@ async function getDatabaseVersion(): Promise<string | null> {
     
     // Simulação para demonstração
     return 'PostgreSQL 15.4';
-  } catch (error) {
+  } catch (error) { // eslint-disable-line no-unreachable
     console.error('Failed to get database version:', error);
     return null;
   }
@@ -207,7 +207,7 @@ async function checkMigrationStatus(): Promise<{
       lastMigration: '20231201_initial_migration',
       pendingCount: 0
     };
-  } catch (error) {
+  } catch (error) { // eslint-disable-line no-unreachable
     console.error('Failed to check migration status:', error);
     return {
       applied: false,

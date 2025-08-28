@@ -13,7 +13,7 @@ const sanitizeString = (str) => {
     // Remove tags HTML/XML
     .replace(/<[^>]*>/g, '')
     // Remove caracteres de controle
-    .replace(/[\x00-\x1F\x7F]/g, '')
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // eslint-disable-line no-control-regex
     // Remove caracteres SQL perigosos
     .replace(/[';-]/g, '')
     .replace(/--/g, '')

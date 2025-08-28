@@ -44,6 +44,9 @@ import { rateLimitMiddleware } from './middleware/rate-limiter.js'
 import { lockoutManager } from './services/lockout-manager.js'
 import { logError, logHttp, logInfo, logStartup, logWarning, setupUncaughtExceptionHandling } from './utils/logger.js'
 
+// Import backup functions
+import { createManualBackup, getBackupStats, listBackups } from './services/backup-service.js'
+
 // Load environment variables
 dotenv.config({ path: '.env' })
 
