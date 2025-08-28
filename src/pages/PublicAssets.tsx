@@ -44,7 +44,7 @@ import { Link } from 'react-router-dom';
 import {
   PublicAssetsFilterSheet,
   PublicFilterValues,
-} from '@/components/public/PublicAssetsFilterSheet';
+} from '../components/public/PublicAssetsFilterSheet';
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' };
 type SortConfig = {
