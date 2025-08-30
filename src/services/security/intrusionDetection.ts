@@ -7,7 +7,13 @@ export interface IntrusionEvent {
   userAgent: string;
   userId?: string;
   sessionId?: string;
-  eventType: 'failed_login' | 'suspicious_activity' | 'rate_limit_exceeded' | 'sql_injection' | 'xss_attempt' | 'unauthorized_access';
+  eventType:
+    | 'failed_login'
+    | 'suspicious_activity'
+    | 'rate_limit_exceeded'
+    | 'sql_injection'
+    | 'xss_attempt'
+    | 'unauthorized_access';
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   metadata: Record<string, any>;
@@ -26,7 +32,14 @@ export interface SecurityRule {
 }
 
 export interface SecurityCondition {
-  type: 'ip_whitelist' | 'ip_blacklist' | 'rate_limit' | 'pattern_match' | 'user_agent' | 'geolocation' | 'time_window';
+  type:
+    | 'ip_whitelist'
+    | 'ip_blacklist'
+    | 'rate_limit'
+    | 'pattern_match'
+    | 'user_agent'
+    | 'geolocation'
+    | 'time_window';
   parameters: Record<string, any>;
 }
 
@@ -53,7 +66,10 @@ class IntrusionDetectionSystem {
   private alerts = new Map<string, SecurityAlert>();
   private rules: SecurityRule[] = [];
   private blockedIPs = new Set<string>();
-  private rateLimitCounters = new Map<string, { count: number; resetTime: number }>();
+  private rateLimitCounters = new Map<
+    string,
+    { count: number; resetTime: number }
+  >();
   private whitelistedIPs = new Set<string>();
   private blacklistedIPs = new Set<string>();
 
@@ -81,7 +97,7 @@ class IntrusionDetectionSystem {
 
     // Avaliar regras de segurança
     const triggeredRules = this.evaluateRules(fullEvent);
-    
+
     // Executar ações das regras
     for (const rule of triggeredRules) {
       this.executeRuleActions(rule, fullEvent);
@@ -129,7 +145,10 @@ class IntrusionDetectionSystem {
     }
 
     // Verificar padrões suspeitos
-    const suspiciousPatterns = this.detectSuspiciousPatterns(userAgent, ipAddress);
+    const suspiciousPatterns = this.detectSuspiciousPatterns(
+      userAgent,
+      ipAddress
+    );
     if (suspiciousPatterns.length > 0) {
       this.recordEvent({
         ipAddress,
@@ -224,14 +243,17 @@ class IntrusionDetectionSystem {
 
     for (const event of allEvents) {
       eventsByType[event.eventType] = (eventsByType[event.eventType] || 0) + 1;
-      eventsBySeverity[event.severity] = (eventsBySeverity[event.severity] || 0) + 1;
+      eventsBySeverity[event.severity] =
+        (eventsBySeverity[event.severity] || 0) + 1;
     }
 
     return {
       totalEvents: allEvents.length,
       totalAlerts: this.alerts.size,
       blockedIPs: this.blockedIPs.size,
-      activeAlerts: Array.from(this.alerts.values()).filter(a => !a.acknowledged).length,
+      activeAlerts: Array.from(this.alerts.values()).filter(
+        a => !a.acknowledged
+      ).length,
       eventsByType,
       eventsBySeverity,
     };
@@ -413,7 +435,10 @@ class IntrusionDetectionSystem {
   /**
    * Avalia condições de uma regra
    */
-  private evaluateRuleConditions(rule: SecurityRule, event: IntrusionEvent): boolean {
+  private evaluateRuleConditions(
+    rule: SecurityRule,
+    event: IntrusionEvent
+  ): boolean {
     for (const condition of rule.conditions) {
       if (!this.evaluateCondition(condition, event)) {
         return false;
@@ -425,7 +450,10 @@ class IntrusionDetectionSystem {
   /**
    * Avalia uma condição específica
    */
-  private evaluateCondition(condition: SecurityCondition, event: IntrusionEvent): boolean {
+  private evaluateCondition(
+    condition: SecurityCondition,
+    event: IntrusionEvent
+  ): boolean {
     switch (condition.type) {
       case 'ip_whitelist':
         return this.whitelistedIPs.has(event.ipAddress);
@@ -453,7 +481,10 @@ class IntrusionDetectionSystem {
   /**
    * Verifica condição de rate limit
    */
-  private checkRateLimitCondition(parameters: any, event: IntrusionEvent): boolean {
+  private checkRateLimitCondition(
+    parameters: any,
+    event: IntrusionEvent
+  ): boolean {
     const { eventType, maxEvents, timeWindow } = parameters;
     const cutoffTime = Date.now() - timeWindow * 1000;
 
@@ -468,7 +499,10 @@ class IntrusionDetectionSystem {
   /**
    * Verifica condição de padrão
    */
-  private checkPatternMatchCondition(parameters: any, event: IntrusionEvent): boolean {
+  private checkPatternMatchCondition(
+    parameters: any,
+    event: IntrusionEvent
+  ): boolean {
     const { patterns } = parameters;
     const textToCheck = `${event.description} ${event.userAgent}`;
 
@@ -484,7 +518,10 @@ class IntrusionDetectionSystem {
   /**
    * Verifica condição de user agent
    */
-  private checkUserAgentCondition(parameters: any, event: IntrusionEvent): boolean {
+  private checkUserAgentCondition(
+    parameters: any,
+    event: IntrusionEvent
+  ): boolean {
     const { suspiciousPatterns } = parameters;
 
     for (const pattern of suspiciousPatterns) {
@@ -499,7 +536,10 @@ class IntrusionDetectionSystem {
   /**
    * Verifica condição de janela de tempo
    */
-  private checkTimeWindowCondition(parameters: any, event: IntrusionEvent): boolean {
+  private checkTimeWindowCondition(
+    parameters: any,
+    event: IntrusionEvent
+  ): boolean {
     const { startHour, endHour } = parameters;
     const eventHour = new Date(event.timestamp).getHours();
     return eventHour >= startHour && eventHour <= endHour;
@@ -517,7 +557,11 @@ class IntrusionDetectionSystem {
   /**
    * Executa uma ação específica
    */
-  private executeAction(action: SecurityAction, event: IntrusionEvent, rule: SecurityRule): void {
+  private executeAction(
+    action: SecurityAction,
+    event: IntrusionEvent,
+    rule: SecurityRule
+  ): void {
     switch (action.type) {
       case 'block':
         this.blockIP(event.ipAddress, action.parameters['duration'] || 3600);
@@ -533,7 +577,11 @@ class IntrusionDetectionSystem {
         break;
 
       case 'alert':
-        this.createAlert(rule, event, action.parameters['severity'] || 'medium');
+        this.createAlert(
+          rule,
+          event,
+          action.parameters['severity'] || 'medium'
+        );
         break;
 
       case 'rate_limit':
@@ -555,7 +603,7 @@ class IntrusionDetectionSystem {
    */
   private blockIP(ipAddress: string, durationSeconds: number): void {
     this.blockedIPs.add(ipAddress);
-    
+
     // Remover bloqueio após o tempo especificado
     setTimeout(() => {
       this.blockedIPs.delete(ipAddress);
@@ -570,7 +618,11 @@ class IntrusionDetectionSystem {
   /**
    * Cria um alerta de segurança
    */
-  private createAlert(rule: SecurityRule, event: IntrusionEvent, severity: string): void {
+  private createAlert(
+    rule: SecurityRule,
+    event: IntrusionEvent,
+    severity: string
+  ): void {
     const alertId = this.generateAlertId();
     const alert: SecurityAlert = {
       id: alertId,
@@ -596,7 +648,10 @@ class IntrusionDetectionSystem {
   /**
    * Verifica rate limiting
    */
-  private checkRateLimit(ipAddress: string): { allowed: boolean; remaining: number } {
+  private checkRateLimit(ipAddress: string): {
+    allowed: boolean;
+    remaining: number;
+  } {
     const counter = this.rateLimitCounters.get(ipAddress);
     const now = Date.now();
 
@@ -609,7 +664,8 @@ class IntrusionDetectionSystem {
       return { allowed: true, remaining: 99 };
     }
 
-    if (counter.count >= 100) { // 100 requests por minuto
+    if (counter.count >= 100) {
+      // 100 requests por minuto
       return { allowed: false, remaining: 0 };
     }
 
@@ -633,7 +689,10 @@ class IntrusionDetectionSystem {
   /**
    * Detecta padrões suspeitos
    */
-  private detectSuspiciousPatterns(userAgent: string, ipAddress: string): string[] {
+  private detectSuspiciousPatterns(
+    userAgent: string,
+    ipAddress: string
+  ): string[] {
     const patterns: string[] = [];
 
     // User agent vazio ou suspeito
@@ -719,16 +778,19 @@ class IntrusionDetectionSystem {
    * Inicia limpeza periódica
    */
   private startPeriodicCleanup(): void {
-    setInterval(() => {
-      this.cleanupOldData();
-    }, 60 * 60 * 1000); // 1 hora
+    setInterval(
+      () => {
+        this.cleanupOldData();
+      },
+      60 * 60 * 1000
+    ); // 1 hora
   }
 
   /**
    * Limpa dados antigos
    */
   private cleanupOldData(): void {
-    const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 horas
+    const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 horas
 
     // Limpar eventos antigos
     for (const [ipAddress, events] of this.events.entries()) {
@@ -741,7 +803,7 @@ class IntrusionDetectionSystem {
     }
 
     // Limpar alertas antigos (mais de 7 dias)
-    const alertCutoffTime = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const alertCutoffTime = Date.now() - 7 * 24 * 60 * 60 * 1000;
     for (const [alertId, alert] of this.alerts.entries()) {
       if (alert.timestamp < alertCutoffTime) {
         this.alerts.delete(alertId);

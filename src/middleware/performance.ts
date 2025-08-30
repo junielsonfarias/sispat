@@ -51,10 +51,10 @@ class PerformanceMonitor {
 
     // Interceptar finalização da resposta
     const originalEnd = res.end;
-    res.end = function(this: Response, ...args: any[]) {
+    res.end = function (this: Response, ...args: any[]) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
+
       metrics.endTime = endTime;
       metrics.duration = duration;
       metrics.statusCode = res.statusCode;
@@ -108,9 +108,13 @@ class PerformanceMonitor {
     // Interceptar queries de banco (se disponível)
     const originalQuery = (req as any).db?.query;
     if (originalQuery) {
-      (req as any).db.query = async function(this: any, sql: string, params: any[] = []) {
+      (req as any).db.query = async function (
+        this: any,
+        sql: string,
+        params: any[] = []
+      ) {
         const queryStartTime = Date.now();
-        
+
         try {
           // Analisar query antes da execução
           const optimization = queryOptimizer.analyzeQuery(sql, params);
@@ -124,7 +128,7 @@ class PerformanceMonitor {
 
           // Executar query
           const result = await originalQuery.call(this, sql, params);
-          
+
           const queryEndTime = Date.now();
           const executionTime = queryEndTime - queryStartTime;
 
@@ -140,7 +144,7 @@ class PerformanceMonitor {
 
           // Atualizar métricas da requisição
           metrics.queryCount++;
-          
+
           return result;
         } catch (error) {
           const queryEndTime = Date.now();
@@ -181,15 +185,15 @@ class PerformanceMonitor {
     // Interceptar operações de cache (se disponível)
     const originalCacheGet = (req as any).cache?.get;
     if (originalCacheGet) {
-      (req as any).cache.get = async function(this: any, key: string) {
+      (req as any).cache.get = async function (this: any, key: string) {
         const result = await originalCacheGet.call(this, key);
-        
+
         if (result !== null) {
           metrics.cacheHits++;
         } else {
           metrics.cacheMisses++;
         }
-        
+
         return result;
       };
     }
@@ -223,7 +227,10 @@ class PerformanceMonitor {
     }
 
     // Calcular estatísticas por endpoint
-    const endpointStats = new Map<string, { count: number; totalTime: number }>();
+    const endpointStats = new Map<
+      string,
+      { count: number; totalTime: number }
+    >();
     for (const metric of completedMetrics) {
       const stats = endpointStats.get(metric.url) || { count: 0, totalTime: 0 };
       stats.count++;
@@ -241,19 +248,34 @@ class PerformanceMonitor {
       .slice(0, 10);
 
     // Calcular estatísticas de cache
-    const totalCacheHits = completedMetrics.reduce((sum, m) => sum + m.cacheHits, 0);
-    const totalCacheMisses = completedMetrics.reduce((sum, m) => sum + m.cacheMisses, 0);
+    const totalCacheHits = completedMetrics.reduce(
+      (sum, m) => sum + m.cacheHits,
+      0
+    );
+    const totalCacheMisses = completedMetrics.reduce(
+      (sum, m) => sum + m.cacheMisses,
+      0
+    );
     const totalCacheRequests = totalCacheHits + totalCacheMisses;
-    const cacheHitRate = totalCacheRequests > 0 ? (totalCacheHits / totalCacheRequests) * 100 : 0;
+    const cacheHitRate =
+      totalCacheRequests > 0 ? (totalCacheHits / totalCacheRequests) * 100 : 0;
 
     // Calcular estatísticas de queries
-    const totalQueries = completedMetrics.reduce((sum, m) => sum + m.queryCount, 0);
-    const avgQueriesPerRequest = completedMetrics.length > 0 ? totalQueries / completedMetrics.length : 0;
+    const totalQueries = completedMetrics.reduce(
+      (sum, m) => sum + m.queryCount,
+      0
+    );
+    const avgQueriesPerRequest =
+      completedMetrics.length > 0 ? totalQueries / completedMetrics.length : 0;
 
     return {
       totalRequests: completedMetrics.length,
-      averageResponseTime: completedMetrics.reduce((sum, m) => sum + m.duration!, 0) / completedMetrics.length,
-      slowRequests: completedMetrics.filter(m => m.duration! > this.slowRequestThreshold),
+      averageResponseTime:
+        completedMetrics.reduce((sum, m) => sum + m.duration!, 0) /
+        completedMetrics.length,
+      slowRequests: completedMetrics.filter(
+        m => m.duration! > this.slowRequestThreshold
+      ),
       topEndpoints,
       cacheStats: {
         hits: totalCacheHits,
@@ -278,7 +300,10 @@ class PerformanceMonitor {
     }
 
     // Log de métricas para requisições importantes
-    if (metrics.duration! > this.slowRequestThreshold || metrics.queryCount > this.highQueryThreshold) {
+    if (
+      metrics.duration! > this.slowRequestThreshold ||
+      metrics.queryCount > this.highQueryThreshold
+    ) {
       logInfo('Métricas de performance', {
         requestId: metrics.requestId,
         method: metrics.method,
@@ -303,14 +328,20 @@ class PerformanceMonitor {
    * Extrai nome da tabela de uma query SQL
    */
   private extractTableName(sql: string): string {
-    const match = sql.match(/FROM\s+(\w+)/i) || sql.match(/UPDATE\s+(\w+)/i) || sql.match(/INSERT\s+INTO\s+(\w+)/i) || sql.match(/DELETE\s+FROM\s+(\w+)/i);
+    const match =
+      sql.match(/FROM\s+(\w+)/i) ||
+      sql.match(/UPDATE\s+(\w+)/i) ||
+      sql.match(/INSERT\s+INTO\s+(\w+)/i) ||
+      sql.match(/DELETE\s+FROM\s+(\w+)/i);
     return match ? match[1] : 'unknown';
   }
 
   /**
    * Extrai operação de uma query SQL
    */
-  private extractOperation(sql: string): 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' {
+  private extractOperation(
+    sql: string
+  ): 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' {
     const upperSql = sql.toUpperCase().trim();
     if (upperSql.startsWith('SELECT')) return 'SELECT';
     if (upperSql.startsWith('INSERT')) return 'INSERT';
@@ -323,7 +354,7 @@ class PerformanceMonitor {
    * Limpa métricas antigas
    */
   cleanup(): void {
-    const cutoffTime = Date.now() - (60 * 60 * 1000); // 1 hora
+    const cutoffTime = Date.now() - 60 * 60 * 1000; // 1 hora
 
     for (const [requestId, metrics] of this.metrics.entries()) {
       if (metrics.startTime < cutoffTime) {

@@ -442,7 +442,8 @@ function containsUserInfo(password: string, userInfo: UserInfo): boolean {
   }
 
   if (userInfo.email) {
-    const emailParts = userInfo.email.toLowerCase().split('@')[0]?.split('.') || [];
+    const emailParts =
+      userInfo.email.toLowerCase().split('@')[0]?.split('.') || [];
     if (
       emailParts.some(part => part.length > 2 && lowerPassword.includes(part))
     ) {

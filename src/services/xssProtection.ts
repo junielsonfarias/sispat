@@ -174,7 +174,10 @@ class XSSProtectionService {
       '/': '&#x2F;',
     };
 
-    return text.replace(/[&<>"'/]/g, char => escapeMap[char as keyof typeof escapeMap] || char);
+    return text.replace(
+      /[&<>"'/]/g,
+      char => escapeMap[char as keyof typeof escapeMap] || char
+    );
   }
 
   /**

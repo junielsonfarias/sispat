@@ -82,7 +82,12 @@ class AdvancedCacheManager {
   }
 
   async get<T>(key: string, options: CacheOptions = {}): Promise<T | null> {
-    const { useRedis = true, useMemory = true, tags = [], priority = 'medium' } = options;
+    const {
+      useRedis = true,
+      useMemory = true,
+      tags = [],
+      priority = 'medium',
+    } = options;
     let value: T | null = null;
 
     // Estratégia de cache baseada na prioridade

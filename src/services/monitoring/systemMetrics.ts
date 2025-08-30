@@ -49,7 +49,11 @@ export class SystemMonitor {
       const previous = this.previousCPUStats[i];
 
       const currentTotal =
-        (current?.user || 0) + (current?.nice || 0) + (current?.sys || 0) + (current?.idle || 0) + (current?.irq || 0);
+        (current?.user || 0) +
+        (current?.nice || 0) +
+        (current?.sys || 0) +
+        (current?.idle || 0) +
+        (current?.irq || 0);
       const previousTotal =
         (previous?.user || 0) +
         (previous?.nice || 0) +

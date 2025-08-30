@@ -303,11 +303,10 @@ export const AdminPages = {
         /* webpackChunkName: "admin-sectors" */ '@/pages/admin/SectorManagement'
       )
   ),
-  SecuritySettings: lazy(
-    () =>
-      import(
-        /* webpackChunkName: "admin-security" */ '@/pages/admin/SecuritySettings'
-      ).then(module => ({ default: module.default || module }))
+  SecuritySettings: lazy(() =>
+    import(
+      /* webpackChunkName: "admin-security" */ '@/pages/admin/SecuritySettings'
+    ).then(module => ({ default: module.default || module }))
   ),
   BackupSettings: lazy(
     () =>
