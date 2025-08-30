@@ -280,6 +280,108 @@ find /var/sispat/backups -name "*.sql" -mtime +30 -delete
 - **Backups**: `/var/sispat/backups/`
 - **Uploads**: `/var/sispat/uploads/`
 
+## 🚀 Comandos PM2
+
+### **Iniciar Aplicação**
+
+```bash
+# Iniciar em produção
+pm2 start ecosystem.config.js --env production
+
+# Ou usar o script npm
+npm run start:prod
+```
+
+### **Gerenciar Aplicação**
+
+```bash
+# Ver status
+pm2 status
+
+# Ver logs
+pm2 logs
+
+# Monitorar recursos
+pm2 monit
+
+# Reiniciar aplicação
+pm2 restart ecosystem.config.js
+
+# Recarregar aplicação (zero downtime)
+pm2 reload ecosystem.config.js
+
+# Parar aplicação
+pm2 stop ecosystem.config.js
+
+# Deletar aplicação
+pm2 delete ecosystem.config.js
+```
+
+### **Scripts NPM Disponíveis**
+
+```bash
+# Iniciar produção
+npm run start:prod
+
+# Parar produção
+npm run stop:prod
+
+# Reiniciar produção
+npm run restart:prod
+
+# Recarregar produção
+npm run reload:prod
+
+# Ver logs
+npm run logs:prod
+
+# Monitorar
+npm run monit:prod
+```
+
+### **Troubleshooting PM2**
+
+#### **1. PM2 não encontra o arquivo ecosystem.config.js**
+
+```bash
+# Verificar se o arquivo existe
+ls -la ecosystem.config.js
+
+# Se não existir, criar baseado no exemplo
+cp ecosystem.config.js.example ecosystem.config.js
+```
+
+#### **2. Erro de permissão nos logs**
+
+```bash
+# Corrigir permissões
+sudo chown -R $USER:$USER /var/log/sispat
+sudo chmod -R 755 /var/log/sispat
+```
+
+#### **3. Aplicação não inicia**
+
+```bash
+# Verificar logs
+pm2 logs
+
+# Verificar variáveis de ambiente
+pm2 env 0
+
+# Reiniciar com logs detalhados
+pm2 restart ecosystem.config.js --env production --log
+```
+
+#### **4. Problemas de memória**
+
+```bash
+# Verificar uso de memória
+pm2 monit
+
+# Ajustar limite de memória no ecosystem.config.js
+max_memory_restart: '2G'
+```
+
 ## ✅ Checklist de Produção
 
 - [ ] Servidor configurado e atualizado

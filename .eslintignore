@@ -1,0 +1,36 @@
+# Arquivos de configuração
+ecosystem.config.cjs
+ecosystem.config.js
+*.config.js
+*.config.cjs
+
+# Arquivos de build
+dist/
+build/
+coverage/
+
+# Arquivos de dependências
+node_modules/
+
+# Arquivos de log
+logs/
+*.log
+
+# Arquivos temporários
+*.tmp
+*.temp
+
+# Arquivos de backup
+backups/
+*.backup
+
+# Arquivos de upload
+uploads/
+
+# Arquivos de documentação
+docs/
+*.md
+
+# Arquivos de teste
+test-results/
+playwright-report/
