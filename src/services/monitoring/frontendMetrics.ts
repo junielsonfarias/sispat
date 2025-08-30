@@ -1,4 +1,4 @@
-import { getCLS, getFCP, getFID, getLCP, getTTFB, Metric } from 'web-vitals';
+import { onCLS, onFCP, onFID, onLCP, onTTFB, Metric } from 'web-vitals';
 
 export interface WebVitalsMetric {
   name: string;
@@ -352,7 +352,7 @@ export class FrontendMetricsCollector {
   // Enviar métrica Web Vital para servidor
   private sendMetricToServer(metric: WebVitalsMetric): void {
     // Em produção, enviar para sua API de métricas
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.log('Sending Web Vital metric:', metric);
     } else {
       // fetch('/api/metrics/web-vitals', {
@@ -365,14 +365,14 @@ export class FrontendMetricsCollector {
 
   // Enviar métrica de navegação para servidor
   private sendNavigationMetricToServer(metric: NavigationMetric): void {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.log('Sending navigation metric:', metric);
     }
   }
 
   // Enviar erro para servidor
   private sendErrorToServer(error: ErrorMetric): void {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.error('Frontend error:', error);
     } else {
       // fetch('/api/metrics/errors', {
@@ -385,14 +385,14 @@ export class FrontendMetricsCollector {
 
   // Enviar alerta de recurso lento
   private sendSlowResourceAlert(resource: PerformanceResourceTiming): void {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.warn('Slow resource alert:', resource);
     }
   }
 
   // Enviar evento customizado para servidor
   private sendCustomEventToServer(name: string, data: any): void {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.log('Custom event:', name, data);
     }
   }
@@ -437,7 +437,9 @@ export function getMetricsSummary(): {
 
   Object.keys(webVitalAverages).forEach(key => {
     const count = metrics.webVitals.filter(m => m.name === key).length;
-    webVitalAverages[key] = webVitalAverages[key] / count;
+    if (webVitalAverages[key] !== undefined) {
+      webVitalAverages[key] = webVitalAverages[key] / count;
+    }
   });
 
   // Contar recursos lentos

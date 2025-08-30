@@ -1,4 +1,4 @@
-import WebSocket from 'ws';
+import { WebSocket, Server } from 'ws';
 import { performanceMonitor, recordCustomMetric } from './performanceMetrics';
 import { systemMonitor } from './systemMetrics';
 
@@ -17,7 +17,7 @@ export interface MetricUpdate {
 
 // Classe para gerenciar WebSocket de monitoramento
 export class MonitoringWebSocketServer {
-  private wss: WebSocket.Server | null = null;
+  private wss: Server | null = null;
   private clients: Map<string, MonitoringClient> = new Map();
   private updateInterval: NodeJS.Timeout | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -26,9 +26,9 @@ export class MonitoringWebSocketServer {
 
   // Inicializar servidor WebSocket
   public start(): void {
-    this.wss = new WebSocket.Server({ port: this.port });
+    this.wss = new Server({ port: this.port });
 
-    this.wss.on('connection', (ws, request) => {
+    this.wss.on('connection', (ws: WebSocket, request: any) => {
       const clientId = this.generateClientId();
       const client: MonitoringClient = {
         id: clientId,

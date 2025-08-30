@@ -68,12 +68,28 @@ class AdvancedCacheManager {
     }
   }
 
+  private getCacheStrategy(priority: 'low' | 'medium' | 'high') {
+    switch (priority) {
+      case 'high':
+        return { memory: true, redis: false }; // Cache apenas em memória para máxima velocidade
+      case 'medium':
+        return { memory: true, redis: true }; // Cache híbrido
+      case 'low':
+        return { memory: false, redis: true }; // Cache apenas no Redis para economizar memória
+      default:
+        return { memory: true, redis: true };
+    }
+  }
+
   async get<T>(key: string, options: CacheOptions = {}): Promise<T | null> {
-    const { useRedis = true, useMemory = true, tags = [] } = options;
+    const { useRedis = true, useMemory = true, tags = [], priority = 'medium' } = options;
     let value: T | null = null;
 
+    // Estratégia de cache baseada na prioridade
+    const cacheStrategy = this.getCacheStrategy(priority);
+
     // Tentar cache em memória primeiro (mais rápido)
-    if (useMemory) {
+    if (useMemory && cacheStrategy.memory) {
       value = globalCache.get<T>(key);
       if (value !== null) {
         this.stats.memory.hits++;
@@ -84,7 +100,7 @@ class AdvancedCacheManager {
     }
 
     // Tentar Redis se cache em memória falhou
-    if (useRedis && redisClient.isReady()) {
+    if (useRedis && cacheStrategy.redis && redisClient.isReady()) {
       try {
         value = await redisClient.get<T>(key);
         if (value !== null) {
@@ -92,7 +108,7 @@ class AdvancedCacheManager {
           this.updateMetrics(key, 'hit', this.getDataSize(value));
 
           // Armazenar também no cache em memória para próximas consultas
-          if (useMemory) {
+          if (useMemory && cacheStrategy.memory) {
             globalCache.set(key, value, { ttl: options.ttl });
           }
 

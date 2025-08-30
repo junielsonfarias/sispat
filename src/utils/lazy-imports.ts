@@ -307,7 +307,7 @@ export const AdminPages = {
     () =>
       import(
         /* webpackChunkName: "admin-security" */ '@/pages/admin/SecuritySettings'
-      )
+      ).then(module => ({ default: module.default || module }))
   ),
   BackupSettings: lazy(
     () =>
@@ -454,7 +454,7 @@ export const preloadChunksByRole = (role: string) => {
       // Preload chunks mais comuns para superuser
       Object.values(SuperuserPages).forEach(component => {
         if (typeof component === 'function') {
-          component();
+          component({});
         }
       });
       break;
@@ -462,7 +462,7 @@ export const preloadChunksByRole = (role: string) => {
       // Preload chunks para admin
       Object.values(AdminPages).forEach(component => {
         if (typeof component === 'function') {
-          component();
+          component({});
         }
       });
       break;
@@ -470,7 +470,7 @@ export const preloadChunksByRole = (role: string) => {
       // Preload chunks para supervisor
       Object.values(DashboardPages).forEach(component => {
         if (typeof component === 'function') {
-          component();
+          component({});
         }
       });
       break;
@@ -478,7 +478,7 @@ export const preloadChunksByRole = (role: string) => {
       // Preload chunks básicos
       Object.values(CommonPages).forEach(component => {
         if (typeof component === 'function') {
-          component();
+          component({});
         }
       });
   }
@@ -502,6 +502,6 @@ export const preloadChunk = (chunkName: string) => {
 
   const component = allPages[chunkName as keyof typeof allPages];
   if (component && typeof component === 'function') {
-    component();
+    component({});
   }
 };

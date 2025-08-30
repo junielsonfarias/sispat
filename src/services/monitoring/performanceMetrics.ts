@@ -8,7 +8,7 @@ import {
 
 // Configurar coleta de métricas padrão
 collectDefaultMetrics({
-  timeout: 5000,
+  // timeout: 5000, // Comentado temporariamente
   gcDurationBuckets: [0.001, 0.01, 0.1, 1, 2, 5],
   eventLoopMonitoringPrecision: 10,
 });
@@ -152,8 +152,8 @@ export class PerformanceMonitor {
 
     return {
       avg: sum / values.length,
-      min: values[0],
-      max: values[values.length - 1],
+      min: values[0] || 0,
+      max: values[values.length - 1] || 0,
       count: values.length,
       p95: values[Math.floor(values.length * 0.95)] || 0,
       p99: values[Math.floor(values.length * 0.99)] || 0,
@@ -225,7 +225,7 @@ export function recordCustomMetric(
     name,
     value,
     timestamp: Date.now(),
-    labels,
+    labels: labels || {},
   });
 }
 

@@ -59,12 +59,8 @@ import {
   setupUncaughtExceptionHandling,
 } from './utils/logger.js';
 
-// Import backup functions
-import {
-  createManualBackup,
-  getBackupStats,
-  listBackups,
-} from './services/backup-service.js';
+// Import backup service
+import backupService from './services/backup/backupService.js';
 
 // Load environment variables
 dotenv.config({ path: '.env' });
@@ -688,7 +684,7 @@ app.get('/api/debug/patrimonios-data', async (req, res) => {
 // Backup routes (apenas para superuser)
 app.post('/api/backup/create', async (req, res) => {
   try {
-    const result = await createManualBackup();
+    const result = await backupService.createBackup('manual');
     res.json(result);
   } catch (error) {
     console.error('Erro ao criar backup:', error);
@@ -696,9 +692,9 @@ app.post('/api/backup/create', async (req, res) => {
   }
 });
 
-app.get('/api/backup/list', (req, res) => {
+app.get('/api/backup/list', async (req, res) => {
   try {
-    const backups = listBackups();
+    const backups = await backupService.listBackups();
     res.json(backups);
   } catch (error) {
     console.error('Erro ao listar backups:', error);
@@ -706,9 +702,9 @@ app.get('/api/backup/list', (req, res) => {
   }
 });
 
-app.get('/api/backup/stats', (req, res) => {
+app.get('/api/backup/stats', async (req, res) => {
   try {
-    const stats = getBackupStats();
+    const stats = await backupService.getBackupStats();
     res.json(stats);
   } catch (error) {
     console.error('Erro ao obter estatísticas de backup:', error);

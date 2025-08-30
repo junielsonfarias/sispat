@@ -406,35 +406,4 @@ export interface AuditTrailEntry {
   userAgent?: string;
 }
 
-// Export all types
-export type {
-  BaseEntity,
-  User,
-  Municipality,
-  Sector,
-  Patrimonio,
-  Imovel,
-  Local,
-  Emprestimo,
-  Transferencia,
-  Inventario,
-  ActivityLog,
-  SystemSettings,
-  Report,
-  Notification,
-  Backup,
-  ApiResponse,
-  PaginatedResponse,
-  FormField,
-  FilterOption,
-  FilterConfig,
-  SearchResult,
-  ChartData,
-  DashboardMetric,
-  DashboardWidget,
-  ApiError,
-  LoadingState,
-  PaginationParams,
-  FileUpload,
-  AuditTrailEntry,
-};
+// Export all types - Removed duplicate exports to fix TypeScript conflicts

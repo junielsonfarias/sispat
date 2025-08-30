@@ -148,7 +148,7 @@ export class DatabaseMonitor {
         duration,
         timestamp: startTime,
         parameters: this.sanitizeParameters(parameters),
-        table,
+        table: table || 'unknown',
         operation,
         status: 'error',
         error: errorMessage,
@@ -234,7 +234,7 @@ export class DatabaseMonitor {
         threshold: this.config.slowQueryThreshold,
         timestamp: queryLog.timestamp,
         frequency: 1,
-        table: queryLog.table,
+        table: queryLog.table || 'unknown',
         suggestions: this.generateOptimizationSuggestions(queryLog),
       };
 
@@ -369,7 +369,7 @@ export class DatabaseMonitor {
     });
 
     // Em produção, enviar para sistema de alertas
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env['NODE_ENV'] === 'production') {
       // this.sendSlowQueryNotification(alert);
     }
   }

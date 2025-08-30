@@ -1,9 +1,10 @@
-const fs = require('fs').promises;
-const path = require('path');
-const { exec } = require('child_process');
-const { promisify } = require('util');
+import fs from 'fs/promises';
+import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import cron from 'node-cron';
+
 const execAsync = promisify(exec);
-const cron = require('node-cron');
 
 class BackupService {
   constructor() {
@@ -337,4 +338,4 @@ class BackupService {
 // Instância singleton
 const backupService = new BackupService();
 
-module.exports = backupService;
+export default backupService;

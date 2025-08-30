@@ -49,16 +49,16 @@ export class SystemMonitor {
       const previous = this.previousCPUStats[i];
 
       const currentTotal =
-        current.user + current.nice + current.sys + current.idle + current.irq;
+        (current?.user || 0) + (current?.nice || 0) + (current?.sys || 0) + (current?.idle || 0) + (current?.irq || 0);
       const previousTotal =
-        previous.user +
-        previous.nice +
-        previous.sys +
-        previous.idle +
-        previous.irq;
+        (previous?.user || 0) +
+        (previous?.nice || 0) +
+        (previous?.sys || 0) +
+        (previous?.idle || 0) +
+        (previous?.irq || 0);
 
       const totalDiff = currentTotal - previousTotal;
-      const idleDiff = current.idle - previous.idle;
+      const idleDiff = (current?.idle || 0) - (previous?.idle || 0);
 
       const usage =
         totalDiff > 0 ? ((totalDiff - idleDiff) / totalDiff) * 100 : 0;
@@ -93,9 +93,9 @@ export class SystemMonitor {
   private getLoadAverage(): { load1: number; load5: number; load15: number } {
     const loadAvg = os.loadavg();
     return {
-      load1: loadAvg[0],
-      load5: loadAvg[1],
-      load15: loadAvg[2],
+      load1: loadAvg[0] || 0,
+      load5: loadAvg[1] || 0,
+      load15: loadAvg[2] || 0,
     };
   }
 

@@ -31,11 +31,11 @@ export const generateTwoFactorSecret = async (
   const backupCodes = generateBackupCodes();
 
   // Gera QR Code URL
-  const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+  const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url || '');
 
   return {
     secret: secret.base32!,
-    qrCodeUrl,
+    qrCodeUrl: qrCodeUrl,
     backupCodes,
     manualEntryKey: secret.base32!,
   };

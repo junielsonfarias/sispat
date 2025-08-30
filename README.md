@@ -16,6 +16,11 @@ desenvolvido com tecnologias modernas e arquitetura full-stack.
 - **📄 Relatórios**: Templates customizáveis para relatórios
 - **🔍 Busca Pública**: Consulta pública de patrimônios
 - **📱 Interface Responsiva**: Design moderno e adaptável
+- **⚡ Performance Otimizada**: Cache inteligente e otimização de queries
+- **🛡️ Segurança Avançada**: Sistema de detecção de intrusão (IDS)
+- **📈 Monitoramento**: Métricas de performance e segurança em tempo real
+- **🔄 Backup Automático**: Sistema de backup e recuperação de dados
+- **🔐 Autenticação 2FA**: Suporte a autenticação de dois fatores
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -39,12 +44,52 @@ desenvolvido com tecnologias modernas e arquitetura full-stack.
 - **bcryptjs** - Criptografia de senhas
 - **Multer** - Upload de arquivos
 - **Helmet** - Segurança
+- **Redis** - Cache e sessões
+- **node-cron** - Agendamento de tarefas
+- **express-rate-limit** - Rate limiting
+
+### Segurança e Performance
+
+- **Sistema IDS** - Detecção de intrusão em tempo real
+- **Cache Inteligente** - Estratégias de cache baseadas em prioridade
+- **Otimização de Queries** - Análise e otimização automática
+- **Monitoramento** - Métricas de performance e segurança
+- **Backup Automático** - Sistema de backup e recuperação
 
 ## 📋 Pré-requisitos
 
 - **Node.js** 18+
 - **PostgreSQL** 14+
+- **Redis** 6+ (opcional, para cache avançado)
 - **pnpm** (recomendado) ou npm
+
+## 🆕 Novas Funcionalidades
+
+### ⚡ Otimização de Performance
+
+O SISPAT agora inclui um sistema avançado de otimização de performance:
+
+- **Cache Inteligente**: Estratégias de cache baseadas em prioridade (high, medium, low)
+- **Otimização de Queries**: Análise automática e sugestões de otimização
+- **Monitoramento de Performance**: Métricas em tempo real de requisições e queries
+- **Rate Limiting**: Proteção contra sobrecarga do sistema
+
+### 🛡️ Sistema de Segurança Avançado
+
+Implementamos um sistema completo de detecção de intrusão (IDS):
+
+- **Detecção de Ataques**: SQL Injection, XSS, Rate Limiting
+- **Regras Configuráveis**: 4 regras padrão + regras customizáveis
+- **Bloqueio Automático**: IPs maliciosos são bloqueados automaticamente
+- **Alertas em Tempo Real**: Notificações para administradores
+- **Dashboard de Segurança**: Estatísticas e monitoramento
+
+### 📊 Monitoramento e Backup
+
+- **Métricas de Sistema**: Performance, segurança e uso
+- **Backup Automático**: Agendamento e recuperação de dados
+- **Logs Detalhados**: Rastreamento completo de eventos
+- **Alertas Inteligentes**: Notificações baseadas em regras
 
 ## 🚀 Instalação e Configuração
 
