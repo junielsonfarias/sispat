@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import App from '../src/App';
 
@@ -11,8 +11,12 @@ const MockApp = () => (
 
 describe('App', () => {
   it('renders without crashing', () => {
-    render(<MockApp />);
-    // Teste básico para verificar se o componente renderiza
-    expect(document.body).toBeInTheDocument();
+    // Teste básico para verificar se o componente renderiza sem erros
+    expect(() => render(<MockApp />)).not.toThrow();
+  });
+
+  it('renders a div element', () => {
+    const { container } = render(<MockApp />);
+    expect(container.querySelector('div')).toBeInTheDocument();
   });
 });

@@ -1,11 +1,13 @@
 # 🏛️ SISPAT - Sistema de Gestão Patrimonial
 
-Sistema completo e independente de gestão patrimonial para municípios e organizações públicas, desenvolvido com tecnologias modernas e arquitetura full-stack.
+Sistema completo e independente de gestão patrimonial para municípios e organizações públicas,
+desenvolvido com tecnologias modernas e arquitetura full-stack.
 
 ## 🚀 Características Principais
 
 - **🏛️ Gestão Completa de Patrimônio**: Controle total de bens, imóveis e equipamentos
-- **👥 Sistema de Usuários**: Hierarquia de permissões (superuser, supervisor, admin, usuario, visualizador)
+- **👥 Sistema de Usuários**: Hierarquia de permissões (superuser, supervisor, admin, usuario,
+  visualizador)
 - **🏘️ Gestão Municipal**: Suporte a múltiplos municípios com isolamento de dados
 - **📊 Dashboards Inteligentes**: Relatórios e análises em tempo real
 - **🔄 Controle de Transferências**: Gestão de empréstimos e transferências
@@ -18,6 +20,7 @@ Sistema completo e independente de gestão patrimonial para municípios e organi
 ## 🛠️ Tecnologias Utilizadas
 
 ### Frontend
+
 - **React 19.1.1** - Framework principal
 - **TypeScript 5.9.2** - Tipagem estática
 - **Vite 7.1.0** - Build tool e dev server
@@ -28,6 +31,7 @@ Sistema completo e independente de gestão patrimonial para municípios e organi
 - **Recharts** - Gráficos e visualizações
 
 ### Backend
+
 - **Node.js** - Runtime JavaScript
 - **Express.js** - Framework web
 - **PostgreSQL** - Banco de dados relacional
@@ -38,19 +42,21 @@ Sistema completo e independente de gestão patrimonial para municípios e organi
 
 ## 📋 Pré-requisitos
 
-- **Node.js** 18+ 
+- **Node.js** 18+
 - **PostgreSQL** 14+
 - **pnpm** (recomendado) ou npm
 
 ## 🚀 Instalação e Configuração
 
 ### 1. Clone o repositório
+
 ```bash
 git clone <repository-url>
 cd sispat-sistema-patrimonial
 ```
 
 ### 2. Instale as dependências
+
 ```bash
 pnpm install
 ```
@@ -58,19 +64,23 @@ pnpm install
 ### 3. Configure o banco de dados PostgreSQL
 
 #### Opção A: Instalação Automática (Windows)
+
 ```powershell
 # Execute o script de instalação do PostgreSQL
 .\install-postgresql.ps1
 ```
 
 #### Opção B: Instalação Manual
+
 1. Instale o PostgreSQL
 2. Crie o banco de dados:
+
 ```sql
 CREATE DATABASE sispat_db;
 ```
 
 ### 4. Configure as variáveis de ambiente
+
 ```bash
 # Copie o arquivo de exemplo
 cp .env.example .env
@@ -85,6 +95,7 @@ JWT_SECRET=seu_jwt_secret
 ```
 
 ### 5. Execute a configuração inicial
+
 ```bash
 # Configuração automática
 pnpm run setup
@@ -97,6 +108,7 @@ pnpm run db:seed
 ```
 
 ### 6. Inicie o sistema
+
 ```bash
 # Desenvolvimento (frontend + backend)
 pnpm run dev
@@ -162,6 +174,7 @@ pnpm run format           # Formatar código
 ## 🏛️ Sistema de Permissões
 
 ### Hierarquia de Roles
+
 1. **superuser** - Acesso total ao sistema
 2. **supervisor** - Gestão de município
 3. **admin** - Administração local
@@ -169,6 +182,7 @@ pnpm run format           # Formatar código
 5. **visualizador** - Apenas visualização
 
 ### Controle de Acesso
+
 - **Município-based**: Usuários só acessam dados do seu município
 - **Acesso automático**: Usuários têm acesso a todos os setores/locais do município
 - **Isolamento**: Dados são isolados por município
@@ -176,6 +190,7 @@ pnpm run format           # Formatar código
 ## 🗄️ Banco de Dados
 
 ### 19 Tabelas Principais
+
 - `municipalities` - Municípios
 - `users` - Usuários
 - `sectors` - Setores
@@ -209,6 +224,7 @@ pnpm run format           # Formatar código
 ## 📊 Funcionalidades Principais
 
 ### Gestão de Patrimônio
+
 - ✅ Cadastro completo de bens
 - ✅ Categorização e classificação
 - ✅ Controle de estado e valor
@@ -217,24 +233,28 @@ pnpm run format           # Formatar código
 - ✅ Geração de etiquetas
 
 ### Gestão de Imóveis
+
 - ✅ Cadastro de imóveis
 - ✅ Geolocalização
 - ✅ Manutenções
 - ✅ Relatórios específicos
 
 ### Inventários
+
 - ✅ Criação de inventários
 - ✅ Contagem de bens
 - ✅ Relatórios de divergências
 - ✅ Exportação de dados
 
 ### Transferências
+
 - ✅ Solicitação de transferências
 - ✅ Aprovação/rejeição
 - ✅ Controle de empréstimos
 - ✅ Termos de responsabilidade
 
 ### Relatórios
+
 - ✅ Templates customizáveis
 - ✅ Exportação em PDF/Excel
 - ✅ Gráficos e dashboards
@@ -243,11 +263,13 @@ pnpm run format           # Formatar código
 ## 🚀 Deploy
 
 ### Desenvolvimento
+
 ```bash
 pnpm run dev
 ```
 
 ### Produção
+
 ```bash
 # Build
 pnpm run build

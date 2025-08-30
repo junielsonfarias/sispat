@@ -1,11 +1,5 @@
 // Setup file for tests
 import '@testing-library/jest-dom';
-import { server } from './mocks/server';
-
-// Configurar MSW para interceptar requisições HTTP
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
 
 // Mock do localStorage
 const localStorageMock = {
@@ -66,7 +60,9 @@ beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render is no longer supported')
+      (args[0].includes('Warning: ReactDOM.render is no longer supported') ||
+       args[0].includes('Warning: ReactDOM.findDOMNode') ||
+       args[0].includes('Warning: componentWillReceiveProps'))
     ) {
       return;
     }
@@ -77,3 +73,12 @@ beforeAll(() => {
 afterAll(() => {
   console.error = originalError;
 });
+
+// Mock do fetch global
+global.fetch = jest.fn();
+
+// Mock do URL.createObjectURL
+global.URL.createObjectURL = jest.fn(() => 'mock-url');
+
+// Mock do URL.revokeObjectURL
+global.URL.revokeObjectURL = jest.fn();

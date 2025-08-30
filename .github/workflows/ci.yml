@@ -19,24 +19,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Prepare pnpm
-        run: corepack prepare pnpm@8.15.0 --activate
-
-      - name: Debug installation
-        run: |
-          echo "Node version: $(node --version)"
-          echo "Corepack version: $(corepack --version)"
-          echo "PNPM version: $(pnpm --version)"
-          echo "PNPM location: $(which pnpm)"
-          echo "PATH: $PATH"
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -44,11 +36,19 @@ jobs:
       - name: Lint code
         run: pnpm run lint
 
+      - name: Lint tests
+        run: pnpm run lint:test
+
       - name: Format check
         run: pnpm run format:check
 
       - name: Type check
         run: pnpm run type-check
+
+      - name: Run unit tests
+        run: pnpm run test:unit
+        env:
+          CI: true
 
   build:
     name: Build Application
@@ -59,24 +59,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Prepare pnpm
-        run: corepack prepare pnpm@8.15.0 --activate
-
-      - name: Debug installation
-        run: |
-          echo "Node version: $(node --version)"
-          echo "Corepack version: $(corepack --version)"
-          echo "PNPM version: $(pnpm --version)"
-          echo "PNPM location: $(which pnpm)"
-          echo "PATH: $PATH"
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
