@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =================================
-# SCRIPT DE DEPLOY PARA PRODUÇÃO
+# SCRIPT DE DEPLOY SIMPLIFICADO PARA PRODUÇÃO
 # SISPAT - Sistema de Patrimônio
 # =================================
 
@@ -46,7 +46,7 @@ PRODUCTION_ENV=".env.production"
 BACKUP_DIR="./backups/deploy"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
-log "🚀 Iniciando deploy para produção..."
+log "🚀 Iniciando deploy simplificado para produção..."
 
 # 1. Verificar variáveis de ambiente
 log "📋 Verificando variáveis de ambiente..."
@@ -60,11 +60,6 @@ mkdir -p "$BACKUP_DIR"
 if [ -d "dist" ]; then
     tar -czf "$BACKUP_DIR/frontend_backup_$TIMESTAMP.tar.gz" dist/
     success "Backup do frontend criado"
-fi
-
-if [ -d "logs" ]; then
-    tar -czf "$BACKUP_DIR/logs_backup_$TIMESTAMP.tar.gz" logs/
-    success "Backup dos logs criado"
 fi
 
 # 3. Parar serviços em execução
@@ -82,43 +77,18 @@ log "🧹 Limpando builds anteriores..."
 rm -rf dist/ node_modules/.cache/
 success "Cache limpo"
 
-# 5. Instalar dependências de produção
+# 5. Instalar dependências de produção (SEM HUSKY)
 log "📦 Instalando dependências de produção..."
+log "⚠️ Desabilitando husky para evitar erros..."
 
-# Configurar variáveis para pular scripts problemáticos em produção
+# Configurar variáveis para pular scripts problemáticos
 export HUSKY=0
 export CI=true
 export SKIP_HUSKY=1
 
-# Tentar instalar com --ignore-scripts primeiro
-if pnpm install --prod --frozen-lockfile --ignore-scripts; then
-    success "Dependências instaladas com --ignore-scripts"
-else
-    log "⚠️ Fallback: instalando com modificação temporária do package.json..."
-    
-    # Backup do package.json original
-    cp package.json package.json.backup
-    
-    # Remover temporariamente o script prepare que causa problemas
-    # Usar sed compatível com diferentes sistemas
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        sed -i '' 's/"prepare": "husky install"//' package.json
-    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
-        # Windows
-        sed -i 's/"prepare": "husky install"//' package.json
-    else
-        # Linux
-        sed -i 's/"prepare": "husky install"//' package.json
-    fi
-    
-    # Instalar dependências
-    pnpm install --prod --frozen-lockfile
-    success "Dependências instaladas com modificação temporária"
-    
-    # Restaurar package.json original
-    mv package.json.backup package.json
-fi
+# Instalar com --ignore-scripts para pular o husky
+pnpm install --prod --frozen-lockfile --ignore-scripts
+success "Dependências instaladas (husky desabilitado)"
 
 # 6. Build da aplicação
 log "🔨 Gerando build de produção..."
@@ -177,7 +147,7 @@ log "🧹 Limpando arquivos temporários..."
 rm -rf node_modules/.cache/
 
 # 12. Log de sucesso
-log "🎉 Deploy concluído com sucesso!"
+log "🎉 Deploy simplificado concluído com sucesso!"
 log "📊 Status dos serviços:"
 if command -v pm2 &> /dev/null; then
     pm2 list
@@ -191,4 +161,4 @@ log "   - Health Check: http://localhost:3001/api/health"
 log "📁 Backups salvos em: $BACKUP_DIR"
 log "📝 Logs disponíveis em: ./logs/"
 
-success "Deploy para produção concluído com sucesso!"
+success "Deploy simplificado para produção concluído com sucesso!"
