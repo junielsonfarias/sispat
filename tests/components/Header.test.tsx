@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, jest, beforeEach } from '@jest/globals'
 import '@testing-library/jest-dom'
 import { MemoryRouter } from 'react-router-dom'
 import Header from '../../src/components/Header'

@@ -1,6 +1,6 @@
 import React from 'react'
 import { screen } from '@testing-library/react'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import { render, mockFetch, mockUser } from './test-utils'
 import Login from '../src/pages/auth/Login'
 import BensCadastrados from '../src/pages/bens/BensCadastrados'

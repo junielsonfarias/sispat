@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from '@jest/globals'
 import { cn } from '../../src/lib/utils'
 
 describe('Utility Functions', () => {

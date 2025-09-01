@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent } from '../../test-utils'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, jest } from '@jest/globals'
 import { Button } from '../../src/components/ui/button'
 
 describe('Button Component', () => {

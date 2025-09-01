@@ -1,80 +1,79 @@
-import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
+import React from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { vi } from 'vitest'
 
 // Create comprehensive mock values for all contexts
 const mockAuthValue = {
   user: null,
-  login: vi.fn(),
-  logout: vi.fn(),
+  login: jest.fn(),
+  logout: jest.fn(),
   isLoading: false,
-  checkAuth: vi.fn(),
+  checkAuth: jest.fn(),
   token: null,
 }
 
 const mockMunicipalityValue = {
   municipalities: [],
   isLoading: false,
-  fetchMunicipalities: vi.fn(),
+  fetchMunicipalities: jest.fn(),
   selectedMunicipality: null,
-  setSelectedMunicipality: vi.fn(),
+  setSelectedMunicipality: jest.fn(),
 }
 
 const mockPatrimonioValue = {
   patrimonios: [],
   isLoading: false,
-  fetchPatrimonios: vi.fn(),
-  createPatrimonio: vi.fn(),
-  updatePatrimonio: vi.fn(),
-  deletePatrimonio: vi.fn(),
-  getPatrimonio: vi.fn(),
-  searchPatrimonios: vi.fn(),
+  fetchPatrimonios: jest.fn(),
+  createPatrimonio: jest.fn(),
+  updatePatrimonio: jest.fn(),
+  deletePatrimonio: jest.fn(),
+  getPatrimonio: jest.fn(),
+  searchPatrimonios: jest.fn(),
   totalCount: 0,
   currentPage: 1,
-  setCurrentPage: vi.fn(),
+  setCurrentPage: jest.fn(),
   filters: {},
-  setFilters: vi.fn(),
+  setFilters: jest.fn(),
 }
 
 const mockActivityLogValue = {
   logs: [],
   isLoading: false,
-  fetchLogs: vi.fn(),
+  fetchLogs: jest.fn(),
   totalCount: 0,
   currentPage: 1,
-  setCurrentPage: vi.fn(),
+  setCurrentPage: jest.fn(),
 }
 
 const mockSectorValue = {
   sectors: [],
   isLoading: false,
-  fetchSectors: vi.fn(),
-  createSector: vi.fn(),
-  updateSector: vi.fn(),
-  deleteSector: vi.fn(),
+  fetchSectors: jest.fn(),
+  createSector: jest.fn(),
+  updateSector: jest.fn(),
+  deleteSector: jest.fn(),
 }
 
 const mockLocalValue = {
   locals: [],
   isLoading: false,
-  fetchLocals: vi.fn(),
-  createLocal: vi.fn(),
-  updateLocal: vi.fn(),
-  deleteLocal: vi.fn(),
+  fetchLocals: jest.fn(),
+  createLocal: jest.fn(),
+  updateLocal: jest.fn(),
+  deleteLocal: jest.fn(),
 }
 
 const mockThemeValue = {
   theme: 'light' as const,
-  setTheme: vi.fn(),
-  toggleTheme: vi.fn(),
+  setTheme: jest.fn(),
+  toggleTheme: jest.fn(),
 }
 
 const mockNotificationValue = {
   notifications: [],
-  addNotification: vi.fn(),
-  removeNotification: vi.fn(),
-  markAsRead: vi.fn(),
+  addNotification: jest.fn(),
+  removeNotification: jest.fn(),
+  markAsRead: jest.fn(),
 }
 
 // Mock all context providers with comprehensive values
@@ -155,3 +154,4 @@ export const mockPatrimonio = {
 // Re-export everything
 export * from '@testing-library/react'
 export { customRender as render }
+

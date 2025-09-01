@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '../../test-utils'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, jest } from '@jest/globals'
 import Login from '../../../src/pages/auth/Login'
 import { mockFetch } from '../../test-utils'
 

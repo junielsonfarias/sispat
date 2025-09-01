@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from '@jest/globals'
 import { patrimonioSchema } from '../../src/lib/validations/patrimonioSchema'
 
 describe('Patrimonio Validation Schema', () => {
