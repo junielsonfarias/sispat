@@ -15,6 +15,105 @@ echo "📱 Corrigindo problema ES Module no frontend..."
 # Parar o frontend
 pm2 stop sispat-frontend
 
+# ===== 1.1 INSTALAR SERVE (PACOTE NECESSÁRIO PARA O FRONTEND) =====
+echo "📦 Verificando se o pacote 'serve' está instalado..."
+if ! command -v serve &> /dev/null; then
+    echo "❌ Pacote 'serve' não encontrado - instalando..."
+    
+    # Tentar instalar com npm global
+    if npm install -g serve; then
+        echo "✅ Serve instalado com npm global"
+    else
+        echo "❌ Falha ao instalar serve com npm - tentando com pnpm..."
+        if pnpm add -g serve; then
+            echo "✅ Serve instalado com pnpm global"
+        else
+            echo "❌ Falha ao instalar serve - tentando método alternativo..."
+            
+            # Instalar localmente no projeto
+            if npm install serve; then
+                echo "✅ Serve instalado localmente"
+                # Criar alias para o serve local
+                echo 'alias serve="npx serve"' >> ~/.bashrc
+                source ~/.bashrc
+            else
+                echo "❌ Falha ao instalar serve - usando método alternativo..."
+                
+                # Usar npx serve diretamente
+                if npx serve --version &> /dev/null; then
+                    echo "✅ Serve disponível via npx"
+                else
+                    echo "❌ Serve não disponível - instalando via apt..."
+                    # Tentar instalar via apt (Ubuntu/Debian)
+                    if apt update && apt install -y node-serve; then
+                        echo "✅ Serve instalado via apt"
+                    else
+                        echo "❌ Falha ao instalar serve - criando script alternativo..."
+                        
+                        # Criar script alternativo usando Python ou Node.js simples
+                        cat > serve-alternative.js << 'EOF'
+#!/usr/bin/env node
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const PORT = process.env.PORT || 8080;
+const DIST_DIR = path.join(__dirname, 'dist');
+
+const mimeTypes = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon'
+};
+
+const server = http.createServer((req, res) => {
+    let filePath = path.join(DIST_DIR, req.url === '/' ? '/index.html' : req.url);
+    
+    // Verificar se o arquivo existe
+    if (!fs.existsSync(filePath)) {
+        filePath = path.join(DIST_DIR, '/index.html');
+    }
+    
+    const extname = path.extname(filePath);
+    const contentType = mimeTypes[extname] || 'application/octet-stream';
+    
+    fs.readFile(filePath, (err, content) => {
+        if (err) {
+            res.writeHead(500);
+            res.end('Erro interno do servidor');
+        } else {
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(content, 'utf-8');
+        }
+    });
+});
+
+server.listen(PORT, () => {
+    console.log(`🚀 Servidor alternativo rodando na porta ${PORT}`);
+    console.log(`📁 Servindo arquivos de: ${DIST_DIR}`);
+});
+
+process.on('SIGTERM', () => server.close());
+process.on('SIGINT', () => server.close());
+EOF
+                        
+                        chmod +x serve-alternative.js
+                        echo "✅ Script alternativo criado: serve-alternative.js"
+                    fi
+                fi
+            fi
+        fi
+    fi
+else
+    echo "✅ Pacote 'serve' já está instalado"
+fi
+
 # Verificar se o start-frontend.js foi atualizado
 if grep -q "import.*spawn" start-frontend.js; then
     echo "✅ start-frontend.js já está usando ES modules"
@@ -187,17 +286,61 @@ fi
 
 # Iniciar frontend
 echo "🚀 Iniciando frontend..."
-pm2 start ecosystem.config.cjs --env production --only sispat-frontend
+
+# Verificar qual método de serve está disponível
+if command -v serve &> /dev/null; then
+    echo "✅ Usando serve global instalado"
+    pm2 start ecosystem.config.cjs --env production --only sispat-frontend
+elif [ -f "serve-alternative.js" ]; then
+    echo "✅ Usando script alternativo serve-alternative.js"
+    pm2 start serve-alternative.js --name "sispat-frontend"
+elif npx serve --version &> /dev/null; then
+    echo "✅ Usando npx serve"
+    pm2 start ecosystem.config.cjs --env production --only sispat-frontend
+else
+    echo "❌ Nenhum método de serve disponível - tentando instalar novamente..."
+    
+    # Tentar instalar serve novamente
+    npm install -g serve
+    
+    if command -v serve &> /dev/null; then
+        echo "✅ Serve instalado com sucesso"
+        pm2 start ecosystem.config.cjs --env production --only sispat-frontend
+    else
+        echo "❌ Falha ao instalar serve - criando processo manual..."
+        
+        # Criar processo manual para o frontend
+        pm2 start ecosystem.config.cjs --env production --only sispat-backend
+        
+        # Iniciar frontend manualmente
+        cd /var/www/sispat
+        nohup npx serve -s dist -l 8080 > /var/www/sispat/logs/frontend-manual.log 2>&1 &
+        FRONTEND_PID=$!
+        echo $FRONTEND_PID > /var/www/sispat/frontend.pid
+        
+        echo "✅ Frontend iniciado manualmente com PID: $FRONTEND_PID"
+    fi
+fi
 
 # Aguardar frontend inicializar
-sleep 3
+sleep 5
 
 # Verificar se frontend está funcionando
 if curl -s http://localhost:8080 > /dev/null; then
     echo "✅ Frontend funcionando"
 else
     echo "❌ Frontend não está funcionando - verificando logs..."
-    pm2 logs sispat-frontend --lines 10
+    pm2 logs sispat-frontend --lines 10 2>/dev/null || echo "⚠️ Logs PM2 não disponíveis"
+    
+    # Verificar se há processo manual
+    if [ -f "/var/www/sispat/frontend.pid" ]; then
+        FRONTEND_PID=$(cat /var/www/sispat/frontend.pid)
+        if ps -p $FRONTEND_PID > /dev/null; then
+            echo "✅ Frontend manual rodando com PID: $FRONTEND_PID"
+        else
+            echo "❌ Frontend manual não está rodando"
+        fi
+    fi
 fi
 
 # ===== 6. VERIFICAÇÕES FINAIS =====
