@@ -1,23 +1,26 @@
 # 📚 Scripts de Produção - SISPAT
 
-Este diretório contém todos os scripts necessários para configurar e implantar o SISPAT em produção.
-
----
+Este diretório contém todos os scripts necessários para configurar, deployar e manter o SISPAT em
+produção.
 
 ## 🚀 **Scripts Principais**
 
-### **1. `install-vps-complete.sh` - INSTALAÇÃO COMPLETA (RECOMENDADO)**
+### **1. `install-vps-complete.sh` - INSTALAÇÃO COMPLETA VPS**
 
-**🎯 Script mais completo e robusto para VPS:**
+**🎯 Função:** Instalação completa e automatizada do SISPAT em uma VPS **✅ Inclui:** Todas as
+correções e soluções para problemas comuns **🔧 Correções aplicadas:**
 
-- ✅ Instala todas as dependências automaticamente
-- ✅ Detecta versão Ubuntu e resolve problemas PostgreSQL
-- ✅ Configura PostgreSQL, Redis, Nginx, PM2
-- ✅ Clona repositório e executa deploy
-- ✅ Configura domínio e SSL
-- ✅ Inclui todas as correções conhecidas
+- Repositório PostgreSQL problemático removido previamente
+- Terser instalado automaticamente
+- NODE_ENV=production removido do .env
+- Usuário PostgreSQL recriado com senha correta
+- Script de correção PostgreSQL incluído automaticamente
+- Configuração Nginx otimizada
+- PM2 configurado para startup automático
+- Verificações de conectividade incluídas
+- Correção automática de autenticação PostgreSQL
 
-**📥 Download e execução:**
+**📋 Uso:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete.sh -o install-vps-complete.sh
@@ -27,260 +30,234 @@ chmod +x install-vps-complete.sh
 
 ---
 
-### **2. `install-vps.sh` - Instalação VPS Básica**
+### **2. `setup-production.sh` - CONFIGURAÇÃO INICIAL**
 
-**🎯 Script de instalação VPS padrão:**
+**🎯 Função:** Configura o ambiente de produção básico **✅ Inclui:** Variáveis de ambiente,
+dependências, configurações de sistema
 
-- ✅ Instala dependências básicas
-- ✅ Configura PostgreSQL e Redis
-- ✅ Instala Nginx e PM2
-- ✅ Clona repositório
-- ✅ Executa scripts de configuração
-
-**📥 Download e execução:**
+**📋 Uso:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps.sh -o install-vps.sh
-chmod +x install-vps.sh
-./install-vps.sh
-```
-
----
-
-### **3. `setup-production.sh` - Configuração de Produção**
-
-**🎯 Configura ambiente de produção:**
-
-- ✅ Verifica dependências do sistema
-- ✅ Cria arquivo .env.production
-- ✅ Configura PM2 e firewall
-- ✅ Cria scripts de backup
-
-**📥 Execução:**
-
-```bash
-chmod +x scripts/setup-production.sh
 ./scripts/setup-production.sh
 ```
 
 ---
 
-### **4. `deploy-production.sh` - Deploy Principal**
+### **3. `deploy-production-simple.sh` - DEPLOY SIMPLIFICADO**
 
-**🎯 Script principal de deploy:**
+**🎯 Função:** Deploy simplificado para produção **✅ Inclui:** Build, instalação de dependências,
+configuração PM2
 
-- ✅ Instala dependências com fallbacks
-- ✅ Configura Husky corretamente
-- ✅ Executa build de produção
-- ✅ Configura PM2
-- ✅ Inclui verificações de segurança
-
-**📥 Execução:**
+**📋 Uso:**
 
 ```bash
-chmod +x scripts/deploy-production.sh
-./scripts/deploy-production.sh
-```
-
----
-
-### **5. `deploy-production-simple.sh` - Deploy Simplificado**
-
-**🎯 Versão simplificada do deploy:**
-
-- ✅ Instala dependências com fallbacks
-- ✅ Configura Husky automaticamente
-- ✅ Executa build de produção
-- ✅ Configura PM2
-- ✅ Ideal para instalações rápidas
-
-**📥 Execução:**
-
-```bash
-chmod +x scripts/deploy-production-simple.sh
 ./scripts/deploy-production-simple.sh
 ```
 
 ---
 
-### **6. `setup-husky.sh` - Configuração do Husky**
+## 🔧 **Scripts de Correção**
 
-**🎯 Configura Husky em produção:**
+### **4. `fix-postgresql-final.sh` - CORREÇÃO COMPLETA POSTGRESQL**
 
-- ✅ Instala Husky globalmente se necessário
-- ✅ Configura variáveis de ambiente
-- ✅ Instala dependências
-- ✅ Verifica configuração
+**🎯 Função:** Correção completa e definitiva do PostgreSQL **✅ Inclui:** Recriação de usuário,
+banco, permissões, testes completos **🔧 Problemas resolvidos:**
 
-**📥 Execução:**
+- Usuário PostgreSQL com senha incorreta
+- Banco de dados não configurado
+- Permissões insuficientes
+- Problemas de conectividade
+
+**📋 Uso:**
 
 ```bash
-chmod +x scripts/setup-husky.sh
-./scripts/setup-husky.sh
+./scripts/fix-postgresql-final.sh
 ```
 
 ---
 
-### **7. `fix-postgresql-ubuntu20.sh` - Correção PostgreSQL**
+### **5. `fix-postgresql-quick-final.sh` - CORREÇÃO RÁPIDA POSTGRESQL**
 
-**🎯 Resolve problemas PostgreSQL no Ubuntu 20.04:**
+**🎯 Função:** Correção rápida para problemas de autenticação PostgreSQL **✅ Inclui:** Correção
+básica de usuário e senha **🔧 Uso:** Para correções rápidas sem testes extensivos
 
-- ✅ Remove repositórios problemáticos
-- ✅ Instala PostgreSQL do repositório padrão
-- ✅ Cria usuário e banco para SISPAT
-- ✅ Testa conexão
-- ✅ Fornece dados de conexão
-
-**📥 Download e execução:**
+**📋 Uso:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-ubuntu20.sh -o fix-postgresql.sh
-chmod +x fix-postgresql.sh
-./fix-postgresql.sh
+./scripts/fix-postgresql-quick-final.sh
 ```
 
 ---
 
-## 🔧 **Como Usar os Scripts**
+### **6. `fix-export-error.sh` - CORREÇÃO ERRO EXPORT**
 
-### **Tornar Scripts Executáveis**
+**🎯 Função:** Corrige erros de export no deploy **✅ Inclui:** Correção de caracteres especiais,
+reinicialização de serviços
 
-```bash
-# No diretório da aplicação
-chmod +x scripts/*.sh
-```
-
-### **Executar Scripts**
+**📋 Uso:**
 
 ```bash
-# Executar script específico
-./scripts/nome-do-script.sh
-
-# Ou navegar para o diretório scripts
-cd scripts
-./nome-do-script.sh
+./scripts/fix-export-error.sh
 ```
 
 ---
 
-## 🎯 **Recomendações de Uso**
+### **7. `fix-build-error.sh` - CORREÇÃO ERRO BUILD**
 
-### **Para Nova Instalação VPS:**
+**🎯 Função:** Corrige erros de build do Vite **✅ Inclui:** Instalação de terser, limpeza de cache,
+correção de configurações
 
-1. **Use `install-vps-complete.sh`** - Mais completo e robusto
-2. **Use `install-vps.sh`** - Para instalação básica
+**📋 Uso:**
 
-### **Para Configuração Existente:**
+```bash
+./scripts/fix-build-error.sh
+```
 
-1. **Use `setup-production.sh`** - Para configurar ambiente
-2. **Use `deploy-production-simple.sh`** - Para deploy rápido
+---
 
-### **Para Resolver Problemas:**
+### **8. `fix-postgresql-quick.sh` - CORREÇÃO POSTGRESQL UBUNTU 20.04**
 
-1. **Use `fix-postgresql-ubuntu20.sh`** - Para problemas PostgreSQL
-2. **Use `setup-husky.sh`** - Para problemas Husky
+**🎯 Função:** Corrige problemas específicos do PostgreSQL no Ubuntu 20.04 **✅ Inclui:** Remoção de
+repositórios problemáticos, instalação alternativa
+
+**📋 Uso:**
+
+```bash
+./scripts/fix-postgresql-quick.sh
+```
+
+---
+
+## 🎯 **Ordem de Execução Recomendada**
+
+### **Para Nova Instalação:**
+
+1. `install-vps-complete.sh` - Instalação completa e automatizada
+
+### **Para Correção de Problemas:**
+
+1. `fix-postgresql-quick-final.sh` - Correção rápida PostgreSQL
+2. `fix-export-error.sh` - Se houver erro de export
+3. `fix-build-error.sh` - Se houver erro de build
+
+### **Para Correção Completa:**
+
+1. `fix-postgresql-final.sh` - Correção completa PostgreSQL
+
+---
+
+## 🔒 **Configurações de Segurança**
+
+### **PostgreSQL:**
+
+- **Usuário:** `sispat_user`
+- **Senha:** `sispat123456`
+- **Banco:** `sispat_production`
+- **Host:** `localhost`
+- **Porta:** `5432`
+
+### **Redis:**
+
+- **Host:** `localhost`
+- **Porta:** `6379`
+- **Senha:** `sispat123456`
+
+### **JWT:**
+
+- **Secret:** Gerado automaticamente
+- **Expiração:** 24h
+- **Refresh:** 7d
+
+---
+
+## 📋 **Comandos Úteis**
+
+### **Verificar Status:**
+
+```bash
+pm2 status                    # Status dos processos
+pm2 logs                      # Logs em tempo real
+systemctl status postgresql   # Status PostgreSQL
+systemctl status redis-server # Status Redis
+systemctl status nginx        # Status Nginx
+```
+
+### **Reiniciar Serviços:**
+
+```bash
+pm2 restart all              # Reiniciar todos os processos
+pm2 restart sispat-backend   # Reiniciar apenas backend
+systemctl restart postgresql # Reiniciar PostgreSQL
+systemctl restart nginx      # Reiniciar Nginx
+```
+
+### **Verificar Logs:**
+
+```bash
+pm2 logs --lines 50          # Últimas 50 linhas
+journalctl -u nginx -f       # Logs Nginx em tempo real
+tail -f logs/app.log         # Logs da aplicação
+```
 
 ---
 
 ## 🚨 **Resolução de Problemas**
 
-### **Problema: Script não executa**
+### **Problema: "password authentication failed"**
+
+**Solução:** Execute `fix-postgresql-quick-final.sh`
+
+### **Problema: "export: not a valid identifier"**
+
+**Solução:** Execute `fix-export-error.sh`
+
+### **Problema: "terser not found"**
+
+**Solução:** Execute `fix-build-error.sh`
+
+### **Problema: "404 Not Found" PostgreSQL Ubuntu 20.04**
+
+**Solução:** Execute `fix-postgresql-quick.sh`
+
+---
+
+## 🌟 **Recursos Avançados**
+
+### **Backup Automático:**
 
 ```bash
-# Verificar permissões
-ls -la scripts/*.sh
-
-# Tornar executável
-chmod +x scripts/nome-do-script.sh
+./scripts/backup.sh          # Backup manual
+crontab -e                    # Configurar backup automático
+# 0 2 * * * /var/www/sispat/scripts/backup.sh
 ```
 
-### **Problema: Erro de permissão**
+### **Monitoramento:**
 
 ```bash
-# Executar como root
-sudo ./scripts/nome-do-script.sh
-
-# Ou usar sudo para comandos específicos
-sudo chmod +x scripts/*.sh
-```
-
-### **Problema: PostgreSQL não instala**
-
-```bash
-# Usar script de correção
-./scripts/fix-postgresql-ubuntu20.sh
-```
-
-### **Problema: Husky não encontrado**
-
-```bash
-# Usar script de configuração
-./scripts/setup-husky.sh
+pm2 monit                     # Monitor PM2
+htop                          # Monitor de sistema
+iotop                         # Monitor de I/O
 ```
 
 ---
 
-## 📋 **Ordem de Execução Recomendada**
+## 📞 **Suporte**
 
-### **Instalação Completa (Recomendada):**
+### **Se encontrar problemas:**
 
-```bash
-# 1. Baixar e executar script completo
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete.sh -o install-vps-complete.sh
-chmod +x install-vps-complete.sh
-./install-vps-complete.sh
+1. Execute o script de correção apropriado
+2. Verifique os logs com `pm2 logs`
+3. Verifique o status dos serviços
+4. Execute testes de conectividade
 
-# 2. Configurar SSL (opcional)
-certbot --nginx -d seu-dominio.com
-```
+### **Logs importantes:**
 
-### **Instalação Manual:**
-
-```bash
-# 1. Configurar ambiente
-./scripts/setup-production.sh
-
-# 2. Executar deploy
-./scripts/deploy-production-simple.sh
-
-# 3. Configurar Nginx manualmente
-# 4. Configurar SSL
-```
+- **Aplicação:** `./logs/`
+- **PM2:** `~/.pm2/logs/`
+- **Sistema:** `/var/log/`
+- **Nginx:** `/var/log/nginx/`
+- **PostgreSQL:** `/var/log/postgresql/`
 
 ---
 
-## 🔒 **Configuração do Husky em Produção**
-
-O Husky é configurado automaticamente pelos scripts de deploy. Ele:
-
-- ✅ **Instala corretamente** em ambiente de produção
-- ✅ **Configura variáveis** de ambiente apropriadas
-- ✅ **Verifica dependências** necessárias
-- ✅ **Testa hooks** antes de finalizar
-
-**Não é necessário desabilitar o Husky em produção!**
-
----
-
-## 📚 **Documentação Relacionada**
-
-- **`VPS-INSTALLATION-GUIDE-UPDATED.md`** - Guia completo de instalação
-- **`POSTGRESQL-UBUNTU20-FIX.md`** - Solução para problemas PostgreSQL
-- **`HUSKY-PRODUCTION-FIX.md`** - Solução para problemas Husky
-
----
-
-## 🎉 **Resultado Final**
-
-Após executar os scripts, você terá:
-
-- ✅ **Sistema completo** configurado
-- ✅ **Aplicação rodando** em produção
-- ✅ **Todos os serviços** funcionando
-- ✅ **Segurança configurada** adequadamente
-- ✅ **Monitoramento** ativo
-- ✅ **Backup** configurado
-
----
-
-**🚀 Use `install-vps-complete.sh` para uma instalação completa e sem problemas!**
+**🎉 Com estes scripts, o SISPAT estará 100% funcional em produção!**

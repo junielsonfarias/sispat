@@ -356,16 +356,18 @@ echo "4. Backup automático configurado em:"
 echo "   /var/www/sispat/scripts/backup.sh"
 echo ""
 
-# 21. CORREÇÕES APLICADAS
+# 22. CORREÇÕES APLICADAS
 log "🔧 CORREÇÕES APLICADAS NESTA VERSÃO:"
 echo "✅ Repositório PostgreSQL problemático removido previamente"
 echo "✅ Terser instalado automaticamente"
 echo "✅ NODE_ENV=production removido do .env"
 echo "✅ Usuário PostgreSQL recriado com senha correta"
+echo "✅ Script de correção PostgreSQL incluído automaticamente"
 echo "✅ Configuração Nginx otimizada"
 echo "✅ PM2 configurado para startup automático"
 echo "✅ Scripts com permissões corretas"
 echo "✅ Verificações de conectividade incluídas"
+echo "✅ Correção automática de autenticação PostgreSQL"
 
 success "🎉 Instalação completa VPS concluída com sucesso!"
 success "✅ SISPAT está rodando em produção!"
