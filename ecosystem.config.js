@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = dirname(import.meta.url);
 
 export default {
   apps: [
@@ -39,32 +39,32 @@ export default {
         DB_NAME: process.env.DB_NAME || 'sispat_production',
         DB_USER: process.env.DB_USER || 'sispat_user',
         DB_PASSWORD: process.env.DB_PASSWORD || 'sispat123456',
-        JWT_SECRET:
-          process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-        CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
+        JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+        CORS_ORIGIN: process.env.CORS_ORIGIN || 'https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080',
         RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || 900000,
         RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || 100,
         UPLOAD_PATH: process.env.UPLOAD_PATH || './uploads',
         BACKUP_PATH: process.env.BACKUP_PATH || './backups',
         SMTP_HOST: process.env.SMTP_HOST || 'localhost',
         SSL_CERT_EMAIL: process.env.SSL_CERT_EMAIL || 'admin@example.com',
-        CDN_URL: process.env.CDN_URL || 'http://localhost:3000',
+        CDN_URL: process.env.CDN_URL || 'https://sispat.vps-kinghost.net',
       },
       log_file: join(__dirname, 'logs', 'combined.log'),
       out_file: join(__dirname, 'logs', 'out.log'),
       error_file: join(__dirname, 'logs', 'err.log'),
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       min_uptime: '10s',
-      max_restarts: 10,
-      restart_delay: 4000,
+      max_restarts: 5,
+      restart_delay: 5000,
       autorestart: true,
       watch: false,
       ignore_watch: ['node_modules', 'logs', 'uploads', 'backups'],
-      source_map_support: true,
+      source_map_support: false, // Desabilitado para produção
       node_args: '--max-old-space-size=2048',
-      kill_timeout: 5000,
+      kill_timeout: 10000,
       wait_ready: true,
-      listen_timeout: 8000,
+      listen_timeout: 10000,
+      max_memory_restart: '1G',
     },
     {
       name: 'sispat-frontend',
@@ -74,29 +74,30 @@ export default {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'development',
-        PORT: 3000,
+        PORT: 8080,
         VITE_API_URL: 'http://localhost:3001/api',
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: process.env.PORT || 3000,
-        VITE_API_URL: process.env.VITE_API_URL || 'http://localhost:3001/api',
+        PORT: process.env.PORT || 8080,
+        VITE_API_URL: process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api',
       },
       log_file: join(__dirname, 'logs', 'frontend-combined.log'),
       out_file: join(__dirname, 'logs', 'frontend-out.log'),
       error_file: join(__dirname, 'logs', 'frontend-err.log'),
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       min_uptime: '10s',
-      max_restarts: 10,
-      restart_delay: 4000,
+      max_restarts: 3,
+      restart_delay: 5000,
       autorestart: true,
       watch: false,
       ignore_watch: ['node_modules', 'logs', 'dist'],
-      source_map_support: true,
+      source_map_support: false, // Desabilitado para produção
       node_args: '--max-old-space-size=1024',
-      kill_timeout: 5000,
+      kill_timeout: 10000,
       wait_ready: true,
-      listen_timeout: 8000,
+      listen_timeout: 10000,
+      max_memory_restart: '512M',
     },
   ],
 

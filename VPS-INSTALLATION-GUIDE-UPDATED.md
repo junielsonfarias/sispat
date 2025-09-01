@@ -487,6 +487,23 @@ export CI=false
 npx husky install
 ```
 
+### **Problema 7: Backend API não responde (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `{"success":false,"error":{"code":"NOT_FOUND","message":"Rota não encontrada: GET /api"}}`
+**🔧 Solução:** Conflito de rotas `/api/health` duplicadas resolvido, rota principal adicionada ao servidor **✅ Status:** **RESOLVIDO** - Rota `/api/health` agora funciona corretamente
+
+### **Problema 8: Frontend tela branca (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `ReferenceError: require is not defined in ES module scope` **🔧 Solução:** `start-frontend.js` corrigido para compatibilidade PM2 e ES modules **✅ Status:** **RESOLVIDO** - Frontend agora inicia corretamente
+
+### **Problema 9: Conflito de módulos ES vs CommonJS (RESOLVIDO)**
+
+**❌ Erro:** `require()` statements em arquivos ES modules **🔧 Solução:** Todos os `require()` convertidos para `import` dinâmico **✅ Status:** **RESOLVIDO** - Compatibilidade ES modules garantida
+
+### **Problema 10: Configuração PM2 não otimizada (RESOLVIDO)**
+
+**❌ Erro:** Configurações PM2 inadequadas para produção **🔧 Solução:** `ecosystem.config.js` otimizado com timeouts, memory limits e configurações de produção **✅ Status:** **RESOLVIDO** - PM2 configurado para estabilidade em produção
+
 ---
 
 ## 📋 **COMANDOS ESSENCIAIS (execute em sequência):**

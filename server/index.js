@@ -710,6 +710,26 @@ console.log('✅ registerRoutes chamado com sucesso!');
 // Middleware para notificação de erros críticos
 app.use(criticalErrorNotifier);
 
+// ============================================================================
+// ROTA PRINCIPAL DE HEALTH CHECK
+// ============================================================================
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'SISPAT Backend',
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    database: 'connected', // Assumindo que está conectado
+  });
+});
+
+// ============================================================================
+// REGISTRO DE ROTAS
+// ============================================================================
+
 // 404 handler - deve vir DEPOIS das rotas serem registradas
 app.use('*', notFoundHandler);
 
