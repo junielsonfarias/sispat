@@ -205,11 +205,11 @@ success "Diretórios de logs criados"
 # 8. Configurar PM2
 log "⚙️ Configurando PM2..."
 
-# Verificar se ecosystem.config.cjs existe
-if [ -f "ecosystem.config.cjs" ]; then
+# Verificar se ecosystem.config.js existe
+if [ -f "ecosystem.config.js" ]; then
     success "Arquivo de configuração PM2 encontrado"
 else
-    error "Arquivo ecosystem.config.cjs não encontrado"
+    error "Arquivo ecosystem.config.js não encontrado"
 fi
 
 # 9. Configurar firewall básico
@@ -300,7 +300,7 @@ fi
 log "🎯 Configuração final..."
 
 # Verificar se tudo está configurado
-if [ -f ".env.production" ] && [ -f "ecosystem.config.cjs" ]; then
+if [ -f ".env.production" ] && [ -f "ecosystem.config.js" ]; then
     success "✅ Configuração básica concluída!"
     
     echo ""

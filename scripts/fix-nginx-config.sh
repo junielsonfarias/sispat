@@ -65,9 +65,9 @@ if command -v pm2 &> /dev/null; then
     else
         warning "⚠️ Aplicação SISPAT não encontrada no PM2, iniciando..."
         
-        # Verificar se o arquivo ecosystem.config.cjs existe
-        if [ -f "ecosystem.config.cjs" ]; then
-            pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
+        # Verificar se o arquivo ecosystem.config.js existe
+if [ -f "ecosystem.config.js" ]; then
+    pm2 start ecosystem.config.js --env production --name "sispat-backend"
             sleep 10
             
             if pm2 list | grep -q "sispat-backend"; then
@@ -76,7 +76,7 @@ if command -v pm2 &> /dev/null; then
                 error "❌ Falha ao iniciar aplicação SISPAT no PM2"
             fi
         else
-            error "❌ Arquivo ecosystem.config.cjs não encontrado"
+            error "❌ Arquivo ecosystem.config.js não encontrado"
         fi
     fi
 else

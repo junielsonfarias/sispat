@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
 // Carregar variáveis de ambiente PRIMEIRO
 dotenv.config({ path: '.env' });
@@ -474,7 +475,7 @@ app.get('/api/files/:fileId', (req, res) => {
     const filePath = path.join(__dirname, '../uploads', fileId);
 
     // Verificar se o arquivo existe
-    if (!require('fs').existsSync(filePath)) {
+    if (!existsSync(filePath)) {
       return res.status(404).json({ error: 'Arquivo não encontrado' });
     }
 
@@ -698,25 +699,8 @@ app.get('/api/backup/stats', async (req, res) => {
   }
 });
 
-// Rota de teste simples para verificar se o servidor está funcionando
-app.get('/api/test', (req, res) => {
-  console.log('✅ Rota /api/test foi chamada!');
-  res.json({
-    status: 'OK',
-    message: 'Servidor funcionando!',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// Rota de health check simples
-app.get('/api/health', (req, res) => {
-  console.log('✅ Rota /api/health foi chamada!');
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    message: 'Backend funcionando corretamente!',
-  });
-});
+// Health check endpoint - Removido pois está definido em routes/index.js
+// As rotas são registradas via registerRoutes() mais abaixo
 
 // Registrar todas as rotas da API
 console.log('🔧 Chamando registerRoutes...');
@@ -735,30 +719,47 @@ app.use(errorHandler);
 
 // Inicializar WebSocket server e serviço de notificações
 Promise.all([
-  import('./services/websocket-server.js'),
-  import('./services/notification-service.js'),
-  import('./services/audit.js'),
+  import('./services/websocket-server.js').catch(() => ({
+    websocketServer: null,
+  })),
+  import('./services/notification-service.js').catch(() => ({
+    notificationService: null,
+  })),
+  import('./services/audit.js').catch(() => ({ auditService: null })),
 ])
-  .then(([{ websocketServer }, { notificationService }, { auditService }]) => {
-    const wsInitialized = websocketServer.initialize(server);
+  .then(([wsResult, notificationResult, auditResult]) => {
+    const websocketServer = wsResult?.websocketServer;
+    const notificationService = notificationResult?.notificationService;
+    const auditService = auditResult?.auditService;
 
-    if (wsInitialized) {
-      logInfo('🔌 WebSocket server inicializado com sucesso');
-      notificationService.initialize();
-      auditService
-        .initialize()
-        .then(() => {
-          logInfo('🔍 Serviço de auditoria inicializado com sucesso');
-        })
-        .catch(error => {
-          logError('Erro ao inicializar serviço de auditoria', error);
-        });
+    if (websocketServer) {
+      const wsInitialized = websocketServer.initialize(server);
+      if (wsInitialized) {
+        logInfo('🔌 WebSocket server inicializado com sucesso');
+        if (notificationService) {
+          notificationService.initialize();
+        }
+        if (auditService) {
+          auditService
+            .initialize()
+            .then(() => {
+              logInfo('🔍 Serviço de auditoria inicializado com sucesso');
+            })
+            .catch(error => {
+              logWarning(
+                '⚠️ Erro ao inicializar serviço de auditoria, continuando...'
+              );
+            });
+        }
+      } else {
+        logWarning('⚠️ Falha ao inicializar WebSocket server');
+      }
     } else {
-      logWarning('⚠️ Falha ao inicializar WebSocket server');
+      logWarning('⚠️ WebSocket server não disponível, continuando...');
     }
   })
   .catch(error => {
-    logError('Erro ao inicializar WebSocket server', error);
+    logWarning('⚠️ Erro ao inicializar serviços opcionais, continuando...');
   });
 
 // Start server - Bind em todas as interfaces para aceitar conexões externas
@@ -800,7 +801,7 @@ server.listen(PORT, '0.0.0.0', () => {
       }
     })
     .catch(error => {
-      logError('Erro ao inicializar backup automático', error);
+      logWarning('⚠️ Serviço de backup não disponível, continuando...');
     });
 
   // Inicializar sistema de lockout

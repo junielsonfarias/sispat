@@ -289,8 +289,14 @@ EOF
 
 success "Arquivo .env.production criado (SEM NODE_ENV)"
 
-# 11. Configurar scripts
-log "🔧 Configurando scripts..."
+# 11. Configurar scripts e diretórios
+log "🔧 Configurando scripts e diretórios..."
+
+# Criar diretório de logs se não existir
+mkdir -p logs
+chmod 755 logs
+success "Diretório de logs criado"
+
 # Verificar se os scripts existem antes de dar permissão
 if [ -d "scripts" ] && [ "$(ls -A scripts/*.sh 2>/dev/null)" ]; then
     chmod +x scripts/*.sh
@@ -826,9 +832,9 @@ fi
 # 11. INICIAR BACKEND
 log "🚀 Iniciando backend..."
 if command -v pm2 &> /dev/null; then
-    # Iniciar backend
-    log "📦 Iniciando backend..."
-    pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
+            # Iniciar backend
+        log "📦 Iniciando backend..."
+        pm2 start ecosystem.config.js --env production --name "sispat-backend"
     
     # Aguardar inicialização
     sleep 15
@@ -984,9 +990,9 @@ if command -v pm2 &> /dev/null; then
     else
         warning "⚠️ Aplicação SISPAT não encontrada no PM2, iniciando..."
         
-        # Verificar se o arquivo ecosystem.config.cjs existe
-        if [ -f "ecosystem.config.cjs" ]; then
-            pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
+        # Verificar se o arquivo ecosystem.config.js existe
+        if [ -f "ecosystem.config.js" ]; then
+            pm2 start ecosystem.config.js --env production --name "sispat-backend"
             sleep 10
             
             if pm2 list | grep -q "sispat-backend"; then
@@ -995,7 +1001,7 @@ if command -v pm2 &> /dev/null; then
                 error "❌ Falha ao iniciar aplicação SISPAT no PM2"
             fi
         else
-            error "❌ Arquivo ecosystem.config.cjs não encontrado"
+            error "❌ Arquivo ecosystem.config.js não encontrado"
         fi
     fi
 else
@@ -1342,6 +1348,7 @@ success "Certbot instalado"
 log "🔧 Executando correções específicas da VPS..."
 if [ -f "scripts/fix-vps-issues.sh" ]; then
     chmod +x scripts/fix-vps-issues.sh
+    # Executar correções ANTES da verificação final
     ./scripts/fix-vps-issues.sh
     success "✅ Correções da VPS aplicadas"
 else
@@ -1364,32 +1371,67 @@ echo ""
 
 # 21. Testes de conectividade
 log "🌐 Testando conectividade..."
+
 # Verificação mais robusta do backend
 if command -v curl &> /dev/null; then
-    if curl -s --max-time 10 http://localhost:3001/api/health > /dev/null 2>&1; then
+    log "🔍 Testando backend em http://localhost:3001/api/health..."
+    if curl -s --max-time 15 --retry 3 http://localhost:3001/api/health > /dev/null 2>&1; then
         success "✅ Backend respondendo em /api/health"
     else
         warning "⚠️ Backend não está respondendo em /api/health"
         log "🔍 Verificando logs do backend..."
         if command -v pm2 &> /dev/null; then
-            pm2 logs sispat-backend --lines 5 2>/dev/null || echo "Logs PM2 não disponíveis"
+            pm2 logs sispat-backend --lines 10 2>/dev/null || echo "Logs PM2 não disponíveis"
+        fi
+        
+        # Tentar reiniciar o backend
+        log "🔄 Tentando reiniciar o backend..."
+        if command -v pm2 &> /dev/null; then
+            pm2 restart sispat-backend 2>/dev/null || true
+            sleep 10
+            
+            # Testar novamente
+            if curl -s --max-time 15 http://localhost:3001/api/health > /dev/null 2>&1; then
+                success "✅ Backend reiniciado e respondendo"
+            else
+                warning "⚠️ Backend ainda não responde após reinicialização"
+            fi
         fi
     fi
 else
-    warning "⚠️ curl não encontrado - não foi possível testar conectividade"
+    warning "⚠️ curl não encontrado - instalando..."
+    apt install -y curl
+    if curl -s --max-time 15 http://localhost:3001/api/health > /dev/null 2>&1; then
+        success "✅ Backend respondendo após instalar curl"
+    else
+        warning "⚠️ Backend não responde mesmo após instalar curl"
+    fi
 fi
 
 # Verificação mais robusta do Nginx
 if command -v curl &> /dev/null; then
-    if curl -s --max-time 10 http://localhost:80 > /dev/null 2>&1; then
+    log "🔍 Testando Nginx em http://localhost:80..."
+    if curl -s --max-time 15 --retry 3 http://localhost:80 > /dev/null 2>&1; then
         success "✅ Nginx respondendo na porta 80"
     else
         warning "⚠️ Nginx não está respondendo na porta 80"
         log "🔍 Verificando status do Nginx..."
-        systemctl status nginx --no-pager -l | head -10
+        systemctl status nginx --no-pager -l | head -15
+        
+        # Tentar reiniciar o Nginx
+        log "🔄 Tentando reiniciar o Nginx..."
+        systemctl restart nginx
+        sleep 5
+        
+        # Testar novamente
+        if curl -s --max-time 15 http://localhost:80 > /dev/null 2>&1; then
+            success "✅ Nginx reiniciado e respondendo"
+        else
+            warning "⚠️ Nginx ainda não responde após reinicialização"
+        fi
     fi
 else
-    warning "⚠️ curl não encontrado - não foi possível testar conectividade"
+    warning "⚠️ curl não disponível para testar Nginx"
 fi
 
 # 22. Instruções finais

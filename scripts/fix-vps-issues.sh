@@ -271,7 +271,7 @@ sleep 2
 
 # Iniciar backend primeiro
 echo "🚀 Iniciando backend..."
-pm2 start ecosystem.config.cjs --env production --only sispat-backend
+        pm2 start ecosystem.config.js --env production --only sispat-backend
 
 # Aguardar backend inicializar
 sleep 5
@@ -290,13 +290,13 @@ echo "🚀 Iniciando frontend..."
 # Verificar qual método de serve está disponível
 if command -v serve &> /dev/null; then
     echo "✅ Usando serve global instalado"
-    pm2 start ecosystem.config.cjs --env production --only sispat-frontend
+    pm2 start ecosystem.config.js --env production --only sispat-frontend
 elif [ -f "serve-alternative.js" ]; then
     echo "✅ Usando script alternativo serve-alternative.js"
     pm2 start serve-alternative.js --name "sispat-frontend"
 elif npx serve --version &> /dev/null; then
     echo "✅ Usando npx serve"
-    pm2 start ecosystem.config.cjs --env production --only sispat-frontend
+    pm2 start ecosystem.config.js --env production --only sispat-frontend
 else
     echo "❌ Nenhum método de serve disponível - tentando instalar novamente..."
     
@@ -305,12 +305,12 @@ else
     
     if command -v serve &> /dev/null; then
         echo "✅ Serve instalado com sucesso"
-        pm2 start ecosystem.config.cjs --env production --only sispat-frontend
+        pm2 start ecosystem.config.js --env production --only sispat-frontend
     else
         echo "❌ Falha ao instalar serve - criando processo manual..."
         
         # Criar processo manual para o frontend
-        pm2 start ecosystem.config.cjs --env production --only sispat-backend
+        pm2 start ecosystem.config.js --env production --only sispat-backend
         
         # Iniciar frontend manualmente
         cd /var/www/sispat

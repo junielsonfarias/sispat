@@ -1,5 +1,5 @@
 # Arquivos de configuração
-ecosystem.config.cjs
+ecosystem.config.js
 ecosystem.config.js
 *.config.js
 *.config.cjs
