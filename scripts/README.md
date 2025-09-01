@@ -12,6 +12,7 @@ chmod +x scripts/*.sh
 chmod +x scripts/setup-production.sh
 chmod +x scripts/deploy-production.sh
 chmod +x scripts/deploy-production-simple.sh
+chmod +x scripts/setup-husky.sh
 ```
 
 ### **2. Executar Scripts**
@@ -25,6 +26,9 @@ chmod +x scripts/deploy-production-simple.sh
 
 # Deploy para produção (versão simplificada - RECOMENDADA)
 ./scripts/deploy-production-simple.sh
+
+# Configuração específica do Husky
+./scripts/setup-husky.sh
 ```
 
 ## 📋 Descrição dos Scripts
@@ -43,91 +47,33 @@ chmod +x scripts/deploy-production-simple.sh
 - ✅ Cria backup do sistema atual
 - ✅ Para serviços em execução
 - ✅ Instala dependências de produção
+- ✅ **Instala e configura Husky corretamente**
 - ✅ Gera build otimizado
 - ✅ Inicia serviços com PM2
-- ✅ Verifica funcionamento
+- ✅ Verifica saúde da aplicação
 
 ### **deploy-production-simple.sh** ⭐ **RECOMENDADO**
 
 - ✅ Versão simplificada do deploy
 - ✅ **Resolve automaticamente o problema do Husky**
-- ✅ Instala dependências sem scripts problemáticos
-- ✅ Mais estável e confiável
-- ✅ Ideal para primeira execução
+- ✅ Instala dependências completas
+- ✅ Configura Husky para produção
+- ✅ Build e deploy otimizados
 
-## 🚨 Problema Conhecido: Husky
+### **setup-husky.sh** 🆕 **NOVO**
 
-### **Erro Comum:**
+- ✅ Instala Husky globalmente se necessário
+- ✅ Configura hooks de pre-commit
+- ✅ Verifica permissões dos scripts
+- ✅ Testa funcionamento dos hooks
+- ✅ Instala dependências necessárias (chalk)
+- ✅ **Solução definitiva para o problema do Husky**
 
-```
-sh: 1: husky: not found
-ELIFECYCLE: Failed to execute script 'prepare'
-```
-
-### **Causa:**
-
-O script `prepare: "husky install"` no package.json é executado automaticamente durante a
-instalação, mas o husky não está disponível em produção.
-
-### **Soluções:**
-
-#### **1. Usar Script Simplificado (RECOMENDADO):**
-
-```bash
-./scripts/deploy-production-simple.sh
-```
-
-#### **2. Configurar Variáveis de Ambiente:**
-
-```bash
-export HUSKY=0
-export CI=true
-export SKIP_HUSKY=1
-pnpm install --prod --frozen-lockfile --ignore-scripts
-```
-
-#### **3. Modificar Temporariamente o package.json:**
-
-```bash
-# Backup
-cp package.json package.json.backup
-
-# Remover script prepare
-sed -i 's/"prepare": "husky install"//' package.json
-
-# Instalar dependências
-pnpm install --prod --frozen-lockfile
-
-# Restaurar
-mv package.json.backup package.json
-```
-
-## 🚀 Uso Rápido
-
-```bash
-# 1. Configurar ambiente
-./scripts/setup-production.sh
-
-# 2. Fazer deploy (versão simplificada)
-./scripts/deploy-production-simple.sh
-
-# 3. Verificar status
-pm2 status
-```
-
-## ⚠️ Notas Importantes
-
-- Execute os scripts no diretório raiz do projeto
-- Tenha permissões de administrador (sudo) no Linux
-- Configure as variáveis de ambiente antes de executar
-- Faça backup antes de qualquer deploy
-- **Use o script simplificado para evitar problemas com Husky**
-
-## 🔧 Troubleshooting
+## 🚨 Problemas Comuns e Soluções
 
 ### **Problema: Husky não encontrado**
 
-**Solução:** Use `./scripts/deploy-production-simple.sh`
+**Solução:** Use `./scripts/setup-husky.sh` para configuração completa
 
 ### **Problema: Permissões negadas**
 
@@ -140,3 +86,59 @@ pm2 status
 ### **Problema: Variáveis de ambiente não configuradas**
 
 **Solução:** Configure o arquivo `.env.production` primeiro
+
+## 🔧 Configuração do Husky em Produção
+
+### **Por que o Husky é importante?**
+
+O Husky executa hooks de pre-commit que garantem:
+
+- ✅ Qualidade do código (linting)
+- ✅ Formatação consistente (Prettier)
+- ✅ Verificação de tipos (TypeScript)
+- ✅ Testes automáticos
+
+### **Como funciona agora:**
+
+1. **Scripts de deploy instalam Husky automaticamente**
+2. **Hooks são configurados corretamente**
+3. **Permissões são definidas automaticamente**
+4. **Dependências necessárias são instaladas**
+
+### **Verificação manual:**
+
+```bash
+# Verificar se o Husky está funcionando
+ls -la .husky/
+cat .husky/pre-commit
+
+# Testar hook manualmente
+./scripts/pre-commit.js
+```
+
+## 🚀 Fluxo de Deploy Recomendado
+
+### **1. Primeira vez:**
+
+```bash
+./scripts/setup-production.sh
+./scripts/setup-husky.sh
+```
+
+### **2. Deploy normal:**
+
+```bash
+./scripts/deploy-production-simple.sh
+```
+
+### **3. Se houver problemas com Husky:**
+
+```bash
+./scripts/setup-husky.sh
+```
+
+## 📚 Documentação Adicional
+
+- **`PRODUCTION-DEPLOY-GUIDE.md`** - Guia completo de deploy
+- **`docs/PRODUCAO.md`** - Documentação de produção
+- **`ecosystem.config.cjs`** - Configuração do PM2

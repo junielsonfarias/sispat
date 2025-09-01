@@ -85,40 +85,28 @@ success "Cache limpo"
 # 5. Instalar dependências de produção
 log "📦 Instalando dependências de produção..."
 
-# Configurar variáveis para pular scripts problemáticos em produção
-export HUSKY=0
-export CI=true
-export SKIP_HUSKY=1
+# Configurar variáveis para produção
+export NODE_ENV=production
+export CI=false
 
-# Tentar instalar com --ignore-scripts primeiro
-if pnpm install --prod --frozen-lockfile --ignore-scripts; then
-    success "Dependências instaladas com --ignore-scripts"
+# Instalar dependências incluindo Husky
+log "🔧 Instalando Husky para hooks de qualidade..."
+pnpm install --frozen-lockfile
+
+# Configurar Husky para produção
+log "🔧 Configurando Husky..."
+npx husky install
+
+# Verificar se o Husky foi instalado corretamente
+if [ -f ".husky/pre-commit" ]; then
+    success "Husky configurado com sucesso"
+    log "📋 Hooks disponíveis:"
+    ls -la .husky/
 else
-    log "⚠️ Fallback: instalando com modificação temporária do package.json..."
-    
-    # Backup do package.json original
-    cp package.json package.json.backup
-    
-    # Remover temporariamente o script prepare que causa problemas
-    # Usar sed compatível com diferentes sistemas
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        sed -i '' 's/"prepare": "husky install"//' package.json
-    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
-        # Windows
-        sed -i 's/"prepare": "husky install"//' package.json
-    else
-        # Linux
-        sed -i 's/"prepare": "husky install"//' package.json
-    fi
-    
-    # Instalar dependências
-    pnpm install --prod --frozen-lockfile
-    success "Dependências instaladas com modificação temporária"
-    
-    # Restaurar package.json original
-    mv package.json.backup package.json
+    error "Falha ao configurar Husky"
 fi
+
+success "Dependências instaladas"
 
 # 6. Build da aplicação
 log "🔨 Gerando build de produção..."

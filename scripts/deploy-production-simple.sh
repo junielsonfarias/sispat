@@ -77,18 +77,31 @@ log "🧹 Limpando builds anteriores..."
 rm -rf dist/ node_modules/.cache/
 success "Cache limpo"
 
-# 5. Instalar dependências de produção (SEM HUSKY)
+# 5. Instalar dependências de produção
 log "📦 Instalando dependências de produção..."
-log "⚠️ Desabilitando husky para evitar erros..."
 
-# Configurar variáveis para pular scripts problemáticos
-export HUSKY=0
-export CI=true
-export SKIP_HUSKY=1
+# Configurar variáveis para produção
+export NODE_ENV=production
+export CI=false
 
-# Instalar com --ignore-scripts para pular o husky
-pnpm install --prod --frozen-lockfile --ignore-scripts
-success "Dependências instaladas (husky desabilitado)"
+# Instalar dependências incluindo Husky
+log "🔧 Instalando Husky para hooks de qualidade..."
+pnpm install --frozen-lockfile
+
+# Configurar Husky para produção
+log "🔧 Configurando Husky..."
+npx husky install
+
+# Verificar se o Husky foi instalado corretamente
+if [ -f ".husky/pre-commit" ]; then
+    success "Husky configurado com sucesso"
+    log "📋 Hooks disponíveis:"
+    ls -la .husky/
+else
+    error "Falha ao configurar Husky"
+fi
+
+success "Dependências instaladas"
 
 # 6. Build da aplicação
 log "🔨 Gerando build de produção..."
