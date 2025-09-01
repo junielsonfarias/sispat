@@ -272,8 +272,9 @@ JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=7d
 
 # CORS
-CORS_ORIGIN=https://sispat.vps-kinghost.net
+CORS_ORIGIN=https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 CORS_CREDENTIALS=true
+ALLOWED_ORIGINS=https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 
 # Logs
 LOG_LEVEL=info
@@ -505,8 +506,9 @@ JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=7d
 
 # CORS
-CORS_ORIGIN=https://sispat.vps-kinghost.net
+CORS_ORIGIN=https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 CORS_CREDENTIALS=true
+ALLOWED_ORIGINS=https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 
 # Logs
 LOG_LEVEL=info
@@ -536,7 +538,7 @@ log "🚀 Iniciando backend..."
 if command -v pm2 &> /dev/null; then
     pm2 stop all 2>/dev/null || true
     pm2 delete all 2>/dev/null || true
-    pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
+            pm2 start ecosystem.config.js --env production --name "sispat-backend"
     success "✅ Backend iniciado"
 else
     warning "⚠️ PM2 não encontrado"
@@ -662,7 +664,20 @@ success "✅ Usuário e banco PostgreSQL corrigidos FORÇADAMENTE"
 
 # 4. CONFIGURAR POSTGRESQL.CONF
 log "⚙️ Configurando PostgreSQL.conf..."
-PG_CONF="/etc/postgresql/12/main/postgresql.conf"
+
+# Detectar versão do PostgreSQL instalada
+PG_VERSION=$(psql --version | grep -oE '[0-9]+\.[0-9]+' | head -1)
+log "📋 Versão PostgreSQL detectada: $PG_VERSION"
+
+# Tentar diferentes caminhos de configuração
+PG_CONF=""
+for path in "/etc/postgresql/$PG_VERSION/main/postgresql.conf" "/etc/postgresql/main/postgresql.conf" "/etc/postgresql/postgresql.conf"; do
+    if [ -f "$path" ]; then
+        PG_CONF="$path"
+        log "✅ Arquivo de configuração encontrado: $PG_CONF"
+        break
+    fi
+done
 
 if [ -f "$PG_CONF" ]; then
     # Backup do arquivo original
@@ -691,7 +706,16 @@ fi
 
 # 5. CONFIGURAR PG_HBA.CONF
 log "🔐 Configurando pg_hba.conf..."
-PG_HBA="/etc/postgresql/12/main/pg_hba.conf"
+
+# Tentar diferentes caminhos de configuração pg_hba.conf
+PG_HBA=""
+for path in "/etc/postgresql/$PG_VERSION/main/pg_hba.conf" "/etc/postgresql/main/pg_hba.conf" "/etc/postgresql/pg_hba.conf"; do
+    if [ -f "$path" ]; then
+        PG_HBA="$path"
+        log "✅ Arquivo pg_hba.conf encontrado: $PG_HBA"
+        break
+    fi
+done
 
 if [ -f "$PG_HBA" ]; then
     # Backup do arquivo original

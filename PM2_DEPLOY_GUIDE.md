@@ -282,7 +282,8 @@ LOG_LEVEL=info
 LOG_FILE=./logs/app.log
 
 # Segurança
-CORS_ORIGIN=https://seudominio.com
+CORS_ORIGIN=https://seudominio.com,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
+ALLOWED_ORIGINS=https://seudominio.com,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
 ```

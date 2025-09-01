@@ -161,7 +161,8 @@ JWT_SECRET=sua_chave_jwt_aqui
 CSRF_SECRET=sua_chave_csrf_aqui
 
 # Domínio
-CORS_ORIGIN=https://seudominio.com
+CORS_ORIGIN=https://seudominio.com,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
+ALLOWED_ORIGINS=https://seudominio.com,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 ```
 
 ### **2. Configuração PM2**
