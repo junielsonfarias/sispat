@@ -66,6 +66,13 @@ configuração PM2
 - **Solução**: Substituído por `source .env` com validação de arquivo
 - **Status**: ✅ **RESOLVIDO** em todos os scripts
 
+### **Problema Resolvido: Erro de Comando não Encontrado**
+
+- **Erro**: `.env.production: line 34: 2: command not found`
+- **Causa**: Valor `BACKUP_SCHEDULE=0 2 * * *` sendo interpretado como comandos separados
+- **Solução**: Valor agora é gerado entre aspas: `BACKUP_SCHEDULE="0 2 * * *"`
+- **Status**: ✅ **RESOLVIDO** no `install-vps-complete.sh`
+
 ### **Scripts Corrigidos:**
 
 - ✅ `deploy-production-simple.sh` - Problema export resolvido
