@@ -87,11 +87,22 @@ curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 apt install -y nodejs
 success "Node.js instalado: $(node --version)"
 
-# 4. Instalar pnpm e PM2
-log "📦 Instalando pnpm e PM2..."
-npm install -g pnpm pm2
+# 4. Instalar pnpm, PM2 e serve
+log "📦 Instalando pnpm, PM2 e serve..."
+npm install -g pnpm pm2 serve
 success "pnpm instalado: $(pnpm --version)"
 success "PM2 instalado: $(pm2 --version)"
+success "serve instalado: $(serve --version)"
+
+# Verificar se serve foi instalado corretamente
+if ! command -v serve &> /dev/null; then
+    warning "⚠️ Serve não foi encontrado no PATH, tentando instalação alternativa..."
+    if npm install -g serve; then
+        success "✅ Serve instalado com sucesso na segunda tentativa"
+    else
+        error "❌ Falha ao instalar serve - necessário para o frontend"
+    fi
+fi
 
 # 5. Instalar PostgreSQL com correções
 log "🗄️ Instalando PostgreSQL com correções..."
@@ -1330,6 +1341,7 @@ echo "✅ Problema ES Module no frontend RESOLVIDO"
 echo "✅ Problema de autenticação PostgreSQL RESOLVIDO"
 echo "✅ Problema de CORS RESOLVIDO"
 echo "✅ Problema de rotas do backend RESOLVIDO"
+echo "✅ Pacote serve instalado automaticamente para o frontend"
 
 success "🎉 Instalação completa VPS concluída com sucesso!"
 success "✅ SISPAT está rodando em produção!"
