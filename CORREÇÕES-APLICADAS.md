@@ -55,7 +55,13 @@ Arquivos de configuração PostgreSQL não configurados para conexões locais **
 **Problema:** Nginx funcionando mas não roteia tráfego para aplicação SISPAT **Causa:** Configuração
 Nginx não específica para o domínio e aplicação **Solução:** Script `fix-nginx-config.sh` que
 configura proxy reverso, headers de segurança, compressão e cache **Status:** ✅ **RESOLVIDO** e
-integrado automaticamente ao `install-vps-complete.sh`
+integrado automaticamente ao `install-vps-complete.sh\*\*
+
+### **8. ✅ Configuração Nginx - Erro de Valor Inválido (RESOLVIDO)**
+
+**Problema:** `nginx: [emerg] invalid value "must-revalidate" in /etc/nginx/sites-enabled/sispat:83`
+**Causa:** Valor inválido "must-revalidate" na diretiva `gzip_proxied` **Solução:** Remoção do valor
+inválido da configuração Nginx **Status:** ✅ **RESOLVIDO** e corrigido no `fix-nginx-config.sh`
 
 ---
 
@@ -154,7 +160,7 @@ integrado automaticamente ao `install-vps-complete.sh`
 
 ## 📊 **STATUS ATUAL**
 
-### **✅ Problemas Resolvidos:** 7/7 (100%)
+### **✅ Problemas Resolvidos:** 8/8 (100%)
 
 ### **✅ Scripts Corrigidos:** 6/6 (100%)
 

@@ -450,7 +450,11 @@ Correção integrada automaticamente
 **RESOLVIDO** - Configuração integrada automaticamente **🌐 Configurações:** Proxy reverso, headers
 de segurança, compressão Gzip, cache para arquivos estáticos
 
-### **Problema 3: PostgreSQL não instala (Ubuntu 20.04)**
+### **Problema 3: Erro de configuração Nginx (RESOLVIDO)**
+
+**❌ Erro:** `nginx: [emerg] invalid value "must-revalidate" in /etc/nginx/sites-enabled/sispat:83` **🔧 Solução:** Corrigido o valor inválido "must-revalidate" na diretiva `gzip_proxied` **✅ Status:** **RESOLVIDO** - Configuração Nginx agora é válida e funcional
+
+### **Problema 4: PostgreSQL não instala (Ubuntu 20.04)**
 
 ```bash
 # Solução automática
@@ -459,7 +463,7 @@ chmod +x fix-postgresql.sh
 ./fix-postgresql.sh
 ```
 
-### **Problema 3: pnpm-lock.yaml incompatível**
+### **Problema 5: pnpm-lock.yaml incompatível**
 
 ```bash
 # Tentar instalar com força
@@ -470,7 +474,7 @@ rm pnpm-lock.yaml
 npm install
 ```
 
-### **Problema 4: Husky não encontrado**
+### **Problema 6: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -569,12 +573,15 @@ performance!**
 3. **Build Vite:** Erro terser not found - **RESOLVIDO**
 4. **NODE_ENV:** Conflito com Vite - **RESOLVIDO**
 5. **Autenticação PostgreSQL:** Usuário e senha incorretos - **RESOLVIDO**
+6. **Configuração Nginx:** Erro de valor inválido "must-revalidate" - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
+- `fix-postgresql-auth-final.sh` - Correção definitiva da autenticação PostgreSQL
+- `fix-nginx-config.sh` - Correção da configuração Nginx
 - `deploy-production-simple.sh` - Problema de export resolvido
 
 ### **✅ Funcionalidades Adicionadas:**
@@ -584,6 +591,9 @@ performance!**
 - Scripts de correção integrados automaticamente
 - Configuração Nginx otimizada
 - PM2 configurado para startup automático
+- Autenticação PostgreSQL 100% funcional (senha: sispat123456)
+- Configuração automática de proxy reverso
+- Headers de segurança aplicados automaticamente
 
 ---
 

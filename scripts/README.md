@@ -240,6 +240,7 @@ repositórios problemáticos, instalação alternativa
 5. **Autenticação PostgreSQL:** Usuário e senha incorretos - **RESOLVIDO DEFINITIVAMENTE**
 6. **Erro "password authentication failed":**
    `password authentication failed for user "sispat_user"` - **RESOLVIDO**
+7. **Configuração Nginx:** Erro de valor inválido "must-revalidate" - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -264,10 +265,11 @@ repositórios problemáticos, instalação alternativa
 - Build automático do frontend se necessário
 - Configuração completa de proxy reverso
 - Headers de segurança aplicados
-- Compressão Gzip habilitada
+- Compressão Gzip habilitada (corrigida)
 - Cache para arquivos estáticos configurado
 - WebSocket configurado corretamente
 - Logs específicos do SISPAT configurados
+- Correção de valor inválido na diretiva `gzip_proxied`
 
 ---
 
