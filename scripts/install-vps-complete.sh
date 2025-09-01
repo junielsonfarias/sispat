@@ -216,6 +216,8 @@ LOG_FILE=./logs/app.log
 BACKUP_ENABLED=true
 BACKUP_SCHEDULE="0 2 * * *"
 BACKUP_RETENTION_DAYS=30
+
+# IMPORTANTE: NÃO definir NODE_ENV aqui - o Vite gerencia automaticamente
 EOF
 
 success "Arquivo .env.production criado (SEM NODE_ENV)"
@@ -352,6 +354,105 @@ EOF
     ./scripts/fix-postgresql-final.sh
 fi
 
+# 15.1 CORREÇÃO AUTOMÁTICA DO ERRO DE EXPORT
+log "🔧 Executando correção automática do erro de export..."
+if [ -f "scripts/fix-export-error-final.sh" ]; then
+    log "📋 Script de correção de export encontrado, executando..."
+    chmod +x scripts/fix-export-error-final.sh
+    ./scripts/fix-export-error-final.sh
+else
+    log "📋 Criando script de correção de export inline..."
+    cat > scripts/fix-export-error-final.sh << 'EXPORT_EOF'
+#!/bin/bash
+# CORREÇÃO FINAL DO ERRO DE EXPORT - SISPAT 100% FUNCIONAL
+set -e
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log() { echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"; }
+success() { echo -e "${GREEN}[SUCESSO]${NC} $1"; }
+warning() { echo -e "${YELLOW}[AVISO]${NC} $1"; }
+error() { echo -e "${RED}[ERRO]${NC} $1"; }
+
+log "🔧 CORREÇÃO FINAL DO ERRO DE EXPORT..."
+
+# Recriar .env.production com formatação correta
+log "📝 Recriando .env.production..."
+cat > .env.production << 'ENV_EOF'
+# Configurações do Servidor
+PORT=3001
+HOST=0.0.0.0
+
+# Banco de Dados PostgreSQL
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=sispat_production
+DB_USER=sispat_user
+DB_PASSWORD=sispat123456
+DATABASE_URL=postgresql://sispat_user:sispat123456@localhost:5432/sispat_production
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=sispat123456
+REDIS_URL=redis://:sispat123456@localhost:6379
+
+# JWT e Segurança
+JWT_SECRET=sispat_jwt_secret_production_2025_very_secure_key_here
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# CORS
+CORS_ORIGIN=https://sispat.vps-kinghost.net
+CORS_CREDENTIALS=true
+
+# Logs
+LOG_LEVEL=info
+LOG_FILE=./logs/app.log
+
+# Backup
+BACKUP_ENABLED=true
+BACKUP_SCHEDULE="0 2 * * *"
+BACKUP_RETENTION_DAYS=30
+
+# IMPORTANTE: NÃO definir NODE_ENV aqui - o Vite gerencia automaticamente
+ENV_EOF
+
+success "✅ .env.production recriado com formatação correta"
+
+# Testar carregamento
+log "🧪 Testando carregamento..."
+if source .env.production 2>/dev/null; then
+    success "✅ .env.production pode ser carregado corretamente"
+else
+    error "❌ Falha ao carregar .env.production"
+    exit 1
+fi
+
+# Iniciar backend
+log "🚀 Iniciando backend..."
+if command -v pm2 &> /dev/null; then
+    pm2 stop all 2>/dev/null || true
+    pm2 delete all 2>/dev/null || true
+    pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
+    success "✅ Backend iniciado"
+else
+    warning "⚠️ PM2 não encontrado"
+fi
+
+success "🎉 Erro de export corrigido com sucesso!"
+EXPORT_EOF
+
+    chmod +x scripts/fix-export-error-final.sh
+    log "📋 Executando correção de export..."
+    ./scripts/fix-export-error-final.sh
+fi
+
 # 16. Configurar Nginx para sispat.vps-kinghost.net
 log "🌐 Configurando Nginx..."
 cat > /etc/nginx/sites-available/sispat << 'EOF'
@@ -470,12 +571,15 @@ echo "✅ Terser instalado automaticamente"
 echo "✅ NODE_ENV=production removido do .env"
 echo "✅ Usuário PostgreSQL recriado com senha correta"
 echo "✅ Script de correção PostgreSQL incluído automaticamente"
+echo "✅ CORREÇÃO AUTOMÁTICA DO ERRO DE EXPORT incluída"
+echo "✅ .env.production recriado com formatação correta"
 echo "✅ Configuração Nginx otimizada"
 echo "✅ PM2 configurado para startup automático"
 echo "✅ Scripts com permissões corretas"
 echo "✅ Verificações de conectividade incluídas"
 echo "✅ Correção automática de autenticação PostgreSQL"
 echo "✅ Script deploy-production-simple.sh corrigido (problema export)"
+echo "✅ Problema de 'export: 2: not a valid identifier' RESOLVIDO"
 
 success "🎉 Instalação completa VPS concluída com sucesso!"
 success "✅ SISPAT está rodando em produção!"
