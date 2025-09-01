@@ -71,8 +71,29 @@ success "PM2 instalado: $(pm2 --version)"
 
 # 6. Instalar PostgreSQL
 log "🗄️ Instalando PostgreSQL..."
-sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+
+# Verificar versão do Ubuntu
+UBUNTU_VERSION=$(lsb_release -cs)
+log "📋 Versão do Ubuntu detectada: $UBUNTU_VERSION"
+
+# Configurar repositório PostgreSQL baseado na versão
+if [[ "$UBUNTU_VERSION" == "focal" ]]; then
+    # Ubuntu 20.04 - usar repositório específico
+    log "📦 Configurando repositório PostgreSQL para Ubuntu 20.04..."
+    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+elif [[ "$UBUNTU_VERSION" == "jammy" ]]; then
+    # Ubuntu 22.04
+    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+else
+    # Tentar repositório genérico
+    log "⚠️ Versão não suportada, tentando repositório genérico..."
+    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+fi
+
+# Atualizar e instalar
 apt update
 apt install -y postgresql postgresql-contrib
 success "PostgreSQL instalado"
@@ -160,7 +181,7 @@ log "🌐 Configurando Nginx..."
 cat > /etc/nginx/sites-available/sispat << 'EOF'
 server {
     listen 80;
-    server_name _;
+    server_name sispat.vps-kinghost.net www.sispat.vps-kinghost.net;
 
     # Frontend
     location / {
@@ -231,8 +252,8 @@ echo ""
 log "🎉 Instalação concluída com sucesso!"
 echo ""
 echo "🚀 SISPAT está rodando em:"
-echo "   - Frontend: http://$(hostname -I | awk '{print $1}')"
-echo "   - Backend: http://$(hostname -I | awk '{print $1}'):3001"
+echo "   - Frontend: http://sispat.vps-kinghost.net"
+echo "   - Backend: http://sispat.vps-kinghost.net:3001"
 echo ""
 echo "📋 COMANDOS ÚTEIS:"
 echo "   - Ver status: pm2 status"
@@ -251,7 +272,11 @@ echo "   - Configure: /etc/postgresql/*/main/pg_hba.conf"
 echo "   - Configure: /etc/redis/redis.conf"
 echo ""
 echo "🌐 Para configurar SSL:"
-echo "   certbot --nginx -d SEU_DOMINIO.com"
+echo "   certbot --nginx -d sispat.vps-kinghost.net"
+echo ""
+echo "🔧 Para resolver problemas do PostgreSQL:"
+echo "   - Ubuntu 20.04: Use repositório focal-pgdg"
+echo "   - Ubuntu 22.04: Use repositório jammy-pgdg"
 echo ""
 
 success "Instalação da VPS concluída! SISPAT está rodando."
