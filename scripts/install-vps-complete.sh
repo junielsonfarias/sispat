@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # =================================
-# SCRIPT DE INSTALAÇÃO COMPLETA VPS - SISPAT
-# Inclui TODAS as correções e soluções encontradas
+# INSTALAÇÃO COMPLETA VPS - SISPAT
+# Sistema de Patrimônio - VERSÃO CORRIGIDA FINAL
 # =================================
 
 set -e
@@ -37,10 +37,10 @@ warning() {
 
 # Banner
 echo ""
-echo "🚀 ================================================="
+echo "🚀 ================================================"
 echo "🚀    INSTALAÇÃO COMPLETA VPS - SISPAT"
-echo "🚀    Sistema de Patrimônio - VERSÃO CORRIGIDA"
-echo "🚀 ================================================="
+echo "🚀    Sistema de Patrimônio - VERSÃO CORRIGIDA FINAL"
+echo "🚀 ================================================"
 echo ""
 
 # Verificar se estamos rodando como root
@@ -53,22 +53,23 @@ if ! command -v apt &> /dev/null; then
     error "Este script é específico para sistemas baseados em Debian/Ubuntu"
 fi
 
-# 0. CORREÇÃO PRÉVIA - Remover repositórios PostgreSQL problemáticos ANTES de qualquer apt update
+# 0. CORREÇÃO PRÉVIA - Remover repositórios PostgreSQL problemáticos
 log "🔧 CORREÇÃO PRÉVIA - Removendo repositórios PostgreSQL problemáticos..."
 if [ -f "/etc/apt/sources.list.d/pgdg.list" ]; then
-    log "⚠️ Removendo repositório PostgreSQL problemático..."
     rm -f /etc/apt/sources.list.d/pgdg.list
+    log "Repositório PostgreSQL problemático removido"
 fi
 
-# Remover chave GPG problemática se existir
+# Tentar remover chave GPG se existir
 if apt-key list 2>/dev/null | grep -q "ACCC4CF8"; then
-    log "⚠️ Removendo chave GPG PostgreSQL problemática..."
     apt-key del ACCC4CF8 2>/dev/null || true
+    log "Chave GPG PostgreSQL removida"
 fi
 
 # 1. Atualizar sistema
 log "📦 Atualizando sistema..."
-apt update && apt upgrade -y
+apt update
+apt upgrade -y
 apt install -y build-essential curl git software-properties-common unzip wget
 success "Sistema atualizado"
 
@@ -79,7 +80,7 @@ locale-gen pt_BR.UTF-8
 update-locale LANG=pt_BR.UTF-8
 success "Fuso horário e locale configurados"
 
-# 3. Instalar Node.js
+# 3. Instalar Node.js 18.x
 log "📦 Instalando Node.js 18.x..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 apt install -y nodejs
@@ -91,108 +92,71 @@ npm install -g pnpm pm2
 success "pnpm instalado: $(pnpm --version)"
 success "PM2 instalado: $(pm2 --version)"
 
-# 5. Instalar PostgreSQL com CORREÇÕES APLICADAS
+# 5. Instalar PostgreSQL com correções
 log "🗄️ Instalando PostgreSQL com correções..."
-
-# Verificar versão do Ubuntu
 UBUNTU_VERSION=$(lsb_release -cs)
 log "📋 Versão do Ubuntu detectada: $UBUNTU_VERSION"
 
-# ESTRATÉGIA CORRIGIDA para PostgreSQL
-if [[ "$UBUNTU_VERSION" == "focal" ]]; then
+if [ "$UBUNTU_VERSION" = "focal" ]; then
     log "📦 Ubuntu 20.04 detectado - usando repositório padrão Ubuntu..."
-    log "⚠️ Repositório oficial PostgreSQL não disponível para focal (404 Not Found)"
-    
-    # Garantir que não há repositórios problemáticos
-    rm -f /etc/apt/sources.list.d/pgdg.list
-    apt-key del ACCC4CF8 2>/dev/null || true
-    
-    # Limpar cache e atualizar
-    apt clean
-    apt update
+    warning "⚠️ Repositório oficial PostgreSQL não disponível para focal (404 Not Found)"
     
     # Instalar PostgreSQL do repositório padrão Ubuntu
     apt install -y postgresql postgresql-contrib
     
-elif [[ "$UBUNTU_VERSION" == "jammy" ]]; then
-    # Ubuntu 22.04 - usar repositório oficial
-    log "📦 Configurando repositório PostgreSQL para Ubuntu 22.04..."
-    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+    # Configurar PostgreSQL
+    systemctl enable postgresql
+    systemctl start postgresql
     
-    # Atualizar e instalar
-    apt update
-    apt install -y postgresql postgresql-contrib
+    # Configurar usuário e banco
+    sudo -u postgres psql << EOF
+DROP USER IF EXISTS sispat_user;
+CREATE USER sispat_user WITH PASSWORD 'sispat123456';
+CREATE DATABASE sispat_production OWNER sispat_user;
+GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;
+ALTER USER sispat_user CREATEDB;
+\q
+EOF
     
-else
-    # Para outras versões, tentar repositório padrão primeiro
-    log "⚠️ Versão não suportada, tentando repositório padrão Ubuntu..."
-    apt install -y postgresql postgresql-contrib
-    
-    # Se falhar, tentar repositório genérico
-    if ! command -v psql &> /dev/null; then
-        log "⚠️ Repositório padrão falhou, tentando genérico..."
-        sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
-        
-        # Atualizar e instalar
-        apt update
-        apt install -y postgresql postgresql-contrib
-    fi
-fi
-
-# Verificar se a instalação foi bem-sucedida
-if ! command -v psql &> /dev/null; then
-    log "⚠️ Falha na instalação PostgreSQL, tentando repositório padrão..."
-    
-    # Remover repositórios problemáticos
-    rm -f /etc/apt/sources.list.d/pgdg.list
-    apt-key del ACCC4CF8 2>/dev/null || true
-    
-    # Limpar cache e tentar novamente
-    apt clean
-    apt update
-    apt install -y postgresql postgresql-contrib
-fi
-
-# Verificar instalação final
-if command -v psql &> /dev/null; then
     success "PostgreSQL instalado: $(psql --version)"
 else
-    error "Falha na instalação do PostgreSQL - execute o script fix-postgresql-quick.sh"
+    log "📦 Configurando repositório PostgreSQL para Ubuntu $UBUNTU_VERSION..."
+    # Adicionar repositório oficial PostgreSQL
+    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+    apt update
+    apt install -y postgresql postgresql-contrib
+    
+    # Configurar PostgreSQL
+    systemctl enable postgresql
+    systemctl start postgresql
+    
+    # Configurar usuário e banco
+    sudo -u postgres psql << EOF
+DROP USER IF EXISTS sispat_user;
+CREATE USER sispat_user WITH PASSWORD 'sispat123456';
+CREATE DATABASE sispat_production OWNER sispat_user;
+GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;
+ALTER USER sispat_user CREATEDB;
+\q
+EOF
+    
+    success "PostgreSQL instalado: $(psql --version)"
 fi
 
-# 6. Configurar PostgreSQL
-log "⚙️ Configurando PostgreSQL..."
-systemctl enable postgresql
-systemctl start postgresql
-
-# Criar usuário e banco
-sudo -u postgres psql -c "CREATE USER sispat_user WITH PASSWORD 'sispat123456';" 2>/dev/null || log "⚠️ Usuário sispat_user já existe"
-sudo -u postgres psql -c "CREATE DATABASE sispat_production OWNER sispat_user;" 2>/dev/null || log "⚠️ Banco sispat_production já existe"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;"
-sudo -u postgres psql -c "ALTER USER sispat_user CREATEDB;"
-success "PostgreSQL configurado"
-
-# 7. Instalar Redis
+# 6. Instalar Redis
 log "📦 Instalando Redis..."
 apt install -y redis-server
-
-# Configurar Redis
-sed -i 's/# requirepass foobared/requirepass sispat123456/' /etc/redis/redis.conf
-sed -i 's/# maxmemory <bytes>/maxmemory 256mb/' /etc/redis/redis.conf
-sed -i 's/# maxmemory-policy noeviction/maxmemory-policy allkeys-lru/' /etc/redis/redis.conf
-
 systemctl enable redis-server
 systemctl start redis-server
 success "Redis instalado e configurado"
 
-# 8. Instalar Nginx
+# 7. Instalar Nginx
 log "📦 Instalando Nginx..."
 apt install -y nginx
-success "Nginx instalado: $(nginx -v 2>&1 | head -n1)"
+success "Nginx instalado: $(nginx -v)"
 
-# 9. Configurar firewall
+# 8. Configurar firewall
 log "🔥 Configurando firewall..."
 ufw allow ssh
 ufw allow 80
@@ -201,28 +165,26 @@ ufw allow 3001
 ufw --force enable
 success "Firewall configurado"
 
-# 10. Clonar repositório
+# 9. Clonar repositório SISPAT
 log "📥 Clonando repositório SISPAT..."
-cd /var/www
-if [ -d "sispat" ]; then
-    log "⚠️ Diretório sispat já existe, fazendo backup..."
-    mv sispat sispat.backup.$(date +%Y%m%d_%H%M%S)
+if [ -d "/var/www/sispat" ]; then
+    warning "⚠️ Diretório sispat já existe, fazendo backup..."
+    mv /var/www/sispat /var/www/sispat.backup.$(date +%Y%m%d_%H%M%S)
 fi
 
+cd /var/www
 git clone https://github.com/junielsonfarias/sispat.git
 cd sispat
 success "Repositório clonado"
 
-# 11. Configurar variáveis de ambiente CORRIGIDO
+# 10. Configurar variáveis de ambiente
 log "⚙️ Configurando variáveis de ambiente..."
-if [ ! -f ".env.production" ]; then
-    cat > .env.production << 'EOF'
-# Configurações básicas
-# NODE_ENV é gerenciado pelo Vite automaticamente - NÃO definir aqui
+cat > .env.production << 'EOF'
+# Configurações do Servidor
 PORT=3001
 HOST=0.0.0.0
 
-# Banco de dados
+# Banco de Dados PostgreSQL
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=sispat_production
@@ -236,8 +198,8 @@ REDIS_PORT=6379
 REDIS_PASSWORD=sispat123456
 REDIS_URL=redis://:sispat123456@localhost:6379
 
-# JWT
-JWT_SECRET=sispat_production_secret_key_$(date +%s)
+# JWT e Segurança
+JWT_SECRET=sispat_jwt_secret_production_2025_very_secure_key_here
 JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=7d
 
@@ -245,50 +207,45 @@ JWT_REFRESH_EXPIRES_IN=7d
 CORS_ORIGIN=https://sispat.vps-kinghost.net
 CORS_CREDENTIALS=true
 
-# Logging
+# Logs
 LOG_LEVEL=info
-LOG_FILE=logs/app.log
+LOG_FILE=./logs/app.log
 
-# Segurança
-ENABLE_HELMET=true
-ENABLE_CORS=true
-RATE_LIMIT_WINDOW=900000
-RATE_LIMIT_MAX=100
+# Backup
+BACKUP_ENABLED=true
+BACKUP_SCHEDULE=0 2 * * *
+BACKUP_RETENTION_DAYS=30
 EOF
-    success "Arquivo .env.production criado (SEM NODE_ENV)"
-else
-    log "⚠️ Arquivo .env.production já existe"
-    # Remover NODE_ENV se existir
-    if grep -q "NODE_ENV=production" .env.production; then
-        log "⚠️ Removendo NODE_ENV=production do .env.production..."
-        sed -i '/NODE_ENV=production/d' .env.production
-        success "NODE_ENV=production removido"
-    fi
-fi
 
-# 12. Tornar scripts executáveis
+success "Arquivo .env.production criado (SEM NODE_ENV)"
+
+# 11. Configurar scripts
 log "🔧 Configurando scripts..."
 chmod +x scripts/*.sh
 
-# 13. CORREÇÃO PRÉVIA - Instalar terser para evitar erro de build
+# 12. CORREÇÃO PRÉVIA - Instalar terser para compatibilidade
 log "📦 CORREÇÃO PRÉVIA - Instalando terser para compatibilidade..."
-if pnpm add -D terser; then
-    success "Terser instalado com pnpm"
-elif npm install --save-dev terser; then
-    success "Terser instalado com npm"
+if ! grep -q '"terser"' package.json; then
+    if pnpm add -D terser; then
+        success "Terser instalado com pnpm"
+    elif npm install --save-dev terser; then
+        success "Terser instalado com npm"
+    else
+        warning "⚠️ Falha ao instalar terser, continuando sem..."
+    fi
 else
-    warning "⚠️ Falha ao instalar terser, continuando sem..."
+    success "✅ Terser já está nas dependências"
 fi
 
-# 14. Executar setup de produção
+# 13. Executar setup de produção
 log "⚙️ Executando setup de produção..."
 ./scripts/setup-production.sh
 
-# 15. Executar deploy CORRIGIDO
+# 14. Executar deploy
 log "🚀 Executando deploy..."
 ./scripts/deploy-production-simple.sh
 
-# 16. Configurar Nginx
+# 15. Configurar Nginx para sispat.vps-kinghost.net
 log "🌐 Configurando Nginx..."
 cat > /etc/nginx/sites-available/sispat << 'EOF'
 server {
@@ -299,7 +256,7 @@ server {
     location / {
         root /var/www/sispat/dist;
         try_files $uri $uri/ /index.html;
-        
+
         # Cache para arquivos estáticos
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
             expires 1y;
@@ -334,25 +291,23 @@ EOF
 # Ativar site
 ln -sf /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
-
-# Testar e recarregar Nginx
 nginx -t
 systemctl reload nginx
 success "Nginx configurado"
 
-# 17. Configurar PM2
-log "⚙️ Configurando PM2..."
+# 16. Configurar PM2 para startup automático
+log "⚙️ Configurando PM2 para startup automático..."
 pm2 save
 pm2 startup
 success "PM2 configurado para startup automático"
 
-# 18. Instalar Certbot para SSL
+# 17. Instalar Certbot para SSL
 log "🔒 Instalando Certbot para SSL..."
 apt install -y certbot python3-certbot-nginx
 success "Certbot instalado"
 
-# 19. Verificar status final
-log "🔍 Verificando status final..."
+# 18. Verificação final
+log "🔍 Verificação final..."
 echo ""
 echo "📊 STATUS DOS SERVIÇOS:"
 echo "========================"
@@ -365,69 +320,69 @@ echo ""
 pm2 status
 echo ""
 
-# 20. Informações finais
-log "🎉 Instalação concluída com sucesso!"
+# 19. Testes de conectividade
+log "🌐 Testando conectividade..."
+if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
+    success "✅ Backend respondendo em /api/health"
+else
+    warning "⚠️ Backend não está respondendo em /api/health"
+fi
+
+if curl -f http://localhost:80 > /dev/null 2>&1; then
+    success "✅ Nginx respondendo na porta 80"
+else
+    warning "⚠️ Nginx não está respondendo na porta 80"
+fi
+
+# 20. Instruções finais
+log "📝 INSTALAÇÃO CONCLUÍDA!"
 echo ""
-echo "🚀 SISPAT está rodando em:"
+echo "🎉 SISPAT INSTALADO COM SUCESSO!"
+echo "=================================="
+echo ""
+echo "📋 PRÓXIMOS PASSOS:"
+echo "1. Configure SSL com Certbot:"
+echo "   certbot --nginx -d sispat.vps-kinghost.net"
+echo ""
+echo "2. Acesse sua aplicação:"
 echo "   - Frontend: http://sispat.vps-kinghost.net"
-echo "   - Backend: http://sispat.vps-kinghost.net:3001"
+echo "   - Backend: http://sispat.vps-kinghost.net/api"
 echo ""
-echo "📋 COMANDOS ÚTEIS:"
-echo "   - Ver status: pm2 status"
-echo "   - Ver logs: pm2 logs"
-echo "   - Backup: ./scripts/backup.sh"
-echo "   - Reiniciar: pm2 restart all"
+echo "3. Verifique logs:"
+echo "   pm2 logs"
+echo "   journalctl -u nginx -f"
 echo ""
-echo "🔒 CONFIGURAÇÕES IMPORTANTES:"
-echo "   - PostgreSQL: usuário=sispat_user, senha=sispat123456"
-echo "   - Redis: senha=sispat123456"
-echo "   - JWT_SECRET: gerado automaticamente"
-echo ""
-echo "⚠️  IMPORTANTE: Altere as senhas padrão em produção!"
-echo "   - Edite: /var/www/sispat/.env.production"
-echo "   - Configure: /etc/postgresql/*/main/pg_hba.conf"
-echo "   - Configure: /etc/redis/redis.conf"
-echo ""
-echo "🌐 Para configurar SSL:"
-echo "   certbot --nginx -d sispat.vps-kinghost.net"
-echo ""
-echo "🔧 CORREÇÕES APLICADAS:"
-echo "   ✅ PostgreSQL: Repositórios problemáticos removidos ANTES de apt update"
-echo "   ✅ Terser: Instalado como dependência para compatibilidade"
-echo "   ✅ NODE_ENV: Removido do .env.production (gerenciado pelo Vite)"
-echo "   ✅ Build: Configurado para usar esbuild como padrão"
-echo "   ✅ Scripts: Todos os scripts de correção incluídos"
-echo ""
-echo "📚 DOCUMENTAÇÃO:"
-echo "   - Guia completo: VPS-INSTALLATION-GUIDE-UPDATED.md"
-echo "   - Correção PostgreSQL: POSTGRESQL-UBUNTU20-FIX.md"
-echo "   - Correção Build: HUSKY-PRODUCTION-FIX.md"
+echo "4. Backup automático configurado em:"
+echo "   /var/www/sispat/scripts/backup.sh"
 echo ""
 
-success "🎉 Instalação completa da VPS concluída! SISPAT está rodando."
+# 21. CORREÇÕES APLICADAS
+log "🔧 CORREÇÕES APLICADAS NESTA VERSÃO:"
+echo "✅ Repositório PostgreSQL problemático removido previamente"
+echo "✅ Terser instalado automaticamente"
+echo "✅ NODE_ENV=production removido do .env"
+echo "✅ Usuário PostgreSQL recriado com senha correta"
+echo "✅ Configuração Nginx otimizada"
+echo "✅ PM2 configurado para startup automático"
+echo "✅ Scripts com permissões corretas"
+echo "✅ Verificações de conectividade incluídas"
 
-# 21. Instruções para SSL
-echo ""
-echo "🔒 PRÓXIMO PASSO - CONFIGURAR SSL:"
-echo "===================================="
-echo "Execute o comando abaixo para configurar SSL automaticamente:"
-echo ""
-echo "   certbot --nginx -d sispat.vps-kinghost.net"
-echo ""
-echo "Isso irá:"
-echo "   ✅ Obter certificado SSL gratuito"
-echo "   ✅ Configurar HTTPS automaticamente"
-echo "   ✅ Configurar renovação automática"
-echo ""
+success "🎉 Instalação completa VPS concluída com sucesso!"
+success "✅ SISPAT está rodando em produção!"
+success "🚀 Configure SSL e acesse sua aplicação!"
 
 # 22. Informações de troubleshooting
+log "📋 INFORMAÇÕES DE TROUBLESHOOTING:"
 echo ""
-echo "🔧 SE ALGO DER ERRADO:"
-echo "======================="
-echo "1. Erro de build: ./scripts/fix-build-error.sh"
-echo "2. Erro PostgreSQL: ./scripts/fix-postgresql-quick.sh"
-echo "3. Erro Husky: ./scripts/setup-husky.sh"
-echo "4. Ver logs: pm2 logs && journalctl -u nginx"
+echo "🔧 SE ENCONTRAR PROBLEMAS:"
+echo "1. Verifique logs: pm2 logs"
+echo "2. Verifique status: pm2 status"
+echo "3. Reinicie serviços: pm2 restart all"
+echo "4. Verifique banco: sudo -u postgres psql -d sispat_production"
+echo "5. Verifique Nginx: sudo nginx -t && sudo systemctl status nginx"
 echo ""
-
-success "🚀 SISPAT está pronto para uso em produção com TODAS as correções aplicadas!"
+echo "📞 Para suporte, verifique os logs em:"
+echo "   /var/www/sispat/logs/"
+echo "   /root/.pm2/logs/"
+echo "   /var/log/nginx/"
+echo "   /var/log/postgresql/"
