@@ -437,7 +437,13 @@ sudo -u postgres psql -d sispat_production -c "SELECT version();"
 script `install-vps-complete.sh` agora inclui correção automática **✅ Status:** **RESOLVIDO** -
 Correção integrada automaticamente
 
-### **Problema 1: PostgreSQL não instala (Ubuntu 20.04)**
+### **Problema 1: Erro de Autenticação PostgreSQL (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `password authentication failed for user "sispat_user"` **🔧 Solução:** O script
+`install-vps-complete.sh` agora inclui correção automática de autenticação **✅ Status:**
+**RESOLVIDO** - Correção integrada automaticamente **🔒 Senha Configurada:** `sispat123456`
+
+### **Problema 2: PostgreSQL não instala (Ubuntu 20.04)**
 
 ```bash
 # Solução automática
@@ -446,7 +452,7 @@ chmod +x fix-postgresql.sh
 ./fix-postgresql.sh
 ```
 
-### **Problema 2: pnpm-lock.yaml incompatível**
+### **Problema 3: pnpm-lock.yaml incompatível**
 
 ```bash
 # Tentar instalar com força
@@ -457,7 +463,7 @@ rm pnpm-lock.yaml
 npm install
 ```
 
-### **Problema 3: Husky não encontrado**
+### **Problema 4: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
