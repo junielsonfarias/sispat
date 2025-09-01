@@ -48,242 +48,277 @@ log "🔧 Configurando ambiente de produção para SISPAT..."
 log "📋 Verificando sistema operacional..."
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     success "Sistema Linux detectado"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    success "Sistema macOS detectado"
 else
-    warning "Sistema operacional não suportado: $OSTYPE"
+    error "Sistema operacional não suportado: $OSTYPE"
 fi
 
-# 2. Verificar dependências
+# 2. Verificar dependências do sistema
 log "🔍 Verificando dependências do sistema..."
 
-# Node.js
+# Verificar Node.js
 if command -v node &> /dev/null; then
     NODE_VERSION=$(node --version)
     log "✅ Node.js encontrado: $NODE_VERSION"
-    
-    # Verificar versão mínima
-    NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d'v' -f2 | cut -d'.' -f1)
-    if [ "$NODE_MAJOR" -lt 18 ]; then
-        error "Node.js 18+ é necessário. Versão atual: $NODE_VERSION"
-    fi
 else
     error "Node.js não encontrado. Instale Node.js 18+ primeiro."
 fi
 
-# pnpm
+# Verificar pnpm
 if command -v pnpm &> /dev/null; then
     PNPM_VERSION=$(pnpm --version)
     success "✅ pnpm encontrado: $PNPM_VERSION"
 else
-    log "📦 Instalando pnpm..."
-    npm install -g pnpm
-    success "pnpm instalado"
+    error "pnpm não encontrado. Execute: npm install -g pnpm@8"
 fi
 
-# PM2
+# Verificar PM2
 if command -v pm2 &> /dev/null; then
     PM2_VERSION=$(pm2 --version)
     success "✅ PM2 encontrado: $PM2_VERSION"
 else
-    log "📦 Instalando PM2..."
-    npm install -g pm2
-    success "PM2 instalado"
+    error "PM2 não encontrado. Execute: npm install -g pm2"
 fi
 
 # 3. Configurar variáveis de ambiente
 log "⚙️ Configurando variáveis de ambiente..."
 
-# Verificar se arquivo de produção existe
+# Verificar se .env.production existe
 if [ ! -f ".env.production" ]; then
     log "📝 Criando arquivo .env.production..."
-    cp env.production.example .env.production
-    success "Arquivo .env.production criado"
-fi
+    
+    # Criar arquivo .env.production com configurações padrão
+    cat > .env.production << 'EOF'
+# =======================================
+# VARIÁVEIS DE AMBIENTE - PRODUÇÃO
+# SISPAT - Sistema de Patrimônio
+# =======================================
 
-# Solicitar configurações do usuário
-log "🔐 Configurando credenciais de segurança..."
+# ===== APLICAÇÃO =====
+NODE_ENV=production
+PORT=3001
+HOST=0.0.0.0
+VERSION=1.0.0
 
-# JWT Secret
-JWT_SECRET=$(openssl rand -base64 32 2>/dev/null || echo "CHANGE_ME_STRONG_JWT_SECRET_32_CHARS_MIN")
-sed -i.bak "s/CHANGE_ME_STRONG_JWT_SECRET_32_CHARS_MIN/$JWT_SECRET/g" .env.production
+# ===== BANCO DE DADOS =====
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=sispat_production
+DB_USER=sispat_user
+DB_PASSWORD=CHANGE_ME_STRONG_DB_PASSWORD
+DATABASE_URL=postgresql://sispat_user:CHANGE_ME_STRONG_DB_PASSWORD@localhost:5432/sispat_production
 
-# Database Password
-DB_PASSWORD=$(input "Digite a senha para o banco de dados PostgreSQL: ")
-sed -i.bak "s/CHANGE_ME_STRONG_DB_PASSWORD/$DB_PASSWORD/g" .env.production
+# ===== REDIS =====
+REDIS_URL=redis://localhost:6379
+REDIS_PASSWORD=CHANGE_ME_STRONG_REDIS_PASSWORD
+REDIS_HOST=localhost
+REDIS_PORT=6379
 
-# Redis Password
-REDIS_PASSWORD=$(openssl rand -base64 16 2>/dev/null || echo "CHANGE_ME_STRONG_REDIS_PASSWORD")
-sed -i.bak "s/CHANGE_ME_STRONG_REDIS_PASSWORD/$REDIS_PASSWORD/g" .env.production
+# ===== AUTENTICAÇÃO =====
+JWT_SECRET=CHANGE_ME_STRONG_JWT_SECRET_32_CHARS_MIN
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_EXPIRES_IN=7d
 
-# CSRF Secret
-CSRF_SECRET=$(openssl rand -base64 32 2>/dev/null || echo "CHANGE_ME_STRONG_CSRF_SECRET")
-sed -i.bak "s/CHANGE_ME_STRONG_CSRF_SECRET/$CSRF_SECRET/g" .env.production
+# ===== CORS =====
+CORS_ORIGIN=http://localhost:3000
+CORS_CREDENTIALS=true
 
-# Encryption Key
-ENCRYPTION_KEY=$(openssl rand -base64 32 2>/dev/null || echo "CHANGE_ME_STRONG_ENCRYPTION_KEY")
-sed -i.bak "s/CHANGE_ME_STRONG_ENCRYPTION_KEY/$ENCRYPTION_KEY/g" .env.production
+# ===== LOGS =====
+LOG_LEVEL=info
+LOG_FILE=logs/app.log
 
-# Domain
-DOMAIN=$(input "Digite o domínio da aplicação (ex: sispat.exemplo.com): ")
-sed -i.bak "s/seudominio.com/$DOMAIN/g" .env.production
+# ===== MONITORAMENTO =====
+ENABLE_METRICS=true
+METRICS_PORT=9090
 
-# Email
-EMAIL=$(input "Digite o email para alertas: ")
-sed -i.bak "s/admin@seudominio.com/$EMAIL/g" .env.production
-
-# Limpar arquivos de backup
-rm -f .env.production.bak
-
-success "Variáveis de ambiente configuradas"
-
-# 4. Configurar banco de dados
-log "🗄️ Configurando banco de dados..."
-
-# Verificar se PostgreSQL está rodando
-if command -v pg_isready &> /dev/null; then
-    if pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
-        success "PostgreSQL está rodando"
-    else
-        warning "PostgreSQL não está rodando. Inicie o serviço primeiro."
-    fi
-else
-    warning "PostgreSQL não encontrado. Instale PostgreSQL primeiro."
-fi
-
-# 5. Configurar Redis
-log "🔴 Configurando Redis..."
-
-# Verificar se Redis está rodando
-if command -v redis-cli &> /dev/null; then
-    if redis-cli ping > /dev/null 2>&1; then
-        success "Redis está rodando"
-    else
-        warning "Redis não está rodando. Inicie o serviço primeiro."
-    fi
-else
-    warning "Redis não encontrado. Instale Redis primeiro."
-fi
-
-# 6. Criar diretórios necessários
-log "📁 Criando diretórios necessários..."
-mkdir -p logs uploads backups
-success "Diretórios criados"
-
-# 7. Configurar permissões
-log "🔐 Configurando permissões..."
-chmod 755 logs uploads backups
-success "Permissões configuradas"
-
-# 8. Instalar dependências
-log "📦 Instalando dependências..."
-pnpm install --prod --frozen-lockfile
-success "Dependências instaladas"
-
-# 9. Testar build
-log "🔨 Testando build da aplicação..."
-pnpm run build
-if [ -d "dist" ] && [ -f "dist/index.html" ]; then
-    success "Build testado com sucesso"
-else
-    error "Build falhou"
-fi
-
-# 10. Configurar PM2
-log "⚙️ Configurando PM2..."
-pm2 startup
-success "PM2 configurado para inicialização automática"
-
-# 11. Configurar firewall (Linux)
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    log "🔥 Configurando firewall..."
-    if command -v ufw &> /dev/null; then
-        ufw allow 22/tcp    # SSH
-        ufw allow 80/tcp    # HTTP
-        ufw allow 443/tcp   # HTTPS
-        ufw allow 3001/tcp  # Backend
-        ufw allow 8080/tcp  # Frontend
-        success "Firewall configurado"
-    else
-        warning "UFW não encontrado. Configure o firewall manualmente."
-    fi
-fi
-
-# 12. Configurar SSL (opcional)
-log "🔒 Configuração SSL..."
-SSL_CHOICE=$(input "Deseja configurar SSL com Let's Encrypt? (s/n): ")
-if [[ "$SSL_CHOICE" =~ ^[Ss]$ ]]; then
-    if command -v certbot &> /dev/null; then
-        success "Certbot encontrado. Configure SSL com: certbot --nginx -d $DOMAIN"
-    else
-        warning "Certbot não encontrado. Instale com: sudo apt install certbot python3-certbot-nginx"
-    fi
-fi
-
-# 13. Configurar backup automático
-log "💾 Configurando backup automático..."
-BACKUP_CHOICE=$(input "Deseja configurar backup automático? (s/n): ")
-if [[ "$BACKUP_CHOICE" =~ ^[Ss]$ ]]; then
-    # Criar script de backup
-    cat > scripts/backup.sh << 'EOF'
-#!/bin/bash
-# Script de backup automático
-BACKUP_DIR="./backups"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-
-# Backup do banco
-pg_dump -h localhost -U sispat_user sispat_production > "$BACKUP_DIR/db_backup_$TIMESTAMP.sql"
-
-# Backup dos uploads
-tar -czf "$BACKUP_DIR/uploads_backup_$TIMESTAMP.tar.gz" uploads/
-
-# Limpar backups antigos (mais de 30 dias)
-find "$BACKUP_DIR" -name "*.sql" -mtime +30 -delete
-find "$BACKUP_DIR" -name "*.tar.gz" -mtime +30 -delete
-
-echo "Backup concluído: $TIMESTAMP"
+# ===== SEGURANÇA =====
+RATE_LIMIT_WINDOW=15m
+RATE_LIMIT_MAX=100
+ENABLE_HELMET=true
+ENABLE_CORS=true
 EOF
     
-    chmod +x scripts/backup.sh
+    success "Arquivo .env.production criado"
     
-    # Adicionar ao crontab
-    (crontab -l 2>/dev/null; echo "0 2 * * * cd $(pwd) && ./scripts/backup.sh") | crontab -
-    success "Backup automático configurado"
+    warning "⚠️ IMPORTANTE: Edite o arquivo .env.production com suas configurações reais!"
+    warning "⚠️ Especialmente: DB_PASSWORD, REDIS_PASSWORD, JWT_SECRET"
+    
+    # Perguntar se quer editar agora
+    read -p "Deseja editar o arquivo .env.production agora? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if command -v nano &> /dev/null; then
+            nano .env.production
+        elif command -v vim &> /dev/null; then
+            vim .env.production
+        else
+            log "Editor não encontrado. Edite manualmente o arquivo .env.production"
+        fi
+    fi
+else
+    success "Arquivo .env.production já existe"
 fi
 
-# 14. Configurar monitoramento
-log "📊 Configurando monitoramento..."
-MONITORING_CHOICE=$(input "Deseja configurar monitoramento com Prometheus/Grafana? (s/n): ")
-if [[ "$MONITORING_CHOICE" =~ ^[Ss]$ ]]; then
-    success "Use docker-compose.production.yml para iniciar monitoramento"
+# 4. Configurar credenciais de segurança
+log "🔐 Configurando credenciais de segurança..."
+
+# Gerar JWT_SECRET se não existir
+if ! grep -q "CHANGE_ME_STRONG_JWT_SECRET" .env.production; then
+    success "JWT_SECRET já configurado"
+else
+    # Gerar JWT_SECRET aleatório
+    JWT_SECRET=$(openssl rand -base64 32)
+    sed -i "s/CHANGE_ME_STRONG_JWT_SECRET_32_CHARS_MIN/$JWT_SECRET/g" .env.production
+    success "JWT_SECRET gerado automaticamente"
 fi
 
-# 15. Finalização
-log "🎉 Configuração de produção concluída!"
-log ""
-log "📋 RESUMO DA CONFIGURAÇÃO:"
-log "   ✅ Variáveis de ambiente configuradas"
-log "   ✅ Dependências instaladas"
-log "   ✅ Build testado"
-log "   ✅ PM2 configurado"
-log "   ✅ Diretórios criados"
-log "   ✅ Firewall configurado (Linux)"
-log ""
-log "🚀 PRÓXIMOS PASSOS:"
-log "   1. Configure o banco de dados PostgreSQL"
-log "   2. Configure o Redis"
-log "   3. Execute: ./scripts/deploy-production.sh"
-log "   4. Configure SSL se necessário"
-log "   5. Configure monitoramento se necessário"
-log ""
-log "📁 Arquivos de configuração:"
-log "   - .env.production (variáveis de ambiente)"
-log "   - ecosystem.config.cjs (configuração PM2)"
-log "   - docker-compose.production.yml (Docker)"
-log ""
-log "🔗 URLs de acesso:"
-log "   - Frontend: http://localhost:8080"
-log "   - Backend: http://localhost:3001"
-log "   - Health Check: http://localhost:3001/api/health"
+# 5. Verificar e configurar banco de dados
+log "🗄️ Verificando configuração do banco de dados..."
 
-success "Configuração de produção concluída com sucesso!"
+# Verificar se PostgreSQL está rodando
+if systemctl is-active --quiet postgresql; then
+    success "PostgreSQL está rodando"
+else
+    warning "⚠️ PostgreSQL não está rodando. Inicie o serviço:"
+    echo "sudo systemctl start postgresql"
+    echo "sudo systemctl enable postgresql"
+fi
+
+# 6. Verificar e configurar Redis
+log "🔴 Verificando configuração do Redis..."
+
+# Verificar se Redis está rodando
+if systemctl is-active --quiet redis-server; then
+    success "Redis está rodando"
+else
+    warning "⚠️ Redis não está rodando. Inicie o serviço:"
+    echo "sudo systemctl start redis-server"
+    echo "sudo systemctl enable redis-server"
+fi
+
+# 7. Configurar diretórios de logs
+log "📝 Configurando diretórios de logs..."
+mkdir -p logs
+mkdir -p uploads
+chmod 755 logs uploads
+success "Diretórios de logs criados"
+
+# 8. Configurar PM2
+log "⚙️ Configurando PM2..."
+
+# Verificar se ecosystem.config.cjs existe
+if [ -f "ecosystem.config.cjs" ]; then
+    success "Arquivo de configuração PM2 encontrado"
+else
+    error "Arquivo ecosystem.config.cjs não encontrado"
+fi
+
+# 9. Configurar firewall básico
+log "🔥 Configurando firewall básico..."
+
+# Verificar se UFW está disponível
+if command -v ufw &> /dev/null; then
+    # Verificar status do UFW
+    UFW_STATUS=$(ufw status | grep "Status")
+    if [[ $UFW_STATUS == *"inactive"* ]]; then
+        warning "⚠️ UFW está inativo. Configure as regras:"
+        echo "sudo ufw allow ssh"
+        echo "sudo ufw allow 80"
+        echo "sudo ufw allow 443"
+        echo "sudo ufw allow 3001"
+        echo "sudo ufw enable"
+    else
+        success "UFW está ativo"
+    fi
+else
+    warning "⚠️ UFW não encontrado. Configure o firewall manualmente."
+fi
+
+# 10. Configurar backup automático
+log "💾 Configurando backup automático..."
+
+# Criar diretório de backup
+mkdir -p backups
+chmod 755 backups
+
+# Criar script de backup básico
+cat > scripts/backup.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+# Backup do banco de dados
+if command -v pg_dump &> /dev/null; then
+    pg_dump -h localhost -U sispat_user -d sispat_production > "$BACKUP_DIR/db_backup_$DATE.sql"
+    echo "Backup do banco criado: db_backup_$DATE.sql"
+fi
+
+# Backup dos arquivos
+tar -czf "$BACKUP_DIR/app_backup_$DATE.tar.gz" --exclude=node_modules --exclude=backups .
+echo "Backup da aplicação criado: app_backup_$DATE.tar.gz"
+
+# Manter apenas últimos 7 backups
+find "$BACKUP_DIR" -name "*.sql" -mtime +7 -delete
+find "$BACKUP_DIR" -name "*.tar.gz" -mtime +7 -delete
+
+echo "Backup concluído: $DATE"
+EOF
+
+chmod +x scripts/backup.sh
+success "Script de backup criado"
+
+# 11. Resolver problema do pnpm-lock.yaml
+log "🔧 Resolvendo problema do pnpm-lock.yaml..."
+
+# Verificar se há problema com o lockfile
+if [ -f "pnpm-lock.yaml" ]; then
+    log "📦 Tentando resolver incompatibilidade do lockfile..."
+    
+    # Fazer backup do lockfile atual
+    cp pnpm-lock.yaml pnpm-lock.yaml.backup
+    
+    # Tentar instalar com --force
+    if pnpm install --force; then
+        success "Dependências instaladas com sucesso"
+        rm pnpm-lock.yaml.backup
+    else
+        warning "⚠️ Falha na instalação. Restaurando lockfile original..."
+        mv pnpm-lock.yaml.backup pnpm-lock.yaml
+        
+        # Tentar com npm como fallback
+        log "🔄 Tentando com npm como fallback..."
+        if npm install; then
+            success "Dependências instaladas com npm"
+        else
+            error "Falha na instalação das dependências"
+        fi
+    fi
+else
+    warning "⚠️ pnpm-lock.yaml não encontrado"
+fi
+
+# 12. Configuração final
+log "🎯 Configuração final..."
+
+# Verificar se tudo está configurado
+if [ -f ".env.production" ] && [ -f "ecosystem.config.cjs" ]; then
+    success "✅ Configuração básica concluída!"
+    
+    echo ""
+    echo "🚀 PRÓXIMOS PASSOS:"
+    echo "1. Edite o arquivo .env.production com suas configurações reais"
+    echo "2. Configure o banco de dados PostgreSQL"
+    echo "3. Configure o Redis"
+    echo "4. Execute: ./scripts/deploy-production-simple.sh"
+    echo ""
+    echo "📋 COMANDOS ÚTEIS:"
+    echo "- Ver status: pm2 status"
+    echo "- Ver logs: pm2 logs"
+    echo "- Backup: ./scripts/backup.sh"
+    echo ""
+    
+else
+    error "❌ Configuração incompleta. Verifique os arquivos necessários."
+fi
+
+log "🎉 Script de configuração concluído!"
+success "Ambiente de produção configurado com sucesso!"

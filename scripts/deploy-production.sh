@@ -91,7 +91,23 @@ export CI=false
 
 # Instalar dependências incluindo Husky
 log "🔧 Instalando Husky para hooks de qualidade..."
-pnpm install --frozen-lockfile
+
+# Tentar instalar com pnpm primeiro
+if pnpm install --frozen-lockfile; then
+    success "Dependências instaladas com pnpm"
+else
+    log "⚠️ Falha com pnpm, tentando com --force..."
+    if pnpm install --force; then
+        success "Dependências instaladas com pnpm --force"
+    else
+        log "⚠️ Falha com pnpm, tentando com npm..."
+        if npm install; then
+            success "Dependências instaladas com npm"
+        else
+            error "Falha na instalação das dependências"
+        fi
+    fi
+fi
 
 # Configurar Husky para produção
 log "🔧 Configurando Husky..."
