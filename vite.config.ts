@@ -1,7 +1,7 @@
 /* Vite config for building the frontend react app: https://vite.dev/config/ */
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig } from 'vite';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -62,14 +62,8 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    // Otimizações para produção
-    minify: mode === 'production' ? 'terser' : false,
-    terserOptions: mode === 'production' ? {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    } : undefined,
+    // Otimizações para produção - usar esbuild como padrão
+    minify: mode === 'production' ? 'esbuild' : false,
     // Chunk size warnings
     chunkSizeWarningLimit: 1000,
   },

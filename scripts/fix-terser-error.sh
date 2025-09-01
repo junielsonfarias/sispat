@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =================================
-# CORREÇÃO RÁPIDA - ERRO DE BUILD VITE
+# CORREÇÃO RÁPIDA - ERRO TERSER VITE
 # SISPAT - Sistema de Patrimônio
 # =================================
 
@@ -35,19 +35,14 @@ warning() {
     echo -e "${YELLOW}[AVISO]${NC} $1"
 }
 
-log "🔧 CORREÇÃO RÁPIDA - Erro de Build Vite..."
+log "🔧 CORREÇÃO RÁPIDA - Erro Terser Vite..."
 
 # Verificar se estamos no diretório correto
 if [ ! -f "package.json" ]; then
     error "Execute este script no diretório raiz da aplicação SISPAT"
 fi
 
-# 1. Verificar versão do Vite
-log "📋 Verificando versão do Vite..."
-VITE_VERSION=$(grep '"vite"' package.json | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "não encontrado")
-log "Versão do Vite: $VITE_VERSION"
-
-# 2. Verificar se o .env.production tem NODE_ENV (problema comum)
+# 1. Verificar se o .env.production tem NODE_ENV
 log "📋 Verificando arquivo .env.production..."
 if [ -f ".env.production" ] && grep -q "NODE_ENV=production" .env.production; then
     log "⚠️ NODE_ENV=production encontrado no .env.production - removendo..."
@@ -55,51 +50,41 @@ if [ -f ".env.production" ] && grep -q "NODE_ENV=production" .env.production; th
     success "NODE_ENV=production removido do .env.production"
 fi
 
-# 3. Limpar cache e dependências
-log "🧹 Limpando cache e dependências..."
-rm -rf node_modules
-rm -rf dist
-rm -rf .vite
-rm -f pnpm-lock.yaml
-success "Cache limpo"
-
-# 4. Reinstalar dependências
-log "📦 Reinstalando dependências..."
-pnpm install
-success "Dependências reinstaladas"
-
-# 5. Instalar terser se necessário (para compatibilidade)
-log "📦 Verificando dependência terser..."
-if ! grep -q '"terser"' package.json; then
-    log "📦 Instalando terser como dependência de desenvolvimento..."
-    if pnpm add -D terser; then
-        success "Terser instalado com pnpm"
-    elif npm install --save-dev terser; then
-        success "Terser instalado com npm"
-    else
-        warning "⚠️ Falha ao instalar terser, continuando sem..."
-    fi
+# 2. Instalar terser como dependência de desenvolvimento
+log "📦 Instalando terser como dependência..."
+if pnpm add -D terser; then
+    success "Terser instalado com pnpm"
+elif npm install --save-dev terser; then
+    success "Terser instalado com npm"
 else
-    success "✅ Terser já está nas dependências"
+    warning "⚠️ Falha ao instalar terser, continuando sem..."
 fi
 
-# 6. Tentar build novamente
+# 3. Verificar se o vite.config.ts está correto
+log "🔍 Verificando vite.config.ts..."
+if grep -q "minify.*esbuild" vite.config.ts; then
+    success "✅ vite.config.ts configurado corretamente com esbuild"
+else
+    warning "⚠️ vite.config.ts pode não estar configurado corretamente"
+fi
+
+# 4. Limpar cache do build
+log "🧹 Limpando cache de build..."
+rm -rf dist
+rm -rf .vite
+success "Cache de build limpo"
+
+# 5. Tentar build novamente
 log "🔨 Tentando build novamente..."
 if pnpm run build; then
     success "✅ Build realizado com sucesso!"
+elif npm run build; then
+    success "✅ Build com npm realizado com sucesso!"
 else
-    warning "⚠️ Build falhou, tentando alternativa..."
-    
-    # 7. Tentar build com npm
-    log "📦 Tentando build com npm..."
-    if npm run build; then
-        success "✅ Build com npm realizado com sucesso!"
-    else
-        error "❌ Build falhou mesmo com npm"
-    fi
+    error "❌ Build falhou mesmo após correções"
 fi
 
-# 8. Verificar se o build foi criado
+# 6. Verificar se o build foi criado
 if [ -d "dist" ] && [ "$(ls -A dist)" ]; then
     success "✅ Diretório dist criado com sucesso!"
     log "📁 Conteúdo do diretório dist:"
@@ -112,7 +97,7 @@ else
     error "❌ Diretório dist não foi criado ou está vazio"
 fi
 
-# 9. Instruções para continuar
+# 7. Instruções para continuar
 log "📝 Próximos passos:"
 echo ""
 echo "🔧 AGORA VOCÊ PODE CONTINUAR COM A INSTALAÇÃO:"
@@ -131,5 +116,5 @@ echo "   sudo nginx -t"
 echo "   sudo systemctl reload nginx"
 echo ""
 
-success "🎉 Correção do erro de build concluída!"
+success "🎉 Correção do erro Terser concluída!"
 success "✅ Agora você pode continuar com a instalação do SISPAT!"
