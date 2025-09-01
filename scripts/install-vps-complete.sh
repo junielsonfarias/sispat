@@ -85,38 +85,63 @@ log "🗄️ Instalando PostgreSQL..."
 UBUNTU_VERSION=$(lsb_release -cs)
 log "📋 Versão do Ubuntu detectada: $UBUNTU_VERSION"
 
-# Configurar repositório PostgreSQL baseado na versão
+# Para Ubuntu 20.04, usar diretamente o repositório padrão
 if [[ "$UBUNTU_VERSION" == "focal" ]]; then
-    # Ubuntu 20.04 - usar repositório específico
-    log "📦 Configurando repositório PostgreSQL para Ubuntu 20.04..."
-    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+    log "📦 Ubuntu 20.04 detectado - usando repositório padrão..."
+    log "⚠️ Repositório oficial PostgreSQL não disponível para focal"
+    
+    # Remover qualquer repositório PostgreSQL problemático
+    rm -f /etc/apt/sources.list.d/pgdg.list
+    apt-key del ACCC4CF8 2>/dev/null || true
+    
+    # Limpar cache e atualizar
+    apt clean
+    apt update
+    
+    # Instalar PostgreSQL do repositório padrão Ubuntu
+    apt install -y postgresql postgresql-contrib
+    
 elif [[ "$UBUNTU_VERSION" == "jammy" ]]; then
-    # Ubuntu 22.04
+    # Ubuntu 22.04 - usar repositório oficial
+    log "📦 Configurando repositório PostgreSQL para Ubuntu 22.04..."
     sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+    
+    # Atualizar e instalar
+    apt update
+    apt install -y postgresql postgresql-contrib
+    
 else
     # Tentar repositório genérico
     log "⚠️ Versão não suportada, tentando repositório genérico..."
     sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+    
+    # Atualizar e instalar
+    apt update
+    apt install -y postgresql postgresql-contrib
 fi
 
-# Atualizar e instalar
-apt update
-apt install -y postgresql postgresql-contrib
-
-# Se falhar, tentar repositório padrão
+# Verificar se a instalação foi bem-sucedida
 if ! command -v psql &> /dev/null; then
     log "⚠️ Falha na instalação PostgreSQL, tentando repositório padrão..."
+    
+    # Remover repositórios problemáticos
     rm -f /etc/apt/sources.list.d/pgdg.list
     apt-key del ACCC4CF8 2>/dev/null || true
+    
+    # Limpar cache e tentar novamente
     apt clean
     apt update
     apt install -y postgresql postgresql-contrib
 fi
 
-success "PostgreSQL instalado: $(psql --version)"
+# Verificar instalação final
+if command -v psql &> /dev/null; then
+    success "PostgreSQL instalado: $(psql --version)"
+else
+    error "Falha na instalação do PostgreSQL"
+fi
 
 # 6. Configurar PostgreSQL
 log "⚙️ Configurando PostgreSQL..."

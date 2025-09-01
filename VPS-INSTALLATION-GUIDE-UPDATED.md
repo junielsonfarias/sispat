@@ -21,13 +21,13 @@ ssh root@IP_DA_SUA_VPS
 
 ```bash
 # Baixar o script de instalação
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps.sh -o install-vps.sh
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete.sh -o install-vps-complete.sh
 
 # Tornar executável
-chmod +x install-vps.sh
+chmod +x install-vps-complete.sh
 
 # Executar instalação completa
-./install-vps.sh
+./install-vps-complete.sh
 ```
 
 **🎉 Este script faz TUDO automaticamente:**
