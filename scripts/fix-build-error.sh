@@ -93,10 +93,10 @@ fi
 log "🔨 Executando build corrigido..."
 
 # Definir variáveis específicas para o build
-export NODE_ENV=production
-export VITE_NODE_ENV=production
-export VITE_APP_ENV=production
-export VITE_DEBUG=false
+NODE_ENV=production
+VITE_NODE_ENV=production
+VITE_APP_ENV=production
+VITE_DEBUG=false
 
 # Executar build
 if command -v pnpm &> /dev/null; then

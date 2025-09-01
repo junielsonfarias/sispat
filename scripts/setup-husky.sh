@@ -57,8 +57,8 @@ else
 fi
 
 # 2. Configurar variáveis de ambiente
-export NODE_ENV=production
-export CI=false
+NODE_ENV=production
+CI=false
 
 # 3. Instalar dependências
 log "📦 Instalando dependências..."

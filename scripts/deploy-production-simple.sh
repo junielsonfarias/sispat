@@ -81,8 +81,8 @@ success "Cache limpo"
 log "📦 Instalando dependências de produção..."
 
 # Configurar variáveis para produção
-export NODE_ENV=production
-export CI=false
+NODE_ENV=production
+CI=false
 
 # Instalar dependências incluindo Husky
 log "🔧 Instalando Husky para hooks de qualidade..."
