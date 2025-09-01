@@ -166,6 +166,22 @@ testes completos
 Configurada:** `sispat123456` **🎯 Problema Resolvido:**
 `password authentication failed for user "sispat_user"`
 
+### **6.3. `fix-nginx-config.sh` - CORREÇÃO CONFIGURAÇÃO NGINX**
+
+**🎯 Função:** Configuração completa do Nginx para o SISPAT (INTEGRADO AO INSTALL) **✅ Inclui:**
+Verificação de aplicação no PM2, build automático do frontend, configuração de proxy reverso,
+headers de segurança, compressão Gzip, cache para arquivos estáticos, WebSocket
+
+**📋 Uso:**
+
+```bash
+./scripts/fix-nginx-config.sh
+```
+
+**🔧 Status:** ✅ **INTEGRADO AUTOMATICAMENTE** ao `install-vps-complete.sh` **🌐 Configurações:**
+Proxy reverso para backend na porta 3001, frontend servido de `/var/www/sispat/dist`, logs
+específicos configurados
+
 ---
 
 ### **7. `fix-build-error.sh` - CORREÇÃO ERRO BUILD**
@@ -231,6 +247,7 @@ repositórios problemáticos, instalação alternativa
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
 - `fix-postgresql-auth-final.sh` - Correção final da autenticação PostgreSQL
+- `fix-nginx-config.sh` - Correção da configuração Nginx
 - `deploy-production-simple.sh` - Problema de export resolvido
 
 ### **✅ Funcionalidades Adicionadas:**
@@ -243,6 +260,14 @@ repositórios problemáticos, instalação alternativa
 - Correção automática de autenticação PostgreSQL
 - Configuração automática de arquivos postgresql.conf e pg_hba.conf
 - Testes de conectividade PostgreSQL incluídos
+- Verificação automática de aplicação no PM2
+- Build automático do frontend se necessário
+- Configuração completa de proxy reverso
+- Headers de segurança aplicados
+- Compressão Gzip habilitada
+- Cache para arquivos estáticos configurado
+- WebSocket configurado corretamente
+- Logs específicos do SISPAT configurados
 
 ---
 

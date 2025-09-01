@@ -443,7 +443,14 @@ Correção integrada automaticamente
 `install-vps-complete.sh` agora inclui correção automática de autenticação **✅ Status:**
 **RESOLVIDO** - Correção integrada automaticamente **🔒 Senha Configurada:** `sispat123456`
 
-### **Problema 2: PostgreSQL não instala (Ubuntu 20.04)**
+### **Problema 2: Nginx não roteia tráfego para aplicação (RESOLVIDO)**
+
+**❌ Erro:** Nginx funcionando mas não roteia tráfego para SISPAT **🔧 Solução:** O script
+`install-vps-complete.sh` agora inclui correção automática da configuração Nginx **✅ Status:**
+**RESOLVIDO** - Configuração integrada automaticamente **🌐 Configurações:** Proxy reverso, headers
+de segurança, compressão Gzip, cache para arquivos estáticos
+
+### **Problema 3: PostgreSQL não instala (Ubuntu 20.04)**
 
 ```bash
 # Solução automática
