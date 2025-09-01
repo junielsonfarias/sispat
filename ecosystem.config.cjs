@@ -68,8 +68,7 @@ module.exports = {
     },
     {
       name: 'sispat-frontend',
-      script: 'npm',
-      args: 'run preview',
+      script: 'start-frontend.js',
       instances: 1,
       exec_mode: 'fork',
       env: {

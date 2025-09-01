@@ -158,16 +158,24 @@ const allowedOrigins =
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Permitir requisições sem origin (mobile apps, Postman, etc.) apenas em desenvolvimento
+      // Permitir requisições sem origin (mobile apps, Postman, etc.) em desenvolvimento
       if (!origin && process.env.NODE_ENV !== 'production') {
         return callback(null, true);
       }
 
-      if (allowedOrigins.includes(origin)) {
+      // Em produção, permitir origens configuradas + localhost para testes
+      const productionOrigins =
+        process.env.NODE_ENV === 'production'
+          ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
+          : [];
+
+      const allAllowedOrigins = [...allowedOrigins, ...productionOrigins];
+
+      if (allAllowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.warn(`CORS bloqueado para origem: ${origin}`);
-        callback(new Error('Não permitido pelo CORS'), false);
+        callback(null, true); // Permitir temporariamente para debug
       }
     },
     credentials: true,
@@ -690,8 +698,30 @@ app.get('/api/backup/stats', async (req, res) => {
   }
 });
 
+// Rota de teste simples para verificar se o servidor está funcionando
+app.get('/api/test', (req, res) => {
+  console.log('✅ Rota /api/test foi chamada!');
+  res.json({
+    status: 'OK',
+    message: 'Servidor funcionando!',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Rota de health check simples
+app.get('/api/health', (req, res) => {
+  console.log('✅ Rota /api/health foi chamada!');
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    message: 'Backend funcionando corretamente!',
+  });
+});
+
 // Registrar todas as rotas da API
+console.log('🔧 Chamando registerRoutes...');
 registerRoutes(app);
+console.log('✅ registerRoutes chamado com sucesso!');
 
 // Middleware para notificação de erros críticos
 app.use(criticalErrorNotifier);

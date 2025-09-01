@@ -197,12 +197,12 @@ export const errorHandler = (error, req, res, next) => {
 // Middleware para capturar erros 404
 export const notFoundHandler = (req, res, next) => {
   const error = new AppError(
-    `Rota não encontrada: ${req.method} ${req.path}`,
+    `Rota não encontrada: ${req.method} ${req.originalUrl || req.url}`,
     404,
     ERROR_CODES.NOT_FOUND,
     {
       method: req.method,
-      path: req.path,
+      path: req.originalUrl || req.url,
       availableRoutes: req.app._router
         ? req.app._router.stack.map(r => r.route?.path).filter(Boolean)
         : [],
