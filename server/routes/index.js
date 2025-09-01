@@ -99,6 +99,11 @@ export function registerRoutes(app) {
   app.use('/api/debug', debugRoutes);
   console.log('✅ Rotas de debug registradas');
 
+  // 5. Rotas do router principal (health, status, etc.)
+  console.log('🔧 Registrando rotas do router principal...');
+  app.use('/api', router);
+  console.log('✅ Rotas do router principal registradas');
+
   console.log('✅ Todas as rotas foram registradas com sucesso!');
 
   // Log das rotas registradas

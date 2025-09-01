@@ -452,7 +452,9 @@ de segurança, compressão Gzip, cache para arquivos estáticos
 
 ### **Problema 3: Erro de configuração Nginx (RESOLVIDO)**
 
-**❌ Erro:** `nginx: [emerg] invalid value "must-revalidate" in /etc/nginx/sites-enabled/sispat:83` **🔧 Solução:** Corrigido o valor inválido "must-revalidate" na diretiva `gzip_proxied` **✅ Status:** **RESOLVIDO** - Configuração Nginx agora é válida e funcional
+**❌ Erro:** `nginx: [emerg] invalid value "must-revalidate" in /etc/nginx/sites-enabled/sispat:83`
+**🔧 Solução:** Corrigido o valor inválido "must-revalidate" na diretiva `gzip_proxied` **✅
+Status:** **RESOLVIDO** - Configuração Nginx agora é válida e funcional
 
 ### **Problema 4: PostgreSQL não instala (Ubuntu 20.04)**
 

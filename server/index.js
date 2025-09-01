@@ -139,6 +139,8 @@ const allowedOrigins =
   process.env.NODE_ENV === 'production'
     ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean) || []
     : [
+        'http://localhost:3001', // Backend API
+        'http://127.0.0.1:3001', // Backend API
         'http://localhost:8080',
         'http://127.0.0.1:8080',
         'http://localhost:5173', // Vite dev server
@@ -439,24 +441,7 @@ app.get('/debug/check-tables', async (req, res) => {
   }
 });
 
-// Rate limiting avançado com Redis e configurações específicas por endpoint
-// Permitir livre acesso aos endpoints públicos
-app.use('/api/', (req, res, next) => {
-  const url = req.originalUrl || req.url || '';
-  const isPublicGet =
-    req.method === 'GET' &&
-    (url.startsWith('/api/municipalities/public') ||
-      url.startsWith('/api/patrimonios/public') ||
-      url.startsWith('/api/patrimonios/debug/public-sync') ||
-      url.startsWith('/api/debug/public-sync') ||
-      url.startsWith('/api/sync/public-data') ||
-      url.startsWith('/api/imoveis/public') ||
-      url.startsWith('/api/health'));
-  if (isPublicGet) {
-    return next();
-  }
-  return rateLimitMiddleware(req, res, next);
-});
+// Rate limiting será aplicado nas rotas específicas, não globalmente
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -493,14 +478,7 @@ app.get('/api/files/:fileId', (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-  });
-});
+// Health check endpoint - Removido pois está definido em routes/index.js
 
 // API routes - Removido registro manual duplicado
 // As rotas são registradas via registerRoutes() mais abaixo
@@ -718,8 +696,8 @@ registerRoutes(app);
 // Middleware para notificação de erros críticos
 app.use(criticalErrorNotifier);
 
-// 404 handler - deve vir antes do error handler
-app.use('/api/*', notFoundHandler);
+// 404 handler - deve vir DEPOIS das rotas serem registradas
+app.use('*', notFoundHandler);
 
 // Global error handling middleware (deve ser o último)
 app.use(errorMonitoringMiddleware);
