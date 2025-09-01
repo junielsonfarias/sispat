@@ -1,6 +1,6 @@
 # =================================
 # DOCKERFILE MULTI-STAGE OTIMIZADO
-# SISPAT - Sistema de Patrimônio
+# SISPAT - Sistema de Patrimônio (Vite + Node.js)
 # =================================
 
 # ===== STAGE 1: BASE =====
@@ -26,7 +26,7 @@ RUN apk add --no-cache \
 
 # Configurar usuário não-root
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+    adduser -S nodejs -u 1001
 
 # Configurar diretório de trabalho
 WORKDIR /app
@@ -35,7 +35,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 COPY .npmrc ./
 
-# ===== STAGE 2: DEPENDENCIES =====
+# ===== STAGE 2: DEPENDENCIAS =====
 FROM base AS deps
 
 # Instalar pnpm
@@ -58,43 +58,53 @@ COPY . .
 
 # Configurar variáveis de build
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build da aplicação
-RUN pnpm build
+# Build da aplicação frontend
+RUN pnpm run build
 
 # ===== STAGE 4: RUNTIME =====
 FROM base AS runner
 
 # Configurar ambiente de produção
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
+ENV PORT=3001
 
 # Metadados de build
 LABEL org.opencontainers.image.created=$BUILD_DATE
 LABEL org.opencontainers.image.revision=$VCS_REF
 LABEL org.opencontainers.image.source="https://github.com/usuario/sispat"
 
-# Copiar arquivos necessários
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copiar dependências de produção
+COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Copiar código fonte do backend
+COPY --chown=nodejs:nodejs server ./server
+
+# Copiar arquivos de configuração
+COPY --chown=nodejs:nodejs package.json ./
+COPY --chown=nodejs:nodejs .npmrc ./
+
+# Copiar build do frontend
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
 # Copiar scripts de saúde e inicialização
-COPY --chown=nextjs:nodejs docker/health-check.sh ./
-COPY --chown=nextjs:nodejs docker/start.sh ./
+COPY --chown=nodejs:nodejs docker/health-check.sh ./
+COPY --chown=nodejs:nodejs docker/start.sh ./
 RUN chmod +x health-check.sh start.sh
+
+# Criar diretórios necessários
+RUN mkdir -p logs uploads backups && \
+    chown -R nodejs:nodejs logs uploads backups
 
 # Configurar health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD ./health-check.sh
 
 # Mudar para usuário não-root
-USER nextjs
+USER nodejs
 
 # Expor porta
-EXPOSE 3000
+EXPOSE 3001
 
 # Comando de inicialização
 ENTRYPOINT ["dumb-init", "--"]

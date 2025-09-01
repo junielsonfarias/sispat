@@ -2,7 +2,8 @@
 
 ## 📋 Problema Identificado
 
-Ao executar o comando `pm2 start ecosystem.config.js --env production` em um servidor VPS, você pode encontrar os seguintes problemas:
+Ao executar o comando `pm2 start ecosystem.config.js --env production` em um servidor VPS, você pode
+encontrar os seguintes problemas:
 
 ### **Erros Comuns:**
 
@@ -15,7 +16,8 @@ Ao executar o comando `pm2 start ecosystem.config.js --env production` em um ser
 
 ### **1. Problema de Formato de Arquivo**
 
-**Causa:** O projeto está configurado como ES module (`"type": "module"` no package.json), mas o arquivo `ecosystem.config.js` estava usando sintaxe CommonJS.
+**Causa:** O projeto está configurado como ES module (`"type": "module"` no package.json), mas o
+arquivo `ecosystem.config.js` estava usando sintaxe CommonJS.
 
 **Solução:** Criar um arquivo `ecosystem.config.cjs` com sintaxe CommonJS.
 
@@ -34,7 +36,7 @@ module.exports = {
       env: {
         NODE_ENV: 'development',
         PORT: 3001,
-        HOST: '0.0.0.0'
+        HOST: '0.0.0.0',
       },
       env_production: {
         NODE_ENV: 'production',
@@ -49,7 +51,7 @@ module.exports = {
       merge_logs: true,
       max_memory_restart: '1G',
       autorestart: true,
-      watch: false
+      watch: false,
     },
     {
       name: 'sispat-frontend',
@@ -59,11 +61,11 @@ module.exports = {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'development',
-        PORT: 8080
+        PORT: 8080,
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 8080
+        PORT: 8080,
       },
       error_file: './logs/frontend-err.log',
       out_file: './logs/frontend-out.log',
@@ -72,9 +74,9 @@ module.exports = {
       merge_logs: true,
       max_memory_restart: '512M',
       autorestart: true,
-      watch: false
-    }
-  ]
+      watch: false,
+    },
+  ],
 };
 ```
 
@@ -152,6 +154,7 @@ pm2 delete ecosystem.config.cjs
 ### **Problema 1: "File ecosystem.config.js malformated"**
 
 **Solução:**
+
 ```bash
 # Usar arquivo .cjs em vez de .js
 pm2 start ecosystem.config.cjs --env production
@@ -160,6 +163,7 @@ pm2 start ecosystem.config.cjs --env production
 ### **Problema 2: "Error: No script path - aborting"**
 
 **Solução:**
+
 ```bash
 # Verificar se o arquivo server/index.js existe
 ls -la server/index.js
@@ -171,6 +175,7 @@ pm2 start /caminho/completo/para/server/index.js --name sispat-backend
 ### **Problema 3: "Applications not running, starting..."**
 
 **Solução:**
+
 ```bash
 # Parar todos os processos primeiro
 pm2 stop all
@@ -183,6 +188,7 @@ pm2 start ecosystem.config.cjs --env production
 ### **Problema 4: Erro de permissão nos logs**
 
 **Solução:**
+
 ```bash
 # Corrigir permissões
 sudo chown -R $USER:$USER logs/
@@ -192,6 +198,7 @@ sudo chmod -R 755 logs/
 ### **Problema 5: Aplicação não inicia**
 
 **Solução:**
+
 ```bash
 # Verificar logs detalhados
 pm2 logs --lines 50
@@ -212,6 +219,7 @@ pm2 status
 ```
 
 **Saída Esperada:**
+
 ```
 ┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
 │ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
@@ -332,4 +340,5 @@ Se ainda houver problemas:
 
 **Status:** ✅ **PROBLEMA RESOLVIDO**
 
-O arquivo `ecosystem.config.cjs` resolve todos os problemas de compatibilidade e permite o deploy correto com PM2.
+O arquivo `ecosystem.config.cjs` resolve todos os problemas de compatibilidade e permite o deploy
+correto com PM2.

@@ -8,12 +8,12 @@ export default {
       env: {
         NODE_ENV: 'development',
         PORT: 3001,
-        HOST: '0.0.0.0'
+        HOST: '0.0.0.0',
       },
       env_production: {
         NODE_ENV: 'production',
         PORT: 3001,
-        HOST: '0.0.0.0'
+        HOST: '0.0.0.0',
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
@@ -22,7 +22,7 @@ export default {
       merge_logs: true,
       max_memory_restart: '1G',
       autorestart: true,
-      watch: false
-    }
-  ]
+      watch: false,
+    },
+  ],
 };

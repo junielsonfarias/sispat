@@ -1,14 +1,16 @@
+/* eslint-env node */
+/* global process */
 module.exports = {
   apps: [
     {
       name: 'sispat-backend',
-      script: './server/index.js',
+      script: 'server/index.js',
       instances: 1,
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'development',
         PORT: 3001,
-        HOST: '0.0.0.0'
+        HOST: '0.0.0.0',
       },
       env_production: {
         NODE_ENV: 'production',
@@ -19,10 +21,13 @@ module.exports = {
         DB_NAME: process.env.DB_NAME || 'sispat_production',
         DB_USER: process.env.DB_USER || 'sispat_user',
         DB_PASSWORD: process.env.DB_PASSWORD || 'your_secure_password_here',
-        JWT_SECRET: process.env.JWT_SECRET || 'your_super_secure_jwt_secret_here_min_32_chars',
+        JWT_SECRET:
+          process.env.JWT_SECRET ||
+          'your_super_secure_jwt_secret_here_min_32_chars',
         JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
         REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
-        REDIS_PASSWORD: process.env.REDIS_PASSWORD || 'your_redis_password_here',
+        REDIS_PASSWORD:
+          process.env.REDIS_PASSWORD || 'your_redis_password_here',
         LOG_LEVEL: process.env.LOG_LEVEL || 'info',
         LOG_FILE: process.env.LOG_FILE || './logs/app.log',
         CORS_ORIGIN: process.env.CORS_ORIGIN || 'https://yourdomain.com',
@@ -40,7 +45,7 @@ module.exports = {
         MAX_CONNECTIONS: process.env.MAX_CONNECTIONS || '100',
         ENABLE_ANALYTICS: process.env.ENABLE_ANALYTICS || 'true',
         ANALYTICS_KEY: process.env.ANALYTICS_KEY,
-        TRACKING_ID: process.env.TRACKING_ID
+        TRACKING_ID: process.env.TRACKING_ID,
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
@@ -59,7 +64,7 @@ module.exports = {
       node_args: '--max-old-space-size=1024',
       kill_timeout: 5000,
       wait_ready: true,
-      listen_timeout: 8000
+      listen_timeout: 8000,
     },
     {
       name: 'sispat-frontend',
@@ -69,14 +74,14 @@ module.exports = {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'development',
-        PORT: 8080
+        PORT: 8080,
       },
       env_production: {
         NODE_ENV: 'production',
         PORT: 8080,
         VITE_API_URL: process.env.VITE_API_URL || 'https://yourdomain.com/api',
         VITE_APP_NAME: 'SISPAT',
-        VITE_APP_VERSION: '1.0.0'
+        VITE_APP_VERSION: '1.0.0',
       },
       error_file: './logs/frontend-err.log',
       out_file: './logs/frontend-out.log',
@@ -94,8 +99,8 @@ module.exports = {
       source_map_support: false,
       kill_timeout: 3000,
       wait_ready: true,
-      listen_timeout: 5000
-    }
+      listen_timeout: 5000,
+    },
   ],
 
   deploy: {
@@ -106,12 +111,13 @@ module.exports = {
       repo: 'https://github.com/seu-usuario/sispat.git',
       path: '/var/www/sispat',
       'pre-deploy-local': '',
-      'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.cjs --env production',
+      'post-deploy':
+        'npm install && npm run build && pm2 reload ecosystem.config.cjs --env production',
       'pre-setup': '',
       'post-setup': 'npm install && npm run build',
       env: {
-        NODE_ENV: 'production'
-      }
-    }
-  }
+        NODE_ENV: 'production',
+      },
+    },
+  },
 };

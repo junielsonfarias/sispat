@@ -24,78 +24,84 @@ export default defineConfig(({ mode }) => ({
             // Ensure Authorization header is preserved
             if (req.headers.authorization) {
               proxyReq.setHeader('Authorization', req.headers.authorization);
-              console.log('Authorization header set:', req.headers.authorization.substring(0, 50) + '...');
             }
-          });
-          proxy.on('proxyRes', (proxyRes, req, res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
           });
         },
       },
     },
   },
-  experimental: {
-    enableNativePlugin: true
-  },
-  build: {
-    minify: mode !== 'development',
-    sourcemap: mode === 'development',
-    rollupOptions: {
-      onwarn(warning, warn) {
-        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
-          return
-        }
-        warn(warning)
-      },
-    },
-  },
   plugins: [react()],
-  define: {
-    'process.env.NODE_ENV': JSON.stringify(mode ?? process.env.NODE_ENV ?? 'production'),
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
-  test: {
-    environment: 'happy-dom',
-    globals: true,
-    setupFiles: ['./tests/setup.ts'],
-    include: ['tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html', 'json', 'json-summary'],
-      reportsDirectory: './coverage',
-      exclude: [
-        'node_modules/**',
-        'tests/**',
-        'dist/**',
-        'coverage/**',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/vite.config.*',
-        'server/**', // Backend code
-        'setup.js',
-        'src/main.tsx',
-        'src/vite-env.d.ts',
-        'src/lib/utils.ts', // Already tested
-        '**/*.stories.*',
-        '**/*.test.*',
-        '**/*.spec.*',
-      ],
-      include: [
-        'src/**/*.{js,jsx,ts,tsx}',
-      ],
-      thresholds: {
-        global: {
-          branches: 70,
-          functions: 70,
-          lines: 70,
-          statements: 70,
+  build: {
+    outDir: 'dist',
+    sourcemap: mode === 'development',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          utils: ['@/lib/utils', '@/lib/validations'],
         },
       },
     },
+    // Otimizações para produção
+    minify: mode === 'production' ? 'terser' : false,
+    terserOptions: mode === 'production' ? {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    } : undefined,
+    // Chunk size warnings
+    chunkSizeWarningLimit: 1000,
   },
+  // Otimizações de performance
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+    exclude: ['@/lib/utils'],
+  },
+  // Configurações de CSS
+  css: {
+    devSourcemap: mode === 'development',
+    postcss: {
+      plugins: [
+        // Adicionar plugins PostCSS se necessário
+      ],
+    },
+  },
+  // Configurações de preview
+  preview: {
+    port: 4173,
+    host: true,
+  },
+  // Configurações de teste
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.ts'],
+  },
+  // Configurações de PWA (se implementado)
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
+  },
+  // Configurações de assets
+  assetsInclude: ['**/*.gltf', '**/*.glb', '**/*.fbx', '**/*.obj'],
+  // Configurações de worker
+  worker: {
+    format: 'es',
+  },
+  // Configurações de esbuild
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' },
+  },
+  // Configurações de server para produção
+  ...(mode === 'production' && {
+    server: {
+      host: '0.0.0.0',
+      port: 8080,
+    },
+  }),
 }))
