@@ -137,8 +137,15 @@ fi
 
 # 8. Configurar variáveis de ambiente
 log "⚙️ Configurando variáveis de ambiente..."
-export $(cat "$PRODUCTION_ENV" | grep -v '^#' | xargs)
-success "Variáveis de ambiente configuradas"
+if [ -f "$PRODUCTION_ENV" ]; then
+    # Carregar variáveis de ambiente de forma segura
+    set -a
+    source "$PRODUCTION_ENV"
+    set +a
+    success "Variáveis de ambiente configuradas"
+else
+    error "Arquivo $PRODUCTION_ENV não encontrado"
+fi
 
 # 9. Iniciar serviços com PM2
 log "🚀 Iniciando serviços com PM2..."

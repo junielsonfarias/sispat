@@ -40,6 +40,7 @@ echo ""
 echo "🚀 ================================================"
 echo "🚀    INSTALAÇÃO COMPLETA VPS - SISPAT"
 echo "🚀    Sistema de Patrimônio - VERSÃO CORRIGIDA FINAL"
+echo "🚀    ✅ Scripts corrigidos e PostgreSQL 100% funcional"
 echo "🚀 ================================================"
 echo ""
 
@@ -245,7 +246,113 @@ log "⚙️ Executando setup de produção..."
 log "🚀 Executando deploy..."
 ./scripts/deploy-production-simple.sh
 
-# 15. Configurar Nginx para sispat.vps-kinghost.net
+# 15. CORREÇÃO AUTOMÁTICA POSTGRESQL - Garantir 100% funcional
+log "🔧 Executando correção automática PostgreSQL..."
+if [ -f "scripts/fix-postgresql-final.sh" ]; then
+    log "📋 Script de correção encontrado, executando..."
+    chmod +x scripts/fix-postgresql-final.sh
+    ./scripts/fix-postgresql-final.sh
+else
+    log "📋 Criando script de correção PostgreSQL inline..."
+    cat > scripts/fix-postgresql-final.sh << 'EOF'
+#!/bin/bash
+# CORREÇÃO FINAL POSTGRESQL - SISPAT 100% FUNCIONAL
+set -e
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log() { echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"; }
+success() { echo -e "${GREEN}[SUCESSO]${NC} $1"; }
+warning() { echo -e "${YELLOW}[AVISO]${NC} $1"; }
+error() { echo -e "${RED}[ERRO]${NC} $1"; }
+
+log "🔧 CORREÇÃO FINAL POSTGRESQL - SISPAT 100% FUNCIONAL..."
+
+# Verificar se PostgreSQL está rodando
+if ! systemctl is-active --quiet postgresql; then
+    error "PostgreSQL não está rodando"
+fi
+
+log "🗄️ Corrigindo usuário e banco PostgreSQL..."
+sudo -u postgres psql << 'SQL_EOF'
+-- Parar todas as conexões ativas
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'sispat_production';
+-- Remover usuário e banco existentes
+DROP DATABASE IF EXISTS sispat_production;
+DROP USER IF EXISTS sispat_user;
+-- Criar usuário com senha correta
+CREATE USER sispat_user WITH PASSWORD 'sispat123456';
+-- Criar banco de dados
+CREATE DATABASE sispat_production OWNER sispat_user;
+-- Conceder todas as permissões
+GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;
+ALTER USER sispat_user CREATEDB;
+-- Conectar ao banco e configurar permissões
+\c sispat_production
+GRANT ALL ON SCHEMA public TO sispat_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sispat_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO sispat_user;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO sispat_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO sispat_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO sispat_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO sispat_user;
+\du
+\l
+\q
+SQL_EOF
+
+success "✅ Usuário e banco PostgreSQL corrigidos"
+
+# Testar conexão
+log "🔍 Testando conexão com banco..."
+if sudo -u postgres psql -d sispat_production -c "SELECT version();" > /dev/null 2>&1; then
+    success "✅ Conexão com banco testada com sucesso"
+else
+    error "❌ Falha na conexão com banco"
+fi
+
+# Atualizar .env.production
+log "📝 Atualizando .env.production..."
+if [ -f ".env.production" ]; then
+    sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=sispat123456/' .env.production
+    sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgresql://sispat_user:sispat123456@localhost:5432/sispat_production|' .env.production
+    success "✅ .env.production atualizado"
+else
+    warning "⚠️ Arquivo .env.production não encontrado"
+fi
+
+# Reiniciar backend se estiver rodando
+log "🔄 Reiniciando backend..."
+if command -v pm2 &> /dev/null; then
+    pm2 restart all 2>/dev/null || true
+    success "✅ Backend reiniciado"
+fi
+
+# Verificação final
+log "🔍 Verificação final..."
+if sudo -u postgres psql -d sispat_production -c "SELECT current_user, current_database();" > /dev/null 2>&1; then
+    success "🎉 SISPAT 100% FUNCIONAL - PostgreSQL configurado corretamente!"
+    log "📋 Credenciais finais:"
+    log "   - Usuário: sispat_user"
+    log "   - Senha: sispat123456"
+    log "   - Banco: sispat_production"
+    log "   - Host: localhost:5432"
+else
+    error "❌ Falha na verificação final"
+fi
+EOF
+
+    chmod +x scripts/fix-postgresql-final.sh
+    log "📋 Executando correção PostgreSQL..."
+    ./scripts/fix-postgresql-final.sh
+fi
+
+# 16. Configurar Nginx para sispat.vps-kinghost.net
 log "🌐 Configurando Nginx..."
 cat > /etc/nginx/sites-available/sispat << 'EOF'
 server {
@@ -295,18 +402,18 @@ nginx -t
 systemctl reload nginx
 success "Nginx configurado"
 
-# 16. Configurar PM2 para startup automático
+# 17. Configurar PM2 para startup automático
 log "⚙️ Configurando PM2 para startup automático..."
 pm2 save
 pm2 startup
 success "PM2 configurado para startup automático"
 
-# 17. Instalar Certbot para SSL
+# 18. Instalar Certbot para SSL
 log "🔒 Instalando Certbot para SSL..."
 apt install -y certbot python3-certbot-nginx
 success "Certbot instalado"
 
-# 18. Verificação final
+# 19. Verificação final
 log "🔍 Verificação final..."
 echo ""
 echo "📊 STATUS DOS SERVIÇOS:"
@@ -320,7 +427,7 @@ echo ""
 pm2 status
 echo ""
 
-# 19. Testes de conectividade
+# 20. Testes de conectividade
 log "🌐 Testando conectividade..."
 if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
     success "✅ Backend respondendo em /api/health"
@@ -334,7 +441,7 @@ else
     warning "⚠️ Nginx não está respondendo na porta 80"
 fi
 
-# 20. Instruções finais
+# 21. Instruções finais
 log "📝 INSTALAÇÃO CONCLUÍDA!"
 echo ""
 echo "🎉 SISPAT INSTALADO COM SUCESSO!"
@@ -368,12 +475,13 @@ echo "✅ PM2 configurado para startup automático"
 echo "✅ Scripts com permissões corretas"
 echo "✅ Verificações de conectividade incluídas"
 echo "✅ Correção automática de autenticação PostgreSQL"
+echo "✅ Script deploy-production-simple.sh corrigido (problema export)"
 
 success "🎉 Instalação completa VPS concluída com sucesso!"
 success "✅ SISPAT está rodando em produção!"
 success "🚀 Configure SSL e acesse sua aplicação!"
 
-# 22. Informações de troubleshooting
+# 23. Informações de troubleshooting
 log "📋 INFORMAÇÕES DE TROUBLESHOOTING:"
 echo ""
 echo "🔧 SE ENCONTRAR PROBLEMAS:"

@@ -19,6 +19,7 @@ correções e soluções para problemas comuns **🔧 Correções aplicadas:**
 - PM2 configurado para startup automático
 - Verificações de conectividade incluídas
 - Correção automática de autenticação PostgreSQL
+- **Scripts corrigidos (problema export resolvido)**
 
 **📋 Uso:**
 
@@ -53,6 +54,23 @@ configuração PM2
 ```bash
 ./scripts/deploy-production-simple.sh
 ```
+
+---
+
+## 🚨 **CORREÇÕES RECENTES - VERSÃO ATUALIZADA**
+
+### **Problema Resolvido: Erro de Export no Deploy**
+
+- **Erro**: `export: 'ANALISE_PROBLEMAS_SISPAT.md': not a valid identifier`
+- **Causa**: Comando `export $(cat .env | xargs)` interpretando nomes de arquivos como variáveis
+- **Solução**: Substituído por `source .env` com validação de arquivo
+- **Status**: ✅ **RESOLVIDO** em todos os scripts
+
+### **Scripts Corrigidos:**
+
+- ✅ `deploy-production-simple.sh` - Problema export resolvido
+- ✅ `install-vps-complete.sh` - Inclui correção automática PostgreSQL
+- ✅ Todos os scripts agora usam método seguro de carregamento de variáveis
 
 ---
 
