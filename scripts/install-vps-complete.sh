@@ -2,7 +2,7 @@
 
 # =================================
 # SCRIPT DE INSTALAÇÃO COMPLETA VPS - SISPAT
-# Inclui todas as correções e soluções
+# Inclui TODAS as correções e soluções encontradas
 # =================================
 
 set -e
@@ -39,7 +39,7 @@ warning() {
 echo ""
 echo "🚀 ================================================="
 echo "🚀    INSTALAÇÃO COMPLETA VPS - SISPAT"
-echo "🚀    Sistema de Patrimônio"
+echo "🚀    Sistema de Patrimônio - VERSÃO CORRIGIDA"
 echo "🚀 ================================================="
 echo ""
 
@@ -51,6 +51,19 @@ fi
 # Verificar sistema operacional
 if ! command -v apt &> /dev/null; then
     error "Este script é específico para sistemas baseados em Debian/Ubuntu"
+fi
+
+# 0. CORREÇÃO PRÉVIA - Remover repositórios PostgreSQL problemáticos ANTES de qualquer apt update
+log "🔧 CORREÇÃO PRÉVIA - Removendo repositórios PostgreSQL problemáticos..."
+if [ -f "/etc/apt/sources.list.d/pgdg.list" ]; then
+    log "⚠️ Removendo repositório PostgreSQL problemático..."
+    rm -f /etc/apt/sources.list.d/pgdg.list
+fi
+
+# Remover chave GPG problemática se existir
+if apt-key list 2>/dev/null | grep -q "ACCC4CF8"; then
+    log "⚠️ Removendo chave GPG PostgreSQL problemática..."
+    apt-key del ACCC4CF8 2>/dev/null || true
 fi
 
 # 1. Atualizar sistema
@@ -78,19 +91,19 @@ npm install -g pnpm pm2
 success "pnpm instalado: $(pnpm --version)"
 success "PM2 instalado: $(pm2 --version)"
 
-# 5. Instalar PostgreSQL
-log "🗄️ Instalando PostgreSQL..."
+# 5. Instalar PostgreSQL com CORREÇÕES APLICADAS
+log "🗄️ Instalando PostgreSQL com correções..."
 
 # Verificar versão do Ubuntu
 UBUNTU_VERSION=$(lsb_release -cs)
 log "📋 Versão do Ubuntu detectada: $UBUNTU_VERSION"
 
-# Para Ubuntu 20.04, usar diretamente o repositório padrão
+# ESTRATÉGIA CORRIGIDA para PostgreSQL
 if [[ "$UBUNTU_VERSION" == "focal" ]]; then
-    log "📦 Ubuntu 20.04 detectado - usando repositório padrão..."
-    log "⚠️ Repositório oficial PostgreSQL não disponível para focal"
+    log "📦 Ubuntu 20.04 detectado - usando repositório padrão Ubuntu..."
+    log "⚠️ Repositório oficial PostgreSQL não disponível para focal (404 Not Found)"
     
-    # Remover qualquer repositório PostgreSQL problemático
+    # Garantir que não há repositórios problemáticos
     rm -f /etc/apt/sources.list.d/pgdg.list
     apt-key del ACCC4CF8 2>/dev/null || true
     
@@ -112,14 +125,20 @@ elif [[ "$UBUNTU_VERSION" == "jammy" ]]; then
     apt install -y postgresql postgresql-contrib
     
 else
-    # Tentar repositório genérico
-    log "⚠️ Versão não suportada, tentando repositório genérico..."
-    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
-    
-    # Atualizar e instalar
-    apt update
+    # Para outras versões, tentar repositório padrão primeiro
+    log "⚠️ Versão não suportada, tentando repositório padrão Ubuntu..."
     apt install -y postgresql postgresql-contrib
+    
+    # Se falhar, tentar repositório genérico
+    if ! command -v psql &> /dev/null; then
+        log "⚠️ Repositório padrão falhou, tentando genérico..."
+        sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+        
+        # Atualizar e instalar
+        apt update
+        apt install -y postgresql postgresql-contrib
+    fi
 fi
 
 # Verificar se a instalação foi bem-sucedida
@@ -140,7 +159,7 @@ fi
 if command -v psql &> /dev/null; then
     success "PostgreSQL instalado: $(psql --version)"
 else
-    error "Falha na instalação do PostgreSQL"
+    error "Falha na instalação do PostgreSQL - execute o script fix-postgresql-quick.sh"
 fi
 
 # 6. Configurar PostgreSQL
@@ -194,12 +213,12 @@ git clone https://github.com/junielsonfarias/sispat.git
 cd sispat
 success "Repositório clonado"
 
-# 11. Configurar variáveis de ambiente
+# 11. Configurar variáveis de ambiente CORRIGIDO
 log "⚙️ Configurando variáveis de ambiente..."
 if [ ! -f ".env.production" ]; then
     cat > .env.production << 'EOF'
 # Configurações básicas
-NODE_ENV=production
+# NODE_ENV é gerenciado pelo Vite automaticamente - NÃO definir aqui
 PORT=3001
 HOST=0.0.0.0
 
@@ -236,24 +255,40 @@ ENABLE_CORS=true
 RATE_LIMIT_WINDOW=900000
 RATE_LIMIT_MAX=100
 EOF
-    success "Arquivo .env.production criado"
+    success "Arquivo .env.production criado (SEM NODE_ENV)"
 else
     log "⚠️ Arquivo .env.production já existe"
+    # Remover NODE_ENV se existir
+    if grep -q "NODE_ENV=production" .env.production; then
+        log "⚠️ Removendo NODE_ENV=production do .env.production..."
+        sed -i '/NODE_ENV=production/d' .env.production
+        success "NODE_ENV=production removido"
+    fi
 fi
 
 # 12. Tornar scripts executáveis
 log "🔧 Configurando scripts..."
 chmod +x scripts/*.sh
 
-# 13. Executar setup de produção
+# 13. CORREÇÃO PRÉVIA - Instalar terser para evitar erro de build
+log "📦 CORREÇÃO PRÉVIA - Instalando terser para compatibilidade..."
+if pnpm add -D terser; then
+    success "Terser instalado com pnpm"
+elif npm install --save-dev terser; then
+    success "Terser instalado com npm"
+else
+    warning "⚠️ Falha ao instalar terser, continuando sem..."
+fi
+
+# 14. Executar setup de produção
 log "⚙️ Executando setup de produção..."
 ./scripts/setup-production.sh
 
-# 14. Executar deploy
+# 15. Executar deploy CORRIGIDO
 log "🚀 Executando deploy..."
 ./scripts/deploy-production-simple.sh
 
-# 15. Configurar Nginx
+# 16. Configurar Nginx
 log "🌐 Configurando Nginx..."
 cat > /etc/nginx/sites-available/sispat << 'EOF'
 server {
@@ -305,18 +340,18 @@ nginx -t
 systemctl reload nginx
 success "Nginx configurado"
 
-# 16. Configurar PM2
+# 17. Configurar PM2
 log "⚙️ Configurando PM2..."
 pm2 save
 pm2 startup
 success "PM2 configurado para startup automático"
 
-# 17. Instalar Certbot para SSL
+# 18. Instalar Certbot para SSL
 log "🔒 Instalando Certbot para SSL..."
 apt install -y certbot python3-certbot-nginx
 success "Certbot instalado"
 
-# 18. Verificar status final
+# 19. Verificar status final
 log "🔍 Verificando status final..."
 echo ""
 echo "📊 STATUS DOS SERVIÇOS:"
@@ -330,7 +365,7 @@ echo ""
 pm2 status
 echo ""
 
-# 19. Informações finais
+# 20. Informações finais
 log "🎉 Instalação concluída com sucesso!"
 echo ""
 echo "🚀 SISPAT está rodando em:"
@@ -356,18 +391,22 @@ echo ""
 echo "🌐 Para configurar SSL:"
 echo "   certbot --nginx -d sispat.vps-kinghost.net"
 echo ""
-echo "🔧 Para resolver problemas do PostgreSQL:"
-echo "   - Ubuntu 20.04: Use repositório focal-pgdg"
-echo "   - Ubuntu 22.04: Use repositório jammy-pgdg"
+echo "🔧 CORREÇÕES APLICADAS:"
+echo "   ✅ PostgreSQL: Repositórios problemáticos removidos ANTES de apt update"
+echo "   ✅ Terser: Instalado como dependência para compatibilidade"
+echo "   ✅ NODE_ENV: Removido do .env.production (gerenciado pelo Vite)"
+echo "   ✅ Build: Configurado para usar esbuild como padrão"
+echo "   ✅ Scripts: Todos os scripts de correção incluídos"
 echo ""
 echo "📚 DOCUMENTAÇÃO:"
 echo "   - Guia completo: VPS-INSTALLATION-GUIDE-UPDATED.md"
 echo "   - Correção PostgreSQL: POSTGRESQL-UBUNTU20-FIX.md"
+echo "   - Correção Build: HUSKY-PRODUCTION-FIX.md"
 echo ""
 
 success "🎉 Instalação completa da VPS concluída! SISPAT está rodando."
 
-# 20. Instruções para SSL
+# 21. Instruções para SSL
 echo ""
 echo "🔒 PRÓXIMO PASSO - CONFIGURAR SSL:"
 echo "===================================="
@@ -381,4 +420,14 @@ echo "   ✅ Configurar HTTPS automaticamente"
 echo "   ✅ Configurar renovação automática"
 echo ""
 
-success "🚀 SISPAT está pronto para uso em produção!"
+# 22. Informações de troubleshooting
+echo ""
+echo "🔧 SE ALGO DER ERRADO:"
+echo "======================="
+echo "1. Erro de build: ./scripts/fix-build-error.sh"
+echo "2. Erro PostgreSQL: ./scripts/fix-postgresql-quick.sh"
+echo "3. Erro Husky: ./scripts/setup-husky.sh"
+echo "4. Ver logs: pm2 logs && journalctl -u nginx"
+echo ""
+
+success "🚀 SISPAT está pronto para uso em produção com TODAS as correções aplicadas!"
