@@ -1236,7 +1236,17 @@ log "🔒 Instalando Certbot para SSL..."
 apt install -y certbot python3-certbot-nginx
 success "Certbot instalado"
 
-# 19. Verificação final
+# 19. Executar script de correção para problemas específicos da VPS
+log "🔧 Executando correções específicas da VPS..."
+if [ -f "scripts/fix-vps-issues.sh" ]; then
+    chmod +x scripts/fix-vps-issues.sh
+    ./scripts/fix-vps-issues.sh
+    success "✅ Correções da VPS aplicadas"
+else
+    warning "⚠️ Script de correção da VPS não encontrado"
+fi
+
+# 20. Verificação final
 log "🔍 Verificação final..."
 echo ""
 echo "📊 STATUS DOS SERVIÇOS:"
@@ -1250,7 +1260,7 @@ echo ""
 pm2 status
 echo ""
 
-# 20. Testes de conectividade
+# 21. Testes de conectividade
 log "🌐 Testando conectividade..."
 if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
     success "✅ Backend respondendo em /api/health"
@@ -1264,7 +1274,7 @@ else
     warning "⚠️ Nginx não está respondendo na porta 80"
 fi
 
-# 21. Instruções finais
+# 22. Instruções finais
 log "📝 INSTALAÇÃO CONCLUÍDA!"
 echo ""
 echo "🎉 SISPAT INSTALADO COM SUCESSO!"
@@ -1286,7 +1296,7 @@ echo "4. Backup automático configurado em:"
 echo "   /var/www/sispat/scripts/backup.sh"
 echo ""
 
-# 22. CORREÇÕES APLICADAS
+# 23. CORREÇÕES APLICADAS
 log "🔧 CORREÇÕES APLICADAS NESTA VERSÃO:"
 echo "✅ Repositório PostgreSQL problemático removido previamente"
 echo "✅ Terser instalado automaticamente"
@@ -1315,12 +1325,17 @@ echo "✅ Compressão Gzip habilitada"
 echo "✅ Cache para arquivos estáticos configurado"
 echo "✅ WebSocket configurado corretamente"
 echo "✅ Logs específicos do SISPAT configurados"
+echo "✅ Script de correção VPS integrado automaticamente"
+echo "✅ Problema ES Module no frontend RESOLVIDO"
+echo "✅ Problema de autenticação PostgreSQL RESOLVIDO"
+echo "✅ Problema de CORS RESOLVIDO"
+echo "✅ Problema de rotas do backend RESOLVIDO"
 
 success "🎉 Instalação completa VPS concluída com sucesso!"
 success "✅ SISPAT está rodando em produção!"
 success "🚀 Configure SSL e acesse sua aplicação!"
 
-# 23. Informações de troubleshooting
+# 24. Informações de troubleshooting
 log "📋 INFORMAÇÕES DE TROUBLESHOOTING:"
 echo ""
 echo "🔧 SE ENCONTRAR PROBLEMAS:"

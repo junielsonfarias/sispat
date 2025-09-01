@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
-const path = require('path');
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 // Configurações
 const PORT = process.env.PORT || 8080;
-const DIST_DIR = path.join(__dirname, 'dist');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const DIST_DIR = join(__dirname, 'dist');
 
 console.log(`🚀 Iniciando frontend SISPAT na porta ${PORT}...`);
 console.log(`📁 Servindo arquivos de: ${DIST_DIR}`);
