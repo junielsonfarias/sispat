@@ -489,20 +489,34 @@ npx husky install
 
 ### **Problema 7: Backend API não responde (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `{"success":false,"error":{"code":"NOT_FOUND","message":"Rota não encontrada: GET /api"}}`
-**🔧 Solução:** Conflito de rotas `/api/health` duplicadas resolvido, rota principal adicionada ao servidor **✅ Status:** **RESOLVIDO** - Rota `/api/health` agora funciona corretamente
+**❌ Erro:**
+`{"success":false,"error":{"code":"NOT_FOUND","message":"Rota não encontrada: GET /api"}}` **🔧
+Solução:** Conflito de rotas `/api/health` duplicadas resolvido, rota principal adicionada ao
+servidor **✅ Status:** **RESOLVIDO** - Rota `/api/health` agora funciona corretamente
 
 ### **Problema 8: Frontend tela branca (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `ReferenceError: require is not defined in ES module scope` **🔧 Solução:** `start-frontend.js` corrigido para compatibilidade PM2 e ES modules **✅ Status:** **RESOLVIDO** - Frontend agora inicia corretamente
+**❌ Erro:** `ReferenceError: require is not defined in ES module scope` **🔧 Solução:**
+`start-frontend.js` corrigido para compatibilidade PM2 e ES modules **✅ Status:** **RESOLVIDO** -
+Frontend agora inicia corretamente
 
 ### **Problema 9: Conflito de módulos ES vs CommonJS (RESOLVIDO)**
 
-**❌ Erro:** `require()` statements em arquivos ES modules **🔧 Solução:** Todos os `require()` convertidos para `import` dinâmico **✅ Status:** **RESOLVIDO** - Compatibilidade ES modules garantida
+**❌ Erro:** `require()` statements em arquivos ES modules **🔧 Solução:** Todos os `require()`
+convertidos para `import` dinâmico **✅ Status:** **RESOLVIDO** - Compatibilidade ES modules
+garantida
 
 ### **Problema 10: Configuração PM2 não otimizada (RESOLVIDO)**
 
-**❌ Erro:** Configurações PM2 inadequadas para produção **🔧 Solução:** `ecosystem.config.js` otimizado com timeouts, memory limits e configurações de produção **✅ Status:** **RESOLVIDO** - PM2 configurado para estabilidade em produção
+**❌ Erro:** Configurações PM2 inadequadas para produção **🔧 Solução:** `ecosystem.config.js`
+otimizado com timeouts, memory limits e configurações de produção **✅ Status:** **RESOLVIDO** - PM2
+configurado para estabilidade em produção
+
+### **Problema 11: Conflito PM2 + ES Modules (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `Error [ERR_REQUIRE_ESM]: require() of ES Module ecosystem.config.js not supported`
+**🔧 Solução:** Script `fix-pm2-esm-error.sh` converte automaticamente configuração PM2 para ES
+Modules **✅ Status:** **RESOLVIDO** - PM2 agora funciona perfeitamente com ES Modules
 
 ---
 
@@ -602,6 +616,7 @@ performance!**
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
 - `fix-postgresql-auth-final.sh` - Correção definitiva da autenticação PostgreSQL
 - `fix-nginx-config.sh` - Correção da configuração Nginx
+- `fix-pm2-esm-error.sh` - Correção do conflito PM2 + ES Modules
 - `deploy-production-simple.sh` - Problema de export resolvido
 
 ### **✅ Funcionalidades Adicionadas:**
@@ -611,6 +626,7 @@ performance!**
 - Scripts de correção integrados automaticamente
 - Configuração Nginx otimizada
 - PM2 configurado para startup automático
+- **Compatibilidade ES Modules + PM2 100% funcional**
 - Autenticação PostgreSQL 100% funcional (senha: sispat123456)
 - Configuração automática de proxy reverso
 - Headers de segurança aplicados automaticamente

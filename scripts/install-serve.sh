@@ -172,10 +172,10 @@ EOF
     chmod +x serve-simple.js
     echo "✅ Script alternativo criado: serve-simple.js"
     
-    # Atualizar ecosystem.config.js para usar o script alternativo
-echo "🔧 Atualizando ecosystem.config.js para usar script alternativo..."
-sed -i 's|script: .start-frontend.js.|script: .serve-simple.js.|' ecosystem.config.js
-echo "✅ ecosystem.config.js atualizado"
+    # Atualizar ecosystem.config.cjs para usar o script alternativo
+echo "🔧 Atualizando ecosystem.config.cjs para usar script alternativo..."
+sed -i 's|script: .start-frontend.js.|script: .serve-simple.js.|' ecosystem.config.cjs
+echo "✅ ecosystem.config.cjs atualizado"
 fi
 
 # Verificar se o build do frontend existe
@@ -208,7 +208,7 @@ echo "🚀 Iniciando frontend..."
 
 if [ "$SERVE_AVAILABLE" = true ]; then
     echo "✅ Usando serve instalado"
-    pm2 start ecosystem.config.js --env production --only sispat-frontend
+    pm2 start ecosystem.config.cjs --env production --only sispat-frontend
 elif [ -f "serve-simple.js" ]; then
     echo "✅ Usando script alternativo serve-simple.js"
     pm2 start serve-simple.js --name "sispat-frontend"

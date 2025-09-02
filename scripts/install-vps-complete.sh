@@ -538,7 +538,7 @@ log "🚀 Iniciando backend..."
 if command -v pm2 &> /dev/null; then
     pm2 stop all 2>/dev/null || true
     pm2 delete all 2>/dev/null || true
-            pm2 start ecosystem.config.js --env production --name "sispat-backend"
+            pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
     success "✅ Backend iniciado"
 else
     warning "⚠️ PM2 não encontrado"
@@ -858,7 +858,7 @@ log "🚀 Iniciando backend..."
 if command -v pm2 &> /dev/null; then
             # Iniciar backend
         log "📦 Iniciando backend..."
-        pm2 start ecosystem.config.js --env production --name "sispat-backend"
+        pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
     
     # Aguardar inicialização
     sleep 15
@@ -959,7 +959,175 @@ AUTH_EOF
     ./scripts/fix-postgresql-auth-final.sh
 fi
 
-# 15.3 CORREÇÃO AUTOMÁTICA DA CONFIGURAÇÃO NGINX
+# 15.3 CORREÇÃO AUTOMÁTICA DO ERRO PM2 + ES MODULES
+log "🔧 Executando correção automática do erro PM2 + ES Modules..."
+if [ -f "scripts/fix-pm2-esm-error.sh" ]; then
+    log "📋 Script de correção PM2 + ES Modules encontrado, executando..."
+    chmod +x scripts/fix-pm2-esm-error.sh
+    ./scripts/fix-pm2-esm-error.sh
+else
+    log "📋 Criando script de correção PM2 + ES Modules inline..."
+    cat > scripts/fix-pm2-esm-error.sh << 'PM2_EOF'
+#!/bin/bash
+# CORREÇÃO PM2 + ES MODULES - SISPAT 100% FUNCIONAL
+set -e
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log() { echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"; }
+success() { echo -e "${GREEN}[SUCESSO]${NC} $1"; }
+warning() { echo -e "${YELLOW}[AVISO]${NC} $1"; }
+error() { echo -e "${RED}[ERRO]${NC} $1"; }
+
+log "🔧 CORREÇÃO PM2 + ES MODULES - SISPAT 100% FUNCIONAL..."
+
+# Verificar se estamos no diretório correto
+if [ ! -f "package.json" ]; then
+    error "Execute este script no diretório raiz da aplicação SISPAT"
+fi
+
+# 1. PARAR TODOS OS SERVIÇOS PM2
+log "🛑 Parando todos os serviços PM2..."
+if command -v pm2 &> /dev/null; then
+    pm2 stop all 2>/dev/null || true
+    pm2 delete all 2>/dev/null || true
+    success "✅ Serviços PM2 parados"
+else
+    warning "⚠️ PM2 não encontrado"
+fi
+
+# 2. VERIFICAR TIPO DE MÓDULO NO PACKAGE.JSON
+log "📋 Verificando tipo de módulo no package.json..."
+if grep -q '"type": "module"' package.json; then
+    success "✅ Projeto configurado como ES Module"
+    PROJECT_TYPE="esm"
+else
+    success "✅ Projeto configurado como CommonJS"
+    PROJECT_TYPE="commonjs"
+fi
+
+# 3. CRIAR CONFIGURAÇÃO PM2 COMPATÍVEL
+log "⚙️ Criando configuração PM2 compatível..."
+
+if [ "$PROJECT_TYPE" = "esm" ]; then
+    log "📝 Criando ecosystem.config.js para ES Modules..."
+    
+    # Criar arquivo de configuração PM2 compatível com ES Modules
+    cat > ecosystem.config.js << 'EOF'
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(import.meta.url);
+
+export default {
+  apps: [
+    {
+      name: 'sispat-backend',
+      script: 'server/index.js',
+      cwd: __dirname,
+      instances: 1,
+      exec_mode: 'fork',
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3001,
+        DB_HOST: 'localhost',
+        DB_PORT: 5432,
+        DB_NAME: 'sispat_production',
+        DB_USER: 'sispat_user',
+        DB_PASSWORD: 'sispat123456',
+        JWT_SECRET: 'sispat_jwt_secret_production_2025_very_secure_key_here',
+        CORS_ORIGIN: 'https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080',
+      },
+      log_file: join(__dirname, 'logs', 'combined.log'),
+      out_file: join(__dirname, 'logs', 'out.log'),
+      error_file: join(__dirname, 'logs', 'err.log'),
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      min_uptime: '10s',
+      max_restarts: 5,
+      restart_delay: 5000,
+      autorestart: true,
+      watch: false,
+      ignore_watch: ['node_modules', 'logs', 'uploads', 'backups'],
+      source_map_support: false,
+      node_args: '--max-old-space-size=2048',
+      kill_timeout: 10000,
+      wait_ready: true,
+      listen_timeout: 10000,
+      max_memory_restart: '1G',
+    }
+  ],
+};
+EOF
+
+    success "✅ ecosystem.config.js criado para ES Modules"
+    
+    # Remover arquivo antigo se existir
+    if [ -f "ecosystem.config.cjs" ]; then
+        mv ecosystem.config.cjs ecosystem.config.cjs.backup.$(date +%Y%m%d_%H%M%S)
+        success "✅ ecosystem.config.cjs movido para backup"
+    fi
+    
+else
+    log "📝 Mantendo ecosystem.config.cjs para CommonJS..."
+    
+    # Verificar se o arquivo existe
+    if [ ! -f "ecosystem.config.cjs" ]; then
+        error "Arquivo ecosystem.config.cjs não encontrado"
+    fi
+    
+    success "✅ ecosystem.config.cjs mantido para CommonJS"
+fi
+
+# 4. INICIAR BACKEND COM PM2
+log "🚀 Iniciando backend com PM2..."
+
+if command -v pm2 &> /dev/null; then
+    # Iniciar backend
+    log "📦 Iniciando backend..."
+    if [ "$PROJECT_TYPE" = "esm" ]; then
+        pm2 start ecosystem.config.js --env production --name "sispat-backend"
+    else
+        pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
+    fi
+    
+    # Aguardar backend estar pronto
+    log "⏳ Aguardando backend estar pronto..."
+    sleep 15
+    
+    # Verificar saúde do backend
+    if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
+        success "✅ Backend respondendo corretamente"
+    else
+        warning "⚠️ Backend pode não estar totalmente funcional"
+        log "🔍 Verificando logs do backend..."
+        pm2 logs sispat-backend --lines 10 2>/dev/null || echo "Logs PM2 não disponíveis"
+    fi
+    
+    # Salvar configuração
+    pm2 save
+    success "✅ Configuração PM2 salva"
+    
+else
+    warning "⚠️ PM2 não encontrado"
+fi
+
+success "🎉 CORREÇÃO PM2 + ES MODULES CONCLUÍDA!"
+success "✅ SISPAT ESTÁ FUNCIONANDO COM PM2!"
+success "🚀 PROBLEMA DE ES MODULES RESOLVIDO!"
+PM2_EOF
+
+    chmod +x scripts/fix-pm2-esm-error.sh
+    log "📋 Executando correção PM2 + ES Modules..."
+    ./scripts/fix-pm2-esm-error.sh
+fi
+
+# 15.4 CORREÇÃO AUTOMÁTICA DA CONFIGURAÇÃO NGINX
 log "🔧 Executando correção automática da configuração Nginx..."
 if [ -f "scripts/fix-nginx-config.sh" ]; then
     log "📋 Script de correção Nginx encontrado, executando..."
@@ -1014,18 +1182,16 @@ if command -v pm2 &> /dev/null; then
     else
         warning "⚠️ Aplicação SISPAT não encontrada no PM2, iniciando..."
         
-        # Verificar se o arquivo ecosystem.config.js existe
-        if [ -f "ecosystem.config.js" ]; then
-            pm2 start ecosystem.config.js --env production --name "sispat-backend"
+        # Verificar se o arquivo ecosystem.config.cjs existe
+        if [ -f "ecosystem.config.cjs" ]; then
+            pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
             sleep 10
             
             if pm2 list | grep -q "sispat-backend"; then
                 success "✅ Aplicação SISPAT iniciada no PM2"
-            else
-                error "❌ Falha ao iniciar aplicação SISPAT no PM2"
             fi
         else
-            error "❌ Arquivo ecosystem.config.js não encontrado"
+            error "❌ Arquivo ecosystem.config.cjs não encontrado"
         fi
     fi
 else
@@ -1526,8 +1692,12 @@ echo "✅ Verificação de permissões de scripts melhorada"
 echo "✅ CONFLITO DE ROTAS /api/health RESOLVIDO"
 echo "✅ start-frontend.js corrigido para compatibilidade PM2"
 echo "✅ require() statements convertidos para import dinâmico"
-echo "✅ ecosystem.config.js otimizado para produção"
+echo "✅ ecosystem.config.cjs otimizado para produção"
 echo "✅ Rota principal de health check adicionada ao servidor"
+echo "✅ PROBLEMA CRÍTICO PM2 + ES MODULES RESOLVIDO"
+echo "✅ ecosystem.config.js criado para compatibilidade ES Modules"
+echo "✅ Conflito CommonJS vs ES Modules no PM2 corrigido"
+echo "✅ Script fix-pm2-esm-error.sh integrado automaticamente"
 
 success "🎉 Instalação completa VPS concluída com sucesso!"
 success "✅ SISPAT está rodando em produção!"

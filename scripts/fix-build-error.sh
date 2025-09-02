@@ -150,7 +150,7 @@ fi
 log "🚀 Iniciando backend..."
 if command -v pm2 &> /dev/null; then
     # Iniciar backend
-    pm2 start ecosystem.config.js --env production --name "sispat-backend"
+    pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
     
     # Aguardar inicialização
     sleep 10

@@ -1,11 +1,8 @@
 /* eslint-env node */
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+/* global __dirname, process */
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(import.meta.url);
-
-export default {
+module.exports = {
   apps: [
     {
       name: 'sispat-backend',
@@ -39,8 +36,11 @@ export default {
         DB_NAME: process.env.DB_NAME || 'sispat_production',
         DB_USER: process.env.DB_USER || 'sispat_user',
         DB_PASSWORD: process.env.DB_PASSWORD || 'sispat123456',
-        JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-        CORS_ORIGIN: process.env.CORS_ORIGIN || 'https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080',
+        JWT_SECRET:
+          process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+        CORS_ORIGIN:
+          process.env.CORS_ORIGIN ||
+          'https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080',
         RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || 900000,
         RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || 100,
         UPLOAD_PATH: process.env.UPLOAD_PATH || './uploads',
@@ -49,9 +49,9 @@ export default {
         SSL_CERT_EMAIL: process.env.SSL_CERT_EMAIL || 'admin@example.com',
         CDN_URL: process.env.CDN_URL || 'https://sispat.vps-kinghost.net',
       },
-      log_file: join(__dirname, 'logs', 'combined.log'),
-      out_file: join(__dirname, 'logs', 'out.log'),
-      error_file: join(__dirname, 'logs', 'err.log'),
+      log_file: path.join(__dirname, 'logs', 'combined.log'),
+      out_file: path.join(__dirname, 'logs', 'out.log'),
+      error_file: path.join(__dirname, 'logs', 'err.log'),
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       min_uptime: '10s',
       max_restarts: 5,
@@ -80,11 +80,12 @@ export default {
       env_production: {
         NODE_ENV: 'production',
         PORT: process.env.PORT || 8080,
-        VITE_API_URL: process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api',
+        VITE_API_URL:
+          process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api',
       },
-      log_file: join(__dirname, 'logs', 'frontend-combined.log'),
-      out_file: join(__dirname, 'logs', 'frontend-out.log'),
-      error_file: join(__dirname, 'logs', 'frontend-err.log'),
+      log_file: path.join(__dirname, 'logs', 'frontend-combined.log'),
+      out_file: path.join(__dirname, 'logs', 'frontend-out.log'),
+      error_file: path.join(__dirname, 'logs', 'frontend-err.log'),
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       min_uptime: '10s',
       max_restarts: 3,
@@ -100,22 +101,4 @@ export default {
       max_memory_restart: '512M',
     },
   ],
-
-  deploy: {
-    production: {
-      user: 'root',
-      host: 'localhost',
-      ref: 'origin/main',
-      repo: 'https://github.com/junielsonfarias/sispat.git',
-      path: '/var/www/sispat',
-      'pre-deploy-local': '',
-      'post-deploy':
-        'pnpm install && pnpm run build && pm2 reload ecosystem.config.js --env production',
-      'pre-setup': '',
-      'post-setup': 'pnpm install && pnpm run build',
-      env: {
-        NODE_ENV: 'production',
-      },
-    },
-  },
 };

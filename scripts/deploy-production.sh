@@ -156,7 +156,7 @@ fi
 log "🚀 Iniciando serviços com PM2..."
 if command -v pm2 &> /dev/null; then
     # Iniciar backend
-    pm2 start ecosystem.config.js --env production --name "$PROJECT_NAME-backend"
+    pm2 start ecosystem.config.cjs --env production --name "$PROJECT_NAME-backend"
     success "Backend iniciado"
     
     # Aguardar backend estar pronto

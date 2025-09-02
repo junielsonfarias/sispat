@@ -144,37 +144,37 @@ else
     error "❌ Arquivo start-frontend.js não encontrado"
 fi
 
-# 3. CORREÇÃO DO ecosystem.config.js
-log "🔧 CORREÇÃO 3: Otimizando ecosystem.config.js para produção..."
+# 3. CORREÇÃO DO ecosystem.config.cjs
+log "🔧 CORREÇÃO 3: Otimizando ecosystem.config.cjs para produção..."
 
 # Verificar se o arquivo existe
-if [ -f "ecosystem.config.js" ]; then
+if [ -f "ecosystem.config.cjs" ]; then
     # Verificar se tem as otimizações necessárias
-    if grep -q "max_memory_restart" ecosystem.config.js && grep -q "source_map_support: false" ecosystem.config.js; then
-        success "✅ ecosystem.config.js já está otimizado"
+    if grep -q "max_memory_restart" ecosystem.config.cjs && grep -q "source_map_support: false" ecosystem.config.cjs; then
+        success "✅ ecosystem.config.cjs já está otimizado"
     else
-        warning "⚠️ ecosystem.config.js precisa de otimizações, aplicando..."
+        warning "⚠️ ecosystem.config.cjs precisa de otimizações, aplicando..."
         
         # Fazer backup
-        cp ecosystem.config.js ecosystem.config.js.backup
+        cp ecosystem.config.cjs ecosystem.config.cjs.backup
         
         # Aplicar otimizações
-        sed -i 's/source_map_support: true/source_map_support: false \/\/ Desabilitado para produção/g' ecosystem.config.js
-        sed -i 's/max_restarts: 10/max_restarts: 5/g' ecosystem.config.js
-        sed -i 's/restart_delay: 4000/restart_delay: 5000/g' ecosystem.config.js
-        sed -i 's/kill_timeout: 5000/kill_timeout: 10000/g' ecosystem.config.js
-        sed -i 's/listen_timeout: 8000/listen_timeout: 10000/g' ecosystem.config.js
+        sed -i 's/source_map_support: true/source_map_support: false \/\/ Desabilitado para produção/g' ecosystem.config.cjs
+        sed -i 's/max_restarts: 10/max_restarts: 5/g' ecosystem.config.cjs
+        sed -i 's/restart_delay: 4000/restart_delay: 5000/g' ecosystem.config.cjs
+        sed -i 's/kill_timeout: 5000/kill_timeout: 10000/g' ecosystem.config.cjs
+        sed -i 's/listen_timeout: 8000/listen_timeout: 10000/g' ecosystem.config.cjs
         
         # Adicionar max_memory_restart se não existir
-        if ! grep -q "max_memory_restart" ecosystem.config.js; then
-            sed -i '/node_args:.*--max-old-space-size=2048/a\      max_memory_restart: "1G",' ecosystem.config.js
-            sed -i '/node_args:.*--max-old-space-size=1024/a\      max_memory_restart: "512M",' ecosystem.config.js
+        if ! grep -q "max_memory_restart" ecosystem.config.cjs; then
+            sed -i '/node_args:.*--max-old-space-size=2048/a\      max_memory_restart: "1G",' ecosystem.config.cjs
+            sed -i '/node_args:.*--max-old-space-size=1024/a\      max_memory_restart: "512M",' ecosystem.config.cjs
         fi
         
-        success "✅ ecosystem.config.js otimizado"
+        success "✅ ecosystem.config.cjs otimizado"
     fi
 else
-    error "❌ Arquivo ecosystem.config.js não encontrado"
+    error "❌ Arquivo ecosystem.config.cjs não encontrado"
 fi
 
 # 4. CORREÇÃO DAS ROTAS DUPLICADAS
@@ -219,7 +219,7 @@ if command -v pm2 &> /dev/null; then
         success "✅ Backend está rodando no PM2"
     else
         warning "⚠️ Backend não está rodando, iniciando..."
-        pm2 start ecosystem.config.js --env production --name "sispat-backend"
+        pm2 start ecosystem.config.cjs --env production --name "sispat-backend"
         sleep 10
         
         if pm2 list | grep -q "sispat-backend.*online"; then
@@ -260,7 +260,7 @@ echo "✅ CORREÇÕES APLICADAS:"
 echo "  - Conflito de rotas /api/health RESOLVIDO"
 echo "  - start-frontend.js corrigido para compatibilidade PM2"
 echo "  - require() statements convertidos para import dinâmico"
-echo "  - ecosystem.config.js otimizado para produção"
+    echo "  - ecosystem.config.cjs otimizado para produção"
 echo "  - Rota principal de health check adicionada"
 echo "  - Rotas duplicadas removidas"
 echo ""
