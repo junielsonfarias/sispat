@@ -1,9 +1,9 @@
 import { NavContent } from '@/components/NavContent';
 import {
-    SidebarContent,
-    SidebarHeader,
-    Sidebar as SidebarPrimitive,
-    SidebarTrigger,
+  SidebarContent,
+  SidebarHeader,
+  Sidebar as SidebarPrimitive,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { useCustomization } from '@/contexts/CustomizationContext';
 import { cn } from '@/lib/utils';

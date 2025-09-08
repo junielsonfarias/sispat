@@ -1,9 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -91,7 +91,10 @@ export const NotificationBell = () => {
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-80 p-0 shadow-xl border-0 bg-white/95 backdrop-blur-md' align='end'>
+      <PopoverContent
+        className='w-80 p-0 shadow-xl border-0 bg-white/95 backdrop-blur-md'
+        align='end'
+      >
         <div className='flex items-center justify-between p-4 border-b border-gray-200'>
           <div className='flex items-center gap-2'>
             <h4 className='font-semibold text-gray-900'>Notificações</h4>
@@ -126,7 +129,9 @@ export const NotificationBell = () => {
               <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4'>
                 <Bell className='h-8 w-8 text-gray-400' />
               </div>
-              <p className='text-sm font-medium text-gray-900 mb-1'>Nenhuma notificação</p>
+              <p className='text-sm font-medium text-gray-900 mb-1'>
+                Nenhuma notificação
+              </p>
               <p className='text-xs text-gray-500'>
                 {!isConnected
                   ? 'Conecte-se para receber notificações em tempo real'
@@ -187,7 +192,10 @@ export const NotificationBell = () => {
                         </span>
 
                         {!notification.isRead && (
-                          <Badge variant='secondary' className='text-xs bg-blue-100 text-blue-700 border-0'>
+                          <Badge
+                            variant='secondary'
+                            className='text-xs bg-blue-100 text-blue-700 border-0'
+                          >
                             Nova
                           </Badge>
                         )}

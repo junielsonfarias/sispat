@@ -208,6 +208,7 @@ router.put('/:id', requireSuperuser, async (req, res) => {
     const { id } = req.params;
     const {
       name,
+      state,
       logoUrl,
       fullAddress,
       cnpj,
@@ -245,20 +246,22 @@ router.put('/:id', requireSuperuser, async (req, res) => {
       `
       UPDATE municipalities SET
         name = COALESCE($1, name),
-        logo_url = $2,
-        full_address = COALESCE($3, full_address),
-        cnpj = COALESCE($4, cnpj),
-        contact_email = COALESCE($5, contact_email),
-        mayor_name = COALESCE($6, mayor_name),
-        mayor_cpf = COALESCE($7, mayor_cpf),
-        access_start_date = $8,
-        access_end_date = $9,
+        state = COALESCE($2, state),
+        logo_url = $3,
+        full_address = COALESCE($4, full_address),
+        cnpj = COALESCE($5, cnpj),
+        contact_email = COALESCE($6, contact_email),
+        mayor_name = COALESCE($7, mayor_name),
+        mayor_cpf = COALESCE($8, mayor_cpf),
+        access_start_date = $9,
+        access_end_date = $10,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $10
+      WHERE id = $11
       RETURNING *
     `,
       [
         name,
+        state,
         logoUrl,
         fullAddress,
         cnpj,

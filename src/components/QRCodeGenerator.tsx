@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { useGlobalLogo } from '@/contexts/GlobalLogoContext';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Copy, Download, Eye, Printer, QrCode, Settings } from 'lucide-react';
@@ -44,6 +45,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   onGenerate,
   className,
 }) => {
+  const { getLogoForSystem } = useGlobalLogo();
   const [qrData, setQrData] = useState<string>('');
   const [qrSize, setQrSize] = useState<number>(256);
   const [qrColor, setQrColor] = useState<string>('#000000');
@@ -154,8 +156,8 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
       };
 
-      // Usar logo padrão do sistema ou criar um texto
-      logo.src = '/logo.png'; // Ajustar para o caminho correto do logo
+      // Usar logo do sistema
+      logo.src = getLogoForSystem('geral');
     } catch (error) {
       console.warn('Erro ao carregar logo:', error);
       // Fallback: desenhar texto do número do patrimônio

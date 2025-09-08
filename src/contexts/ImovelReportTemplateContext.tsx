@@ -1,13 +1,13 @@
 import { generateId } from '@/lib/utils';
 import { ImovelReportTemplate } from '@/types';
 import {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react';
 import { useAuth } from './AuthContext';
 

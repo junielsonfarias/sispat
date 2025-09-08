@@ -1,10 +1,10 @@
 import React, {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
 
 interface PublicSearchSettings {
@@ -192,4 +192,3 @@ export const usePublicSearch = () => {
   }
   return context;
 };
-

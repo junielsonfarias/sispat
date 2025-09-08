@@ -5,15 +5,15 @@ import { isAfter, subMonths } from 'date-fns';
 import { AlertCircle, Folder, PlusCircle, UserCheck } from 'lucide-react';
 import { useMemo } from 'react';
 import {
-    Bar,
-    BarChart,
-    Cell,
-    Legend,
-    Pie,
-    PieChart,
-    Tooltip,
-    XAxis,
-    YAxis,
+  Bar,
+  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 
 const UserDashboard = () => {
@@ -119,8 +119,18 @@ const UserDashboard = () => {
         <div className='bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-6'>
           <div className='flex items-center gap-3'>
             <div className='p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-md'>
-              <svg className='h-6 w-6 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' />
+              <svg
+                className='h-6 w-6 text-white'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
+                />
               </svg>
             </div>
             <div>
@@ -128,7 +138,10 @@ const UserDashboard = () => {
                 Dashboard do Usuário
               </h1>
               <p className='text-sm text-gray-600'>
-                Visão geral do setor: <span className='font-semibold text-blue-600'>{user?.sector}</span>
+                Visão geral do setor:{' '}
+                <span className='font-semibold text-blue-600'>
+                  {user?.sector}
+                </span>
               </p>
             </div>
           </div>
@@ -139,17 +152,17 @@ const UserDashboard = () => {
           {statsCards.map((card, index) => {
             const colors = [
               'from-blue-50 to-blue-100 border-blue-200',
-              'from-green-50 to-green-100 border-green-200', 
+              'from-green-50 to-green-100 border-green-200',
               'from-yellow-50 to-yellow-100 border-yellow-200',
-              'from-purple-50 to-purple-100 border-purple-200'
+              'from-purple-50 to-purple-100 border-purple-200',
             ];
             const iconColors = [
               'bg-blue-500',
               'bg-green-500',
-              'bg-yellow-500', 
-              'bg-purple-500'
+              'bg-yellow-500',
+              'bg-purple-500',
             ];
-            
+
             return (
               <div
                 key={card.title}
@@ -157,10 +170,16 @@ const UserDashboard = () => {
               >
                 <div className='flex items-center justify-between'>
                   <div>
-                    <h3 className='text-sm font-semibold text-gray-700 mb-2'>{card.title}</h3>
-                    <p className='text-4xl font-bold text-gray-800'>{card.value}</p>
+                    <h3 className='text-sm font-semibold text-gray-700 mb-2'>
+                      {card.title}
+                    </h3>
+                    <p className='text-4xl font-bold text-gray-800'>
+                      {card.value}
+                    </p>
                   </div>
-                  <div className={`w-12 h-12 ${iconColors[index]} rounded-lg flex items-center justify-center`}>
+                  <div
+                    className={`w-12 h-12 ${iconColors[index]} rounded-lg flex items-center justify-center`}
+                  >
                     <card.icon className='w-6 h-6 text-white' />
                   </div>
                 </div>
@@ -172,8 +191,12 @@ const UserDashboard = () => {
         <div className='grid gap-6 md:grid-cols-1 lg:grid-cols-2'>
           <div className='bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
             <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200'>
-              <h2 className='text-lg font-semibold text-gray-800'>Status dos Meus Bens</h2>
-              <p className='text-sm text-gray-600'>Distribuição por situação atual</p>
+              <h2 className='text-lg font-semibold text-gray-800'>
+                Status dos Meus Bens
+              </h2>
+              <p className='text-sm text-gray-600'>
+                Distribuição por situação atual
+              </p>
             </div>
             <div className='p-6'>
               <ChartContainer config={{}} className='h-[300px] w-full'>
@@ -198,10 +221,12 @@ const UserDashboard = () => {
               </ChartContainer>
             </div>
           </div>
-          
+
           <div className='bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
             <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200'>
-              <h2 className='text-lg font-semibold text-gray-800'>Tipos de Bens no Setor</h2>
+              <h2 className='text-lg font-semibold text-gray-800'>
+                Tipos de Bens no Setor
+              </h2>
               <p className='text-sm text-gray-600'>Quantidade por categoria</p>
             </div>
             <div className='p-6'>

@@ -1,24 +1,22 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useReportTemplates } from '@/contexts/ReportTemplateContext';
-import { ReportTemplate, ReportComponent } from '@/types';
-import { generateId } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
-import { Save, PlusCircle, Trash2, GalleryHorizontal } from 'lucide-react';
+import { ReportComponentProperties } from '@/components/admin/ReportComponentProperties';
+import { ReportTemplateGallery } from '@/components/admin/ReportTemplateGallery';
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { cn } from '@/lib/utils';
-import { ReportComponentProperties } from '@/components/admin/ReportComponentProperties';
-import { ReportTemplateGallery } from '@/components/admin/ReportTemplateGallery';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { useReportTemplates } from '@/contexts/ReportTemplateContext';
+import { toast } from '@/hooks/use-toast';
+import { cn, generateId } from '@/lib/utils';
+import { ReportComponent, ReportTemplate } from '@/types';
+import { GalleryHorizontal, PlusCircle, Save, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 const ReportLayoutEditor = () => {
   const { templateId } = useParams<{ templateId: string }>();
@@ -116,9 +114,9 @@ const ReportLayoutEditor = () => {
           </Button>
         </div>
       </div>
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 items-start'>
-        <div className='lg:col-span-2 space-y-4'>
-          <Card>
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1', display: 'flex', gap: '16px' }}>
+          <Card style={{ flex: '1', minWidth: '500px' }}>
             <CardHeader>
               <CardTitle>Layout do Relatório</CardTitle>
             </CardHeader>
@@ -162,7 +160,10 @@ const ReportLayoutEditor = () => {
             </CardContent>
           </Card>
         </div>
-        <div className='lg:col-span-1 sticky top-24 space-y-4'>
+        <div
+          style={{ width: '350px', position: 'sticky', top: '96px' }}
+          className='space-y-4'
+        >
           <Card>
             <CardHeader>
               <CardTitle>Componentes</CardTitle>

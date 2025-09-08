@@ -103,7 +103,7 @@ export const LabelPreview = forwardRef<HTMLDivElement, LabelPreviewProps>(
         <div
           key={element.id}
           className={cn(
-            'absolute p-0.5 box-border border border-solid border-gray-300',
+            'absolute p-0.5 box-border',
             onElementClick &&
               'cursor-pointer hover:outline-dashed hover:outline-1 hover:outline-primary',
             selectedElementId === element.id &&

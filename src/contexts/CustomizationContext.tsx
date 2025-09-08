@@ -1,11 +1,11 @@
 import { useAuth } from '@/hooks/useAuth';
 import {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
 
 export interface CustomizationSettings {
@@ -28,6 +28,47 @@ export interface CustomizationSettings {
   loginFooterText: string;
   systemFooterText: string;
   superUserFooterText?: string;
+  // Configurações de cabeçalho para relatórios e fichas
+  reportHeader: {
+    showLogo: boolean;
+    showTitle: boolean;
+    showSubtitle: boolean;
+    showDate: boolean;
+    showTime: boolean;
+    showMunicipality: boolean;
+    showAddress: boolean;
+    showPhone: boolean;
+    showEmail: boolean;
+    showWebsite: boolean;
+    customText: string;
+    title: string;
+    subtitle: string;
+    municipality: string;
+    address: string;
+    phone: string;
+    email: string;
+    website: string;
+  };
+  formHeader: {
+    showLogo: boolean;
+    showTitle: boolean;
+    showSubtitle: boolean;
+    showDate: boolean;
+    showTime: boolean;
+    showMunicipality: boolean;
+    showAddress: boolean;
+    showPhone: boolean;
+    showEmail: boolean;
+    showWebsite: boolean;
+    customText: string;
+    title: string;
+    subtitle: string;
+    municipality: string;
+    address: string;
+    phone: string;
+    email: string;
+    website: string;
+  };
 }
 
 interface CustomizationContextType {
@@ -68,6 +109,48 @@ const defaultSettings: CustomizationSettings = {
   loginFooterText: '© 2025 Curling. Todos os direitos reservados.',
   systemFooterText: 'SISPAT - Desenvolvido por Curling',
   superUserFooterText: 'SISPAT Superusuário - Painel de Controle Global',
+  // Configurações padrão para cabeçalhos de relatórios
+  reportHeader: {
+    showLogo: true,
+    showTitle: true,
+    showSubtitle: true,
+    showDate: true,
+    showTime: true,
+    showMunicipality: true,
+    showAddress: false,
+    showPhone: false,
+    showEmail: false,
+    showWebsite: false,
+    customText: '',
+    title: 'Relatório de Patrimônio',
+    subtitle: 'Sistema de Gestão de Patrimônio',
+    municipality: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+  },
+  // Configurações padrão para cabeçalhos de fichas
+  formHeader: {
+    showLogo: true,
+    showTitle: true,
+    showSubtitle: true,
+    showDate: true,
+    showTime: true,
+    showMunicipality: true,
+    showAddress: false,
+    showPhone: false,
+    showEmail: false,
+    showWebsite: false,
+    customText: '',
+    title: 'Ficha de Patrimônio',
+    subtitle: 'Sistema de Gestão de Patrimônio',
+    municipality: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+  },
 };
 
 export const CustomizationProvider = ({
@@ -137,7 +220,7 @@ export const CustomizationProvider = ({
       const newSettings = { ...allSettings, [key]: settings };
       persist(newSettings);
     },
-    [allSettings]
+    [allSettings, persist]
   );
 
   const resetSettingsForMunicipality = useCallback(

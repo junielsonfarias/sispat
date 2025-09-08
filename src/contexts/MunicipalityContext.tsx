@@ -1,12 +1,12 @@
 import { api } from '@/services/api';
 import { Municipality, User } from '@/types';
 import React, {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
 
 interface MunicipalityContextType {
@@ -231,5 +231,3 @@ export const useMunicipalities = () => {
   }
   return context;
 };
-
-

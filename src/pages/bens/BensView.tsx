@@ -373,245 +373,257 @@ const BensView = () => {
           </AlertDialog>
         </div>
       </div>
-      <div className='grid gap-6 lg:grid-cols-3'>
-        <div className='lg:col-span-2 space-y-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle>{patrimonio.descricao}</CardTitle>
-              <CardDescription>
-                Nº de Patrimônio: {patrimonio.numero_patrimonio}
-              </CardDescription>
-              {lastModification && (
-                <div className='text-xs text-muted-foreground pt-2'>
-                  Última alteração por <strong>{lastModification.user}</strong>{' '}
-                  em{' '}
-                  {formatDate(
-                    new Date(lastModification.date),
-                    "dd/MM/yyyy 'às' HH:mm"
-                  )}
-                </div>
-              )}
-            </CardHeader>
-            <CardContent>
-              {(patrimonio.fotos || []).length > 0 ? (
-                <Carousel className='w-full max-w-lg mx-auto mb-6'>
-                  <CarouselContent>
-                    {(patrimonio.fotos || []).map((fotoId, index) => (
-                      <CarouselItem key={index}>
-                        <OptimizedImage
-                          src={getCloudImageUrl(fotoId)}
-                          alt={`${patrimonio.descricao} - Foto ${index + 1}`}
-                          size='large'
-                          aspectRatio='video'
-                          className='rounded-lg object-cover w-full aspect-video'
-                        />
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious />
-                  <CarouselNext />
-                </Carousel>
-              ) : (
-                <div className='w-full aspect-video flex items-center justify-center bg-muted rounded-lg mb-6'>
-                  <div className='text-center text-muted-foreground'>
-                    <ImageIcon className='mx-auto h-12 w-12' />
-                    <p>Nenhuma foto disponível</p>
+      <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1', display: 'flex', gap: '24px' }}>
+          <div style={{ flex: '1', minWidth: '600px' }} className='space-y-6'>
+            <Card>
+              <CardHeader>
+                <CardTitle>{patrimonio.descricao}</CardTitle>
+                <CardDescription>
+                  Nº de Patrimônio: {patrimonio.numero_patrimonio}
+                </CardDescription>
+                {lastModification && (
+                  <div className='text-xs text-muted-foreground pt-2'>
+                    Última alteração por{' '}
+                    <strong>{lastModification.user}</strong> em{' '}
+                    {formatDate(
+                      new Date(lastModification.date),
+                      "dd/MM/yyyy 'às' HH:mm"
+                    )}
                   </div>
-                </div>
-              )}
-              <div className='grid md:grid-cols-2 gap-x-8 gap-y-4'>
-                <DetailItem
-                  label='Status'
-                  value={<Badge>{patrimonio.status || 'NÃO INFORMADO'}</Badge>}
-                />
-                <DetailItem
-                  label='Situação'
-                  value={
-                    <Badge variant='secondary'>
-                      {patrimonio.situacao_bem || 'NÃO INFORMADO'}
-                    </Badge>
-                  }
-                />
-                <DetailItem
-                  label='Setor Responsável'
-                  value={patrimonio.setor_responsavel}
-                />
-                <DetailItem
-                  label='Localização'
-                  value={patrimonio.local_objeto}
-                />
-                <DetailItem
-                  label='Data de Aquisição'
-                  value={formatDate(new Date(patrimonio.data_aquisicao))}
-                />
-                <DetailItem
-                  label='Valor de Aquisição'
-                  value={formatCurrency(patrimonio.valor_aquisicao)}
-                />
-                <DetailItem label='Quantidade' value={patrimonio.quantidade} />
-                <DetailItem
-                  label='Nota Fiscal'
-                  value={patrimonio.numero_nota_fiscal}
-                />
-                <DetailItem
-                  label='Forma de Aquisição'
-                  value={patrimonio.forma_aquisicao}
-                />
-                <DetailItem
-                  label='Número de Série'
-                  value={patrimonio.numero_serie}
-                />
-                <DetailItem label='Marca' value={patrimonio.marca} />
-                <DetailItem label='Modelo' value={patrimonio.modelo} />
-                <DetailItem label='Cor' value={patrimonio.cor} />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Documentos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(patrimonio.documentos || []).length > 0 ? (
-                <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-                  {(patrimonio.documentos || []).map((docId, index) => (
-                    <a
-                      key={index}
-                      href={getCloudImageUrl(docId)}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='group'
-                    >
-                      <div className='aspect-square flex flex-col items-center justify-center bg-muted rounded-lg p-2 text-center group-hover:bg-accent transition-colors'>
-                        <FileText className='h-8 w-8 text-muted-foreground mb-2' />
-                        <p className='text-xs truncate'>
-                          Documento {index + 1}
-                        </p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className='text-sm text-muted-foreground'>
-                  Nenhum documento anexado.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações de Depreciação</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {depreciationInfo ? (
+                )}
+              </CardHeader>
+              <CardContent>
+                {(patrimonio.fotos || []).length > 0 ? (
+                  <Carousel className='w-full max-w-lg mx-auto mb-6'>
+                    <CarouselContent>
+                      {(patrimonio.fotos || []).map((fotoId, index) => (
+                        <CarouselItem key={index}>
+                          <OptimizedImage
+                            src={getCloudImageUrl(fotoId)}
+                            alt={`${patrimonio.descricao} - Foto ${index + 1}`}
+                            size='large'
+                            aspectRatio='video'
+                            className='rounded-lg object-cover w-full aspect-video'
+                          />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
+                ) : (
+                  <div className='w-full aspect-video flex items-center justify-center bg-muted rounded-lg mb-6'>
+                    <div className='text-center text-muted-foreground'>
+                      <ImageIcon className='mx-auto h-12 w-12' />
+                      <p>Nenhuma foto disponível</p>
+                    </div>
+                  </div>
+                )}
                 <div className='grid md:grid-cols-2 gap-x-8 gap-y-4'>
                   <DetailItem
-                    label='Método'
-                    value={patrimonio.metodo_depreciacao || 'N/A'}
+                    label='Status'
+                    value={
+                      <Badge>{patrimonio.status || 'NÃO INFORMADO'}</Badge>
+                    }
                   />
                   <DetailItem
-                    label='Vida Útil'
-                    value={`${patrimonio.vida_util_anos || 0} anos`}
+                    label='Situação'
+                    value={
+                      <Badge variant='secondary'>
+                        {patrimonio.situacao_bem || 'NÃO INFORMADO'}
+                      </Badge>
+                    }
                   />
                   <DetailItem
-                    label='Depreciação Acumulada'
-                    value={formatCurrency(
-                      depreciationInfo.accumulatedDepreciation
-                    )}
+                    label='Setor Responsável'
+                    value={patrimonio.setor_responsavel}
                   />
                   <DetailItem
-                    label='Valor Contábil Atual'
-                    value={formatCurrency(depreciationInfo.bookValue)}
+                    label='Localização'
+                    value={patrimonio.local_objeto}
                   />
                   <DetailItem
-                    label='Depreciação Anual'
-                    value={formatCurrency(depreciationInfo.annualDepreciation)}
+                    label='Data de Aquisição'
+                    value={formatDate(new Date(patrimonio.data_aquisicao))}
                   />
                   <DetailItem
-                    label='Vida Útil Restante'
-                    value={`${(
-                      depreciationInfo.remainingLifeMonths / 12
-                    ).toFixed(1)} anos`}
+                    label='Valor de Aquisição'
+                    value={formatCurrency(patrimonio.valor_aquisicao)}
                   />
+                  <DetailItem
+                    label='Quantidade'
+                    value={patrimonio.quantidade}
+                  />
+                  <DetailItem
+                    label='Nota Fiscal'
+                    value={patrimonio.numero_nota_fiscal}
+                  />
+                  <DetailItem
+                    label='Forma de Aquisição'
+                    value={patrimonio.forma_aquisicao}
+                  />
+                  <DetailItem
+                    label='Número de Série'
+                    value={patrimonio.numero_serie}
+                  />
+                  <DetailItem label='Marca' value={patrimonio.marca} />
+                  <DetailItem label='Modelo' value={patrimonio.modelo} />
+                  <DetailItem label='Cor' value={patrimonio.cor} />
                 </div>
-              ) : (
-                <p>Informações de depreciação não disponíveis.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        <div className='space-y-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Movimentações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className='h-[300px]'>
-                <div className='relative pl-6 after:absolute after:inset-y-0 after:w-0.5 after:bg-border after:left-0'>
-                  {(patrimonio.historico_movimentacao || [])
-                    .sort(
-                      (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
-                    )
-                    .map((entry, index) => (
-                      <div key={index} className='relative mb-6 pl-8'>
-                        <div className='absolute -left-3 mt-1.5 h-6 w-6 rounded-full bg-primary flex items-center justify-center ring-8 ring-background'>
-                          <Clock className='h-3 w-3 text-primary-foreground' />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Documentos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(patrimonio.documentos || []).length > 0 ? (
+                  <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+                    {(patrimonio.documentos || []).map((docId, index) => (
+                      <a
+                        key={index}
+                        href={getCloudImageUrl(docId)}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='group'
+                      >
+                        <div className='aspect-square flex flex-col items-center justify-center bg-muted rounded-lg p-2 text-center group-hover:bg-accent transition-colors'>
+                          <FileText className='h-8 w-8 text-muted-foreground mb-2' />
+                          <p className='text-xs truncate'>
+                            Documento {index + 1}
+                          </p>
                         </div>
-                        <time className='mb-1 text-xs font-normal text-muted-foreground'>
-                          {formatDate(
-                            new Date(entry.date),
-                            "dd/MM/yy 'às' HH:mm"
-                          )}
-                        </time>
-                        <h3 className='font-semibold'>
-                          {entry.action} por {entry.user}
-                        </h3>
-                        <p className='text-sm text-muted-foreground'>
-                          {entry.details}
-                        </p>
-                        {entry.origem && (
-                          <p className='text-xs text-muted-foreground'>
-                            <strong>Origem:</strong> {entry.origem}
-                          </p>
-                        )}
-                        {entry.destino && (
-                          <p className='text-xs text-muted-foreground'>
-                            <strong>Destino:</strong> {entry.destino}
-                          </p>
-                        )}
-                        {(entry.documentosAnexos || []).length > 0 && (
-                          <div className='mt-2'>
-                            <p className='text-xs font-semibold'>Documentos:</p>
-                            <div className='flex gap-2 mt-1'>
-                              {(entry.documentosAnexos || []).map(
-                                (docId, i) => (
-                                  <Button
-                                    key={i}
-                                    size='sm'
-                                    variant='outline'
-                                    asChild
-                                  >
-                                    <a
-                                      href={getCloudImageUrl(docId)}
-                                      target='_blank'
-                                      rel='noopener noreferrer'
-                                    >
-                                      <FileText className='h-3 w-3 mr-1' /> Doc{' '}
-                                      {i + 1}
-                                    </a>
-                                  </Button>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      </a>
                     ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                  </div>
+                ) : (
+                  <p className='text-sm text-muted-foreground'>
+                    Nenhum documento anexado.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações de Depreciação</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {depreciationInfo ? (
+                  <div className='grid md:grid-cols-2 gap-x-8 gap-y-4'>
+                    <DetailItem
+                      label='Método'
+                      value={patrimonio.metodo_depreciacao || 'N/A'}
+                    />
+                    <DetailItem
+                      label='Vida Útil'
+                      value={`${patrimonio.vida_util_anos || 0} anos`}
+                    />
+                    <DetailItem
+                      label='Depreciação Acumulada'
+                      value={formatCurrency(
+                        depreciationInfo.accumulatedDepreciation
+                      )}
+                    />
+                    <DetailItem
+                      label='Valor Contábil Atual'
+                      value={formatCurrency(depreciationInfo.bookValue)}
+                    />
+                    <DetailItem
+                      label='Depreciação Anual'
+                      value={formatCurrency(
+                        depreciationInfo.annualDepreciation
+                      )}
+                    />
+                    <DetailItem
+                      label='Vida Útil Restante'
+                      value={`${(
+                        depreciationInfo.remainingLifeMonths / 12
+                      ).toFixed(1)} anos`}
+                    />
+                  </div>
+                ) : (
+                  <p>Informações de depreciação não disponíveis.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          <div className='space-y-6'>
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Movimentações</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className='h-[300px]'>
+                  <div className='relative pl-6 after:absolute after:inset-y-0 after:w-0.5 after:bg-border after:left-0'>
+                    {(patrimonio.historico_movimentacao || [])
+                      .sort(
+                        (a, b) =>
+                          new Date(b.date).getTime() -
+                          new Date(a.date).getTime()
+                      )
+                      .map((entry, index) => (
+                        <div key={index} className='relative mb-6 pl-8'>
+                          <div className='absolute -left-3 mt-1.5 h-6 w-6 rounded-full bg-primary flex items-center justify-center ring-8 ring-background'>
+                            <Clock className='h-3 w-3 text-primary-foreground' />
+                          </div>
+                          <time className='mb-1 text-xs font-normal text-muted-foreground'>
+                            {formatDate(
+                              new Date(entry.date),
+                              "dd/MM/yy 'às' HH:mm"
+                            )}
+                          </time>
+                          <h3 className='font-semibold'>
+                            {entry.action} por {entry.user}
+                          </h3>
+                          <p className='text-sm text-muted-foreground'>
+                            {entry.details}
+                          </p>
+                          {entry.origem && (
+                            <p className='text-xs text-muted-foreground'>
+                              <strong>Origem:</strong> {entry.origem}
+                            </p>
+                          )}
+                          {entry.destino && (
+                            <p className='text-xs text-muted-foreground'>
+                              <strong>Destino:</strong> {entry.destino}
+                            </p>
+                          )}
+                          {(entry.documentosAnexos || []).length > 0 && (
+                            <div className='mt-2'>
+                              <p className='text-xs font-semibold'>
+                                Documentos:
+                              </p>
+                              <div className='flex gap-2 mt-1'>
+                                {(entry.documentosAnexos || []).map(
+                                  (docId, i) => (
+                                    <Button
+                                      key={i}
+                                      size='sm'
+                                      variant='outline'
+                                      asChild
+                                    >
+                                      <a
+                                        href={getCloudImageUrl(docId)}
+                                        target='_blank'
+                                        rel='noopener noreferrer'
+                                      >
+                                        <FileText className='h-3 w-3 mr-1' />{' '}
+                                        Doc {i + 1}
+                                      </a>
+                                    </Button>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
       <div className='hidden'>

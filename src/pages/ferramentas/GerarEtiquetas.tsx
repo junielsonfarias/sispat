@@ -147,9 +147,9 @@ const GerarEtiquetas = () => {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 items-start'>
-        <div className='lg:col-span-2'>
-          <Card>
+      <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1', display: 'flex', gap: '24px' }}>
+          <Card style={{ flex: '1', minWidth: '600px' }}>
             <CardHeader>
               <CardTitle>Selecionar Itens</CardTitle>
               <CardDescription>
@@ -219,7 +219,7 @@ const GerarEtiquetas = () => {
             </CardContent>
           </Card>
         </div>
-        <div className='lg:col-span-1 sticky top-24'>
+        <div style={{ width: '400px', position: 'sticky', top: '96px' }}>
           <Card>
             <CardHeader>
               <CardTitle>Etiquetas para Impressão</CardTitle>

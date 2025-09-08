@@ -81,10 +81,21 @@ router.post(
       }
 
       // Check municipality access for non-superuser
-      if (user.role !== 'superuser' && municipalityId) {
-        if (user.municipality_id !== municipalityId) {
+      if (user.role !== 'superuser') {
+        // Se municipalityId foi fornecido, verificar se corresponde ao usuário
+        if (
+          municipalityId &&
+          user.municipality_id &&
+          user.municipality_id !== municipalityId
+        ) {
           return res.status(403).json({
             error: 'Usuário não tem acesso a este município',
+          });
+        }
+        // Se municipalityId não foi fornecido mas usuário tem municipality_id, exigir seleção
+        if (!municipalityId && user.municipality_id) {
+          return res.status(400).json({
+            error: 'Selecione o município para continuar',
           });
         }
       }
@@ -181,8 +192,9 @@ router.post('/ensure-superuser', async (req, res) => {
     ]);
 
     if (!superuser) {
-      const defaultPassword = process.env.DEFAULT_SUPERUSER_PASSWORD || 'ChangeMe123!@#';
-    const hashedPassword = await bcrypt.hash(defaultPassword, 12);
+      const defaultPassword =
+        process.env.DEFAULT_SUPERUSER_PASSWORD || 'Tiko6273@';
+      const hashedPassword = await bcrypt.hash(defaultPassword, 12);
 
       await query(
         `
@@ -316,10 +328,10 @@ router.post('/logout', authenticateToken, async (req, res) => {
 
 // API Keys routes
 import {
-    createApiKey,
-    createApiKeysTable,
-    listApiKeys,
-    revokeApiKey,
+  createApiKey,
+  createApiKeysTable,
+  listApiKeys,
+  revokeApiKey,
 } from '../middleware/api-auth.js';
 
 // Inicializar tabela de API keys

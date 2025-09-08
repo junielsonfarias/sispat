@@ -43,40 +43,48 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            // React e React DOM
+            // React e React DOM - chunk separado
             if (id.includes('react') || id.includes('react-dom')) {
               return 'vendor-react';
             }
-            // React Router
+            // React Router - chunk separado
             if (id.includes('react-router')) {
               return 'vendor-router';
             }
-            // Radix UI Components
+            // Radix UI Components - chunk separado
             if (id.includes('@radix-ui')) {
               return 'vendor-radix';
             }
-            // TanStack Query
+            // TanStack Query - chunk separado
             if (id.includes('@tanstack')) {
               return 'vendor-tanstack';
             }
-            // Charts (Recharts)
+            // Charts (Recharts) - chunk separado
             if (id.includes('recharts')) {
               return 'vendor-charts';
             }
-            // Form libraries
+            // Form libraries - chunk separado
             if (id.includes('react-hook-form') || id.includes('@hookform')) {
               return 'vendor-forms';
             }
-            // Date libraries
+            // Date libraries - chunk separado
             if (id.includes('date-fns') || id.includes('dayjs')) {
               return 'vendor-dates';
             }
-            // UI Libraries
+            // UI Libraries - chunk separado
             if (id.includes('lucide-react') || id.includes('clsx') || id.includes('class-variance-authority')) {
               return 'vendor-ui';
             }
-            // Resto das dependências
-            return 'vendor';
+            // Bibliotecas grandes separadas
+            if (id.includes('lodash') || id.includes('moment') || id.includes('axios')) {
+              return 'vendor-utils';
+            }
+            // Bibliotecas de validação
+            if (id.includes('zod') || id.includes('yup') || id.includes('joi')) {
+              return 'vendor-validation';
+            }
+            // Resto das dependências menores
+            return 'vendor-misc';
           }
           
           // Chunks para páginas grandes
@@ -101,7 +109,7 @@ export default defineConfig(({ mode }) => ({
       },
     },
     minify: mode === 'production' ? 'esbuild' : false,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
   },
   
   optimizeDeps: {

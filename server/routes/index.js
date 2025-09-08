@@ -157,13 +157,15 @@ function logRegisteredRoutes(app) {
  */
 export function intelligentCacheMiddleware(req, res, next) {
   // Adicionar cache inteligente ao request
-  import('../services/cache/intelligentCache.js').then(module => {
-    req.intelligentCache = module.default;
-    next();
-  }).catch(() => {
-    req.intelligentCache = null;
-    next();
-  });
+  import('../services/cache/intelligentCache.js')
+    .then(module => {
+      req.intelligentCache = module.default;
+      next();
+    })
+    .catch(() => {
+      req.intelligentCache = null;
+      next();
+    });
 }
 
 /**
@@ -171,13 +173,15 @@ export function intelligentCacheMiddleware(req, res, next) {
  */
 export function advancedSearchMiddleware(req, res, next) {
   // Adicionar busca avançada ao request
-  import('../services/search/advancedSearch.js').then(module => {
-    req.advancedSearch = module.default;
-    next();
-  }).catch(() => {
-    req.advancedSearch = null;
-    next();
-  });
+  import('../services/search/advancedSearch.js')
+    .then(module => {
+      req.advancedSearch = module.default;
+      next();
+    })
+    .catch(() => {
+      req.advancedSearch = null;
+      next();
+    });
 }
 
 /**
@@ -185,13 +189,15 @@ export function advancedSearchMiddleware(req, res, next) {
  */
 export function analyticsMiddleware(req, res, next) {
   // Adicionar analytics ao request
-  import('../services/analytics/advancedAnalytics.js').then(module => {
-    req.analytics = module.default;
-    next();
-  }).catch(() => {
-    req.analytics = null;
-    next();
-  });
+  import('../services/analytics/advancedAnalytics.js')
+    .then(module => {
+      req.analytics = module.default;
+      next();
+    })
+    .catch(() => {
+      req.analytics = null;
+      next();
+    });
 }
 
 /**
@@ -199,13 +205,15 @@ export function analyticsMiddleware(req, res, next) {
  */
 export function advancedReportsMiddleware(req, res, next) {
   // Adicionar relatórios avançados ao request
-  import('../services/reports/advancedReports.js').then(module => {
-    req.advancedReports = module.default;
-    next();
-  }).catch(() => {
-    req.advancedReports = null;
-    next();
-  });
+  import('../services/reports/advancedReports.js')
+    .then(module => {
+      req.advancedReports = module.default;
+      next();
+    })
+    .catch(() => {
+      req.advancedReports = null;
+      next();
+    });
 }
 
 // ============================================================================
@@ -394,7 +402,9 @@ router.get('/config', (req, res) => {
  */
 router.post('/test/cache', async (req, res) => {
   try {
-    const intelligentCacheModule = await import('../services/cache/intelligentCache.js');
+    const intelligentCacheModule = await import(
+      '../services/cache/intelligentCache.js'
+    );
     const intelligentCache = intelligentCacheModule.default;
 
     const testKey = 'test_key_' + Date.now();

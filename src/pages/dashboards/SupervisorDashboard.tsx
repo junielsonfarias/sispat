@@ -2,41 +2,41 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { usePatrimonio } from '@/contexts/PatrimonioContext';
 import { formatCurrency } from '@/lib/utils';
 import { Patrimonio } from '@/types';
 import { format, subMonths } from 'date-fns';
 import {
-    AlertTriangle,
-    Archive,
-    Building,
-    CheckCircle,
-    Clock,
-    DollarSign,
-    Wrench,
-    XCircle,
+  AlertTriangle,
+  Archive,
+  Building,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Wrench,
+  XCircle,
 } from 'lucide-react';
 import { useMemo } from 'react';
 import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    ComposedChart,
-    Legend,
-    Line,
-    Pie,
-    PieChart,
-    Tooltip,
-    XAxis,
-    YAxis,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Legend,
+  Line,
+  Pie,
+  PieChart,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 
 const alertsData = [
@@ -206,8 +206,18 @@ const SupervisorDashboard = () => {
         <div className='bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-6'>
           <div className='flex items-center gap-3'>
             <div className='p-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg shadow-md'>
-              <svg className='h-6 w-6 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' />
+              <svg
+                className='h-6 w-6 text-white'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                />
               </svg>
             </div>
             <div>
@@ -226,14 +236,14 @@ const SupervisorDashboard = () => {
           {statsCards.map((card, index) => {
             const colors = [
               'from-blue-50 to-blue-100 border-blue-200',
-              'from-green-50 to-green-100 border-green-200', 
+              'from-green-50 to-green-100 border-green-200',
               'from-orange-50 to-orange-100 border-orange-200',
               'from-purple-50 to-purple-100 border-purple-200',
               'from-pink-50 to-pink-100 border-pink-200',
-              'from-indigo-50 to-indigo-100 border-indigo-200'
+              'from-indigo-50 to-indigo-100 border-indigo-200',
             ];
             const colorClass = colors[index % colors.length];
-            
+
             return (
               <Card
                 key={card.title}

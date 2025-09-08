@@ -2,30 +2,30 @@ import { ImageUpload } from '@/components/bens/ImageUpload';
 import { Button } from '@/components/ui/button';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingButton } from '@/components/ui/loading';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useActivityLog } from '@/contexts/ActivityLogContext';
 // import { useComponentLoading } from '@/contexts/LoadingContext'
@@ -314,15 +314,27 @@ const BensCreate = () => {
         <div className='bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-6'>
           <div className='flex items-center gap-4'>
             <div className='w-12 h-12 bg-gradient-to-r from-green-600 to-green-700 rounded-lg flex items-center justify-center'>
-              <svg className='w-6 h-6 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 6v6m0 0v6m0-6h6m-6 0H6' />
+              <svg
+                className='w-6 h-6 text-white'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M12 6v6m0 0v6m0-6h6m-6 0H6'
+                />
               </svg>
             </div>
             <div>
               <h1 className='text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent'>
                 Cadastro de Bem
               </h1>
-              <p className='text-gray-600 mt-1'>Preencha as informações para cadastrar um novo patrimônio</p>
+              <p className='text-gray-600 mt-1'>
+                Preencha as informações para cadastrar um novo patrimônio
+              </p>
             </div>
           </div>
         </div>
@@ -331,12 +343,18 @@ const BensCreate = () => {
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
             <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
               <div className='bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-3 border-b border-gray-200'>
-                <h2 className='text-base font-semibold text-gray-800'>Identificação</h2>
-                <p className='text-sm text-gray-600'>Número único do patrimônio</p>
+                <h2 className='text-base font-semibold text-gray-800'>
+                  Identificação
+                </h2>
+                <p className='text-sm text-gray-600'>
+                  Número único do patrimônio
+                </p>
               </div>
               <div className='p-4'>
                 <FormItem>
-                  <FormLabel className='text-sm font-semibold text-gray-700'>Número de Patrimônio</FormLabel>
+                  <FormLabel className='text-sm font-semibold text-gray-700'>
+                    Número de Patrimônio
+                  </FormLabel>
                   <FormControl>
                     <Input
                       value={generatedNumber || 'Selecione um setor para gerar'}
@@ -345,7 +363,8 @@ const BensCreate = () => {
                     />
                   </FormControl>
                   <FormDescription className='text-xs text-gray-500 mt-2'>
-                    Este número é gerado automaticamente com base no setor selecionado.
+                    Este número é gerado automaticamente com base no setor
+                    selecionado.
                   </FormDescription>
                 </FormItem>
               </div>
@@ -354,15 +373,21 @@ const BensCreate = () => {
             <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
               <div className='bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-3 border-b border-gray-200'>
                 <h2 className='text-base font-semibold text-gray-800'>Mídia</h2>
-                <p className='text-xs text-gray-600'>Fotos e documentos do bem</p>
+                <p className='text-xs text-gray-600'>
+                  Fotos e documentos do bem
+                </p>
               </div>
               <div className='p-4 space-y-4'>
                 <div>
-                  <Label className='text-sm font-semibold text-gray-700'>Fotos do Bem</Label>
+                  <Label className='text-sm font-semibold text-gray-700'>
+                    Fotos do Bem
+                  </Label>
                   <ImageUpload name='fotos' control={form.control} />
                 </div>
                 <div>
-                  <Label className='text-sm font-semibold text-gray-700'>Documentos (Nota Fiscal, Garantia, etc.)</Label>
+                  <Label className='text-sm font-semibold text-gray-700'>
+                    Documentos (Nota Fiscal, Garantia, etc.)
+                  </Label>
                   <ImageUpload name='documentos' control={form.control} />
                 </div>
               </div>
@@ -370,299 +395,307 @@ const BensCreate = () => {
 
             <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
               <div className='bg-gradient-to-r from-green-50 to-green-100 px-4 py-3 border-b border-gray-200'>
-                <h2 className='text-base font-semibold text-gray-800'>Informações do Bem</h2>
-                <p className='text-sm text-gray-600'>Dados principais do patrimônio</p>
+                <h2 className='text-base font-semibold text-gray-800'>
+                  Informações do Bem
+                </h2>
+                <p className='text-sm text-gray-600'>
+                  Dados principais do patrimônio
+                </p>
               </div>
               <div className='p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-              <FormField
-                control={form.control}
-                name='descricao'
-                render={({ field }) => (
-                  <FormItem className='lg:col-span-3'>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder='Ex: Notebook Dell Vostro 15'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='tipo'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Ex: Eletrônico' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='marca'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Marca</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Ex: Dell' {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='modelo'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Modelo</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Ex: Vostro 15' {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='cor'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cor</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Ex: Preto' {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='numero_serie'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Número de Série</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Ex: SN123456' {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='data_aquisicao'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data de Aquisição</FormLabel>
-                    <FormControl>
-                      <Input type='date' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='valor_aquisicao'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor de Aquisição (R$)</FormLabel>
-                    <FormControl>
-                      <CurrencyInput
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='quantidade'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantidade</FormLabel>
-                    <FormControl>
-                      <Input type='number' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='numero_nota_fiscal'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nota Fiscal</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Ex: NF-001' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='forma_aquisicao'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Forma de Aquisição</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Ex: Compra Direta' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='setor_responsavel'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='flex items-center'>
-                      Setor Responsável
-                      {sectorTooltipContent && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className='h-4 w-4 ml-2 text-muted-foreground' />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{sectorTooltipContent}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </FormLabel>
-                    <FormControl>
-                      <SearchableSelect
-                        options={allowedSectors.map(s => ({
-                          value: s.label,
-                          label: s.label,
-                        }))}
-                        value={field.value}
-                        onChange={value => {
-                          field.onChange(value);
-                          form.setValue('local_objeto', '');
-                        }}
-                        placeholder='Selecione um setor'
-                        disabled={isSectorDisabled}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='local_objeto'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Local do Bem</FormLabel>
-                    <FormControl>
-                      <SearchableSelect
-                        options={locationOptions}
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder='Selecione um local'
-                        disabled={!selectedSectorName}
-                        emptyMessage='Nenhum local encontrado para este setor.'
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='situacao_bem'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Situação do Bem</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                <FormField
+                  control={form.control}
+                  name='descricao'
+                  render={({ field }) => (
+                    <FormItem className='lg:col-span-3'>
+                      <FormLabel>Descrição</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder='Selecione a situação' />
-                        </SelectTrigger>
+                        <Textarea
+                          placeholder='Ex: Notebook Dell Vostro 15'
+                          {...field}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value='OTIMO'>Ótimo</SelectItem>
-                        <SelectItem value='BOM'>Bom</SelectItem>
-                        <SelectItem value='REGULAR'>Regular</SelectItem>
-                        <SelectItem value='RUIM'>Ruim</SelectItem>
-                        <SelectItem value='PESSIMO'>Péssimo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='tipo'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo</FormLabel>
+                      <FormControl>
+                        <Input placeholder='Ex: Eletrônico' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='marca'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Marca</FormLabel>
+                      <FormControl>
+                        <Input placeholder='Ex: Dell' {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='modelo'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modelo</FormLabel>
+                      <FormControl>
+                        <Input placeholder='Ex: Vostro 15' {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='cor'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cor</FormLabel>
+                      <FormControl>
+                        <Input placeholder='Ex: Preto' {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='numero_serie'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Série</FormLabel>
+                      <FormControl>
+                        <Input placeholder='Ex: SN123456' {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='data_aquisicao'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Aquisição</FormLabel>
+                      <FormControl>
+                        <Input type='date' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='valor_aquisicao'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor de Aquisição (R$)</FormLabel>
+                      <FormControl>
+                        <CurrencyInput
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='quantidade'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantidade</FormLabel>
+                      <FormControl>
+                        <Input type='number' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='numero_nota_fiscal'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nota Fiscal</FormLabel>
+                      <FormControl>
+                        <Input placeholder='Ex: NF-001' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='forma_aquisicao'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Forma de Aquisição</FormLabel>
+                      <FormControl>
+                        <Input placeholder='Ex: Compra Direta' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='setor_responsavel'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='flex items-center'>
+                        Setor Responsável
+                        {sectorTooltipContent && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className='h-4 w-4 ml-2 text-muted-foreground' />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{sectorTooltipContent}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </FormLabel>
+                      <FormControl>
+                        <SearchableSelect
+                          options={allowedSectors.map(s => ({
+                            value: s.label,
+                            label: s.label,
+                          }))}
+                          value={field.value}
+                          onChange={value => {
+                            field.onChange(value);
+                            form.setValue('local_objeto', '');
+                          }}
+                          placeholder='Selecione um setor'
+                          disabled={isSectorDisabled}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='local_objeto'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Local do Bem</FormLabel>
+                      <FormControl>
+                        <SearchableSelect
+                          options={locationOptions}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder='Selecione um local'
+                          disabled={!selectedSectorName}
+                          emptyMessage='Nenhum local encontrado para este setor.'
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='situacao_bem'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Situação do Bem</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Selecione a situação' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value='OTIMO'>Ótimo</SelectItem>
+                          <SelectItem value='BOM'>Bom</SelectItem>
+                          <SelectItem value='REGULAR'>Regular</SelectItem>
+                          <SelectItem value='RUIM'>Ruim</SelectItem>
+                          <SelectItem value='PESSIMO'>Péssimo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
               <div className='bg-gradient-to-r from-orange-50 to-orange-100 px-4 py-3 border-b border-gray-200'>
-                <h2 className='text-base font-semibold text-gray-800'>Informações de Depreciação</h2>
-                <p className='text-sm text-gray-600'>Configurações de depreciação do bem</p>
+                <h2 className='text-base font-semibold text-gray-800'>
+                  Informações de Depreciação
+                </h2>
+                <p className='text-sm text-gray-600'>
+                  Configurações de depreciação do bem
+                </p>
               </div>
               <div className='p-4 grid gap-4 md:grid-cols-3'>
-              <FormField
-                control={form.control}
-                name='metodo_depreciacao'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Método de Depreciação</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value='Linear'>Linear</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='vida_util_anos'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vida Útil (anos)</FormLabel>
-                    <FormControl>
-                      <Input type='number' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='valor_residual'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor Residual (R$)</FormLabel>
-                    <FormControl>
-                      <CurrencyInput
-                        value={field.value}
+                <FormField
+                  control={form.control}
+                  name='metodo_depreciacao'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Método de Depreciação</FormLabel>
+                      <Select
                         onValueChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value='Linear'>Linear</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='vida_util_anos'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vida Útil (anos)</FormLabel>
+                      <FormControl>
+                        <Input type='number' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='valor_residual'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor Residual (R$)</FormLabel>
+                      <FormControl>
+                        <CurrencyInput
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 

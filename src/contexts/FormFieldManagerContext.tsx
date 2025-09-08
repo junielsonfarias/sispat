@@ -2,12 +2,12 @@ import { toast } from '@/hooks/use-toast';
 import { generateId } from '@/lib/utils';
 import { ActivityLogAction, FormFieldConfig } from '@/types';
 import {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
 import { useActivityLog } from './ActivityLogContext';
 import { useAuth } from './AuthContext';

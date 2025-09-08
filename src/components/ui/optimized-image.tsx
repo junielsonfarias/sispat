@@ -128,6 +128,6 @@ export const LabelImage: React.FC<OptimizedImageProps> = props => (
     {...props}
     size='label'
     aspectRatio='square'
-    className={cn('border-2 border-gray-300', props.className)}
+    className={cn(props.className)}
   />
 );

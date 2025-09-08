@@ -3,23 +3,23 @@ import { QuickActions } from '@/components/QuickActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useSearch } from '@/contexts/SearchContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
-    LayoutDashboard,
-    LogOut,
-    Menu,
-    Search,
-    Settings,
-    User as UserIcon,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Search,
+  Settings,
+  User as UserIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -112,13 +112,16 @@ export const Header = () => {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align='end' className='w-64 p-2 shadow-xl border-0 bg-white/95 backdrop-blur-md'>
+          <DropdownMenuContent
+            align='end'
+            className='w-64 p-2 shadow-xl border-0 bg-white/95 backdrop-blur-md'
+          >
             <DropdownMenuLabel className='px-3 py-2 text-base font-semibold text-gray-900'>
               {user?.name}
             </DropdownMenuLabel>
             <DropdownMenuSeparator className='bg-gray-200' />
-            <DropdownMenuItem 
-              onClick={() => navigate('/')} 
+            <DropdownMenuItem
+              onClick={() => navigate('/')}
               className='px-3 py-2.5 text-sm rounded-lg hover:bg-gray-50 transition-colors duration-200 cursor-pointer'
             >
               <LayoutDashboard className='mr-3 h-4 w-4 text-gray-600' />

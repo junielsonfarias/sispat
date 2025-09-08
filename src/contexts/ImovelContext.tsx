@@ -3,13 +3,13 @@ import { getSubSectorIds } from '@/lib/sector-utils';
 import { generateId } from '@/lib/utils';
 import { HistoricoEntry, Imovel } from '@/types';
 import {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react';
 import { useAuth } from './AuthContext';
 import { useSectors } from './SectorContext';

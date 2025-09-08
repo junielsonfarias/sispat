@@ -3,12 +3,12 @@ import { useInactivityTimeout } from '@/hooks/use-inactivity-timeout';
 import { api } from '@/services/api';
 import { User } from '@/types';
 import {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useActivityLog } from './ActivityLogContext';
@@ -333,5 +333,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-

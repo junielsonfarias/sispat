@@ -1,11 +1,11 @@
 import { ReportFilterDialog } from '@/components/ferramentas/ReportFilterDialog';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Dialog } from '@/components/ui/dialog';
 import { useReportTemplates } from '@/contexts/ReportTemplateContext';
@@ -52,7 +52,10 @@ const Relatorios = () => {
                 </p>
               </div>
             </div>
-            <Button asChild className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+            <Button
+              asChild
+              className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300'
+            >
               <Link to='/relatorios/templates'>
                 <Settings className='mr-2 h-4 w-4' /> Gerenciar Modelos
               </Link>
@@ -64,16 +67,19 @@ const Relatorios = () => {
           {templates.map((template, index) => {
             const colors = [
               'from-blue-50 to-blue-100 border-blue-200',
-              'from-green-50 to-green-100 border-green-200', 
+              'from-green-50 to-green-100 border-green-200',
               'from-orange-50 to-orange-100 border-orange-200',
               'from-purple-50 to-purple-100 border-purple-200',
               'from-pink-50 to-pink-100 border-pink-200',
-              'from-indigo-50 to-indigo-100 border-indigo-200'
+              'from-indigo-50 to-indigo-100 border-indigo-200',
             ];
             const colorClass = colors[index % colors.length];
-            
+
             return (
-              <Card key={template.id} className={`bg-gradient-to-br ${colorClass} border-2 hover:shadow-xl transition-all duration-300 hover:scale-105`}>
+              <Card
+                key={template.id}
+                className={`bg-gradient-to-br ${colorClass} border-2 hover:shadow-xl transition-all duration-300 hover:scale-105`}
+              >
                 <CardHeader className='pb-3'>
                   <div className='flex items-center gap-3'>
                     <div className='p-2 bg-white rounded-lg shadow-sm'>
@@ -100,7 +106,7 @@ const Relatorios = () => {
               </Card>
             );
           })}
-          
+
           {/* Card para criar novo modelo */}
           <Card className='border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 transition-all duration-300 hover:scale-105'>
             <CardHeader className='text-center pb-3'>
@@ -115,7 +121,11 @@ const Relatorios = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className='pt-0'>
-              <Button variant='outline' asChild className='w-full border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300'>
+              <Button
+                variant='outline'
+                asChild
+                className='w-full border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300'
+              >
                 <Link to='/relatorios/templates'>
                   <PlusCircle className='mr-2 h-4 w-4' />
                   Criar Modelo

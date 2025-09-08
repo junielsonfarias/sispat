@@ -32,7 +32,8 @@ export default {
   // Redis
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
-    password: process.env.REDIS_PASSWORD || 'CHANGE_ME_STRONG_REDIS_PASSWORD_2025',
+    password:
+      process.env.REDIS_PASSWORD || 'CHANGE_ME_STRONG_REDIS_PASSWORD_2025',
     retryDelayOnFailover: 100,
     maxRetriesPerRequest: 3,
   },

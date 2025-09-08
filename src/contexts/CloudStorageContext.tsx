@@ -1,11 +1,11 @@
 import { toast } from '@/hooks/use-toast';
 import {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
 
 interface CloudStorageSettings {

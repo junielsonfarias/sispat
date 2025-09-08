@@ -44,6 +44,13 @@ export function formatDate(
   return formatDateFns(new Date(date), formatStr, { locale: ptBR });
 }
 
+export function formatTime(
+  date: Date | string | number,
+  formatStr = 'HH:mm:ss'
+) {
+  return formatDateFns(new Date(date), formatStr, { locale: ptBR });
+}
+
 export function formatRelativeDate(date: Date | string | number) {
   return formatDistanceToNowStrict(new Date(date), {
     addSuffix: true,

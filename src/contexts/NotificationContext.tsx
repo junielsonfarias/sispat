@@ -2,13 +2,13 @@ import { useWebSocketNotifications } from '@/hooks/useWebSocketNotifications';
 import { generateId } from '@/lib/utils';
 import { Notification } from '@/types';
 import React, {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react';
 import { useAuth } from './AuthContext';
 
@@ -144,5 +144,3 @@ export const useNotifications = () => {
   }
   return context;
 };
-
-

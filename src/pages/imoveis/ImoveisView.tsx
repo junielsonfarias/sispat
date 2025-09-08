@@ -1,13 +1,5 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { PrintConfigDialog } from '@/components/PrintConfigDialog';
+import { ImovelPrintForm } from '@/components/imoveis/ImovelPrintForm';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,20 +11,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { formatDate, formatCurrency, getCloudImageUrl } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
-  Edit,
-  Printer,
-  Trash2,
-  Clock,
-  Image as ImageIcon,
-  ArrowLeft,
-  FileText,
-} from 'lucide-react';
-import { Imovel } from '@/types';
-import { useImovel } from '@/contexts/ImovelContext';
-import { useImovelField } from '@/contexts/ImovelFieldContext';
-import { toast } from '@/hooks/use-toast';
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Carousel,
   CarouselContent,
@@ -41,10 +27,23 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ImovelPrintForm } from '@/components/imoveis/ImovelPrintForm';
-import { PrintConfigDialog } from '@/components/PrintConfigDialog';
+import { useImovel } from '@/contexts/ImovelContext';
+import { useImovelField } from '@/contexts/ImovelFieldContext';
+import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Label } from '@/components/ui/label';
+import { formatCurrency, formatDate, getCloudImageUrl } from '@/lib/utils';
+import { Imovel } from '@/types';
+import {
+  ArrowLeft,
+  Clock,
+  Edit,
+  FileText,
+  Image as ImageIcon,
+  Printer,
+  Trash2,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 const DetailItem = ({
   label,
@@ -185,159 +184,165 @@ export default function ImoveisView() {
           )}
         </div>
       </div>
-      <div className='grid gap-6 lg:grid-cols-3'>
-        <div className='lg:col-span-2 space-y-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle>{imovel.denominacao}</CardTitle>
-              <CardDescription>
-                Nº de Patrimônio: {imovel.numero_patrimonio}
-              </CardDescription>
-              {lastModification && (
-                <div className='text-xs text-muted-foreground pt-2'>
-                  Última alteração por <strong>{lastModification.user}</strong>{' '}
-                  em{' '}
-                  {formatDate(
-                    new Date(lastModification.date),
-                    "dd/MM/yyyy 'às' HH:mm"
-                  )}
-                </div>
-              )}
-            </CardHeader>
-            <CardContent>
-              {imovel.fotos && imovel.fotos.length > 0 ? (
-                <Carousel className='w-full max-w-lg mx-auto mb-6'>
-                  <CarouselContent>
-                    {imovel.fotos.map((fotoId, index) => (
-                      <CarouselItem key={index}>
-                        <img
-                          src={getCloudImageUrl(fotoId)}
-                          alt={`${imovel.denominacao} - Foto ${index + 1}`}
-                          className='rounded-lg object-cover w-full aspect-video'
-                        />
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious />
-                  <CarouselNext />
-                </Carousel>
-              ) : (
-                <div className='w-full aspect-video flex items-center justify-center bg-muted rounded-lg mb-6'>
-                  <div className='text-center text-muted-foreground'>
-                    <ImageIcon className='mx-auto h-12 w-12' />
-                    <p>Nenhuma foto disponível</p>
+      <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1', display: 'flex', gap: '24px' }}>
+          <div style={{ flex: '1', minWidth: '600px' }} className='space-y-6'>
+            <Card>
+              <CardHeader>
+                <CardTitle>{imovel.denominacao}</CardTitle>
+                <CardDescription>
+                  Nº de Patrimônio: {imovel.numero_patrimonio}
+                </CardDescription>
+                {lastModification && (
+                  <div className='text-xs text-muted-foreground pt-2'>
+                    Última alteração por{' '}
+                    <strong>{lastModification.user}</strong> em{' '}
+                    {formatDate(
+                      new Date(lastModification.date),
+                      "dd/MM/yyyy 'às' HH:mm"
+                    )}
                   </div>
-                </div>
-              )}
-              <div className='grid md:grid-cols-2 gap-x-8 gap-y-4'>
-                <DetailItem label='Endereço' value={imovel.endereco} />
-                <DetailItem
-                  label='Data de Aquisição'
-                  value={formatDate(new Date(imovel.data_aquisicao))}
-                />
-                <DetailItem
-                  label='Valor de Aquisição'
-                  value={formatCurrency(imovel.valor_aquisicao)}
-                />
-                <DetailItem
-                  label='Área do Terreno (m²)'
-                  value={imovel.area_terreno}
-                />
-                <DetailItem
-                  label='Área Construída (m²)'
-                  value={imovel.area_construida}
-                />
-                <DetailItem label='Latitude' value={imovel.latitude || 'N/A'} />
-                <DetailItem
-                  label='Longitude'
-                  value={imovel.longitude || 'N/A'}
-                />
-                {customFieldConfigs
-                  .filter(f => f.isCustom)
-                  .map(field => (
-                    <DetailItem
-                      key={field.id}
-                      label={field.label}
-                      value={imovel.customFields?.[field.key] || 'N/A'}
-                    />
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <div className='space-y-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Movimentações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className='h-[300px]'>
-                <div className='relative pl-6 after:absolute after:inset-y-0 after:w-0.5 after:bg-border after:left-0'>
-                  {imovel.historico
-                    .sort(
-                      (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
-                    )
-                    .map((entry, index) => (
-                      <div key={index} className='relative mb-6 pl-8'>
-                        <div className='absolute -left-3 mt-1.5 h-6 w-6 rounded-full bg-primary flex items-center justify-center ring-8 ring-background'>
-                          <Clock className='h-3 w-3 text-primary-foreground' />
-                        </div>
-                        <time className='mb-1 text-xs font-normal text-muted-foreground'>
-                          {formatDate(
-                            new Date(entry.date),
-                            "dd/MM/yy 'às' HH:mm"
-                          )}
-                        </time>
-                        <h3 className='font-semibold'>
-                          {entry.action} por {entry.user}
-                        </h3>
-                        <p className='text-sm text-muted-foreground'>
-                          {entry.details}
-                        </p>
-                        {entry.origem && (
-                          <p className='text-xs text-muted-foreground'>
-                            <strong>Origem:</strong> {entry.origem}
-                          </p>
-                        )}
-                        {entry.destino && (
-                          <p className='text-xs text-muted-foreground'>
-                            <strong>Destino:</strong> {entry.destino}
-                          </p>
-                        )}
-                        {entry.documentosAnexos &&
-                          entry.documentosAnexos.length > 0 && (
-                            <div className='mt-2'>
-                              <p className='text-xs font-semibold'>
-                                Documentos:
-                              </p>
-                              <div className='flex gap-2 mt-1'>
-                                {entry.documentosAnexos.map((docId, i) => (
-                                  <Button
-                                    key={i}
-                                    size='sm'
-                                    variant='outline'
-                                    asChild
-                                  >
-                                    <a
-                                      href={getCloudImageUrl(docId)}
-                                      target='_blank'
-                                      rel='noopener noreferrer'
-                                    >
-                                      <FileText className='h-3 w-3 mr-1' /> Doc{' '}
-                                      {i + 1}
-                                    </a>
-                                  </Button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                      </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                {imovel.fotos && imovel.fotos.length > 0 ? (
+                  <Carousel className='w-full max-w-lg mx-auto mb-6'>
+                    <CarouselContent>
+                      {imovel.fotos.map((fotoId, index) => (
+                        <CarouselItem key={index}>
+                          <img
+                            src={getCloudImageUrl(fotoId)}
+                            alt={`${imovel.denominacao} - Foto ${index + 1}`}
+                            className='rounded-lg object-cover w-full aspect-video'
+                          />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
+                ) : (
+                  <div className='w-full aspect-video flex items-center justify-center bg-muted rounded-lg mb-6'>
+                    <div className='text-center text-muted-foreground'>
+                      <ImageIcon className='mx-auto h-12 w-12' />
+                      <p>Nenhuma foto disponível</p>
+                    </div>
+                  </div>
+                )}
+                <div className='grid md:grid-cols-2 gap-x-8 gap-y-4'>
+                  <DetailItem label='Endereço' value={imovel.endereco} />
+                  <DetailItem
+                    label='Data de Aquisição'
+                    value={formatDate(new Date(imovel.data_aquisicao))}
+                  />
+                  <DetailItem
+                    label='Valor de Aquisição'
+                    value={formatCurrency(imovel.valor_aquisicao)}
+                  />
+                  <DetailItem
+                    label='Área do Terreno (m²)'
+                    value={imovel.area_terreno}
+                  />
+                  <DetailItem
+                    label='Área Construída (m²)'
+                    value={imovel.area_construida}
+                  />
+                  <DetailItem
+                    label='Latitude'
+                    value={imovel.latitude || 'N/A'}
+                  />
+                  <DetailItem
+                    label='Longitude'
+                    value={imovel.longitude || 'N/A'}
+                  />
+                  {customFieldConfigs
+                    .filter(f => f.isCustom)
+                    .map(field => (
+                      <DetailItem
+                        key={field.id}
+                        label={field.label}
+                        value={imovel.customFields?.[field.key] || 'N/A'}
+                      />
                     ))}
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+          <div className='space-y-6'>
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Movimentações</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className='h-[300px]'>
+                  <div className='relative pl-6 after:absolute after:inset-y-0 after:w-0.5 after:bg-border after:left-0'>
+                    {imovel.historico
+                      .sort(
+                        (a, b) =>
+                          new Date(b.date).getTime() -
+                          new Date(a.date).getTime()
+                      )
+                      .map((entry, index) => (
+                        <div key={index} className='relative mb-6 pl-8'>
+                          <div className='absolute -left-3 mt-1.5 h-6 w-6 rounded-full bg-primary flex items-center justify-center ring-8 ring-background'>
+                            <Clock className='h-3 w-3 text-primary-foreground' />
+                          </div>
+                          <time className='mb-1 text-xs font-normal text-muted-foreground'>
+                            {formatDate(
+                              new Date(entry.date),
+                              "dd/MM/yy 'às' HH:mm"
+                            )}
+                          </time>
+                          <h3 className='font-semibold'>
+                            {entry.action} por {entry.user}
+                          </h3>
+                          <p className='text-sm text-muted-foreground'>
+                            {entry.details}
+                          </p>
+                          {entry.origem && (
+                            <p className='text-xs text-muted-foreground'>
+                              <strong>Origem:</strong> {entry.origem}
+                            </p>
+                          )}
+                          {entry.destino && (
+                            <p className='text-xs text-muted-foreground'>
+                              <strong>Destino:</strong> {entry.destino}
+                            </p>
+                          )}
+                          {entry.documentosAnexos &&
+                            entry.documentosAnexos.length > 0 && (
+                              <div className='mt-2'>
+                                <p className='text-xs font-semibold'>
+                                  Documentos:
+                                </p>
+                                <div className='flex gap-2 mt-1'>
+                                  {entry.documentosAnexos.map((docId, i) => (
+                                    <Button
+                                      key={i}
+                                      size='sm'
+                                      variant='outline'
+                                      asChild
+                                    >
+                                      <a
+                                        href={getCloudImageUrl(docId)}
+                                        target='_blank'
+                                        rel='noopener noreferrer'
+                                      >
+                                        <FileText className='h-3 w-3 mr-1' />{' '}
+                                        Doc {i + 1}
+                                      </a>
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                        </div>
+                      ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
       <div className='hidden'>

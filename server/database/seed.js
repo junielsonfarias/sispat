@@ -13,8 +13,9 @@ const seedDatabase = async () => {
     console.log('🌱 Iniciando seed do banco de dados...');
 
     // Hash password for superuser
-    const defaultPassword = process.env.DEFAULT_SUPERUSER_PASSWORD || 'ChangeMe123!@#';
-  const hashedPassword = await bcrypt.hash(defaultPassword, 12);
+    const defaultPassword =
+      process.env.DEFAULT_SUPERUSER_PASSWORD || 'ChangeMe123!@#';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 12);
 
     // Create superuser
     const superuserResult = await client.query(

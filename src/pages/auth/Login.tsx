@@ -2,31 +2,31 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-    SearchableSelect,
-    SearchableSelectOption,
+  SearchableSelect,
+  SearchableSelectOption,
 } from '@/components/ui/searchable-select';
 import { Toaster } from '@/components/ui/toaster';
 import {
-    CustomizationSettings,
-    useCustomization,
+  CustomizationSettings,
+  useCustomization,
 } from '@/contexts/CustomizationContext';
 import { useMunicipalities } from '@/contexts/MunicipalityContext';
 import { useVersion } from '@/contexts/VersionContext';
@@ -36,14 +36,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
-    AlertCircle,
-    CheckCircle,
-    Eye,
-    EyeOff,
-    History,
-    Loader2,
-    Lock,
-    Mail,
+  AlertCircle,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  History,
+  Loader2,
+  Lock,
+  Mail,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';

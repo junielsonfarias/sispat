@@ -1,3 +1,4 @@
+import { PrintHeader } from '@/components/PrintHeader';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,7 +8,6 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { PrintImage } from '@/components/ui/optimized-image';
 import {
   Select,
   SelectContent,
@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useGlobalLogo } from '@/contexts/GlobalLogoContext';
 import { useMunicipalities } from '@/contexts/MunicipalityContext';
 import { usePatrimonio } from '@/contexts/PatrimonioContext';
 import { useReportTemplates } from '@/contexts/ReportTemplateContext';
@@ -47,6 +48,7 @@ const ReportView = () => {
   const { patrimonios } = usePatrimonio();
   const { user } = useAuth();
   const { getMunicipalityById } = useMunicipalities();
+  const { getLogoForSystem } = useGlobalLogo();
   const [template, setTemplate] = useState<ReportTemplate | null | undefined>(
     undefined
   );
@@ -87,22 +89,8 @@ const ReportView = () => {
     switch (component.type) {
       case 'HEADER':
         return (
-          <div className='flex items-center justify-between mb-4' style={style}>
-            <div className='flex items-center gap-4'>
-              <PrintImage
-                src={municipality?.logoUrl}
-                alt='Logo'
-                className='h-16 w-auto'
-              />
-              <div>
-                <h1 className='text-2xl font-bold'>{municipality?.name}</h1>
-                <p>Relatório de Patrimônio</p>
-              </div>
-            </div>
-            <div className='text-right text-sm'>
-              <p>Data: {formatDate(new Date())}</p>
-              <p>Gerado em: {new Date().toLocaleTimeString()}</p>
-            </div>
+          <div style={style}>
+            <PrintHeader type='report' />
           </div>
         );
       case 'TABLE':
@@ -227,14 +215,14 @@ const ReportView = () => {
       </Card>
       <div
         className={cn(
-          'p-8 bg-muted flex justify-center overflow-auto',
+          'bg-muted flex justify-center overflow-auto print-no-scrollbar',
           `paper-${paperSize}`,
           orientation
         )}
       >
         <div
           ref={reportRef}
-          className='bg-white shadow-lg printable-area'
+          className='bg-white printable-area print-no-border'
           style={{ transform: `scale(${zoom})`, transformOrigin: 'top' }}
         >
           <div className='p-8 report-grid'>

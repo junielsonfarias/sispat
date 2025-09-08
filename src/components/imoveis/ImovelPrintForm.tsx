@@ -1,5 +1,7 @@
+import { PrintHeader } from '@/components/PrintHeader';
 import { PrintImage } from '@/components/ui/optimized-image';
 import { useCustomization } from '@/contexts/CustomizationContext';
+import { useGlobalLogo } from '@/contexts/GlobalLogoContext';
 import { useImovelField } from '@/contexts/ImovelFieldContext';
 import { useMunicipalities } from '@/contexts/MunicipalityContext';
 import { getImovelFields } from '@/lib/imovel-fields';
@@ -15,6 +17,7 @@ interface ImovelPrintFormProps {
 export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
   ({ imovel, fieldsToPrint }, ref) => {
     const { settings } = useCustomization();
+    const { getLogoForSystem } = useGlobalLogo();
     const { getMunicipalityById } = useMunicipalities();
     const { fields: customFieldConfigs } = useImovelField();
     const municipality = getMunicipalityById(imovel.municipalityId);
@@ -36,29 +39,43 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
       </div>
     );
 
+    const TwoColumnRow = ({
+      leftLabel,
+      leftValue,
+      rightLabel,
+      rightValue,
+    }: {
+      leftLabel: string;
+      leftValue: React.ReactNode;
+      rightLabel: string;
+      rightValue: React.ReactNode;
+    }) => (
+      <div className='grid grid-cols-2 gap-4 py-1 border-b'>
+        <div className='flex items-center gap-2'>
+          <dt className='font-semibold text-gray-600 min-w-fit'>
+            {leftLabel}:
+          </dt>
+          <dd className='text-gray-800'>{leftValue}</dd>
+        </div>
+        <div className='flex items-center gap-2'>
+          <dt className='font-semibold text-gray-600 min-w-fit'>
+            {rightLabel}:
+          </dt>
+          <dd className='text-gray-800'>{rightValue}</dd>
+        </div>
+      </div>
+    );
+
     return (
       <div ref={ref} className='p-4 bg-white text-black font-sans text-sm'>
-        <header className='flex items-center justify-between pb-4 border-b-2 border-black'>
-          <div className='flex items-center gap-4'>
-            <PrintImage
-              src={municipality?.logoUrl || settings.activeLogoUrl}
-              alt='Logo'
-              className='h-20 w-auto'
-            />
-            <div>
-              <h1 className='text-xl font-bold'>{municipality?.name}</h1>
-              <h2 className='text-lg'>Ficha de Cadastro de Imóvel</h2>
-            </div>
+        <PrintHeader type='form' className='pb-4 border-b-2 border-black' />
+
+        {/* Número do patrimônio */}
+        {shouldPrint('numero_patrimonio') && (
+          <div className='text-right mb-4'>
+            <p className='font-bold text-lg'>Nº: {imovel.numero_patrimonio}</p>
           </div>
-          <div className='text-right'>
-            {shouldPrint('numero_patrimonio') && (
-              <p className='font-bold text-lg'>
-                Nº: {imovel.numero_patrimonio}
-              </p>
-            )}
-            <p>Data: {formatDate(new Date())}</p>
-          </div>
-        </header>
+        )}
 
         <main className='mt-4'>
           <section>
@@ -80,30 +97,52 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
               INFORMAÇÕES DE AQUISIÇÃO E MEDIDAS
             </h3>
             <dl>
-              {shouldPrint('data_aquisicao') && (
-                <DetailRow
-                  label='Data de Aquisição'
-                  value={formatDate(new Date(imovel.data_aquisicao))}
-                />
-              )}
-              {shouldPrint('valor_aquisicao') && (
-                <DetailRow
-                  label='Valor de Aquisição'
-                  value={formatCurrency(imovel.valor_aquisicao)}
-                />
-              )}
-              {shouldPrint('area_terreno') && (
-                <DetailRow
-                  label='Área do Terreno (m²)'
-                  value={imovel.area_terreno.toLocaleString('pt-BR')}
-                />
-              )}
-              {shouldPrint('area_construida') && (
-                <DetailRow
-                  label='Área Construída (m²)'
-                  value={imovel.area_construida.toLocaleString('pt-BR')}
-                />
-              )}
+              {shouldPrint('data_aquisicao') &&
+                shouldPrint('valor_aquisicao') && (
+                  <TwoColumnRow
+                    leftLabel='Data de Aquisição'
+                    leftValue={formatDate(new Date(imovel.data_aquisicao))}
+                    rightLabel='Valor de Aquisição'
+                    rightValue={formatCurrency(imovel.valor_aquisicao)}
+                  />
+                )}
+              {shouldPrint('data_aquisicao') &&
+                !shouldPrint('valor_aquisicao') && (
+                  <DetailRow
+                    label='Data de Aquisição'
+                    value={formatDate(new Date(imovel.data_aquisicao))}
+                  />
+                )}
+              {!shouldPrint('data_aquisicao') &&
+                shouldPrint('valor_aquisicao') && (
+                  <DetailRow
+                    label='Valor de Aquisição'
+                    value={formatCurrency(imovel.valor_aquisicao)}
+                  />
+                )}
+              {shouldPrint('area_terreno') &&
+                shouldPrint('area_construida') && (
+                  <TwoColumnRow
+                    leftLabel='Área do Terreno (m²)'
+                    leftValue={imovel.area_terreno.toLocaleString('pt-BR')}
+                    rightLabel='Área Construída (m²)'
+                    rightValue={imovel.area_construida.toLocaleString('pt-BR')}
+                  />
+                )}
+              {shouldPrint('area_terreno') &&
+                !shouldPrint('area_construida') && (
+                  <DetailRow
+                    label='Área do Terreno (m²)'
+                    value={imovel.area_terreno.toLocaleString('pt-BR')}
+                  />
+                )}
+              {!shouldPrint('area_terreno') &&
+                shouldPrint('area_construida') && (
+                  <DetailRow
+                    label='Área Construída (m²)'
+                    value={imovel.area_construida.toLocaleString('pt-BR')}
+                  />
+                )}
             </dl>
           </section>
 

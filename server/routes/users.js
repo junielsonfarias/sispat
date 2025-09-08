@@ -45,6 +45,7 @@ router.get('/', usersCacheMiddleware, async (req, res) => {
         u.responsible_sectors as "responsibleSectors",
         u.failed_login_attempts as "failedLoginAttempts",
         u.lockout_until as "lockoutUntil",
+        u.is_active as "isActive",
         u.municipality_id as "municipalityId", u.created_at as "createdAt", u.updated_at as "updatedAt",
         m.name as municipality_name,
         COALESCE(
@@ -139,6 +140,7 @@ router.post('/', requireUserManagement, async (req, res) => {
       sector,
       responsibleSectors,
       municipalityId,
+      avatarUrl,
     } = req.body;
 
     // Validation
@@ -183,12 +185,12 @@ router.post('/', requireUserManagement, async (req, res) => {
       `
       INSERT INTO users (
         name, email, password, role, 
-        municipality_id
-      ) VALUES ($1, $2, $3, $4, $5)
+        municipality_id, avatar_url
+      ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, name, email, role, 
-                municipality_id, created_at, updated_at
+                municipality_id, avatar_url as "avatarUrl", created_at, updated_at
     `,
-      [name, email, hashedPassword, role, finalMunicipalityId]
+      [name, email, hashedPassword, role, finalMunicipalityId, avatarUrl]
     );
 
     const newUser = result.rows[0];
@@ -289,8 +291,16 @@ router.post('/', requireUserManagement, async (req, res) => {
 router.put('/:id', requireUserManagement, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, sector, responsibleSectors, municipalityId } =
-      req.body;
+    const {
+      name,
+      email,
+      role,
+      sector,
+      responsibleSectors,
+      municipalityId,
+      avatarUrl,
+      isActive,
+    } = req.body;
 
     // Check if user exists
     const existingUser = await getRow(
@@ -347,15 +357,19 @@ router.put('/:id', requireUserManagement, async (req, res) => {
         name = COALESCE($1, name),
         email = COALESCE($2, email),
         role = COALESCE($3, role),
-        municipality_id = $4,
+        municipality_id = COALESCE($4, municipality_id),
         sector = $5,
         responsible_sectors = $6,
+        avatar_url = COALESCE($7, avatar_url),
+        is_active = COALESCE($8, is_active),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $7
+      WHERE id = $9
       RETURNING id, name, email, role, 
                 municipality_id as "municipalityId", 
                 sector, 
                 responsible_sectors as "responsibleSectors",
+                avatar_url as "avatarUrl",
+                is_active as "isActive",
                 created_at as "createdAt", 
                 updated_at as "updatedAt"
     `,
@@ -366,6 +380,8 @@ router.put('/:id', requireUserManagement, async (req, res) => {
         finalMunicipalityId,
         sector,
         responsibleSectors || null,
+        avatarUrl,
+        isActive,
         id,
       ]
     );

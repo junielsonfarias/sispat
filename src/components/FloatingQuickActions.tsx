@@ -2,12 +2,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types';
 import {
-    Archive,
-    BarChart,
-    Download,
-    FileText,
-    Plus,
-    QrCode
+  Archive,
+  BarChart,
+  Download,
+  FileText,
+  Plus,
+  QrCode,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -27,7 +27,8 @@ const floatingActions: FloatingAction[] = [
     path: '/bens-cadastrados/novo',
     roles: ['superuser', 'supervisor', 'admin', 'usuario'],
     color: 'text-white',
-    bgColor: 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700',
+    bgColor:
+      'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700',
   },
   {
     label: 'Gerar Etiqueta',
@@ -35,7 +36,8 @@ const floatingActions: FloatingAction[] = [
     path: '/gerar-etiquetas',
     roles: ['superuser', 'supervisor', 'admin', 'usuario'],
     color: 'text-white',
-    bgColor: 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700',
+    bgColor:
+      'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700',
   },
   {
     label: 'Relatórios',
@@ -43,7 +45,8 @@ const floatingActions: FloatingAction[] = [
     path: '/relatorios',
     roles: ['superuser', 'supervisor', 'admin', 'usuario'],
     color: 'text-white',
-    bgColor: 'bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700',
+    bgColor:
+      'bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700',
   },
   {
     label: 'Exportar',
@@ -51,7 +54,8 @@ const floatingActions: FloatingAction[] = [
     path: '/exportacao',
     roles: ['superuser', 'supervisor', 'admin', 'usuario'],
     color: 'text-white',
-    bgColor: 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700',
+    bgColor:
+      'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700',
   },
   {
     label: 'Análise',
@@ -59,7 +63,8 @@ const floatingActions: FloatingAction[] = [
     path: '/analise/setor',
     roles: ['superuser', 'supervisor', 'admin'],
     color: 'text-white',
-    bgColor: 'bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700',
+    bgColor:
+      'bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700',
   },
   {
     label: 'Inventários',
@@ -67,7 +72,8 @@ const floatingActions: FloatingAction[] = [
     path: '/inventarios',
     roles: ['superuser', 'supervisor', 'admin', 'usuario'],
     color: 'text-white',
-    bgColor: 'bg-gradient-to-r from-gray-500 to-slate-600 hover:from-gray-600 hover:to-slate-700',
+    bgColor:
+      'bg-gradient-to-r from-gray-500 to-slate-600 hover:from-gray-600 hover:to-slate-700',
   },
 ];
 
@@ -76,16 +82,16 @@ interface FloatingQuickActionsProps {
   showLabels?: boolean;
 }
 
-export const FloatingQuickActions = ({ 
-  className = '', 
-  showLabels = false 
+export const FloatingQuickActions = ({
+  className = '',
+  showLabels = false,
 }: FloatingQuickActionsProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   // Filtrar ações baseadas no role do usuário
-  const availableActions = floatingActions.filter(action => 
-    user && action.roles.includes(user.role)
+  const availableActions = floatingActions.filter(
+    action => user && action.roles.includes(user.role)
   );
 
   const handleActionClick = (path: string) => {
@@ -98,7 +104,7 @@ export const FloatingQuickActions = ({
 
   return (
     <div className={`flex flex-wrap gap-2 ${className}`}>
-      {availableActions.map((action) => (
+      {availableActions.map(action => (
         <Button
           key={action.path}
           onClick={() => handleActionClick(action.path)}

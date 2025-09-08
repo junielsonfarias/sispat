@@ -265,5 +265,3 @@ export const usePatrimonio = () => {
   }
   return context;
 };
-
-

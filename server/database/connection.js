@@ -16,7 +16,10 @@ const dbConfig = {
   max: parseInt(process.env.DB_MAX_CONNECTIONS) || 20,
   idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
   connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 10000,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
 };
 
 // Create connection pool

@@ -1,9 +1,9 @@
 import React, {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useState,
 } from 'react';
 
 interface SearchContextType {
@@ -37,4 +37,3 @@ export const useSearch = () => {
   }
   return context;
 };
-

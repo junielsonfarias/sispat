@@ -208,7 +208,7 @@ router.get('/json', (req, res) => {
 // Rota para obter especificação YAML
 router.get('/yaml', (req, res) => {
   res.setHeader('Content-Type', 'text/yaml');
-  res.send(yaml.dump(specs));
+  res.send(require('js-yaml').dump(specs));
 });
 
 export default router;

@@ -67,7 +67,10 @@ function initializeApp() {
     );
 
   // Log de inicialização
-  logger.info('SISPAT - Sistema de Gestão Patrimonial inicializado com sucesso!', 'App');
+  logger.info(
+    'SISPAT - Sistema de Gestão Patrimonial inicializado com sucesso!',
+    'App'
+  );
   logger.debug('Versão', 'App', { version: APP_CONFIG.version });
   logger.debug('Ambiente', 'App', { mode: import.meta.env.MODE });
   logger.debug('API URL', 'App', { backendUrl: APP_CONFIG.backendUrl });

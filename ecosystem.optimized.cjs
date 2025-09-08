@@ -1,0 +1,30 @@
+module.exports = {
+  apps: [
+    {
+      name: 'sispat-backend',
+      script: 'server/index.js',
+      instances: 1,
+      exec_mode: 'fork',
+      max_memory_restart: '512M',
+      node_args: '--max-old-space-size=512',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3001,
+      },
+      log_file: './logs/combined.log',
+      out_file: './logs/out.log',
+      error_file: './logs/err.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+      autorestart: true,
+      watch: false,
+      ignore_watch: ['node_modules', 'logs', 'uploads', 'backups'],
+      source_map_support: false,
+      kill_timeout: 5000,
+      wait_ready: true,
+      listen_timeout: 10000,
+    },
+  ],
+};

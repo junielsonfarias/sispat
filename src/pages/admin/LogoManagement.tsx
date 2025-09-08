@@ -1,26 +1,28 @@
-import { useState, ChangeEvent, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  useCustomization,
   CustomizationSettings,
+  useCustomization,
 } from '@/contexts/CustomizationContext';
-import { useAuth } from '@/hooks/useAuth';
+import { useGlobalLogo } from '@/contexts/GlobalLogoContext';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { UploadCloud } from 'lucide-react';
+import { ChangeEvent, useEffect, useState } from 'react';
 
 const LogoManagement = () => {
   const { user } = useAuth();
   const { getSettingsForMunicipality, saveSettingsForMunicipality } =
     useCustomization();
+  const { setGlobalLogoUrl } = useGlobalLogo();
   const [settings, setSettings] = useState<CustomizationSettings>(
     getSettingsForMunicipality(user?.municipalityId || null)
   );
@@ -48,6 +50,10 @@ const LogoManagement = () => {
   const handleSave = () => {
     if (user?.municipalityId) {
       saveSettingsForMunicipality(user.municipalityId, settings);
+      // Sincronizar com GlobalLogoContext
+      if (settings.activeLogoUrl) {
+        setGlobalLogoUrl(settings.activeLogoUrl);
+      }
       toast({ description: 'Logos atualizados com sucesso.' });
     }
   };

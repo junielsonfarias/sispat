@@ -138,6 +138,9 @@ const SectorManagement = lazy(() => import('@/pages/admin/SectorManagement'));
 const SecuritySettings = lazy(() => import('@/pages/admin/SecuritySettings'));
 const BackupSettings = lazy(() => import('@/pages/admin/BackupSettings'));
 const Personalization = lazy(() => import('@/pages/admin/Personalization'));
+const HeaderCustomization = lazy(
+  () => import('@/pages/admin/HeaderCustomization')
+);
 const NumberingSettings = lazy(() => import('@/pages/admin/NumberingSettings'));
 const GlobalLogoSettings = lazy(
   () => import('@/pages/admin/GlobalLogoSettings')
@@ -659,6 +662,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
                       <Personalization />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path='/configuracoes/cabecalhos'
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+                      <HeaderCustomization />
                     </ProtectedRoute>
                   }
                 />

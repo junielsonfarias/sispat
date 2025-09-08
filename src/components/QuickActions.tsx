@@ -1,23 +1,23 @@
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types';
 import {
-    Archive,
-    BarChart,
-    Download,
-    FileText,
-    Plus,
-    QrCode,
-    Settings,
-    Zap,
+  Archive,
+  BarChart,
+  Download,
+  FileText,
+  Plus,
+  QrCode,
+  Settings,
+  Zap,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -86,8 +86,8 @@ export const QuickActions = () => {
   const navigate = useNavigate();
 
   // Filtrar ações baseadas no role do usuário
-  const availableActions = quickActions.filter(action => 
-    user && action.roles.includes(user.role)
+  const availableActions = quickActions.filter(
+    action => user && action.roles.includes(user.role)
   );
 
   const handleActionClick = (path: string) => {
@@ -111,8 +111,8 @@ export const QuickActions = () => {
           <span className='sr-only'>Ações Rápidas</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align='end' 
+      <DropdownMenuContent
+        align='end'
         className='w-72 p-2 shadow-xl border-0 bg-white/95 backdrop-blur-md'
       >
         <DropdownMenuLabel className='px-3 py-2 text-base font-semibold text-gray-900 flex items-center gap-2'>
@@ -120,7 +120,7 @@ export const QuickActions = () => {
           Ações Rápidas
         </DropdownMenuLabel>
         <DropdownMenuSeparator className='bg-gray-200' />
-        
+
         {availableActions.map((action, index) => (
           <DropdownMenuItem
             key={action.path}
@@ -133,7 +133,9 @@ export const QuickActions = () => {
               </div>
               <div className='flex-1'>
                 <div className='font-medium text-gray-900'>{action.label}</div>
-                <div className='text-xs text-gray-500'>{action.description}</div>
+                <div className='text-xs text-gray-500'>
+                  {action.description}
+                </div>
               </div>
             </div>
           </DropdownMenuItem>

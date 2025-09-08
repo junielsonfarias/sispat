@@ -1,11 +1,11 @@
 import { generateId } from '@/lib/utils';
 import React, {
-    ReactNode,
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
 
 export interface WidgetConfig {
@@ -159,5 +159,3 @@ export const useDashboard = () => {
   }
   return context;
 };
-
-

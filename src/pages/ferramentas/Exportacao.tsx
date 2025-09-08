@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,21 +17,21 @@ import { usePatrimonio } from '@/contexts/PatrimonioContext';
 import { useUserReportConfigs } from '@/contexts/UserReportConfigContext';
 import { toast } from '@/hooks/use-toast';
 import {
-    exportToCsv,
-    exportToPdf,
-    exportToXlsx,
-    getColumnsWithLabels,
+  exportToCsv,
+  exportToPdf,
+  exportToXlsx,
+  getColumnsWithLabels,
 } from '@/lib/export-utils';
 import { patrimonioFields } from '@/lib/report-utils';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-    Download,
-    FileDigit,
-    FileSpreadsheet,
-    FileText,
-    Loader2,
-    Save,
+  Download,
+  FileDigit,
+  FileSpreadsheet,
+  FileText,
+  Loader2,
+  Save,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -206,238 +206,296 @@ export default function Exportacao() {
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 items-start'>
-              <div className='lg:col-span-2 space-y-6'>
-                {/* Configurações Salvas - Card compacto */}
-                <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
-                  <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
-                    <h2 className='text-lg font-semibold text-gray-800'>Configurações Salvas</h2>
-                    <p className='text-sm text-gray-600'>Carregue uma configuração previamente salva</p>
+            <div
+              style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}
+            >
+              <div style={{ flex: '1', display: 'flex', gap: '24px' }}>
+                <div
+                  style={{ flex: '1', minWidth: '600px' }}
+                  className='space-y-6'
+                >
+                  {/* Configurações Salvas - Card compacto */}
+                  <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
+                    <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
+                      <h2 className='text-lg font-semibold text-gray-800'>
+                        Configurações Salvas
+                      </h2>
+                      <p className='text-sm text-gray-600'>
+                        Carregue uma configuração previamente salva
+                      </p>
+                    </div>
+                    <SearchableSelect
+                      options={configOptions}
+                      onChange={handleLoadConfig}
+                      placeholder='Carregar uma configuração salva...'
+                      isClearable
+                    />
                   </div>
-                  <SearchableSelect
-                    options={configOptions}
-                    onChange={handleLoadConfig}
-                    placeholder='Carregar uma configuração salva...'
-                    isClearable
-                  />
-                </div>
-                {/* Campos para Exportar - Card compacto */}
-                <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
-                  <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
-                    <h2 className='text-lg font-semibold text-gray-800'>Campos para Exportar</h2>
-                    <p className='text-sm text-gray-600'>Selecione os campos que deseja incluir na exportação</p>
+                  {/* Campos para Exportar - Card compacto */}
+                  <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
+                    <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
+                      <h2 className='text-lg font-semibold text-gray-800'>
+                        Campos para Exportar
+                      </h2>
+                      <p className='text-sm text-gray-600'>
+                        Selecione os campos que deseja incluir na exportação
+                      </p>
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name='fields'
+                      render={() => (
+                        <FormItem>
+                          <ScrollArea className='h-48 w-full rounded-lg border border-gray-200'>
+                            <div className='p-4 grid grid-cols-2 md:grid-cols-3 gap-3'>
+                              {patrimonioFields.map(item => (
+                                <FormField
+                                  key={item.id}
+                                  control={form.control}
+                                  name='fields'
+                                  render={({ field }) => (
+                                    <FormItem className='flex flex-row items-start space-x-2 space-y-0'>
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(
+                                            item.id
+                                          )}
+                                          onCheckedChange={checked => {
+                                            return checked
+                                              ? field.onChange([
+                                                  ...field.value,
+                                                  item.id,
+                                                ])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    value => value !== item.id
+                                                  )
+                                                );
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className='font-normal text-sm'>
+                                        {item.label}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )}
+                                />
+                              ))}
+                            </div>
+                          </ScrollArea>
+                          <FormMessage className='pt-2' />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <FormField
-                    control={form.control}
-                    name='fields'
-                    render={() => (
-                      <FormItem>
-                        <ScrollArea className='h-48 w-full rounded-lg border border-gray-200'>
-                          <div className='p-4 grid grid-cols-2 md:grid-cols-3 gap-3'>
-                            {patrimonioFields.map(item => (
-                              <FormField
-                                key={item.id}
-                                control={form.control}
-                                name='fields'
-                                render={({ field }) => (
-                                  <FormItem className='flex flex-row items-start space-x-2 space-y-0'>
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(item.id)}
-                                        onCheckedChange={checked => {
-                                          return checked
-                                            ? field.onChange([
-                                                ...field.value,
-                                                item.id,
-                                              ])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                  value => value !== item.id
-                                                )
-                                              );
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <FormLabel className='font-normal text-sm'>
-                                      {item.label}
-                                    </FormLabel>
-                                  </FormItem>
-                                )}
+                  {/* Filtros - Card compacto */}
+                  <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
+                    <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
+                      <h2 className='text-lg font-semibold text-gray-800'>
+                        Filtros de Data
+                      </h2>
+                      <p className='text-sm text-gray-600'>
+                        Filtre os patrimônios por período de aquisição
+                      </p>
+                    </div>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                      <FormField
+                        control={form.control}
+                        name='dateFrom'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className='text-sm font-medium text-gray-700'>
+                              Data de Aquisição (De)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type='date'
+                                {...field}
+                                className='rounded-lg border-gray-200'
                               />
-                            ))}
-                          </div>
-                        </ScrollArea>
-                        <FormMessage className='pt-2' />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                {/* Filtros - Card compacto */}
-                <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
-                  <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
-                    <h2 className='text-lg font-semibold text-gray-800'>Filtros de Data</h2>
-                    <p className='text-sm text-gray-600'>Filtre os patrimônios por período de aquisição</p>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name='dateTo'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className='text-sm font-medium text-gray-700'>
+                              Data de Aquisição (Até)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type='date'
+                                {...field}
+                                className='rounded-lg border-gray-200'
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
-                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                </div>
+                <div
+                  style={{ width: '400px', position: 'sticky', top: '96px' }}
+                  className='space-y-6'
+                >
+                  {/* Formato do Arquivo - Card compacto */}
+                  <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
+                    <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
+                      <h2 className='text-lg font-semibold text-gray-800'>
+                        Formato do Arquivo
+                      </h2>
+                      <p className='text-sm text-gray-600'>
+                        Escolha o formato de exportação
+                      </p>
+                    </div>
                     <FormField
                       control={form.control}
-                      name='dateFrom'
+                      name='format'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className='text-sm font-medium text-gray-700'>Data de Aquisição (De)</FormLabel>
                           <FormControl>
-                            <Input type='date' {...field} className='rounded-lg border-gray-200' />
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              className='grid grid-cols-1 gap-3'
+                            >
+                              <FormItem>
+                                <FormControl>
+                                  <RadioGroupItem
+                                    value='csv'
+                                    id='csv'
+                                    className='peer sr-only'
+                                  />
+                                </FormControl>
+                                <Label
+                                  htmlFor='csv'
+                                  className={cn(
+                                    'border border-gray-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors',
+                                    'peer-data-[state=checked]:border-green-500 peer-data-[state=checked]:bg-green-50 [&:has([data-state=checked])]:border-green-500 [&:has([data-state=checked])]:bg-green-50'
+                                  )}
+                                >
+                                  <FileText className='h-6 w-6 text-gray-600' />
+                                  <div>
+                                    <p className='font-semibold text-sm'>CSV</p>
+                                    <p className='text-xs text-gray-500'>
+                                      Arquivo de texto
+                                    </p>
+                                  </div>
+                                </Label>
+                              </FormItem>
+                              <FormItem>
+                                <FormControl>
+                                  <RadioGroupItem
+                                    value='xlsx'
+                                    id='xlsx'
+                                    className='peer sr-only'
+                                  />
+                                </FormControl>
+                                <Label
+                                  htmlFor='xlsx'
+                                  className={cn(
+                                    'border border-gray-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors',
+                                    'peer-data-[state=checked]:border-green-500 peer-data-[state=checked]:bg-green-50 [&:has([data-state=checked])]:border-green-500 [&:has([data-state=checked])]:bg-green-50'
+                                  )}
+                                >
+                                  <FileSpreadsheet className='h-6 w-6 text-gray-600' />
+                                  <div>
+                                    <p className='font-semibold text-sm'>
+                                      Excel (XLSX)
+                                    </p>
+                                    <p className='text-xs text-gray-500'>
+                                      Planilha Excel
+                                    </p>
+                                  </div>
+                                </Label>
+                              </FormItem>
+                              <FormItem>
+                                <FormControl>
+                                  <RadioGroupItem
+                                    value='pdf'
+                                    id='pdf'
+                                    className='peer sr-only'
+                                  />
+                                </FormControl>
+                                <Label
+                                  htmlFor='pdf'
+                                  className={cn(
+                                    'border border-gray-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors',
+                                    'peer-data-[state=checked]:border-green-500 peer-data-[state=checked]:bg-green-50 [&:has([data-state=checked])]:border-green-500 [&:has([data-state=checked])]:bg-green-50'
+                                  )}
+                                >
+                                  <FileDigit className='h-6 w-6 text-gray-600' />
+                                  <div>
+                                    <p className='font-semibold text-sm'>PDF</p>
+                                    <p className='text-xs text-gray-500'>
+                                      Documento PDF
+                                    </p>
+                                  </div>
+                                </Label>
+                              </FormItem>
+                            </RadioGroup>
                           </FormControl>
+                          <FormMessage className='pt-2' />
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name='dateTo'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className='text-sm font-medium text-gray-700'>Data de Aquisição (Até)</FormLabel>
-                          <FormControl>
-                            <Input type='date' {...field} className='rounded-lg border-gray-200' />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                    <div className='mt-6'>
+                      <Button
+                        type='submit'
+                        className='w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200'
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                        ) : (
+                          <Download className='mr-2 h-4 w-4' />
+                        )}
+                        {isLoading ? 'Exportando...' : 'Iniciar Exportação'}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-            </div>
-              <div className='lg:col-span-1 space-y-6 sticky top-24'>
-                {/* Formato do Arquivo - Card compacto */}
-                <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
-                  <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
-                    <h2 className='text-lg font-semibold text-gray-800'>Formato do Arquivo</h2>
-                    <p className='text-sm text-gray-600'>Escolha o formato de exportação</p>
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name='format'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className='grid grid-cols-1 gap-3'
-                          >
-                            <FormItem>
-                              <FormControl>
-                                <RadioGroupItem
-                                  value='csv'
-                                  id='csv'
-                                  className='peer sr-only'
-                                />
-                              </FormControl>
-                              <Label
-                                htmlFor='csv'
-                                className={cn(
-                                  'border border-gray-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors',
-                                  'peer-data-[state=checked]:border-green-500 peer-data-[state=checked]:bg-green-50 [&:has([data-state=checked])]:border-green-500 [&:has([data-state=checked])]:bg-green-50'
-                                )}
-                              >
-                                <FileText className='h-6 w-6 text-gray-600' />
-                                <div>
-                                  <p className='font-semibold text-sm'>CSV</p>
-                                  <p className='text-xs text-gray-500'>Arquivo de texto</p>
-                                </div>
-                              </Label>
-                            </FormItem>
-                            <FormItem>
-                              <FormControl>
-                                <RadioGroupItem
-                                  value='xlsx'
-                                  id='xlsx'
-                                  className='peer sr-only'
-                                />
-                              </FormControl>
-                              <Label
-                                htmlFor='xlsx'
-                                className={cn(
-                                  'border border-gray-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors',
-                                  'peer-data-[state=checked]:border-green-500 peer-data-[state=checked]:bg-green-50 [&:has([data-state=checked])]:border-green-500 [&:has([data-state=checked])]:bg-green-50'
-                                )}
-                              >
-                                <FileSpreadsheet className='h-6 w-6 text-gray-600' />
-                                <div>
-                                  <p className='font-semibold text-sm'>Excel (XLSX)</p>
-                                  <p className='text-xs text-gray-500'>Planilha Excel</p>
-                                </div>
-                              </Label>
-                            </FormItem>
-                            <FormItem>
-                              <FormControl>
-                                <RadioGroupItem
-                                  value='pdf'
-                                  id='pdf'
-                                  className='peer sr-only'
-                                />
-                              </FormControl>
-                              <Label
-                                htmlFor='pdf'
-                                className={cn(
-                                  'border border-gray-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors',
-                                  'peer-data-[state=checked]:border-green-500 peer-data-[state=checked]:bg-green-50 [&:has([data-state=checked])]:border-green-500 [&:has([data-state=checked])]:bg-green-50'
-                                )}
-                              >
-                                <FileDigit className='h-6 w-6 text-gray-600' />
-                                <div>
-                                  <p className='font-semibold text-sm'>PDF</p>
-                                  <p className='text-xs text-gray-500'>Documento PDF</p>
-                                </div>
-                              </Label>
-                            </FormItem>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage className='pt-2' />
-                      </FormItem>
-                    )}
-                  />
-                  <div className='mt-6'>
-                    <Button type='submit' className='w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200' disabled={isLoading}>
-                      {isLoading ? (
-                        <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                      ) : (
-                        <Download className='mr-2 h-4 w-4' />
-                      )}
-                      {isLoading ? 'Exportando...' : 'Iniciar Exportação'}
-                    </Button>
-                  </div>
-                </div>
-                {/* Salvar Configuração - Card compacto */}
-                <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
-                  <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
-                    <h2 className='text-lg font-semibold text-gray-800'>Salvar Configuração</h2>
-                    <p className='text-sm text-gray-600'>Salve esta configuração para uso futuro</p>
-                  </div>
-                  <div className='space-y-4'>
-                    <FormField
-                      control={form.control}
-                      name='configName'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className='text-sm font-medium text-gray-700'>Nome da Configuração</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder='Ex: Relatório Mensal'
-                              {...field}
-                              className='rounded-lg border-gray-200'
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type='button'
-                      variant='outline'
-                      className='w-full border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2 rounded-lg'
-                      onClick={handleSaveConfig}
-                    >
-                      <Save className='mr-2 h-4 w-4' /> Salvar Configuração
-                    </Button>
+                  {/* Salvar Configuração - Card compacto */}
+                  <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6'>
+                    <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg mb-4'>
+                      <h2 className='text-lg font-semibold text-gray-800'>
+                        Salvar Configuração
+                      </h2>
+                      <p className='text-sm text-gray-600'>
+                        Salve esta configuração para uso futuro
+                      </p>
+                    </div>
+                    <div className='space-y-4'>
+                      <FormField
+                        control={form.control}
+                        name='configName'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className='text-sm font-medium text-gray-700'>
+                              Nome da Configuração
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder='Ex: Relatório Mensal'
+                                {...field}
+                                className='rounded-lg border-gray-200'
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type='button'
+                        variant='outline'
+                        className='w-full border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2 rounded-lg'
+                        onClick={handleSaveConfig}
+                      >
+                        <Save className='mr-2 h-4 w-4' /> Salvar Configuração
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

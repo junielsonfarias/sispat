@@ -2,29 +2,29 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
 import {
-    AlertTriangle,
-    Building2,
-    CheckCircle,
-    Database,
-    Globe,
-    Info,
-    Loader2,
-    MapPin,
-    Package,
-    Settings,
-    Users,
-    XCircle,
-    Zap
+  AlertTriangle,
+  Building2,
+  CheckCircle,
+  Database,
+  Globe,
+  Info,
+  Loader2,
+  MapPin,
+  Package,
+  Settings,
+  Users,
+  XCircle,
+  Zap,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -294,11 +294,19 @@ export default function SystemAudit() {
               </div>
             </div>
             <div className='flex gap-3'>
-              <Button onClick={testConnection} variant='outline' className='border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300'>
+              <Button
+                onClick={testConnection}
+                variant='outline'
+                className='border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300'
+              >
                 <Globe className='mr-2 h-4 w-4' />
                 Testar Conexão
               </Button>
-              <Button onClick={runAudit} disabled={isLoading} className='bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+              <Button
+                onClick={runAudit}
+                disabled={isLoading}
+                className='bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300'
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className='mr-2 h-4 w-4 animate-spin' />
@@ -311,7 +319,12 @@ export default function SystemAudit() {
                   </>
                 )}
               </Button>
-              <Button onClick={runTests} disabled={isTesting} variant='outline' className='border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300'>
+              <Button
+                onClick={runTests}
+                disabled={isTesting}
+                variant='outline'
+                className='border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300'
+              >
                 {isTesting ? (
                   <>
                     <Loader2 className='mr-2 h-4 w-4 animate-spin' />
