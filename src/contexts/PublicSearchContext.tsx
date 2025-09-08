@@ -1,10 +1,10 @@
-import {
-  ReactNode,
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
+import React, {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
 } from 'react';
 
 interface PublicSearchSettings {
@@ -31,15 +31,10 @@ export const PublicSearchProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const stored = localStorage.getItem('sispat_public_search_settings');
-    console.log('🔍 PublicSearchProvider - Stored settings:', stored);
 
     if (stored) {
       try {
         const parsedSettings = JSON.parse(stored);
-        console.log(
-          '✅ PublicSearchProvider - Parsed settings:',
-          parsedSettings
-        );
         setSettings(parsedSettings);
       } catch (error) {
         console.error('❌ Erro ao parsear configurações públicas:', error);
@@ -49,10 +44,6 @@ export const PublicSearchProvider = ({ children }: { children: ReactNode }) => {
       // Tentar obter municípios do cache para incluir todos por padrão
       const cachedMunicipalities = localStorage.getItem(
         'sispat_municipalities'
-      );
-      console.log(
-        '🔍 PublicSearchProvider - Cached municipalities:',
-        cachedMunicipalities
       );
 
       if (cachedMunicipalities) {
@@ -201,3 +192,4 @@ export const usePublicSearch = () => {
   }
   return context;
 };
+

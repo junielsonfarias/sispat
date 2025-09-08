@@ -1,55 +1,55 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Eye,
-  EyeOff,
-  Loader2,
-  Mail,
-  Lock,
-  CheckCircle,
-  History,
-  AlertCircle,
-} from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  useCustomization,
-  CustomizationSettings,
-} from '@/contexts/CustomizationContext';
-import { useMunicipalities } from '@/contexts/MunicipalityContext';
-import {
-  SearchableSelect,
-  SearchableSelectOption,
+    SearchableSelect,
+    SearchableSelectOption,
 } from '@/components/ui/searchable-select';
 import { Toaster } from '@/components/ui/toaster';
-import { useToast } from '@/hooks/use-toast';
-import { useVersion } from '@/contexts/VersionContext';
-import { toast as sonnerToast } from 'sonner';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+    CustomizationSettings,
+    useCustomization,
+} from '@/contexts/CustomizationContext';
+import { useMunicipalities } from '@/contexts/MunicipalityContext';
+import { useVersion } from '@/contexts/VersionContext';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Badge } from '@/components/ui/badge';
+import {
+    AlertCircle,
+    CheckCircle,
+    Eye,
+    EyeOff,
+    History,
+    Loader2,
+    Lock,
+    Mail,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { toast as sonnerToast } from 'sonner';
+import * as z from 'zod';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
@@ -66,11 +66,7 @@ export default function Login() {
   const { municipalities, isLoading: isLoadingMunicipalities } =
     useMunicipalities();
 
-  console.log('Login component - municipalities:', municipalities);
-  console.log(
-    'Login component - isLoadingMunicipalities:',
-    isLoadingMunicipalities
-  );
+  // Debug logs removidos para melhor performance
   const { rollbackHistory, currentVersion } = useVersion();
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,20 +88,14 @@ export default function Login() {
   );
 
   const municipalityOptions: SearchableSelectOption[] = useMemo(() => {
-    console.log('Municipalities in login:', municipalities);
     if (!Array.isArray(municipalities)) {
-      console.log('Municipalities is not an array:', municipalities);
       return [];
     }
-    const options = municipalities.map(m => ({
+    return municipalities.map(m => ({
       value: m.id,
       label: m.name,
     }));
-    console.log('Municipality options:', options);
-    return options;
   }, [municipalities]);
-
-  console.log('Login component - municipalityOptions:', municipalityOptions);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),

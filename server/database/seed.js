@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { pool } from './connection.js';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import { pool } from './connection.js';
 
 dotenv.config();
 
@@ -13,7 +13,8 @@ const seedDatabase = async () => {
     console.log('🌱 Iniciando seed do banco de dados...');
 
     // Hash password for superuser
-    const hashedPassword = await bcrypt.hash('Tiko6273@', 12);
+    const defaultPassword = process.env.DEFAULT_SUPERUSER_PASSWORD || 'ChangeMe123!@#';
+  const hashedPassword = await bcrypt.hash(defaultPassword, 12);
 
     // Create superuser
     const superuserResult = await client.query(

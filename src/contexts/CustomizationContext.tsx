@@ -1,12 +1,12 @@
-import {
-  createContext,
-  useState,
-  ReactNode,
-  useContext,
-  useCallback,
-  useEffect,
-} from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from 'react';
 
 export interface CustomizationSettings {
   activeLogoUrl: string;

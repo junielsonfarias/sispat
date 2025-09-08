@@ -1,35 +1,32 @@
-import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
-  Loader2,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Info,
-  Database,
-  Globe,
-  Settings,
-  Users,
-  Building2,
-  MapPin,
-  Package,
-  Navigation,
-  Zap,
-} from 'lucide-react';
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
+import {
+    AlertTriangle,
+    Building2,
+    CheckCircle,
+    Database,
+    Globe,
+    Info,
+    Loader2,
+    MapPin,
+    Package,
+    Settings,
+    Users,
+    XCircle,
+    Zap
+} from 'lucide-react';
+import { useState } from 'react';
 
 interface AuditResult {
   timestamp: string;
@@ -278,97 +275,109 @@ export default function SystemAudit() {
   };
 
   return (
-    <div className='container mx-auto p-6 space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold'>Auditoria do Sistema</h1>
-          <p className='text-muted-foreground'>
-            Verificação completa de todas as funcionalidades e integridade dos
-            dados
-          </p>
-        </div>
-        <div className='flex gap-2'>
-          <Button onClick={testConnection} variant='outline'>
-            <Globe className='mr-2 h-4 w-4' />
-            Testar Conexão
-          </Button>
-          <Button onClick={runAudit} disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                Executando Auditoria...
-              </>
-            ) : (
-              <>
-                <Database className='mr-2 h-4 w-4' />
-                Executar Auditoria
-              </>
-            )}
-          </Button>
-          <Button onClick={runTests} disabled={isTesting} variant='outline'>
-            {isTesting ? (
-              <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                Executando Testes...
-              </>
-            ) : (
-              <>
-                <Settings className='mr-2 h-4 w-4' />
-                Testes de Criação
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={runCRUDTests}
-            disabled={isTesting}
-            variant='secondary'
-          >
-            {isTesting ? (
-              <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                Testando CRUD...
-              </>
-            ) : (
-              <>
-                <CheckCircle className='mr-2 h-4 w-4' />
-                Testes CRUD Completos
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={runNavigationTests}
-            disabled={isTesting}
-            variant='outline'
-          >
-            {isTesting ? (
-              <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                Testando Navegação...
-              </>
-            ) : (
-              <>
+    <div className='min-h-screen bg-gradient-to-br from-gray-50 to-gray-100'>
+      <div className='container mx-auto p-6'>
+        {/* Header compacto com gradiente */}
+        <div className='bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-6'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-3'>
+              <div className='p-2 bg-gradient-to-r from-red-500 to-orange-600 rounded-lg shadow-md'>
+                <Settings className='h-6 w-6 text-white' />
+              </div>
+              <div>
+                <h1 className='text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent'>
+                  Auditoria do Sistema
+                </h1>
+                <p className='text-sm text-gray-600'>
+                  Verificação completa de funcionalidades e integridade
+                </p>
+              </div>
+            </div>
+            <div className='flex gap-3'>
+              <Button onClick={testConnection} variant='outline' className='border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300'>
                 <Globe className='mr-2 h-4 w-4' />
-                Testes de Navegação
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={runCompleteSystemTest}
-            disabled={isTesting}
-            variant='secondary'
-          >
-            {isTesting ? (
-              <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                Testando Sistema Completo...
-              </>
-            ) : (
-              <>
-                <Zap className='mr-2 h-4 w-4' />
-                Teste Completo do Sistema
-              </>
-            )}
-          </Button>
+                Testar Conexão
+              </Button>
+              <Button onClick={runAudit} disabled={isLoading} className='bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+                {isLoading ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Executando Auditoria...
+                  </>
+                ) : (
+                  <>
+                    <Database className='mr-2 h-4 w-4' />
+                    Executar Auditoria
+                  </>
+                )}
+              </Button>
+              <Button onClick={runTests} disabled={isTesting} variant='outline' className='border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300'>
+                {isTesting ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Executando Testes...
+                  </>
+                ) : (
+                  <>
+                    <Settings className='mr-2 h-4 w-4' />
+                    Testes de Criação
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={runCRUDTests}
+                disabled={isTesting}
+                className='bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300'
+              >
+                {isTesting ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Testando CRUD...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className='mr-2 h-4 w-4' />
+                    Testes CRUD
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={runNavigationTests}
+                disabled={isTesting}
+                variant='outline'
+                className='border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300'
+              >
+                {isTesting ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Testando Navegação...
+                  </>
+                ) : (
+                  <>
+                    <Globe className='mr-2 h-4 w-4' />
+                    Testes de Navegação
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={runCompleteSystemTest}
+                disabled={isTesting}
+                className='bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300'
+              >
+                {isTesting ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Testando Sistema Completo...
+                  </>
+                ) : (
+                  <>
+                    <Zap className='mr-2 h-4 w-4' />
+                    Teste Completo
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 

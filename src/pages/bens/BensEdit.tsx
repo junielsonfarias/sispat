@@ -4,34 +4,34 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useActivityLog } from '@/contexts/ActivityLogContext';
 import { useLocals } from '@/contexts/LocalContext';
@@ -617,16 +617,16 @@ const BensEdit = () => {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
-              <CardTitle>Mídia e Documentos</CardTitle>
+            <CardHeader className='pb-3'>
+              <CardTitle className='text-base'>Mídia e Documentos</CardTitle>
             </CardHeader>
-            <CardContent className='grid gap-6 md:grid-cols-2'>
+            <CardContent className='grid gap-4 md:grid-cols-2'>
               <FormField
                 control={form.control}
                 name='fotos'
                 render={({ field }) => (
                   <div>
-                    <FormLabel>Fotos do Bem</FormLabel>
+                    <FormLabel className='text-sm'>Fotos do Bem</FormLabel>
                     <ImageUpload name='fotos' control={form.control} />
                   </div>
                 )}
@@ -636,7 +636,7 @@ const BensEdit = () => {
                 name='documentos'
                 render={({ field }) => (
                   <div>
-                    <FormLabel>
+                    <FormLabel className='text-sm'>
                       Documentos (Nota Fiscal, Garantia, etc.)
                     </FormLabel>
                     <ImageUpload name='documentos' control={form.control} />

@@ -1,5 +1,4 @@
 /* eslint-env node */
-/* global __dirname, process */
 const path = require('path');
 
 module.exports = {
@@ -7,7 +6,7 @@ module.exports = {
     {
       name: 'sispat-backend',
       script: 'server/index.js',
-      cwd: __dirname,
+      cwd: process.cwd(),
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -69,7 +68,7 @@ module.exports = {
     {
       name: 'sispat-frontend',
       script: 'start-frontend.js',
-      cwd: __dirname,
+      cwd: process.cwd(),
       instances: 1,
       exec_mode: 'fork',
       env: {

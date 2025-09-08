@@ -1,5 +1,5 @@
 // Configurações de Produção - SISPAT
-module.exports = {
+export default {
   // Servidor
   server: {
     port: process.env.PORT || 3001,
@@ -13,7 +13,7 @@ module.exports = {
     port: process.env.DB_PORT || 5432,
     name: process.env.DB_NAME || 'sispat_production',
     user: process.env.DB_USER || 'sispat_user',
-    password: process.env.DB_PASSWORD || 'your_secure_password_here',
+    password: process.env.DB_PASSWORD || 'CHANGE_ME_STRONG_DB_PASSWORD_2025',
     ssl: true,
     maxConnections: 100,
     idleTimeoutMillis: 30000,
@@ -24,7 +24,7 @@ module.exports = {
   jwt: {
     secret:
       process.env.JWT_SECRET ||
-      'your_super_secure_jwt_secret_here_min_32_chars',
+      'CHANGE_ME_STRONG_JWT_SECRET_2025_MIN_32_CHARS_LONG',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
     refreshExpiresIn: '7d',
   },
@@ -32,7 +32,7 @@ module.exports = {
   // Redis
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
-    password: process.env.REDIS_PASSWORD || 'your_redis_password_here',
+    password: process.env.REDIS_PASSWORD || 'CHANGE_ME_STRONG_REDIS_PASSWORD_2025',
     retryDelayOnFailover: 100,
     maxRetriesPerRequest: 3,
   },

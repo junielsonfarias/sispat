@@ -1,31 +1,21 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  ChartContainer,
-  ChartTooltipContent,
-  ChartTooltip,
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
 } from '@/components/ui/chart';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Legend,
-} from 'recharts';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { usePatrimonio } from '@/contexts/PatrimonioContext';
 import { useSectors } from '@/contexts/SectorContext';
-import { MultiSelect } from '@/components/ui/multi-select';
 import { formatCurrency } from '@/lib/utils';
+import { useMemo, useState } from 'react';
+import {
+    Legend,
+    PolarAngleAxis,
+    PolarGrid,
+    PolarRadiusAxis,
+    Radar,
+    RadarChart,
+} from 'recharts';
 
 const AnaliseSetor = () => {
   const { patrimonios } = usePatrimonio();
@@ -94,72 +84,106 @@ const AnaliseSetor = () => {
   }, [sectorStats, patrimonios]);
 
   return (
-    <div className='flex flex-col gap-6'>
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to='/'>Dashboard</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Análise por Setor</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-      <div className='flex items-center justify-between'>
-        <h1 className='text-2xl font-bold'>Análise por Setor</h1>
-        <div className='w-96'>
-          <MultiSelect
-            options={sectorOptions}
-            selected={selectedSectors}
-            onChange={setSelectedSectors}
-            placeholder='Selecione os setores para comparar'
-          />
+    <div className='min-h-screen bg-gradient-to-br from-gray-50 to-gray-100'>
+      <div className='container mx-auto p-6'>
+        {/* Header compacto com gradiente */}
+        <div className='bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-6'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-3'>
+              <div className='w-10 h-10 bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg flex items-center justify-center'>
+                <svg className='w-5 h-5 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' />
+                </svg>
+              </div>
+              <div>
+                <h1 className='text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent'>
+                  Análise por Setor
+                </h1>
+                <p className='text-sm text-gray-600'>Compare indicadores entre diferentes setores</p>
+              </div>
+            </div>
+            <div className='w-80'>
+              <MultiSelect
+                options={sectorOptions}
+                selected={selectedSectors}
+                onChange={setSelectedSectors}
+                placeholder='Selecione os setores para comparar'
+              />
+            </div>
+          </div>
+        </div>
+        {/* Cards de estatísticas compactos */}
+        <div className='grid grid-cols-4 gap-3 mb-4'>
+          {sectorStats.map((stat, index) => {
+            const colors = [
+              'from-blue-50 to-blue-100 border-blue-200',
+              'from-green-50 to-green-100 border-green-200', 
+              'from-orange-50 to-orange-100 border-orange-200',
+              'from-purple-50 to-purple-100 border-purple-200'
+            ];
+            const iconColors = [
+              'bg-blue-500',
+              'bg-green-500',
+              'bg-orange-500', 
+              'bg-purple-500'
+            ];
+            
+            return (
+              <div
+                key={stat.name}
+                className={`bg-gradient-to-br ${colors[index % 4]} rounded-lg shadow-sm border ${iconColors[index % 4].replace('bg-', 'border-')} p-4 hover:shadow-md transition-all duration-200`}
+              >
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <h3 className='text-xs font-medium text-gray-700 mb-1 truncate' title={stat.name}>
+                      {stat.name}
+                    </h3>
+                    <p className='text-2xl font-bold text-gray-800'>
+                      {stat.totalBens}
+                    </p>
+                    <p className='text-xs text-gray-600'>
+                      {formatCurrency(stat.totalValue)}
+                    </p>
+                  </div>
+                  <div className={`w-8 h-8 ${iconColors[index % 4]} rounded-md flex items-center justify-center`}>
+                    <svg className='w-4 h-4 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Gráfico de Comparativo - Card moderno */}
+        <div className='bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
+          <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200'>
+            <h2 className='text-lg font-semibold text-gray-800'>Comparativo de Indicadores</h2>
+            <p className='text-sm text-gray-600'>Análise comparativa entre setores selecionados</p>
+          </div>
+          <div className='p-6'>
+            <ChartContainer config={{}} className='h-[350px] w-full'>
+              <RadarChart cx='50%' cy='50%' outerRadius='80%' data={radarData}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey='subject' />
+                <PolarRadiusAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Legend />
+                {selectedSectors.map((sectorName, index) => (
+                  <Radar
+                    key={sectorName}
+                    name={sectorName}
+                    dataKey={sectorName}
+                    stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
+                    fill={`hsl(var(--chart-${(index % 5) + 1}))`}
+                    fillOpacity={0.6}
+                  />
+                ))}
+              </RadarChart>
+            </ChartContainer>
+          </div>
         </div>
       </div>
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        {sectorStats.map(stat => (
-          <Card key={stat.name}>
-            <CardHeader>
-              <CardTitle>{stat.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className='text-2xl font-bold'>{stat.totalBens} bens</p>
-              <p className='text-sm text-muted-foreground'>
-                {formatCurrency(stat.totalValue)}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Comparativo de Indicadores</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={{}} className='h-[400px] w-full'>
-            <RadarChart cx='50%' cy='50%' outerRadius='80%' data={radarData}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey='subject' />
-              <PolarRadiusAxis />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Legend />
-              {selectedSectors.map((sectorName, index) => (
-                <Radar
-                  key={sectorName}
-                  name={sectorName}
-                  dataKey={sectorName}
-                  stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
-                  fill={`hsl(var(--chart-${(index % 5) + 1}))`}
-                  fillOpacity={0.6}
-                />
-              ))}
-            </RadarChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
     </div>
   );
 };

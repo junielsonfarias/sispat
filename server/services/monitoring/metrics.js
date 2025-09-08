@@ -1,4 +1,4 @@
-const promClient = require('prom-client');
+import promClient from 'prom-client';
 
 // Configuração do Prometheus
 const register = new promClient.Registry();
@@ -207,4 +207,4 @@ const metrics = {
   },
 };
 
-module.exports = metrics;
+export default metrics;

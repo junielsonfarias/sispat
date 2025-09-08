@@ -45,66 +45,29 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchPatrimonios = useCallback(async () => {
     if (!user) {
-      console.log('❌ Usuário não autenticado, não buscando patrimônios');
       return;
     }
-    console.log(
-      '🔄 Buscando patrimônios para usuário:',
-      user.name,
-      'Role:',
-      user.role,
-      'Municipality:',
-      user.municipality_id
-    );
-
     // Verificar token antes da chamada
     const token =
       localStorage.getItem('sispat_auth_token') ||
       sessionStorage.getItem('sispat_auth_token');
-    console.log('🔑 Token antes da chamada:', token ? 'Presente' : 'Ausente');
 
     setIsLoading(true);
     setError(null);
     try {
-      console.log('📡 Fazendo chamada para API /patrimonios...');
       const response = await api.get<{
         success: boolean;
         data: Patrimonio[];
         meta: any;
       }>('/patrimonios');
-      console.log('📋 Resposta completa da API:', response);
 
       // Extrair os dados da resposta paginada
       const data = response.data || [];
-      console.log('✅ Patrimônios recebidos:', data.length, 'itens');
-      console.log(
-        '📋 Patrimônios:',
-        data.map(p => ({
-          id: p.id,
-          numero: p.numero_patrimonio,
-          descricao: p.descricao,
-          setor: p.setor_responsavel,
-          local: p.local_objeto,
-          situacao: p.situacao_bem,
-          status: p.status,
-          fotos: p.fotos ? `${p.fotos.length} fotos` : 'Nenhuma',
-        }))
-      );
+      // Log removido para melhor performance
       setPatrimonios(data);
     } catch (err) {
       console.error('❌ Erro ao buscar patrimônios:', err);
-      console.error('❌ Detalhes do erro:', {
-        message: err.message,
-        stack: err.stack,
-        user: user
-          ? {
-              id: user.id,
-              name: user.name,
-              role: user.role,
-              municipalityId: user.municipality_id,
-            }
-          : 'Não autenticado',
-      });
+      // Detalhes do erro removidos para melhor performance
       setError('Falha ao carregar patrimônios.');
     } finally {
       setIsLoading(false);
@@ -116,22 +79,9 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchPatrimonios]);
 
   useEffect(() => {
-    console.log(
-      '🔄 useEffect PatrimonioContext - user mudou:',
-      user
-        ? {
-            id: user.id,
-            name: user.name,
-            role: user.role,
-            municipalityId: user.municipality_id,
-          }
-        : 'Não autenticado'
-    );
     if (user) {
-      console.log('✅ Usuário autenticado, buscando patrimônios...');
       fetchPatrimonios();
     } else {
-      console.log('❌ Usuário não autenticado, limpando patrimônios');
       setPatrimonios([]);
     }
   }, [user?.id, fetchPatrimonios]);
@@ -315,3 +265,5 @@ export const usePatrimonio = () => {
   }
   return context;
 };
+
+

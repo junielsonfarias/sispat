@@ -157,9 +157,13 @@ function logRegisteredRoutes(app) {
  */
 export function intelligentCacheMiddleware(req, res, next) {
   // Adicionar cache inteligente ao request
-  req.intelligentCache =
-    require('../services/cache/intelligentCache.js').default;
-  next();
+  import('../services/cache/intelligentCache.js').then(module => {
+    req.intelligentCache = module.default;
+    next();
+  }).catch(() => {
+    req.intelligentCache = null;
+    next();
+  });
 }
 
 /**
@@ -167,8 +171,13 @@ export function intelligentCacheMiddleware(req, res, next) {
  */
 export function advancedSearchMiddleware(req, res, next) {
   // Adicionar busca avançada ao request
-  req.advancedSearch = require('../services/search/advancedSearch.js').default;
-  next();
+  import('../services/search/advancedSearch.js').then(module => {
+    req.advancedSearch = module.default;
+    next();
+  }).catch(() => {
+    req.advancedSearch = null;
+    next();
+  });
 }
 
 /**
@@ -176,8 +185,13 @@ export function advancedSearchMiddleware(req, res, next) {
  */
 export function analyticsMiddleware(req, res, next) {
   // Adicionar analytics ao request
-  req.analytics = require('../services/analytics/advancedAnalytics.js').default;
-  next();
+  import('../services/analytics/advancedAnalytics.js').then(module => {
+    req.analytics = module.default;
+    next();
+  }).catch(() => {
+    req.analytics = null;
+    next();
+  });
 }
 
 /**
@@ -185,9 +199,13 @@ export function analyticsMiddleware(req, res, next) {
  */
 export function advancedReportsMiddleware(req, res, next) {
   // Adicionar relatórios avançados ao request
-  req.advancedReports =
-    require('../services/reports/advancedReports.js').default;
-  next();
+  import('../services/reports/advancedReports.js').then(module => {
+    req.advancedReports = module.default;
+    next();
+  }).catch(() => {
+    req.advancedReports = null;
+    next();
+  });
 }
 
 // ============================================================================
@@ -376,8 +394,8 @@ router.get('/config', (req, res) => {
  */
 router.post('/test/cache', async (req, res) => {
   try {
-    const intelligentCache =
-      require('../services/cache/intelligentCache.js').default;
+    const intelligentCacheModule = await import('../services/cache/intelligentCache.js');
+    const intelligentCache = intelligentCacheModule.default;
 
     const testKey = 'test_key_' + Date.now();
     const testValue = {

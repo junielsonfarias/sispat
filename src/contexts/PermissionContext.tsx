@@ -1,11 +1,11 @@
+import { Permission, Role, UserRole } from '@/types';
 import {
-  createContext,
-  useState,
-  ReactNode,
-  useContext,
-  useEffect,
+    ReactNode,
+    createContext,
+    useContext,
+    useEffect,
+    useState,
 } from 'react';
-import { Role, Permission, UserRole } from '@/types';
 
 const defaultRoles: Role[] = [
   {

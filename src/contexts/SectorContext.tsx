@@ -2,11 +2,11 @@ import { toast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
 import { Sector } from '@/types';
 import {
-  ReactNode,
-  createContext,
-  useCallback,
-  useContext,
-  useState,
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useState,
 } from 'react';
 import { useAuth } from './AuthContext';
 

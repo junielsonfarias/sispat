@@ -1,15 +1,15 @@
-import {
-  createContext,
-  useState,
-  ReactNode,
-  useContext,
-  useCallback,
-  useEffect,
-  useMemo,
-} from 'react';
-import { GeneralDocument } from '@/types';
-import { generateId } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { generateId } from '@/lib/utils';
+import { GeneralDocument } from '@/types';
+import React, {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
 import { useAuth } from './AuthContext';
 import { useNotifications } from './NotificationContext';
 
@@ -118,3 +118,5 @@ export const useDocuments = () => {
   }
   return context;
 };
+
+

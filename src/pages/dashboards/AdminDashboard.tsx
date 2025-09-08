@@ -220,13 +220,13 @@ const AdminDashboard = () => {
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6'>
-      <div className='max-w-7xl mx-auto space-y-8'>
-        {/* Header do Dashboard */}
-        <div className='text-center mb-8'>
-          <h1 className='text-4xl font-bold text-gray-800 mb-2'>
+      <div className='max-w-7xl mx-auto space-y-6'>
+        {/* Header compacto do Dashboard */}
+        <div className='text-center mb-6'>
+          <h1 className='text-2xl font-bold text-gray-800 mb-1'>
             Dashboard Administrativo
           </h1>
-          <p className='text-lg text-gray-600'>
+          <p className='text-sm text-gray-600'>
             Visão geral do patrimônio municipal
           </p>
         </div>

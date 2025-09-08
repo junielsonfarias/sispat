@@ -2,12 +2,12 @@ import { generateId } from '@/lib/utils';
 import { api } from '@/services/api';
 import { ActivityLog, ActivityLogAction, User } from '@/types';
 import {
-  ReactNode,
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
 } from 'react';
 import { toast } from 'sonner';
 
@@ -120,3 +120,5 @@ export const useActivityLog = () => {
   }
   return context;
 };
+
+

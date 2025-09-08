@@ -1,32 +1,31 @@
 import { ImageUpload } from '@/components/bens/ImageUpload';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingButton } from '@/components/ui/loading';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useActivityLog } from '@/contexts/ActivityLogContext';
 // import { useComponentLoading } from '@/contexts/LoadingContext'
@@ -309,50 +308,72 @@ const BensCreate = () => {
   }, [isSectorDisabled, user]);
 
   return (
-    <div className='flex flex-col gap-6'>
-      <h1 className='text-2xl font-bold'>Cadastro de Bem</h1>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Identificação</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FormItem>
-                <FormLabel>Número de Patrimônio</FormLabel>
-                <FormControl>
-                  <Input
-                    value={generatedNumber || 'Selecione um setor para gerar'}
-                    readOnly
-                  />
-                </FormControl>
-                <FormDescription>
-                  Este número é gerado automaticamente com base no setor
-                  selecionado.
-                </FormDescription>
-              </FormItem>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Mídia</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-6'>
-              <div>
-                <Label>Fotos do Bem</Label>
-                <ImageUpload name='fotos' control={form.control} />
+    <div className='min-h-screen bg-gradient-to-br from-gray-50 to-gray-100'>
+      <div className='container mx-auto p-6'>
+        {/* Header moderno */}
+        <div className='bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-6'>
+          <div className='flex items-center gap-4'>
+            <div className='w-12 h-12 bg-gradient-to-r from-green-600 to-green-700 rounded-lg flex items-center justify-center'>
+              <svg className='w-6 h-6 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 6v6m0 0v6m0-6h6m-6 0H6' />
+              </svg>
+            </div>
+            <div>
+              <h1 className='text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent'>
+                Cadastro de Bem
+              </h1>
+              <p className='text-gray-600 mt-1'>Preencha as informações para cadastrar um novo patrimônio</p>
+            </div>
+          </div>
+        </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+            <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
+              <div className='bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-3 border-b border-gray-200'>
+                <h2 className='text-base font-semibold text-gray-800'>Identificação</h2>
+                <p className='text-sm text-gray-600'>Número único do patrimônio</p>
               </div>
-              <div>
-                <Label>Documentos (Nota Fiscal, Garantia, etc.)</Label>
-                <ImageUpload name='documentos' control={form.control} />
+              <div className='p-4'>
+                <FormItem>
+                  <FormLabel className='text-sm font-semibold text-gray-700'>Número de Patrimônio</FormLabel>
+                  <FormControl>
+                    <Input
+                      value={generatedNumber || 'Selecione um setor para gerar'}
+                      readOnly
+                      className='bg-gray-50 border-gray-200'
+                    />
+                  </FormControl>
+                  <FormDescription className='text-xs text-gray-500 mt-2'>
+                    Este número é gerado automaticamente com base no setor selecionado.
+                  </FormDescription>
+                </FormItem>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações do Bem</CardTitle>
-            </CardHeader>
-            <CardContent className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+            </div>
+
+            <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
+              <div className='bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-3 border-b border-gray-200'>
+                <h2 className='text-base font-semibold text-gray-800'>Mídia</h2>
+                <p className='text-xs text-gray-600'>Fotos e documentos do bem</p>
+              </div>
+              <div className='p-4 space-y-4'>
+                <div>
+                  <Label className='text-sm font-semibold text-gray-700'>Fotos do Bem</Label>
+                  <ImageUpload name='fotos' control={form.control} />
+                </div>
+                <div>
+                  <Label className='text-sm font-semibold text-gray-700'>Documentos (Nota Fiscal, Garantia, etc.)</Label>
+                  <ImageUpload name='documentos' control={form.control} />
+                </div>
+              </div>
+            </div>
+
+            <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
+              <div className='bg-gradient-to-r from-green-50 to-green-100 px-4 py-3 border-b border-gray-200'>
+                <h2 className='text-base font-semibold text-gray-800'>Informações do Bem</h2>
+                <p className='text-sm text-gray-600'>Dados principais do patrimônio</p>
+              </div>
+              <div className='p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
               <FormField
                 control={form.control}
                 name='descricao'
@@ -582,13 +603,15 @@ const BensCreate = () => {
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações de Depreciação</CardTitle>
-            </CardHeader>
-            <CardContent className='grid gap-6 md:grid-cols-3'>
+            </div>
+            </div>
+
+            <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
+              <div className='bg-gradient-to-r from-orange-50 to-orange-100 px-4 py-3 border-b border-gray-200'>
+                <h2 className='text-base font-semibold text-gray-800'>Informações de Depreciação</h2>
+                <p className='text-sm text-gray-600'>Configurações de depreciação do bem</p>
+              </div>
+              <div className='p-4 grid gap-4 md:grid-cols-3'>
               <FormField
                 control={form.control}
                 name='metodo_depreciacao'
@@ -640,27 +663,31 @@ const BensCreate = () => {
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
-          <div className='mt-6 flex justify-end gap-2'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => navigate('/bens-cadastrados')}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </Button>
-            <LoadingButton
-              type='submit'
-              loading={isSubmitting}
-              disabled={!generatedNumber}
-            >
-              Salvar
-            </LoadingButton>
-          </div>
-        </form>
-      </Form>
+              </div>
+            </div>
+
+            <div className='mt-8 flex justify-end gap-4'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => navigate('/bens-cadastrados')}
+                disabled={isSubmitting}
+                className='px-8 py-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-200 font-semibold'
+              >
+                Cancelar
+              </Button>
+              <LoadingButton
+                type='submit'
+                loading={isSubmitting}
+                disabled={!generatedNumber}
+                className='px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+              >
+                Salvar Bem
+              </LoadingButton>
+            </div>
+          </form>
+        </Form>
+      </div>
     </div>
   );
 };

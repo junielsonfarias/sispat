@@ -1,17 +1,9 @@
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { useDebounceValue } from '@/hooks/use-debounce';
 import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -140,43 +132,92 @@ const Documentation = () => {
   }, [debouncedSearchTerm]);
 
   return (
-    <div className='flex flex-col gap-6'>
-      <h1 className='text-2xl font-bold'>Documentação do Sistema</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Bem-vindo à documentação do SISPAT</CardTitle>
-          <CardDescription>
-            Aqui você encontrará informações detalhadas sobre as
-            funcionalidades, manuais e guias.
-          </CardDescription>
-          <div className='relative pt-4'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
-            <Input
+    <div className='min-h-screen bg-gradient-to-br from-gray-50 to-gray-100'>
+      <div className='container mx-auto p-6'>
+        {/* Header moderno com gradiente */}
+        <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8'>
+          <div className='flex items-center gap-4'>
+            <div className='w-12 h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg flex items-center justify-center'>
+              <svg className='w-6 h-6 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' />
+              </svg>
+            </div>
+            <div>
+              <h1 className='text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent'>
+                Documentação do Sistema
+              </h1>
+              <p className='text-gray-600 mt-1'>Manuais, guias e informações detalhadas sobre o SISPAT</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Barra de busca moderna */}
+        <div className='bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8'>
+          <div className='relative'>
+            <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
+              <Search className='h-5 w-5 text-gray-400' />
+            </div>
+            <input
+              type='text'
               placeholder='Pesquisar na documentação...'
-              className='pl-10'
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              className='w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 placeholder-gray-500 bg-gray-50 focus:bg-white transition-all duration-200 text-lg'
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className='absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600'
+              >
+                <svg className='h-5 w-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+                </svg>
+              </button>
+            )}
           </div>
-        </CardHeader>
-        <CardContent>
-          <Accordion type='single' collapsible className='w-full'>
-            {filteredContent.map(item => (
-              <AccordionItem value={item.id} key={item.id}>
-                <AccordionTrigger>{item.title}</AccordionTrigger>
-                <AccordionContent>
-                  <div dangerouslySetInnerHTML={{ __html: item.content }} />
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-          {filteredContent.length === 0 && (
-            <p className='text-center text-muted-foreground py-8'>
-              Nenhum resultado encontrado para "{debouncedSearchTerm}".
-            </p>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Conteúdo da documentação */}
+        <div className='bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
+          <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200'>
+            <h2 className='text-lg font-semibold text-gray-800'>Bem-vindo à documentação do SISPAT</h2>
+            <p className='text-sm text-gray-600'>Aqui você encontrará informações detalhadas sobre as funcionalidades, manuais e guias</p>
+          </div>
+          <div className='p-6'>
+            <Accordion type='single' collapsible className='w-full'>
+              {filteredContent.map(item => (
+                <AccordionItem value={item.id} key={item.id} className='border border-gray-200 rounded-lg mb-4'>
+                  <AccordionTrigger className='px-6 py-4 hover:bg-gray-50 rounded-lg font-semibold text-gray-800'>
+                    {item.title}
+                  </AccordionTrigger>
+                  <AccordionContent className='px-6 pb-4'>
+                    <div className='prose prose-sm max-w-none' dangerouslySetInnerHTML={{ __html: item.content }} />
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+            {filteredContent.length === 0 && (
+              <div className='text-center py-12'>
+                <div className='w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6'>
+                  <Search className='w-12 h-12 text-gray-400' />
+                </div>
+                <h3 className='text-xl font-semibold text-gray-900 mb-2'>
+                  Nenhum resultado encontrado
+                </h3>
+                <p className='text-gray-600 mb-6'>
+                  Não encontramos resultados para "{debouncedSearchTerm}". Tente ajustar os termos da sua busca.
+                </p>
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className='px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium'
+                >
+                  Limpar busca
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

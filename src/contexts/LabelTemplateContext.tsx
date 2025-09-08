@@ -1,14 +1,13 @@
-import {
-  createContext,
-  useState,
-  ReactNode,
-  useEffect,
-  useCallback,
-  useContext,
-  useMemo,
-} from 'react';
 import { LabelTemplate } from '@/types';
-import { generateId } from '@/lib/utils';
+import {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
 import { useAuth } from './AuthContext';
 
 interface LabelTemplateContextType {

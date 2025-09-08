@@ -1,6 +1,6 @@
-const express = require('express');
-const swaggerJsdoc = require('swagger-jsdoc');
-const swaggerUi = require('swagger-ui-express');
+import express from 'express';
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
 
 const router = express.Router();
 
@@ -207,9 +207,8 @@ router.get('/json', (req, res) => {
 
 // Rota para obter especificação YAML
 router.get('/yaml', (req, res) => {
-  const yaml = require('js-yaml');
   res.setHeader('Content-Type', 'text/yaml');
   res.send(yaml.dump(specs));
 });
 
-module.exports = router;
+export default router;

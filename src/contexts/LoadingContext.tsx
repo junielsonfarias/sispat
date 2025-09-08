@@ -2,6 +2,7 @@
  * Contexto Global de Loading States
  */
 
+import React from 'react';
 import { LoadingOverlay } from '@/components/ui/loading';
 import {
   ReactNode,

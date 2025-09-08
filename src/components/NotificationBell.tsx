@@ -1,12 +1,10 @@
-import { useState } from 'react';
-import { Bell, Check, X, Wifi, WifiOff } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useNotifications } from '@/contexts/NotificationContext';
@@ -14,6 +12,8 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Bell, Check, Wifi, WifiOff, X } from 'lucide-react';
+import { useState } from 'react';
 
 export const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -67,14 +67,14 @@ export const NotificationBell = () => {
         <Button
           variant='ghost'
           size='icon'
-          className='relative'
+          className='relative h-10 w-10 rounded-xl hover:bg-gray-100 transition-all duration-200'
           aria-label='Notificações'
         >
           <Bell className='h-5 w-5' />
           {unreadCount > 0 && (
             <Badge
               variant='destructive'
-              className='absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs'
+              className='absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs font-semibold'
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
@@ -91,10 +91,10 @@ export const NotificationBell = () => {
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-80 p-0' align='end'>
-        <div className='flex items-center justify-between p-4 border-b'>
+      <PopoverContent className='w-80 p-0 shadow-xl border-0 bg-white/95 backdrop-blur-md' align='end'>
+        <div className='flex items-center justify-between p-4 border-b border-gray-200'>
           <div className='flex items-center gap-2'>
-            <h4 className='font-semibold'>Notificações</h4>
+            <h4 className='font-semibold text-gray-900'>Notificações</h4>
             {!isConnected && (
               <WifiOff className='h-4 w-4 text-red-500' title='Desconectado' />
             )}
@@ -113,7 +113,7 @@ export const NotificationBell = () => {
               variant='ghost'
               size='sm'
               onClick={handleMarkAllAsRead}
-              className='text-xs'
+              className='text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg'
             >
               Marcar todas como lidas
             </Button>
@@ -122,10 +122,12 @@ export const NotificationBell = () => {
 
         <ScrollArea className='h-80'>
           {notifications.length === 0 ? (
-            <div className='flex flex-col items-center justify-center h-40 text-center p-4'>
-              <Bell className='h-8 w-8 text-gray-400 mb-2' />
-              <p className='text-sm text-gray-500'>Nenhuma notificação</p>
-              <p className='text-xs text-gray-400 mt-1'>
+            <div className='flex flex-col items-center justify-center h-40 text-center p-6'>
+              <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4'>
+                <Bell className='h-8 w-8 text-gray-400' />
+              </div>
+              <p className='text-sm font-medium text-gray-900 mb-1'>Nenhuma notificação</p>
+              <p className='text-xs text-gray-500'>
                 {!isConnected
                   ? 'Conecte-se para receber notificações em tempo real'
                   : 'Novas notificações aparecerão aqui'}
@@ -137,22 +139,24 @@ export const NotificationBell = () => {
                 <div key={notification.id}>
                   <div
                     className={cn(
-                      'flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-gray-50',
+                      'flex items-start gap-3 p-3 rounded-xl transition-all duration-200 hover:bg-gray-50 cursor-pointer',
                       !notification.isRead &&
-                        'bg-blue-50 border-l-4 border-l-blue-500'
+                        'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-l-blue-500 shadow-sm'
                     )}
                   >
                     <div className='flex-shrink-0 mt-1'>
-                      <span className='text-lg'>
-                        {getNotificationIcon(notification.type)}
-                      </span>
+                      <div className='w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center'>
+                        <span className='text-sm'>
+                          {getNotificationIcon(notification.type)}
+                        </span>
+                      </div>
                     </div>
 
                     <div className='flex-1 min-w-0'>
                       <div className='flex items-start justify-between gap-2'>
                         <h5
                           className={cn(
-                            'text-sm font-medium truncate',
+                            'text-sm font-semibold truncate',
                             getNotificationColor(notification.type)
                           )}
                         >
@@ -163,19 +167,19 @@ export const NotificationBell = () => {
                             variant='ghost'
                             size='sm'
                             onClick={() => handleMarkAsRead(notification.id)}
-                            className='h-6 w-6 p-0'
+                            className='h-6 w-6 p-0 hover:bg-blue-100 rounded-full'
                           >
-                            <Check className='h-3 w-3' />
+                            <Check className='h-3 w-3 text-blue-600' />
                           </Button>
                         )}
                       </div>
 
-                      <p className='text-sm text-gray-600 mt-1 line-clamp-2'>
+                      <p className='text-sm text-gray-600 mt-1 line-clamp-2 leading-relaxed'>
                         {notification.message}
                       </p>
 
-                      <div className='flex items-center justify-between mt-2'>
-                        <span className='text-xs text-gray-400'>
+                      <div className='flex items-center justify-between mt-3'>
+                        <span className='text-xs text-gray-500 font-medium'>
                           {formatDistanceToNow(notification.timestamp, {
                             addSuffix: true,
                             locale: ptBR,
@@ -183,7 +187,7 @@ export const NotificationBell = () => {
                         </span>
 
                         {!notification.isRead && (
-                          <Badge variant='secondary' className='text-xs'>
+                          <Badge variant='secondary' className='text-xs bg-blue-100 text-blue-700 border-0'>
                             Nova
                           </Badge>
                         )}
@@ -192,7 +196,7 @@ export const NotificationBell = () => {
                   </div>
 
                   {index < notifications.length - 1 && (
-                    <Separator className='my-2' />
+                    <Separator className='my-2 bg-gray-200' />
                   )}
                 </div>
               ))}
@@ -201,9 +205,9 @@ export const NotificationBell = () => {
         </ScrollArea>
 
         {notifications.length > 0 && (
-          <div className='p-3 border-t bg-gray-50'>
-            <div className='flex items-center justify-between text-xs text-gray-500'>
-              <span>
+          <div className='p-3 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100'>
+            <div className='flex items-center justify-between text-xs text-gray-600'>
+              <span className='font-medium'>
                 {unreadCount} não lida{unreadCount !== 1 ? 's' : ''} de{' '}
                 {notifications.length}
               </span>
@@ -211,7 +215,7 @@ export const NotificationBell = () => {
                 variant='ghost'
                 size='sm'
                 onClick={() => setIsOpen(false)}
-                className='h-6 px-2'
+                className='h-6 w-6 p-0 hover:bg-gray-200 rounded-full'
               >
                 <X className='h-3 w-3' />
               </Button>

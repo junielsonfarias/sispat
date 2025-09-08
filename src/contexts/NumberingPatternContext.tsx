@@ -1,15 +1,15 @@
-import {
-  createContext,
-  useState,
-  ReactNode,
-  useContext,
-  useCallback,
-  useEffect,
-  useMemo,
-} from 'react';
-import { NumberingPattern } from '@/types';
-import { useAuth } from './AuthContext';
 import { generateId } from '@/lib/utils';
+import { NumberingPattern } from '@/types';
+import {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
+import { useAuth } from './AuthContext';
 
 interface NumberingPatternContextType {
   pattern: NumberingPattern | null;

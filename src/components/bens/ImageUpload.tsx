@@ -92,12 +92,12 @@ export const ImageUpload = ({
   };
 
   return (
-    <div className='space-y-4'>
-      <div className='flex flex-col sm:flex-row gap-4'>
+    <div className='space-y-3'>
+      <div className='grid grid-cols-2 gap-3'>
         <Button
           type='button'
           variant='outline'
-          className='w-full'
+          className='h-10 text-sm'
           onClick={() => fileInputRef.current?.click()}
         >
           <UploadCloud className='mr-2 h-4 w-4' />
@@ -106,7 +106,7 @@ export const ImageUpload = ({
         <Button
           type='button'
           variant='outline'
-          className='w-full'
+          className='h-10 text-sm'
           onClick={() => setCameraOpen(true)}
         >
           <Camera className='mr-2 h-4 w-4' />
@@ -127,7 +127,7 @@ export const ImageUpload = ({
       </div>
 
       {(fileIds?.length > 0 || uploadingFiles.length > 0) && (
-        <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'>
+        <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3'>
           {fileIds?.map((id: string) => {
             const isImage =
               id.startsWith('data:image/') || id.includes('image');

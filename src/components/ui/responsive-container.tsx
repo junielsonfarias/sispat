@@ -20,16 +20,16 @@ const maxWidthClasses = {
 
 const paddingClasses = {
   none: '',
-  sm: 'px-4 py-2 sm:px-6 sm:py-3',
-  md: 'px-4 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-6',
-  lg: 'px-6 py-4 sm:px-8 sm:py-6 lg:px-12 lg:py-8',
+  sm: 'px-3 py-1.5 sm:px-4 sm:py-2',
+  md: 'px-3 py-2 sm:px-4 sm:py-3 lg:px-6 lg:py-4',
+  lg: 'px-4 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-6',
 };
 
 const spacingClasses = {
   none: '',
-  sm: 'space-y-2 sm:space-y-3',
-  md: 'space-y-3 sm:space-y-4 lg:space-y-6',
-  lg: 'space-y-4 sm:space-y-6 lg:space-y-8',
+  sm: 'space-y-1.5 sm:space-y-2',
+  md: 'space-y-2 sm:space-y-3 lg:space-y-4',
+  lg: 'space-y-3 sm:space-y-4 lg:space-y-6',
 };
 
 export function ResponsiveContainer({
@@ -98,9 +98,9 @@ interface ResponsiveGridProps {
 }
 
 const gapClasses = {
-  sm: 'gap-2 sm:gap-3',
-  md: 'gap-3 sm:gap-4 lg:gap-6',
-  lg: 'gap-4 sm:gap-6 lg:gap-8',
+  sm: 'gap-1.5 sm:gap-2',
+  md: 'gap-2 sm:gap-3 lg:gap-4',
+  lg: 'gap-3 sm:gap-4 lg:gap-6',
 };
 
 export function ResponsiveGrid({

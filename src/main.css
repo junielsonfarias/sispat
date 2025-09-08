@@ -68,6 +68,9 @@
       'rlig' 1,
       'calt' 1;
     font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
 }
 
@@ -130,6 +133,157 @@
     background-size: cover;
     background-position: center;
     font-family: var(--login-font-family);
+  }
+
+  /* Layout fixes - Fixed Sidebar Approach */
+  .layout-container {
+    display: block;
+    min-height: 100vh;
+    width: 100%;
+    position: relative;
+  }
+
+  .sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    height: 100vh;
+    width: 288px;
+    overflow-y: auto;
+    /* Barra de rolagem personalizada */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  }
+
+  .sidebar-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-container::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.3);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+  }
+
+  .sidebar-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.5);
+  }
+
+  /* Barra de rolagem para SuperuserLayout */
+  .superuser-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  }
+
+  .superuser-sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .superuser-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .superuser-sidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.3);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+  }
+
+  .superuser-sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.5);
+  }
+
+  .main-content {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    margin-left: 288px;
+  }
+
+  /* Header no topo */
+  .main-content > header {
+    grid-row: 1;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: hsl(var(--background));
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  /* Main content no meio */
+  .main-content > main {
+    grid-row: 2;
+    overflow-y: auto;
+    position: relative;
+    padding: 1rem;
+  }
+
+  /* Footer no final */
+  .main-content > footer {
+    grid-row: 3;
+    margin-top: auto;
+  }
+
+  /* Responsividade para mobile */
+  @media (max-width: 768px) {
+    .sidebar-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 50;
+      width: 100%;
+      height: 100%;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .sidebar-container.open {
+      transform: translateX(0);
+    }
+
+    .main-content {
+      margin-left: 0;
+      width: 100%;
+    }
+  }
+
+  /* Garantir que o conteúdo não seja empurrado */
+  .main-content > main > div {
+    width: 100%;
+    max-width: none;
+  }
+
+  /* Melhorar o espaçamento */
+  .main-content > main {
+    padding: 1rem;
+  }
+
+  /* Ajustes para telas menores */
+  @media (max-width: 1024px) {
+    .sidebar-container {
+      width: 256px;
+    }
+
+    .main-content {
+      margin-left: 256px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar-container {
+      width: 100%;
+    }
+
+    .main-content {
+      margin-left: 0;
+    }
   }
 
   @media print {

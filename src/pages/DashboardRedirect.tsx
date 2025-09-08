@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { RouteFallback } from '@/components/RouteFallback';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types';
-import { RouteFallback } from '@/components/RouteFallback';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardRedirect = () => {
   const { user } = useAuth();

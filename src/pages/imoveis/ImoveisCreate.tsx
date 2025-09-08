@@ -145,15 +145,15 @@ export default function ImoveisCreate() {
   };
 
   return (
-    <div className='flex flex-col gap-6'>
-      <h1 className='text-2xl font-bold'>Cadastrar Novo Imóvel</h1>
+    <div className='flex flex-col gap-4'>
+      <h1 className='text-xl font-bold'>Cadastrar Novo Imóvel</h1>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+        <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
           <Card>
             <CardHeader>
               <CardTitle>Informações Principais</CardTitle>
             </CardHeader>
-            <CardContent className='grid gap-6 md:grid-cols-2'>
+            <CardContent className='grid gap-4 md:grid-cols-2'>
               <FormField
                 control={form.control}
                 name='numero_patrimonio'
@@ -224,7 +224,7 @@ export default function ImoveisCreate() {
             <CardHeader>
               <CardTitle>Detalhes da Aquisição e Medidas</CardTitle>
             </CardHeader>
-            <CardContent className='grid gap-6 md:grid-cols-2'>
+            <CardContent className='grid gap-4 md:grid-cols-2'>
               <FormField
                 control={form.control}
                 name='data_aquisicao'
@@ -288,7 +288,7 @@ export default function ImoveisCreate() {
               <CardHeader>
                 <CardTitle>Campos Personalizados</CardTitle>
               </CardHeader>
-              <CardContent className='grid gap-6 md:grid-cols-2'>
+              <CardContent className='grid gap-4 md:grid-cols-2'>
                 {customFields
                   .filter(f => f.isCustom)
                   .map(field => renderCustomField(field, form.control))}

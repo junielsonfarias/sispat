@@ -1,12 +1,12 @@
 import { api } from '@/services/api';
 import { Municipality, User } from '@/types';
-import {
-  ReactNode,
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
+import React, {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
 } from 'react';
 
 interface MunicipalityContextType {
@@ -32,24 +32,16 @@ export const MunicipalityProvider = ({ children }: { children: ReactNode }) => {
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log('MunicipalityProvider - Initial state:', {
-    municipalities,
-    isLoading,
-  });
+  // Debug log removido para melhor performance
 
   const fetchMunicipalities = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('Fetching municipalities...');
-
       // Check if user is authenticated
       const token =
         localStorage.getItem('sispat_auth_token') ||
         sessionStorage.getItem('sispat_auth_token');
       if (!token) {
-        console.log(
-          'No auth token found, trying to fetch municipalities without auth...'
-        );
         // Try to fetch without auth for login page
         try {
           const response = await fetch('/api/municipalities/public');
@@ -57,7 +49,6 @@ export const MunicipalityProvider = ({ children }: { children: ReactNode }) => {
             const data = await response.json();
             if (Array.isArray(data)) {
               setMunicipalities(data);
-              console.log('Municipalities fetched without auth:', data);
               localStorage.setItem(
                 'sispat_municipalities',
                 JSON.stringify(data)
@@ -65,7 +56,7 @@ export const MunicipalityProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         } catch (error) {
-          console.log('Failed to fetch municipalities without auth:', error);
+          // Silently handle error for better performance
         }
         setIsLoading(false);
         return;
@@ -99,7 +90,6 @@ export const MunicipalityProvider = ({ children }: { children: ReactNode }) => {
       try {
         const parsed = JSON.parse(cachedMunicipalities);
         if (Array.isArray(parsed)) {
-          console.log('Loading municipalities from cache:', parsed);
           setMunicipalities(parsed);
           setIsLoading(false);
         }
@@ -114,7 +104,6 @@ export const MunicipalityProvider = ({ children }: { children: ReactNode }) => {
 
     // Set up auto-refresh every 5 minutes (more reasonable)
     const interval = setInterval(() => {
-      console.log('Auto-refreshing municipalities...');
       fetchMunicipalities();
     }, 300000); // 5 minutes
 
@@ -242,3 +231,5 @@ export const useMunicipalities = () => {
   }
   return context;
 };
+
+

@@ -6,18 +6,21 @@ dotenv.config({ path: '.env' });
 
 const { Pool } = pg;
 
-// Create connection pool
-export const pool = new Pool({
+// Configuração do banco de dados
+const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 5432,
   database: process.env.DB_NAME || 'sispat_db',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
-  max: 20, // maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // how long a client is allowed to remain idle before being closed
-  connectionTimeoutMillis: 10000, // increased timeout for testing
-  ssl: false, // disable SSL for local development
-});
+  max: parseInt(process.env.DB_MAX_CONNECTIONS) || 20,
+  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 10000,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+};
+
+// Create connection pool
+export const pool = new Pool(dbConfig);
 
 // Test database connection
 pool.on('connect', () => {

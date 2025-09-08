@@ -1,16 +1,16 @@
-import {
-  createContext,
-  useState,
-  ReactNode,
-  useContext,
-  useCallback,
-  useEffect,
-  useMemo,
-} from 'react';
-import { ExcelCsvTemplate } from '@/types';
-import { generateId } from '@/lib/utils';
-import { useAuth } from './AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { generateId } from '@/lib/utils';
+import { ExcelCsvTemplate } from '@/types';
+import {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
+import { useAuth } from './AuthContext';
 
 interface ExcelCsvTemplateContextType {
   templates: ExcelCsvTemplate[];

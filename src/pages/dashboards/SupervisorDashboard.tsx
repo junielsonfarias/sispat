@@ -1,43 +1,43 @@
-import { useMemo } from 'react';
-import {
-  Archive,
-  DollarSign,
-  CheckCircle,
-  Wrench,
-  XCircle,
-  Building,
-  AlertTriangle,
-  Clock,
-} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Bar,
-  BarChart,
-  Line,
-  Pie,
-  PieChart,
-  ComposedChart,
-  Cell,
-  CartesianGrid,
-  Legend,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { usePatrimonio } from '@/contexts/PatrimonioContext';
-import { Patrimonio } from '@/types';
 import { formatCurrency } from '@/lib/utils';
-import { subMonths, format } from 'date-fns';
+import { Patrimonio } from '@/types';
+import { format, subMonths } from 'date-fns';
+import {
+    AlertTriangle,
+    Archive,
+    Building,
+    CheckCircle,
+    Clock,
+    DollarSign,
+    Wrench,
+    XCircle,
+} from 'lucide-react';
+import { useMemo } from 'react';
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    ComposedChart,
+    Legend,
+    Line,
+    Pie,
+    PieChart,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
 
 const alertsData = [
   {
@@ -200,27 +200,64 @@ const SupervisorDashboard = () => {
   ];
 
   return (
-    <div className='flex flex-col gap-6'>
-      <h1 className='text-2xl font-bold'>Dashboard do Supervisor</h1>
-      <div className='grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'>
-        {statsCards.map(card => (
-          <Card
-            key={card.title}
-            className='hover:shadow-elevation transition-shadow duration-300'
-          >
-            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium'>
-                {card.title}
-              </CardTitle>
-              <card.icon className={`h-4 w-4 ${card.color}`} />
-            </CardHeader>
-            <CardContent className='text-center'>
-              <div className='text-lg sm:text-xl lg:text-2xl font-bold'>
-                {card.value}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+    <div className='min-h-screen bg-gradient-to-br from-gray-50 to-gray-100'>
+      <div className='container mx-auto p-6'>
+        {/* Header compacto com gradiente */}
+        <div className='bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-6'>
+          <div className='flex items-center gap-3'>
+            <div className='p-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg shadow-md'>
+              <svg className='h-6 w-6 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' />
+              </svg>
+            </div>
+            <div>
+              <h1 className='text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent'>
+                Dashboard do Supervisor
+              </h1>
+              <p className='text-sm text-gray-600'>
+                Visão geral e controle dos setores supervisionados
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Cards de estatísticas compactos */}
+        <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6'>
+          {statsCards.map((card, index) => {
+            const colors = [
+              'from-blue-50 to-blue-100 border-blue-200',
+              'from-green-50 to-green-100 border-green-200', 
+              'from-orange-50 to-orange-100 border-orange-200',
+              'from-purple-50 to-purple-100 border-purple-200',
+              'from-pink-50 to-pink-100 border-pink-200',
+              'from-indigo-50 to-indigo-100 border-indigo-200'
+            ];
+            const colorClass = colors[index % colors.length];
+            
+            return (
+              <Card
+                key={card.title}
+                className={`bg-gradient-to-br ${colorClass} border-2 hover:shadow-xl transition-all duration-300 hover:scale-105`}
+              >
+                <CardHeader className='pb-3'>
+                  <div className='flex items-center justify-between'>
+                    <CardTitle className='text-xs font-semibold text-gray-800'>
+                      {card.title}
+                    </CardTitle>
+                    <div className='p-1.5 bg-white rounded-lg shadow-sm'>
+                      <card.icon className={`h-3 w-3 ${card.color}`} />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className='pt-0 text-center'>
+                  <div className='text-lg sm:text-xl lg:text-2xl font-bold text-gray-900'>
+                    {card.value}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
         <Card className='lg:col-span-2'>

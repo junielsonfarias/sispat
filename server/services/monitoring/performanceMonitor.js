@@ -1,5 +1,5 @@
-const os = require('os');
-const metrics = require('./metrics');
+import os from 'os';
+import metrics from './metrics.js';
 
 class PerformanceMonitor {
   constructor() {
@@ -269,4 +269,4 @@ class PerformanceMonitor {
 // Instância singleton
 const performanceMonitor = new PerformanceMonitor();
 
-module.exports = performanceMonitor;
+export default performanceMonitor;

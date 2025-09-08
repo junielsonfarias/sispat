@@ -141,7 +141,7 @@ export default [
         { allowConstantExport: true },
       ],
       'no-undef': 'off', // Desabilitar no-undef para TypeScript
-      'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+      'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
       'no-debugger': 'warn', // Mudado para warn
       'no-alert': 'warn',
       'no-eval': 'error',

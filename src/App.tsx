@@ -5,7 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { PublicDataInitializer } from '@/components/PublicDataInitializer';
 import { RouteFallback } from '@/components/RouteFallback';
 import { SuperuserLayout } from '@/components/SuperuserLayout';
-import { Suspense, lazy } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 // Context Providers
@@ -40,8 +40,6 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TransferProvider } from '@/contexts/TransferContext';
 import { UserReportConfigProvider } from '@/contexts/UserReportConfigContext';
 import { VersionProvider } from '@/contexts/VersionContext';
-import PersonalizationDirect from '@/pages/admin/Personalization';
-import BensCreateDirect from '@/pages/bens/BensCreate';
 
 // Page Imports (Lazy)
 const Login = lazy(() => import('@/pages/auth/Login'));
@@ -67,7 +65,7 @@ const ViewerDashboard = lazy(
   () => import('@/pages/dashboards/ViewerDashboard')
 );
 const BensCadastrados = lazy(() => import('@/pages/bens/BensCadastrados'));
-const BensCreate = BensCreateDirect;
+const BensCreate = lazy(() => import('@/pages/bens/BensCreate'));
 const BensEdit = lazy(() => import('@/pages/bens/BensEdit'));
 const BensView = lazy(() => import('@/pages/bens/BensView'));
 const Emprestimos = lazy(() => import('@/pages/bens/Emprestimos'));
@@ -139,7 +137,7 @@ const UserManagement = lazy(() => import('@/pages/admin/UserManagement'));
 const SectorManagement = lazy(() => import('@/pages/admin/SectorManagement'));
 const SecuritySettings = lazy(() => import('@/pages/admin/SecuritySettings'));
 const BackupSettings = lazy(() => import('@/pages/admin/BackupSettings'));
-const Personalization = PersonalizationDirect;
+const Personalization = lazy(() => import('@/pages/admin/Personalization'));
 const NumberingSettings = lazy(() => import('@/pages/admin/NumberingSettings'));
 const GlobalLogoSettings = lazy(
   () => import('@/pages/admin/GlobalLogoSettings')
@@ -255,7 +253,12 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => (
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <ErrorBoundaryWrapper>
         <AppProviders>
           <PublicDataInitializer />

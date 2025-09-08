@@ -1,12 +1,12 @@
-import {
-  createContext,
-  useState,
-  useContext,
-  ReactNode,
-  useEffect,
-  useCallback,
-} from 'react';
 import { generateId } from '@/lib/utils';
+import React, {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from 'react';
 
 export interface WidgetConfig {
   id: string;
@@ -159,3 +159,5 @@ export const useDashboard = () => {
   }
   return context;
 };
+
+

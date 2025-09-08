@@ -10,7 +10,7 @@ export const BUILD_INFO = {
   framework: 'React 19.1.1',
   buildTool: 'Vite 7.1.0',
   typescript: '5.9.2',
-  nodeVersion: process.version || 'Unknown',
+  nodeVersion: 'Unknown', // Node version not available in browser
 
   // Informações de desenvolvimento
   isDevelopment: import.meta.env.DEV,

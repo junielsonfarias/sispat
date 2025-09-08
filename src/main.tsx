@@ -1,11 +1,14 @@
 /* Main entry point for the application - renders the root React component */
+import React from 'react';
+import { APP_CONFIG } from '@/config/app';
+import { logBuildInfo } from '@/config/build-info';
+import { logger } from '@/config/logging';
+import { performanceMonitor } from '@/config/performance';
+import { initSentry } from '@/config/sentry';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './main.css';
-import { logBuildInfo } from '@/config/build-info';
-import { APP_CONFIG } from '@/config/app';
-import { initSentry } from '@/config/sentry';
-import { performanceMonitor } from '@/config/performance';
+import './styles/responsive.css';
 
 // Inicialização independente do SISPAT
 initializeApp();
@@ -32,16 +35,15 @@ function initializeApp() {
   ) {
     events.push([message, source, line, column, error]);
 
-    // Log do erro para desenvolvimento
-    if (APP_CONFIG.development.enableDebugLogs) {
-      console.error('🚨 SISPAT Error:', {
-        message,
-        source,
-        line,
-        column,
-        error,
-      });
-    }
+    // Log do erro usando sistema de logging
+    logger.error('SISPAT Error', 'ErrorBoundary', {
+      message,
+      source,
+      line,
+      column,
+      error: error?.message,
+      stack: error?.stack,
+    });
 
     // Registrar métrica de erro
     performanceMonitor.recordMetric('Error', 1, 'count', {
@@ -65,14 +67,10 @@ function initializeApp() {
     );
 
   // Log de inicialização
-  if (APP_CONFIG.development.enableDebugLogs) {
-    console.log(
-      '🚀 SISPAT - Sistema de Gestão Patrimonial inicializado com sucesso!'
-    );
-    console.log('📊 Versão:', APP_CONFIG.version);
-    console.log('🌍 Ambiente:', import.meta.env.MODE);
-    console.log('🔗 API URL:', APP_CONFIG.backendUrl);
-    console.log('🔍 Sentry: Configurado para error tracking');
-    console.log('📊 Performance Monitor: Ativo');
-  }
+  logger.info('SISPAT - Sistema de Gestão Patrimonial inicializado com sucesso!', 'App');
+  logger.debug('Versão', 'App', { version: APP_CONFIG.version });
+  logger.debug('Ambiente', 'App', { mode: import.meta.env.MODE });
+  logger.debug('API URL', 'App', { backendUrl: APP_CONFIG.backendUrl });
+  logger.debug('Sentry: Configurado para error tracking', 'App');
+  logger.debug('Performance Monitor: Ativo', 'App');
 }

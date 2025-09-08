@@ -181,7 +181,8 @@ router.post('/ensure-superuser', async (req, res) => {
     ]);
 
     if (!superuser) {
-      const hashedPassword = await bcrypt.hash('Tiko6273@', 12);
+      const defaultPassword = process.env.DEFAULT_SUPERUSER_PASSWORD || 'ChangeMe123!@#';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 12);
 
       await query(
         `
@@ -315,10 +316,10 @@ router.post('/logout', authenticateToken, async (req, res) => {
 
 // API Keys routes
 import {
-  createApiKey,
-  createApiKeysTable,
-  listApiKeys,
-  revokeApiKey,
+    createApiKey,
+    createApiKeysTable,
+    listApiKeys,
+    revokeApiKey,
 } from '../middleware/api-auth.js';
 
 // Inicializar tabela de API keys

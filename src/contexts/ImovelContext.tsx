@@ -1,18 +1,18 @@
-import {
-  createContext,
-  useState,
-  ReactNode,
-  useContext,
-  useCallback,
-  useEffect,
-  useMemo,
-} from 'react';
-import { Imovel, HistoricoEntry } from '@/types';
-import { generateId } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { getSubSectorIds } from '@/lib/sector-utils';
+import { generateId } from '@/lib/utils';
+import { HistoricoEntry, Imovel } from '@/types';
+import {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
 import { useAuth } from './AuthContext';
 import { useSectors } from './SectorContext';
-import { getSubSectorIds } from '@/lib/sector-utils';
 
 interface ImovelContextType {
   imoveis: Imovel[];

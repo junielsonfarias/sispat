@@ -1,29 +1,26 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TwoFactorSetup } from '@/components/security/TwoFactorSetup';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Shield,
-  Lock,
-  Key,
-  Eye,
-  EyeOff,
-  Smartphone,
-  Settings,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Users,
-  Activity,
-} from 'lucide-react';
-import { TwoFactorSetup } from '@/components/TwoFactorSetup';
-import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
+import {
+    Activity,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
+    Eye,
+    EyeOff,
+    Lock,
+    Settings,
+    Shield,
+    Users
+} from 'lucide-react';
+import React, { useState } from 'react';
 
 interface SecuritySettingsProps {}
 

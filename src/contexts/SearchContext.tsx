@@ -1,9 +1,9 @@
-import {
-  createContext,
-  useState,
-  useContext,
-  ReactNode,
-  useCallback,
+import React, {
+    ReactNode,
+    createContext,
+    useCallback,
+    useContext,
+    useState,
 } from 'react';
 
 interface SearchContextType {
@@ -37,3 +37,4 @@ export const useSearch = () => {
   }
   return context;
 };
+
