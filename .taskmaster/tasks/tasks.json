@@ -501,15 +501,438 @@
         ],
         "technicalDetails": "Implementar biblioteca de tour guiado, criar steps para cada funcionalidade, sistema de progresso",
         "testStrategy": "Testes de usabilidade, validação de fluxo de onboarding"
+      },
+      {
+        "id": 26,
+        "title": "FASE 1.1: Limpeza de Arquivos Desnecessários",
+        "description": "Remover arquivos de teste, debug, logs antigos e dependências não utilizadas para preparar o código para produção.",
+        "status": "pending",
+        "priority": "critical",
+        "estimatedHours": 8,
+        "phase": "Fase 1 - Auditoria e Limpeza",
+        "category": "Code Quality",
+        "dependencies": [],
+        "tags": ["limpeza", "produção", "arquivos", "dependências"],
+        "acceptanceCriteria": [
+          "Arquivos de teste e debug removidos",
+          "Logs antigos limpos",
+          "Dependências não utilizadas removidas",
+          "Estrutura de pastas organizada",
+          "Bundle size otimizado"
+        ],
+        "technicalDetails": "Executar análise de dependências, remover arquivos temporários, organizar estrutura de pastas, otimizar imports",
+        "testStrategy": "Verificação de bundle size, análise de dependências, testes de build"
+      },
+      {
+        "id": 27,
+        "title": "FASE 1.2: Auditoria de Segurança Completa",
+        "description": "Revisar e validar todas as configurações de segurança, autenticação, permissões e sanitização de inputs.",
+        "status": "pending",
+        "priority": "critical",
+        "estimatedHours": 12,
+        "phase": "Fase 1 - Auditoria e Limpeza",
+        "category": "Security",
+        "dependencies": [],
+        "tags": ["segurança", "auditoria", "autenticação", "permissões"],
+        "acceptanceCriteria": [
+          "Configurações de autenticação validadas",
+          "Implementação CSRF/XSS verificada",
+          "Permissões de usuários auditadas",
+          "Sanitização de inputs validada",
+          "Configurações CORS verificadas",
+          "Zero vulnerabilidades críticas"
+        ],
+        "technicalDetails": "Revisar middleware de autenticação, validar headers de segurança, testar sanitização, verificar CORS",
+        "testStrategy": "Testes de penetração básicos, validação de headers de segurança, testes de sanitização"
+      },
+      {
+        "id": 28,
+        "title": "FASE 1.3: Revisão de Performance e Otimização",
+        "description": "Analisar e otimizar queries do banco, componentes React, uso de memória e implementar lazy loading onde necessário.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 16,
+        "phase": "Fase 1 - Auditoria e Limpeza",
+        "category": "Performance",
+        "dependencies": [],
+        "tags": ["performance", "otimização", "queries", "memória"],
+        "acceptanceCriteria": [
+          "Queries do banco otimizadas",
+          "Componentes React otimizados",
+          "Uso de memória reduzido",
+          "Lazy loading implementado",
+          "Cache strategies revisadas",
+          "Tempo de resposta < 2s"
+        ],
+        "technicalDetails": "Analisar queries com EXPLAIN, implementar React.memo, otimizar re-renders, configurar lazy loading",
+        "testStrategy": "Benchmarks de performance, análise de memória, testes de carga"
+      },
+      {
+        "id": 29,
+        "title": "FASE 1.4: Documentação Técnica Atualizada",
+        "description": "Atualizar README.md, documentar APIs, criar guia de instalação e documentar variáveis de ambiente.",
+        "status": "pending",
+        "priority": "medium",
+        "estimatedHours": 10,
+        "phase": "Fase 1 - Auditoria e Limpeza",
+        "category": "Documentation",
+        "dependencies": [],
+        "tags": ["documentação", "readme", "api", "instalação"],
+        "acceptanceCriteria": [
+          "README.md atualizado e completo",
+          "APIs documentadas",
+          "Guia de instalação criado",
+          "Variáveis de ambiente documentadas",
+          "Exemplos de uso fornecidos"
+        ],
+        "technicalDetails": "Atualizar documentação existente, criar exemplos de configuração, documentar endpoints críticos",
+        "testStrategy": "Validação de documentação por novos desenvolvedores, testes de instalação"
+      },
+      {
+        "id": 30,
+        "title": "FASE 2.1: Configuração de Ambiente de Produção",
+        "description": "Configurar variáveis de produção, implementar gestão de secrets, configurar logs estruturados e definir níveis apropriados.",
+        "status": "pending",
+        "priority": "critical",
+        "estimatedHours": 12,
+        "phase": "Fase 2 - Configuração e Otimização",
+        "category": "Infrastructure",
+        "dependencies": ["26", "27"],
+        "tags": ["produção", "secrets", "logs", "configuração"],
+        "acceptanceCriteria": [
+          "Variáveis de produção configuradas",
+          "Gestão de secrets implementada",
+          "Logs estruturados funcionando",
+          "Níveis de log apropriados definidos",
+          "Configuração de ambiente validada"
+        ],
+        "technicalDetails": "Configurar .env de produção, implementar gestão de secrets com HashiCorp Vault ou similar, configurar Winston",
+        "testStrategy": "Testes de configuração, validação de logs, testes de secrets"
+      },
+      {
+        "id": 31,
+        "title": "FASE 2.2: Otimização do Banco de Dados",
+        "description": "Criar índices necessários, otimizar queries lentas, implementar backup automático e configurar monitoramento de performance.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 14,
+        "phase": "Fase 2 - Configuração e Otimização",
+        "category": "Database",
+        "dependencies": ["28"],
+        "tags": ["database", "índices", "backup", "monitoramento"],
+        "acceptanceCriteria": [
+          "Índices necessários criados",
+          "Queries lentas otimizadas",
+          "Backup automático funcionando",
+          "Monitoramento de performance ativo",
+          "Integridade dos dados verificada"
+        ],
+        "technicalDetails": "Criar índices compostos, otimizar queries com EXPLAIN, configurar pg_dump automático, implementar pg_stat_statements",
+        "testStrategy": "Benchmarks de performance, testes de backup, validação de integridade"
+      },
+      {
+        "id": 32,
+        "title": "FASE 2.3: Configuração de Servidor de Produção",
+        "description": "Configurar PM2, implementar load balancing, configurar SSL/HTTPS, implementar rate limiting e configurar compressão gzip.",
+        "status": "pending",
+        "priority": "critical",
+        "estimatedHours": 16,
+        "phase": "Fase 2 - Configuração e Otimização",
+        "category": "Infrastructure",
+        "dependencies": ["30"],
+        "tags": ["servidor", "pm2", "ssl", "rate-limiting"],
+        "acceptanceCriteria": [
+          "PM2 configurado para produção",
+          "Load balancing implementado",
+          "SSL/HTTPS configurado",
+          "Rate limiting ativo",
+          "Compressão gzip funcionando"
+        ],
+        "technicalDetails": "Configurar ecosystem.config.js, implementar Nginx como proxy reverso, configurar Let's Encrypt, rate limiting",
+        "testStrategy": "Testes de carga, validação de SSL, testes de rate limiting"
+      },
+      {
+        "id": 33,
+        "title": "FASE 2.4: Monitoramento e Alertas",
+        "description": "Implementar health checks, configurar alertas de sistema, implementar métricas de performance e configurar notificações de erro.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 12,
+        "phase": "Fase 2 - Configuração e Otimização",
+        "category": "Monitoring",
+        "dependencies": ["32"],
+        "tags": ["monitoramento", "alertas", "health-checks", "métricas"],
+        "acceptanceCriteria": [
+          "Health checks implementados",
+          "Alertas de sistema configurados",
+          "Métricas de performance ativas",
+          "Notificações de erro funcionando",
+          "Dashboard de monitoramento criado"
+        ],
+        "technicalDetails": "Implementar /health endpoint, configurar alertas com Prometheus/Alertmanager, métricas customizadas",
+        "testStrategy": "Testes de health checks, validação de alertas, testes de métricas"
+      },
+      {
+        "id": 34,
+        "title": "FASE 3.1: Testes Funcionais Completos",
+        "description": "Testar todos os fluxos de usuário, validar relatórios e impressões, testar upload de arquivos e verificar funcionalidades de busca.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 20,
+        "phase": "Fase 3 - Testes e Validação",
+        "category": "Testing",
+        "dependencies": ["31", "32"],
+        "tags": ["testes", "funcionais", "fluxos", "validação"],
+        "acceptanceCriteria": [
+          "Todos os fluxos de usuário testados",
+          "Relatórios e impressões validados",
+          "Upload de arquivos funcionando",
+          "Funcionalidades de busca testadas",
+          "Sistema de permissões verificado"
+        ],
+        "technicalDetails": "Criar cenários de teste end-to-end, validar todos os roles de usuário, testar edge cases",
+        "testStrategy": "Testes manuais sistemáticos, testes automatizados de fluxos críticos"
+      },
+      {
+        "id": 35,
+        "title": "FASE 3.2: Testes de Performance e Carga",
+        "description": "Realizar teste de carga, teste de concorrência, validação de tempo de resposta, teste de uso de memória e verificação de escalabilidade.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 16,
+        "phase": "Fase 3 - Testes e Validação",
+        "category": "Testing",
+        "dependencies": ["34"],
+        "tags": ["performance", "carga", "concorrência", "escalabilidade"],
+        "acceptanceCriteria": [
+          "Teste de carga realizado com sucesso",
+          "Teste de concorrência validado",
+          "Tempo de resposta < 2s para 95% das requests",
+          "Uso de memória dentro dos limites",
+          "Escalabilidade verificada"
+        ],
+        "technicalDetails": "Usar Artillery ou JMeter para testes de carga, configurar cenários de concorrência, monitorar métricas",
+        "testStrategy": "Testes de carga progressivos, monitoramento de recursos, análise de gargalos"
+      },
+      {
+        "id": 36,
+        "title": "FASE 3.3: Testes de Segurança",
+        "description": "Realizar teste de penetração básico, validação de autenticação, teste de autorização, verificação de sanitização e teste de CSRF/XSS.",
+        "status": "pending",
+        "priority": "critical",
+        "estimatedHours": 18,
+        "phase": "Fase 3 - Testes e Validação",
+        "category": "Security",
+        "dependencies": ["27"],
+        "tags": ["segurança", "penetração", "autenticação", "csrf"],
+        "acceptanceCriteria": [
+          "Teste de penetração realizado",
+          "Autenticação validada",
+          "Autorização testada",
+          "Sanitização verificada",
+          "CSRF/XSS testados",
+          "Zero vulnerabilidades críticas"
+        ],
+        "technicalDetails": "Usar OWASP ZAP ou similar, testar diferentes vetores de ataque, validar headers de segurança",
+        "testStrategy": "Testes automatizados de segurança, validação manual de vulnerabilidades"
+      },
+      {
+        "id": 37,
+        "title": "FASE 3.4: Testes de Compatibilidade",
+        "description": "Testar em diferentes navegadores, validação em dispositivos móveis, teste de responsividade e verificação de acessibilidade.",
+        "status": "pending",
+        "priority": "medium",
+        "estimatedHours": 12,
+        "phase": "Fase 3 - Testes e Validação",
+        "category": "Testing",
+        "dependencies": ["34"],
+        "tags": ["compatibilidade", "navegadores", "mobile", "acessibilidade"],
+        "acceptanceCriteria": [
+          "Testado em Chrome, Firefox, Safari, Edge",
+          "Validação em dispositivos móveis",
+          "Responsividade verificada",
+          "Acessibilidade validada",
+          "Performance em mobile testada"
+        ],
+        "technicalDetails": "Usar BrowserStack ou similar, testar em diferentes resoluções, validar WCAG guidelines",
+        "testStrategy": "Testes cross-browser, testes de responsividade, validação de acessibilidade"
+      },
+      {
+        "id": 38,
+        "title": "FASE 4.1: Preparação do Ambiente de Produção",
+        "description": "Configurar servidor de produção, instalar dependências do sistema, configurar banco de dados e configurar proxy reverso (Nginx).",
+        "status": "pending",
+        "priority": "critical",
+        "estimatedHours": 16,
+        "phase": "Fase 4 - Deployment e Infraestrutura",
+        "category": "Infrastructure",
+        "dependencies": ["33", "35", "36"],
+        "tags": ["produção", "servidor", "nginx", "deploy"],
+        "acceptanceCriteria": [
+          "Servidor de produção configurado",
+          "Dependências do sistema instaladas",
+          "Banco de dados configurado",
+          "Nginx configurado como proxy reverso",
+          "SSL/TLS implementado"
+        ],
+        "technicalDetails": "Configurar servidor Ubuntu/CentOS, instalar Node.js, PostgreSQL, Nginx, configurar SSL com Let's Encrypt",
+        "testStrategy": "Testes de conectividade, validação de configurações, testes de SSL"
+      },
+      {
+        "id": 39,
+        "title": "FASE 4.2: Processo de Deploy Automatizado",
+        "description": "Criar scripts de deploy automatizado, implementar rollback automático, configurar CI/CD pipeline e testar processo de deploy.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 14,
+        "phase": "Fase 4 - Deployment e Infraestrutura",
+        "category": "DevOps",
+        "dependencies": ["38"],
+        "tags": ["deploy", "automação", "ci-cd", "rollback"],
+        "acceptanceCriteria": [
+          "Scripts de deploy automatizado criados",
+          "Rollback automático implementado",
+          "CI/CD pipeline configurado",
+          "Processo de deploy testado",
+          "Procedimentos documentados"
+        ],
+        "technicalDetails": "Criar scripts de deploy com PM2, implementar rollback com backup, configurar GitHub Actions ou Jenkins",
+        "testStrategy": "Testes de deploy, testes de rollback, validação de pipeline"
+      },
+      {
+        "id": 40,
+        "title": "FASE 4.3: Configuração de Backup",
+        "description": "Implementar backup do banco de dados, configurar backup de arquivos, testar restauração de backup e implementar backup incremental.",
+        "status": "pending",
+        "priority": "critical",
+        "estimatedHours": 12,
+        "phase": "Fase 4 - Deployment e Infraestrutura",
+        "category": "Infrastructure",
+        "dependencies": ["38"],
+        "tags": ["backup", "restore", "incremental", "disaster-recovery"],
+        "acceptanceCriteria": [
+          "Backup do banco implementado",
+          "Backup de arquivos configurado",
+          "Restauração de backup testada",
+          "Backup incremental implementado",
+          "Retenção de backups configurada"
+        ],
+        "technicalDetails": "Configurar pg_dump automático, backup de uploads, implementar backup incremental com rsync, configurar retenção",
+        "testStrategy": "Testes de backup, testes de restore, simulação de disaster recovery"
+      },
+      {
+        "id": 41,
+        "title": "FASE 4.4: Monitoramento em Produção",
+        "description": "Configurar logs centralizados, implementar dashboards de monitoramento, configurar alertas críticos e implementar métricas de negócio.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 16,
+        "phase": "Fase 4 - Deployment e Infraestrutura",
+        "category": "Monitoring",
+        "dependencies": ["38", "39"],
+        "tags": ["monitoramento", "logs", "dashboards", "alertas"],
+        "acceptanceCriteria": [
+          "Logs centralizados configurados",
+          "Dashboards de monitoramento ativos",
+          "Alertas críticos configurados",
+          "Métricas de negócio implementadas",
+          "Uptime monitoring ativo"
+        ],
+        "technicalDetails": "Configurar ELK Stack ou similar, criar dashboards no Grafana, configurar alertas críticos, métricas customizadas",
+        "testStrategy": "Validação de logs, testes de alertas, verificação de dashboards"
+      },
+      {
+        "id": 42,
+        "title": "FASE 5.1: Testes em Produção",
+        "description": "Realizar smoke tests em ambiente de produção, validar funcionalidades críticas, testar performance em produção e verificar logs e monitoramento.",
+        "status": "pending",
+        "priority": "critical",
+        "estimatedHours": 12,
+        "phase": "Fase 5 - Validação e Go-Live",
+        "category": "Testing",
+        "dependencies": ["40", "41"],
+        "tags": ["produção", "smoke-tests", "validação", "performance"],
+        "acceptanceCriteria": [
+          "Smoke tests em produção realizados",
+          "Funcionalidades críticas validadas",
+          "Performance em produção testada",
+          "Logs e monitoramento verificados",
+          "Backup e restore testados"
+        ],
+        "technicalDetails": "Executar suite de smoke tests, validar funcionalidades críticas, monitorar performance, verificar logs",
+        "testStrategy": "Testes em ambiente de produção, monitoramento contínuo, validação de métricas"
+      },
+      {
+        "id": 43,
+        "title": "FASE 5.2: Treinamento e Documentação",
+        "description": "Treinar usuários finais, criar manuais de usuário, documentar procedimentos operacionais e criar guia de troubleshooting.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 16,
+        "phase": "Fase 5 - Validação e Go-Live",
+        "category": "Documentation",
+        "dependencies": ["42"],
+        "tags": ["treinamento", "documentação", "manuais", "troubleshooting"],
+        "acceptanceCriteria": [
+          "Usuários finais treinados",
+          "Manuais de usuário criados",
+          "Procedimentos operacionais documentados",
+          "Guia de troubleshooting criado",
+          "Suporte técnico preparado"
+        ],
+        "technicalDetails": "Criar materiais de treinamento, documentar procedimentos, criar base de conhecimento, treinar equipe de suporte",
+        "testStrategy": "Validação de treinamento, testes de procedimentos, verificação de documentação"
+      },
+      {
+        "id": 44,
+        "title": "FASE 5.3: Plano de Go-Live",
+        "description": "Definir janela de manutenção, preparar plano de rollback, configurar suporte 24/7 e comunicar stakeholders.",
+        "status": "pending",
+        "priority": "critical",
+        "estimatedHours": 10,
+        "phase": "Fase 5 - Validação e Go-Live",
+        "category": "Project Management",
+        "dependencies": ["43"],
+        "tags": ["go-live", "manutenção", "rollback", "comunicação"],
+        "acceptanceCriteria": [
+          "Janela de manutenção definida",
+          "Plano de rollback preparado",
+          "Suporte 24/7 configurado",
+          "Stakeholders comunicados",
+          "Comunicação de lançamento preparada"
+        ],
+        "technicalDetails": "Definir cronograma de go-live, preparar procedimentos de rollback, configurar suporte, criar comunicação",
+        "testStrategy": "Validação de planos, testes de comunicação, verificação de suporte"
+      },
+      {
+        "id": 45,
+        "title": "FASE 5.4: Pós-Deploy e Monitoramento",
+        "description": "Monitorar sistema por 48h, coletar feedback dos usuários, ajustar configurações se necessário e documentar lições aprendidas.",
+        "status": "pending",
+        "priority": "high",
+        "estimatedHours": 12,
+        "phase": "Fase 5 - Validação e Go-Live",
+        "category": "Operations",
+        "dependencies": ["44"],
+        "tags": ["pós-deploy", "monitoramento", "feedback", "lições"],
+        "acceptanceCriteria": [
+          "Sistema monitorado por 48h",
+          "Feedback dos usuários coletado",
+          "Configurações ajustadas se necessário",
+          "Lições aprendidas documentadas",
+          "Próximas iterações planejadas"
+        ],
+        "technicalDetails": "Monitoramento contínuo, coleta de feedback, análise de métricas, documentação de melhorias",
+        "testStrategy": "Monitoramento ativo, análise de feedback, validação de ajustes"
       }
     ],
     "metadata": {
       "version": "1.0.0",
       "created": "2024-01-15T10:00:00Z",
-      "updated": "2025-08-24T17:28:05.530Z",
-      "source": "melhorias-sispat.txt",
-      "totalTasks": 25,
-      "description": "Tasks for master context"
+      "updated": "2025-01-08T20:30:00Z",
+      "source": "roteiro-preparacao-producao-2025.md",
+      "totalTasks": 45,
+      "description": "Tasks for master context - Roteiro de Preparação para Produção"
     }
   }
 }
