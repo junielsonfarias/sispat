@@ -52,6 +52,8 @@ fi
 log "🧹 Limpando build anterior..."
 rm -rf dist
 rm -rf node_modules/.vite
+rm -rf node_modules/.cache
+rm -rf .vite
 success "Build anterior limpo"
 
 # Limpar cache do npm
@@ -66,7 +68,10 @@ if [ ! -d "node_modules" ]; then
     npm install --legacy-peer-deps
     success "Dependências instaladas"
 else
-    success "Dependências encontradas"
+    log "📦 Reinstalando dependências para resolver problemas de cache..."
+    rm -rf node_modules
+    npm install --legacy-peer-deps
+    success "Dependências reinstaladas"
 fi
 
 # Verificar configuração do Vite

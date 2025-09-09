@@ -60,7 +60,7 @@ export default defineConfig(({ mode }) => ({
               return 'vendor-tanstack';
             }
             // Charts (Recharts) - chunk separado com configuração mais específica
-            if (id.includes('recharts') || id.includes('d3-') || id.includes('d3')) {
+            if (id.includes('recharts') || id.includes('d3-') || id.includes('d3') || id.includes('victory') || id.includes('chart')) {
               return 'vendor-charts';
             }
             // Form libraries - chunk separado
@@ -113,6 +113,9 @@ export default defineConfig(({ mode }) => ({
         },
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
+        // Configurações específicas para resolver problemas de inicialização
+        format: 'es',
+        strictDeprecations: false,
       },
     },
     minify: mode === 'production' ? 'esbuild' : false,
@@ -121,7 +124,22 @@ export default defineConfig(({ mode }) => ({
   },
   
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: [
+      'react', 
+      'react-dom', 
+      'react-router-dom',
+      'recharts',
+      'd3-scale',
+      'd3-array',
+      'd3-time',
+      'd3-time-format',
+      'd3-shape',
+      'd3-path',
+      'd3-color',
+      'd3-interpolate',
+      'd3-ease'
+    ],
+    exclude: ['@vite/client', '@vite/env'],
   },
   
   css: {

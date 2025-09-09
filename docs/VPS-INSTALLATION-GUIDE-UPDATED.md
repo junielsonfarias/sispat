@@ -589,9 +589,9 @@ chmod +x fix-nginx-certbot.sh
 
 ### **Problema 13: Erro Autenticação PostgreSQL (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `password authentication failed for user "sispat_user"` - Usuário existente com senha diferente
-**🔧 Solução:** Remoção e recriação do usuário e banco com CASCADE
-**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+**❌ Erro:** `password authentication failed for user "sispat_user"` - Usuário existente com senha
+diferente **🔧 Solução:** Remoção e recriação do usuário e banco com CASCADE **✅ Status:**
+**RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
@@ -600,7 +600,20 @@ chmod +x fix-postgresql-auth-final.sh
 ./fix-postgresql-auth-final.sh
 ```
 
-### **Problema 14: Husky não encontrado**
+### **Problema 14: Erro Inicialização Charts (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `Cannot access 'P' before initialization` - Erro de inicialização no vendor-charts **🔧
+Solução:** Configuração Vite otimizada, limpeza agressiva e dependências D3 incluídas **✅ Status:**
+**RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Se ainda houver problemas, execute o script de correção:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-charts-initialization.sh -o fix-charts-initialization.sh
+chmod +x fix-charts-initialization.sh
+./fix-charts-initialization.sh
+```
+
+### **Problema 15: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -743,13 +756,15 @@ performance!**
 12. **Erro JavaScript Frontend (CRÍTICO):** Erro de inicialização no vendor-charts - **RESOLVIDO**
 13. **Erro Nginx + Certbot (CRÍTICO):** Configuração Nginx e comando Certbot incorretos -
     **RESOLVIDO**
-14. **Erro Autenticação PostgreSQL (CRÍTICO):** Usuário existente com senha diferente - **RESOLVIDO**
-15. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-16. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-17. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-18. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-19. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-20. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+14. **Erro Autenticação PostgreSQL (CRÍTICO):** Usuário existente com senha diferente -
+    **RESOLVIDO**
+15. **Erro Inicialização Charts (CRÍTICO):** Erro de inicialização no vendor-charts - **RESOLVIDO**
+16. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+17. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+18. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+19. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+20. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+21. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -763,6 +778,7 @@ performance!**
 - `fix-frontend-build.sh` - **NOVO** Script para corrigir build do frontend
 - `fix-nginx-certbot.sh` - **NOVO** Script para corrigir Nginx + Certbot
 - `fix-postgresql-auth-final.sh` - **NOVO** Script para corrigir autenticação PostgreSQL
+- `fix-charts-initialization.sh` - **NOVO** Script para corrigir inicialização de charts
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -784,6 +800,7 @@ performance!**
 - **Build Frontend Corrigido:** Configuração Vite otimizada e build limpo
 - **Nginx + Certbot Corrigidos:** Configuração limpa e comandos corrigidos
 - **Autenticação PostgreSQL Corrigida:** Remoção e recriação de usuários com CASCADE
+- **Inicialização Charts Corrigida:** Configuração Vite otimizada e dependências D3 incluídas
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos

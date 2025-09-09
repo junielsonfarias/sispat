@@ -257,9 +257,13 @@ fi
 
 # 14. Build do frontend
 log "🏗️ Fazendo build do frontend..."
-# Limpar build anterior
+# Limpar build anterior e cache
 rm -rf dist
 rm -rf node_modules/.vite
+rm -rf node_modules/.cache
+rm -rf .vite
+# Limpar cache do npm
+npm cache clean --force
 # Fazer build
 npm run build
 success "Frontend buildado"
