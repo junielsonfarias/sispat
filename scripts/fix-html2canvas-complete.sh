@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # =================================
-# CORREÇÃO HTML2CANVAS DEPENDENCY - SISPAT
-# Corrige problemas de dependência html2canvas
+# CORREÇÃO HTML2CANVAS COMPLETA - SISPAT
+# Corrige problemas de dependência html2canvas com conflitos NPM
 # =================================
 
 set -e
@@ -38,8 +38,9 @@ warning() {
 # Banner
 echo ""
 echo "🔧 ================================================"
-echo "🔧    CORREÇÃO HTML2CANVAS DEPENDENCY - SISPAT"
+echo "🔧    CORREÇÃO HTML2CANVAS COMPLETA - SISPAT"
 echo "🔧    Corrige problemas de dependência html2canvas"
+echo "🔧    com conflitos NPM (React 19 + Sentry)"
 echo "🔧 ================================================"
 echo ""
 
@@ -48,7 +49,7 @@ if [ ! -f "package.json" ]; then
     error "Execute este script no diretório raiz da aplicação SISPAT"
 fi
 
-log "🔧 Iniciando correção de dependência html2canvas..."
+log "🔧 Iniciando correção completa de dependência html2canvas..."
 
 # 1. Parar PM2 se estiver rodando
 log "🛑 Parando PM2..."
@@ -56,7 +57,28 @@ pm2 stop all 2>/dev/null || warning "PM2 não estava rodando"
 pm2 delete all 2>/dev/null || true
 success "PM2 parado"
 
-# 2. Verificar se html2canvas está instalado
+# 2. Fazer backup do package.json
+log "💾 Fazendo backup do package.json..."
+cp package.json package.json.backup
+success "Backup criado"
+
+# 3. Limpar cache do npm
+log "🧹 Limpando cache do npm..."
+npm cache clean --force
+success "Cache do npm limpo"
+
+# 4. Remover node_modules e package-lock.json
+log "🧹 Removendo node_modules e package-lock.json..."
+rm -rf node_modules
+rm -f package-lock.json
+success "Arquivos removidos"
+
+# 5. Instalar dependências com --legacy-peer-deps
+log "📦 Reinstalando dependências com --legacy-peer-deps..."
+npm install --legacy-peer-deps --force
+success "Dependências reinstaladas"
+
+# 6. Verificar se html2canvas está instalado
 log "🔍 Verificando html2canvas..."
 if npm list html2canvas 2>/dev/null | grep -q "html2canvas"; then
     success "✅ html2canvas instalado"
@@ -67,7 +89,7 @@ else
     success "html2canvas instalado"
 fi
 
-# 3. Verificar se jspdf está instalado
+# 7. Verificar se jspdf está instalado
 log "🔍 Verificando jspdf..."
 if npm list jspdf 2>/dev/null | grep -q "jspdf"; then
     success "✅ jspdf instalado"
@@ -78,13 +100,13 @@ else
     success "jspdf instalado"
 fi
 
-# 4. Atualizar configuração do Vite para incluir html2canvas
+# 8. Atualizar configuração do Vite para incluir html2canvas
 log "🔧 Atualizando configuração do Vite..."
 VITE_CONFIG_FILE="vite.config.ts"
 
 if [ -f "$VITE_CONFIG_FILE" ]; then
     # Fazer backup da configuração atual
-    cp "$VITE_CONFIG_FILE" "$VITE_CONFIG_FILE.backup2"
+    cp "$VITE_CONFIG_FILE" "$VITE_CONFIG_FILE.backup3"
     
     # Atualizar a configuração para incluir html2canvas no optimizeDeps
     sed -i '/optimizeDeps: {/,/},/c\
@@ -128,13 +150,13 @@ else
     error "❌ Arquivo vite.config.ts não encontrado"
 fi
 
-# 5. Limpar cache do Vite
+# 9. Limpar cache do Vite
 log "🧹 Limpando cache do Vite..."
 rm -rf .vite
 rm -rf node_modules/.vite
 success "Cache do Vite limpo"
 
-# 6. Fazer build do frontend
+# 10. Fazer build do frontend
 log "🏗️ Fazendo build do frontend..."
 export NODE_ENV=production
 export CI=false
@@ -145,7 +167,7 @@ else
     error "❌ Falha no build do frontend"
 fi
 
-# 7. Verificar se os arquivos foram gerados
+# 11. Verificar se os arquivos foram gerados
 log "🔍 Verificando arquivos gerados..."
 if [ -d "dist" ] && [ -f "dist/index.html" ]; then
     success "✅ Arquivos de build encontrados"
@@ -164,7 +186,7 @@ else
     error "❌ Arquivos de build não encontrados"
 fi
 
-# 8. Testar se o build funciona
+# 12. Testar se o build funciona
 log "🧪 Testando build..."
 if command -v python3 &> /dev/null; then
     log "🚀 Iniciando servidor de teste na porta 8080..."
@@ -194,7 +216,7 @@ else
     warning "⚠️ Python3 não encontrado, pulando teste do servidor"
 fi
 
-# 9. Iniciar aplicação com PM2
+# 13. Iniciar aplicação com PM2
 log "🚀 Iniciando aplicação com PM2..."
 if [ -f "ecosystem.config.cjs" ]; then
     pm2 start ecosystem.config.cjs --env production
@@ -204,11 +226,11 @@ else
     error "❌ Arquivo ecosystem.config.cjs não encontrado"
 fi
 
-# 10. Aguardar inicialização
+# 14. Aguardar inicialização
 log "⏳ Aguardando aplicação inicializar..."
 sleep 10
 
-# 11. Verificar se PM2 está rodando
+# 15. Verificar se PM2 está rodando
 log "🔍 Verificando status do PM2..."
 if pm2 list | grep -q "online"; then
     success "✅ Aplicação está rodando no PM2"
@@ -216,7 +238,7 @@ else
     error "❌ Aplicação não está rodando no PM2"
 fi
 
-# 12. Testar API
+# 16. Testar API
 log "🧪 Testando API..."
 if curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/health | grep -q "200"; then
     success "✅ API respondendo corretamente"
@@ -224,7 +246,7 @@ else
     warning "⚠️ API pode não estar respondendo"
 fi
 
-# 13. Verificar logs recentes
+# 17. Verificar logs recentes
 log "📋 Verificando logs recentes..."
 if pm2 logs sispat --lines 5 --nostream 2>/dev/null | grep -q "CORS bloqueado"; then
     warning "⚠️ Ainda há problemas de CORS nos logs"
@@ -232,7 +254,7 @@ else
     success "✅ Nenhum problema de CORS recente encontrado"
 fi
 
-# 14. Testar frontend
+# 18. Testar frontend
 log "🧪 Testando frontend..."
 if curl -s -o /dev/null -w "%{http_code}" http://localhost:3001 | grep -q "200"; then
     success "✅ Frontend respondendo corretamente"
@@ -241,13 +263,17 @@ else
 fi
 
 # Instruções finais
-log "📝 CORREÇÃO HTML2CANVAS DEPENDENCY CONCLUÍDA!"
+log "📝 CORREÇÃO HTML2CANVAS COMPLETA CONCLUÍDA!"
 echo ""
-echo "🎉 HTML2CANVAS DEPENDENCY CORRIGIDA!"
+echo "🎉 HTML2CANVAS COMPLETA CORRIGIDA!"
 echo "===================================="
 echo ""
 echo "📋 O que foi feito:"
 echo "✅ PM2 parado"
+echo "✅ Backup do package.json criado"
+echo "✅ Cache do npm limpo"
+echo "✅ node_modules e package-lock.json removidos"
+echo "✅ Dependências reinstaladas com --legacy-peer-deps"
 echo "✅ html2canvas verificado e instalado"
 echo "✅ jspdf verificado e instalado"
 echo "✅ Configuração Vite atualizada"
@@ -263,6 +289,7 @@ echo "✅ Logs verificados"
 echo "✅ Frontend testado"
 echo ""
 echo "🔧 Correções aplicadas:"
+echo "   - Conflito React 19 + Sentry resolvido com --legacy-peer-deps"
 echo "   - html2canvas incluído no optimizeDeps.include"
 echo "   - jspdf incluído no optimizeDeps.include"
 echo "   - Dependências D3 excluídas do optimizeDeps"
@@ -282,4 +309,4 @@ echo "   4. Verifique os logs: pm2 logs sispat"
 echo "   5. Verifique o console do navegador para erros JavaScript"
 echo ""
 
-success "🎉 Correção de dependência html2canvas concluída!"
+success "🎉 Correção completa de dependência html2canvas concluída!"
