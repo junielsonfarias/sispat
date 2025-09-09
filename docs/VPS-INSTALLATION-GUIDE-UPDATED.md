@@ -979,3 +979,118 @@ performance!**
 
 **🎉 Com este guia atualizado, você terá uma instalação completa e funcional do SISPAT em
 produção!**
+
+## 🔧 **SOLUÇÃO PARA O PROBLEMA DE LOCALHOST EM PRODUÇÃO**
+
+### ** PROBLEMA IDENTIFICADO:**
+
+O frontend está tentando conectar em `localhost:3001` porque:
+
+1. **Build antigo:** O build atual (`dist/`) foi criado com configurações antigas
+2. **Vite config:** O arquivo `vite.config.ts` tem fallbacks hardcoded para `localhost:3001`
+3. **Variáveis de ambiente:** Não estão sendo carregadas corretamente no build
+
+### **✅ SOLUÇÃO IMEDIATA:**
+
+#### **1. Corrigir o vite.config.ts:**
+
+```typescript
+// Linha 184 e 191 - CORRIGIR:
+'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api'),
+VITE_API_URL: process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api',
+```
+
+#### **2. Fazer rebuild com variáveis de ambiente:**
+
+```bash
+<code_block_to_apply_changes_from>
+```
+
+#### **3. Copiar build para produção:**
+
+```bash
+# Copiar para diretório de produção
+sudo cp -r dist/* /var/www/html/
+# ou
+sudo cp -r dist/* /var/www/sispat/
+```
+
+---
+
+### ** COMANDOS PARA EXECUTAR AGORA:**
+
+#### **Opção 1: Correção Rápida (Recomendada)**
+
+```bash
+# 1. Parar PM2
+pm2 stop sispat
+
+# 2. Definir variáveis de ambiente
+export VITE_API_URL=https://sispat.vps-kinghost.net/api
+export VITE_BACKEND_URL=https://sispat.vps-kinghost.net
+
+# 3. Fazer rebuild
+npm run build
+
+# 4. Copiar build para produção
+sudo cp -r dist/* /var/www/html/
+
+# 5. Reiniciar PM2
+pm2 start sispat
+```
+
+#### **Opção 2: Correção Completa**
+
+```bash
+# 1. Editar vite.config.ts
+sed -i 's|http://localhost:3001/api|https://sispat.vps-kinghost.net/api|g' vite.config.ts
+
+# 2. Definir variáveis de ambiente
+export VITE_API_URL=https://sispat.vps-kinghost.net/api
+export VITE_BACKEND_URL=https://sispat.vps-kinghost.net
+
+# 3. Fazer rebuild
+npm run build
+
+# 4. Verificar se não há mais localhost no build
+grep -r "localhost:3001" dist/ || echo "✅ Nenhuma referência a localhost encontrada"
+
+# 5. Copiar build para produção
+sudo cp -r dist/* /var/www/html/
+
+# 6. Reiniciar PM2
+pm2 restart sispat
+```
+
+---
+
+### **🔍 VERIFICAÇÃO:**
+
+#### **Antes da correção:**
+
+- ❌ `POST http://localhost:3001/api/auth/ensure-superuser net::ERR_CONNECTION_REFUSED`
+- ❌ `POST http://localhost:3001/api/auth/login net::ERR_CONNECTION_REFUSED`
+
+#### **Após a correção:**
+
+- ✅ `POST https://sispat.vps-kinghost.net/api/auth/ensure-superuser 200 OK`
+- ✅ `POST https://sispat.vps-kinghost.net/api/auth/login 200 OK`
+
+---
+
+### ** EXECUTE AGORA:**
+
+**Comando mais simples:**
+
+```bash
+export VITE_API_URL=https://sispat.vps-kinghost.net/api && npm run build && sudo cp -r dist/* /var/www/html/ && pm2 restart sispat
+```
+
+**🎉 Após executar, o frontend não tentará mais conectar em localhost:3001!**
+
+### **🔍 Para verificar se funcionou:**
+
+1. Acesse `https://sispat.vps-kinghost.net`
+2. Abra o console do navegador (F12)
+3. Verifique se não há mais erros de `localhost:3001`
+4. Tente fazer login com `junielsonfarias@gmail.com` / `Tiko6273@`
