@@ -20,6 +20,7 @@ ssh root@IP_DA_SUA_VPS
 ### **1.2 Executar Script de Instalação Automática**
 
 **Para Iniciantes (Recomendado):**
+
 ```bash
 # Baixar o script de instalação simplificado
 curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-simple.sh -o install-vps-simple.sh
@@ -32,6 +33,7 @@ chmod +x install-vps-simple.sh
 ```
 
 **Para Usuários Avançados:**
+
 ```bash
 # Baixar o script de instalação completo
 curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete-fixed.sh -o install-vps-complete-fixed.sh
