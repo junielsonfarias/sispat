@@ -116,7 +116,7 @@ export default defineConfig(({ mode }) => ({
       },
     },
     minify: mode === 'production' ? 'esbuild' : false,
-    chunkSizeWarningLimit: 1000, // Aumentar limite para evitar warnings desnecessários
+    chunkSizeWarningLimit: 2000, // Aumentar limite para evitar warnings desnecessários
     target: 'es2015', // Definir target específico para melhor compatibilidade
   },
   

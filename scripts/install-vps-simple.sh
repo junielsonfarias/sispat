@@ -258,6 +258,12 @@ success "Frontend buildado"
 
 # 15. Configurar Nginx (HTTP apenas)
 log "🌐 Configurando Nginx (HTTP)..."
+# Remover configurações existentes
+rm -f /etc/nginx/sites-available/sispat
+rm -f /etc/nginx/sites-enabled/sispat
+rm -f /etc/nginx/sites-enabled/default
+
+# Criar configuração Nginx limpa
 cat > /etc/nginx/sites-available/sispat << EOF
 server {
     listen 80;
@@ -301,11 +307,9 @@ EOF
 
 # Ativar site
 ln -sf /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
 
 # Testar configuração
-nginx -t
-systemctl reload nginx
+nginx -t && systemctl reload nginx
 success "Nginx configurado (HTTP)"
 
 # 16. Instalar Certbot
@@ -315,7 +319,16 @@ success "Certbot instalado"
 
 # 17. Obter certificado SSL
 log "🔒 Obtendo certificado SSL..."
-certbot --nginx -d $DOMAIN -d www.$DOMAIN --email $EMAIL --agree-tos --non-interactive
+# Verificar se o domínio está acessível
+log "🔍 Verificando se o domínio $DOMAIN está acessível..."
+if curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN | grep -q "200\|301\|302"; then
+    success "Domínio $DOMAIN está acessível"
+else
+    warning "⚠️ Domínio $DOMAIN pode não estar acessível. Continuando mesmo assim..."
+fi
+
+# Obter certificado SSL
+certbot --nginx -d $DOMAIN -d www.$DOMAIN --email $EMAIL --agree-tos --non-interactive --redirect
 success "Certificado SSL obtido"
 
 # 18. Configurar PM2

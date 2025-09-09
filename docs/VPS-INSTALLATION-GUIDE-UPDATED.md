@@ -573,7 +573,20 @@ rm pnpm-lock.yaml
 npm install --legacy-peer-deps
 ```
 
-### **Problema 12: Husky não encontrado**
+### **Problema 12: Erro Nginx + Certbot (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `server name "http://sispat.vps-kinghost.net/" has suspicious symbols` e `Requested name http://sispat.vps-kinghost.net/ appears to be a URL, not a FQDN`
+**🔧 Solução:** Configuração Nginx limpa e comando Certbot corrigido
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Se ainda houver problemas, execute o script de correção:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-certbot.sh -o fix-nginx-certbot.sh
+chmod +x fix-nginx-certbot.sh
+./fix-nginx-certbot.sh
+```
+
+### **Problema 13: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -714,12 +727,13 @@ performance!**
     **RESOLVIDO**
 11. **Configuração PM2 Incorreta (CRÍTICO):** Script de monitoramento inexistente - **RESOLVIDO**
 12. **Erro JavaScript Frontend (CRÍTICO):** Erro de inicialização no vendor-charts - **RESOLVIDO**
-13. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-14. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-15. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-16. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-17. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-18. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+13. **Erro Nginx + Certbot (CRÍTICO):** Configuração Nginx e comando Certbot incorretos - **RESOLVIDO**
+14. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+15. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+16. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+17. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+18. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+19. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -731,6 +745,7 @@ performance!**
 - `fix-ssl-configuration.sh` - **NOVO** Script para corrigir configuração SSL
 - `fix-pm2-configuration.sh` - **NOVO** Script para corrigir configuração PM2
 - `fix-frontend-build.sh` - **NOVO** Script para corrigir build do frontend
+- `fix-nginx-certbot.sh` - **NOVO** Script para corrigir Nginx + Certbot
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -750,6 +765,7 @@ performance!**
 - **Configuração SSL Corrigida:** HTTP configurado primeiro, depois SSL com Let's Encrypt
 - **Configuração PM2 Corrigida:** Arquivo de configuração simplificado sem scripts inexistentes
 - **Build Frontend Corrigido:** Configuração Vite otimizada e build limpo
+- **Nginx + Certbot Corrigidos:** Configuração limpa e comandos corrigidos
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos
