@@ -662,7 +662,20 @@ chmod +x fix-rollup-dependencies.sh
 ./fix-rollup-dependencies.sh
 ```
 
-### **Problema 18: Husky não encontrado**
+### **Problema 18: Erro Dependência html2canvas (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `Rollup failed to resolve import "html2canvas"` - Dependência html2canvas não resolvida
+**🔧 Solução:** html2canvas e jspdf incluídos no optimizeDeps.include
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Para correção, execute o script:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-html2canvas-dependency.sh -o fix-html2canvas-dependency.sh
+chmod +x fix-html2canvas-dependency.sh
+./fix-html2canvas-dependency.sh
+```
+
+### **Problema 19: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -814,12 +827,13 @@ performance!**
     **RESOLVIDO**
 18. **Erro Dependências Rollup (CRÍTICO):** Problema com dependências opcionais do Rollup -
     **RESOLVIDO**
-19. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-20. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-21. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-22. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-23. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-24. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+19. **Erro Dependência html2canvas (CRÍTICO):** Dependência html2canvas não resolvida - **RESOLVIDO**
+20. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+21. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+22. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+23. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+24. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+25. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -840,6 +854,7 @@ performance!**
 - `fix-vendor-misc-initialization.sh` - **NOVO** Script para corrigir inicialização vendor-misc
 - `fix-vendor-misc-definitive.sh` - **NOVO** Script para correção definitiva vendor-misc
 - `fix-rollup-dependencies.sh` - **NOVO** Script para corrigir dependências do Rollup
+- `fix-html2canvas-dependency.sh` - **NOVO** Script para corrigir dependência html2canvas
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -864,8 +879,10 @@ performance!**
 - **Inicialização Charts Corrigida:** Charts incluídos no vendor-misc para evitar problemas
 - **CORS + Frontend Corrigidos:** CORS configurado para permitir requisições sem origin em produção
 - **Vendor-Misc Corrigido:** Configuração Vite otimizada e dependências D3 excluídas do optimizeDeps
-- **Vendor-Misc Definitivo:** Configuração Vite mais conservadora para resolver problemas persistentes
+- **Vendor-Misc Definitivo:** Configuração Vite mais conservadora para resolver problemas
+  persistentes
 - **Dependências Rollup Corrigidas:** Problema com dependências opcionais do Rollup resolvido
+- **Dependência html2canvas Corrigida:** html2canvas e jspdf incluídos no optimizeDeps.include
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos
