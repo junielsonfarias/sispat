@@ -680,11 +680,24 @@ chmod +x fix-html2canvas-complete.sh
 ./fix-html2canvas-complete.sh
 ```
 
-### **Problema 19: Diagnóstico Frontend (NOVO)**
+### **Problema 19: Loop Infinito Nginx (CRÍTICO - RESOLVIDO)**
 
-**❌ Problema:** Frontend pode estar com problemas mas backend funcionando
-**🔧 Solução:** Scripts de diagnóstico para identificar problemas específicos
-**✅ Status:** **DISPONÍVEL** - Scripts de diagnóstico criados
+**❌ Erro:** `rewrite or internal redirection cycle while internally redirecting to "/index.html"` - Loop infinito no Nginx
+**🔧 Solução:** Configuração Nginx corrigida com fallback adequado e favicon.svg criado
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Para correção, execute o script:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-redirect-loop.sh -o fix-nginx-redirect-loop.sh
+chmod +x fix-nginx-redirect-loop.sh
+./fix-nginx-redirect-loop.sh
+```
+
+### **Problema 20: Diagnóstico Frontend (NOVO)**
+
+**❌ Problema:** Frontend pode estar com problemas mas backend funcionando **🔧 Solução:** Scripts
+de diagnóstico para identificar problemas específicos **✅ Status:** **DISPONÍVEL** - Scripts de
+diagnóstico criados
 
 ```bash
 # Para diagnóstico completo do frontend:
@@ -698,7 +711,7 @@ chmod +x check-browser-errors.sh
 ./check-browser-errors.sh
 ```
 
-### **Problema 20: Husky não encontrado**
+### **Problema 21: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -883,6 +896,7 @@ performance!**
   NPM
 - `diagnose-frontend.sh` - **NOVO** Script para diagnóstico completo do frontend
 - `check-browser-errors.sh` - **NOVO** Script para verificar erros específicos do browser
+- `fix-nginx-redirect-loop.sh` - **NOVO** Script para corrigir loop infinito do Nginx
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -914,6 +928,7 @@ performance!**
 - **Conflito NPM Resolvido:** React 19 + Sentry resolvido com --legacy-peer-deps
 - **Diagnóstico Frontend:** Scripts para identificar problemas específicos do frontend
 - **Verificação Browser:** Scripts para verificar erros do console do navegador
+- **Loop Nginx Corrigido:** Loop infinito de redirecionamento corrigido com fallback adequado
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos
