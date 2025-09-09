@@ -9,7 +9,7 @@ export const APP_CONFIG = {
 
   // URLs e endpoints
   apiBaseUrl: '/api',
-  backendUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001',
+  backendUrl: import.meta.env.VITE_BACKEND_URL || 'https://sispat.vps-kinghost.net',
 
   // Configurações de autenticação
   auth: {
