@@ -1,4 +1,5 @@
 # 🛠️ COMANDOS STEP-BY-STEP PARA PRODUÇÃO
+
 ## **SISPAT 2025 - Guia de Comandos Detalhado**
 
 ---
@@ -21,6 +22,7 @@
 ## 1. **PREPARAÇÃO INICIAL**
 
 ### 🔧 **1.1 Conectar ao Servidor**
+
 ```bash
 # Conectar via SSH (substitua pelo seu IP)
 ssh root@SEU_IP_DO_SERVIDOR
@@ -30,6 +32,7 @@ ssh usuario@SEU_IP_DO_SERVIDOR
 ```
 
 ### 📦 **1.2 Atualizar Sistema**
+
 ```bash
 # Atualizar lista de pacotes
 sudo apt update
@@ -42,6 +45,7 @@ sudo apt install -y curl wget git vim htop unzip
 ```
 
 ### 📁 **1.3 Criar Estrutura de Diretórios**
+
 ```bash
 # Criar diretório principal
 sudo mkdir -p /opt/sispat
@@ -59,6 +63,7 @@ tree /opt/sispat
 ## 2. **INSTALAÇÃO DE DEPENDÊNCIAS**
 
 ### 🟢 **2.1 Instalar Node.js**
+
 ```bash
 # Baixar e instalar Node.js 18.x
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -76,6 +81,7 @@ pm2 --version
 ```
 
 ### 🐘 **2.2 Instalar PostgreSQL**
+
 ```bash
 # Instalar PostgreSQL
 sudo apt install -y postgresql postgresql-contrib
@@ -92,6 +98,7 @@ sudo -u postgres psql -c "SELECT version();"
 ```
 
 ### 🌐 **2.3 Instalar Nginx**
+
 ```bash
 # Instalar Nginx
 sudo apt install -y nginx
@@ -108,6 +115,7 @@ curl -I http://localhost
 ```
 
 ### 🔒 **2.4 Configurar Firewall**
+
 ```bash
 # Instalar UFW
 sudo apt install -y ufw
@@ -133,6 +141,7 @@ sudo ufw status verbose
 ## 3. **CONFIGURAÇÃO DO BANCO**
 
 ### 👤 **3.1 Criar Usuário e Banco**
+
 ```bash
 # Acessar PostgreSQL
 sudo -u postgres psql
@@ -148,6 +157,7 @@ psql -h localhost -U sispat_user -d sispat_production -c "SELECT current_databas
 ```
 
 ### ⚙️ **3.2 Otimizar PostgreSQL**
+
 ```bash
 # Editar configuração
 sudo nano /etc/postgresql/14/main/postgresql.conf
@@ -179,6 +189,7 @@ sudo systemctl status postgresql
 ## 4. **CONFIGURAÇÃO DA APLICAÇÃO**
 
 ### 📥 **4.1 Baixar Código**
+
 ```bash
 # Navegar para diretório
 cd /opt/sispat
@@ -194,6 +205,7 @@ ls -la
 ```
 
 ### ⚙️ **4.2 Configurar Variáveis de Ambiente**
+
 ```bash
 # Copiar arquivo de exemplo
 cp env.production.example .env
@@ -221,6 +233,7 @@ BACKUP_SCHEDULE=0 2 * * *
 ```
 
 ### 📦 **4.3 Instalar Dependências**
+
 ```bash
 # Instalar dependências do backend
 npm install
@@ -237,6 +250,7 @@ fi
 ```
 
 ### 🗄️ **4.4 Executar Migrações**
+
 ```bash
 # Executar migrações
 node server/database/migrate.js
@@ -249,6 +263,7 @@ psql -h localhost -U sispat_user -d sispat_production -c "\d users"
 ```
 
 ### 🏗️ **4.5 Build do Frontend**
+
 ```bash
 # Fazer build de produção
 npm run build
@@ -265,6 +280,7 @@ du -sh dist/
 ## 5. **CONFIGURAÇÃO DO NGINX**
 
 ### 📝 **5.1 Criar Configuração do Site**
+
 ```bash
 # Criar arquivo de configuração
 sudo nano /etc/nginx/sites-available/sispat
@@ -320,7 +336,7 @@ server {
     location / {
         root /opt/sispat/app/dist;
         try_files $uri $uri/ /index.html;
-        
+
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
             expires 1y;
             add_header Cache-Control "public, immutable";
@@ -335,6 +351,7 @@ server {
 ```
 
 ### 🔗 **5.2 Ativar Site**
+
 ```bash
 # Criar link simbólico
 sudo ln -s /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/
@@ -357,6 +374,7 @@ sudo systemctl status nginx
 ## 6. **CONFIGURAÇÃO DO SSL**
 
 ### 🔧 **6.1 Instalar Certbot**
+
 ```bash
 # Instalar Certbot
 sudo apt install -y certbot python3-certbot-nginx
@@ -366,6 +384,7 @@ certbot --version
 ```
 
 ### 📜 **6.2 Obter Certificado SSL**
+
 ```bash
 # Obter certificado (substitua SEU_DOMINIO.com)
 sudo certbot --nginx -d SEU_DOMINIO.com -d www.SEU_DOMINIO.com
@@ -388,6 +407,7 @@ sudo certbot renew --dry-run
 ## 7. **CONFIGURAÇÃO DO PM2**
 
 ### ⚙️ **7.1 Configurar PM2**
+
 ```bash
 # Navegar para diretório da aplicação
 cd /opt/sispat/app
@@ -409,6 +429,7 @@ pm2 show sispat
 ```
 
 ### 🔄 **7.2 Configurar Inicialização Automática**
+
 ```bash
 # Gerar script de inicialização
 pm2 startup
@@ -428,6 +449,7 @@ pm2 list
 ## 8. **DEPLOY E TESTES**
 
 ### 🚀 **8.1 Deploy Completo**
+
 ```bash
 # Executar script de deploy
 bash scripts/setup-production-complete.sh
@@ -442,6 +464,7 @@ pm2 logs sispat --lines 50
 ```
 
 ### ✅ **8.2 Testes Básicos**
+
 ```bash
 # Testar API
 curl -I http://localhost:3001/api/health
@@ -457,6 +480,7 @@ curl -I https://SEU_DOMINIO.com/
 ```
 
 ### 🧪 **8.3 Testes Automatizados**
+
 ```bash
 # Executar testes funcionais
 bash scripts/run-production-tests.sh
@@ -476,6 +500,7 @@ cat reports/load-tests-report.json
 ## 9. **MONITORAMENTO**
 
 ### 📊 **9.1 Instalar Monitoramento**
+
 ```bash
 # Instalar Prometheus e Grafana
 bash scripts/setup-production-monitoring.sh
@@ -489,6 +514,7 @@ sudo netstat -tlnp | grep -E "(3000|9090)"
 ```
 
 ### 📈 **9.2 Configurar Dashboards**
+
 ```bash
 # Configurar dashboards
 bash scripts/setup-grafana-dashboards.sh
@@ -503,6 +529,7 @@ curl -I http://localhost:3000
 ```
 
 ### 🚨 **9.3 Configurar Alertas**
+
 ```bash
 # Configurar sistema de alertas
 bash scripts/setup-monitoring-alerts.sh
@@ -517,6 +544,7 @@ ls -la /opt/sispat/logs/
 ## 10. **MANUTENÇÃO**
 
 ### 📋 **10.1 Comandos de Verificação**
+
 ```bash
 # Ver status geral
 pm2 status
@@ -535,6 +563,7 @@ ps aux | grep -E "(node|nginx|postgres)"
 ```
 
 ### 🔄 **10.2 Comandos de Reinicialização**
+
 ```bash
 # Reiniciar aplicação
 pm2 restart sispat
@@ -551,6 +580,7 @@ sudo systemctl restart nginx postgresql
 ```
 
 ### 📦 **10.3 Comandos de Atualização**
+
 ```bash
 # Atualizar aplicação
 cd /opt/sispat/app
@@ -569,6 +599,7 @@ sudo apt autoclean
 ```
 
 ### 🗑️ **10.4 Comandos de Limpeza**
+
 ```bash
 # Limpar logs antigos
 pm2 flush
@@ -583,6 +614,7 @@ sudo apt autoclean
 ```
 
 ### 🆘 **10.5 Comandos de Troubleshooting**
+
 ```bash
 # Verificar portas em uso
 sudo netstat -tlnp | grep -E "(3001|80|443|5432)"
@@ -608,6 +640,7 @@ openssl s_client -connect SEU_DOMINIO.com:443 -servername SEU_DOMINIO.com
 ## 🎯 **COMANDOS DE EMERGÊNCIA**
 
 ### 🚨 **11.1 Parar Tudo**
+
 ```bash
 # Parar aplicação
 pm2 stop all
@@ -621,6 +654,7 @@ sudo systemctl status nginx postgresql
 ```
 
 ### 🔄 **11.2 Reiniciar Tudo**
+
 ```bash
 # Reiniciar aplicação
 pm2 restart all
@@ -634,6 +668,7 @@ sudo systemctl status nginx postgresql
 ```
 
 ### 📋 **11.3 Verificar Saúde do Sistema**
+
 ```bash
 # Script de verificação rápida
 echo "=== STATUS DOS SERVIÇOS ==="
@@ -658,6 +693,7 @@ sudo netstat -tlnp | grep -E "(3001|80|443|5432)"
 ## 📚 **COMANDOS ÚTEIS ADICIONAIS**
 
 ### 🔍 **12.1 Investigação de Problemas**
+
 ```bash
 # Ver logs em tempo real
 pm2 logs sispat --follow
@@ -672,6 +708,7 @@ curl -v https://SEU_DOMINIO.com/api/health
 ```
 
 ### 📊 **12.2 Monitoramento Avançado**
+
 ```bash
 # Ver métricas do PM2
 pm2 monit
@@ -685,6 +722,7 @@ ss -tuln
 ```
 
 ### 🛠️ **12.3 Manutenção do Banco**
+
 ```bash
 # Backup manual
 pg_dump -h localhost -U sispat_user -d sispat_production > backup_$(date +%Y%m%d_%H%M%S).sql
@@ -703,12 +741,14 @@ psql -h localhost -U sispat_user -d sispat_production -c "SELECT pg_size_pretty(
 ### 📋 **Marque cada comando executado:**
 
 **Preparação:**
+
 - [ ] `ssh root@SEU_IP`
 - [ ] `sudo apt update && sudo apt upgrade -y`
 - [ ] `sudo apt install -y curl wget git vim htop unzip`
 - [ ] `sudo mkdir -p /opt/sispat && sudo chown $USER:$USER /opt/sispat`
 
 **Instalação:**
+
 - [ ] `curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -`
 - [ ] `sudo apt-get install -y nodejs`
 - [ ] `sudo npm install -g pm2`
@@ -717,6 +757,7 @@ psql -h localhost -U sispat_user -d sispat_production -c "SELECT pg_size_pretty(
 - [ ] `sudo apt install -y ufw`
 
 **Configuração:**
+
 - [ ] `sudo ufw allow ssh && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw enable`
 - [ ] `sudo -u postgres psql` (criar usuário e banco)
 - [ ] `git clone https://github.com/junielsonfarias/sispat.git app`
@@ -726,6 +767,7 @@ psql -h localhost -U sispat_user -d sispat_production -c "SELECT pg_size_pretty(
 - [ ] `npm run build`
 
 **Deploy:**
+
 - [ ] `sudo nano /etc/nginx/sites-available/sispat` (configurar Nginx)
 - [ ] `sudo ln -s /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/`
 - [ ] `sudo nginx -t && sudo systemctl reload nginx`
@@ -734,10 +776,12 @@ psql -h localhost -U sispat_user -d sispat_production -c "SELECT pg_size_pretty(
 - [ ] `pm2 startup && pm2 save`
 
 **Testes:**
+
 - [ ] `curl -I https://SEU_DOMINIO.com`
 - [ ] `pm2 status`
 - [ ] `sudo systemctl status nginx postgresql`
 
 ---
 
-*Este guia contém todos os comandos necessários para colocar o SISPAT em produção. Execute-os na ordem apresentada e marque cada um conforme for executando.*
+_Este guia contém todos os comandos necessários para colocar o SISPAT em produção. Execute-os na
+ordem apresentada e marque cada um conforme for executando._
