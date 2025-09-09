@@ -603,8 +603,8 @@ chmod +x fix-postgresql-auth-final.sh
 ### **Problema 14: Erro Inicialização Charts (CRÍTICO - RESOLVIDO)**
 
 **❌ Erro:** `Cannot access 'P' before initialization` - Erro de inicialização no vendor-charts **🔧
-Solução:** Charts incluídos no vendor-misc (não separado) para evitar problemas de inicialização **✅ Status:**
-**RESOLVIDO** - Correção integrada automaticamente
+Solução:** Charts incluídos no vendor-misc (não separado) para evitar problemas de inicialização
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
 # Para correção definitiva, execute o script:
@@ -613,7 +613,20 @@ chmod +x fix-charts-final.sh
 ./fix-charts-final.sh
 ```
 
-### **Problema 15: Husky não encontrado**
+### **Problema 15: Erro CORS + Frontend (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `CORS bloqueado para origem: undefined` - Frontend não consegue se comunicar com backend
+**🔧 Solução:** CORS configurado para permitir requisições sem origin em produção
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Para correção, execute o script:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-cors-frontend.sh -o fix-cors-frontend.sh
+chmod +x fix-cors-frontend.sh
+./fix-cors-frontend.sh
+```
+
+### **Problema 16: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -759,12 +772,13 @@ performance!**
 14. **Erro Autenticação PostgreSQL (CRÍTICO):** Usuário existente com senha diferente -
     **RESOLVIDO**
 15. **Erro Inicialização Charts (CRÍTICO):** Erro de inicialização no vendor-charts - **RESOLVIDO**
-16. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-17. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-18. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-19. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-20. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-21. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+16. **Erro CORS + Frontend (CRÍTICO):** Frontend não consegue se comunicar com backend - **RESOLVIDO**
+17. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+18. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+19. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+20. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+21. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+22. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -780,6 +794,7 @@ performance!**
 - `fix-postgresql-auth-final.sh` - **NOVO** Script para corrigir autenticação PostgreSQL
 - `fix-charts-initialization.sh` - **NOVO** Script para corrigir inicialização de charts
 - `fix-charts-final.sh` - **NOVO** Script para correção definitiva de charts
+- `fix-cors-frontend.sh` - **NOVO** Script para corrigir CORS + Frontend
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -802,6 +817,7 @@ performance!**
 - **Nginx + Certbot Corrigidos:** Configuração limpa e comandos corrigidos
 - **Autenticação PostgreSQL Corrigida:** Remoção e recriação de usuários com CASCADE
 - **Inicialização Charts Corrigida:** Charts incluídos no vendor-misc para evitar problemas
+- **CORS + Frontend Corrigidos:** CORS configurado para permitir requisições sem origin em produção
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos

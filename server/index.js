@@ -164,6 +164,11 @@ app.use(
         return callback(null, true);
       }
 
+      // Em produção, permitir requisições sem origin também (para servir arquivos estáticos)
+      if (!origin && process.env.NODE_ENV === 'production') {
+        return callback(null, true);
+      }
+
       // Em produção, permitir origens configuradas + localhost para testes
       const productionOrigins =
         process.env.NODE_ENV === 'production'
@@ -176,7 +181,8 @@ app.use(
         callback(null, true);
       } else {
         console.warn(`CORS bloqueado para origem: ${origin}`);
-        callback(null, true); // Permitir temporariamente para debug
+        // Em produção, permitir temporariamente para debug
+        callback(null, true);
       }
     },
     credentials: true,
