@@ -19,18 +19,31 @@ ssh root@IP_DA_SUA_VPS
 
 ### **1.2 Executar Script de Instalação Automática**
 
+**Para Iniciantes (Recomendado):**
 ```bash
-# Baixar o script de instalação
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete.sh -o install-vps-complete.sh
+# Baixar o script de instalação simplificado
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-simple.sh -o install-vps-simple.sh
 
 # Tornar executável
-chmod +x install-vps-complete.sh
+chmod +x install-vps-simple.sh
 
-# Executar instalação completa
-./install-vps-complete.sh
+# Executar instalação simplificada
+./install-vps-simple.sh
 ```
 
-**🎉 Este script faz TUDO automaticamente:**
+**Para Usuários Avançados:**
+```bash
+# Baixar o script de instalação completo
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete-fixed.sh -o install-vps-complete-fixed.sh
+
+# Tornar executável
+chmod +x install-vps-complete-fixed.sh
+
+# Executar instalação completa
+./install-vps-complete-fixed.sh
+```
+
+**🎉 Estes scripts fazem TUDO automaticamente:**
 
 - ✅ Instala todas as dependências
 - ✅ Configura PostgreSQL e Redis
@@ -38,6 +51,9 @@ chmod +x install-vps-complete.sh
 - ✅ Clona o repositório SISPAT
 - ✅ Executa deploy automático
 - ✅ Configura PM2 para startup automático
+- ✅ Configura SSL automaticamente
+- ✅ Configura backup automático
+- ✅ Configura monitoramento básico
 
 ---
 
@@ -608,9 +624,17 @@ performance!**
 4. **NODE_ENV:** Conflito com Vite - **RESOLVIDO**
 5. **Autenticação PostgreSQL:** Usuário e senha incorretos - **RESOLVIDO**
 6. **Configuração Nginx:** Erro de valor inválido "must-revalidate" - **RESOLVIDO**
+7. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+8. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+9. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+10. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+11. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+12. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
+- `install-vps-simple.sh` - **NOVO** Script simplificado para iniciantes
+- `install-vps-complete-fixed.sh` - **NOVO** Script completo corrigido
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -621,15 +645,21 @@ performance!**
 
 ### **✅ Funcionalidades Adicionadas:**
 
-- Correção automática de erros durante a instalação
-- Verificação de conectividade incluída
-- Scripts de correção integrados automaticamente
-- Configuração Nginx otimizada
-- PM2 configurado para startup automático
+- **Configuração Dinâmica:** Script solicita domínio, senhas e email do usuário
+- **Validação de Entrada:** Todas as entradas são validadas antes da instalação
+- **Senhas Seguras:** Geração automática de JWT secret e validação de senhas
+- **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
+- **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
+- **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos
+- **Configuração Nginx Otimizada:** Headers de segurança, compressão Gzip, cache
+- **PM2 Configurado:** Startup automático e gerenciamento de processos
 - **Compatibilidade ES Modules + PM2 100% funcional**
-- Autenticação PostgreSQL 100% funcional (senha: sispat123456)
-- Configuração automática de proxy reverso
-- Headers de segurança aplicados automaticamente
+- **Autenticação PostgreSQL 100% funcional**
+- **Configuração automática de proxy reverso**
+- **Headers de segurança aplicados automaticamente**
+- **Correção automática de erros durante a instalação**
+- **Verificação de conectividade incluída**
+- **Scripts de correção integrados automaticamente**
 
 ---
 
