@@ -575,9 +575,10 @@ npm install --legacy-peer-deps
 
 ### **Problema 12: Erro Nginx + Certbot (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `server name "http://sispat.vps-kinghost.net/" has suspicious symbols` e `Requested name http://sispat.vps-kinghost.net/ appears to be a URL, not a FQDN`
-**🔧 Solução:** Configuração Nginx limpa e comando Certbot corrigido
-**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+**❌ Erro:** `server name "http://sispat.vps-kinghost.net/" has suspicious symbols` e
+`Requested name http://sispat.vps-kinghost.net/ appears to be a URL, not a FQDN` **🔧 Solução:**
+Configuração Nginx limpa e comando Certbot corrigido **✅ Status:** **RESOLVIDO** - Correção
+integrada automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
@@ -586,7 +587,20 @@ chmod +x fix-nginx-certbot.sh
 ./fix-nginx-certbot.sh
 ```
 
-### **Problema 13: Husky não encontrado**
+### **Problema 13: Erro Autenticação PostgreSQL (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `password authentication failed for user "sispat_user"` - Usuário existente com senha diferente
+**🔧 Solução:** Remoção e recriação do usuário e banco com CASCADE
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Se ainda houver problemas, execute o script de correção:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-auth-final.sh -o fix-postgresql-auth-final.sh
+chmod +x fix-postgresql-auth-final.sh
+./fix-postgresql-auth-final.sh
+```
+
+### **Problema 14: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -727,13 +741,15 @@ performance!**
     **RESOLVIDO**
 11. **Configuração PM2 Incorreta (CRÍTICO):** Script de monitoramento inexistente - **RESOLVIDO**
 12. **Erro JavaScript Frontend (CRÍTICO):** Erro de inicialização no vendor-charts - **RESOLVIDO**
-13. **Erro Nginx + Certbot (CRÍTICO):** Configuração Nginx e comando Certbot incorretos - **RESOLVIDO**
-14. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-15. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-16. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-17. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-18. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-19. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+13. **Erro Nginx + Certbot (CRÍTICO):** Configuração Nginx e comando Certbot incorretos -
+    **RESOLVIDO**
+14. **Erro Autenticação PostgreSQL (CRÍTICO):** Usuário existente com senha diferente - **RESOLVIDO**
+15. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+16. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+17. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+18. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+19. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+20. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -746,6 +762,7 @@ performance!**
 - `fix-pm2-configuration.sh` - **NOVO** Script para corrigir configuração PM2
 - `fix-frontend-build.sh` - **NOVO** Script para corrigir build do frontend
 - `fix-nginx-certbot.sh` - **NOVO** Script para corrigir Nginx + Certbot
+- `fix-postgresql-auth-final.sh` - **NOVO** Script para corrigir autenticação PostgreSQL
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -766,6 +783,7 @@ performance!**
 - **Configuração PM2 Corrigida:** Arquivo de configuração simplificado sem scripts inexistentes
 - **Build Frontend Corrigido:** Configuração Vite otimizada e build limpo
 - **Nginx + Certbot Corrigidos:** Configuração limpa e comandos corrigidos
+- **Autenticação PostgreSQL Corrigida:** Remoção e recriação de usuários com CASCADE
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos

@@ -124,8 +124,16 @@ systemctl enable postgresql
 systemctl start postgresql
 
 # Configurar usuário e banco
+# Parar PostgreSQL para limpeza
+systemctl stop postgresql
+systemctl start postgresql
+
+# Remover usuário e banco existentes com CASCADE
+sudo -u postgres psql -c "DROP USER IF EXISTS sispat_user CASCADE;" 2>/dev/null || true
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS sispat_production;" 2>/dev/null || true
+
+# Criar usuário e banco
 sudo -u postgres psql << EOF
-DROP USER IF EXISTS sispat_user;
 CREATE USER sispat_user WITH PASSWORD '$DB_PASSWORD';
 CREATE DATABASE sispat_production OWNER sispat_user;
 GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;
