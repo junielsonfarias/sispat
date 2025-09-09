@@ -631,7 +631,20 @@ chmod +x fix-cors-complete.sh
 ./fix-cors-complete.sh
 ```
 
-### **Problema 16: Husky não encontrado**
+### **Problema 16: Erro Inicialização Vendor-Misc (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `Cannot access 'ee' before initialization` - Erro de inicialização no vendor-misc
+**🔧 Solução:** Configuração Vite otimizada e dependências D3 excluídas do optimizeDeps
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Para correção, execute o script:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-vendor-misc-initialization.sh -o fix-vendor-misc-initialization.sh
+chmod +x fix-vendor-misc-initialization.sh
+./fix-vendor-misc-initialization.sh
+```
+
+### **Problema 17: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -779,12 +792,13 @@ performance!**
 15. **Erro Inicialização Charts (CRÍTICO):** Erro de inicialização no vendor-charts - **RESOLVIDO**
 16. **Erro CORS + Frontend (CRÍTICO):** Frontend não consegue se comunicar com backend -
     **RESOLVIDO**
-17. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-18. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-19. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-20. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-21. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-22. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+17. **Erro Inicialização Vendor-Misc (CRÍTICO):** Erro de inicialização no vendor-misc - **RESOLVIDO**
+18. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+19. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+20. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+21. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+22. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+23. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -802,6 +816,7 @@ performance!**
 - `fix-charts-final.sh` - **NOVO** Script para correção definitiva de charts
 - `fix-cors-frontend.sh` - **NOVO** Script para corrigir CORS + Frontend
 - `fix-cors-complete.sh` - **NOVO** Script para correção CORS completa
+- `fix-vendor-misc-initialization.sh` - **NOVO** Script para corrigir inicialização vendor-misc
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -825,6 +840,7 @@ performance!**
 - **Autenticação PostgreSQL Corrigida:** Remoção e recriação de usuários com CASCADE
 - **Inicialização Charts Corrigida:** Charts incluídos no vendor-misc para evitar problemas
 - **CORS + Frontend Corrigidos:** CORS configurado para permitir requisições sem origin em produção
+- **Vendor-Misc Corrigido:** Configuração Vite otimizada e dependências D3 excluídas do optimizeDeps
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos

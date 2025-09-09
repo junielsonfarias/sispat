@@ -129,7 +129,31 @@ export default defineConfig(({ mode }) => ({
       'react-dom', 
       'react-router-dom'
     ],
-    exclude: ['@vite/client', '@vite/env', 'recharts', 'd3-scale', 'd3-array', 'd3-time', 'd3-time-format', 'd3-shape', 'd3-path', 'd3-color', 'd3-interpolate', 'd3-ease'],
+    exclude: [
+      '@vite/client', 
+      '@vite/env', 
+      'recharts', 
+      'd3-scale', 
+      'd3-array', 
+      'd3-time', 
+      'd3-time-format', 
+      'd3-shape', 
+      'd3-path', 
+      'd3-color', 
+      'd3-interpolate', 
+      'd3-ease',
+      'd3-selection',
+      'd3-transition',
+      'd3-zoom',
+      'd3-brush',
+      'd3-drag',
+      'd3-force',
+      'd3-hierarchy',
+      'd3-quadtree',
+      'd3-timer',
+      'd3-dispatch'
+    ],
+    force: true, // Força re-otimização das dependências
   },
   
   css: {
