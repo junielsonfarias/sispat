@@ -512,9 +512,9 @@ chmod +x fix-postgresql-uuid.sh
 
 ### **Problema 7: Ordem de Migração Incorreta (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `relation "sectors" does not exist` - Tabela user_sectors criada antes de sectors
-**🔧 Solução:** Ordem das tabelas corrigida na migração
-**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+**❌ Erro:** `relation "sectors" does not exist` - Tabela user_sectors criada antes de sectors **🔧
+Solução:** Ordem das tabelas corrigida na migração **✅ Status:** **RESOLVIDO** - Correção integrada
+automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
@@ -523,7 +523,20 @@ chmod +x fix-migration-order.sh
 ./fix-migration-order.sh
 ```
 
-### **Problema 8: pnpm-lock.yaml incompatível**
+### **Problema 8: Configuração SSL Incorreta (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `cannot load certificate` - SSL configurado antes de obter certificado
+**🔧 Solução:** Scripts agora configuram HTTP primeiro, depois SSL
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Se ainda houver problemas, execute o script de correção:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-ssl-configuration.sh -o fix-ssl-configuration.sh
+chmod +x fix-ssl-configuration.sh
+./fix-ssl-configuration.sh
+```
+
+### **Problema 9: pnpm-lock.yaml incompatível**
 
 ```bash
 # Tentar instalar com força
@@ -534,7 +547,7 @@ rm pnpm-lock.yaml
 npm install --legacy-peer-deps
 ```
 
-### **Problema 9: Husky não encontrado**
+### **Problema 10: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -669,13 +682,15 @@ performance!**
    **RESOLVIDO**
 8. **Função gen_random_uuid() não existe (CRÍTICO):** Extensão pgcrypto não habilitada -
    **RESOLVIDO**
-9. **Ordem de Migração Incorreta (CRÍTICO):** Tabela user_sectors criada antes de sectors - **RESOLVIDO**
-10. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-11. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-12. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-13. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-14. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-15. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+9. **Ordem de Migração Incorreta (CRÍTICO):** Tabela user_sectors criada antes de sectors -
+   **RESOLVIDO**
+10. **Configuração SSL Incorreta (CRÍTICO):** SSL configurado antes de obter certificado - **RESOLVIDO**
+11. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+12. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+13. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+14. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+15. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+16. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -684,6 +699,7 @@ performance!**
 - `fix-npm-dependencies.sh` - **NOVO** Script para corrigir conflitos de dependências
 - `fix-postgresql-uuid.sh` - **NOVO** Script para corrigir função gen_random_uuid()
 - `fix-migration-order.sh` - **NOVO** Script para corrigir ordem de migração
+- `fix-ssl-configuration.sh` - **NOVO** Script para corrigir configuração SSL
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -700,6 +716,7 @@ performance!**
 - **Resolução de Dependências:** Conflitos NPM resolvidos automaticamente com --legacy-peer-deps
 - **Extensões PostgreSQL:** pgcrypto, uuid-ossp, unaccent, pg_trgm habilitadas automaticamente
 - **Ordem de Migração Corrigida:** Tabelas criadas na ordem correta (sectors antes de user_sectors)
+- **Configuração SSL Corrigida:** HTTP configurado primeiro, depois SSL com Let's Encrypt
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos
