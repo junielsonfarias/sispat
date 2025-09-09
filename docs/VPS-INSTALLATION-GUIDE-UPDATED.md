@@ -615,15 +615,20 @@ chmod +x fix-charts-final.sh
 
 ### **Problema 15: Erro CORS + Frontend (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `CORS bloqueado para origem: undefined` - Frontend não consegue se comunicar com backend
-**🔧 Solução:** CORS configurado para permitir requisições sem origin em produção
-**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+**❌ Erro:** `CORS bloqueado para origem: undefined` - Frontend não consegue se comunicar com
+backend **🔧 Solução:** CORS configurado para permitir requisições sem origin em produção **✅
+Status:** **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
-# Para correção, execute o script:
+# Para correção simples, execute o script:
 curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-cors-frontend.sh -o fix-cors-frontend.sh
 chmod +x fix-cors-frontend.sh
 ./fix-cors-frontend.sh
+
+# Para correção completa (se o problema persistir), execute:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-cors-complete.sh -o fix-cors-complete.sh
+chmod +x fix-cors-complete.sh
+./fix-cors-complete.sh
 ```
 
 ### **Problema 16: Husky não encontrado**
@@ -772,7 +777,8 @@ performance!**
 14. **Erro Autenticação PostgreSQL (CRÍTICO):** Usuário existente com senha diferente -
     **RESOLVIDO**
 15. **Erro Inicialização Charts (CRÍTICO):** Erro de inicialização no vendor-charts - **RESOLVIDO**
-16. **Erro CORS + Frontend (CRÍTICO):** Frontend não consegue se comunicar com backend - **RESOLVIDO**
+16. **Erro CORS + Frontend (CRÍTICO):** Frontend não consegue se comunicar com backend -
+    **RESOLVIDO**
 17. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
 18. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
 19. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
@@ -795,6 +801,7 @@ performance!**
 - `fix-charts-initialization.sh` - **NOVO** Script para corrigir inicialização de charts
 - `fix-charts-final.sh` - **NOVO** Script para correção definitiva de charts
 - `fix-cors-frontend.sh` - **NOVO** Script para corrigir CORS + Frontend
+- `fix-cors-complete.sh` - **NOVO** Script para correção CORS completa
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
