@@ -453,7 +453,7 @@ GET /api/health
   "status": "ok",
   "timestamp": "2025-09-09T14:30:00.000Z",
   "service": "SISPAT Backend",
-  "version": "0.0.193",
+  "version": "1.0.0",
   "environment": "production",
   "uptime": 86400,
   "memory": {

@@ -682,9 +682,9 @@ chmod +x fix-html2canvas-complete.sh
 
 ### **Problema 19: Loop Infinito Nginx (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `rewrite or internal redirection cycle while internally redirecting to "/index.html"` - Loop infinito no Nginx
-**🔧 Solução:** Configuração Nginx corrigida com fallback adequado e favicon.svg criado
-**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+**❌ Erro:** `rewrite or internal redirection cycle while internally redirecting to "/index.html"` -
+Loop infinito no Nginx **🔧 Solução:** Configuração Nginx corrigida com fallback adequado e
+favicon.svg criado **✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
 # Para correção, execute o script:

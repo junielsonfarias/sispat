@@ -1,6 +1,6 @@
 {
   "name": "sispat-sistema-patrimonial",
-  "version": "0.0.193",
+  "version": "1.0.0",
   "description": "Sistema de Gestão Patrimonial",
   "type": "module",
   "scripts": {
