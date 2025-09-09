@@ -316,12 +316,15 @@ success "Certificado SSL obtido"
 
 # 18. Configurar PM2
 log "⚙️ Configurando PM2..."
-pm2 start ecosystem.production.config.cjs --env production
+# Criar diretório de logs
+mkdir -p logs
+# Iniciar aplicação com PM2
+pm2 start ecosystem.config.cjs --env production
 pm2 save
 pm2 startup
 success "PM2 configurado"
 
-# 18. Configurar backup automático
+# 19. Configurar backup automático
 log "💾 Configurando backup automático..."
 cat > /var/www/sispat/scripts/backup.sh << EOF
 #!/bin/bash

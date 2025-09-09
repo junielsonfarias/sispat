@@ -1,103 +1,91 @@
-/* eslint-env node */
-const path = require('path');
+/* eslint-disable no-undef */
+/**
+ * SISPAT - Configuração PM2 para Produção
+ * Data: 09/09/2025
+ * Versão: 0.0.193
+ * Descrição: Configuração simplificada do PM2 para ambiente de produção
+ */
 
 module.exports = {
   apps: [
     {
-      name: 'sispat-backend',
+      // Configuração principal da aplicação
+      name: 'sispat',
       script: 'server/index.js',
-      cwd: process.cwd(),
-      instances: 1,
+      instances: 1, // Usar apenas 1 instância para evitar problemas
       exec_mode: 'fork',
+
+      // Configurações de ambiente
       env: {
         NODE_ENV: 'development',
         PORT: 3001,
-        DB_HOST: 'localhost',
-        DB_PORT: 5432,
-        DB_NAME: 'sispat_development',
-        DB_USER: 'sispat_user',
-        DB_PASSWORD: 'sispat123456',
-        JWT_SECRET: 'your-secret-key-change-in-production',
-        CORS_ORIGIN: 'http://localhost:3000',
-        RATE_LIMIT_WINDOW_MS: 900000,
-        RATE_LIMIT_MAX_REQUESTS: 100,
-        UPLOAD_PATH: './uploads',
-        BACKUP_PATH: './backups',
-        SMTP_HOST: 'localhost',
-        SSL_CERT_EMAIL: 'admin@example.com',
-        CDN_URL: 'http://localhost:3000',
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: process.env.PORT || 3001,
-        DB_HOST: process.env.DB_HOST || 'localhost',
-        DB_PORT: process.env.DB_PORT || 5432,
-        DB_NAME: process.env.DB_NAME || 'sispat_production',
-        DB_USER: process.env.DB_USER || 'sispat_user',
-        DB_PASSWORD: process.env.DB_PASSWORD || 'sispat123456',
-        JWT_SECRET:
-          process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-        CORS_ORIGIN:
-          process.env.CORS_ORIGIN ||
-          'https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080',
-        RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || 900000,
-        RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || 100,
-        UPLOAD_PATH: process.env.UPLOAD_PATH || './uploads',
-        BACKUP_PATH: process.env.BACKUP_PATH || './backups',
-        SMTP_HOST: process.env.SMTP_HOST || 'localhost',
-        SSL_CERT_EMAIL: process.env.SSL_CERT_EMAIL || 'admin@example.com',
-        CDN_URL: process.env.CDN_URL || 'https://sispat.vps-kinghost.net',
+        PORT: 3001,
       },
-      log_file: path.join(__dirname, 'logs', 'combined.log'),
-      out_file: path.join(__dirname, 'logs', 'out.log'),
-      error_file: path.join(__dirname, 'logs', 'err.log'),
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      min_uptime: '10s',
-      max_restarts: 5,
-      restart_delay: 5000,
-      autorestart: true,
-      watch: false,
-      ignore_watch: ['node_modules', 'logs', 'uploads', 'backups'],
-      source_map_support: false, // Desabilitado para produção
-      node_args: '--max-old-space-size=2048',
-      kill_timeout: 10000,
-      wait_ready: true,
-      listen_timeout: 10000,
+
+      // Configurações de performance
       max_memory_restart: '1G',
-    },
-    {
-      name: 'sispat-frontend',
-      script: 'start-frontend.js',
-      cwd: process.cwd(),
-      instances: 1,
-      exec_mode: 'fork',
-      env: {
-        NODE_ENV: 'development',
-        PORT: 8080,
-        VITE_API_URL: 'http://localhost:3001/api',
-      },
-      env_production: {
-        NODE_ENV: 'production',
-        PORT: process.env.PORT || 8080,
-        VITE_API_URL:
-          process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api',
-      },
-      log_file: path.join(__dirname, 'logs', 'frontend-combined.log'),
-      out_file: path.join(__dirname, 'logs', 'frontend-out.log'),
-      error_file: path.join(__dirname, 'logs', 'frontend-err.log'),
+      node_args: '--max-old-space-size=1024',
+
+      // Configurações de logs
+      log_file: './logs/combined.log',
+      out_file: './logs/out.log',
+      error_file: './logs/error.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      min_uptime: '10s',
-      max_restarts: 3,
-      restart_delay: 5000,
+      merge_logs: true,
+
+      // Configurações de restart
       autorestart: true,
       watch: false,
-      ignore_watch: ['node_modules', 'logs', 'dist'],
-      source_map_support: false, // Desabilitado para produção
-      node_args: '--max-old-space-size=1024',
-      kill_timeout: 10000,
-      wait_ready: true,
-      listen_timeout: 10000,
-      max_memory_restart: '512M',
+      max_restarts: 10,
+      min_uptime: '10s',
+      restart_delay: 4000,
+
+      // Configurações de monitoramento
+      monitoring: true,
+      pmx: true,
+
+      // Configurações de timeout
+      kill_timeout: 5000,
+      listen_timeout: 3000,
+
+      // Configurações de cron
+      cron_restart: '0 2 * * *', // Restart diário às 2h
+
+      // Configurações de health check
+      health_check_grace_period: 3000,
+      health_check_fatal_exceptions: true,
+
+      // Configurações de source map
+      source_map_support: true,
+
+      // Configurações de timeout
+      kill_retry_time: 100,
+
+      // Configurações de interação
+      interactive: false,
+
+      // Configurações de timezone
+      time: true,
+
+      // Configurações de ignore watch
+      ignore_watch: [
+        'node_modules',
+        'logs',
+        'uploads',
+        'backups',
+        '.git',
+        'dist',
+        'coverage',
+        'tests',
+        'docs',
+        'scripts',
+        '*.log',
+        '*.tmp',
+        '*.temp',
+      ],
     },
   ],
 };
