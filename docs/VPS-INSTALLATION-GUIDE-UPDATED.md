@@ -680,7 +680,25 @@ chmod +x fix-html2canvas-complete.sh
 ./fix-html2canvas-complete.sh
 ```
 
-### **Problema 19: Husky não encontrado**
+### **Problema 19: Diagnóstico Frontend (NOVO)**
+
+**❌ Problema:** Frontend pode estar com problemas mas backend funcionando
+**🔧 Solução:** Scripts de diagnóstico para identificar problemas específicos
+**✅ Status:** **DISPONÍVEL** - Scripts de diagnóstico criados
+
+```bash
+# Para diagnóstico completo do frontend:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/diagnose-frontend.sh -o diagnose-frontend.sh
+chmod +x diagnose-frontend.sh
+./diagnose-frontend.sh
+
+# Para verificar erros específicos do browser:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/check-browser-errors.sh -o check-browser-errors.sh
+chmod +x check-browser-errors.sh
+./check-browser-errors.sh
+```
+
+### **Problema 20: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -861,7 +879,10 @@ performance!**
 - `fix-vendor-misc-definitive.sh` - **NOVO** Script para correção definitiva vendor-misc
 - `fix-rollup-dependencies.sh` - **NOVO** Script para corrigir dependências do Rollup
 - `fix-html2canvas-dependency.sh` - **NOVO** Script para corrigir dependência html2canvas
-- `fix-html2canvas-complete.sh` - **NOVO** Script para correção completa html2canvas com conflitos NPM
+- `fix-html2canvas-complete.sh` - **NOVO** Script para correção completa html2canvas com conflitos
+  NPM
+- `diagnose-frontend.sh` - **NOVO** Script para diagnóstico completo do frontend
+- `check-browser-errors.sh` - **NOVO** Script para verificar erros específicos do browser
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -891,6 +912,8 @@ performance!**
 - **Dependências Rollup Corrigidas:** Problema com dependências opcionais do Rollup resolvido
 - **Dependência html2canvas Corrigida:** html2canvas e jspdf incluídos no optimizeDeps.include
 - **Conflito NPM Resolvido:** React 19 + Sentry resolvido com --legacy-peer-deps
+- **Diagnóstico Frontend:** Scripts para identificar problemas específicos do frontend
+- **Verificação Browser:** Scripts para verificar erros do console do navegador
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos
