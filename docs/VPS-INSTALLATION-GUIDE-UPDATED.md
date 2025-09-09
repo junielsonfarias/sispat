@@ -499,9 +499,9 @@ chmod +x fix-npm-dependencies.sh
 
 ### **Problema 6: Função gen_random_uuid() não existe (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `function gen_random_uuid() does not exist` - Extensão pgcrypto não habilitada
-**🔧 Solução:** Os scripts agora habilitam extensões PostgreSQL automaticamente
-**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+**❌ Erro:** `function gen_random_uuid() does not exist` - Extensão pgcrypto não habilitada **🔧
+Solução:** Os scripts agora habilitam extensões PostgreSQL automaticamente **✅ Status:**
+**RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
@@ -510,7 +510,20 @@ chmod +x fix-postgresql-uuid.sh
 ./fix-postgresql-uuid.sh
 ```
 
-### **Problema 7: pnpm-lock.yaml incompatível**
+### **Problema 7: Ordem de Migração Incorreta (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `relation "sectors" does not exist` - Tabela user_sectors criada antes de sectors
+**🔧 Solução:** Ordem das tabelas corrigida na migração
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Se ainda houver problemas, execute o script de correção:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-migration-order.sh -o fix-migration-order.sh
+chmod +x fix-migration-order.sh
+./fix-migration-order.sh
+```
+
+### **Problema 8: pnpm-lock.yaml incompatível**
 
 ```bash
 # Tentar instalar com força
@@ -521,7 +534,7 @@ rm pnpm-lock.yaml
 npm install --legacy-peer-deps
 ```
 
-### **Problema 8: Husky não encontrado**
+### **Problema 9: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -654,13 +667,15 @@ performance!**
 6. **Configuração Nginx:** Erro de valor inválido "must-revalidate" - **RESOLVIDO**
 7. **Conflito de Dependências NPM (CRÍTICO):** `ERESOLVE unable to resolve dependency tree` -
    **RESOLVIDO**
-8. **Função gen_random_uuid() não existe (CRÍTICO):** Extensão pgcrypto não habilitada - **RESOLVIDO**
-9. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-10. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-11. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-12. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-13. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-14. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+8. **Função gen_random_uuid() não existe (CRÍTICO):** Extensão pgcrypto não habilitada -
+   **RESOLVIDO**
+9. **Ordem de Migração Incorreta (CRÍTICO):** Tabela user_sectors criada antes de sectors - **RESOLVIDO**
+10. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+11. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+12. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+13. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+14. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+15. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -668,6 +683,7 @@ performance!**
 - `install-vps-complete-fixed.sh` - **NOVO** Script completo corrigido
 - `fix-npm-dependencies.sh` - **NOVO** Script para corrigir conflitos de dependências
 - `fix-postgresql-uuid.sh` - **NOVO** Script para corrigir função gen_random_uuid()
+- `fix-migration-order.sh` - **NOVO** Script para corrigir ordem de migração
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -683,6 +699,7 @@ performance!**
 - **Senhas Seguras:** Geração automática de JWT secret e validação de senhas
 - **Resolução de Dependências:** Conflitos NPM resolvidos automaticamente com --legacy-peer-deps
 - **Extensões PostgreSQL:** pgcrypto, uuid-ossp, unaccent, pg_trgm habilitadas automaticamente
+- **Ordem de Migração Corrigida:** Tabelas criadas na ordem correta (sectors antes de user_sectors)
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos

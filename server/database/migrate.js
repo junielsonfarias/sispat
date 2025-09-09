@@ -41,19 +41,6 @@ const createTables = async () => {
     `);
     console.log('✅ Tabela users criada');
 
-    // Create user_sectors table for user-sector relationships
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS user_sectors (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        sector_id UUID NOT NULL REFERENCES sectors(id) ON DELETE CASCADE,
-        is_primary BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, sector_id)
-      )
-    `);
-    console.log('✅ Tabela user_sectors criada');
-
     // Create sectors table
     await client.query(`
       CREATE TABLE IF NOT EXISTS sectors (
@@ -68,6 +55,19 @@ const createTables = async () => {
       )
     `);
     console.log('✅ Tabela sectors criada');
+
+    // Create user_sectors table for user-sector relationships
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_sectors (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        sector_id UUID NOT NULL REFERENCES sectors(id) ON DELETE CASCADE,
+        is_primary BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, sector_id)
+      )
+    `);
+    console.log('✅ Tabela user_sectors criada');
 
     // Create locals table
     await client.query(`
