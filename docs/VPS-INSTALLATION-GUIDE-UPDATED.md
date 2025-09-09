@@ -603,14 +603,14 @@ chmod +x fix-postgresql-auth-final.sh
 ### **Problema 14: Erro Inicialização Charts (CRÍTICO - RESOLVIDO)**
 
 **❌ Erro:** `Cannot access 'P' before initialization` - Erro de inicialização no vendor-charts **🔧
-Solução:** Configuração Vite otimizada, limpeza agressiva e dependências D3 incluídas **✅ Status:**
+Solução:** Charts incluídos no vendor-misc (não separado) para evitar problemas de inicialização **✅ Status:**
 **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
-# Se ainda houver problemas, execute o script de correção:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-charts-initialization.sh -o fix-charts-initialization.sh
-chmod +x fix-charts-initialization.sh
-./fix-charts-initialization.sh
+# Para correção definitiva, execute o script:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-charts-final.sh -o fix-charts-final.sh
+chmod +x fix-charts-final.sh
+./fix-charts-final.sh
 ```
 
 ### **Problema 15: Husky não encontrado**
@@ -779,6 +779,7 @@ performance!**
 - `fix-nginx-certbot.sh` - **NOVO** Script para corrigir Nginx + Certbot
 - `fix-postgresql-auth-final.sh` - **NOVO** Script para corrigir autenticação PostgreSQL
 - `fix-charts-initialization.sh` - **NOVO** Script para corrigir inicialização de charts
+- `fix-charts-final.sh` - **NOVO** Script para correção definitiva de charts
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -800,7 +801,7 @@ performance!**
 - **Build Frontend Corrigido:** Configuração Vite otimizada e build limpo
 - **Nginx + Certbot Corrigidos:** Configuração limpa e comandos corrigidos
 - **Autenticação PostgreSQL Corrigida:** Remoção e recriação de usuários com CASCADE
-- **Inicialização Charts Corrigida:** Configuração Vite otimizada e dependências D3 incluídas
+- **Inicialização Charts Corrigida:** Charts incluídos no vendor-misc para evitar problemas
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos

@@ -59,10 +59,10 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tanstack')) {
               return 'vendor-tanstack';
             }
-            // Charts (Recharts) - chunk separado com configuração mais específica
-            if (id.includes('recharts') || id.includes('d3-') || id.includes('d3') || id.includes('victory') || id.includes('chart')) {
-              return 'vendor-charts';
-            }
+            // Charts (Recharts) - INCLUIR NO VENDOR-MISC para evitar problemas de inicialização
+            // if (id.includes('recharts') || id.includes('d3-') || id.includes('d3') || id.includes('victory') || id.includes('chart')) {
+            //   return 'vendor-charts';
+            // }
             // Form libraries - chunk separado
             if (id.includes('react-hook-form') || id.includes('@hookform')) {
               return 'vendor-forms';
@@ -83,7 +83,7 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('zod') || id.includes('yup') || id.includes('joi')) {
               return 'vendor-validation';
             }
-            // Resto das dependências menores
+            // Resto das dependências menores (incluindo charts)
             return 'vendor-misc';
           }
           
@@ -127,19 +127,9 @@ export default defineConfig(({ mode }) => ({
     include: [
       'react', 
       'react-dom', 
-      'react-router-dom',
-      'recharts',
-      'd3-scale',
-      'd3-array',
-      'd3-time',
-      'd3-time-format',
-      'd3-shape',
-      'd3-path',
-      'd3-color',
-      'd3-interpolate',
-      'd3-ease'
+      'react-router-dom'
     ],
-    exclude: ['@vite/client', '@vite/env'],
+    exclude: ['@vite/client', '@vite/env', 'recharts', 'd3-scale', 'd3-array', 'd3-time', 'd3-time-format', 'd3-shape', 'd3-path', 'd3-color', 'd3-interpolate', 'd3-ease'],
   },
   
   css: {
