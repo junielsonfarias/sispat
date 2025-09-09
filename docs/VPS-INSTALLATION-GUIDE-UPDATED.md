@@ -642,13 +642,18 @@ Solução:** Configuração Vite otimizada e dependências D3 excluídas do opti
 curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-vendor-misc-initialization.sh -o fix-vendor-misc-initialization.sh
 chmod +x fix-vendor-misc-initialization.sh
 ./fix-vendor-misc-initialization.sh
+
+# Para correção definitiva (se o problema persistir), execute:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-vendor-misc-definitive.sh -o fix-vendor-misc-definitive.sh
+chmod +x fix-vendor-misc-definitive.sh
+./fix-vendor-misc-definitive.sh
 ```
 
 ### **Problema 17: Erro Dependências Rollup (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `Cannot find module @rollup/rollup-linux-x64-gnu` - Problema com dependências opcionais do Rollup
-**🔧 Solução:** Remoção de package-lock.json e reinstalação com --no-optional
-**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+**❌ Erro:** `Cannot find module @rollup/rollup-linux-x64-gnu` - Problema com dependências opcionais
+do Rollup **🔧 Solução:** Remoção de package-lock.json e reinstalação com --no-optional **✅
+Status:** **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
 # Para correção, execute o script:
@@ -807,7 +812,8 @@ performance!**
     **RESOLVIDO**
 17. **Erro Inicialização Vendor-Misc (CRÍTICO):** Erro de inicialização no vendor-misc -
     **RESOLVIDO**
-18. **Erro Dependências Rollup (CRÍTICO):** Problema com dependências opcionais do Rollup - **RESOLVIDO**
+18. **Erro Dependências Rollup (CRÍTICO):** Problema com dependências opcionais do Rollup -
+    **RESOLVIDO**
 19. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
 20. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
 21. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
@@ -832,6 +838,7 @@ performance!**
 - `fix-cors-frontend.sh` - **NOVO** Script para corrigir CORS + Frontend
 - `fix-cors-complete.sh` - **NOVO** Script para correção CORS completa
 - `fix-vendor-misc-initialization.sh` - **NOVO** Script para corrigir inicialização vendor-misc
+- `fix-vendor-misc-definitive.sh` - **NOVO** Script para correção definitiva vendor-misc
 - `fix-rollup-dependencies.sh` - **NOVO** Script para corrigir dependências do Rollup
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
@@ -857,6 +864,7 @@ performance!**
 - **Inicialização Charts Corrigida:** Charts incluídos no vendor-misc para evitar problemas
 - **CORS + Frontend Corrigidos:** CORS configurado para permitir requisições sem origin em produção
 - **Vendor-Misc Corrigido:** Configuração Vite otimizada e dependências D3 excluídas do optimizeDeps
+- **Vendor-Misc Definitivo:** Configuração Vite mais conservadora para resolver problemas persistentes
 - **Dependências Rollup Corrigidas:** Problema com dependências opcionais do Rollup resolvido
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
