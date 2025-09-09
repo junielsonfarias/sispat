@@ -486,9 +486,9 @@ chmod +x fix-postgresql.sh
 
 ### **Problema 5: Conflito de Dependências NPM (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `ERESOLVE unable to resolve dependency tree` - Conflito entre React 19 e Sentry
-**🔧 Solução:** Os scripts agora usam `--legacy-peer-deps` automaticamente
-**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+**❌ Erro:** `ERESOLVE unable to resolve dependency tree` - Conflito entre React 19 e Sentry **🔧
+Solução:** Os scripts agora usam `--legacy-peer-deps` automaticamente **✅ Status:** **RESOLVIDO** -
+Correção integrada automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
@@ -497,7 +497,20 @@ chmod +x fix-npm-dependencies.sh
 ./fix-npm-dependencies.sh
 ```
 
-### **Problema 6: pnpm-lock.yaml incompatível**
+### **Problema 6: Função gen_random_uuid() não existe (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `function gen_random_uuid() does not exist` - Extensão pgcrypto não habilitada
+**🔧 Solução:** Os scripts agora habilitam extensões PostgreSQL automaticamente
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Se ainda houver problemas, execute o script de correção:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-uuid.sh -o fix-postgresql-uuid.sh
+chmod +x fix-postgresql-uuid.sh
+./fix-postgresql-uuid.sh
+```
+
+### **Problema 7: pnpm-lock.yaml incompatível**
 
 ```bash
 # Tentar instalar com força
@@ -508,7 +521,7 @@ rm pnpm-lock.yaml
 npm install --legacy-peer-deps
 ```
 
-### **Problema 7: Husky não encontrado**
+### **Problema 8: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -639,19 +652,22 @@ performance!**
 4. **NODE_ENV:** Conflito com Vite - **RESOLVIDO**
 5. **Autenticação PostgreSQL:** Usuário e senha incorretos - **RESOLVIDO**
 6. **Configuração Nginx:** Erro de valor inválido "must-revalidate" - **RESOLVIDO**
-7. **Conflito de Dependências NPM (CRÍTICO):** `ERESOLVE unable to resolve dependency tree` - **RESOLVIDO**
-8. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-9. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-10. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-11. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-12. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-13. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+7. **Conflito de Dependências NPM (CRÍTICO):** `ERESOLVE unable to resolve dependency tree` -
+   **RESOLVIDO**
+8. **Função gen_random_uuid() não existe (CRÍTICO):** Extensão pgcrypto não habilitada - **RESOLVIDO**
+9. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+10. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+11. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+12. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+13. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+14. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
 - `install-vps-simple.sh` - **NOVO** Script simplificado para iniciantes
 - `install-vps-complete-fixed.sh` - **NOVO** Script completo corrigido
 - `fix-npm-dependencies.sh` - **NOVO** Script para corrigir conflitos de dependências
+- `fix-postgresql-uuid.sh` - **NOVO** Script para corrigir função gen_random_uuid()
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -666,6 +682,7 @@ performance!**
 - **Validação de Entrada:** Todas as entradas são validadas antes da instalação
 - **Senhas Seguras:** Geração automática de JWT secret e validação de senhas
 - **Resolução de Dependências:** Conflitos NPM resolvidos automaticamente com --legacy-peer-deps
+- **Extensões PostgreSQL:** pgcrypto, uuid-ossp, unaccent, pg_trgm habilitadas automaticamente
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos

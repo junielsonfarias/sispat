@@ -280,7 +280,15 @@ log "📦 Instalando dependências..."
 npm install --legacy-peer-deps
 success "Dependências instaladas"
 
-# 13. Executar migrações
+# 13. Habilitar extensões PostgreSQL
+log "🔧 Habilitando extensões PostgreSQL..."
+sudo -u postgres psql -d sispat_production -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" 2>/dev/null || true
+sudo -u postgres psql -d sispat_production -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" 2>/dev/null || true
+sudo -u postgres psql -d sispat_production -c "CREATE EXTENSION IF NOT EXISTS unaccent;" 2>/dev/null || true
+sudo -u postgres psql -d sispat_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;" 2>/dev/null || true
+success "Extensões PostgreSQL habilitadas"
+
+# 14. Executar migrações
 log "🗄️ Executando migrações do banco..."
 if [ -f "server/database/migrate.js" ]; then
     node server/database/migrate.js
@@ -289,12 +297,12 @@ else
     warning "⚠️ Arquivo de migração não encontrado"
 fi
 
-# 14. Build do frontend
+# 15. Build do frontend
 log "🏗️ Fazendo build do frontend..."
 npm run build
 success "Frontend buildado"
 
-# 15. Configurar Nginx
+# 16. Configurar Nginx
 log "🌐 Configurando Nginx..."
 cat > /etc/nginx/sites-available/sispat << EOF
 server {
