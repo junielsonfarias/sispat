@@ -46,6 +46,11 @@ export interface User extends BaseEntity {
   municipalityName?: string;
   sector?: string;
   responsibleSectors?: string[];
+  sectors?: Array<{
+    id: string;
+    name: string;
+    isPrimary: boolean;
+  }>;
   avatarUrl?: string;
   isActive: boolean;
   failedLoginAttempts?: number;
@@ -117,6 +122,7 @@ export interface Patrimonio extends BaseEntity {
   emprestimo_ativo?: boolean;
   transferencia_pendente?: boolean;
   doado?: boolean;
+  label_template_id?: string;
 }
 
 // Imóvel

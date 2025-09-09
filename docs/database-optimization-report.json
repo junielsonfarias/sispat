@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-09-09T14:53:16.010Z",
+  "database": "sispat_db",
+  "host": "localhost",
+  "port": 5432,
+  "optimizations": {
+    "extensions": ["pg_stat_statements", "pg_trgm", "btree_gin", "btree_gist", "unaccent", "pgcrypto"],
+    "indexes": "141",
+    "tables_analyzed": 29,
+    "monitoring_function": true,
+    "backup_user": true
+  },
+  "recommendations": [
+    "Configure backup automático diário",
+    "Monitore performance regularmente",
+    "Execute VACUUM ANALYZE semanalmente",
+    "Configure alertas para métricas críticas",
+    "Considere particionamento para tabelas grandes"
+  ]
+}

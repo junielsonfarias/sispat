@@ -48,7 +48,6 @@ type PatrimonioFormValues = z.infer<typeof patrimonioBaseSchema>;
 
 const BensCreate = () => {
   // Componente para cadastro de novos bens patrimoniais
-  console.log('🏠 BensCreate - Componente montado');
   const navigate = useNavigate();
   const { user } = useAuth();
   const { patrimonios, addPatrimonio } = usePatrimonio();
@@ -69,21 +68,9 @@ const BensCreate = () => {
   const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
   const [generatedNumber, setGeneratedNumber] = useState<string | null>(null);
 
-  console.log(
-    '👤 Usuário:',
-    user?.name,
-    'Role:',
-    user?.role,
-    'Municipality:',
-    user?.municipalityId
-  );
-  console.log('📋 Setores disponíveis:', sectors.length);
-  console.log('📋 Patrimônios carregados:', patrimonios.length);
-
   // Carregar setores automaticamente quando o componente for montado
   useEffect(() => {
     if (user?.municipalityId) {
-      console.log('🔄 Carregando setores para município:', user.municipalityId);
       fetchSectorsByMunicipality(user.municipalityId);
     }
   }, [user?.municipalityId, fetchSectorsByMunicipality]);
@@ -166,8 +153,6 @@ const BensCreate = () => {
     if (selectedSector) {
       const generateNumber = async () => {
         try {
-          console.log('🔍 Gerando número para setor:', selectedSector.name);
-
           // Usar o serviço de API existente que já tem autenticação
           const data = await api.get<{
             success: boolean;
@@ -180,10 +165,6 @@ const BensCreate = () => {
           }>(`/patrimonios/generate-number/${selectedSector.id}`);
 
           if (data.success) {
-            console.log(
-              '✅ Número gerado pelo backend:',
-              data.numero_patrimonio
-            );
             setGeneratedNumber(data.numero_patrimonio);
           } else {
             throw new Error(data.error || 'Erro ao gerar número');
@@ -211,10 +192,8 @@ const BensCreate = () => {
   // Carregar locais do setor selecionado
   useEffect(() => {
     if (selectedSector) {
-      console.log('🔍 Carregando locais do setor:', selectedSector.name);
       fetchLocalsBySector(selectedSector.id).then(locals => {
         setSectorLocals(locals);
-        console.log('✅ Locais carregados para o setor:', locals.length);
       });
     } else {
       setSectorLocals([]);
@@ -229,12 +208,7 @@ const BensCreate = () => {
   }, [sectorLocals]);
 
   const onSubmit = async (data: PatrimonioFormValues) => {
-    console.log('🔄 onSubmit - Iniciando criação de patrimônio');
-    console.log('👤 Usuário:', user?.name);
-    console.log('📋 Número gerado:', generatedNumber);
-
     if (!user || !generatedNumber) {
-      console.log('❌ Usuário ou número não disponível');
       return;
     }
 
@@ -263,14 +237,8 @@ const BensCreate = () => {
         valor_residual: data.valor_residual,
       };
 
-      console.log('📋 Dados do patrimônio:', patrimonioData);
-      console.log('🔍 Setor responsável:', data.setor_responsavel);
-      console.log('🔍 Local objeto:', data.local_objeto);
-
       // Chamar o backend para criar o patrimônio
-      console.log('🔄 Chamando addPatrimonio...');
       const newPatrimonio = await addPatrimonio(patrimonioData);
-      console.log('✅ Patrimônio criado:', newPatrimonio);
 
       // Exibir toast de sucesso
       toast({
@@ -279,14 +247,11 @@ const BensCreate = () => {
       });
 
       // Redirecionar para a lista imediatamente
-      console.log('🔄 Redirecionando para /bens-cadastrados');
       navigate('/bens-cadastrados', { replace: true });
-      console.log('✅ Redirecionamento executado');
     } catch (error) {
       console.error('❌ Erro ao criar patrimônio:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'Falha ao criar o bem.';
-      console.log('❌ Mensagem de erro:', errorMessage);
       toast({
         variant: 'destructive',
         title: 'Erro',

@@ -9,6 +9,7 @@ import asyncReportsRoutes from './async-reports.js';
 import authRoutes from './auth.js';
 import backupEnhancedRoutes from './backup-enhanced.js';
 import cacheAdminRoutes from './cache-admin.js';
+import customizationRoutes from './customization.js';
 import databaseRoutes from './database-optimization.js';
 import debugRoutes from './debug.js';
 import imoveisRoutes from './imoveis.js';
@@ -58,6 +59,7 @@ export function registerRoutes(app) {
   app.use('/api/reports', reportsRoutes);
   app.use('/api/uploads', uploadsRoutes);
   app.use('/api/activity-log', activityLogRoutes);
+  app.use('/api/customization', customizationRoutes);
   console.log('✅ Rotas principais registradas');
 
   // Rotas administrativas

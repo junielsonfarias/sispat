@@ -140,11 +140,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       sessionStorage.getItem('sispat_auth_token');
     if (token) {
       try {
+        console.log('🔍 Fetching current user from /auth/me...');
         const currentUser = await api.get<User>('/auth/me');
+        console.log('✅ Current user data received:', {
+          name: currentUser.name,
+          email: currentUser.email,
+          role: currentUser.role,
+          municipalityId: currentUser.municipalityId,
+          sectors: currentUser.sectors,
+          sector: currentUser.sector,
+          responsibleSectors: currentUser.responsibleSectors,
+        });
         setUser(currentUser);
         // Fetch fresh users after successful authentication
         await fetchUsers();
       } catch (error) {
+        console.error('❌ Error fetching current user:', error);
         localStorage.removeItem('sispat_auth_token');
         sessionStorage.removeItem('sispat_auth_token');
         setUser(null);

@@ -1,390 +1,280 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useCache } from './useCache';
-import { useVirtualizedList } from './useVirtualizedList';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
-export interface PerformanceMetrics {
-  renderTime: number;
-  dataProcessingTime: number;
-  cacheHitRate: number;
-  memoryUsage: number;
-  listVirtualized: boolean;
-  totalItems: number;
-  visibleItems: number;
-}
-
-export interface OptimizationOptions {
+interface PerformanceOptions {
   enableCache?: boolean;
   enableVirtualization?: boolean;
   enableMemoization?: boolean;
   cacheKey?: string;
   cacheTTL?: number;
   virtualizationThreshold?: number;
-  itemHeight?: number;
-  containerHeight?: number;
+  debounceMs?: number;
 }
 
-// Hook principal para otimização de performance
-export function usePerformanceOptimization<T extends { id: string | number }>(
+interface PerformanceMetrics {
+  renderTime: number;
+  dataSize: number;
+  cacheHits: number;
+  cacheMisses: number;
+  virtualizationEnabled: boolean;
+  memoizationEnabled: boolean;
+}
+
+interface PerformanceOptimizationReturn<T> {
+  data: T[];
+  totalCount: number;
+  isLoading: boolean;
+  isVirtualized: boolean;
+  metrics: PerformanceMetrics;
+  currentPage: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  goToPage: (page: number) => void;
+  nextPage: () => void;
+  prevPage: () => void;
+  invalidateCache: () => void;
+  optimize: () => void;
+}
+
+const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+export function usePerformanceOptimization<T>(
   data: T[],
-  options: OptimizationOptions = {}
-) {
+  options: PerformanceOptions = {}
+): PerformanceOptimizationReturn<T> {
   const {
     enableCache = true,
     enableVirtualization = true,
     enableMemoization = true,
-    cacheKey = 'performance_data',
+    cacheKey = 'default',
     cacheTTL = 5 * 60 * 1000, // 5 minutos
     virtualizationThreshold = 100,
-    itemHeight = 50,
-    containerHeight = 400,
+    debounceMs = 300,
   } = options;
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     renderTime: 0,
-    dataProcessingTime: 0,
-    cacheHitRate: 0,
-    memoryUsage: 0,
-    listVirtualized: false,
-    totalItems: 0,
-    visibleItems: 0,
+    dataSize: 0,
+    cacheHits: 0,
+    cacheMisses: 0,
+    virtualizationEnabled: false,
+    memoizationEnabled: false,
   });
 
   const renderStartTime = useRef<number>(0);
-  const processingStartTime = useRef<number>(0);
+  const cacheHitsRef = useRef(0);
+  const cacheMissesRef = useRef(0);
 
-  // Cache inteligente
-  const {
-    data: cachedData,
-    isLoading: cacheLoading,
-    mutate: updateCache,
-  } = useCache(cacheKey, () => Promise.resolve(data), {
-    ttl: cacheTTL,
-    persistToStorage: true,
-    version: '1.0',
-  });
-
-  // Dados processados com memoização
-  const processedData = useMemo(() => {
+  // Memoização dos dados
+  const memoizedData = useMemo(() => {
     if (!enableMemoization) return data;
 
-    processingStartTime.current = performance.now();
-
-    // Simular processamento de dados
-    const processed = enableCache && cachedData ? cachedData : data;
-
-    const processingTime = performance.now() - processingStartTime.current;
-
-    setMetrics(prev => ({
-      ...prev,
-      dataProcessingTime: processingTime,
-      totalItems: processed.length,
-    }));
-
-    return processed;
-  }, [data, cachedData, enableCache, enableMemoization]);
-
-  // Virtualização de lista
-  const virtualizationConfig = useVirtualizedList({
-    data: processedData,
-    itemHeight,
-    containerHeight,
-    pageSize: 50,
-  });
-
-  const shouldVirtualize =
-    enableVirtualization && processedData.length > virtualizationThreshold;
-
-  const optimizedData = shouldVirtualize
-    ? virtualizationConfig.visibleItems
-    : processedData;
-
-  // Métricas de performance
-  useEffect(() => {
     renderStartTime.current = performance.now();
-  });
-
-  useEffect(() => {
+    const result = [...data];
     const renderTime = performance.now() - renderStartTime.current;
 
     setMetrics(prev => ({
       ...prev,
       renderTime,
-      listVirtualized: shouldVirtualize,
-      visibleItems: optimizedData.length,
-      memoryUsage: getMemoryUsage(),
+      dataSize: result.length,
+      memoizationEnabled: true,
     }));
-  }, [optimizedData, shouldVirtualize]);
 
-  // Função para medir uso de memória (aproximado)
-  const getMemoryUsage = useCallback(() => {
-    if ('memory' in performance) {
-      return (performance as any).memory.usedJSHeapSize / 1024 / 1024; // MB
+    return result;
+  }, [data, enableMemoization]);
+
+  // Cache de dados
+  const getCachedData = useCallback((key: string) => {
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.timestamp < cached.ttl) {
+      cacheHitsRef.current++;
+      return cached.data;
     }
-    return 0;
+    cacheMissesRef.current++;
+    return null;
   }, []);
 
-  // Função para invalidar cache
-  const invalidateCache = useCallback(() => {
-    updateCache();
-  }, [updateCache]);
+  const setCachedData = useCallback(
+    (key: string, data: any) => {
+      cache.set(key, {
+        data,
+        timestamp: Date.now(),
+        ttl: cacheTTL,
+      });
+    },
+    [cacheTTL]
+  );
 
-  // Função para otimização manual
-  const optimize = useCallback(() => {
-    // Força garbage collection se disponível
-    if ('gc' in window && typeof (window as any).gc === 'function') {
-      (window as any).gc();
+  // Dados otimizados
+  const optimizedData = useMemo(() => {
+    if (!enableCache) return memoizedData;
+
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      setMetrics(prev => ({
+        ...prev,
+        cacheHits: cacheHitsRef.current,
+        cacheMisses: cacheMissesRef.current,
+      }));
+      return cached;
     }
 
-    // Atualiza cache
-    invalidateCache();
+    const result = memoizedData;
+    setCachedData(cacheKey, result);
+
+    setMetrics(prev => ({
+      ...prev,
+      cacheHits: cacheHitsRef.current,
+      cacheMisses: cacheMissesRef.current,
+    }));
+
+    return result;
+  }, [memoizedData, enableCache, cacheKey, getCachedData, setCachedData]);
+
+  // Virtualização
+  const isVirtualized = useMemo(() => {
+    const shouldVirtualize =
+      enableVirtualization && optimizedData.length > virtualizationThreshold;
+    setMetrics(prev => ({
+      ...prev,
+      virtualizationEnabled: shouldVirtualize,
+    }));
+    return shouldVirtualize;
+  }, [enableVirtualization, optimizedData.length, virtualizationThreshold]);
+
+  // Paginação
+  const pageSize = isVirtualized ? 50 : 100;
+  const totalCount = optimizedData.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasNextPage = currentPage < totalPages;
+  const hasPrevPage = currentPage > 1;
+
+  const paginatedData = useMemo(() => {
+    if (!isVirtualized) return optimizedData;
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return optimizedData.slice(startIndex, endIndex);
+  }, [optimizedData, currentPage, pageSize, isVirtualized]);
+
+  // Funções de navegação
+  const goToPage = useCallback(
+    (page: number) => {
+      if (page >= 1 && page <= totalPages) {
+        setCurrentPage(page);
+      }
+    },
+    [totalPages]
+  );
+
+  const nextPage = useCallback(() => {
+    if (hasNextPage) {
+      setCurrentPage(prev => prev + 1);
+    }
+  }, [hasNextPage]);
+
+  const prevPage = useCallback(() => {
+    if (hasPrevPage) {
+      setCurrentPage(prev => prev - 1);
+    }
+  }, [hasPrevPage]);
+
+  // Invalidação de cache
+  const invalidateCache = useCallback(() => {
+    cache.delete(cacheKey);
+    cacheMissesRef.current++;
+    setMetrics(prev => ({
+      ...prev,
+      cacheMisses: cacheMissesRef.current,
+    }));
+  }, [cacheKey]);
+
+  // Otimização manual
+  const optimize = useCallback(() => {
+    setIsLoading(true);
+
+    // Simular otimização
+    setTimeout(() => {
+      invalidateCache();
+      setCurrentPage(1);
+      setIsLoading(false);
+    }, 1000);
   }, [invalidateCache]);
 
   return {
-    // Dados otimizados
-    data: optimizedData,
-    totalCount: processedData.length,
-
-    // Estados
-    isLoading: cacheLoading,
-    isVirtualized: shouldVirtualize,
-
-    // Controles de virtualização
-    ...virtualizationConfig,
-
-    // Métricas
+    data: paginatedData,
+    totalCount,
+    isLoading,
+    isVirtualized,
     metrics,
-
-    // Controles
+    currentPage,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    goToPage,
+    nextPage,
+    prevPage,
     invalidateCache,
     optimize,
-
-    // Configuração
-    options: {
-      enableCache,
-      enableVirtualization,
-      enableMemoization,
-      virtualizationThreshold,
-    },
   };
 }
 
-// Hook para monitoramento de performance em tempo real
-export function usePerformanceMonitor() {
-  const [metrics, setMetrics] = useState({
-    fps: 0,
-    memoryUsage: 0,
-    renderTime: 0,
-    componentCount: 0,
-  });
+// Hook para debounce
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
-  const frameCount = useRef(0);
-  const lastTime = useRef(Date.now());
-  const animationFrame = useRef<number>();
-
-  const measureFPS = useCallback(() => {
-    frameCount.current++;
-    const now = Date.now();
-
-    if (now - lastTime.current >= 1000) {
-      const fps = Math.round(
-        (frameCount.current * 1000) / (now - lastTime.current)
-      );
-      frameCount.current = 0;
-      lastTime.current = now;
-
-      setMetrics(prev => ({
-        ...prev,
-        fps,
-        memoryUsage: getMemoryUsage(),
-        renderTime: performance.now(),
-      }));
-    }
-
-    animationFrame.current = requestAnimationFrame(measureFPS);
-  }, []);
-
-  const getMemoryUsage = useCallback(() => {
-    if ('memory' in performance) {
-      return Math.round(
-        (performance as any).memory.usedJSHeapSize / 1024 / 1024
-      );
-    }
-    return 0;
-  }, []);
-
-  useEffect(() => {
-    animationFrame.current = requestAnimationFrame(measureFPS);
+  useMemo(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
     return () => {
-      if (animationFrame.current) {
-        cancelAnimationFrame(animationFrame.current);
-      }
+      clearTimeout(handler);
     };
-  }, [measureFPS]);
-
-  return metrics;
-}
-
-// Hook para otimização de imagens
-export function useImageOptimization(
-  src: string,
-  options: {
-    lazy?: boolean;
-    quality?: number;
-    format?: 'webp' | 'avif' | 'auto';
-    sizes?: string;
-  } = {}
-) {
-  const { lazy = true, quality = 80, format = 'auto', sizes } = options;
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState(false);
-  const imgRef = useRef<HTMLImageElement>();
-
-  const optimizedSrc = useMemo(() => {
-    // Aqui você pode implementar lógica para otimização de imagens
-    // Por exemplo, usar um serviço como Cloudinary ou ImageKit
-    let optimized = src;
-
-    if (quality < 100) {
-      optimized += `?q=${quality}`;
-    }
-
-    if (format !== 'auto') {
-      optimized += `&f=${format}`;
-    }
-
-    return optimized;
-  }, [src, quality, format]);
-
-  useEffect(() => {
-    if (!lazy) {
-      const img = new Image();
-      img.onload = () => setLoaded(true);
-      img.onerror = () => setError(true);
-      img.src = optimizedSrc;
-      imgRef.current = img;
-    }
-  }, [optimizedSrc, lazy]);
-
-  const load = useCallback(() => {
-    if (lazy && !loaded && !error) {
-      const img = new Image();
-      img.onload = () => setLoaded(true);
-      img.onerror = () => setError(true);
-      img.src = optimizedSrc;
-      imgRef.current = img;
-    }
-  }, [optimizedSrc, lazy, loaded, error]);
-
-  return {
-    src: optimizedSrc,
-    loaded,
-    error,
-    load,
-    sizes,
-  };
-}
-
-// Hook para debounce otimizado
-export function useOptimizedDebounce<T>(
-  value: T,
-  delay: number,
-  options: {
-    leading?: boolean;
-    trailing?: boolean;
-    maxWait?: number;
-  } = {}
-) {
-  const { leading = false, trailing = true, maxWait } = options;
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  const maxTimeoutRef = useRef<NodeJS.Timeout>();
-  const lastCallTime = useRef<number>(0);
-  const lastInvokeTime = useRef<number>(0);
-
-  const invokeFunc = useCallback(() => {
-    setDebouncedValue(value);
-    lastInvokeTime.current = Date.now();
-  }, [value]);
-
-  const leadingEdge = useCallback(() => {
-    lastInvokeTime.current = Date.now();
-    if (leading) {
-      invokeFunc();
-    }
-  }, [leading, invokeFunc]);
-
-  const remainingWait = useCallback(
-    (time: number) => {
-      const timeSinceLastCall = time - lastCallTime.current;
-      const timeSinceLastInvoke = time - lastInvokeTime.current;
-      const timeWaiting = delay - timeSinceLastCall;
-
-      return maxWait !== undefined
-        ? Math.min(timeWaiting, maxWait - timeSinceLastInvoke)
-        : timeWaiting;
-    },
-    [delay, maxWait]
-  );
-
-  const shouldInvoke = useCallback(
-    (time: number) => {
-      const timeSinceLastCall = time - lastCallTime.current;
-      const timeSinceLastInvoke = time - lastInvokeTime.current;
-
-      return (
-        lastCallTime.current === 0 ||
-        timeSinceLastCall >= delay ||
-        timeSinceLastCall < 0 ||
-        (maxWait !== undefined && timeSinceLastInvoke >= maxWait)
-      );
-    },
-    [delay, maxWait]
-  );
-
-  useEffect(() => {
-    const time = Date.now();
-    lastCallTime.current = time;
-
-    if (shouldInvoke(time)) {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (maxTimeoutRef.current) {
-        clearTimeout(maxTimeoutRef.current);
-      }
-      leadingEdge();
-    } else {
-      const wait = remainingWait(time);
-
-      timeoutRef.current = setTimeout(() => {
-        if (trailing) {
-          invokeFunc();
-        }
-      }, wait);
-
-      if (maxWait !== undefined) {
-        maxTimeoutRef.current = setTimeout(invokeFunc, maxWait);
-      }
-    }
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (maxTimeoutRef.current) {
-        clearTimeout(maxTimeoutRef.current);
-      }
-    };
-  }, [
-    value,
-    shouldInvoke,
-    remainingWait,
-    leadingEdge,
-    invokeFunc,
-    trailing,
-    maxWait,
-  ]);
+  }, [value, delay]);
 
   return debouncedValue;
+}
+
+// Hook para throttle
+export function useThrottle<T>(value: T, limit: number): T {
+  const [throttledValue, setThrottledValue] = useState<T>(value);
+  const lastRan = useRef<number>(Date.now());
+
+  useMemo(() => {
+    if (Date.now() - lastRan.current >= limit) {
+      setThrottledValue(value);
+      lastRan.current = Date.now();
+    } else {
+      const timeout = setTimeout(
+        () => {
+          setThrottledValue(value);
+          lastRan.current = Date.now();
+        },
+        limit - (Date.now() - lastRan.current)
+      );
+
+      return () => clearTimeout(timeout);
+    }
+  }, [value, limit]);
+
+  return throttledValue;
+}
+
+// Hook para memoização de funções
+export function useStableCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  deps: React.DependencyList
+): T {
+  return useCallback(callback, deps);
+}
+
+// Hook para memoização de valores
+export function useStableMemo<T>(
+  factory: () => T,
+  deps: React.DependencyList
+): T {
+  return useMemo(factory, deps);
 }

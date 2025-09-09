@@ -1,8 +1,17 @@
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { usePatrimonio } from '@/contexts/PatrimonioContext';
 import { useAuth } from '@/hooks/useAuth';
-import { isAfter, subMonths } from 'date-fns';
-import { AlertCircle, Folder, PlusCircle, UserCheck } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+import { Patrimonio } from '@/types';
+import { format, isAfter, subMonths } from 'date-fns';
+import {
+  AlertTriangle,
+  Archive,
+  DollarSign,
+  PlusCircle,
+  Wrench,
+  XCircle,
+} from 'lucide-react';
 import { useMemo } from 'react';
 import {
   Bar,
@@ -21,11 +30,31 @@ const UserDashboard = () => {
   const { patrimonios } = usePatrimonio();
 
   const userPatrimonios = useMemo(() => {
-    if (!user?.sector) return [];
-    return patrimonios.filter(p => p.setor_responsavel === user.sector);
+    if (!user?.sectors || user.sectors.length === 0) {
+      // Fallback para o campo sector antigo
+      if (!user?.sector) return [];
+      return patrimonios.filter(p => p.setor_responsavel === user.sector);
+    }
+
+    // Usar os setores do usuário logado
+    const userSectorNames = user.sectors.map(s => s.name);
+    return patrimonios.filter(
+      p => p.setor_responsavel && userSectorNames.includes(p.setor_responsavel)
+    );
   }, [patrimonios, user]);
 
   const stats = useMemo(() => {
+    const totalValue = userPatrimonios.reduce(
+      (acc, p) => acc + (parseFloat(p.valor_aquisicao) || 0),
+      0
+    );
+    const statusCounts = userPatrimonios.reduce(
+      (acc, p) => {
+        acc[p.status] = (acc[p.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<Patrimonio['status'], number>
+    );
     const oneMonthAgo = subMonths(new Date(), 1);
     const addedThisMonth = userPatrimonios.filter(p =>
       isAfter(new Date(p.data_aquisicao), oneMonthAgo)
@@ -33,39 +62,69 @@ const UserDashboard = () => {
     const needsAttention = userPatrimonios.filter(
       p => p.situacao_bem === 'RUIM' || p.situacao_bem === 'PESSIMO'
     ).length;
+    const baixadosLastMonth = userPatrimonios.filter(
+      p =>
+        p.status === 'baixado' &&
+        p.data_baixa &&
+        new Date(p.data_baixa) > oneMonthAgo
+    ).length;
 
     return {
       total: userPatrimonios.length,
-      responsible: userPatrimonios.length, // Simplified for now
+      totalValue,
       needsAttention,
       addedThisMonth,
+      baixadosLastMonth,
+      activePercentage:
+        userPatrimonios.length > 0
+          ? ((statusCounts.ativo || 0) / userPatrimonios.length) * 100
+          : 0,
+      maintenanceCount: statusCounts.manutencao || 0,
     };
   }, [userPatrimonios]);
 
   const statsCards = [
     {
-      title: 'Bens no Setor',
+      title: 'Total de Bens',
       value: stats.total.toString(),
-      icon: Folder,
+      icon: Archive,
       color: 'text-blue-500',
+      description: 'Bens no setor',
     },
     {
-      title: 'Sob Minha Responsabilidade',
-      value: stats.responsible.toString(),
-      icon: UserCheck,
+      title: 'Valor Total',
+      value: formatCurrency(stats.totalValue),
+      icon: DollarSign,
       color: 'text-green-500',
+      description: 'Valor dos bens',
     },
     {
       title: 'Necessitam Atenção',
       value: stats.needsAttention.toString(),
-      icon: AlertCircle,
+      icon: AlertTriangle,
       color: 'text-yellow-500',
+      description: 'Bens em situação ruim',
+    },
+    {
+      title: 'Em Manutenção',
+      value: stats.maintenanceCount.toString(),
+      icon: Wrench,
+      color: 'text-orange-500',
+      description: 'Bens em manutenção',
     },
     {
       title: 'Adicionados Este Mês',
       value: stats.addedThisMonth.toString(),
       icon: PlusCircle,
       color: 'text-green-500',
+      description: 'Novos bens',
+    },
+    {
+      title: 'Baixados Este Mês',
+      value: stats.baixadosLastMonth.toString(),
+      icon: XCircle,
+      color: 'text-red-500',
+      description: 'Bens baixados',
     },
   ];
 
@@ -112,6 +171,27 @@ const UserDashboard = () => {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [userPatrimonios]);
 
+  const evolutionData = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, i) =>
+      subMonths(new Date(), 5 - i)
+    );
+    return months.map(month => {
+      const monthStr = format(month, 'MMM');
+      const aquisicoes = userPatrimonios.filter(
+        p =>
+          p.data_aquisicao &&
+          format(new Date(p.data_aquisicao), 'yyyy-MM') ===
+            format(month, 'yyyy-MM')
+      ).length;
+      const baixas = userPatrimonios.filter(
+        p =>
+          p.data_baixa &&
+          format(new Date(p.data_baixa), 'yyyy-MM') === format(month, 'yyyy-MM')
+      ).length;
+      return { month: monthStr, aquisicoes, baixas };
+    });
+  }, [userPatrimonios]);
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-gray-50 to-gray-100'>
       <div className='container mx-auto p-6'>
@@ -138,9 +218,11 @@ const UserDashboard = () => {
                 Dashboard do Usuário
               </h1>
               <p className='text-sm text-gray-600'>
-                Visão geral do setor:{' '}
+                Visão geral dos setores:{' '}
                 <span className='font-semibold text-blue-600'>
-                  {user?.sector}
+                  {user?.sectors && user.sectors.length > 0
+                    ? user.sectors.map(s => s.name).join(', ')
+                    : user?.sector || 'Não definido'}
                 </span>
               </p>
             </div>
@@ -148,58 +230,63 @@ const UserDashboard = () => {
         </div>
 
         {/* Cards de estatísticas modernos */}
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6'>
+        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6'>
           {statsCards.map((card, index) => {
             const colors = [
               'from-blue-50 to-blue-100 border-blue-200',
               'from-green-50 to-green-100 border-green-200',
               'from-yellow-50 to-yellow-100 border-yellow-200',
-              'from-purple-50 to-purple-100 border-purple-200',
+              'from-orange-50 to-orange-100 border-orange-200',
+              'from-emerald-50 to-emerald-100 border-emerald-200',
+              'from-red-50 to-red-100 border-red-200',
             ];
             const iconColors = [
               'bg-blue-500',
               'bg-green-500',
               'bg-yellow-500',
-              'bg-purple-500',
+              'bg-orange-500',
+              'bg-emerald-500',
+              'bg-red-500',
             ];
 
             return (
               <div
                 key={card.title}
-                className={`bg-gradient-to-br ${colors[index]} rounded-xl shadow-lg border ${iconColors[index].replace('bg-', 'border-')} p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}
+                className={`bg-gradient-to-br ${colors[index]} rounded-lg shadow-md border ${iconColors[index].replace('bg-', 'border-')} p-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1`}
               >
-                <div className='flex items-center justify-between'>
-                  <div>
-                    <h3 className='text-sm font-semibold text-gray-700 mb-2'>
-                      {card.title}
-                    </h3>
-                    <p className='text-4xl font-bold text-gray-800'>
-                      {card.value}
-                    </p>
-                  </div>
+                <div className='flex flex-col items-center text-center'>
                   <div
-                    className={`w-12 h-12 ${iconColors[index]} rounded-lg flex items-center justify-center`}
+                    className={`w-10 h-10 ${iconColors[index]} rounded-lg flex items-center justify-center mb-2`}
                   >
-                    <card.icon className='w-6 h-6 text-white' />
+                    <card.icon className='w-5 h-5 text-white' />
                   </div>
+                  <h3 className='text-xs font-semibold text-gray-700 mb-1 leading-tight'>
+                    {card.title}
+                  </h3>
+                  <p className='text-2xl font-bold text-gray-800'>
+                    {card.value}
+                  </p>
+                  {card.description && (
+                    <p className='text-xs text-gray-600 mt-1 leading-tight'>
+                      {card.description}
+                    </p>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
         {/* Gráficos modernos */}
-        <div className='grid gap-6 md:grid-cols-1 lg:grid-cols-2'>
-          <div className='bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
-            <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200'>
-              <h2 className='text-lg font-semibold text-gray-800'>
-                Status dos Meus Bens
+        <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+          <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
+            <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200'>
+              <h2 className='text-base font-semibold text-gray-800'>
+                Status dos Bens
               </h2>
-              <p className='text-sm text-gray-600'>
-                Distribuição por situação atual
-              </p>
+              <p className='text-xs text-gray-600'>Distribuição por situação</p>
             </div>
-            <div className='p-6'>
-              <ChartContainer config={{}} className='h-[300px] w-full'>
+            <div className='p-4'>
+              <ChartContainer config={{}} className='h-[250px] w-full'>
                 <PieChart>
                   <Tooltip content={<ChartTooltipContent />} />
                   <Pie
@@ -222,15 +309,15 @@ const UserDashboard = () => {
             </div>
           </div>
 
-          <div className='bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden'>
-            <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200'>
-              <h2 className='text-lg font-semibold text-gray-800'>
-                Tipos de Bens no Setor
+          <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
+            <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200'>
+              <h2 className='text-base font-semibold text-gray-800'>
+                Tipos de Bens
               </h2>
-              <p className='text-sm text-gray-600'>Quantidade por categoria</p>
+              <p className='text-xs text-gray-600'>Por categoria</p>
             </div>
-            <div className='p-6'>
-              <ChartContainer config={{}} className='h-[300px] w-full'>
+            <div className='p-4'>
+              <ChartContainer config={{}} className='h-[250px] w-full'>
                 <BarChart
                   data={typesData}
                   layout='vertical'
@@ -252,6 +339,39 @@ const UserDashboard = () => {
                     dataKey='value'
                     fill='hsl(var(--chart-1))'
                     radius={[0, 4, 4, 0]}
+                  />
+                </BarChart>
+              </ChartContainer>
+            </div>
+          </div>
+
+          {/* Gráfico de Evolução Temporal */}
+          <div className='bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden'>
+            <div className='bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200'>
+              <h2 className='text-base font-semibold text-gray-800'>
+                Evolução dos Bens
+              </h2>
+              <p className='text-xs text-gray-600'>Últimos 6 meses</p>
+            </div>
+            <div className='p-4'>
+              <ChartContainer config={{}} className='h-[250px] w-full'>
+                <BarChart
+                  data={evolutionData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <XAxis dataKey='month' />
+                  <YAxis />
+                  <Tooltip content={<ChartTooltipContent />} />
+                  <Legend />
+                  <Bar
+                    dataKey='aquisicoes'
+                    fill='hsl(var(--chart-1))'
+                    name='Aquisições'
+                  />
+                  <Bar
+                    dataKey='baixas'
+                    fill='hsl(var(--chart-2))'
+                    name='Baixas'
                   />
                 </BarChart>
               </ChartContainer>

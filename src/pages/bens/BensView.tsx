@@ -31,6 +31,8 @@ import {
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+import { useLabelGenerator } from '@/components/bens/LabelGenerator';
+import { LabelTemplateSelector } from '@/components/bens/LabelTemplateSelector';
 import { usePatrimonio } from '@/contexts/PatrimonioContext';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -71,10 +73,12 @@ const BensView = () => {
   const { user } = useAuth();
   const { getPatrimonioById, updatePatrimonio, deletePatrimonio } =
     usePatrimonio();
+  const { generateLabel } = useLabelGenerator();
   const [patrimonio, setPatrimonio] = useState<Patrimonio | undefined>();
 
   const [isPrintConfigOpen, setPrintConfigOpen] = useState(false);
   const [fieldsToPrint, setFieldsToPrint] = useState<string[]>([]);
+  const [isLabelTemplateOpen, setLabelTemplateOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -158,163 +162,16 @@ const BensView = () => {
 
   const handleGenerateLabel = useCallback(() => {
     if (!patrimonio) return;
-
-    try {
-      // Criar uma nova janela para impressão da etiqueta
-      const labelWindow = window.open('', '_blank', 'width=400,height=600');
-      if (!labelWindow) {
-        toast({
-          title: 'Erro ao gerar etiqueta',
-          description: 'Permita pop-ups para gerar a etiqueta',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Gerar URL da consulta pública para o QR Code
-      const publicUrl = `${window.location.origin}/consulta-publica/${patrimonio.numero_patrimonio}`;
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(publicUrl)}&q=H`;
-
-      // Usar o modelo correto da etiqueta conforme imagem fornecida
-      const labelContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Etiqueta - ${patrimonio.numero_patrimonio}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 0;
-              padding: 5px;
-              font-size: 10px;
-            }
-            .label {
-              width: 240px; /* 60mm * 4px */
-              height: 160px; /* 40mm * 4px */
-              border: 1px solid #000;
-              position: relative;
-              background: white;
-              box-sizing: border-box;
-            }
-            .logo {
-              position: absolute;
-              left: 5%;
-              top: 5%;
-              width: 25%;
-              height: 20%;
-              text-align: center;
-              background: #FF6B35;
-              border-radius: 3px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-size: 8px;
-              font-weight: bold;
-            }
-            .entity-info {
-              position: absolute;
-              right: 5%;
-              top: 5%;
-              width: 60%;
-              height: 20%;
-              text-align: left;
-            }
-            .entity-name {
-              font-size: 6px;
-              font-weight: bold;
-              text-transform: uppercase;
-              line-height: 1.2;
-            }
-            .municipality-name {
-              font-size: 8px;
-              font-weight: bold;
-              text-transform: uppercase;
-              line-height: 1.2;
-            }
-            .department {
-              font-size: 6px;
-              line-height: 1.2;
-            }
-            .patrimony-section {
-              position: absolute;
-              left: 5%;
-              bottom: 5%;
-              width: 55%;
-              height: 25%;
-            }
-            .patrimony-label {
-              font-size: 8px;
-              font-weight: bold;
-              text-transform: uppercase;
-              margin-bottom: 2px;
-            }
-            .patrimony-number {
-              font-size: 16px;
-              font-weight: bold;
-              color: #000;
-            }
-            .qrcode {
-              position: absolute;
-              right: 5%;
-              bottom: 5%;
-              width: 30%;
-              height: 35%;
-              text-align: center;
-            }
-            .qrcode img {
-              width: 100%;
-              height: 100%;
-              object-fit: contain;
-            }
-            @media print {
-              body { margin: 0; }
-              .label { border: 1px solid #000; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="label">
-            <div class="logo">🏛️</div>
-            <div class="entity-info">
-              <div class="entity-name">PREFEITURA MUNICIPAL DE</div>
-              <div class="municipality-name">SÃO SEBASTIÃO DA BOA VISTA</div>
-              <div class="department">Secretaria de Administração e Finanças</div>
-              <div class="department">Gestão e Controle de Patrimônio</div>
-            </div>
-            <div class="patrimony-section">
-              <div class="patrimony-label">Nº PATRIMÔNIO</div>
-              <div class="patrimony-number">${patrimonio.numero_patrimonio}</div>
-            </div>
-            <div class="qrcode">
-              <img src="${qrCodeUrl}" alt="QR Code" />
-            </div>
-          </div>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() {
-                window.close();
-              }, 1000);
-            }
-          </script>
-        </body>
-        </html>
-      `;
-
-      labelWindow.document.write(labelContent);
-      labelWindow.document.close();
-
-      toast({ description: 'Etiqueta gerada com sucesso!' });
-    } catch (error) {
-      console.error('Erro ao gerar etiqueta:', error);
-      toast({
-        title: 'Erro ao gerar etiqueta',
-        description: 'Tente novamente',
-        variant: 'destructive',
-      });
-    }
+    setLabelTemplateOpen(true);
   }, [patrimonio]);
+
+  const handleLabelGenerate = useCallback(
+    (templateId: string) => {
+      if (!patrimonio) return;
+      generateLabel({ patrimonio, templateId });
+    },
+    [patrimonio]
+  );
 
   if (!patrimonio) {
     return <div>Bem não encontrado.</div>;
@@ -640,6 +497,12 @@ const BensView = () => {
         onOpenChange={setPrintConfigOpen}
         onConfirm={handlePrint}
         assetType='patrimonio'
+      />
+      <LabelTemplateSelector
+        open={isLabelTemplateOpen}
+        onOpenChange={setLabelTemplateOpen}
+        patrimonio={patrimonio}
+        onGenerate={handleLabelGenerate}
       />
     </div>
   );

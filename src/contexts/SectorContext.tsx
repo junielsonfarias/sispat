@@ -59,9 +59,30 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
           setIsLoading(false);
           return;
         } else {
-          // Para outros usuários, buscar setores do seu município
-          console.log('🔍 Usuário normal buscando setores do seu município');
-          data = await api.get<Sector[]>('/sectors');
+          // Para outros usuários, usar setores do usuário logado se disponíveis
+          if (user.sectors && user.sectors.length > 0) {
+            console.log(
+              '🔍 Usando setores do usuário logado:',
+              user.sectors.length,
+              'setores'
+            );
+            data = user.sectors.map(sector => ({
+              id: sector.id,
+              name: sector.name,
+              municipality_id: user.municipalityId || '',
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              created_by: user.id,
+              updated_by: user.id,
+            }));
+          } else {
+            // Fallback: buscar setores do município
+            console.log(
+              '🔍 Usuário sem setores, buscando setores do município'
+            );
+            data = await api.get<Sector[]>('/sectors');
+          }
         }
 
         console.log('✅ Setores carregados:', data?.length || 0, 'setores');

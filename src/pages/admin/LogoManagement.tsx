@@ -47,14 +47,22 @@ const LogoManagement = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (user?.municipalityId) {
-      saveSettingsForMunicipality(user.municipalityId, settings);
-      // Sincronizar com GlobalLogoContext
-      if (settings.activeLogoUrl) {
-        setGlobalLogoUrl(settings.activeLogoUrl);
+      try {
+        await saveSettingsForMunicipality(user.municipalityId, settings);
+        // Sincronizar com GlobalLogoContext
+        if (settings.activeLogoUrl) {
+          setGlobalLogoUrl(settings.activeLogoUrl);
+        }
+        toast({ description: 'Logos atualizados com sucesso.' });
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao salvar configurações. Tente novamente.',
+        });
       }
-      toast({ description: 'Logos atualizados com sucesso.' });
     }
   };
 

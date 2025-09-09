@@ -1,4 +1,3 @@
-import React from 'react';
 import { ImageEditor } from '@/components/profile/ImageEditor';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -15,13 +14,28 @@ import { useMunicipalities } from '@/contexts/MunicipalityContext';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Edit } from 'lucide-react';
-import { ChangeEvent, useMemo, useState } from 'react';
+import React, { ChangeEvent, useMemo, useState } from 'react';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
   const { getMunicipalityById } = useMunicipalities();
   const [isEditorOpen, setEditorOpen] = useState(false);
   const [imageToEdit, setImageToEdit] = useState<string | null>(null);
+
+  // Debug: Log user data
+  React.useEffect(() => {
+    if (user) {
+      console.log('🔍 Profile component - User data:', {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        municipalityId: user.municipalityId,
+        sectors: user.sectors,
+        sector: user.sector,
+        responsibleSectors: user.responsibleSectors,
+      });
+    }
+  }, [user]);
 
   const municipalityName = useMemo(() => {
     if (user?.municipalityId) {

@@ -27,10 +27,10 @@
     "test:frontend": "jest --testPathPattern=src",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 2000 --quiet",
     "lint:fix": "eslint . --ext ts,tsx --fix",
-    "lint:test": "eslint tests --ext ts,tsx --report-unused-disable-directives --max-warnings 2000 --quiet --config eslint.config.test.js",
+    "lint:test": "eslint tests --ext ts,tsx --report-unused-disable-directives --max-warnings 2000 --quiet",
     "format": "prettier --write .",
     "format:check": "prettier --check . --config .prettierrc",
-    "type-check": "tsc --noEmit --project tsconfig.typecheck.json",
+    "type-check": "tsc --noEmit",
     "prepare": "husky install"
   },
   "dependencies": {

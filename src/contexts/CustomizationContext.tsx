@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks/useAuth';
+import { api } from '@/services/api';
 import {
   ReactNode,
   createContext,
@@ -88,8 +89,7 @@ const CustomizationContext = createContext<CustomizationContextType | null>(
 );
 
 const defaultSettings: CustomizationSettings = {
-  activeLogoUrl:
-    'https://img.usecurling.com/i?q=brazilian%20government&color=azure',
+  activeLogoUrl: '/logo-sispat.svg',
   secondaryLogoUrl: '',
   backgroundType: 'color',
   backgroundColor: '#f1f5f9',
@@ -164,11 +164,44 @@ export const CustomizationProvider = ({
   >({});
 
   useEffect(() => {
-    const stored = localStorage.getItem('sispat_customization_settings');
-    if (stored) {
-      setAllSettings(JSON.parse(stored));
-    }
-  }, []);
+    const loadSettings = async () => {
+      // Carregar do localStorage primeiro (cache)
+      const stored = localStorage.getItem('sispat_customization_settings');
+      if (stored) {
+        setAllSettings(JSON.parse(stored));
+      }
+
+      // Carregar do backend se o usuário estiver logado
+      if (user) {
+        try {
+          const municipalityId =
+            user.role === 'superuser' ? 'superuser' : user.municipalityId;
+          if (municipalityId) {
+            const backendSettings = await api.get(
+              `/customization/settings/${municipalityId}`
+            );
+            if (backendSettings) {
+              const key = municipalityId;
+              const newSettings = {
+                ...JSON.parse(stored || '{}'),
+                [key]: backendSettings,
+              };
+              setAllSettings(newSettings);
+              localStorage.setItem(
+                'sispat_customization_settings',
+                JSON.stringify(newSettings)
+              );
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao carregar configurações do backend:', error);
+          // Continuar com cache local se houver erro
+        }
+      }
+    };
+
+    loadSettings();
+  }, [user]);
 
   const persist = (newSettings: Record<string, CustomizationSettings>) => {
     localStorage.setItem(
@@ -215,10 +248,22 @@ export const CustomizationProvider = ({
   );
 
   const saveSettingsForMunicipality = useCallback(
-    (municipalityId: string, settings: CustomizationSettings) => {
-      const key = municipalityId;
-      const newSettings = { ...allSettings, [key]: settings };
-      persist(newSettings);
+    async (municipalityId: string, settings: CustomizationSettings) => {
+      try {
+        // Salvar no backend
+        await api.post(`/customization/settings/${municipalityId}`, settings);
+
+        // Manter cache local para performance
+        const key = municipalityId;
+        const newSettings = { ...allSettings, [key]: settings };
+        persist(newSettings);
+      } catch (error) {
+        console.error('Erro ao salvar configurações:', error);
+        // Fallback: salvar apenas localmente
+        const key = municipalityId;
+        const newSettings = { ...allSettings, [key]: settings };
+        persist(newSettings);
+      }
     },
     [allSettings, persist]
   );
