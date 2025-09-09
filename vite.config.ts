@@ -59,8 +59,8 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tanstack')) {
               return 'vendor-tanstack';
             }
-            // Charts (Recharts) - chunk separado
-            if (id.includes('recharts')) {
+            // Charts (Recharts) - chunk separado com configuração mais específica
+            if (id.includes('recharts') || id.includes('d3-') || id.includes('d3')) {
               return 'vendor-charts';
             }
             // Form libraries - chunk separado
@@ -106,10 +106,18 @@ export default defineConfig(({ mode }) => ({
             }
           }
         },
+        // Configurações adicionais para evitar erros de inicialização
+        chunkFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
+          return `assets/[name]-[hash].js`;
+        },
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
     minify: mode === 'production' ? 'esbuild' : false,
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 1000, // Aumentar limite para evitar warnings desnecessários
+    target: 'es2015', // Definir target específico para melhor compatibilidade
   },
   
   optimizeDeps: {

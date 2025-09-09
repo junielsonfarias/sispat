@@ -249,6 +249,10 @@ fi
 
 # 14. Build do frontend
 log "🏗️ Fazendo build do frontend..."
+# Limpar build anterior
+rm -rf dist
+rm -rf node_modules/.vite
+# Fazer build
 npm run build
 success "Frontend buildado"
 

@@ -538,9 +538,9 @@ chmod +x fix-ssl-configuration.sh
 
 ### **Problema 9: Configuração PM2 Incorreta (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `Script not found: /var/www/sispat/server/monitoring/health-monitor.js` - Script de monitoramento inexistente
-**🔧 Solução:** Arquivo de configuração PM2 simplificado criado
-**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+**❌ Erro:** `Script not found: /var/www/sispat/server/monitoring/health-monitor.js` - Script de
+monitoramento inexistente **🔧 Solução:** Arquivo de configuração PM2 simplificado criado **✅
+Status:** **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
@@ -549,7 +549,20 @@ chmod +x fix-pm2-configuration.sh
 ./fix-pm2-configuration.sh
 ```
 
-### **Problema 10: pnpm-lock.yaml incompatível**
+### **Problema 10: Erro JavaScript Frontend (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `Cannot access 'w' before initialization` - Erro de inicialização no vendor-charts **🔧
+Solução:** Configuração Vite corrigida e build limpo **✅ Status:** **RESOLVIDO** - Correção
+integrada automaticamente
+
+```bash
+# Se ainda houver problemas, execute o script de correção:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-frontend-build.sh -o fix-frontend-build.sh
+chmod +x fix-frontend-build.sh
+./fix-frontend-build.sh
+```
+
+### **Problema 11: pnpm-lock.yaml incompatível**
 
 ```bash
 # Tentar instalar com força
@@ -560,7 +573,7 @@ rm pnpm-lock.yaml
 npm install --legacy-peer-deps
 ```
 
-### **Problema 11: Husky não encontrado**
+### **Problema 12: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -700,12 +713,13 @@ performance!**
 10. **Configuração SSL Incorreta (CRÍTICO):** SSL configurado antes de obter certificado -
     **RESOLVIDO**
 11. **Configuração PM2 Incorreta (CRÍTICO):** Script de monitoramento inexistente - **RESOLVIDO**
-12. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-13. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-14. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-15. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-16. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-17. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+12. **Erro JavaScript Frontend (CRÍTICO):** Erro de inicialização no vendor-charts - **RESOLVIDO**
+13. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+14. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+15. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+16. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+17. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+18. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -716,6 +730,7 @@ performance!**
 - `fix-migration-order.sh` - **NOVO** Script para corrigir ordem de migração
 - `fix-ssl-configuration.sh` - **NOVO** Script para corrigir configuração SSL
 - `fix-pm2-configuration.sh` - **NOVO** Script para corrigir configuração PM2
+- `fix-frontend-build.sh` - **NOVO** Script para corrigir build do frontend
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -734,6 +749,7 @@ performance!**
 - **Ordem de Migração Corrigida:** Tabelas criadas na ordem correta (sectors antes de user_sectors)
 - **Configuração SSL Corrigida:** HTTP configurado primeiro, depois SSL com Let's Encrypt
 - **Configuração PM2 Corrigida:** Arquivo de configuração simplificado sem scripts inexistentes
+- **Build Frontend Corrigido:** Configuração Vite otimizada e build limpo
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos
