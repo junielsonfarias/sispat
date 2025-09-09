@@ -484,7 +484,20 @@ chmod +x fix-postgresql.sh
 ./fix-postgresql.sh
 ```
 
-### **Problema 5: pnpm-lock.yaml incompatível**
+### **Problema 5: Conflito de Dependências NPM (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `ERESOLVE unable to resolve dependency tree` - Conflito entre React 19 e Sentry
+**🔧 Solução:** Os scripts agora usam `--legacy-peer-deps` automaticamente
+**✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Se ainda houver problemas, execute o script de correção:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-npm-dependencies.sh -o fix-npm-dependencies.sh
+chmod +x fix-npm-dependencies.sh
+./fix-npm-dependencies.sh
+```
+
+### **Problema 6: pnpm-lock.yaml incompatível**
 
 ```bash
 # Tentar instalar com força
@@ -492,10 +505,10 @@ pnpm install --force
 
 # Se falhar, usar npm
 rm pnpm-lock.yaml
-npm install
+npm install --legacy-peer-deps
 ```
 
-### **Problema 6: Husky não encontrado**
+### **Problema 7: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -626,17 +639,19 @@ performance!**
 4. **NODE_ENV:** Conflito com Vite - **RESOLVIDO**
 5. **Autenticação PostgreSQL:** Usuário e senha incorretos - **RESOLVIDO**
 6. **Configuração Nginx:** Erro de valor inválido "must-revalidate" - **RESOLVIDO**
-7. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
-8. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
-9. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
-10. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
-11. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
-12. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+7. **Conflito de Dependências NPM (CRÍTICO):** `ERESOLVE unable to resolve dependency tree` - **RESOLVIDO**
+8. **Domínio Hardcoded:** Script agora solicita domínio do usuário - **RESOLVIDO**
+9. **Senhas Fracas:** Script agora solicita senhas seguras - **RESOLVIDO**
+10. **Configuração SSL:** SSL configurado automaticamente - **RESOLVIDO**
+11. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
+12. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
+13. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
 - `install-vps-simple.sh` - **NOVO** Script simplificado para iniciantes
 - `install-vps-complete-fixed.sh` - **NOVO** Script completo corrigido
+- `fix-npm-dependencies.sh` - **NOVO** Script para corrigir conflitos de dependências
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -650,6 +665,7 @@ performance!**
 - **Configuração Dinâmica:** Script solicita domínio, senhas e email do usuário
 - **Validação de Entrada:** Todas as entradas são validadas antes da instalação
 - **Senhas Seguras:** Geração automática de JWT secret e validação de senhas
+- **Resolução de Dependências:** Conflitos NPM resolvidos automaticamente com --legacy-peer-deps
 - **SSL Automático:** Certificado SSL configurado automaticamente com Let's Encrypt
 - **Backup Automático:** Sistema de backup configurado com retenção de 7 dias
 - **Monitoramento Básico:** Verificação automática de serviços a cada 5 minutos

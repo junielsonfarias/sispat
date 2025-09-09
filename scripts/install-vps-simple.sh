@@ -226,7 +226,8 @@ fi
 
 # 11. Instalar dependências
 log "📦 Instalando dependências..."
-npm install
+# Resolver conflitos de dependências com --legacy-peer-deps
+npm install --legacy-peer-deps
 success "Dependências instaladas"
 
 # 12. Executar migrações
