@@ -1,6 +1,7 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { existsSync } from 'fs';
 import helmet from 'helmet';
 import http from 'http';
@@ -10,15 +11,55 @@ import { fileURLToPath } from 'url';
 // Carregar variáveis de ambiente PRIMEIRO
 dotenv.config({ path: '.env' });
 
+// Função de log condicional para produção
+const isProduction = process.env.NODE_ENV === 'production';
+const debugLog = (...args) => {
+  if (!isProduction) {
+    console.log(...args);
+  }
+};
+
+const debugWarn = (...args) => {
+  if (!isProduction) {
+    console.warn(...args);
+  }
+};
+
 // Configurar tratamento de erros não capturados
 setupUncaughtExceptionHandling();
 
 // Verificar configurações críticas
-if (!process.env.JWT_SECRET) {
-  console.error('🚨 ERRO CRÍTICO: JWT_SECRET não encontrado no arquivo .env');
-  console.error(
-    '💡 Solução: Verifique se o arquivo .env existe e contém JWT_SECRET=sua_chave_secreta'
+const requiredEnvVars = [
+  'JWT_SECRET',
+  'DB_PASSWORD',
+  'DB_HOST',
+  'DB_NAME',
+  'DB_USER'
+];
+
+// Em produção, adicionar mais variáveis obrigatórias
+if (isProduction) {
+  requiredEnvVars.push(
+    'ALLOWED_ORIGINS',
+    'NODE_ENV'
   );
+}
+
+const missingVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingVars.length > 0) {
+  console.error('🚨 ERRO CRÍTICO: Variáveis de ambiente obrigatórias não encontradas:');
+  missingVars.forEach(envVar => {
+    console.error(`   - ${envVar}`);
+  });
+  console.error('💡 Solução: Verifique se o arquivo .env contém todas as variáveis necessárias');
+  process.exit(1);
+}
+
+// Validar JWT_SECRET específico
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('🚨 ERRO CRÍTICO: JWT_SECRET deve ter pelo menos 32 caracteres');
+  console.error('💡 Solução: Gere uma chave segura: openssl rand -base64 32');
   process.exit(1);
 }
 
@@ -158,17 +199,18 @@ const allowedOrigins =
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Permitir requisições sem origin (mobile apps, Postman, etc.) em desenvolvimento
+      // Permitir requisições sem origin apenas em desenvolvimento
       if (!origin && process.env.NODE_ENV !== 'production') {
         return callback(null, true);
       }
 
-      // Em produção, permitir requisições sem origin também (para servir arquivos estáticos)
+      // Em produção, NÃO permitir requisições sem origin (segurança)
       if (!origin && process.env.NODE_ENV === 'production') {
-        return callback(null, true);
+        console.warn('❌ CORS: Requisição sem origin bloqueada em produção');
+        return callback(new Error('Not allowed by CORS - No origin provided'));
       }
 
-      // Em produção, permitir origens configuradas + localhost para testes
+      // Em produção, permitir apenas origens configuradas
       const productionOrigins =
         process.env.NODE_ENV === 'production'
           ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
@@ -179,9 +221,8 @@ app.use(
       if (allAllowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.warn(`CORS bloqueado para origem: ${origin}`);
-        // Em produção, permitir temporariamente para debug
-        callback(null, true);
+        console.warn(`❌ CORS bloqueado para origem: ${origin}`);
+        callback(new Error(`Not allowed by CORS - Origin: ${origin}`));
       }
     },
     credentials: true,
@@ -194,13 +235,13 @@ app.use(
 // Debug endpoint to check public data sync (BEFORE ANY MIDDLEWARE)
 app.get('/debug/public-sync', async (req, res) => {
   try {
-    console.log('🔍 DEBUG - Verificando sincronização de dados públicos');
+    debugLog('🔍 DEBUG - Verificando sincronização de dados públicos');
 
     // Check municipalities (all municipalities are public for now)
     const municipalities = await pool.query(
       'SELECT id, name, state FROM municipalities'
     );
-    console.log('📋 Municípios públicos:', municipalities.rows.length);
+    debugLog('📋 Municípios públicos:', municipalities.rows.length);
 
     // Check patrimonios for each municipality
     const patrimoniosData = [];
@@ -246,7 +287,7 @@ app.get('/debug/public-sync', async (req, res) => {
 // Force public data sync endpoint (BEFORE ANY MIDDLEWARE)
 app.post('/debug/force-public-sync', async (req, res) => {
   try {
-    console.log('🔄 FORÇANDO sincronização de dados públicos...');
+    debugLog('🔄 FORÇANDO sincronização de dados públicos...');
 
     // Get all public municipalities (all municipalities are public for now)
     const municipalities = await pool.query(
@@ -359,13 +400,13 @@ app.post('/debug/test-websocket', express.json(), async (req, res) => {
 // Frontend sync endpoint (BEFORE ANY MIDDLEWARE)
 app.get('/api/sync/public-data', async (req, res) => {
   try {
-    console.log('🔄 Sincronização de dados públicos para o frontend...');
+    debugLog('🔄 Sincronização de dados públicos para o frontend...');
 
     // Get all municipalities
     const municipalities = await pool.query(
       'SELECT id, name, state FROM municipalities'
     );
-    console.log('📋 Municípios encontrados:', municipalities.rows.length);
+    debugLog('📋 Municípios encontrados:', municipalities.rows.length);
 
     // Get all patrimonios
     const patrimonios = await pool.query(`
@@ -374,7 +415,7 @@ app.get('/api/sync/public-data', async (req, res) => {
       WHERE deleted_at IS NULL
       ORDER BY numero_patrimonio
     `);
-    console.log('📋 Patrimônios encontrados:', patrimonios.rows.length);
+    debugLog('📋 Patrimônios encontrados:', patrimonios.rows.length);
 
     // Group patrimonios by municipality
     const patrimoniosByMunicipality = {};
@@ -455,7 +496,46 @@ app.get('/debug/check-tables', async (req, res) => {
   }
 });
 
-// Rate limiting será aplicado nas rotas específicas, não globalmente
+// Rate limiting global para proteção contra DDoS e brute force
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 100 requests por IP em produção, 1000 em desenvolvimento
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true, // Retorna rate limit info nos headers
+  legacyHeaders: false, // Desabilita headers X-RateLimit-*
+  handler: (req, res) => {
+    console.warn(`🚨 Rate limit exceeded for IP: ${req.ip}`);
+    res.status(429).json({
+      error: 'Too many requests from this IP, please try again later.',
+      retryAfter: '15 minutes'
+    });
+  }
+});
+
+// Rate limiting mais restritivo para rotas de autenticação
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // Apenas 5 tentativas de login por IP a cada 15 minutos
+  message: {
+    error: 'Too many login attempts, please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    console.warn(`🚨 Auth rate limit exceeded for IP: ${req.ip}`);
+    res.status(429).json({
+      error: 'Too many login attempts, please try again later.',
+      retryAfter: '15 minutes'
+    });
+  }
+});
+
+// Aplicar rate limiting global
+app.use(globalLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -464,8 +544,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Configurar contexto de logging (deve vir após parsing)
 app.use(setupLogContext);
 
-// Static files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Static files with cache headers
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  maxAge: '1d', // Cache por 1 dia
+  etag: true,
+  lastModified: true
+}));
 
 // File serving endpoint for documents and images
 app.get('/api/files/:fileId', (req, res) => {
@@ -652,7 +736,7 @@ app.get('/api/debug/patrimonios-data', async (req, res) => {
       FROM patrimonios 
       GROUP BY municipality_id
     `);
-    console.log('📊 Patrimônios por município:', byMunicipality.rows);
+    debugLog('📊 Patrimônios por município:', byMunicipality.rows);
 
     // Get sample data
     const sampleData = await pool.query(`
@@ -716,7 +800,21 @@ console.log('✅ registerRoutes chamado com sucesso!');
 const distPath = path.join(__dirname, '../dist');
 if (existsSync(distPath)) {
   console.log('📁 Servindo arquivos estáticos do frontend de:', distPath);
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, {
+    maxAge: '1y', // Cache por 1 ano para assets com hash
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, path) => {
+      // Cache mais longo para arquivos com hash (JS, CSS)
+      if (path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      // Cache menor para HTML
+      if (path.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+      }
+    }
+  }));
   
   // Rota catch-all para SPA (Single Page Application)
   app.get('*', (req, res) => {
@@ -732,8 +830,9 @@ app.use(criticalErrorNotifier);
 // ============================================================================
 // ROTA PRINCIPAL DE HEALTH CHECK
 // ============================================================================
-app.get('/api/health', (req, res) => {
-  res.json({
+// Health check avançado com verificação de serviços
+app.get('/api/health', async (req, res) => {
+  const health = {
     status: 'ok',
     timestamp: new Date().toISOString(),
     service: 'SISPAT Backend',
@@ -741,8 +840,62 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     uptime: process.uptime(),
     memory: process.memoryUsage(),
-    database: 'connected', // Assumindo que está conectado
-  });
+    services: {}
+  };
+
+  try {
+    // Verificar banco de dados
+    const dbStart = Date.now();
+    await pool.query('SELECT 1');
+    const dbTime = Date.now() - dbStart;
+    
+    health.services.database = {
+      status: 'healthy',
+      responseTime: `${dbTime}ms`,
+      connectionCount: pool.totalCount,
+      idleCount: pool.idleCount,
+      waitingCount: pool.waitingCount
+    };
+  } catch (error) {
+    health.status = 'degraded';
+    health.services.database = {
+      status: 'unhealthy',
+      error: error.message
+    };
+  }
+
+  // Verificar espaço em disco
+  try {
+    const fs = await import('fs');
+    const stats = fs.statSync('.');
+    health.services.disk = {
+      status: 'healthy',
+      available: true
+    };
+  } catch (error) {
+    health.services.disk = {
+      status: 'unhealthy',
+      error: error.message
+    };
+  }
+
+  // Verificar variáveis de ambiente críticas
+  const criticalEnvVars = ['JWT_SECRET', 'DB_PASSWORD', 'DB_HOST'];
+  const missingEnvVars = criticalEnvVars.filter(envVar => !process.env[envVar]);
+  
+  health.services.environment = {
+    status: missingEnvVars.length === 0 ? 'healthy' : 'unhealthy',
+    missingVars: missingEnvVars
+  };
+
+  // Determinar status geral
+  const unhealthyServices = Object.values(health.services).filter(service => service.status === 'unhealthy');
+  if (unhealthyServices.length > 0) {
+    health.status = 'unhealthy';
+  }
+
+  const statusCode = health.status === 'ok' ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
 // ============================================================================

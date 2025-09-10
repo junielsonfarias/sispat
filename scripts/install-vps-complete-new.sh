@@ -254,23 +254,39 @@ PORT=3001
 HOST=0.0.0.0
 
 # Banco de dados
-DB_HOST=localhost
+DB_HOST=${DB_HOST:-localhost}
 DB_PORT=5432
 DB_NAME=sispat_production
 DB_USER=sispat_user
 DB_PASSWORD=$DB_PASSWORD
-DATABASE_URL=postgresql://sispat_user:$DB_PASSWORD@localhost:5432/sispat_production
+DATABASE_URL=postgresql://sispat_user:$DB_PASSWORD@${DB_HOST:-localhost}:5432/sispat_production
 
 # Redis
-REDIS_HOST=localhost
+REDIS_HOST=${REDIS_HOST:-localhost}
 REDIS_PORT=6379
 REDIS_PASSWORD=$DB_PASSWORD
-REDIS_URL=redis://:$DB_PASSWORD@localhost:6379
+REDIS_URL=redis://:$DB_PASSWORD@${REDIS_HOST:-localhost}:6379
 
 # JWT
 JWT_SECRET=$JWT_SECRET
 JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=7d
+
+# Validação de variáveis críticas
+if [ -z "$JWT_SECRET" ]; then
+    echo "❌ ERRO: JWT_SECRET não pode estar vazio"
+    exit 1
+fi
+
+if [ ${#JWT_SECRET} -lt 32 ]; then
+    echo "❌ ERRO: JWT_SECRET deve ter pelo menos 32 caracteres"
+    exit 1
+fi
+
+if [ -z "$DB_PASSWORD" ]; then
+    echo "❌ ERRO: DB_PASSWORD não pode estar vazio"
+    exit 1
+fi
 
 # CORS
 CORS_ORIGIN=https://$DOMAIN,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
@@ -306,6 +322,12 @@ install_dependencies() {
     
     # Instalar dependências
     npm install --legacy-peer-deps --no-optional --force
+    
+    # Verificar se express-rate-limit está instalado
+    if ! npm list express-rate-limit > /dev/null 2>&1; then
+        echo "📦 Instalando express-rate-limit para rate limiting..."
+        npm install express-rate-limit
+    fi
     
     success "Dependências instaladas"
 }

@@ -9,8 +9,8 @@ import { defineConfig } from 'vite';
 export default defineConfig(({ mode }) => {
   // Determinar URLs baseado no ambiente
   const isProduction = mode === 'production';
-  const baseUrl = isProduction ? process.env.VITE_BACKEND_URL || 'https://sispat.vps-kinghost.net' : 'http://localhost:3001';
-  const apiUrl = isProduction ? process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api' : 'http://localhost:3001/api';
+  const baseUrl = isProduction ? process.env.VITE_BACKEND_URL || process.env.VITE_DOMAIN || 'https://CHANGE_ME_DOMAIN.com' : 'http://localhost:3001';
+  const apiUrl = isProduction ? process.env.VITE_API_URL || `${process.env.VITE_DOMAIN || 'https://CHANGE_ME_DOMAIN.com'}/api` : 'http://localhost:3001/api';
   
   return {
     // Configuração base para resolver problemas de roteamento

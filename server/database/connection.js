@@ -4,6 +4,19 @@ import pg from 'pg';
 // Carregar .env da raiz do projeto
 dotenv.config({ path: '.env' });
 
+// Validar variáveis críticas de ambiente
+const requiredEnvVars = ['DB_PASSWORD', 'DB_HOST', 'DB_NAME', 'DB_USER'];
+const missingVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingVars.length > 0) {
+  console.error('❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias não encontradas:');
+  missingVars.forEach(envVar => {
+    console.error(`   - ${envVar}`);
+  });
+  console.error('💡 Solução: Verifique se o arquivo .env contém todas as variáveis necessárias');
+  process.exit(1);
+}
+
 const { Pool } = pg;
 
 // Configuração do banco de dados
@@ -18,7 +31,12 @@ const dbConfig = {
   connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 10000,
   ssl:
     process.env.NODE_ENV === 'production'
-      ? { rejectUnauthorized: false }
+      ? {
+          rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+          ca: process.env.DB_SSL_CA || undefined,
+          cert: process.env.DB_SSL_CERT || undefined,
+          key: process.env.DB_SSL_KEY || undefined,
+        }
       : false,
 };
 
