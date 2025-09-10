@@ -6,9 +6,15 @@ import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  // Configuração base para resolver problemas de roteamento
-  base: '/',
+export default defineConfig(({ mode }) => {
+  // Determinar URLs baseado no ambiente
+  const isProduction = mode === 'production';
+  const baseUrl = isProduction ? process.env.VITE_BACKEND_URL || 'https://sispat.vps-kinghost.net' : 'http://localhost:3001';
+  const apiUrl = isProduction ? process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api' : 'http://localhost:3001/api';
+  
+  return {
+    // Configuração base para resolver problemas de roteamento
+    base: '/',
   
   plugins: [react({
     jsxRuntime: 'automatic',
@@ -180,4 +186,5 @@ export default defineConfig(({ mode }) => ({
   esbuild: {
     target: 'es2015',
   },
-}));
+  };
+});

@@ -429,7 +429,17 @@ else
     warning "⚠️ Script de correção createContext não encontrado"
 fi
 
-# 22. Instruções finais
+# 22. Corrigir erro vite.config.ts se necessário
+log "🔧 Aplicando correção para erro vite.config.ts..."
+if [ -f "scripts/fix-vite-config-error.sh" ]; then
+    chmod +x scripts/fix-vite-config-error.sh
+    ./scripts/fix-vite-config-error.sh
+    success "✅ Correção vite.config.ts aplicada"
+else
+    warning "⚠️ Script de correção vite.config.ts não encontrado"
+fi
+
+# 23. Instruções finais
 log "📝 INSTALAÇÃO CONCLUÍDA!"
 echo ""
 echo "🎉 SISPAT INSTALADO COM SUCESSO!"

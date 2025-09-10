@@ -793,7 +793,20 @@ chmod +x fix-createcontext-error.sh
 ./fix-createcontext-error.sh
 ```
 
-### **Problema 21: Husky não encontrado**
+### **Problema 22: Erro vite.config.ts (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `ReferenceError: baseUrl is not defined` - Erro de configuração no vite.config.ts
+**🔧 Solução:** Variáveis baseUrl e apiUrl definidas corretamente na configuração **✅ Status:**
+**RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Para correção, execute o script:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-vite-config-error.sh -o fix-vite-config-error.sh
+chmod +x fix-vite-config-error.sh
+./fix-vite-config-error.sh
+```
+
+### **Problema 23: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -953,7 +966,9 @@ performance!**
 23. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
 24. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
 25. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
-26. **Erro createContext (CRÍTICO):** `Cannot read properties of undefined (reading 'createContext')` - **RESOLVIDO**
+26. **Erro createContext (CRÍTICO):**
+    `Cannot read properties of undefined (reading 'createContext')` - **RESOLVIDO**
+27. **Erro vite.config.ts (CRÍTICO):** `ReferenceError: baseUrl is not defined` - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -981,6 +996,7 @@ performance!**
 - `check-browser-errors.sh` - **NOVO** Script para verificar erros específicos do browser
 - `fix-nginx-redirect-loop.sh` - **NOVO** Script para corrigir loop infinito do Nginx
 - `fix-createcontext-error.sh` - **NOVO** Script para corrigir erro createContext do React
+- `fix-vite-config-error.sh` - **NOVO** Script para corrigir erro vite.config.ts
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -1025,8 +1041,11 @@ performance!**
 - **Correção automática de erros durante a instalação**
 - **Verificação de conectividade incluída**
 - **Scripts de correção integrados automaticamente**
-- **Erro createContext Corrigido:** Configuração Vite otimizada para React e chunks configurados corretamente
+- **Erro createContext Corrigido:** Configuração Vite otimizada para React e chunks configurados
+  corretamente
 - **Build Otimizado:** Configuração de chunks mais conservadora para evitar erros de inicialização
+- **Erro vite.config.ts Corrigido:** Variáveis baseUrl e apiUrl definidas corretamente na configuração
+- **Configuração Vite Robusta:** Configuração mais robusta para evitar erros de build em produção
 
 ---
 
