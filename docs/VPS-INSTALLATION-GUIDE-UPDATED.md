@@ -780,23 +780,23 @@ chmod +x check-browser-errors.sh
 ./check-browser-errors.sh
 ```
 
-### **Problema 21: Erro createContext (CRÍTICO - RESOLVIDO)**
+### **Problema 21: Erro createContext (CRÍTICO - RESOLVIDO DEFINITIVAMENTE)**
 
 **❌ Erro:** `Cannot read properties of undefined (reading 'createContext')` - Erro de inicialização
-do React no chunk pages-admin **🔧 Solução:** Configuração Vite otimizada para React e chunks
-configurados corretamente **✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+do React no chunk pages-admin **🔧 Solução:** Configuração Vite DEFINITIVA com React sempre no vendor-misc
+**✅ Status:** **RESOLVIDO DEFINITIVAMENTE** - Correção integrada automaticamente
 
 ```bash
-# Para correção, execute o script:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-createcontext-error.sh -o fix-createcontext-error.sh
-chmod +x fix-createcontext-error.sh
-./fix-createcontext-error.sh
+# Para correção DEFINITIVA, execute o script:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-createcontext-definitive.sh -o fix-createcontext-definitive.sh
+chmod +x fix-createcontext-definitive.sh
+./fix-createcontext-definitive.sh
 ```
 
 ### **Problema 22: Erro vite.config.ts (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `ReferenceError: baseUrl is not defined` - Erro de configuração no vite.config.ts
-**🔧 Solução:** Variáveis baseUrl e apiUrl definidas corretamente na configuração **✅ Status:**
+**❌ Erro:** `ReferenceError: baseUrl is not defined` - Erro de configuração no vite.config.ts **🔧
+Solução:** Variáveis baseUrl e apiUrl definidas corretamente na configuração **✅ Status:**
 **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
@@ -996,6 +996,7 @@ performance!**
 - `check-browser-errors.sh` - **NOVO** Script para verificar erros específicos do browser
 - `fix-nginx-redirect-loop.sh` - **NOVO** Script para corrigir loop infinito do Nginx
 - `fix-createcontext-error.sh` - **NOVO** Script para corrigir erro createContext do React
+- `fix-createcontext-definitive.sh` - **NOVO** Script para correção DEFINITIVA do erro createContext
 - `fix-vite-config-error.sh` - **NOVO** Script para corrigir erro vite.config.ts
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
@@ -1041,10 +1042,10 @@ performance!**
 - **Correção automática de erros durante a instalação**
 - **Verificação de conectividade incluída**
 - **Scripts de correção integrados automaticamente**
-- **Erro createContext Corrigido:** Configuração Vite otimizada para React e chunks configurados
-  corretamente
+- **Erro createContext Corrigido DEFINITIVAMENTE:** Configuração Vite DEFINITIVA com React sempre no vendor-misc
 - **Build Otimizado:** Configuração de chunks mais conservadora para evitar erros de inicialização
-- **Erro vite.config.ts Corrigido:** Variáveis baseUrl e apiUrl definidas corretamente na configuração
+- **Erro vite.config.ts Corrigido:** Variáveis baseUrl e apiUrl definidas corretamente na
+  configuração
 - **Configuração Vite Robusta:** Configuração mais robusta para evitar erros de build em produção
 
 ---

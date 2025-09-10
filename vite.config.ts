@@ -50,13 +50,10 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            // React e React DOM - chunk separado
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor-react';
-            }
-            // React Router - chunk separado
-            if (id.includes('react-router')) {
-              return 'vendor-router';
+            // CONFIGURAÇÃO MAIS CONSERVADORA - EVITAR SEPARAR REACT
+            // React e React DOM - INCLUIR NO VENDOR-MISC PARA EVITAR ERROS
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'vendor-misc';
             }
             // Radix UI Components - chunk separado
             if (id.includes('@radix-ui')) {
@@ -86,7 +83,7 @@ export default defineConfig(({ mode }) => {
             if (id.includes('zod') || id.includes('yup') || id.includes('joi')) {
               return 'vendor-validation';
             }
-            // Resto das dependências (incluindo charts) - SEM SEPARAÇÃO
+            // Resto das dependências (incluindo charts e React) - SEM SEPARAÇÃO
             return 'vendor-misc';
           }
           

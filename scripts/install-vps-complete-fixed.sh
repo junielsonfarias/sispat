@@ -509,14 +509,14 @@ else
     warning "⚠️ Script de configuração de domínio não encontrado"
 fi
 
-# 23. Corrigir erro createContext se necessário
-log "🔧 Aplicando correção para erro createContext..."
-if [ -f "scripts/fix-createcontext-error.sh" ]; then
-    chmod +x scripts/fix-createcontext-error.sh
-    ./scripts/fix-createcontext-error.sh
-    success "✅ Correção createContext aplicada"
+# 23. Corrigir erro createContext DEFINITIVAMENTE
+log "🔧 Aplicando correção DEFINITIVA para erro createContext..."
+if [ -f "scripts/fix-createcontext-definitive.sh" ]; then
+    chmod +x scripts/fix-createcontext-definitive.sh
+    ./scripts/fix-createcontext-definitive.sh
+    success "✅ Correção DEFINITIVA createContext aplicada"
 else
-    warning "⚠️ Script de correção createContext não encontrado"
+    warning "⚠️ Script de correção DEFINITIVA createContext não encontrado"
 fi
 
 # 24. Corrigir erro vite.config.ts se necessário
