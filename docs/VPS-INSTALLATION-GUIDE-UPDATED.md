@@ -780,6 +780,19 @@ chmod +x check-browser-errors.sh
 ./check-browser-errors.sh
 ```
 
+### **Problema 21: Erro createContext (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** `Cannot read properties of undefined (reading 'createContext')` - Erro de inicialização
+do React no chunk pages-admin **🔧 Solução:** Configuração Vite otimizada para React e chunks
+configurados corretamente **✅ Status:** **RESOLVIDO** - Correção integrada automaticamente
+
+```bash
+# Para correção, execute o script:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-createcontext-error.sh -o fix-createcontext-error.sh
+chmod +x fix-createcontext-error.sh
+./fix-createcontext-error.sh
+```
+
 ### **Problema 21: Husky não encontrado**
 
 ```bash
@@ -940,6 +953,7 @@ performance!**
 23. **Backup Automático:** Sistema de backup configurado - **RESOLVIDO**
 24. **Monitoramento:** Monitoramento básico configurado - **RESOLVIDO**
 25. **Validação de Entrada:** Script valida todas as entradas - **RESOLVIDO**
+26. **Erro createContext (CRÍTICO):** `Cannot read properties of undefined (reading 'createContext')` - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -966,6 +980,7 @@ performance!**
 - `diagnose-frontend.sh` - **NOVO** Script para diagnóstico completo do frontend
 - `check-browser-errors.sh` - **NOVO** Script para verificar erros específicos do browser
 - `fix-nginx-redirect-loop.sh` - **NOVO** Script para corrigir loop infinito do Nginx
+- `fix-createcontext-error.sh` - **NOVO** Script para corrigir erro createContext do React
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -1010,6 +1025,8 @@ performance!**
 - **Correção automática de erros durante a instalação**
 - **Verificação de conectividade incluída**
 - **Scripts de correção integrados automaticamente**
+- **Erro createContext Corrigido:** Configuração Vite otimizada para React e chunks configurados corretamente
+- **Build Otimizado:** Configuração de chunks mais conservadora para evitar erros de inicialização
 
 ---
 

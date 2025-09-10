@@ -419,7 +419,17 @@ else
     warning "⚠️ Script de configuração de domínio não encontrado"
 fi
 
-# 21. Instruções finais
+# 21. Corrigir erro createContext se necessário
+log "🔧 Aplicando correção para erro createContext..."
+if [ -f "scripts/fix-createcontext-error.sh" ]; then
+    chmod +x scripts/fix-createcontext-error.sh
+    ./scripts/fix-createcontext-error.sh
+    success "✅ Correção createContext aplicada"
+else
+    warning "⚠️ Script de correção createContext não encontrado"
+fi
+
+# 22. Instruções finais
 log "📝 INSTALAÇÃO CONCLUÍDA!"
 echo ""
 echo "🎉 SISPAT INSTALADO COM SUCESSO!"

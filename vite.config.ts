@@ -35,13 +35,14 @@ export default defineConfig(({ mode }) => ({
     },
   },
   
-  build: {
-    outDir: 'dist',
-    sourcemap: mode === 'development',
-    cssCodeSplit: true,
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
+    build: {
+      outDir: 'dist',
+      sourcemap: mode === 'development',
+      cssCodeSplit: true,
+      rollupOptions: {
+        external: [],
+        output: {
+          manualChunks: (id) => {
           if (id.includes('node_modules')) {
             // React e React DOM - chunk separado
             if (id.includes('react') || id.includes('react-dom')) {
@@ -83,13 +84,15 @@ export default defineConfig(({ mode }) => ({
             return 'vendor-misc';
           }
           
-          // Chunks para páginas grandes
+          // Chunks para páginas grandes - CONFIGURAÇÃO MAIS CONSERVADORA
           if (id.includes('/src/pages/')) {
-            if (id.includes('/bens/')) {
-              return 'pages-bens';
-            }
+            // Páginas admin - incluir React para evitar erros de createContext
             if (id.includes('/admin/')) {
               return 'pages-admin';
+            }
+            // Outras páginas grandes
+            if (id.includes('/bens/')) {
+              return 'pages-bens';
             }
             if (id.includes('/dashboards/')) {
               return 'pages-dashboards';
@@ -167,6 +170,11 @@ export default defineConfig(({ mode }) => ({
   
   define: {
     global: 'globalThis',
+    // Definir URLs para o build
+    'process.env.VITE_BACKEND_URL': JSON.stringify(baseUrl),
+    'process.env.VITE_API_URL': JSON.stringify(apiUrl),
+    // Garantir que React está disponível globalmente
+    'process.env.NODE_ENV': JSON.stringify(mode),
   },
   
   esbuild: {
