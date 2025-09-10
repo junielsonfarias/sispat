@@ -1,11 +1,11 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import { existsSync } from 'fs';
 import helmet from 'helmet';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
 
 // Carregar variáveis de ambiente PRIMEIRO
 dotenv.config({ path: '.env' });
@@ -38,26 +38,25 @@ import { pool } from './database/connection.js';
 
 // Import logging and error handling
 import {
-  criticalErrorNotifier,
-  errorHandler,
-  notFoundHandler,
-  requestTracker,
+    criticalErrorNotifier,
+    errorHandler,
+    notFoundHandler,
+    requestTracker,
 } from './middleware/errorHandler.js';
 import { setupLogContext } from './middleware/logContext.js';
 import {
-  errorMonitoringMiddleware,
-  monitoringMiddleware,
-  requestTimestampMiddleware,
+    errorMonitoringMiddleware,
+    monitoringMiddleware,
+    requestTimestampMiddleware,
 } from './middleware/monitoring.js';
-import { rateLimitMiddleware } from './middleware/rate-limiter.js';
 import { lockoutManager } from './services/lockout-manager.js';
 import {
-  logError,
-  logHttp,
-  logInfo,
-  logStartup,
-  logWarning,
-  setupUncaughtExceptionHandling,
+    logError,
+    logHttp,
+    logInfo,
+    logStartup,
+    logWarning,
+    setupUncaughtExceptionHandling,
 } from './utils/logger.js';
 
 // Import backup service
@@ -712,6 +711,20 @@ app.get('/api/backup/stats', async (req, res) => {
 console.log('🔧 Chamando registerRoutes...');
 registerRoutes(app);
 console.log('✅ registerRoutes chamado com sucesso!');
+
+// Servir arquivos estáticos do frontend
+const distPath = path.join(__dirname, '../dist');
+if (existsSync(distPath)) {
+  console.log('📁 Servindo arquivos estáticos do frontend de:', distPath);
+  app.use(express.static(distPath));
+  
+  // Rota catch-all para SPA (Single Page Application)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+} else {
+  console.log('⚠️ Diretório dist não encontrado, frontend não será servido');
+}
 
 // Middleware para notificação de erros críticos
 app.use(criticalErrorNotifier);

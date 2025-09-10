@@ -409,7 +409,17 @@ else
     error "❌ Aplicação SISPAT não está rodando"
 fi
 
-# 20. Instruções finais
+# 20. Configuração automática de domínio
+log "🌐 Configurando domínio automaticamente..."
+if [ -f "scripts/configure-production-domain.sh" ]; then
+    chmod +x scripts/configure-production-domain.sh
+    ./scripts/configure-production-domain.sh
+    success "✅ Domínio configurado automaticamente"
+else
+    warning "⚠️ Script de configuração de domínio não encontrado"
+fi
+
+# 21. Instruções finais
 log "📝 INSTALAÇÃO CONCLUÍDA!"
 echo ""
 echo "🎉 SISPAT INSTALADO COM SUCESSO!"

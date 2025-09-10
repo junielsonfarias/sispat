@@ -59,10 +59,6 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tanstack')) {
               return 'vendor-tanstack';
             }
-            // Charts (Recharts) - INCLUIR NO VENDOR-MISC para evitar problemas de inicialização
-            // if (id.includes('recharts') || id.includes('d3-') || id.includes('d3') || id.includes('victory') || id.includes('chart')) {
-            //   return 'vendor-charts';
-            // }
             // Form libraries - chunk separado
             if (id.includes('react-hook-form') || id.includes('@hookform')) {
               return 'vendor-forms';
@@ -83,7 +79,7 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('zod') || id.includes('yup') || id.includes('joi')) {
               return 'vendor-validation';
             }
-            // Resto das dependências menores (incluindo charts)
+            // Resto das dependências (incluindo charts) - SEM SEPARAÇÃO
             return 'vendor-misc';
           }
           
@@ -92,35 +88,33 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('/bens/')) {
               return 'pages-bens';
             }
-            if (id.includes('/dashboards/')) {
-              return 'pages-dashboards';
-            }
             if (id.includes('/admin/')) {
               return 'pages-admin';
+            }
+            if (id.includes('/dashboards/')) {
+              return 'pages-dashboards';
             }
             if (id.includes('/imoveis/')) {
               return 'pages-imoveis';
             }
-            if (id.includes('/relatorios/')) {
-              return 'pages-relatorios';
-            }
+            return 'pages-misc';
           }
+          
+          return null;
         },
-        // Configurações adicionais para evitar erros de inicialização
         chunkFileNames: (chunkInfo) => {
           const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
           return `assets/[name]-[hash].js`;
         },
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
-        // Configurações específicas para resolver problemas de inicialização
         format: 'es',
         strictDeprecations: false,
       },
     },
     minify: mode === 'production' ? 'esbuild' : false,
-    chunkSizeWarningLimit: 2000, // Aumentar limite para evitar warnings desnecessários
-    target: 'es2015', // Definir target específico para melhor compatibilidade
+    chunkSizeWarningLimit: 3000, // Aumentar limite para evitar warnings
+    target: 'es2015',
   },
   
   optimizeDeps: {
@@ -132,15 +126,15 @@ export default defineConfig(({ mode }) => ({
     exclude: [
       '@vite/client', 
       '@vite/env', 
-      'recharts', 
-      'd3-scale', 
-      'd3-array', 
-      'd3-time', 
-      'd3-time-format', 
-      'd3-shape', 
-      'd3-path', 
-      'd3-color', 
-      'd3-interpolate', 
+      'recharts',
+      'd3-scale',
+      'd3-array',
+      'd3-time',
+      'd3-time-format',
+      'd3-shape',
+      'd3-path',
+      'd3-color',
+      'd3-interpolate',
       'd3-ease',
       'd3-selection',
       'd3-transition',
@@ -153,7 +147,7 @@ export default defineConfig(({ mode }) => ({
       'd3-timer',
       'd3-dispatch'
     ],
-    force: true, // Força re-otimização das dependências
+    force: true,
   },
   
   css: {
@@ -171,37 +165,11 @@ export default defineConfig(({ mode }) => ({
     host: true,
   },
   
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./tests/setup.ts'],
-  },
-  
-  // Configuração para resolver process is not defined
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION || '1.0.0'),
-    'process.env.NODE_ENV': JSON.stringify(mode),
-    'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'http://localhost:3001/api'),
-    'process.env.VITE_APP_NAME': JSON.stringify(process.env.VITE_APP_NAME || 'SISPAT'),
-    'process.env.VITE_APP_VERSION': JSON.stringify(process.env.VITE_APP_VERSION || '1.0.0'),
-    // Definir process globalmente para o navegador
-    'process': JSON.stringify({
-      env: {
-        NODE_ENV: mode,
-        VITE_API_URL: process.env.VITE_API_URL || 'http://localhost:3001/api',
-        VITE_APP_NAME: process.env.VITE_APP_NAME || 'SISPAT',
-        VITE_APP_VERSION: process.env.VITE_APP_VERSION || '1.0.0',
-      }
-    }),
-    // Fallback para process global
-    'global': 'globalThis',
+    global: 'globalThis',
   },
   
-  // Configurações de assets
-  assetsInclude: ['**/*.gltf', '**/*.glb', '**/*.fbx', '**/*.obj'],
-  
-  // Configurações de worker
-  worker: {
-    format: 'es',
+  esbuild: {
+    target: 'es2015',
   },
-}))
+}));

@@ -499,7 +499,17 @@ else
     warning "⚠️ Site não acessível via HTTPS (pode levar alguns minutos para propagar)"
 fi
 
-# 22. Instruções finais
+# 22. Configuração automática de domínio
+log "🌐 Configurando domínio automaticamente..."
+if [ -f "scripts/configure-production-domain.sh" ]; then
+    chmod +x scripts/configure-production-domain.sh
+    ./scripts/configure-production-domain.sh
+    success "✅ Domínio configurado automaticamente"
+else
+    warning "⚠️ Script de configuração de domínio não encontrado"
+fi
+
+# 23. Instruções finais
 log "📝 INSTALAÇÃO CONCLUÍDA!"
 echo ""
 echo "🎉 SISPAT INSTALADO COM SUCESSO!"

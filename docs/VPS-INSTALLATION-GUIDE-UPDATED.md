@@ -56,6 +56,9 @@ chmod +x install-vps-complete-fixed.sh
 - ✅ Configura SSL automaticamente
 - ✅ Configura backup automático
 - ✅ Configura monitoramento básico
+- ✅ **NOVO:** Configuração automática de domínio
+- ✅ **NOVO:** Substituição automática de localhost pelo domínio
+- ✅ **NOVO:** URLs dinâmicas baseadas no ambiente
 
 ---
 
@@ -445,6 +448,72 @@ curl -I http://sispat.vps-kinghost.net/api/health
 # Testar banco de dados
 sudo -u postgres psql -d sispat_production -c "SELECT version();"
 ```
+
+---
+
+## 🌐 **CONFIGURAÇÃO AUTOMÁTICA DE DOMÍNIO (NOVO)**
+
+### **🎯 Sistema de Detecção Automática**
+
+O SISPAT agora inclui um sistema inteligente que detecta automaticamente o domínio da VPS e
+substitui todas as referências a `localhost` pelas URLs corretas de produção.
+
+### **🔍 Como Funciona:**
+
+1. **Detecção Automática:** O script detecta o domínio através de:
+   - Configuração do Nginx (`/etc/nginx/sites-available/sispat`)
+   - Certificados SSL (`/etc/letsencrypt/live/`)
+   - Variáveis de ambiente do sistema
+   - Arquivo `/etc/hostname`
+
+2. **Configuração Dinâmica:** Baseado no domínio detectado:
+   - `http://localhost:3001` → `https://seu-dominio.com/api`
+   - `http://localhost:3001` → `https://seu-dominio.com`
+   - `ws://localhost:3001` → `wss://seu-dominio.com`
+
+3. **Build Inteligente:** O Vite é configurado para usar as URLs corretas durante o build
+
+### **📋 Scripts Disponíveis:**
+
+#### **Para Novas Instalações:**
+
+```bash
+# Os scripts de instalação já incluem configuração automática
+./install-vps-simple.sh
+# ou
+./install-vps-complete-fixed.sh
+```
+
+#### **Para Instalações Existentes:**
+
+```bash
+# Atualizar configuração de domínio em instalações existentes
+chmod +x scripts/update-domain-config.sh
+./scripts/update-domain-config.sh
+```
+
+#### **Configuração Manual:**
+
+```bash
+# Configurar domínio manualmente
+chmod +x scripts/configure-production-domain.sh
+./scripts/configure-production-domain.sh
+```
+
+### **✅ Benefícios:**
+
+- **Zero Configuração Manual:** Não precisa editar arquivos manualmente
+- **Detecção Inteligente:** Funciona com qualquer domínio
+- **SSL Automático:** Detecta se HTTPS está disponível
+- **Build Otimizado:** URLs corretas no build de produção
+- **Compatibilidade:** Funciona com instalações existentes
+
+### **🔧 Arquivos Atualizados Automaticamente:**
+
+- `env.production` - URLs do domínio
+- `vite.config.ts` - Configuração dinâmica
+- `server/index.js` - CORS configurado
+- `dist/` - Build com URLs corretas
 
 ---
 
