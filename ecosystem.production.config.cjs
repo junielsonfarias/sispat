@@ -20,12 +20,6 @@ module.exports = {
         NODE_ENV: 'development',
         PORT: 3001,
       },
-      env_production: {
-        NODE_ENV: 'production',
-        PORT: 3001,
-        // Carregar variáveis do arquivo .env.production
-        env_file: '.env.production',
-      },
 
       // Configurações de performance
       max_memory_restart: '1G',
@@ -129,42 +123,6 @@ module.exports = {
         VERBOSE_LOGGING: 'false',
         ENABLE_DEBUG_ROUTES: 'false',
       },
-    },
-
-    // Configuração para monitoramento (opcional)
-    {
-      name: 'sispat-monitor',
-      script: 'server/monitoring/health-monitor.js',
-      instances: 1,
-      exec_mode: 'fork',
-
-      env_production: {
-        NODE_ENV: 'production',
-        MONITOR_INTERVAL: 30000, // 30 segundos
-        ALERT_EMAIL: process.env.ALERT_EMAIL || 'admin@yourdomain.com',
-        HEALTH_CHECK_URL: 'http://localhost:3001/api/health',
-      },
-
-      // Configurações de logs
-      log_file: './logs/monitor.log',
-      out_file: './logs/monitor-out.log',
-      error_file: './logs/monitor-error.log',
-
-      // Configurações de restart
-      autorestart: true,
-      watch: false,
-      max_restarts: 5,
-      min_uptime: '10s',
-
-      // Configurações de monitoramento
-      monitoring: false, // Não monitorar o monitor
-      pmx: false,
-
-      // Configurações de cron
-      cron_restart: '0 3 * * *', // Restart diário às 3h
-
-      // Configurações de timezone
-      time: true,
     },
   ],
 
