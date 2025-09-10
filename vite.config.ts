@@ -15,32 +15,32 @@ export default defineConfig(({ mode }) => {
   return {
     // Configuração base para resolver problemas de roteamento
     base: '/',
-  
-  plugins: [react({
-    jsxRuntime: 'automatic',
-    babel: {
-      plugins: []
-    }
-  })],
-  
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  
-  server: {
-    host: '0.0.0.0', // Permite acesso externo
-    port: parseInt(process.env.VITE_PORT || '8080'),
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_TARGET || 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
+    
+    plugins: [react({
+      jsxRuntime: 'automatic',
+      babel: {
+        plugins: []
+      }
+    })],
+    
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
       },
     },
-  },
-  
+    
+    server: {
+      host: '0.0.0.0',
+      port: parseInt(process.env.VITE_PORT || '8080'),
+      proxy: {
+        '/api': {
+          target: isProduction ? baseUrl : 'http://localhost:3001',
+          changeOrigin: true,
+          secure: isProduction,
+        },
+      },
+    },
+    
     build: {
       outDir: 'dist',
       sourcemap: mode === 'development',
@@ -49,139 +49,136 @@ export default defineConfig(({ mode }) => {
         external: [],
         output: {
           manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            // CONFIGURAÇÃO MAIS CONSERVADORA - EVITAR SEPARAR REACT
-            // React e React DOM - INCLUIR NO VENDOR-MISC PARA EVITAR ERROS
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+            if (id.includes('node_modules')) {
+              // CONFIGURAÇÃO DEFINITIVA - REACT SEMPRE NO VENDOR-MISC
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                return 'vendor-misc';
+              }
+              // Radix UI Components
+              if (id.includes('@radix-ui')) {
+                return 'vendor-radix';
+              }
+              // TanStack Query
+              if (id.includes('@tanstack')) {
+                return 'vendor-tanstack';
+              }
+              // Form libraries
+              if (id.includes('react-hook-form') || id.includes('@hookform')) {
+                return 'vendor-forms';
+              }
+              // Date libraries
+              if (id.includes('date-fns') || id.includes('dayjs')) {
+                return 'vendor-dates';
+              }
+              // UI Libraries
+              if (id.includes('lucide-react') || id.includes('clsx') || id.includes('class-variance-authority')) {
+                return 'vendor-ui';
+              }
+              // Bibliotecas grandes
+              if (id.includes('lodash') || id.includes('moment') || id.includes('axios')) {
+                return 'vendor-utils';
+              }
+              // Bibliotecas de validação
+              if (id.includes('zod') || id.includes('yup') || id.includes('joi')) {
+                return 'vendor-validation';
+              }
+              // Resto das dependências (incluindo charts e React)
               return 'vendor-misc';
             }
-            // Radix UI Components - chunk separado
-            if (id.includes('@radix-ui')) {
-              return 'vendor-radix';
+            
+            // Chunks para páginas grandes
+            if (id.includes('/src/pages/')) {
+              if (id.includes('/admin/')) {
+                return 'pages-admin';
+              }
+              if (id.includes('/bens/')) {
+                return 'pages-bens';
+              }
+              if (id.includes('/dashboards/')) {
+                return 'pages-dashboards';
+              }
+              if (id.includes('/imoveis/')) {
+                return 'pages-imoveis';
+              }
+              return 'pages-misc';
             }
-            // TanStack Query - chunk separado
-            if (id.includes('@tanstack')) {
-              return 'vendor-tanstack';
-            }
-            // Form libraries - chunk separado
-            if (id.includes('react-hook-form') || id.includes('@hookform')) {
-              return 'vendor-forms';
-            }
-            // Date libraries - chunk separado
-            if (id.includes('date-fns') || id.includes('dayjs')) {
-              return 'vendor-dates';
-            }
-            // UI Libraries - chunk separado
-            if (id.includes('lucide-react') || id.includes('clsx') || id.includes('class-variance-authority')) {
-              return 'vendor-ui';
-            }
-            // Bibliotecas grandes separadas
-            if (id.includes('lodash') || id.includes('moment') || id.includes('axios')) {
-              return 'vendor-utils';
-            }
-            // Bibliotecas de validação
-            if (id.includes('zod') || id.includes('yup') || id.includes('joi')) {
-              return 'vendor-validation';
-            }
-            // Resto das dependências (incluindo charts e React) - SEM SEPARAÇÃO
-            return 'vendor-misc';
-          }
-          
-          // Chunks para páginas grandes - CONFIGURAÇÃO MAIS CONSERVADORA
-          if (id.includes('/src/pages/')) {
-            // Páginas admin - incluir React para evitar erros de createContext
-            if (id.includes('/admin/')) {
-              return 'pages-admin';
-            }
-            // Outras páginas grandes
-            if (id.includes('/bens/')) {
-              return 'pages-bens';
-            }
-            if (id.includes('/dashboards/')) {
-              return 'pages-dashboards';
-            }
-            if (id.includes('/imoveis/')) {
-              return 'pages-imoveis';
-            }
-            return 'pages-misc';
-          }
-          
-          return null;
+            
+            return null;
+          },
+          chunkFileNames: (chunkInfo) => {
+            const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
+            return `assets/[name]-[hash].js`;
+          },
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+          format: 'es',
         },
-        chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
-          return `assets/[name]-[hash].js`;
-        },
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
-        format: 'es',
-        strictDeprecations: false,
+      },
+      minify: mode === 'production' ? 'esbuild' : false,
+      chunkSizeWarningLimit: 10000,
+      target: 'es2015',
+    },
+    
+    optimizeDeps: {
+      include: [
+        'react', 
+        'react-dom', 
+        'react-router-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime'
+      ],
+      exclude: [
+        '@vite/client', 
+        '@vite/env', 
+        'recharts',
+        'd3-scale',
+        'd3-array',
+        'd3-time',
+        'd3-time-format',
+        'd3-shape',
+        'd3-path',
+        'd3-color',
+        'd3-interpolate',
+        'd3-ease',
+        'd3-selection',
+        'd3-transition',
+        'd3-zoom',
+        'd3-brush',
+        'd3-drag',
+        'd3-force',
+        'd3-hierarchy',
+        'd3-quadtree',
+        'd3-timer',
+        'd3-dispatch'
+      ],
+      force: true,
+    },
+    
+    css: {
+      devSourcemap: mode === 'development',
+      postcss: {
+        plugins: [
+          tailwindcss,
+          autoprefixer,
+        ],
       },
     },
-    minify: mode === 'production' ? 'esbuild' : false,
-    chunkSizeWarningLimit: 3000, // Aumentar limite para evitar warnings
-    target: 'es2015',
-  },
-  
-  optimizeDeps: {
-    include: [
-      'react', 
-      'react-dom', 
-      'react-router-dom'
-    ],
-    exclude: [
-      '@vite/client', 
-      '@vite/env', 
-      'recharts',
-      'd3-scale',
-      'd3-array',
-      'd3-time',
-      'd3-time-format',
-      'd3-shape',
-      'd3-path',
-      'd3-color',
-      'd3-interpolate',
-      'd3-ease',
-      'd3-selection',
-      'd3-transition',
-      'd3-zoom',
-      'd3-brush',
-      'd3-drag',
-      'd3-force',
-      'd3-hierarchy',
-      'd3-quadtree',
-      'd3-timer',
-      'd3-dispatch'
-    ],
-    force: true,
-  },
-  
-  css: {
-    devSourcemap: mode === 'development',
-    postcss: {
-      plugins: [
-        tailwindcss,
-        autoprefixer,
-      ],
+    
+    preview: {
+      port: 4173,
+      host: true,
     },
-  },
-  
-  preview: {
-    port: 4173,
-    host: true,
-  },
-  
-  define: {
-    global: 'globalThis',
-    // Definir URLs para o build
-    'process.env.VITE_BACKEND_URL': JSON.stringify(baseUrl),
-    'process.env.VITE_API_URL': JSON.stringify(apiUrl),
-    // Garantir que React está disponível globalmente
-    'process.env.NODE_ENV': JSON.stringify(mode),
-  },
-  
-  esbuild: {
-    target: 'es2015',
-  },
+    
+    define: {
+      global: 'globalThis',
+      'process.env.VITE_BACKEND_URL': JSON.stringify(baseUrl),
+      'process.env.VITE_API_URL': JSON.stringify(apiUrl),
+      'process.env.NODE_ENV': JSON.stringify(mode),
+    },
+    
+    esbuild: {
+      target: 'es2015',
+      jsx: 'automatic',
+    },
   };
 });
