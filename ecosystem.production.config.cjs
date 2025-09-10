@@ -12,7 +12,7 @@ module.exports = {
       // Configuração principal da aplicação
       name: 'sispat',
       script: 'server/index.js',
-      instances: 'max', // Usar todos os cores disponíveis
+      instances: 2, // Limitar a 2 instâncias para evitar consumo excessivo de recursos
       exec_mode: 'cluster',
 
       // Configurações de ambiente
@@ -22,8 +22,8 @@ module.exports = {
       },
 
       // Configurações de performance
-      max_memory_restart: '1G',
-      node_args: '--max-old-space-size=1024',
+      max_memory_restart: '2G', // Aumentado de 1G para 2G
+      node_args: '--max-old-space-size=2048', // Aumentado de 1024 para 2048
 
       // Configurações de logs
       log_file: './logs/combined.log',

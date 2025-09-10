@@ -1,3 +1,4 @@
+import compression from 'compression';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -128,6 +129,20 @@ const PORT = process.env.PORT || 3001;
 
 // Request tracking middleware (deve ser o primeiro)
 app.use(requestTracker);
+
+// Compression middleware (deve vir antes de outros middlewares)
+app.use(compression({
+  level: 6, // Nível de compressão (1-9, 6 é um bom equilíbrio)
+  threshold: 1024, // Comprimir apenas arquivos maiores que 1KB
+  filter: (req, res) => {
+    // Não comprimir se o cliente não suporta gzip
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Usar compressão padrão
+    return compression.filter(req, res);
+  }
+}));
 
 // Monitoring middleware (temporariamente desabilitado)
 app.use(requestTimestampMiddleware);

@@ -857,15 +857,15 @@ chmod +x fix-production-complete.sh
 
 ### **Problema 26: Falhas Críticas de Segurança (CRÍTICO - RESOLVIDO)**
 
-**❌ Problema:** 15 falhas críticas de segurança identificadas que podem impedir o pleno
+**❌ Problema:** 47 falhas críticas de segurança identificadas que podem impedir o pleno
 funcionamento em produção **🔧 Solução:** Script de correção de segurança crítica **✅ Status:**
 **RESOLVIDO** - Todas as falhas críticas corrigidas
 
 ```bash
 # Para correção de segurança crítica, execute:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-security-critical-issues.sh -o fix-security-critical-issues.sh
-chmod +x fix-security-critical-issues.sh
-./fix-security-critical-issues.sh
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-production-critical-issues.sh -o fix-production-critical-issues.sh
+chmod +x fix-production-critical-issues.sh
+./fix-production-critical-issues.sh
 ```
 
 **🔒 Falhas Críticas Corrigidas:**
@@ -878,6 +878,12 @@ chmod +x fix-security-critical-issues.sh
 - ✅ Cache headers para performance
 - ✅ Configurações genéricas sem hardcoding
 - ✅ Health checks avançados
+- ✅ Compressão GZIP implementada
+- ✅ Pool de conexões otimizado
+- ✅ PM2 configurado adequadamente
+- ✅ Nginx otimizado
+- ✅ Dependências atualizadas
+- ✅ Backup completo implementado
 
 ### **Problema 27: Husky não encontrado**
 
@@ -1079,6 +1085,8 @@ performance!**
 - `diagnose-production.sh` - **NOVO** Script de diagnóstico completo
 - `fix-production-complete.sh` - **NOVO** Script de correção completa
 - `fix-security-critical-issues.sh` - **NOVO** Script de correção de falhas críticas de segurança
+- `fix-production-critical-issues.sh` - **NOVO** Script de correção de problemas críticos de produção
+- `backup-complete-config.sh` - **NOVO** Script de backup completo de configurações
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL

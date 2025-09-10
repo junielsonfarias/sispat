@@ -26,13 +26,13 @@ const dbConfig = {
   database: process.env.DB_NAME || 'sispat_db',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
-  max: parseInt(process.env.DB_MAX_CONNECTIONS) || 20,
-  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
-  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 10000,
+  max: parseInt(process.env.DB_MAX_CONNECTIONS) || 50, // Aumentado de 20 para 50
+  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 60000, // Aumentado de 30s para 60s
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 30000, // Aumentado de 10s para 30s
   ssl:
     process.env.NODE_ENV === 'production'
       ? {
-          rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+          rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true',
           ca: process.env.DB_SSL_CA || undefined,
           cert: process.env.DB_SSL_CERT || undefined,
           key: process.env.DB_SSL_KEY || undefined,
