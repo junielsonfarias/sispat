@@ -32,6 +32,19 @@ chmod +x install-vps-simple.sh
 ./install-vps-simple.sh
 ```
 
+**Para Instalação Completa e Testada (NOVO):**
+
+```bash
+# Baixar o script de instalação completo e testado
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete-new.sh -o install-vps-complete-new.sh
+
+# Tornar executável
+chmod +x install-vps-complete-new.sh
+
+# Executar instalação completa
+./install-vps-complete-new.sh
+```
+
 **Para Usuários Avançados:**
 
 ```bash
@@ -783,8 +796,8 @@ chmod +x check-browser-errors.sh
 ### **Problema 21: Erro createContext (CRÍTICO - RESOLVIDO DEFINITIVAMENTE)**
 
 **❌ Erro:** `Cannot read properties of undefined (reading 'createContext')` - Erro de inicialização
-do React no chunk pages-admin **🔧 Solução:** Configuração Vite DEFINITIVA com React sempre no vendor-misc
-**✅ Status:** **RESOLVIDO DEFINITIVAMENTE** - Correção integrada automaticamente
+do React no chunk pages-admin **🔧 Solução:** Configuração Vite DEFINITIVA com React sempre no
+vendor-misc **✅ Status:** **RESOLVIDO DEFINITIVAMENTE** - Correção integrada automaticamente
 
 ```bash
 # Para correção DEFINITIVA, execute o script:
@@ -806,7 +819,43 @@ chmod +x fix-vite-config-error.sh
 ./fix-vite-config-error.sh
 ```
 
-### **Problema 23: Husky não encontrado**
+### **Problema 23: Tela Branca em Produção (CRÍTICO - RESOLVIDO)**
+
+**❌ Erro:** Tela branca no navegador após instalação em VPS **🔧 Solução:** Script de instalação
+completamente novo e testado **✅ Status:** **RESOLVIDO** - Script de instalação completo criado
+
+```bash
+# Para instalação completa e testada, execute:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete-new.sh -o install-vps-complete-new.sh
+chmod +x install-vps-complete-new.sh
+./install-vps-complete-new.sh
+```
+
+### **Problema 24: Diagnóstico de Problemas (NOVO)**
+
+**❌ Problema:** Dificuldade para identificar problemas específicos em produção **🔧 Solução:**
+Script de diagnóstico completo **✅ Status:** **DISPONÍVEL** - Script de diagnóstico criado
+
+```bash
+# Para diagnóstico completo, execute:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/diagnose-production.sh -o diagnose-production.sh
+chmod +x diagnose-production.sh
+./diagnose-production.sh
+```
+
+### **Problema 25: Correção Completa de Produção (NOVO)**
+
+**❌ Problema:** Múltiplos problemas em produção que precisam ser corrigidos **🔧 Solução:**
+Script de correção completa **✅ Status:** **DISPONÍVEL** - Script de correção completa criado
+
+```bash
+# Para correção completa, execute:
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-production-complete.sh -o fix-production-complete.sh
+chmod +x fix-production-complete.sh
+./fix-production-complete.sh
+```
+
+### **Problema 26: Husky não encontrado**
 
 ```bash
 # O script deploy-production-simple.sh já resolve automaticamente
@@ -969,6 +1018,9 @@ performance!**
 26. **Erro createContext (CRÍTICO):**
     `Cannot read properties of undefined (reading 'createContext')` - **RESOLVIDO**
 27. **Erro vite.config.ts (CRÍTICO):** `ReferenceError: baseUrl is not defined` - **RESOLVIDO**
+28. **Tela Branca em Produção (CRÍTICO):** Tela branca no navegador após instalação - **RESOLVIDO**
+29. **Diagnóstico de Problemas:** Dificuldade para identificar problemas específicos - **RESOLVIDO**
+30. **Correção Completa de Produção:** Múltiplos problemas em produção - **RESOLVIDO**
 
 ### **✅ Scripts Corrigidos:**
 
@@ -998,6 +1050,9 @@ performance!**
 - `fix-createcontext-error.sh` - **NOVO** Script para corrigir erro createContext do React
 - `fix-createcontext-definitive.sh` - **NOVO** Script para correção DEFINITIVA do erro createContext
 - `fix-vite-config-error.sh` - **NOVO** Script para corrigir erro vite.config.ts
+- `install-vps-complete-new.sh` - **NOVO** Script de instalação completo e testado
+- `diagnose-production.sh` - **NOVO** Script de diagnóstico completo
+- `fix-production-complete.sh` - **NOVO** Script de correção completa
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
 - `fix-postgresql-final.sh` - Correção completa do PostgreSQL
@@ -1042,11 +1097,15 @@ performance!**
 - **Correção automática de erros durante a instalação**
 - **Verificação de conectividade incluída**
 - **Scripts de correção integrados automaticamente**
-- **Erro createContext Corrigido DEFINITIVAMENTE:** Configuração Vite DEFINITIVA com React sempre no vendor-misc
+- **Erro createContext Corrigido DEFINITIVAMENTE:** Configuração Vite DEFINITIVA com React sempre no
+  vendor-misc
 - **Build Otimizado:** Configuração de chunks mais conservadora para evitar erros de inicialização
 - **Erro vite.config.ts Corrigido:** Variáveis baseUrl e apiUrl definidas corretamente na
   configuração
 - **Configuração Vite Robusta:** Configuração mais robusta para evitar erros de build em produção
+- **Script de Instalação Completo:** Script completamente novo e testado para instalação VPS
+- **Sistema de Diagnóstico:** Script de diagnóstico completo para identificar problemas
+- **Correção Completa:** Script de correção completa para resolver múltiplos problemas
 
 ---
 
