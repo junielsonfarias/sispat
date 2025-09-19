@@ -468,34 +468,12 @@ server {
     error_log /var/log/nginx/sispat.error.log;
 }
 
-# Configuração HTTPS (se não for localhost)
-server {
-    listen 443 ssl http2;
-    server_name $DOMAIN;
-
-    # Certificados SSL (serão configurados pelo Certbot)
-    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-
-    # Configurações SSL
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
-    ssl_prefer_server_ciphers off;
-    ssl_session_cache shared:SSL:10m;
-
-    # Configurações de segurança
-    add_header X-Frame-Options DENY;
-    add_header X-Content-Type-Options nosniff;
-    add_header X-XSS-Protection "1; mode=block";
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
-    # Servir arquivos estáticos
-    location / {
-        root /var/www/sispat/dist;
-        try_files \$uri \$uri/ /index.html;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
+# Configuração HTTPS (será adicionada pelo Certbot se SSL for configurado)
+# server {
+#     listen 443 ssl http2;
+#     server_name $DOMAIN;
+#     # Certificados SSL serão configurados pelo Certbot
+# }
 
     # Proxy para API
     location /api/ {
@@ -621,10 +599,27 @@ setup_ssl() {
     log_header "Configurando SSL..."
     
     # Instalar Certbot
+    log_info "Instalando Certbot..."
     apt install -y certbot python3-certbot-nginx
     
+    # Verificar se o domínio é acessível
+    log_info "Verificando acessibilidade do domínio $DOMAIN..."
+    if ! nslookup $DOMAIN >/dev/null 2>&1; then
+        log_warning "Domínio $DOMAIN não é acessível. SSL será configurado mais tarde."
+        log_info "Para configurar SSL manualmente: certbot --nginx -d $DOMAIN"
+        return 0
+    fi
+    
     # Obter certificado SSL
-    certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN
+    log_info "Obtendo certificado SSL para $DOMAIN..."
+    if certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN --dry-run; then
+        log_info "Teste do Certbot bem-sucedido. Obtendo certificado real..."
+        certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN
+        log_success "Certificado SSL configurado com sucesso!"
+    else
+        log_warning "Falha ao obter certificado SSL. Sistema funcionará em HTTP."
+        log_info "Para configurar SSL manualmente: certbot --nginx -d $DOMAIN"
+    fi
     
     # Configurar renovação automática
     echo "0 12 * * * root certbot renew --quiet" >> /etc/crontab

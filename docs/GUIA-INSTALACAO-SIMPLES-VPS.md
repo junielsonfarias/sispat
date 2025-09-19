@@ -313,6 +313,43 @@ diretório.
     ./init-db.sh
     ```
 
+### **❌ "relation 'report_templates' does not exist"**
+
+**Causa:** Tabelas adicionais não foram criadas durante a inicialização do banco.
+
+**Solução IMEDIATA:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-installation-errors.sh -o fix-errors.sh
+chmod +x fix-errors.sh
+./fix-errors.sh
+```
+
+### **❌ "cannot load certificate" ou "SSL certificate error"**
+
+**Causa:** O Nginx está tentando carregar certificados SSL que não existem.
+
+**Solução IMEDIATA:**
+
+1.  **Executar script de correção de erros:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-installation-errors.sh -o fix-errors.sh
+    chmod +x fix-errors.sh
+    ./fix-errors.sh
+    ```
+
+2.  **Ou corrigir manualmente:**
+
+    ```bash
+    # Remover configuração SSL problemática
+    sed -i '/ssl_certificate/d' /etc/nginx/sites-available/sispat
+    sed -i '/listen 443/d' /etc/nginx/sites-available/sispat
+    
+    # Testar e recarregar Nginx
+    nginx -t && systemctl reload nginx
+    ```
+
 ### **❌ "destination path '.' already exists and is not an empty directory"**
 
 **Causa:** O diretório `/var/www/sispat` já existe e não está vazio, impedindo o clone do

@@ -259,6 +259,66 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 "
 
+# Tabela de templates de relatório
+execute_sql "
+CREATE TABLE IF NOT EXISTS report_templates (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    config JSONB,
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
+# Tabela de manutenção
+execute_sql "
+CREATE TABLE IF NOT EXISTS manutencao_tasks (
+    id SERIAL PRIMARY KEY,
+    patrimonio_id INTEGER REFERENCES patrimonios(id),
+    imovel_id INTEGER REFERENCES imoveis(id),
+    titulo VARCHAR(255) NOT NULL,
+    descricao TEXT,
+    tipo_manutencao VARCHAR(100),
+    prioridade VARCHAR(50) DEFAULT 'media',
+    status VARCHAR(50) DEFAULT 'pendente',
+    data_agendada DATE,
+    data_inicio DATE,
+    data_fim DATE,
+    custo_estimado DECIMAL(15,2),
+    custo_real DECIMAL(15,2),
+    fornecedor VARCHAR(255),
+    observacoes TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
+# Tabela de transferências (corrigir nome)
+execute_sql "
+CREATE TABLE IF NOT EXISTS transfers (
+    id SERIAL PRIMARY KEY,
+    patrimonio_id INTEGER REFERENCES patrimonios(id),
+    imovel_id INTEGER REFERENCES imoveis(id),
+    sector_origem_id INTEGER REFERENCES sectors(id),
+    sector_destino_id INTEGER REFERENCES sectors(id),
+    local_origem_id INTEGER REFERENCES locals(id),
+    local_destino_id INTEGER REFERENCES locals(id),
+    user_origem_id INTEGER REFERENCES users(id),
+    user_destino_id INTEGER REFERENCES users(id),
+    data_transferencia DATE NOT NULL,
+    motivo TEXT,
+    observacoes TEXT,
+    status VARCHAR(50) DEFAULT 'pendente',
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
 # Criar usuário administrador padrão
 log_info "Criando usuário administrador padrão..."
 execute_sql "
