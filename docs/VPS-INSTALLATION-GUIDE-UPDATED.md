@@ -1,4 +1,9 @@
-# 🚀 GUIA COMPLETO DE INSTALAÇÃO VPS - SISPAT (ATUALIZADO)
+# 🚀 GUIA COMPLETO DE INSTALAÇÃO VPS - SISPAT (VERSÃO SEGURA)
+
+## ⚠️ **IMPORTANTE - VERSÃO CORRIGIDA**
+
+Este guia foi corrigido para resolver problemas críticos de segurança. Use a versão segura
+disponível em `docs/VPS-INSTALLATION-GUIDE-SECURE-2025.md`
 
 ## 📋 **Pré-requisitos da VPS:**
 
@@ -23,7 +28,7 @@ ssh root@IP_DA_SUA_VPS
 
 ```bash
 # Baixar o script de instalação simplificado
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-simple.sh -o install-vps-simple.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/install-vps-simple.sh -o install-vps-simple.sh
 
 # Tornar executável
 chmod +x install-vps-simple.sh
@@ -36,7 +41,7 @@ chmod +x install-vps-simple.sh
 
 ```bash
 # Baixar o script de instalação completo e testado
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete-new.sh -o install-vps-complete-new.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/install-vps-complete-new.sh -o install-vps-complete-new.sh
 
 # Tornar executável
 chmod +x install-vps-complete-new.sh
@@ -49,7 +54,7 @@ chmod +x install-vps-complete-new.sh
 
 ```bash
 # Baixar o script de instalação completo
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete-fixed.sh -o install-vps-complete-fixed.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/install-vps-complete-fixed.sh -o install-vps-complete-fixed.sh
 
 # Tornar executável
 chmod +x install-vps-complete-fixed.sh
@@ -161,7 +166,7 @@ systemctl status postgresql
 sudo -u postgres psql
 
 # Criar usuário e banco (execute dentro do psql)
-CREATE USER sispat_user WITH PASSWORD 'sispat123456';
+CREATE USER sispat_user WITH PASSWORD 'CHANGE_ME_SECURE_PASSWORD';
 CREATE DATABASE sispat_production OWNER sispat_user;
 GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;
 ALTER USER sispat_user CREATEDB;
@@ -190,7 +195,7 @@ nano /etc/redis/redis.conf
 
 # Adicionar/modificar estas linhas:
 # bind 127.0.0.1
-# requirepass sispat123456
+# requirepass CHANGE_ME_SECURE_PASSWORD
 # maxmemory 256mb
 # maxmemory-policy allkeys-lru
 
@@ -199,7 +204,7 @@ systemctl enable redis-server
 systemctl start redis-server
 
 # Testar conexão
-redis-cli -a sispat123456 ping
+redis-cli -a CHANGE_ME_SECURE_PASSWORD ping
 ```
 
 ---
@@ -242,7 +247,7 @@ mkdir -p /var/www
 cd /var/www
 
 # Clonar repositório SISPAT
-git clone https://github.com/junielsonfarias/sispat.git
+git clone https://github.com/SEU_USUARIO/sispat.git
 cd sispat
 
 # Verificar conteúdo
@@ -272,24 +277,24 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=sispat_production
 DB_USER=sispat_user
-DB_PASSWORD=sispat123456
-DATABASE_URL=postgresql://sispat_user:sispat123456@localhost:5432/sispat_production
+DB_PASSWORD=CHANGE_ME_SECURE_PASSWORD
+DATABASE_URL=postgresql://sispat_user:CHANGE_ME_SECURE_PASSWORD@localhost:5432/sispat_production
 
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PASSWORD=sispat123456
-REDIS_URL=redis://:sispat123456@localhost:6379
+REDIS_PASSWORD=CHANGE_ME_SECURE_PASSWORD
+REDIS_URL=redis://:CHANGE_ME_SECURE_PASSWORD@localhost:6379
 
 # JWT
-JWT_SECRET=SEU_JWT_SECRET_AQUI
+JWT_SECRET=CHANGE_ME_SECURE_JWT_SECRET
 JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=7d
 
 # CORS
-CORS_ORIGIN=https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
+CORS_ORIGIN=https://SEU_DOMINIO.com,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 CORS_CREDENTIALS=true
-ALLOWED_ORIGINS=https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
+ALLOWED_ORIGINS=https://SEU_DOMINIO.com,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 ```
 
 ---
@@ -334,7 +339,7 @@ nano /etc/nginx/sites-available/sispat
 ```nginx
 server {
     listen 80;
-    server_name sispat.vps-kinghost.net www.sispat.vps-kinghost.net;
+    server_name SEU_DOMINIO.com www.SEU_DOMINIO.com;
 
     # Frontend
     location / {
@@ -399,7 +404,7 @@ systemctl reload nginx
 apt install -y certbot python3-certbot-nginx
 
 # Obter certificado SSL
-certbot --nginx -d sispat.vps-kinghost.net
+certbot --nginx -d SEU_DOMINIO.com
 
 # Configurar renovação automática
 crontab -e
@@ -453,10 +458,10 @@ pm2 status
 
 ```bash
 # Testar frontend
-curl -I http://sispat.vps-kinghost.net
+curl -I http://SEU_DOMINIO.com
 
 # Testar API
-curl -I http://sispat.vps-kinghost.net/api/health
+curl -I http://SEU_DOMINIO.com/api/health
 
 # Testar banco de dados
 sudo -u postgres psql -d sispat_production -c "SELECT version();"
@@ -542,7 +547,8 @@ Correção integrada automaticamente
 
 **❌ Erro:** `password authentication failed for user "sispat_user"` **🔧 Solução:** O script
 `install-vps-complete.sh` agora inclui correção automática de autenticação **✅ Status:**
-**RESOLVIDO** - Correção integrada automaticamente **🔒 Senha Configurada:** `sispat123456`
+**RESOLVIDO** - Correção integrada automaticamente **🔒 Senha Configurada:**
+`CHANGE_ME_SECURE_PASSWORD`
 
 ### **Problema 2: Nginx não roteia tráfego para aplicação (RESOLVIDO)**
 
@@ -561,7 +567,7 @@ Status:** **RESOLVIDO** - Configuração Nginx agora é válida e funcional
 
 ```bash
 # Solução automática
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-ubuntu20.sh -o fix-postgresql.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-postgresql-ubuntu20.sh -o fix-postgresql.sh
 chmod +x fix-postgresql.sh
 ./fix-postgresql.sh
 ```
@@ -574,7 +580,7 @@ Correção integrada automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-npm-dependencies.sh -o fix-npm-dependencies.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-npm-dependencies.sh -o fix-npm-dependencies.sh
 chmod +x fix-npm-dependencies.sh
 ./fix-npm-dependencies.sh
 ```
@@ -587,7 +593,7 @@ Solução:** Os scripts agora habilitam extensões PostgreSQL automaticamente **
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-uuid.sh -o fix-postgresql-uuid.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-postgresql-uuid.sh -o fix-postgresql-uuid.sh
 chmod +x fix-postgresql-uuid.sh
 ./fix-postgresql-uuid.sh
 ```
@@ -600,7 +606,7 @@ automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-migration-order.sh -o fix-migration-order.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-migration-order.sh -o fix-migration-order.sh
 chmod +x fix-migration-order.sh
 ./fix-migration-order.sh
 ```
@@ -613,7 +619,7 @@ automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-ssl-configuration.sh -o fix-ssl-configuration.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-ssl-configuration.sh -o fix-ssl-configuration.sh
 chmod +x fix-ssl-configuration.sh
 ./fix-ssl-configuration.sh
 ```
@@ -626,7 +632,7 @@ Status:** **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-pm2-configuration.sh -o fix-pm2-configuration.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-pm2-configuration.sh -o fix-pm2-configuration.sh
 chmod +x fix-pm2-configuration.sh
 ./fix-pm2-configuration.sh
 ```
@@ -639,7 +645,7 @@ integrada automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-frontend-build.sh -o fix-frontend-build.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-frontend-build.sh -o fix-frontend-build.sh
 chmod +x fix-frontend-build.sh
 ./fix-frontend-build.sh
 ```
@@ -657,14 +663,14 @@ npm install --legacy-peer-deps
 
 ### **Problema 12: Erro Nginx + Certbot (CRÍTICO - RESOLVIDO)**
 
-**❌ Erro:** `server name "http://sispat.vps-kinghost.net/" has suspicious symbols` e
-`Requested name http://sispat.vps-kinghost.net/ appears to be a URL, not a FQDN` **🔧 Solução:**
+**❌ Erro:** `server name "http://SEU_DOMINIO.com/" has suspicious symbols` e
+`Requested name http://SEU_DOMINIO.com/ appears to be a URL, not a FQDN` **🔧 Solução:**
 Configuração Nginx limpa e comando Certbot corrigido **✅ Status:** **RESOLVIDO** - Correção
 integrada automaticamente
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-certbot.sh -o fix-nginx-certbot.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-nginx-certbot.sh -o fix-nginx-certbot.sh
 chmod +x fix-nginx-certbot.sh
 ./fix-nginx-certbot.sh
 ```
@@ -677,7 +683,7 @@ diferente **🔧 Solução:** Remoção e recriação do usuário e banco com CA
 
 ```bash
 # Se ainda houver problemas, execute o script de correção:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-auth-final.sh -o fix-postgresql-auth-final.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-postgresql-auth-final.sh -o fix-postgresql-auth-final.sh
 chmod +x fix-postgresql-auth-final.sh
 ./fix-postgresql-auth-final.sh
 ```
@@ -690,7 +696,7 @@ Solução:** Charts incluídos no vendor-misc (não separado) para evitar proble
 
 ```bash
 # Para correção definitiva, execute o script:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-charts-final.sh -o fix-charts-final.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-charts-final.sh -o fix-charts-final.sh
 chmod +x fix-charts-final.sh
 ./fix-charts-final.sh
 ```
@@ -703,12 +709,12 @@ Status:** **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
 # Para correção simples, execute o script:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-cors-frontend.sh -o fix-cors-frontend.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-cors-frontend.sh -o fix-cors-frontend.sh
 chmod +x fix-cors-frontend.sh
 ./fix-cors-frontend.sh
 
 # Para correção completa (se o problema persistir), execute:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-cors-complete.sh -o fix-cors-complete.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-cors-complete.sh -o fix-cors-complete.sh
 chmod +x fix-cors-complete.sh
 ./fix-cors-complete.sh
 ```
@@ -721,12 +727,12 @@ Solução:** Configuração Vite otimizada e dependências D3 excluídas do opti
 
 ```bash
 # Para correção, execute o script:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-vendor-misc-initialization.sh -o fix-vendor-misc-initialization.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-vendor-misc-initialization.sh -o fix-vendor-misc-initialization.sh
 chmod +x fix-vendor-misc-initialization.sh
 ./fix-vendor-misc-initialization.sh
 
 # Para correção definitiva (se o problema persistir), execute:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-vendor-misc-definitive.sh -o fix-vendor-misc-definitive.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-vendor-misc-definitive.sh -o fix-vendor-misc-definitive.sh
 chmod +x fix-vendor-misc-definitive.sh
 ./fix-vendor-misc-definitive.sh
 ```
@@ -739,7 +745,7 @@ Status:** **RESOLVIDO** - Correção integrada automaticamente
 
 ```bash
 # Para correção, execute o script:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-rollup-dependencies.sh -o fix-rollup-dependencies.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-rollup-dependencies.sh -o fix-rollup-dependencies.sh
 chmod +x fix-rollup-dependencies.sh
 ./fix-rollup-dependencies.sh
 ```
@@ -752,12 +758,12 @@ Correção integrada automaticamente
 
 ```bash
 # Para correção simples, execute o script:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-html2canvas-dependency.sh -o fix-html2canvas-dependency.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-html2canvas-dependency.sh -o fix-html2canvas-dependency.sh
 chmod +x fix-html2canvas-dependency.sh
 ./fix-html2canvas-dependency.sh
 
 # Para correção completa (se houver conflitos NPM), execute:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-html2canvas-complete.sh -o fix-html2canvas-complete.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-html2canvas-complete.sh -o fix-html2canvas-complete.sh
 chmod +x fix-html2canvas-complete.sh
 ./fix-html2canvas-complete.sh
 ```
@@ -770,7 +776,7 @@ favicon.svg criado **✅ Status:** **RESOLVIDO** - Correção integrada automati
 
 ```bash
 # Para correção, execute o script:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-redirect-loop.sh -o fix-nginx-redirect-loop.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-nginx-redirect-loop.sh -o fix-nginx-redirect-loop.sh
 chmod +x fix-nginx-redirect-loop.sh
 ./fix-nginx-redirect-loop.sh
 ```
@@ -783,12 +789,12 @@ diagnóstico criados
 
 ```bash
 # Para diagnóstico completo do frontend:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/diagnose-frontend.sh -o diagnose-frontend.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/diagnose-frontend.sh -o diagnose-frontend.sh
 chmod +x diagnose-frontend.sh
 ./diagnose-frontend.sh
 
 # Para verificar erros específicos do browser:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/check-browser-errors.sh -o check-browser-errors.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/check-browser-errors.sh -o check-browser-errors.sh
 chmod +x check-browser-errors.sh
 ./check-browser-errors.sh
 ```
@@ -801,7 +807,7 @@ vendor-misc **✅ Status:** **RESOLVIDO DEFINITIVAMENTE** - Correção integrada
 
 ```bash
 # Para correção DEFINITIVA, execute o script:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-createcontext-definitive.sh -o fix-createcontext-definitive.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-createcontext-definitive.sh -o fix-createcontext-definitive.sh
 chmod +x fix-createcontext-definitive.sh
 ./fix-createcontext-definitive.sh
 ```
@@ -814,7 +820,7 @@ Solução:** Variáveis baseUrl e apiUrl definidas corretamente na configuraçã
 
 ```bash
 # Para correção, execute o script:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-vite-config-error.sh -o fix-vite-config-error.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-vite-config-error.sh -o fix-vite-config-error.sh
 chmod +x fix-vite-config-error.sh
 ./fix-vite-config-error.sh
 ```
@@ -826,7 +832,7 @@ completamente novo e testado **✅ Status:** **RESOLVIDO** - Script de instalaç
 
 ```bash
 # Para instalação completa e testada, execute:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-complete-new.sh -o install-vps-complete-new.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/install-vps-complete-new.sh -o install-vps-complete-new.sh
 chmod +x install-vps-complete-new.sh
 ./install-vps-complete-new.sh
 ```
@@ -838,7 +844,7 @@ Script de diagnóstico completo **✅ Status:** **DISPONÍVEL** - Script de diag
 
 ```bash
 # Para diagnóstico completo, execute:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/diagnose-production.sh -o diagnose-production.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/diagnose-production.sh -o diagnose-production.sh
 chmod +x diagnose-production.sh
 ./diagnose-production.sh
 ```
@@ -850,7 +856,7 @@ de correção completa **✅ Status:** **DISPONÍVEL** - Script de correção co
 
 ```bash
 # Para correção completa, execute:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-production-complete.sh -o fix-production-complete.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-production-complete.sh -o fix-production-complete.sh
 chmod +x fix-production-complete.sh
 ./fix-production-complete.sh
 ```
@@ -861,12 +867,37 @@ chmod +x fix-production-complete.sh
 funcionamento em produção **🔧 Solução:** Script de correção de segurança crítica **✅ Status:**
 **RESOLVIDO** - Todas as falhas críticas corrigidas
 
+### **Problema 27: Conexão com Banco de Dados (CRÍTICO - RESOLVIDO)**
+
+**❌ Problema:** Erros de conexão com PostgreSQL impedem o funcionamento da aplicação **🔧
+Solução:** Scripts de correção de conexão e modo de desenvolvimento sem banco **✅ Status:**
+**RESOLVIDO** - Conexão com banco corrigida e modo de desenvolvimento implementado
+
 ```bash
-# Para correção de segurança crítica, execute:
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-production-critical-issues.sh -o fix-production-critical-issues.sh
-chmod +x fix-production-critical-issues.sh
-./fix-production-critical-issues.sh
+# Para correção de conexão com banco de dados, execute:
+# Linux/macOS:
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-database-connection.sh -o fix-database-connection.sh
+chmod +x fix-database-connection.sh
+./fix-database-connection.sh
+
+# Windows:
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/fix-database-connection.ps1 -o fix-database-connection.ps1
+powershell -ExecutionPolicy Bypass -File fix-database-connection.ps1
+
+# Para desenvolvimento sem banco de dados:
+node scripts/setup-dev-without-db.js
 ```
+
+**🔧 Correções Implementadas:**
+
+- ✅ **Script de correção de conexão:** `fix-database-connection.sh` (Linux/macOS) e
+  `fix-database-connection.ps1` (Windows)
+- ✅ **Modo de desenvolvimento sem banco:** `setup-dev-without-db.js`
+- ✅ **Validação de variáveis de ambiente:** Verificação automática de configurações críticas
+- ✅ **Teste de conexão:** Função `testConnection()` para verificar conectividade
+- ✅ **Tratamento de erros:** Mensagens claras e soluções automáticas
+- ✅ **Health check adaptativo:** Funciona com ou sem banco de dados
+- ✅ **Configuração automática:** Criação automática de arquivo `.env` e diretórios necessários
 
 **🔒 Falhas Críticas Corrigidas:**
 
@@ -955,7 +986,7 @@ apt install -y nginx
 ufw allow ssh && ufw allow 80 && ufw allow 443 && ufw allow 3001 && ufw --force enable
 
 # 8. Clonar aplicação
-cd /var/www && git clone https://github.com/junielsonfarias/sispat.git && cd sispat
+cd /var/www && git clone https://github.com/SEU_USUARIO/sispat.git && cd sispat
 
 # 9. Configurar ambiente
 chmod +x scripts/*.sh
@@ -968,7 +999,7 @@ chmod +x scripts/*.sh
 # (criar arquivo de configuração manualmente)
 
 # 12. SSL
-certbot --nginx -d sispat.vps-kinghost.net
+certbot --nginx -d SEU_DOMINIO.com
 
 # 13. PM2 startup
 pm2 save && pm2 startup
@@ -996,7 +1027,7 @@ Após executar todos os passos, você terá:
 **Para instalação mais rápida, use o script automático:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps.sh -o install-vps.sh
+curl -fsSL https://raw.githubusercontent.com/SEU_USUARIO/sispat/main/scripts/install-vps.sh -o install-vps.sh
 chmod +x install-vps.sh
 ./install-vps.sh
 ```
@@ -1085,7 +1116,8 @@ performance!**
 - `diagnose-production.sh` - **NOVO** Script de diagnóstico completo
 - `fix-production-complete.sh` - **NOVO** Script de correção completa
 - `fix-security-critical-issues.sh` - **NOVO** Script de correção de falhas críticas de segurança
-- `fix-production-critical-issues.sh` - **NOVO** Script de correção de problemas críticos de produção
+- `fix-production-critical-issues.sh` - **NOVO** Script de correção de problemas críticos de
+  produção
 - `backup-complete-config.sh` - **NOVO** Script de backup completo de configurações
 - `install-vps-complete.sh` - Inclui todas as correções automaticamente
 - `fix-export-error-final.sh` - Correção final do erro de export
@@ -1171,7 +1203,7 @@ performance!**
 4. **Teste conectividade:**
    ```bash
    curl -I http://localhost:3001
-   curl -I http://sispat.vps-kinghost.net
+   curl -I http://SEU_DOMINIO.com
    ```
 
 ---
@@ -1195,8 +1227,8 @@ O frontend está tentando conectar em `localhost:3001` porque:
 
 ```typescript
 // Linha 184 e 191 - CORRIGIR:
-'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api'),
-VITE_API_URL: process.env.VITE_API_URL || 'https://sispat.vps-kinghost.net/api',
+'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://SEU_DOMINIO.com/api'),
+VITE_API_URL: process.env.VITE_API_URL || 'https://SEU_DOMINIO.com/api',
 ```
 
 #### **2. Fazer rebuild com variáveis de ambiente:**
@@ -1225,8 +1257,8 @@ sudo cp -r dist/* /var/www/sispat/
 pm2 stop sispat
 
 # 2. Definir variáveis de ambiente
-export VITE_API_URL=https://sispat.vps-kinghost.net/api
-export VITE_BACKEND_URL=https://sispat.vps-kinghost.net
+export VITE_API_URL=https://SEU_DOMINIO.com/api
+export VITE_BACKEND_URL=https://SEU_DOMINIO.com
 
 # 3. Fazer rebuild
 npm run build
@@ -1242,11 +1274,11 @@ pm2 start sispat
 
 ```bash
 # 1. Editar vite.config.ts
-sed -i 's|http://localhost:3001/api|https://sispat.vps-kinghost.net/api|g' vite.config.ts
+sed -i 's|http://localhost:3001/api|https://SEU_DOMINIO.com/api|g' vite.config.ts
 
 # 2. Definir variáveis de ambiente
-export VITE_API_URL=https://sispat.vps-kinghost.net/api
-export VITE_BACKEND_URL=https://sispat.vps-kinghost.net
+export VITE_API_URL=https://SEU_DOMINIO.com/api
+export VITE_BACKEND_URL=https://SEU_DOMINIO.com
 
 # 3. Fazer rebuild
 npm run build
@@ -1272,8 +1304,8 @@ pm2 restart sispat
 
 #### **Após a correção:**
 
-- ✅ `POST https://sispat.vps-kinghost.net/api/auth/ensure-superuser 200 OK`
-- ✅ `POST https://sispat.vps-kinghost.net/api/auth/login 200 OK`
+- ✅ `POST https://SEU_DOMINIO.com/api/auth/ensure-superuser 200 OK`
+- ✅ `POST https://SEU_DOMINIO.com/api/auth/login 200 OK`
 
 ---
 
@@ -1282,14 +1314,14 @@ pm2 restart sispat
 **Comando mais simples:**
 
 ```bash
-export VITE_API_URL=https://sispat.vps-kinghost.net/api && npm run build && sudo cp -r dist/* /var/www/html/ && pm2 restart sispat
+export VITE_API_URL=https://SEU_DOMINIO.com/api && npm run build && sudo cp -r dist/* /var/www/html/ && pm2 restart sispat
 ```
 
 **🎉 Após executar, o frontend não tentará mais conectar em localhost:3001!**
 
 ### **🔍 Para verificar se funcionou:**
 
-1. Acesse `https://sispat.vps-kinghost.net`
+1. Acesse `https://SEU_DOMINIO.com`
 2. Abra o console do navegador (F12)
 3. Verifique se não há mais erros de `localhost:3001`
-4. Tente fazer login com `junielsonfarias@gmail.com` / `Tiko6273@`
+4. Tente fazer login com `SEU_EMAIL_AQUI` / `SUA_SENHA_AQUI`

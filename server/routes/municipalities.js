@@ -1,5 +1,5 @@
 import express from 'express';
-import { getRow, getRows, query } from '../database/connection.js';
+import { getRow, getRows, pool, query } from '../database/connection.js';
 import { authenticateToken, requireSuperuser } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -7,6 +7,19 @@ const router = express.Router();
 // Public route for municipalities (for login page)
 router.get('/public', async (req, res) => {
   try {
+    if (!pool) {
+      // Retornar dados mockados quando banco está desabilitado
+      const mockMunicipalities = [
+        {
+          id: 'mock-municipality-1',
+          name: 'Município de Exemplo',
+          state: 'SP',
+        },
+      ];
+      res.json(mockMunicipalities);
+      return;
+    }
+
     const municipalities = await getRows(`
       SELECT 
         id,

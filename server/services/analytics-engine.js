@@ -3,8 +3,8 @@
  */
 
 import { EventEmitter } from 'events';
-import { getRow, getRows, query } from '../database/connection.js';
-import { logError, logInfo } from '../utils/logger.js';
+import { getRow, getRows, query, pool } from '../database/connection.js';
+import { logError, logInfo, logWarning } from '../utils/logger.js';
 import { websocketServer } from './websocket-server.js';
 
 class AnalyticsEngine extends EventEmitter {
@@ -42,6 +42,13 @@ class AnalyticsEngine extends EventEmitter {
    */
   async initialize() {
     try {
+      if (!pool) {
+        logWarning(
+          '⚠️ Pool de banco de dados não disponível - Analytics Engine desabilitado'
+        );
+        return;
+      }
+
       await this.createMetricsTable();
       await this.loadHistoricalData();
       this.startMetricsCollection();

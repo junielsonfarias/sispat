@@ -40,6 +40,7 @@ import { Eye, EyeOff, Key, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { logError, logInfo } from '../../utils/frontendLogger';
 
 interface UserData {
   id: string;
@@ -123,7 +124,7 @@ export default function UserManagement() {
 
   const handleStatusChange = async (userId: string, isActive: boolean) => {
     try {
-      console.log('🔍 Atualizando status do usuário:', { userId, isActive });
+      logInfo('🔍 Atualizando status do usuário:', { userId, isActive });
       await api.put(`/users/${userId}`, { isActive });
       await fetchUsers(); // Recarregar lista
       toast({
@@ -131,7 +132,7 @@ export default function UserManagement() {
         description: `Usuário ${isActive ? 'ativado' : 'desativado'} com sucesso.`,
       });
     } catch (error) {
-      console.error('Erro ao atualizar status do usuário:', error);
+      logError('Erro ao atualizar status do usuário:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao atualizar status do usuário.',
@@ -185,7 +186,7 @@ export default function UserManagement() {
       setEditingUser(null);
       passwordForm.reset();
     } catch (error) {
-      console.error('Erro ao atualizar senha:', error);
+      logError('Erro ao atualizar senha:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao atualizar senha do usuário.',
@@ -217,7 +218,7 @@ export default function UserManagement() {
       userEditForm.reset();
       await fetchUsers(); // Recarregar lista
     } catch (error) {
-      console.error('Erro ao atualizar usuário:', error);
+      logError('Erro ao atualizar usuário:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao atualizar dados do usuário.',

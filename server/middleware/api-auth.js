@@ -179,6 +179,13 @@ export const requireApiPermission = permission => {
 // Função para criar tabela de API keys se não existir
 export const createApiKeysTable = async () => {
   try {
+    if (!pool) {
+      console.log(
+        '⚠️ Pool de banco de dados não disponível - pulando criação da tabela api_keys'
+      );
+      return;
+    }
+
     const createTableQuery = `
       CREATE TABLE IF NOT EXISTS api_keys (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

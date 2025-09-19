@@ -7,7 +7,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
 
 export default [
-  { ignores: ['dist', '**/*.d.ts', 'tests/**/*', 'coverage/**/*', 'node_modules/**/*', 'ecosystem.config.cjs', 'ecosystem.optimized.cjs'] },
+  { ignores: ['dist', '**/*.d.ts', 'tests/**/*', 'coverage/**/*', 'node_modules/**/*'] },
   
   // Configuração base para todos os arquivos
   js.configs.recommended,
@@ -141,20 +141,20 @@ export default [
         { allowConstantExport: true },
       ],
       'no-undef': 'off', // Desabilitar no-undef para TypeScript
-      'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
-      'no-debugger': 'warn', // Mudado para warn
+      'no-console': 'off', // Desabilitado para desenvolvimento
+      'no-debugger': 'warn',
       'no-alert': 'warn',
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
-      'no-script-url': 'warn', // Mudado para warn
-      'no-var': 'warn', // Mudado para warn
-      'prefer-arrow-callback': 'warn', // Mudado para warn
-      'prefer-template': 'warn', // Mudado para warn
-      'template-curly-spacing': 'warn', // Mudado para warn
-      'object-shorthand': 'warn', // Mudado para warn
+      'no-script-url': 'warn',
+      'no-var': 'warn',
+      'prefer-arrow-callback': 'warn',
+      'prefer-template': 'warn',
+      'template-curly-spacing': 'warn',
+      'object-shorthand': 'warn',
       'prefer-destructuring': 'warn',
-      'no-empty': 'warn', // Mudado para warn
+      'no-empty': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'warn', // Mudado para warn
         {

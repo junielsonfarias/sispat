@@ -3,7 +3,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { getRow, getRows, query } from '../database/connection.js';
+import { getRow, getRows, query, pool } from '../database/connection.js';
 import {
   logError,
   logInfo,
@@ -48,6 +48,13 @@ class ReportQueue extends EventEmitter {
    */
   async initialize() {
     try {
+      if (!pool) {
+        logWarning(
+          '⚠️ Pool de banco de dados não disponível - Report Queue desabilitado'
+        );
+        return;
+      }
+
       await this.createJobsTable();
       await this.loadPendingJobs();
       this.startWorkers();

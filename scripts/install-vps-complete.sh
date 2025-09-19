@@ -2,7 +2,7 @@
 
 # =================================
 # INSTALAÇÃO COMPLETA VPS - SISPAT
-# Sistema de Patrimônio - VERSÃO CORRIGIDA FINAL
+# Sistema de Patrimônio - VERSÃO ATUALIZADA 2025
 # =================================
 
 set -e
@@ -38,17 +38,46 @@ warning() {
 # Banner
 echo ""
 echo "🚀 ================================================"
-echo "🚀    INSTALAÇÃO COMPLETA VPS - SISPAT"
-echo "🚀    Sistema de Patrimônio - VERSÃO CORRIGIDA FINAL"
-echo "🚀    ✅ Scripts corrigidos e PostgreSQL 100% funcional"
-echo "🚀    ✅ PROBLEMAS CRÍTICOS RESOLVIDOS: apt-key, netstat, timeouts"
-echo "🚀    ✅ Compatibilidade Ubuntu 22.04+ garantida"
+echo "🚀    INSTALAÇÃO COMPLETA VPS - SISPAT 2025"
+echo "🚀    Sistema de Patrimônio - VERSÃO ATUALIZADA"
+echo "🚀    ✅ Modo de desenvolvimento sem banco implementado"
+echo "🚀    ✅ Scripts de produção automatizados"
+echo "🚀    ✅ Compatibilidade Ubuntu 20.04+ garantida"
+echo "🚀    ✅ Instalação simplificada e robusta"
 echo "🚀 ================================================"
 echo ""
 
 # Verificar se estamos rodando como root
 if [ "$EUID" -ne 0 ]; then
     error "Este script deve ser executado como root (sudo)"
+fi
+
+# Solicitar informações do usuário
+echo "📋 Configuração da Instalação:"
+echo "================================"
+read -p "🌐 Digite seu domínio (ex: sispat.exemplo.com): " DOMAIN
+read -p "📧 Digite seu email para SSL: " EMAIL
+read -p "🔐 Digite uma senha forte para o banco de dados: " DB_PASSWORD
+read -p "🔑 Digite uma chave JWT secreta forte: " JWT_SECRET
+
+# Validar entradas
+if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ] || [ -z "$DB_PASSWORD" ] || [ -z "$JWT_SECRET" ]; then
+    error "Todas as informações são obrigatórias!"
+fi
+
+# Perguntar sobre modo de instalação
+echo ""
+echo "🎯 Modo de Instalação:"
+echo "1) Desenvolvimento (sem banco de dados - mais rápido)"
+echo "2) Produção (com PostgreSQL completo)"
+read -p "Escolha o modo (1 ou 2): " INSTALL_MODE
+
+if [ "$INSTALL_MODE" = "1" ]; then
+    DEV_MODE=true
+    log "Modo de desenvolvimento selecionado - PostgreSQL será opcional"
+else
+    DEV_MODE=false
+    log "Modo de produção selecionado - PostgreSQL será instalado"
 fi
 
 # Verificar sistema operacional
@@ -116,8 +145,15 @@ if ! command -v serve &> /dev/null; then
     fi
 fi
 
-# 5. Instalar PostgreSQL com correções
-log "🗄️ Instalando PostgreSQL com correções..."
+# 5. Instalar PostgreSQL com correções (CONDICIONAL)
+if [ "$DEV_MODE" = "false" ]; then
+    log "🗄️ Instalando PostgreSQL para produção..."
+else
+    log "🗄️ Modo de desenvolvimento - PostgreSQL será opcional"
+    warning "⚠️ Para usar PostgreSQL mais tarde, execute: bash scripts/install-postgresql.sh"
+fi
+
+if [ "$DEV_MODE" = "false" ]; then
 UBUNTU_VERSION=$(lsb_release -cs)
 log "📋 Versão do Ubuntu detectada: $UBUNTU_VERSION"
 
@@ -135,7 +171,7 @@ if [ "$UBUNTU_VERSION" = "focal" ]; then
     # Configurar usuário e banco
     sudo -u postgres psql << EOF
 DROP USER IF EXISTS sispat_user;
-CREATE USER sispat_user WITH PASSWORD 'sispat123456';
+CREATE USER sispat_user WITH PASSWORD '$DB_PASSWORD';
 CREATE DATABASE sispat_production OWNER sispat_user;
 GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;
 ALTER USER sispat_user CREATEDB;
@@ -170,7 +206,7 @@ else
         # Configurar usuário e banco
         sudo -u postgres psql << EOF
 DROP USER IF EXISTS sispat_user;
-CREATE USER sispat_user WITH PASSWORD 'sispat123456';
+CREATE USER sispat_user WITH PASSWORD '$DB_PASSWORD';
 CREATE DATABASE sispat_production OWNER sispat_user;
 GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;
 ALTER USER sispat_user CREATEDB;
@@ -201,7 +237,7 @@ EOF
         # Configurar usuário e banco
         sudo -u postgres psql << EOF
 DROP USER IF EXISTS sispat_user;
-CREATE USER sispat_user WITH PASSWORD 'sispat123456';
+CREATE USER sispat_user WITH PASSWORD '$DB_PASSWORD';
 CREATE DATABASE sispat_production OWNER sispat_user;
 GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;
 ALTER USER sispat_user CREATEDB;
@@ -210,6 +246,10 @@ EOF
         
         success "PostgreSQL instalado: $(psql --version)"
     fi
+fi
+else
+    log "📋 Modo de desenvolvimento - PostgreSQL não será instalado"
+    log "📋 Para instalar PostgreSQL mais tarde, execute: bash scripts/install-postgresql.sh"
 fi
 
 # 6. Instalar Redis
@@ -247,8 +287,53 @@ success "Repositório clonado"
 
 # 10. Configurar variáveis de ambiente
 log "⚙️ Configurando variáveis de ambiente..."
-cat > .env.production << 'EOF'
-# Configurações do Servidor
+if [ "$DEV_MODE" = "true" ]; then
+    cat > .env.production << EOF
+# Configurações de Desenvolvimento - SISPAT
+NODE_ENV=development
+PORT=3001
+HOST=0.0.0.0
+
+# Banco de Dados PostgreSQL (OPCIONAL - modo desenvolvimento)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=sispat_production
+DB_USER=sispat_user
+DB_PASSWORD=$DB_PASSWORD
+DATABASE_URL=postgresql://sispat_user:$DB_PASSWORD@localhost:5432/sispat_production
+
+# Modo de desenvolvimento - permite funcionar sem banco
+DISABLE_DATABASE=true
+
+# Redis (opcional)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=sispat123456
+REDIS_URL=redis://:sispat123456@localhost:6379
+
+# JWT e Segurança
+JWT_SECRET=$JWT_SECRET
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# CORS
+CORS_ORIGIN=https://$DOMAIN,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
+CORS_CREDENTIALS=true
+ALLOWED_ORIGINS=https://$DOMAIN,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
+
+# Logs
+LOG_LEVEL=debug
+LOG_FILE=./logs/app.log
+
+# Backup
+BACKUP_ENABLED=false
+BACKUP_SCHEDULE="0 2 * * *"
+BACKUP_RETENTION_DAYS=30
+EOF
+else
+    cat > .env.production << EOF
+# Configurações de Produção - SISPAT
+NODE_ENV=production
 PORT=3001
 HOST=0.0.0.0
 
@@ -257,8 +342,8 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=sispat_production
 DB_USER=sispat_user
-DB_PASSWORD=sispat123456
-DATABASE_URL=postgresql://sispat_user:sispat123456@localhost:5432/sispat_production
+DB_PASSWORD=$DB_PASSWORD
+DATABASE_URL=postgresql://sispat_user:$DB_PASSWORD@localhost:5432/sispat_production
 
 # Redis
 REDIS_HOST=localhost
@@ -267,14 +352,14 @@ REDIS_PASSWORD=sispat123456
 REDIS_URL=redis://:sispat123456@localhost:6379
 
 # JWT e Segurança
-JWT_SECRET=sispat_jwt_secret_production_2025_very_secure_key_here
+JWT_SECRET=$JWT_SECRET
 JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=7d
 
 # CORS
-CORS_ORIGIN=https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
+CORS_ORIGIN=https://$DOMAIN,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 CORS_CREDENTIALS=true
-ALLOWED_ORIGINS=https://sispat.vps-kinghost.net,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
+ALLOWED_ORIGINS=https://$DOMAIN,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080
 
 # Logs
 LOG_LEVEL=info
@@ -284,13 +369,26 @@ LOG_FILE=./logs/app.log
 BACKUP_ENABLED=true
 BACKUP_SCHEDULE="0 2 * * *"
 BACKUP_RETENTION_DAYS=30
-
-# IMPORTANTE: NÃO definir NODE_ENV aqui - o Vite gerencia automaticamente
 EOF
+fi
 
-success "Arquivo .env.production criado (SEM NODE_ENV)"
+if [ "$DEV_MODE" = "true" ]; then
+    success "Arquivo .env.production criado (MODO DESENVOLVIMENTO)"
+else
+    success "Arquivo .env.production criado (MODO PRODUÇÃO)"
+fi
 
-# 11. Configurar scripts e diretórios
+# 11. Executar scripts de configuração de produção
+log "🔧 Executando scripts de configuração de produção..."
+if [ -f "scripts/setup-production-ready.js" ]; then
+    log "📋 Executando setup-production-ready.js..."
+    node scripts/setup-production-ready.js
+    success "Scripts de produção configurados"
+else
+    warning "Script setup-production-ready.js não encontrado"
+fi
+
+# 12. Configurar scripts e diretórios
 log "🔧 Configurando scripts e diretórios..."
 
 # Criar diretório de logs se não existir
@@ -386,7 +484,7 @@ SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'sispat_p
 DROP DATABASE IF EXISTS sispat_production;
 DROP USER IF EXISTS sispat_user;
 -- Criar usuário com senha correta
-CREATE USER sispat_user WITH PASSWORD 'sispat123456';
+CREATE USER sispat_user WITH PASSWORD '$DB_PASSWORD';
 -- Criar banco de dados
 CREATE DATABASE sispat_production OWNER sispat_user;
 -- Conceder todas as permissões
@@ -630,7 +728,7 @@ DROP USER IF EXISTS sispat_user;
 SELECT pg_sleep(1);
 
 -- CRIAR USUÁRIO COM SENHA CORRETA
-CREATE USER sispat_user WITH PASSWORD 'sispat123456';
+CREATE USER sispat_user WITH PASSWORD '$DB_PASSWORD';
 
 -- CRIAR BANCO DE DADOS
 CREATE DATABASE sispat_production OWNER sispat_user;
@@ -1208,15 +1306,35 @@ else
     # Verificar se as dependências estão instaladas
     if [ ! -d "node_modules" ]; then
         log "📦 Instalando dependências..."
-        if command -v pnpm &> /dev/null; then
-            pnpm install
+        if [ "$DEV_MODE" = "true" ]; then
+            log "📋 Modo de desenvolvimento - instalando todas as dependências"
+            if command -v pnpm &> /dev/null; then
+                pnpm install --legacy-peer-deps
+            else
+                npm install --legacy-peer-deps
+            fi
         else
-            npm install
+            log "📋 Modo de produção - instalando dependências de produção"
+            if command -v pnpm &> /dev/null; then
+                pnpm install --production --legacy-peer-deps
+            else
+                npm install --production --legacy-peer-deps
+            fi
         fi
     fi
     
     # Executar build
     log "🔨 Executando build do frontend..."
+    if [ "$DEV_MODE" = "true" ]; then
+        log "📋 Modo de desenvolvimento - build com variáveis de desenvolvimento"
+        export VITE_API_URL="http://localhost:3001/api"
+        export VITE_BACKEND_URL="http://localhost:3001"
+    else
+        log "📋 Modo de produção - build com variáveis de produção"
+        export VITE_API_URL="https://$DOMAIN/api"
+        export VITE_BACKEND_URL="https://$DOMAIN"
+    fi
+    
     if command -v pnpm &> /dev/null; then
         pnpm run build
     else
@@ -1545,13 +1663,25 @@ else
     warning "⚠️ Script de correção da VPS não encontrado"
 fi
 
-# 20. Verificação final
+# 20. Executar testes do sistema
+log "🧪 Executando testes do sistema..."
+if [ -f "scripts/test-complete-system.js" ]; then
+    log "📋 Executando testes completos..."
+    node scripts/test-complete-system.js
+    success "Testes do sistema executados"
+else
+    warning "Script de testes não encontrado"
+fi
+
+# 21. Verificação final
 log "🔍 Verificação final..."
 echo ""
 echo "📊 STATUS DOS SERVIÇOS:"
 echo "========================"
-systemctl status postgresql --no-pager -l
-echo ""
+if [ "$DEV_MODE" = "false" ]; then
+    systemctl status postgresql --no-pager -l
+    echo ""
+fi
 systemctl status redis-server --no-pager -l
 echo ""
 systemctl status nginx --no-pager -l
@@ -1627,31 +1757,65 @@ fi
 # 22. Instruções finais
 log "📝 INSTALAÇÃO CONCLUÍDA!"
 echo ""
-echo "🎉 SISPAT INSTALADO COM SUCESSO!"
-echo "=================================="
-echo ""
-echo "📋 PRÓXIMOS PASSOS:"
-echo "1. Configure SSL com Certbot:"
-echo "   certbot --nginx -d sispat.vps-kinghost.net"
-echo ""
-echo "2. Acesse sua aplicação:"
-echo "   - Frontend: http://sispat.vps-kinghost.net"
-echo "   - Backend: http://sispat.vps-kinghost.net/api"
-echo ""
-echo "3. Verifique logs:"
-echo "   pm2 logs"
-echo "   journalctl -u nginx -f"
-echo ""
-echo "4. Backup automático configurado em:"
-echo "   /var/www/sispat/scripts/backup.sh"
-echo ""
+if [ "$DEV_MODE" = "true" ]; then
+    echo "🎉 SISPAT INSTALADO EM MODO DESENVOLVIMENTO!"
+    echo "=============================================="
+    echo ""
+    echo "📋 PRÓXIMOS PASSOS (DESENVOLVIMENTO):"
+    echo "1. Acesse sua aplicação:"
+    echo "   - Frontend: http://localhost:8080"
+    echo "   - Backend: http://localhost:3001"
+    echo "   - Health Check: http://localhost:3001/api/health"
+    echo ""
+    echo "2. Para instalar PostgreSQL (opcional):"
+    echo "   bash scripts/install-postgresql.sh"
+    echo ""
+    echo "3. Para executar testes:"
+    echo "   node scripts/test-complete-system.js"
+    echo ""
+    echo "4. Verifique logs:"
+    echo "   pm2 logs"
+    echo ""
+    echo "5. Para produção, execute:"
+    echo "   bash scripts/deploy-production.sh"
+    echo ""
+else
+    echo "🎉 SISPAT INSTALADO EM MODO PRODUÇÃO!"
+    echo "======================================"
+    echo ""
+    echo "📋 PRÓXIMOS PASSOS (PRODUÇÃO):"
+    echo "1. Configure SSL com Certbot:"
+    echo "   certbot --nginx -d $DOMAIN"
+    echo ""
+    echo "2. Acesse sua aplicação:"
+    echo "   - Frontend: https://$DOMAIN"
+    echo "   - Backend: https://$DOMAIN/api"
+    echo "   - Health Check: https://$DOMAIN/api/health"
+    echo ""
+    echo "3. Verifique logs:"
+    echo "   pm2 logs"
+    echo "   journalctl -u nginx -f"
+    echo ""
+    echo "4. Backup automático configurado em:"
+    echo "   /var/www/sispat/scripts/backup.sh"
+    echo ""
+fi
 
-# 23. CORREÇÕES APLICADAS
-log "🔧 CORREÇÕES APLICADAS NESTA VERSÃO:"
+# 23. CORREÇÕES E MELHORIAS APLICADAS
+log "🔧 CORREÇÕES E MELHORIAS APLICADAS NESTA VERSÃO:"
+echo "✅ Modo de desenvolvimento sem banco de dados implementado"
+echo "✅ Entrada de dados do usuário (domínio, senhas, JWT) integrada"
+echo "✅ Instalação PostgreSQL condicional baseada no modo escolhido"
+echo "✅ Configuração .env.production dinâmica com variáveis do usuário"
+echo "✅ Scripts de produção automatizados integrados"
+echo "✅ Build condicional (desenvolvimento vs produção)"
+echo "✅ Testes do sistema executados automaticamente"
+echo "✅ Configuração PM2 adaptada para modo desenvolvimento"
+echo "✅ Verificação de serviços condicional baseada no modo"
+echo "✅ Instruções finais personalizadas por modo"
 echo "✅ Repositório PostgreSQL problemático removido previamente"
 echo "✅ Terser instalado automaticamente"
-echo "✅ NODE_ENV=production removido do .env"
-echo "✅ Usuário PostgreSQL recriado com senha correta"
+echo "✅ Usuário PostgreSQL recriado com senha personalizada"
 echo "✅ Script de correção PostgreSQL incluído automaticamente"
 echo "✅ CORREÇÃO AUTOMÁTICA DO ERRO DE EXPORT incluída"
 echo "✅ .env.production recriado com formatação correta"
@@ -1660,9 +1824,8 @@ echo "✅ PM2 configurado para startup automático"
 echo "✅ Scripts com permissões corretas"
 echo "✅ Verificações de conectividade incluídas"
 echo "✅ Correção automática de autenticação PostgreSQL"
-echo "✅ Script deploy-production-simple.sh corrigido (problema export)"
 echo "✅ Problema de 'export: 2: not a valid identifier' RESOLVIDO"
-echo "✅ Autenticação PostgreSQL 100% funcional (senha: sispat123456)"
+echo "✅ Autenticação PostgreSQL 100% funcional"
 echo "✅ Script fix-postgresql-auth-final.sh integrado automaticamente"
 echo "✅ Configuração pg_hba.conf corrigida para conexões locais"
 echo "✅ Problema 'password authentication failed' RESOLVIDO DEFINITIVAMENTE"
@@ -1700,8 +1863,13 @@ echo "✅ Conflito CommonJS vs ES Modules no PM2 corrigido"
 echo "✅ Script fix-pm2-esm-error.sh integrado automaticamente"
 
 success "🎉 Instalação completa VPS concluída com sucesso!"
-success "✅ SISPAT está rodando em produção!"
-success "🚀 Configure SSL e acesse sua aplicação!"
+if [ "$DEV_MODE" = "true" ]; then
+    success "✅ SISPAT está rodando em modo de desenvolvimento!"
+    success "🚀 Acesse http://localhost:8080 para começar!"
+else
+    success "✅ SISPAT está rodando em modo de produção!"
+    success "🚀 Configure SSL e acesse https://$DOMAIN!"
+fi
 
 # 24. Informações de troubleshooting
 log "📋 INFORMAÇÕES DE TROUBLESHOOTING:"

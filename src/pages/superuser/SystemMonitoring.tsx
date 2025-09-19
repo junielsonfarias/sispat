@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
 import { useEffect, useState } from 'react';
+import { logError } from '../../utils/frontendLogger';
 
 interface PerformanceStats {
   cpu: number;
@@ -49,22 +50,23 @@ export default function SystemMonitoring() {
       setIsLoading(true);
 
       // Buscar dados de performance
+
       const performanceResponse = await api.get<PerformanceStats>(
         '/system/performance'
       );
-      setPerformanceStats(performanceResponse);
+      setPerformanceStats(performanceResponse.data);
 
       // Buscar saúde do sistema
       const healthResponse = await api.get<SystemHealth>('/system/health');
-      setSystemHealth(healthResponse);
+      setSystemHealth(healthResponse.data);
 
       // Buscar logs de erro
       const logsResponse = await api.get<ErrorLog[]>('/system/error-logs');
-      setErrorLogs(logsResponse);
+      setErrorLogs(logsResponse.data);
 
       setLastUpdate(new Date());
     } catch (error) {
-      console.error('Erro ao buscar dados do sistema:', error);
+      logError('Erro ao buscar dados do sistema:', error);
     } finally {
       setIsLoading(false);
     }

@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Configuração base da API
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'https://sispat.vps-kinghost.net/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ?? 'https://sispat.vps-kinghost.net/api';
 
 // Helper para obter token armazenado de forma consistente
 const getStoredAuthToken = (): string | null => {

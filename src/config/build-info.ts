@@ -18,7 +18,8 @@ export const BUILD_INFO = {
 
   // Configurações de ambiente
   environment: {
-    apiUrl: import.meta.env.VITE_BACKEND_URL || 'https://sispat.vps-kinghost.net',
+    apiUrl:
+      import.meta.env.VITE_BACKEND_URL || 'https://sispat.vps-kinghost.net',
     enableDebug: import.meta.env.DEV,
     enableAnalytics: false, // Removido analytics da Skip
   },

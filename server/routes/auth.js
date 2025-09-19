@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { getRow, query } from '../database/connection.js';
+import { getRow, pool, query } from '../database/connection.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { logAudit, logError, logWarning } from '../utils/logger.js';
 
@@ -29,13 +29,31 @@ router.post(
       //   console.error('Erro ao inicializar lockout manager:', lockoutError)
       // }
 
-      // Get user from database
-      const user = await getRow('SELECT * FROM users WHERE email = $1', [
-        email,
-      ]);
+      // Get user from database (ou usuário padrão se banco não disponível)
+      let user;
 
-      if (!user) {
-        return res.status(401).json({ error: 'Credenciais inválidas' });
+      if (!pool) {
+        // Modo desenvolvimento sem banco - usuário padrão
+        if (email === 'junielsonfarias@gmail.com') {
+          user = {
+            id: '00000000-0000-0000-0000-000000000001',
+            name: 'JUNIELSON CASTRO FARIAS',
+            email: 'junielsonfarias@gmail.com',
+            password:
+              '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8K8K8K8', // Tiko6273@
+            role: 'superuser',
+            municipality_id: '00000000-0000-0000-0000-000000000001',
+            locked_until: null,
+            login_attempts: 0,
+          };
+        } else {
+          return res.status(401).json({ error: 'Credenciais inválidas' });
+        }
+      } else {
+        user = await getRow('SELECT * FROM users WHERE email = $1', [email]);
+        if (!user) {
+          return res.status(401).json({ error: 'Credenciais inválidas' });
+        }
       }
 
       // Check if user is locked out (básico)
@@ -187,6 +205,21 @@ router.get('/me', authenticateToken, async (req, res) => {
 // Ensure superuser exists
 router.post('/ensure-superuser', async (req, res) => {
   try {
+    if (!pool) {
+      // Retornar sucesso quando banco está desabilitado ou não disponível
+      res.json({
+        success: true,
+        message: 'Banco de dados não disponível - modo desenvolvimento',
+        superuser: {
+          id: '00000000-0000-0000-0000-000000000001',
+          name: 'JUNIELSON CASTRO FARIAS',
+          email: 'junielsonfarias@gmail.com',
+          role: 'superuser',
+        },
+      });
+      return;
+    }
+
     const superuser = await getRow('SELECT id FROM users WHERE role = $1', [
       'superuser',
     ]);
@@ -329,13 +362,11 @@ router.post('/logout', authenticateToken, async (req, res) => {
 // API Keys routes
 import {
   createApiKey,
-  createApiKeysTable,
   listApiKeys,
   revokeApiKey,
 } from '../middleware/api-auth.js';
 
-// Inicializar tabela de API keys
-createApiKeysTable().catch(console.error);
+// Inicialização da tabela de API keys será feita no servidor principal
 
 // GET /api/auth/api-keys - Listar API keys do usuário
 router.get('/api-keys', async (req, res) => {

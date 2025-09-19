@@ -9,19 +9,18 @@ import { defineConfig } from 'vite';
 export default defineConfig(({ mode }) => {
   // Determinar URLs baseado no ambiente
   const isProduction = mode === 'production';
-  const baseUrl = isProduction ? process.env.VITE_BACKEND_URL || process.env.VITE_DOMAIN || 'https://CHANGE_ME_DOMAIN.com' : 'http://localhost:3001';
-  const apiUrl = isProduction ? process.env.VITE_API_URL || `${process.env.VITE_DOMAIN || 'https://CHANGE_ME_DOMAIN.com'}/api` : 'http://localhost:3001/api';
+  const baseUrl = isProduction 
+    ? process.env.VITE_BACKEND_URL || process.env.VITE_DOMAIN || 'https://yourdomain.com' 
+    : 'http://localhost:3001';
+  const apiUrl = isProduction 
+    ? process.env.VITE_API_URL || `${process.env.VITE_DOMAIN || 'https://yourdomain.com'}/api` 
+    : 'http://localhost:3001/api';
   
   return {
     // Configuração base para resolver problemas de roteamento
     base: '/',
     
-    plugins: [react({
-      jsxRuntime: 'automatic',
-      babel: {
-        plugins: []
-      }
-    })],
+    plugins: [react()],
     
     resolve: {
       alias: {
@@ -50,108 +49,53 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
-              // CONFIGURAÇÃO DEFINITIVA - REACT SEMPRE NO VENDOR-MISC
+              // React e dependências principais
               if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-                return 'vendor-misc';
+                return 'vendor-react';
               }
               // Radix UI Components
               if (id.includes('@radix-ui')) {
                 return 'vendor-radix';
               }
-              // TanStack Query
-              if (id.includes('@tanstack')) {
-                return 'vendor-tanstack';
+              // Chart libraries
+              if (id.includes('recharts') || id.includes('chart')) {
+                return 'vendor-charts';
               }
-              // Form libraries
-              if (id.includes('react-hook-form') || id.includes('@hookform')) {
-                return 'vendor-forms';
-              }
-              // Date libraries
-              if (id.includes('date-fns') || id.includes('dayjs')) {
-                return 'vendor-dates';
-              }
-              // UI Libraries
-              if (id.includes('lucide-react') || id.includes('clsx') || id.includes('class-variance-authority')) {
-                return 'vendor-ui';
-              }
-              // Bibliotecas grandes
-              if (id.includes('lodash') || id.includes('moment') || id.includes('axios')) {
+              // Utility libraries
+              if (id.includes('axios') || id.includes('zod') || id.includes('date-fns') || id.includes('lodash')) {
                 return 'vendor-utils';
               }
-              // Bibliotecas de validação
-              if (id.includes('zod') || id.includes('yup') || id.includes('joi')) {
-                return 'vendor-validation';
+              // PDF and document libraries
+              if (id.includes('jspdf') || id.includes('xlsx') || id.includes('qrcode')) {
+                return 'vendor-documents';
               }
-              // Resto das dependências (incluindo charts e React)
+              // Resto das dependências
               return 'vendor-misc';
             }
-            
-            // Chunks para páginas grandes
-            if (id.includes('/src/pages/')) {
-              if (id.includes('/admin/')) {
-                return 'pages-admin';
-              }
-              if (id.includes('/bens/')) {
-                return 'pages-bens';
-              }
-              if (id.includes('/dashboards/')) {
-                return 'pages-dashboards';
-              }
-              if (id.includes('/imoveis/')) {
-                return 'pages-imoveis';
-              }
-              return 'pages-misc';
-            }
-            
             return null;
           },
-          chunkFileNames: (chunkInfo) => {
-            const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
-            return `assets/[name]-[hash].js`;
-          },
+          chunkFileNames: 'assets/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash].[ext]',
-          format: 'es',
         },
       },
       minify: mode === 'production' ? 'esbuild' : false,
-      chunkSizeWarningLimit: 10000,
+      chunkSizeWarningLimit: 1000,
       target: 'es2015',
+      reportCompressedSize: false,
+      emptyOutDir: true,
     },
     
     optimizeDeps: {
       include: [
         'react', 
         'react-dom', 
-        'react-router-dom',
-        'react/jsx-runtime',
-        'react/jsx-dev-runtime'
+        'react-router-dom'
       ],
       exclude: [
         '@vite/client', 
-        '@vite/env', 
-        'recharts',
-        'd3-scale',
-        'd3-array',
-        'd3-time',
-        'd3-time-format',
-        'd3-shape',
-        'd3-path',
-        'd3-color',
-        'd3-interpolate',
-        'd3-ease',
-        'd3-selection',
-        'd3-transition',
-        'd3-zoom',
-        'd3-brush',
-        'd3-drag',
-        'd3-force',
-        'd3-hierarchy',
-        'd3-quadtree',
-        'd3-timer',
-        'd3-dispatch'
+        '@vite/env'
       ],
-      force: true,
     },
     
     css: {

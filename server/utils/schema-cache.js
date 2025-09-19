@@ -31,10 +31,10 @@ export async function tableExists(tableName) {
 
     return exists;
   } catch (error) {
-    console.error(
-      `Erro ao verificar existência da tabela ${tableName}:`,
-      error
-    );
+    // Log centralizado
+    import('../utils/logger.js').then(({ logError }) => {
+      logError(`Erro ao verificar existência da tabela ${tableName}:`, error);
+    });
     return false;
   }
 }
@@ -66,10 +66,12 @@ export async function columnExists(tableName, columnName) {
 
     return exists;
   } catch (error) {
-    console.error(
-      `Erro ao verificar existência da coluna ${columnName} na tabela ${tableName}:`,
-      error
-    );
+    import('../utils/logger.js').then(({ logError }) => {
+      logError(
+        `Erro ao verificar existência da coluna ${columnName} na tabela ${tableName}:`,
+        error
+      );
+    });
     return false;
   }
 }
@@ -101,7 +103,9 @@ export async function getTableColumns(tableName) {
 
     return columns;
   } catch (error) {
-    console.error(`Erro ao obter colunas da tabela ${tableName}:`, error);
+    import('../utils/logger.js').then(({ logError }) => {
+      logError(`Erro ao obter colunas da tabela ${tableName}:`, error);
+    });
     return [];
   }
 }

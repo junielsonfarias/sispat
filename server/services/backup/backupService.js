@@ -1,8 +1,9 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { exec } from 'child_process';
-import { promisify } from 'util';
+import fs from 'fs/promises';
 import cron from 'node-cron';
+import path from 'path';
+import { promisify } from 'util';
+import { logError, logInfo, logWarning } from '../../utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -28,9 +29,9 @@ class BackupService {
       // Configurar agendamentos
       this.setupSchedules();
 
-      console.log('✅ Serviço de backup inicializado');
+      logInfo('✅ Serviço de backup inicializado');
     } catch (error) {
-      console.error('❌ Erro ao inicializar serviço de backup:', error);
+      logError('❌ Erro ao inicializar serviço de backup', error);
     }
   }
 
@@ -79,12 +80,12 @@ class BackupService {
       }
     );
 
-    console.log('📅 Agendamentos de backup configurados');
+    logInfo('📅 Agendamentos de backup configurados');
   }
 
   async createBackup(type = 'manual') {
     if (this.isRunning) {
-      console.log('⚠️ Backup já está em execução');
+      logWarning('⚠️ Backup já está em execução');
       return;
     }
 
@@ -94,13 +95,13 @@ class BackupService {
     const filepath = path.join(this.backupDir, filename);
 
     try {
-      console.log(`🔄 Iniciando backup ${type}: ${filename}`);
+      logInfo(`🔄 Iniciando backup ${type}: ${filename}`);
 
       // Comando pg_dump
       const pgDumpCmd = `PGPASSWORD="${this.dbConfig.password}" pg_dump -h ${this.dbConfig.host} -p ${this.dbConfig.port} -U ${this.dbConfig.username} -d ${this.dbConfig.database} --verbose --clean --no-owner --no-privileges`;
 
       // Executar backup
-      const { stdout, stderr } = await execAsync(pgDumpCmd);
+      const { stdout } = await execAsync(pgDumpCmd);
 
       // Salvar backup em arquivo
       await fs.writeFile(filepath, stdout);
@@ -125,7 +126,7 @@ class BackupService {
         timestamp: new Date().toISOString(),
       });
 
-      console.log(
+      logInfo(
         `✅ Backup ${type} concluído: ${path.basename(compressedFilepath)} (${fileSize})`
       );
 
@@ -136,7 +137,7 @@ class BackupService {
         fileSize
       );
     } catch (error) {
-      console.error(`❌ Erro no backup ${type}:`, error);
+      logError(`❌ Erro no backup ${type}:`, error);
 
       // Notificar erro
       await this.notifyBackupError(type, error.message);
@@ -162,7 +163,7 @@ class BackupService {
       try {
         const logContent = await fs.readFile(backupLogPath, 'utf8');
         backupLog = JSON.parse(logContent);
-      } catch (error) {
+      } catch {
         // Arquivo não existe, começar com array vazio
       }
 
@@ -177,13 +178,13 @@ class BackupService {
       // Salvar log
       await fs.writeFile(backupLogPath, JSON.stringify(backupLog, null, 2));
     } catch (error) {
-      console.error('❌ Erro ao registrar backup:', error);
+      logError('❌ Erro ao registrar backup', error);
     }
   }
 
   async cleanupOldBackups() {
     try {
-      console.log('🧹 Iniciando limpeza de backups antigos...');
+      logInfo('🧹 Iniciando limpeza de backups antigos...');
 
       const files = await fs.readdir(this.backupDir);
       const cutoffDate = new Date();
@@ -202,22 +203,22 @@ class BackupService {
           await fs.unlink(filepath);
           deletedCount++;
           freedSpace += stats.size;
-          console.log(`🗑️ Removido: ${file}`);
+          logInfo(`🗑️ Removido: ${file}`);
         }
       }
 
       const freedSpaceFormatted = this.formatBytes(freedSpace);
-      console.log(
+      logInfo(
         `✅ Limpeza concluída: ${deletedCount} arquivos removidos, ${freedSpaceFormatted} liberados`
       );
     } catch (error) {
-      console.error('❌ Erro na limpeza de backups:', error);
+      logError('❌ Erro na limpeza de backups', error);
     }
   }
 
   async restoreBackup(filename) {
     try {
-      console.log(`🔄 Iniciando restauração: ${filename}`);
+      logInfo(`🔄 Iniciando restauração: ${filename}`);
 
       const filepath = path.join(this.backupDir, filename);
 
@@ -231,16 +232,16 @@ class BackupService {
       const psqlCmd = `PGPASSWORD="${this.dbConfig.password}" psql -h ${this.dbConfig.host} -p ${this.dbConfig.port} -U ${this.dbConfig.username} -d ${this.dbConfig.database} -f "${uncompressedFilepath}"`;
 
       // Executar restauração
-      const { stdout, stderr } = await execAsync(psqlCmd);
+      await execAsync(psqlCmd);
 
       // Remover arquivo descomprimido
       await fs.unlink(uncompressedFilepath);
 
-      console.log(`✅ Restauração concluída: ${filename}`);
+      logInfo(`✅ Restauração concluída: ${filename}`);
 
       return { success: true, message: 'Restauração concluída com sucesso' };
     } catch (error) {
-      console.error(`❌ Erro na restauração:`, error);
+      logError('❌ Erro na restauração', error);
       throw error;
     }
   }
@@ -274,7 +275,7 @@ class BackupService {
       // Ordenar por data de criação (mais recente primeiro)
       return backups.sort((a, b) => b.createdAt - a.createdAt);
     } catch (error) {
-      console.error('❌ Erro ao listar backups:', error);
+      logError('❌ Erro ao listar backups', error);
       return [];
     }
   }
@@ -296,14 +297,12 @@ class BackupService {
 
   async notifyBackupSuccess(type, filename, size) {
     // Implementar notificação (Slack, Discord, email, etc.)
-    console.log(
-      `📢 Backup ${type} realizado com sucesso: ${filename} (${size})`
-    );
+    logInfo(`📢 Backup ${type} realizado com sucesso: ${filename} (${size})`);
   }
 
   async notifyBackupError(type, error) {
     // Implementar notificação de erro
-    console.error(`📢 Erro no backup ${type}: ${error}`);
+    logError(`📢 Erro no backup ${type}: ${error}`);
   }
 
   async getBackupStats() {
@@ -329,7 +328,7 @@ class BackupService {
         },
       };
     } catch (error) {
-      console.error('❌ Erro ao obter estatísticas de backup:', error);
+      logError('❌ Erro ao obter estatísticas de backup', error);
       return null;
     }
   }

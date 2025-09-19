@@ -35,31 +35,34 @@ const requiredEnvVars = [
   'DB_PASSWORD',
   'DB_HOST',
   'DB_NAME',
-  'DB_USER'
+  'DB_USER',
 ];
 
 // Em produção, adicionar mais variáveis obrigatórias
 if (isProduction) {
-  requiredEnvVars.push(
-    'ALLOWED_ORIGINS',
-    'NODE_ENV'
-  );
+  requiredEnvVars.push('ALLOWED_ORIGINS', 'NODE_ENV');
 }
 
 const missingVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingVars.length > 0) {
-  console.error('🚨 ERRO CRÍTICO: Variáveis de ambiente obrigatórias não encontradas:');
+  console.error(
+    '🚨 ERRO CRÍTICO: Variáveis de ambiente obrigatórias não encontradas:'
+  );
   missingVars.forEach(envVar => {
     console.error(`   - ${envVar}`);
   });
-  console.error('💡 Solução: Verifique se o arquivo .env contém todas as variáveis necessárias');
+  console.error(
+    '💡 Solução: Verifique se o arquivo .env contém todas as variáveis necessárias'
+  );
   process.exit(1);
 }
 
 // Validar JWT_SECRET específico
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  console.error('🚨 ERRO CRÍTICO: JWT_SECRET deve ter pelo menos 32 caracteres');
+  console.error(
+    '🚨 ERRO CRÍTICO: JWT_SECRET deve ter pelo menos 32 caracteres'
+  );
   console.error('💡 Solução: Gere uma chave segura: openssl rand -base64 32');
   process.exit(1);
 }
@@ -76,29 +79,28 @@ if (!process.env.DB_HOST) {
 import { registerRoutes } from './routes/index.js';
 
 // Import database connection
-import { pool } from './database/connection.js';
+import { pool, testConnection } from './database/connection.js';
 
 // Import logging and error handling
 import {
-    criticalErrorNotifier,
-    errorHandler,
-    notFoundHandler,
-    requestTracker,
+  criticalErrorNotifier,
+  errorHandler,
+  notFoundHandler,
+  requestTracker,
 } from './middleware/errorHandler.js';
 import { setupLogContext } from './middleware/logContext.js';
 import {
-    errorMonitoringMiddleware,
-    monitoringMiddleware,
-    requestTimestampMiddleware,
+  errorMonitoringMiddleware,
+  monitoringMiddleware,
+  requestTimestampMiddleware,
 } from './middleware/monitoring.js';
 import { lockoutManager } from './services/lockout-manager.js';
 import {
-    logError,
-    logHttp,
-    logInfo,
-    logStartup,
-    logWarning,
-    setupUncaughtExceptionHandling,
+  logHttp,
+  logInfo,
+  logStartup,
+  logWarning,
+  setupUncaughtExceptionHandling,
 } from './utils/logger.js';
 
 // Import backup service
@@ -131,18 +133,20 @@ const PORT = process.env.PORT || 3001;
 app.use(requestTracker);
 
 // Compression middleware (deve vir antes de outros middlewares)
-app.use(compression({
-  level: 6, // Nível de compressão (1-9, 6 é um bom equilíbrio)
-  threshold: 1024, // Comprimir apenas arquivos maiores que 1KB
-  filter: (req, res) => {
-    // Não comprimir se o cliente não suporta gzip
-    if (req.headers['x-no-compression']) {
-      return false;
-    }
-    // Usar compressão padrão
-    return compression.filter(req, res);
-  }
-}));
+app.use(
+  compression({
+    level: 6, // Nível de compressão (1-9, 6 é um bom equilíbrio)
+    threshold: 1024, // Comprimir apenas arquivos maiores que 1KB
+    filter: (req, res) => {
+      // Não comprimir se o cliente não suporta gzip
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      // Usar compressão padrão
+      return compression.filter(req, res);
+    },
+  })
+);
 
 // Monitoring middleware (temporariamente desabilitado)
 app.use(requestTimestampMiddleware);
@@ -417,6 +421,23 @@ app.get('/api/sync/public-data', async (req, res) => {
   try {
     debugLog('🔄 Sincronização de dados públicos para o frontend...');
 
+    if (!pool) {
+      // Retornar dados mockados quando banco está desabilitado
+      const mockData = {
+        municipalities: [
+          {
+            id: 'mock-municipality-1',
+            name: 'Município de Exemplo',
+            state: 'SP',
+          },
+        ],
+        patrimonios: [],
+        patrimoniosByMunicipality: {},
+      };
+      res.json(mockData);
+      return;
+    }
+
     // Get all municipalities
     const municipalities = await pool.query(
       'SELECT id, name, state FROM municipalities'
@@ -517,7 +538,7 @@ const globalLimiter = rateLimit({
   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 100 requests por IP em produção, 1000 em desenvolvimento
   message: {
     error: 'Too many requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
+    retryAfter: '15 minutes',
   },
   standardHeaders: true, // Retorna rate limit info nos headers
   legacyHeaders: false, // Desabilita headers X-RateLimit-*
@@ -525,9 +546,9 @@ const globalLimiter = rateLimit({
     console.warn(`🚨 Rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json({
       error: 'Too many requests from this IP, please try again later.',
-      retryAfter: '15 minutes'
+      retryAfter: '15 minutes',
     });
-  }
+  },
 });
 
 // Rate limiting mais restritivo para rotas de autenticação
@@ -536,7 +557,7 @@ const authLimiter = rateLimit({
   max: 5, // Apenas 5 tentativas de login por IP a cada 15 minutos
   message: {
     error: 'Too many login attempts, please try again later.',
-    retryAfter: '15 minutes'
+    retryAfter: '15 minutes',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -544,9 +565,9 @@ const authLimiter = rateLimit({
     console.warn(`🚨 Auth rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json({
       error: 'Too many login attempts, please try again later.',
-      retryAfter: '15 minutes'
+      retryAfter: '15 minutes',
     });
-  }
+  },
 });
 
 // Aplicar rate limiting global
@@ -560,11 +581,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(setupLogContext);
 
 // Static files with cache headers
-app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
-  maxAge: '1d', // Cache por 1 dia
-  etag: true,
-  lastModified: true
-}));
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '../uploads'), {
+    maxAge: '1d', // Cache por 1 dia
+    etag: true,
+    lastModified: true,
+  })
+);
 
 // File serving endpoint for documents and images
 app.get('/api/files/:fileId', (req, res) => {
@@ -815,22 +839,26 @@ console.log('✅ registerRoutes chamado com sucesso!');
 const distPath = path.join(__dirname, '../dist');
 if (existsSync(distPath)) {
   console.log('📁 Servindo arquivos estáticos do frontend de:', distPath);
-  app.use(express.static(distPath, {
-    maxAge: '1y', // Cache por 1 ano para assets com hash
-    etag: true,
-    lastModified: true,
-    setHeaders: (res, path) => {
-      // Cache mais longo para arquivos com hash (JS, CSS)
-      if (path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      }
-      // Cache menor para HTML
-      if (path.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-      }
-    }
-  }));
-  
+  app.use(
+    express.static(distPath, {
+      maxAge: '1y', // Cache por 1 ano para assets com hash
+      etag: true,
+      lastModified: true,
+      setHeaders: (res, path) => {
+        // Cache mais longo para arquivos com hash (JS, CSS)
+        if (
+          path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)
+        ) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+        // Cache menor para HTML
+        if (path.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+        }
+      },
+    })
+  );
+
   // Rota catch-all para SPA (Single Page Application)
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
@@ -855,27 +883,39 @@ app.get('/api/health', async (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     uptime: process.uptime(),
     memory: process.memoryUsage(),
-    services: {}
+    services: {},
   };
 
   try {
     // Verificar banco de dados
-    const dbStart = Date.now();
-    await pool.query('SELECT 1');
-    const dbTime = Date.now() - dbStart;
-    
-    health.services.database = {
-      status: 'healthy',
-      responseTime: `${dbTime}ms`,
-      connectionCount: pool.totalCount,
-      idleCount: pool.idleCount,
-      waitingCount: pool.waitingCount
-    };
+    if (process.env.DISABLE_DATABASE === 'true') {
+      health.services.database = {
+        status: 'disabled',
+        message: 'Banco de dados desabilitado para desenvolvimento',
+      };
+    } else if (pool) {
+      const dbStart = Date.now();
+      await pool.query('SELECT 1');
+      const dbTime = Date.now() - dbStart;
+
+      health.services.database = {
+        status: 'healthy',
+        responseTime: `${dbTime}ms`,
+        connectionCount: pool.totalCount,
+        idleCount: pool.idleCount,
+        waitingCount: pool.waitingCount,
+      };
+    } else {
+      health.services.database = {
+        status: 'unavailable',
+        message: 'Pool de conexões não disponível',
+      };
+    }
   } catch (error) {
     health.status = 'degraded';
     health.services.database = {
       status: 'unhealthy',
-      error: error.message
+      error: error.message,
     };
   }
 
@@ -885,26 +925,28 @@ app.get('/api/health', async (req, res) => {
     const stats = fs.statSync('.');
     health.services.disk = {
       status: 'healthy',
-      available: true
+      available: true,
     };
   } catch (error) {
     health.services.disk = {
       status: 'unhealthy',
-      error: error.message
+      error: error.message,
     };
   }
 
   // Verificar variáveis de ambiente críticas
   const criticalEnvVars = ['JWT_SECRET', 'DB_PASSWORD', 'DB_HOST'];
   const missingEnvVars = criticalEnvVars.filter(envVar => !process.env[envVar]);
-  
+
   health.services.environment = {
     status: missingEnvVars.length === 0 ? 'healthy' : 'unhealthy',
-    missingVars: missingEnvVars
+    missingVars: missingEnvVars,
   };
 
   // Determinar status geral
-  const unhealthyServices = Object.values(health.services).filter(service => service.status === 'unhealthy');
+  const unhealthyServices = Object.values(health.services).filter(
+    service => service.status === 'unhealthy'
+  );
   if (unhealthyServices.length > 0) {
     health.status = 'unhealthy';
   }
@@ -969,69 +1011,105 @@ Promise.all([
     logWarning('⚠️ Erro ao inicializar serviços opcionais, continuando...');
   });
 
-// Start server - Bind em todas as interfaces para aceitar conexões externas
-server.listen(PORT, '0.0.0.0', () => {
-  logInfo('🚀 SISPAT Server Started', {
-    port: PORT,
-    environment: process.env.NODE_ENV || 'development',
-    apiUrl: `http://localhost:${PORT}/api`,
-    timestamp: new Date().toISOString(),
-    features: {
-      logging: 'enabled',
-      errorHandling: 'enabled',
-      security: 'enabled',
-      rateLimit: 'enabled',
-    },
-  });
+// Test database connection before starting server
+testConnection()
+  .then(connected => {
+    if (!connected && process.env.DISABLE_DATABASE !== 'true') {
+      console.warn(
+        '⚠️ Falha na conexão com banco de dados. Continuando em modo desenvolvimento...'
+      );
+      console.warn(
+        '💡 Para usar banco real, configure PostgreSQL ou execute: bash scripts/setup-database-local.ps1'
+      );
+    }
 
-  logStartup('🚀 Servidor SISPAT rodando', {
-    port: PORT,
-    environment: process.env.NODE_ENV || 'development',
-    apiUrl: `http://localhost:${PORT}/api`,
-    features: {
-      logging: 'enabled',
-      errorHandling: 'enabled',
-      security: 'enabled',
-      rateLimit: 'enabled',
-    },
-  });
+    if (process.env.DISABLE_DATABASE === 'true') {
+      console.log(
+        '⚠️ Servidor iniciando sem banco de dados (modo desenvolvimento)'
+      );
+    } else if (connected) {
+      console.log('✅ Conexão com banco de dados verificada');
+    } else {
+      console.log(
+        '⚠️ Servidor iniciando em modo desenvolvimento sem banco de dados'
+      );
+    }
 
-  // Iniciar serviço de backup automático
-  import('./services/backup-scheduler.js')
-    .then(({ startBackupService }) => {
-      const started = startBackupService();
+    // Start server - Bind em todas as interfaces para aceitar conexões externas
+    server.listen(PORT, '0.0.0.0', () => {
+      logInfo('🚀 SISPAT Server Started', {
+        port: PORT,
+        environment: process.env.NODE_ENV || 'development',
+        apiUrl: `http://localhost:${PORT}/api`,
+        timestamp: new Date().toISOString(),
+        features: {
+          logging: 'enabled',
+          errorHandling: 'enabled',
+          security: 'enabled',
+          rateLimit: 'enabled',
+        },
+      });
 
-      if (started) {
-        logInfo('💾 Sistema de backup automático iniciado com agendamento');
-      } else {
-        logWarning('⚠️ Falha ao iniciar sistema de backup automático');
-      }
-    })
-    .catch(error => {
-      logWarning('⚠️ Serviço de backup não disponível, continuando...');
+      logStartup('🚀 Servidor SISPAT rodando', {
+        port: PORT,
+        environment: process.env.NODE_ENV || 'development',
+        apiUrl: `http://localhost:${PORT}/api`,
+        features: {
+          logging: 'enabled',
+          errorHandling: 'enabled',
+          security: 'enabled',
+          rateLimit: 'enabled',
+        },
+      });
+
+      // Iniciar serviço de backup automático
+      import('./services/backup-scheduler.js')
+        .then(({ startBackupService }) => {
+          const started = startBackupService();
+
+          if (started) {
+            logInfo('💾 Sistema de backup automático iniciado com agendamento');
+          } else {
+            logWarning('⚠️ Falha ao iniciar sistema de backup automático');
+          }
+        })
+        .catch(error => {
+          logWarning('⚠️ Serviço de backup não disponível, continuando...');
+        });
+
+      // Inicializar sistema de lockout
+      lockoutManager
+        .initialize()
+        .then(() => {
+          logInfo('🔐 Sistema de lockout inicializado com sucesso');
+        })
+        .catch(error => {
+          logWarning(
+            '⚠️ Erro ao inicializar sistema de lockout, continuando...'
+          );
+        });
     });
-
-  // Inicializar sistema de lockout
-  lockoutManager
-    .initialize()
-    .then(() => {
-      logInfo('🔐 Sistema de lockout inicializado com sucesso');
-    })
-    .catch(error => {
-      logError('Erro ao inicializar sistema de lockout', error);
-    });
-});
+  })
+  .catch(error => {
+    console.error('❌ Erro ao testar conexão com banco de dados:', error);
+    console.error('💡 Execute: bash scripts/fix-database-connection.sh');
+    process.exit(1);
+  });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM recebido, fechando servidor...');
-  pool.end();
+  if (pool) {
+    pool.end();
+  }
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log('SIGINT recebido, fechando servidor...');
-  pool.end();
+  if (pool) {
+    pool.end();
+  }
   process.exit(0);
 });
 

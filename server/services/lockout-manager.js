@@ -1,6 +1,6 @@
 import cron from 'node-cron';
-import { getRows, query } from '../database/connection.js';
-import { logError, logInfo, logSecurity } from '../utils/logger.js';
+import { getRows, pool, query } from '../database/connection.js';
+import { logError, logInfo, logSecurity, logWarning } from '../utils/logger.js';
 
 /**
  * Gerenciador avançado de lockout de usuários
@@ -28,6 +28,13 @@ export class LockoutManager {
     if (this.initialized) return;
 
     try {
+      if (!pool) {
+        logWarning(
+          '⚠️ Pool de banco de dados não disponível - Gerenciador de lockout desabilitado'
+        );
+        return;
+      }
+
       // Criar tabela de histórico de tentativas se não existir
       await this.createLoginAttemptsTable();
 

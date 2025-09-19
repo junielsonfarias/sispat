@@ -50,6 +50,15 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 };
 
+type PublicFilterValues = {
+  tipo: string;
+  status?: string;
+  situacao?: string;
+  setor: string;
+  dataAquisicaoInicio: string;
+  dataAquisicaoFim: string;
+};
+
 const getPaginationItems = (currentPage: number, pageCount: number) => {
   const delta = 1;
   const range = [];

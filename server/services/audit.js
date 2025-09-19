@@ -1,5 +1,5 @@
 import { pool } from '../database/connection.js';
-import { logInfo, logError } from '../utils/logger.js';
+import { logError, logInfo, logWarning } from '../utils/logger.js';
 
 class AuditService {
   constructor() {
@@ -8,6 +8,13 @@ class AuditService {
 
   async initialize() {
     try {
+      if (!pool) {
+        logWarning(
+          '⚠️ Pool de banco de dados não disponível - Serviço de auditoria desabilitado'
+        );
+        return;
+      }
+
       // Criar tabela de auditoria se não existir
       await this.createAuditTable();
       this.isInitialized = true;

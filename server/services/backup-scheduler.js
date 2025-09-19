@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { backupManager } from '../database/backup-enhanced.js';
+import { pool } from '../database/connection.js';
 import { logError, logInfo, logWarning } from '../utils/logger.js';
 
 /**
@@ -21,6 +22,13 @@ export class BackupScheduler {
     }
 
     try {
+      if (!pool) {
+        logWarning(
+          '⚠️ Pool de banco de dados não disponível - Backup scheduler desabilitado'
+        );
+        return;
+      }
+
       logInfo('🚀 Iniciando serviço de agendamento de backups');
 
       // Backup diário às 02:00
