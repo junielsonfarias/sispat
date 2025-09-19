@@ -90,6 +90,14 @@ CREATE TABLE IF NOT EXISTS users (
 
 # Garantir índice único para email (necessário para ON CONFLICT)
 execute_sql "
+-- Remover duplicados de usuários por email, mantendo o menor id
+DELETE FROM users a
+USING users b
+WHERE a.email = b.email
+  AND a.id > b.id;
+"
+
+execute_sql "
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx ON users(email);
 "
 
