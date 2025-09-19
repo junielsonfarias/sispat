@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# =================================
-# CORREÇÃO DE DEPENDÊNCIAS NPM - SISPAT
-# Resolve conflitos de dependências
-# =================================
+# =============================================================================
+# SCRIPT DE CORREÇÃO - DEPENDÊNCIAS NPM SISPAT
+# Para resolver conflitos de dependências do React 19
+# =============================================================================
 
 set -e
 
@@ -14,94 +14,84 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Função para log
-log() {
-    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
+# Funções de log
+log_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
-# Função para erro
-error() {
-    echo -e "${RED}[ERRO]${NC} $1"
+log_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+log_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+log_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+log_header() {
+    echo -e "\n${BLUE}🚀 $1${NC}"
+}
+
+# Verificar se está rodando como root
+if [[ $EUID -ne 0 ]]; then
+    log_error "Este script deve ser executado como root!"
+    log_info "Execute: sudo su -"
     exit 1
-}
+fi
 
-# Função para sucesso
-success() {
-    echo -e "${GREEN}[SUCESSO]${NC} $1"
-}
-
-# Função para aviso
-warning() {
-    echo -e "${YELLOW}[AVISO]${NC} $1"
-}
-
-# Banner
-echo ""
-echo "🔧 ================================================"
-echo "🔧    CORREÇÃO DE DEPENDÊNCIAS NPM - SISPAT"
-echo "🔧    Resolve conflitos de dependências"
-echo "🔧 ================================================"
-echo ""
+log_header "Corrigindo dependências NPM do SISPAT..."
 
 # Verificar se estamos no diretório correto
 if [ ! -f "package.json" ]; then
-    error "Execute este script no diretório raiz da aplicação SISPAT"
+    log_error "Arquivo package.json não encontrado!"
+    log_info "Execute este script no diretório do SISPAT"
+    exit 1
 fi
 
-# 1. Limpar cache do npm
-log "🧹 Limpando cache do npm..."
+# Limpar cache do npm
+log_info "Limpando cache do NPM..."
 npm cache clean --force
-success "Cache do npm limpo"
 
-# 2. Remover node_modules e package-lock.json
-log "🗑️ Removendo node_modules e package-lock.json..."
-rm -rf node_modules
-rm -f package-lock.json
-success "Arquivos removidos"
+# Remover node_modules e package-lock.json se existirem
+log_info "Removendo node_modules e package-lock.json..."
+rm -rf node_modules package-lock.json
 
-# 3. Instalar dependências com --legacy-peer-deps
-log "📦 Instalando dependências com --legacy-peer-deps..."
+# Instalar dependências com legacy-peer-deps
+log_info "Instalando dependências com --legacy-peer-deps..."
 npm install --legacy-peer-deps
-success "Dependências instaladas com sucesso"
 
-# 4. Verificar se a instalação foi bem-sucedida
-log "🔍 Verificando instalação..."
-if [ -d "node_modules" ] && [ -f "package-lock.json" ]; then
-    success "✅ Instalação verificada com sucesso"
+# Verificar se a instalação foi bem-sucedida
+if [ $? -eq 0 ]; then
+    log_success "Dependências instaladas com sucesso!"
 else
-    error "❌ Falha na verificação da instalação"
+    log_error "Erro ao instalar dependências!"
+    log_info "Tentando com --force..."
+    npm install --force
 fi
 
-# 5. Testar se o projeto pode ser buildado
-log "🏗️ Testando build do projeto..."
-if npm run build; then
-    success "✅ Build do projeto executado com sucesso"
+# Verificar se node_modules foi criado
+if [ -d "node_modules" ]; then
+    log_success "node_modules criado com sucesso!"
+    
+    # Verificar se as dependências principais estão instaladas
+    if [ -d "node_modules/react" ] && [ -d "node_modules/express" ]; then
+        log_success "Dependências principais verificadas!"
+    else
+        log_warning "Algumas dependências podem estar faltando"
+    fi
 else
-    warning "⚠️ Build falhou, mas dependências foram instaladas"
+    log_error "node_modules não foi criado!"
+    exit 1
 fi
 
-# 6. Instruções finais
-log "📝 CORREÇÃO CONCLUÍDA!"
-echo ""
-echo "🎉 DEPENDÊNCIAS CORRIGIDAS COM SUCESSO!"
-echo "========================================"
-echo ""
-echo "📋 O que foi feito:"
-echo "✅ Cache do npm limpo"
-echo "✅ node_modules removido"
-echo "✅ package-lock.json removido"
-echo "✅ Dependências reinstaladas com --legacy-peer-deps"
-echo "✅ Instalação verificada"
-echo ""
-echo "🔧 Comandos úteis:"
-echo "   - npm run dev (desenvolvimento)"
-echo "   - npm run build (produção)"
-echo "   - npm start (iniciar aplicação)"
-echo ""
-echo "📞 Se ainda houver problemas:"
-echo "   1. Verifique os logs: npm install --legacy-peer-deps --verbose"
-echo "   2. Tente: npm install --force"
-echo "   3. Verifique a versão do Node.js: node --version"
-echo ""
+log_header "Correção Concluída!"
+echo -e "\n${GREEN}🎉 Dependências NPM corrigidas com sucesso!${NC}"
+echo -e "\n${BLUE}📋 PRÓXIMOS PASSOS:${NC}"
+echo -e "1. ${YELLOW}Continue com a instalação do SISPAT${NC}"
+echo -e "2. ${YELLOW}Execute o build do projeto${NC}"
+echo -e "3. ${YELLOW}Inicie o sistema${NC}"
 
-success "🎉 Correção de dependências concluída com sucesso!"
+echo -e "\n${GREEN}✅ Agora você pode continuar com a instalação!${NC}"

@@ -229,7 +229,7 @@ EOF
     if ! systemctl is-active --quiet postgresql; then
         log_error "PostgreSQL não está rodando após 5 tentativas!"
         log_info "Tentando iniciar manualmente..."
-        systemctl start postgresql
+systemctl start postgresql
         sleep 5
     fi
 
@@ -365,7 +365,12 @@ setup_sispat() {
     git clone https://github.com/junielsonfarias/sispat.git .
     
     log_info "Instalando dependências..."
-    npm install
+    npm install --legacy-peer-deps || {
+        log_warning "Erro ao instalar dependências, tentando correção..."
+        npm cache clean --force
+        rm -rf node_modules package-lock.json
+        npm install --legacy-peer-deps --force
+    }
     
     log_info "Configurando variáveis de ambiente..."
     

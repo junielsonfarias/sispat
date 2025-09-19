@@ -224,6 +224,29 @@ systemctl status postgresql
     PGPASSWORD=postgres psql -h localhost -U postgres -d sispat_db -c "SELECT version();"
     ```
 
+### **❌ "ERESOLVE unable to resolve dependency tree"**
+
+**Causa:** Conflito de dependências entre React 19 e outras bibliotecas.
+
+**Solução:**
+
+1.  **Executar script de correção de dependências:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-npm-dependencies.sh -o fix-deps.sh
+    chmod +x fix-deps.sh
+    ./fix-deps.sh
+    ```
+
+2.  **Ou executar manualmente:**
+
+    ```bash
+    cd /var/www/sispat
+    npm cache clean --force
+    rm -rf node_modules package-lock.json
+    npm install --legacy-peer-deps
+    ```
+
 ---
 
 ## 📞 **PRECISA DE AJUDA?**
