@@ -128,8 +128,20 @@ systemctl enable postgresql
     DB_USER="sispat_user"
     ADMIN_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
     
-    # Configurar PostgreSQL para aceitar conexões
-    PG_VERSION=$(sudo -u postgres psql -t -c "SELECT version();" | grep -oP '\d+\.\d+' | head -1)
+    # Detectar versão do PostgreSQL instalada
+    PG_VERSION=$(ls /etc/postgresql/ | head -1)
+    if [ -z "$PG_VERSION" ]; then
+        log_error "Não foi possível detectar a versão do PostgreSQL!"
+        exit 1
+    fi
+    
+    log_info "Versão do PostgreSQL detectada: $PG_VERSION"
+    
+    # Verificar se os arquivos de configuração existem
+    if [ ! -f "/etc/postgresql/$PG_VERSION/main/postgresql.conf" ]; then
+        log_error "Arquivo de configuração do PostgreSQL não encontrado: /etc/postgresql/$PG_VERSION/main/postgresql.conf"
+        exit 1
+    fi
     
     # Backup da configuração original
     cp /etc/postgresql/$PG_VERSION/main/postgresql.conf /etc/postgresql/$PG_VERSION/main/postgresql.conf.backup
@@ -198,29 +210,77 @@ EOF
     # Reiniciar PostgreSQL
     systemctl restart postgresql
     
-    # Aguardar PostgreSQL inicializar
-    sleep 5
+    # Aguardar PostgreSQL inicializar e verificar se está funcionando
+    log_info "Aguardando PostgreSQL inicializar..."
+    sleep 10
+    
+    # Verificar se PostgreSQL está rodando
+    for i in {1..5}; do
+        if systemctl is-active --quiet postgresql; then
+            log_success "PostgreSQL está rodando!"
+            break
+        else
+            log_warning "Aguardando PostgreSQL inicializar... (tentativa $i/5)"
+            sleep 5
+        fi
+    done
+    
+    # Verificar se PostgreSQL está realmente funcionando
+    if ! systemctl is-active --quiet postgresql; then
+        log_error "PostgreSQL não está rodando após 5 tentativas!"
+        log_info "Tentando iniciar manualmente..."
+        systemctl start postgresql
+        sleep 5
+    fi
 
-# Criar usuário e banco
+    # Criar usuário e banco
     log_info "Criando usuário e banco de dados..."
-    sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" || true
-    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" || true
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" || true
-    sudo -u postgres psql -c "ALTER USER $DB_USER CREATEDB;" || true
+    
+    # Verificar se o usuário postgres pode conectar
+    if ! sudo -u postgres -H psql -c "SELECT 1;" > /dev/null 2>&1; then
+        log_error "Não foi possível conectar ao PostgreSQL como usuário postgres!"
+        exit 1
+    fi
+    
+    # Criar usuário (ignorar erro se já existir)
+    log_info "Criando usuário $DB_USER..."
+    sudo -u postgres -H psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || log_info "Usuário $DB_USER já existe"
+    
+    # Criar banco de dados (ignorar erro se já existir)
+    log_info "Criando banco de dados $DB_NAME..."
+    sudo -u postgres -H psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null || log_info "Banco $DB_NAME já existe"
+    
+    # Conceder privilégios
+    log_info "Configurando privilégios..."
+    sudo -u postgres -H psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" 2>/dev/null || true
+    sudo -u postgres -H psql -c "ALTER USER $DB_USER CREATEDB;" 2>/dev/null || true
     
     # Configurar senha do postgres para backup
-    sudo -u postgres psql -c "ALTER USER postgres PASSWORD '$ADMIN_PASSWORD';" || true
+    log_info "Configurando senha do usuário postgres..."
+    sudo -u postgres -H psql -c "ALTER USER postgres PASSWORD '$ADMIN_PASSWORD';" 2>/dev/null || true
     
     # Testar conexão
     log_info "Testando conexão com o banco..."
-    PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "SELECT version();" > /dev/null 2>&1
     
-    if [ $? -eq 0 ]; then
-        log_success "PostgreSQL instalado e configurado com sucesso!"
-    else
-        log_error "Erro ao conectar com PostgreSQL!"
-        exit 1
-    fi
+    # Tentar conectar várias vezes
+    for i in {1..3}; do
+        if PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "SELECT version();" > /dev/null 2>&1; then
+            log_success "PostgreSQL instalado e configurado com sucesso!"
+            break
+        else
+            if [ $i -eq 3 ]; then
+                log_error "Erro ao conectar com PostgreSQL após 3 tentativas!"
+                log_info "Verificando status do PostgreSQL..."
+                systemctl status postgresql
+                log_info "Verificando logs do PostgreSQL..."
+                tail -20 /var/log/postgresql/postgresql-$PG_VERSION-main.log
+                exit 1
+            else
+                log_warning "Tentativa $i falhou, tentando novamente em 5 segundos..."
+                sleep 5
+            fi
+        fi
+    done
     
     log_info "Banco: $DB_NAME"
     log_info "Usuário: $DB_USER"
