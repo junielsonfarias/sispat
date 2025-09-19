@@ -97,8 +97,8 @@ install_nodejs() {
     log_header "Instalando Node.js..."
     
     log_info "Baixando e instalando Node.js 18..."
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    apt install -y nodejs
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt install -y nodejs
     
     # Verificar instalação
     NODE_VERSION=$(node --version)
@@ -112,25 +112,21 @@ install_nodejs() {
 install_postgresql() {
     log_header "Instalando PostgreSQL..."
     
-    log_info "Instalando PostgreSQL..."
-    apt install -y postgresql postgresql-contrib
+    log_info "Instalando PostgreSQL 15..."
+    apt install -y postgresql postgresql-contrib postgresql-client
     
     # Iniciar e habilitar PostgreSQL
     systemctl start postgresql
-    systemctl enable postgresql
+systemctl enable postgresql
     
     # Configurar PostgreSQL
     log_info "Configurando PostgreSQL..."
     
     # Gerar senhas seguras
-    DB_PASSWORD=$(openssl rand -base64 32)
+    DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
     DB_NAME="sispat_db"
     DB_USER="sispat_user"
-    
-    # Criar usuário e banco
-    sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
-    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+    ADMIN_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
     
     # Configurar PostgreSQL para aceitar conexões
     PG_VERSION=$(sudo -u postgres psql -t -c "SELECT version();" | grep -oP '\d+\.\d+' | head -1)
@@ -139,16 +135,116 @@ install_postgresql() {
     cp /etc/postgresql/$PG_VERSION/main/postgresql.conf /etc/postgresql/$PG_VERSION/main/postgresql.conf.backup
     cp /etc/postgresql/$PG_VERSION/main/pg_hba.conf /etc/postgresql/$PG_VERSION/main/pg_hba.conf.backup
     
-    # Configurar para aceitar conexões locais
-    sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost'/" /etc/postgresql/$PG_VERSION/main/postgresql.conf
-    
+    # Configurar PostgreSQL para performance e segurança
+    cat >> /etc/postgresql/$PG_VERSION/main/postgresql.conf << EOF
+
+# Configurações do SISPAT
+listen_addresses = 'localhost'
+port = 5432
+max_connections = 200
+shared_buffers = 256MB
+effective_cache_size = 1GB
+maintenance_work_mem = 64MB
+checkpoint_completion_target = 0.9
+wal_buffers = 16MB
+default_statistics_target = 100
+random_page_cost = 1.1
+effective_io_concurrency = 200
+work_mem = 4MB
+min_wal_size = 1GB
+max_wal_size = 4GB
+
+# Logging
+log_destination = 'stderr'
+logging_collector = on
+log_directory = 'log'
+log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+log_rotation_age = 1d
+log_rotation_size = 100MB
+log_min_duration_statement = 1000
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_lock_waits = on
+log_temp_files = -1
+log_autovacuum_min_duration = 0
+log_error_verbosity = default
+
+# Performance
+shared_preload_libraries = 'pg_stat_statements'
+track_activity_query_size = 2048
+pg_stat_statements.track = all
+pg_stat_statements.max = 10000
+EOF
+
+    # Configurar autenticação
+    cat > /etc/postgresql/$PG_VERSION/main/pg_hba.conf << EOF
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            md5
+# IPv6 local connections:
+host    all             all             ::1/128                 md5
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     peer
+host    replication     all             127.0.0.1/32            md5
+host    replication     all             ::1/128                 md5
+EOF
+
     # Reiniciar PostgreSQL
     systemctl restart postgresql
     
-    log_success "PostgreSQL instalado e configurado!"
+    # Aguardar PostgreSQL inicializar
+    sleep 5
+
+# Criar usuário e banco
+    log_info "Criando usuário e banco de dados..."
+    sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" || true
+    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" || true
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" || true
+    sudo -u postgres psql -c "ALTER USER $DB_USER CREATEDB;" || true
+    
+    # Configurar senha do postgres para backup
+    sudo -u postgres psql -c "ALTER USER postgres PASSWORD '$ADMIN_PASSWORD';" || true
+    
+    # Testar conexão
+    log_info "Testando conexão com o banco..."
+    PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "SELECT version();" > /dev/null 2>&1
+    
+    if [ $? -eq 0 ]; then
+        log_success "PostgreSQL instalado e configurado com sucesso!"
+    else
+        log_error "Erro ao conectar com PostgreSQL!"
+        exit 1
+    fi
+    
     log_info "Banco: $DB_NAME"
     log_info "Usuário: $DB_USER"
     log_info "Senha: $DB_PASSWORD"
+    log_info "Senha Admin: $ADMIN_PASSWORD"
+    
+    # Salvar credenciais em arquivo seguro
+    cat > /root/sispat-db-credentials.txt << EOF
+# Credenciais do Banco de Dados SISPAT
+# Gerado em: $(date)
+
+Banco de Dados: $DB_NAME
+Usuário: $DB_USER
+Senha: $DB_PASSWORD
+
+Admin PostgreSQL:
+Usuário: postgres
+Senha: $ADMIN_PASSWORD
+
+IMPORTANTE: Mantenha este arquivo seguro e não compartilhe!
+EOF
+    
+    chmod 600 /root/sispat-db-credentials.txt
+    log_info "Credenciais salvas em: /root/sispat-db-credentials.txt"
 }
 
 # Função para instalar Nginx
@@ -156,7 +252,7 @@ install_nginx() {
     log_header "Instalando Nginx..."
     
     log_info "Instalando Nginx..."
-    apt install -y nginx
+apt install -y nginx
     
     # Iniciar e habilitar Nginx
     systemctl start nginx
@@ -165,7 +261,7 @@ install_nginx() {
     # Configurar firewall básico
     ufw allow 'Nginx Full'
     ufw allow OpenSSH
-    ufw --force enable
+ufw --force enable
     
     log_success "Nginx instalado e configurado!"
 }
@@ -203,41 +299,104 @@ setup_sispat() {
     
     log_info "Configurando variáveis de ambiente..."
     
+    # Gerar JWT Secret seguro
+    JWT_SECRET=$(openssl rand -base64 64)
+    REFRESH_TOKEN_SECRET=$(openssl rand -base64 64)
+    
     # Criar arquivo .env
-    cat > .env << EOF
-# Database Configuration
+cat > .env << EOF
+# =============================================================================
+# CONFIGURAÇÃO DE PRODUÇÃO - SISPAT
+# Gerado automaticamente pelo script de instalação
+# =============================================================================
+
+# Database Configuration (PostgreSQL)
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=$DB_NAME
 DB_USER=$DB_USER
 DB_PASSWORD=$DB_PASSWORD
+DB_MAX_CONNECTIONS=100
+DB_IDLE_TIMEOUT=120000
+DB_CONNECTION_TIMEOUT=60000
+DB_SSL_REJECT_UNAUTHORIZED=false
 
 # JWT Configuration
-JWT_SECRET=$(openssl rand -base64 64)
-JWT_EXPIRES_IN=24h
+JWT_SECRET=$JWT_SECRET
+JWT_EXPIRES_IN=12h
+REFRESH_TOKEN_SECRET=$REFRESH_TOKEN_SECRET
+REFRESH_TOKEN_EXPIRES_IN=7d
 
 # Server Configuration
 PORT=3001
 NODE_ENV=production
+HOST=0.0.0.0
 
 # CORS Configuration
 ALLOWED_ORIGINS=http://localhost:8080,http://$(hostname -I | awk '{print $1}'):8080
+CORS_ORIGIN=http://localhost:8080,http://$(hostname -I | awk '{print $1}'):8080
+CORS_CREDENTIALS=true
+
+# Frontend Configuration
+VITE_PORT=8080
+VITE_API_TARGET=http://localhost:3001
+VITE_API_URL=http://localhost:3001/api
+VITE_BACKEND_URL=http://localhost:3001
+VITE_DOMAIN=http://$(hostname -I | awk '{print $1}'):8080
+
+# Email Configuration (for password reset, notifications)
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+EMAIL_FROM=noreply@$(hostname)
+EMAIL_SUPPORT=support@$(hostname)
+
+# File Upload Configuration
+UPLOAD_PATH=$APP_DIR/uploads
+MAX_FILE_SIZE=20971520
+ALLOWED_FILE_TYPES=image/jpeg,image/png,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel
+
+# Rate Limiting (Backend)
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=60
+RATE_LIMIT_AUTH_MAX_ATTEMPTS=5
+RATE_LIMIT_AUTH_LOCKOUT_DURATION=300000
+RATE_LIMIT_WHITELIST_IPS=127.0.0.1,::1
 
 # Security Configuration
-BCRYPT_ROUNDS=12
-SESSION_TIMEOUT=1800000
+BCRYPT_ROUNDS=14
+SESSION_TIMEOUT=3600000
 MAX_LOGIN_ATTEMPTS=5
-LOCKOUT_DURATION=1800000
+LOCKOUT_DURATION=3600000
+ENABLE_TWO_FACTOR_AUTH=true
+TRUST_PROXY=1
 
 # Logging
 LOG_LEVEL=info
 ENABLE_REQUEST_LOGGING=true
+LOG_FILE_PATH=$APP_DIR/logs/app.log
+ERROR_LOG_FILE_PATH=$APP_DIR/logs/error.log
+AUDIT_LOG_FILE_PATH=$APP_DIR/logs/audit.log
+SENTRY_DSN=
 
-# Backup
-BACKUP_ENABLED=true
-BACKUP_SCHEDULE=0 2 * * *
+# Backup Configuration
+BACKUP_SCHEDULE_CRON="0 2 * * *"
 BACKUP_RETENTION_DAYS=30
-BACKUP_PATH=./backups
+BACKUP_PATH=/var/backups/sispat
+
+# Redis Configuration (optional, for caching, sessions, rate limiting)
+# REDIS_HOST=localhost
+# REDIS_PORT=6379
+# REDIS_PASSWORD=
+# REDIS_DB=0
+
+# Public Search Configuration
+PUBLIC_SEARCH_ENABLED=true
+PUBLIC_SEARCH_CACHE_TTL=3600000
+
+# Database Mode (Production with real PostgreSQL)
+DISABLE_DATABASE=false
 EOF
 
     # Se o usuário forneceu um domínio, adicionar ao .env
@@ -250,6 +409,38 @@ EOF
     fi
     
     log_success "SISPAT configurado!"
+}
+
+# Função para configurar banco de dados
+setup_database() {
+    log_header "Configurando banco de dados..."
+    
+    cd $APP_DIR
+    
+    log_info "Executando migrações do banco de dados..."
+    
+    # Criar diretórios necessários
+    mkdir -p logs uploads
+    
+    # Executar script de criação de tabelas
+    if [ -f "server/database/create-missing-tables.js" ]; then
+        log_info "Criando tabelas do banco de dados..."
+        node server/database/create-missing-tables.js
+    fi
+    
+    # Executar script de dados de exemplo
+    if [ -f "server/database/create-sample-data.js" ]; then
+        log_info "Criando dados iniciais..."
+        node server/database/create-sample-data.js
+    fi
+    
+    # Executar script de otimização
+    if [ -f "server/database/optimize.js" ]; then
+        log_info "Otimizando banco de dados..."
+        node server/database/optimize.js
+    fi
+    
+    log_success "Banco de dados configurado com sucesso!"
 }
 
 # Função para fazer build da aplicação
@@ -303,7 +494,7 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
     }
-    
+
     # WebSocket support
     location /socket.io/ {
         proxy_pass http://localhost:3001;
@@ -352,7 +543,7 @@ configure_ssl() {
         log_header "Configurando SSL..."
         
         log_info "Instalando Certbot..."
-        apt install -y certbot python3-certbot-nginx
+apt install -y certbot python3-certbot-nginx
         
         log_info "Obtendo certificado SSL..."
         certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN
@@ -379,7 +570,7 @@ start_sispat() {
     pm2 start ecosystem.production.config.cjs --env production
     
     # Salvar configuração do PM2
-    pm2 save
+pm2 save
     
     log_success "SISPAT iniciado com PM2!"
 }
@@ -392,23 +583,45 @@ setup_backup() {
     mkdir -p /var/backups/sispat
     
     # Criar script de backup
-    cat > /usr/local/bin/sispat-backup.sh << 'EOF'
+    cat > /usr/local/bin/sispat-backup.sh << EOF
 #!/bin/bash
 BACKUP_DIR="/var/backups/sispat"
-DATE=$(date +%Y%m%d_%H%M%S)
+DATE=\$(date +%Y%m%d_%H%M%S)
 APP_DIR="/var/www/sispat"
 
+# Carregar credenciais do banco
+source /root/sispat-db-credentials.txt 2>/dev/null || {
+    echo "Erro: Não foi possível carregar credenciais do banco"
+    exit 1
+}
+
 # Backup do banco de dados
-pg_dump -h localhost -U sispat_user -d sispat_db > $BACKUP_DIR/db_backup_$DATE.sql
+echo "Iniciando backup do banco de dados..."
+PGPASSWORD=\$DB_PASSWORD pg_dump -h localhost -U \$DB_USER -d \$DB_NAME > \$BACKUP_DIR/db_backup_\$DATE.sql
+
+if [ \$? -eq 0 ]; then
+    echo "Backup do banco concluído: \$DATE"
+else
+    echo "Erro no backup do banco de dados"
+    exit 1
+fi
 
 # Backup dos arquivos da aplicação
-tar -czf $BACKUP_DIR/app_backup_$DATE.tar.gz -C $APP_DIR .
+echo "Iniciando backup dos arquivos..."
+tar -czf \$BACKUP_DIR/app_backup_\$DATE.tar.gz -C \$APP_DIR . --exclude=node_modules --exclude=.git
 
-# Manter apenas os últimos 7 backups
-find $BACKUP_DIR -name "*.sql" -mtime +7 -delete
-find $BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
+if [ \$? -eq 0 ]; then
+    echo "Backup dos arquivos concluído: \$DATE"
+else
+    echo "Erro no backup dos arquivos"
+    exit 1
+fi
 
-echo "Backup concluído: $DATE"
+# Manter apenas os últimos 30 backups
+find \$BACKUP_DIR -name "*.sql" -mtime +30 -delete
+find \$BACKUP_DIR -name "*.tar.gz" -mtime +30 -delete
+
+echo "Backup completo concluído: \$DATE"
 EOF
 
     chmod +x /usr/local/bin/sispat-backup.sh
@@ -442,6 +655,7 @@ show_final_info() {
     echo -e "📊 Nome: ${YELLOW}$DB_NAME${NC}"
     echo -e "👤 Usuário: ${YELLOW}$DB_USER${NC}"
     echo -e "🔑 Senha: ${YELLOW}$DB_PASSWORD${NC}"
+    echo -e "📁 Credenciais salvas em: ${YELLOW}/root/sispat-db-credentials.txt${NC}"
     
     echo -e "\n${CYAN}🛠️  COMANDOS ÚTEIS:${NC}"
     echo -e "📊 Status: ${YELLOW}pm2 status${NC}"
@@ -449,6 +663,12 @@ show_final_info() {
     echo -e "🔄 Reiniciar: ${YELLOW}pm2 restart all${NC}"
     echo -e "⏹️  Parar: ${YELLOW}pm2 stop all${NC}"
     echo -e "▶️  Iniciar: ${YELLOW}pm2 start all${NC}"
+    
+    echo -e "\n${CYAN}🗄️  COMANDOS DO BANCO:${NC}"
+    echo -e "🔍 Conectar: ${YELLOW}PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME${NC}"
+    echo -e "📊 Status: ${YELLOW}systemctl status postgresql${NC}"
+    echo -e "🔄 Reiniciar: ${YELLOW}systemctl restart postgresql${NC}"
+    echo -e "💾 Backup: ${YELLOW}/usr/local/bin/sispat-backup.sh${NC}"
     
     echo -e "\n${CYAN}📁 DIRETÓRIOS IMPORTANTES:${NC}"
     echo -e "📂 Aplicação: ${YELLOW}$APP_DIR${NC}"
@@ -508,6 +728,7 @@ main() {
     install_nginx
     install_pm2
     setup_sispat
+    setup_database
     build_sispat
     configure_nginx
     configure_ssl

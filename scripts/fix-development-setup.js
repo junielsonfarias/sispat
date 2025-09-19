@@ -31,7 +31,10 @@ let modified = false;
 
 // Desabilitar banco de dados
 if (envContent.includes('DISABLE_DATABASE=false')) {
-  envContent = envContent.replace('DISABLE_DATABASE=false', 'DISABLE_DATABASE=true');
+  envContent = envContent.replace(
+    'DISABLE_DATABASE=false',
+    'DISABLE_DATABASE=true'
+  );
   modified = true;
   console.log('✅ Banco de dados desabilitado para desenvolvimento');
 }
@@ -62,4 +65,6 @@ if (modified) {
 
 console.log('\n🎉 Configuração de desenvolvimento corrigida!');
 console.log('💡 Agora você pode executar: npm run dev');
-console.log('⚠️ O sistema funcionará sem banco de dados (modo desenvolvimento)');
+console.log(
+  '⚠️ O sistema funcionará sem banco de dados (modo desenvolvimento)'
+);

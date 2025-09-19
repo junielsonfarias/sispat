@@ -5,6 +5,7 @@
 ### ❌ **Erro 500 - Internal Server Error**
 
 **Sintomas:**
+
 - Frontend carrega mas não consegue fazer login
 - Erro: `POST http://localhost:3001/api/auth/ensure-superuser 500`
 - Erro: `GET http://localhost:8080/api/municipalities/public 500`
@@ -12,6 +13,7 @@
 **Causa:** Backend não consegue conectar com banco de dados PostgreSQL
 
 **Solução Rápida:**
+
 ```bash
 # 1. Parar todos os processos Node.js
 taskkill /F /IM node.exe
@@ -24,6 +26,7 @@ npm run dev
 ```
 
 **Solução Completa (com PostgreSQL):**
+
 ```bash
 # 1. Iniciar PostgreSQL (como administrador)
 net start postgresql-x64-17
@@ -43,10 +46,12 @@ npm run dev
 ### ❌ **"The server does not support SSL connections"**
 
 **Sintomas:**
+
 - Erro no log: `Error: The server does not support SSL connections`
 - Backend não consegue conectar com PostgreSQL
 
 **Solução:**
+
 ```bash
 # Opção 1: Desabilitar banco (recomendado para desenvolvimento)
 node scripts/fix-development-setup.js
@@ -61,10 +66,12 @@ DB_SSL_REJECT_UNAUTHORIZED=false
 ### ❌ **"Comando não encontrado" ou "Command not found"**
 
 **Sintomas:**
+
 - Erro ao executar scripts
 - Comandos npm/pnpm não funcionam
 
 **Solução:**
+
 ```bash
 # 1. Verificar se Node.js está instalado
 node --version
@@ -83,10 +90,12 @@ pnpm install
 ### ❌ **"Port 3001 already in use"**
 
 **Sintomas:**
+
 - Backend não consegue iniciar
 - Erro: `EADDRINUSE: address already in use :::3001`
 
 **Solução:**
+
 ```bash
 # 1. Encontrar processo usando a porta
 netstat -ano | findstr :3001
@@ -106,10 +115,12 @@ npm run dev
 ### ❌ **"Port 8080 already in use"**
 
 **Sintomas:**
+
 - Frontend não consegue iniciar
 - Erro: `EADDRINUSE: address already in use :::8080`
 
 **Solução:**
+
 ```bash
 # 1. Encontrar processo usando a porta
 netstat -ano | findstr :8080
@@ -126,10 +137,12 @@ taskkill /PID <PID> /F
 ### ❌ **Frontend carrega mas mostra erros no console**
 
 **Sintomas:**
+
 - Página carrega mas com erros JavaScript
 - Console mostra erros de API
 
 **Solução:**
+
 ```bash
 # 1. Verificar se backend está rodando
 curl http://localhost:3001/api/health
@@ -146,10 +159,12 @@ npm run dev:frontend
 ### ❌ **"Cannot find module" ou "Module not found"**
 
 **Sintomas:**
+
 - Erro ao iniciar aplicação
 - Módulos não encontrados
 
 **Solução:**
+
 ```bash
 # 1. Limpar cache
 npm cache clean --force
@@ -169,6 +184,7 @@ npm run dev
 ## 🛠️ **Comandos Úteis para Diagnóstico**
 
 ### **Verificar Status dos Serviços:**
+
 ```bash
 # Verificar se backend está rodando
 netstat -an | findstr :3001
@@ -181,6 +197,7 @@ Get-Process | Where-Object {$_.ProcessName -like "*node*"}
 ```
 
 ### **Verificar Logs:**
+
 ```bash
 # Logs de erro do backend
 Get-Content logs/error.log -Tail 20
@@ -193,6 +210,7 @@ Get-Content logs/error.log -Wait
 ```
 
 ### **Testar Endpoints:**
+
 ```bash
 # Testar saúde do backend
 curl http://localhost:3001/api/health
@@ -209,18 +227,21 @@ curl -X POST http://localhost:3001/api/auth/ensure-superuser
 ## 🚀 **Scripts de Automação**
 
 ### **Script de Correção Rápida:**
+
 ```bash
 # Corrige configuração de desenvolvimento automaticamente
 node scripts/fix-development-setup.js
 ```
 
 ### **Script de Início Inteligente:**
+
 ```bash
 # Inicia desenvolvimento com verificação automática
 npm run dev
 ```
 
 ### **Script de Validação:**
+
 ```bash
 # Valida configuração e corrige problemas
 npm run validate
@@ -252,12 +273,14 @@ npm run validate
 ## 🎯 **Modo de Desenvolvimento vs Produção**
 
 ### **Desenvolvimento (Recomendado):**
+
 - ✅ Banco de dados desabilitado (`DISABLE_DATABASE=true`)
 - ✅ Dados mockados para testes
 - ✅ Configuração simplificada
 - ✅ Início rápido
 
 ### **Produção:**
+
 - ✅ PostgreSQL configurado
 - ✅ SSL habilitado
 - ✅ Configurações de segurança
@@ -280,6 +303,7 @@ npm run validate
 Se nenhuma das soluções acima funcionou:
 
 1. **Execute** o script de diagnóstico:
+
    ```bash
    node scripts/validate-and-fix.js
    ```

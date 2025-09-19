@@ -86,6 +86,14 @@ curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts
 - **Senha:** `admin123`
 - **⚠️ IMPORTANTE:** Altere a senha após o primeiro login!
 
+### **Banco de dados:**
+
+- **✅ PostgreSQL configurado automaticamente**
+- **✅ Tabelas criadas automaticamente**
+- **✅ Dados iniciais inseridos**
+- **✅ Backup automático configurado**
+- **📁 Credenciais salvas em:** `/root/sispat-db-credentials.txt`
+
 ---
 
 ## 🛠️ **COMANDOS ÚTEIS (Para depois)**
@@ -120,6 +128,22 @@ pm2 stop all
 pm2 start all
 ```
 
+### **Comandos do banco de dados:**
+
+```bash
+# Ver status do PostgreSQL
+systemctl status postgresql
+
+# Reiniciar PostgreSQL
+systemctl restart postgresql
+
+# Fazer backup manual
+/usr/local/bin/sispat-backup.sh
+
+# Ver credenciais do banco
+cat /root/sispat-db-credentials.txt
+```
+
 ---
 
 ## ❓ **PROBLEMAS COMUNS E SOLUÇÕES**
@@ -151,6 +175,27 @@ sudo su -
 ### **❌ "Erro de SSL"**
 
 **Solução:** Se você configurou domínio, aguarde até 10 minutos para o SSL ser configurado
+
+### **❌ "Erro de banco de dados"**
+
+**Solução:** Verifique se o PostgreSQL está rodando:
+
+```bash
+systemctl status postgresql
+systemctl restart postgresql
+```
+
+### **❌ "Não consegue fazer login"**
+
+**Solução:** Verifique se o banco de dados está funcionando:
+
+```bash
+# Ver logs do SISPAT
+pm2 logs
+
+# Verificar conexão com banco
+systemctl status postgresql
+```
 
 ---
 
@@ -261,11 +306,20 @@ tail -f /var/log/postgresql/postgresql-*.log
 - **Email:** `admin@sispat.com`
 - **Senha:** `admin123`
 
+### **Banco de dados:**
+
+- **✅ PostgreSQL configurado automaticamente**
+- **✅ Tabelas criadas automaticamente**
+- **✅ Backup automático configurado**
+- **📁 Credenciais:** `/root/sispat-db-credentials.txt`
+
 ### **Comandos úteis:**
 
 - **Status:** `pm2 status`
 - **Logs:** `pm2 logs`
 - **Reiniciar:** `pm2 restart all`
+- **Banco:** `systemctl status postgresql`
+- **Backup:** `/usr/local/bin/sispat-backup.sh`
 
 ---
 
