@@ -77,13 +77,17 @@ log_success "Diretório criado e vazio!"
 
 # Clonar repositório
 log_info "Clonando repositório SISPAT..."
-git clone https://github.com/junielsonfarias/sispat.git .
-
-if [ $? -eq 0 ]; then
+if git clone https://github.com/junielsonfarias/sispat.git .; then
     log_success "Repositório clonado com sucesso!"
 else
     log_error "Erro ao clonar repositório!"
-    exit 1
+    log_info "Tentando novamente com --depth 1..."
+    if git clone --depth 1 https://github.com/junielsonfarias/sispat.git .; then
+        log_success "Repositório clonado com sucesso (shallow clone)!"
+    else
+        log_error "Falha completa ao clonar repositório!"
+        exit 1
+    fi
 fi
 
 # Verificar se o clone foi bem-sucedido

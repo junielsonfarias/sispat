@@ -364,22 +364,35 @@ setup_sispat() {
     # Limpar diretório completamente se já existir
     if [ -d ".git" ] || [ -f "package.json" ] || [ "$(ls -A . 2>/dev/null)" ]; then
         log_info "Diretório não está vazio, limpando completamente..."
-        rm -rf .git .* package.json package-lock.json node_modules dist .env
-        # Garantir que o diretório está vazio
-        find . -mindepth 1 -delete 2>/dev/null || true
+        # Remover arquivos específicos evitando . e ..
+        rm -rf .git .env package.json package-lock.json node_modules dist
+        # Remover todos os arquivos ocultos exceto . e ..
+        find . -name ".*" -not -name "." -not -name ".." -exec rm -rf {} + 2>/dev/null || true
+        # Remover arquivos restantes
+        find . -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
     fi
     
     # Verificar se o diretório está realmente vazio
     if [ "$(ls -A . 2>/dev/null)" ]; then
-        log_warning "Diretório ainda não está vazio, forçando limpeza..."
+        log_warning "Diretório ainda não está vazio, forçando limpeza completa..."
         cd ..
         rm -rf sispat
         mkdir -p sispat
         cd sispat
+        log_info "Diretório recriado limpo"
     fi
     
     # Baixar código do GitHub
+    log_info "Clonando repositório do GitHub..."
     git clone https://github.com/junielsonfarias/sispat.git .
+    
+    # Verificar se o clone foi bem-sucedido
+    if [ ! -f "package.json" ]; then
+        log_error "Falha ao clonar repositório!"
+        exit 1
+    fi
+    
+    log_success "Código do SISPAT baixado com sucesso!"
     
     log_info "Instalando dependências..."
     npm install --legacy-peer-deps || {

@@ -247,6 +247,21 @@ systemctl status postgresql
     npm install --legacy-peer-deps
     ```
 
+### **❌ "Could not read package.json: ENOENT: no such file or directory"**
+
+**Causa:** O arquivo `package.json` não foi baixado corretamente devido a problemas na limpeza do
+diretório.
+
+**Solução IMEDIATA:**
+
+1.  **Executar script de correção imediata:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-current-install.sh -o fix-now.sh
+    chmod +x fix-now.sh
+    ./fix-now.sh
+    ```
+
 ### **❌ "destination path '.' already exists and is not an empty directory"**
 
 **Causa:** O diretório `/var/www/sispat` já existe e não está vazio, impedindo o clone do
