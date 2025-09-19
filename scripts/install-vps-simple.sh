@@ -274,7 +274,26 @@ EOF
                 systemctl status postgresql
                 log_info "Verificando logs do PostgreSQL..."
                 tail -20 /var/log/postgresql/postgresql-$PG_VERSION-main.log
-                exit 1
+                
+                log_warning "Tentando executar script de correção de autenticação..."
+                if [ -f "/root/fix-postgresql-auth.sh" ]; then
+                    log_info "Executando script de correção..."
+                    chmod +x /root/fix-postgresql-auth.sh
+                    /root/fix-postgresql-auth.sh
+                else
+                    log_info "Script de correção não encontrado. Baixando..."
+                    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-auth.sh -o /root/fix-postgresql-auth.sh
+                    chmod +x /root/fix-postgresql-auth.sh
+                    /root/fix-postgresql-auth.sh
+                fi
+                
+                # Tentar conectar novamente após correção
+                if PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "SELECT version();" > /dev/null 2>&1; then
+                    log_success "PostgreSQL configurado com sucesso após correção!"
+                else
+                    log_error "Ainda não foi possível conectar após correção!"
+                    exit 1
+                fi
             else
                 log_warning "Tentativa $i falhou, tentando novamente em 5 segundos..."
                 sleep 5

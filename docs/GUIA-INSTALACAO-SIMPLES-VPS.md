@@ -197,6 +197,29 @@ pm2 logs
 systemctl status postgresql
 ```
 
+### **❌ "Erro de autenticação PostgreSQL"**
+
+**Causa:** Problemas de autenticação com o usuário do banco de dados.
+
+**Solução:**
+
+1.  **Executar script de correção de autenticação:**
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-auth.sh -o fix-auth.sh
+    chmod +x fix-auth.sh
+    ./fix-auth.sh
+    ```
+
+2.  **Verificar credenciais:**
+    ```bash
+    cat /root/sispat-db-credentials.txt
+    ```
+
+3.  **Testar conexão manual:**
+    ```bash
+    PGPASSWORD=SUA_SENHA psql -h localhost -U sispat_user -d sispat_db -c "SELECT version();"
+    ```
+
 ---
 
 ## 📞 **PRECISA DE AJUDA?**
