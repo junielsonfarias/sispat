@@ -319,6 +319,68 @@ CREATE TABLE IF NOT EXISTS transfers (
 );
 "
 
+# Tabela de templates de etiqueta
+execute_sql "
+CREATE TABLE IF NOT EXISTS label_templates (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    descricao TEXT,
+    tamanho VARCHAR(50) DEFAULT 'standard',
+    config JSONB,
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
+# Tabela de campos de formulário
+execute_sql "
+CREATE TABLE IF NOT EXISTS form_fields (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    tipo VARCHAR(100) NOT NULL,
+    label VARCHAR(255),
+    placeholder VARCHAR(255),
+    obrigatorio BOOLEAN DEFAULT false,
+    opcoes JSONB,
+    ordem INTEGER DEFAULT 0,
+    tabela_alvo VARCHAR(100),
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
+# Tabela de templates Excel/CSV
+execute_sql "
+CREATE TABLE IF NOT EXISTS excel_csv_templates (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    tipo VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    colunas JSONB,
+    filtros JSONB,
+    formato VARCHAR(50) DEFAULT 'xlsx',
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
+# Tabela de configurações de personalização
+execute_sql "
+CREATE TABLE IF NOT EXISTS customization_settings (
+    id SERIAL PRIMARY KEY,
+    chave VARCHAR(255) UNIQUE NOT NULL,
+    valor TEXT,
+    descricao TEXT,
+    categoria VARCHAR(100),
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
 # Criar usuário administrador padrão
 log_info "Criando usuário administrador padrão..."
 execute_sql "

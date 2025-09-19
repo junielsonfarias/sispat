@@ -122,6 +122,68 @@ CREATE TABLE IF NOT EXISTS transfers (
 );
 "
 
+# Tabela de templates de etiqueta
+execute_sql "
+CREATE TABLE IF NOT EXISTS label_templates (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    descricao TEXT,
+    tamanho VARCHAR(50) DEFAULT 'standard',
+    config JSONB,
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
+# Tabela de campos de formulário
+execute_sql "
+CREATE TABLE IF NOT EXISTS form_fields (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    tipo VARCHAR(100) NOT NULL,
+    label VARCHAR(255),
+    placeholder VARCHAR(255),
+    obrigatorio BOOLEAN DEFAULT false,
+    opcoes JSONB,
+    ordem INTEGER DEFAULT 0,
+    tabela_alvo VARCHAR(100),
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
+# Tabela de templates Excel/CSV
+execute_sql "
+CREATE TABLE IF NOT EXISTS excel_csv_templates (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    tipo VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    colunas JSONB,
+    filtros JSONB,
+    formato VARCHAR(50) DEFAULT 'xlsx',
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
+# Tabela de configurações de personalização
+execute_sql "
+CREATE TABLE IF NOT EXISTS customization_settings (
+    id SERIAL PRIMARY KEY,
+    chave VARCHAR(255) UNIQUE NOT NULL,
+    valor TEXT,
+    descricao TEXT,
+    categoria VARCHAR(100),
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+
 log_success "Tabelas faltantes criadas!"
 
 # 2. Executar script de dados de exemplo
@@ -137,8 +199,60 @@ fi
 # 3. Corrigir configuração do Nginx
 log_header "Corrigindo configuração do Nginx..."
 
-# Verificar se há configuração SSL problemática
-if grep -q "ssl_certificate.*letsencrypt" /etc/nginx/sites-available/sispat 2>/dev/null; then
+# Verificar se há problemas na configuração do Nginx
+if nginx -t 2>&1 | grep -q "location.*directive is not allowed"; then
+    log_info "Corrigindo estrutura da configuração do Nginx..."
+    
+    # Fazer backup da configuração atual
+    cp /etc/nginx/sites-available/sispat /etc/nginx/sites-available/sispat.backup
+    
+    # Recriar configuração correta
+    cat > /etc/nginx/sites-available/sispat << 'EOF'
+server {
+    listen 80;
+    server_name sispat.vps-kinghost.net;
+
+    # Servir arquivos estáticos
+    location / {
+        root /var/www/sispat/dist;
+        try_files $uri $uri/ /index.html;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Proxy para API
+    location /api/ {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # WebSocket support
+    location /socket.io/ {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Logs
+    access_log /var/log/nginx/sispat.access.log;
+    error_log /var/log/nginx/sispat.error.log;
+}
+EOF
+    
+    log_success "Configuração do Nginx recriada!"
+elif grep -q "ssl_certificate.*letsencrypt" /etc/nginx/sites-available/sispat 2>/dev/null; then
     log_info "Removendo configuração SSL problemática..."
     
     # Fazer backup da configuração atual

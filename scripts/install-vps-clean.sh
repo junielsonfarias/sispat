@@ -463,18 +463,6 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
-    # Logs
-    access_log /var/log/nginx/sispat.access.log;
-    error_log /var/log/nginx/sispat.error.log;
-}
-
-# Configuração HTTPS (será adicionada pelo Certbot se SSL for configurado)
-# server {
-#     listen 443 ssl http2;
-#     server_name $DOMAIN;
-#     # Certificados SSL serão configurados pelo Certbot
-# }
-
     # Proxy para API
     location /api/ {
         proxy_pass http://localhost:3001;
@@ -504,6 +492,13 @@ server {
     access_log /var/log/nginx/sispat.access.log;
     error_log /var/log/nginx/sispat.error.log;
 }
+
+# Configuração HTTPS (será adicionada pelo Certbot se SSL for configurado)
+# server {
+#     listen 443 ssl http2;
+#     server_name $DOMAIN;
+#     # Certificados SSL serão configurados pelo Certbot
+# }
 EOF
 
     # Ativar site

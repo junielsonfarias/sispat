@@ -345,8 +345,60 @@ chmod +x fix-errors.sh
     # Remover configuração SSL problemática
     sed -i '/ssl_certificate/d' /etc/nginx/sites-available/sispat
     sed -i '/listen 443/d' /etc/nginx/sites-available/sispat
-    
+
     # Testar e recarregar Nginx
+    nginx -t && systemctl reload nginx
+    ```
+
+### **❌ "relation 'label_templates' does not exist"**
+
+**Causa:** Tabelas adicionais não foram criadas durante a inicialização do banco.
+
+**Solução IMEDIATA:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-installation-errors.sh -o fix-errors.sh
+chmod +x fix-errors.sh
+./fix-errors.sh
+```
+
+### **❌ "location directive is not allowed" no Nginx**
+
+**Causa:** Configuração do Nginx com estrutura incorreta (diretivas location fora do bloco server).
+
+**Solução IMEDIATA:**
+
+1.  **Executar script de correção de erros:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-installation-errors.sh -o fix-errors.sh
+    chmod +x fix-errors.sh
+    ./fix-errors.sh
+    ```
+
+2.  **Ou corrigir manualmente:**
+
+    ```bash
+    # Recriar configuração correta do Nginx
+    cat > /etc/nginx/sites-available/sispat << 'EOF'
+    server {
+        listen 80;
+        server_name sispat.vps-kinghost.net;
+
+        location / {
+            root /var/www/sispat/dist;
+            try_files $uri $uri/ /index.html;
+        }
+
+        location /api/ {
+            proxy_pass http://localhost:3001;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
+    EOF
+
+    # Testar e recarregar
     nginx -t && systemctl reload nginx
     ```
 
