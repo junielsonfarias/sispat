@@ -249,7 +249,8 @@ systemctl status postgresql
 
 ### **❌ "destination path '.' already exists and is not an empty directory"**
 
-**Causa:** O diretório `/var/www/sispat` já existe e não está vazio, impedindo o clone do repositório.
+**Causa:** O diretório `/var/www/sispat` já existe e não está vazio, impedindo o clone do
+repositório.
 
 **Solução:**
 
@@ -261,11 +262,21 @@ systemctl status postgresql
     ./fix-dir.sh
     ```
 
-2.  **Ou executar manualmente:**
+2.  **Ou executar correção forçada:**
 
     ```bash
-    cd /var/www/sispat
-    rm -rf .git package.json package-lock.json node_modules dist
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-directory-force.sh -o fix-force.sh
+    chmod +x fix-force.sh
+    ./fix-force.sh
+    ```
+
+3.  **Ou executar manualmente:**
+
+    ```bash
+    cd /var/www
+    rm -rf sispat
+    mkdir -p sispat
+    cd sispat
     git clone https://github.com/junielsonfarias/sispat.git .
     ```
 

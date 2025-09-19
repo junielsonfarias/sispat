@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # =============================================================================
-# SCRIPT DE CORREÇÃO - CONFLITO DE DIRETÓRIO SISPAT
-# Para resolver problemas de diretório já existente durante instalação
+# SCRIPT DE CORREÇÃO FORÇADA - DIRETÓRIO SISPAT
+# Para resolver problemas persistentes de diretório não vazio
 # =============================================================================
 
 set -e
@@ -42,53 +42,38 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-log_header "Corrigindo conflito de diretório SISPAT..."
+log_header "Correção FORÇADA de diretório SISPAT..."
 
 # Definir diretório da aplicação
 APP_DIR="/var/www/sispat"
 
-# Verificar se o diretório existe
-if [ ! -d "$APP_DIR" ]; then
-    log_info "Diretório $APP_DIR não existe, criando..."
-    mkdir -p $APP_DIR
+log_info "Removendo completamente o diretório $APP_DIR..."
+
+# Parar qualquer processo que possa estar usando o diretório
+log_info "Parando processos que possam estar usando o diretório..."
+pkill -f "sispat" 2>/dev/null || true
+pkill -f "node.*sispat" 2>/dev/null || true
+
+# Aguardar um pouco
+sleep 2
+
+# Remover completamente o diretório
+log_info "Removendo diretório completamente..."
+cd /var/www
+rm -rf sispat
+
+# Criar diretório limpo
+log_info "Criando diretório limpo..."
+mkdir -p sispat
+cd sispat
+
+# Verificar se está vazio
+if [ "$(ls -A . 2>/dev/null)" ]; then
+    log_error "Diretório não está vazio após criação!"
+    exit 1
 fi
 
-# Navegar para o diretório
-cd $APP_DIR
-
-log_info "Verificando conteúdo do diretório $APP_DIR..."
-
-# Verificar se há arquivos do SISPAT
-if [ -f "package.json" ] || [ -d ".git" ]; then
-    log_warning "Diretório já contém arquivos do SISPAT!"
-    
-    # Fazer backup se necessário
-    if [ -f "package.json" ]; then
-        log_info "Fazendo backup do package.json..."
-        cp package.json package.json.backup 2>/dev/null || true
-    fi
-    
-    # Limpar arquivos existentes
-    log_info "Limpando arquivos existentes..."
-    rm -rf .git .* package.json package-lock.json node_modules dist .env
-    
-    # Garantir que o diretório está completamente vazio
-    log_info "Garantindo que o diretório está vazio..."
-    find . -mindepth 1 -delete 2>/dev/null || true
-    
-    # Verificar se ainda há arquivos
-    if [ "$(ls -A . 2>/dev/null)" ]; then
-        log_warning "Diretório ainda não está vazio, forçando limpeza completa..."
-        cd ..
-        rm -rf sispat
-        mkdir -p sispat
-        cd sispat
-    fi
-    
-    log_success "Diretório limpo com sucesso!"
-else
-    log_info "Diretório está vazio, pronto para clonar!"
-fi
+log_success "Diretório criado e vazio!"
 
 # Clonar repositório
 log_info "Clonando repositório SISPAT..."
@@ -116,8 +101,8 @@ else
     exit 1
 fi
 
-log_header "Correção Concluída!"
-echo -e "\n${GREEN}🎉 Conflito de diretório resolvido com sucesso!${NC}"
+log_header "Correção FORÇADA Concluída!"
+echo -e "\n${GREEN}🎉 Diretório SISPAT recriado com sucesso!${NC}"
 echo -e "\n${BLUE}📋 PRÓXIMOS PASSOS:${NC}"
 echo -e "1. ${YELLOW}Execute o script de instalação principal novamente${NC}"
 echo -e "2. ${YELLOW}Ou continue manualmente com: npm install --legacy-peer-deps${NC}"

@@ -361,10 +361,21 @@ setup_sispat() {
     
     log_info "Baixando código do SISPAT..."
     
-    # Limpar diretório se já existir
-    if [ -d ".git" ] || [ -f "package.json" ]; then
-        log_info "Diretório já existe, limpando..."
-        rm -rf .git package.json package-lock.json node_modules dist
+    # Limpar diretório completamente se já existir
+    if [ -d ".git" ] || [ -f "package.json" ] || [ "$(ls -A . 2>/dev/null)" ]; then
+        log_info "Diretório não está vazio, limpando completamente..."
+        rm -rf .git .* package.json package-lock.json node_modules dist .env
+        # Garantir que o diretório está vazio
+        find . -mindepth 1 -delete 2>/dev/null || true
+    fi
+    
+    # Verificar se o diretório está realmente vazio
+    if [ "$(ls -A . 2>/dev/null)" ]; then
+        log_warning "Diretório ainda não está vazio, forçando limpeza..."
+        cd ..
+        rm -rf sispat
+        mkdir -p sispat
+        cd sispat
     fi
     
     # Baixar código do GitHub
