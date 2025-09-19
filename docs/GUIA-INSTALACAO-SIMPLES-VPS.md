@@ -43,19 +43,40 @@
 
 ### **PASSO 2: Executar Script Automático** 🤖
 
+#### **Opção A: Instalação Normal (Recomendada)**
+
 **Copie e cole este comando completo:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-simple.sh -o install.sh && chmod +x install.sh && ./install.sh
 ```
 
-**O que este comando faz:**
+#### **Opção B: Instalação Limpa (Para problemas persistentes)**
+
+**Se você tem problemas com instalação anterior, use este comando:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-clean.sh -o install-clean.sh && chmod +x install-clean.sh && ./install-clean.sh
+```
+
+**O que estes comandos fazem:**
 
 - ✅ Baixa o script de instalação
 - ✅ Torna o arquivo executável
 - ✅ Executa a instalação automática
+- ✅ **Instalação limpa:** Remove instalação anterior e instala do zero
 
 **⏱️ Tempo estimado:** 10-15 minutos
+
+### **PASSO 3: Escolher Tipo de Instalação** 🎯
+
+Se você já tem uma instalação anterior, o script oferecerá opções:
+
+- **1. Instalação normal:** Atualiza a instalação existente
+- **2. Instalação limpa:** Remove tudo e instala do zero
+- **3. Sair:** Cancela a instalação
+
+**Recomendação:** Use "Instalação limpa" se tiver problemas persistentes.
 
 ### **PASSO 3: Configurar Domínio (Opcional)** 🌐
 
@@ -262,6 +283,14 @@ diretório.
     ./fix-now.sh
     ```
 
+2.  **Ou executar instalação limpa (Recomendado para problemas persistentes):**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-clean.sh -o install-clean.sh
+    chmod +x install-clean.sh
+    ./install-clean.sh
+    ```
+
 ### **❌ "destination path '.' already exists and is not an empty directory"**
 
 **Causa:** O diretório `/var/www/sispat` já existe e não está vazio, impedindo o clone do
@@ -294,6 +323,24 @@ repositório.
     cd sispat
     git clone https://github.com/junielsonfarias/sispat.git .
     ```
+
+### **🧹 Quando Usar Instalação Limpa**
+
+**Use a instalação limpa quando:**
+
+- ❌ **Problemas persistentes** com instalação anterior
+- ❌ **Erros de dependências** que não conseguem ser resolvidos
+- ❌ **Conflitos de configuração** entre versões
+- ❌ **Corrupção de arquivos** ou diretórios
+- ❌ **Falhas múltiplas** nos scripts de correção
+- ❌ **Quer começar do zero** com instalação limpa
+
+**A instalação limpa:**
+- ✅ **Remove completamente** a instalação anterior
+- ✅ **Limpa todos os arquivos** e configurações
+- ✅ **Reinstala tudo do zero** com configurações frescas
+- ✅ **Resolve problemas persistentes** automaticamente
+- ✅ **Garante instalação limpa** sem conflitos
 
 ---
 

@@ -378,7 +378,7 @@ setup_sispat() {
         cd ..
         rm -rf sispat
         mkdir -p sispat
-        cd sispat
+cd sispat
         log_info "Diretório recriado limpo"
     fi
     
@@ -806,6 +806,39 @@ main() {
     echo "║                                                              ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
+    
+    # Verificar se há instalação anterior
+    if [ -d "/var/www/sispat" ] && [ -f "/var/www/sispat/package.json" ]; then
+        echo -e "${YELLOW}⚠️  Instalação anterior detectada!${NC}"
+        echo ""
+        echo -e "${BLUE}Escolha uma opção:${NC}"
+        echo -e "1. ${GREEN}Instalação normal${NC} (atualizar instalação existente)"
+        echo -e "2. ${RED}Instalação limpa${NC} (remover tudo e instalar do zero)"
+        echo -e "3. ${YELLOW}Sair${NC}"
+        echo ""
+        read -p "Digite sua escolha (1, 2 ou 3): " INSTALL_CHOICE
+        
+        case $INSTALL_CHOICE in
+            1)
+                log_info "Continuando com instalação normal..."
+                ;;
+            2)
+                log_info "Iniciando instalação limpa..."
+                curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-clean.sh -o install-clean.sh
+                chmod +x install-clean.sh
+                ./install-clean.sh
+                exit 0
+                ;;
+            3)
+                log_info "Saindo..."
+                exit 0
+                ;;
+            *)
+                log_error "Opção inválida!"
+                exit 1
+                ;;
+        esac
+    fi
     
     # Verificações iniciais
     check_root
