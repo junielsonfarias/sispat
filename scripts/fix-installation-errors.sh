@@ -136,6 +136,11 @@ CREATE TABLE IF NOT EXISTS label_templates (
 );
 "
 
+# Garantir índices/constraints necessários para ON CONFLICT
+execute_sql "
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx ON users(email);
+"
+
 # Tabela de campos de formulário
 execute_sql "
 CREATE TABLE IF NOT EXISTS form_fields (

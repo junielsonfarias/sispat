@@ -88,6 +88,11 @@ CREATE TABLE IF NOT EXISTS users (
 );
 "
 
+# Garantir índice único para email (necessário para ON CONFLICT)
+execute_sql "
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx ON users(email);
+"
+
 # Tabela de municípios
 execute_sql "
 CREATE TABLE IF NOT EXISTS municipalities (
