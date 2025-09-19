@@ -291,6 +291,28 @@ diretório.
     ./install-clean.sh
     ```
 
+### **❌ "relation 'imoveis' does not exist" ou "Erro ao criar tabelas"**
+
+**Causa:** As tabelas do banco de dados não foram criadas corretamente.
+
+**Solução IMEDIATA:**
+
+1.  **Executar script de correção do banco de dados:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-current-database.sh -o fix-db.sh
+    chmod +x fix-db.sh
+    ./fix-db.sh
+    ```
+
+2.  **Ou executar script de inicialização do banco manualmente:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/init-database.sh -o init-db.sh
+    chmod +x init-db.sh
+    ./init-db.sh
+    ```
+
 ### **❌ "destination path '.' already exists and is not an empty directory"**
 
 **Causa:** O diretório `/var/www/sispat` já existe e não está vazio, impedindo o clone do
@@ -336,6 +358,7 @@ repositório.
 - ❌ **Quer começar do zero** com instalação limpa
 
 **A instalação limpa:**
+
 - ✅ **Remove completamente** a instalação anterior
 - ✅ **Limpa todos os arquivos** e configurações
 - ✅ **Reinstala tudo do zero** com configurações frescas

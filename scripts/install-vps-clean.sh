@@ -77,6 +77,9 @@ read -p "Pressione Enter para continuar..."
 remove_old_installation() {
     log_header "Removendo instalação anterior..."
     
+    # Navegar para um diretório seguro antes de remover
+    cd /root
+    
     # Parar serviços
     log_info "Parando serviços..."
     pm2 stop all 2>/dev/null || true
@@ -259,9 +262,15 @@ install_nginx() {
 install_pm2() {
     log_header "Instalando PM2..."
     
+    # Navegar para um diretório seguro
+    cd /root
+    
     # Verificar se PM2 já está instalado
     if command -v pm2 &> /dev/null; then
-        log_info "PM2 já está instalado: $(pm2 --version)"
+        log_info "PM2 já está instalado"
+        # Limpar processos antigos
+        pm2 kill 2>/dev/null || true
+        pm2 startup systemd -u root --hp /root 2>/dev/null || true
         return 0
     fi
     
@@ -391,9 +400,17 @@ EOF
     
     # Configurar banco de dados
     log_info "Configurando banco de dados..."
-    node server/database/create-missing-tables.js
-    node server/database/create-sample-data.js
-    node server/database/optimize.js
+    
+    # Baixar e executar script de inicialização do banco
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/init-database.sh -o init-db.sh
+    chmod +x init-db.sh
+    ./init-db.sh
+    
+    # Executar scripts adicionais se existirem
+    if [ -f "server/database/create-sample-data.js" ]; then
+        log_info "Executando script de dados de exemplo..."
+        node server/database/create-sample-data.js || log_warning "Falha nos dados de exemplo - continuando..."
+    fi
     
     log_success "SISPAT configurado com sucesso!"
 }
