@@ -1,300 +1,298 @@
 #!/bin/bash
 
-# =================================
-# INSTALAÇÃO SIMPLIFICADA VPS - SISPAT
-# Para Iniciantes - Versão Simplificada
-# =================================
+# =============================================================================
+# SCRIPT DE INSTALAÇÃO SIMPLES - SISPAT VPS
+# Para pessoas sem conhecimento técnico
+# =============================================================================
 
-set -e
+set -e  # Parar em caso de erro
 
 # Cores para output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Função para log
-log() {
-    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
+# Funções de log
+log_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
-# Função para erro
-error() {
-    echo -e "${RED}[ERRO]${NC} $1"
-    exit 1
+log_success() {
+    echo -e "${GREEN}✅ $1${NC}"
 }
 
-# Função para sucesso
-success() {
-    echo -e "${GREEN}[SUCESSO]${NC} $1"
+log_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
-# Função para aviso
-warning() {
-    echo -e "${YELLOW}[AVISO]${NC} $1"
+log_error() {
+    echo -e "${RED}❌ $1${NC}"
 }
 
-# Banner
-echo ""
-echo "🚀 ================================================"
-echo "🚀    INSTALAÇÃO SIMPLIFICADA VPS - SISPAT"
-echo "🚀    Para Iniciantes - Versão Simplificada"
-echo "🚀    ✅ Instalação automática e segura"
-echo "🚀    ✅ Configuração otimizada para produção"
-echo "🚀 ================================================"
-echo ""
+log_header() {
+    echo -e "\n${PURPLE}🚀 $1${NC}"
+}
 
-# Verificar se estamos rodando como root
-if [ "$EUID" -ne 0 ]; then
-    error "Este script deve ser executado como root (sudo)"
-fi
+# Função para pausar e aguardar confirmação
+pause() {
+    echo -e "\n${YELLOW}Pressione Enter para continuar...${NC}"
+    read -r
+}
 
-# Verificar sistema operacional
-if ! command -v apt &> /dev/null; then
-    error "Este script é específico para sistemas baseados em Debian/Ubuntu"
-fi
+# Função para verificar se está rodando como root
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        log_error "Este script deve ser executado como root!"
+        log_info "Execute: sudo su -"
+        exit 1
+    fi
+}
 
-# 0. CONFIGURAÇÃO INICIAL
-log "🔧 Configuração inicial..."
+# Função para verificar sistema operacional
+check_os() {
+    log_header "Verificando sistema operacional..."
+    
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        OS=$NAME
+        VER=$VERSION_ID
+    else
+        log_error "Sistema operacional não suportado!"
+        exit 1
+    fi
+    
+    log_info "Sistema: $OS $VER"
+    
+    if [[ "$OS" == *"Ubuntu"* ]]; then
+        log_success "Ubuntu detectado - Compatível!"
+    elif [[ "$OS" == *"Debian"* ]]; then
+        log_success "Debian detectado - Compatível!"
+    else
+        log_warning "Sistema não testado, mas tentando continuar..."
+    fi
+}
 
-echo ""
-echo "📋 CONFIGURAÇÃO INICIAL:"
-echo "========================="
-echo "Este script irá instalar o SISPAT automaticamente."
-echo "Você precisará fornecer algumas informações básicas."
-echo ""
+# Função para atualizar sistema
+update_system() {
+    log_header "Atualizando sistema..."
+    
+    log_info "Atualizando lista de pacotes..."
+    apt update -y
+    
+    log_info "Atualizando pacotes instalados..."
+    apt upgrade -y
+    
+    log_info "Instalando dependências básicas..."
+    apt install -y curl wget git unzip software-properties-common apt-transport-https ca-certificates gnupg lsb-release
+    
+    log_success "Sistema atualizado com sucesso!"
+}
 
-# Solicitar informações do usuário
-read -p "🌐 Digite seu domínio (ex: meusite.com): " DOMAIN
-if [ -z "$DOMAIN" ]; then
-    error "Domínio é obrigatório"
-fi
+# Função para instalar Node.js
+install_nodejs() {
+    log_header "Instalando Node.js..."
+    
+    log_info "Baixando e instalando Node.js 18..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt install -y nodejs
+    
+    # Verificar instalação
+    NODE_VERSION=$(node --version)
+    NPM_VERSION=$(npm --version)
+    
+    log_success "Node.js $NODE_VERSION instalado!"
+    log_success "NPM $NPM_VERSION instalado!"
+}
 
-read -s -p "🔒 Digite uma senha forte para o banco de dados: " DB_PASSWORD
-echo ""
-if [ -z "$DB_PASSWORD" ]; then
-    error "Senha do banco é obrigatória"
-fi
+# Função para instalar PostgreSQL
+install_postgresql() {
+    log_header "Instalando PostgreSQL..."
+    
+    log_info "Instalando PostgreSQL..."
+    apt install -y postgresql postgresql-contrib
+    
+    # Iniciar e habilitar PostgreSQL
+    systemctl start postgresql
+    systemctl enable postgresql
+    
+    # Configurar PostgreSQL
+    log_info "Configurando PostgreSQL..."
+    
+    # Gerar senhas seguras
+    DB_PASSWORD=$(openssl rand -base64 32)
+    DB_NAME="sispat_db"
+    DB_USER="sispat_user"
+    
+    # Criar usuário e banco
+    sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+    
+    # Configurar PostgreSQL para aceitar conexões
+    PG_VERSION=$(sudo -u postgres psql -t -c "SELECT version();" | grep -oP '\d+\.\d+' | head -1)
+    
+    # Backup da configuração original
+    cp /etc/postgresql/$PG_VERSION/main/postgresql.conf /etc/postgresql/$PG_VERSION/main/postgresql.conf.backup
+    cp /etc/postgresql/$PG_VERSION/main/pg_hba.conf /etc/postgresql/$PG_VERSION/main/pg_hba.conf.backup
+    
+    # Configurar para aceitar conexões locais
+    sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost'/" /etc/postgresql/$PG_VERSION/main/postgresql.conf
+    
+    # Reiniciar PostgreSQL
+    systemctl restart postgresql
+    
+    log_success "PostgreSQL instalado e configurado!"
+    log_info "Banco: $DB_NAME"
+    log_info "Usuário: $DB_USER"
+    log_info "Senha: $DB_PASSWORD"
+}
 
-read -p "📧 Digite seu email para certificado SSL: " EMAIL
-if [ -z "$EMAIL" ]; then
-    error "Email é obrigatório para certificado SSL"
-fi
+# Função para instalar Nginx
+install_nginx() {
+    log_header "Instalando Nginx..."
+    
+    log_info "Instalando Nginx..."
+    apt install -y nginx
+    
+    # Iniciar e habilitar Nginx
+    systemctl start nginx
+    systemctl enable nginx
+    
+    # Configurar firewall básico
+    ufw allow 'Nginx Full'
+    ufw allow OpenSSH
+    ufw --force enable
+    
+    log_success "Nginx instalado e configurado!"
+}
 
-# Gerar JWT secret automaticamente
-JWT_SECRET=$(openssl rand -base64 64 | tr -d "=+/" | cut -c1-64)
+# Função para instalar PM2
+install_pm2() {
+    log_header "Instalando PM2..."
+    
+    log_info "Instalando PM2 globalmente..."
+    npm install -g pm2
+    
+    # Configurar PM2 para iniciar com o sistema
+    pm2 startup systemd -u root --hp /root
+    pm2 save
+    
+    log_success "PM2 instalado e configurado!"
+}
 
-# Confirmar configurações
-echo ""
-echo "📋 CONFIGURAÇÕES CONFIRMADAS:"
-echo "=============================="
-echo "🌐 Domínio: $DOMAIN"
-echo "🔒 Senha DB: [OCULTA]"
-echo "🔑 JWT Secret: [GERADO AUTOMATICAMENTE]"
-echo "📧 Email SSL: $EMAIL"
-echo ""
-read -p "✅ Confirma as configurações? (y/N): " CONFIRM
-if [[ ! $CONFIRM =~ ^[Yy]$ ]]; then
-    error "Instalação cancelada pelo usuário"
-fi
-
-# 1. Atualizar sistema
-log "📦 Atualizando sistema..."
-apt update
-apt upgrade -y
-apt install -y build-essential curl git software-properties-common unzip wget lsb-release openssl
-success "Sistema atualizado"
-
-# 2. Instalar Node.js 18.x
-log "📦 Instalando Node.js 18.x..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt install -y nodejs
-success "Node.js instalado: $(node --version)"
-
-# 3. Instalar ferramentas
-log "📦 Instalando ferramentas..."
-npm install -g pnpm pm2 serve
-success "Ferramentas instaladas"
-
-# 4. Instalar PostgreSQL
-log "🗄️ Instalando PostgreSQL..."
-apt install -y postgresql postgresql-contrib
-systemctl enable postgresql
-systemctl start postgresql
-
-# Configurar usuário e banco
-# Parar PostgreSQL para limpeza
-systemctl stop postgresql
-systemctl start postgresql
-
-# Remover usuário e banco existentes com CASCADE
-sudo -u postgres psql -c "DROP USER IF EXISTS sispat_user CASCADE;" 2>/dev/null || true
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS sispat_production;" 2>/dev/null || true
-
-# Criar usuário e banco
-sudo -u postgres psql << EOF
-CREATE USER sispat_user WITH PASSWORD '$DB_PASSWORD';
-CREATE DATABASE sispat_production OWNER sispat_user;
-GRANT ALL PRIVILEGES ON DATABASE sispat_production TO sispat_user;
-ALTER USER sispat_user CREATEDB;
-\q
-EOF
-
-success "PostgreSQL instalado e configurado"
-
-# 5. Instalar Redis
-log "📦 Instalando Redis..."
-apt install -y redis-server
-systemctl enable redis-server
-systemctl start redis-server
-success "Redis instalado e configurado"
-
-# 6. Instalar Nginx
-log "📦 Instalando Nginx..."
-apt install -y nginx
-success "Nginx instalado"
-
-# 7. Configurar firewall
-log "🔥 Configurando firewall..."
-ufw allow ssh
-ufw allow 80
-ufw allow 443
-ufw allow 3001
-ufw --force enable
-success "Firewall configurado"
-
-# 8. Clonar repositório SISPAT
-log "📥 Clonando repositório SISPAT..."
-if [ -d "/var/www/sispat" ]; then
-    warning "⚠️ Diretório sispat já existe, fazendo backup..."
-    mv /var/www/sispat /var/www/sispat.backup.$(date +%Y%m%d_%H%M%S)
-fi
-
-cd /var/www
-git clone https://github.com/junielsonfarias/sispat.git
-cd sispat
-success "Repositório clonado"
-
-# 9. Configurar variáveis de ambiente
-log "⚙️ Configurando variáveis de ambiente..."
-cat > .env << EOF
-# Configurações do Servidor
-NODE_ENV=production
-PORT=3001
-HOST=0.0.0.0
-
-# Banco de Dados PostgreSQL
+# Função para baixar e configurar SISPAT
+setup_sispat() {
+    log_header "Configurando SISPAT..."
+    
+    # Criar diretório da aplicação
+    APP_DIR="/var/www/sispat"
+    mkdir -p $APP_DIR
+    cd $APP_DIR
+    
+    log_info "Baixando código do SISPAT..."
+    
+    # Baixar código do GitHub
+    git clone https://github.com/junielsonfarias/sispat.git .
+    
+    log_info "Instalando dependências..."
+    npm install
+    
+    log_info "Configurando variáveis de ambiente..."
+    
+    # Criar arquivo .env
+    cat > .env << EOF
+# Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=sispat_production
-DB_USER=sispat_user
+DB_NAME=$DB_NAME
+DB_USER=$DB_USER
 DB_PASSWORD=$DB_PASSWORD
-DATABASE_URL=postgresql://sispat_user:$DB_PASSWORD@localhost:5432/sispat_production
 
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-REDIS_URL=redis://localhost:6379
-
-# JWT e Segurança
-JWT_SECRET=$JWT_SECRET
+# JWT Configuration
+JWT_SECRET=$(openssl rand -base64 64)
 JWT_EXPIRES_IN=24h
-JWT_REFRESH_EXPIRES_IN=7d
 
-# CORS
-CORS_ORIGIN=https://$DOMAIN,http://localhost:3000,http://127.0.0.1:3000
-CORS_CREDENTIALS=true
-ALLOWED_ORIGINS=https://$DOMAIN,http://localhost:3000,http://127.0.0.1:3000
+# Server Configuration
+PORT=3001
+NODE_ENV=production
 
-# Logs
+# CORS Configuration
+ALLOWED_ORIGINS=http://localhost:8080,http://$(hostname -I | awk '{print $1}'):8080
+
+# Security Configuration
+BCRYPT_ROUNDS=12
+SESSION_TIMEOUT=1800000
+MAX_LOGIN_ATTEMPTS=5
+LOCKOUT_DURATION=1800000
+
+# Logging
 LOG_LEVEL=info
-LOG_FILE=./logs/app.log
+ENABLE_REQUEST_LOGGING=true
 
 # Backup
 BACKUP_ENABLED=true
-BACKUP_SCHEDULE="0 2 * * *"
+BACKUP_SCHEDULE=0 2 * * *
 BACKUP_RETENTION_DAYS=30
+BACKUP_PATH=./backups
 EOF
 
-success "Arquivo .env criado"
+    # Se o usuário forneceu um domínio, adicionar ao .env
+    if [[ -n "$DOMAIN" ]]; then
+        log_info "Configurando domínio: $DOMAIN"
+        sed -i "s|ALLOWED_ORIGINS=.*|ALLOWED_ORIGINS=https://$DOMAIN,http://$DOMAIN|" .env
+        echo "VITE_DOMAIN=https://$DOMAIN" >> .env
+        echo "VITE_BACKEND_URL=https://$DOMAIN" >> .env
+        echo "VITE_API_URL=https://$DOMAIN/api" >> .env
+    fi
+    
+    log_success "SISPAT configurado!"
+}
 
-# 10. Configurar scripts e diretórios
-log "🔧 Configurando scripts e diretórios..."
-mkdir -p logs
-chmod 755 logs
+# Função para fazer build da aplicação
+build_sispat() {
+    log_header "Compilando aplicação..."
+    
+    cd $APP_DIR
+    
+    log_info "Fazendo build da aplicação..."
+    npm run build:prod
+    
+    log_success "Aplicação compilada com sucesso!"
+}
 
-if [ -d "scripts" ] && [ "$(ls -A scripts/*.sh 2>/dev/null)" ]; then
-    chmod +x scripts/*.sh
-    success "Scripts configurados com permissões de execução"
-else
-    warning "⚠️ Diretório scripts não encontrado ou vazio"
-fi
-
-# 11. Instalar dependências
-log "📦 Instalando dependências..."
-# Resolver conflitos de dependências com --legacy-peer-deps
-npm install --legacy-peer-deps
-success "Dependências instaladas"
-
-# 12. Habilitar extensões PostgreSQL
-log "🔧 Habilitando extensões PostgreSQL..."
-sudo -u postgres psql -d sispat_production -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" 2>/dev/null || true
-sudo -u postgres psql -d sispat_production -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" 2>/dev/null || true
-sudo -u postgres psql -d sispat_production -c "CREATE EXTENSION IF NOT EXISTS unaccent;" 2>/dev/null || true
-sudo -u postgres psql -d sispat_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;" 2>/dev/null || true
-success "Extensões PostgreSQL habilitadas"
-
-# 13. Executar migrações
-log "🗄️ Executando migrações do banco..."
-if [ -f "server/database/migrate.js" ]; then
-    node server/database/migrate.js
-    success "Migrações executadas"
-else
-    warning "⚠️ Arquivo de migração não encontrado"
-fi
-
-# 14. Build do frontend
-log "🏗️ Fazendo build do frontend..."
-# Limpar build anterior e cache
-rm -rf dist
-rm -rf node_modules/.vite
-rm -rf node_modules/.cache
-rm -rf .vite
-# Limpar cache do npm
-npm cache clean --force
-# Fazer build
-npm run build
-success "Frontend buildado"
-
-# 15. Configurar Nginx (HTTP apenas)
-log "🌐 Configurando Nginx (HTTP)..."
-# Remover configurações existentes
-rm -f /etc/nginx/sites-available/sispat
-rm -f /etc/nginx/sites-enabled/sispat
-rm -f /etc/nginx/sites-enabled/default
-
-# Criar configuração Nginx limpa
-cat > /etc/nginx/sites-available/sispat << EOF
+# Função para configurar Nginx
+configure_nginx() {
+    log_header "Configurando Nginx..."
+    
+    # Backup da configuração original
+    cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup
+    
+    # Configurar Nginx para SISPAT
+    cat > /etc/nginx/sites-available/default << EOF
 server {
     listen 80;
-    server_name $DOMAIN www.$DOMAIN;
-
-    # Frontend
-    location / {
-        root /var/www/sispat/dist;
-        try_files \$uri \$uri/ /index.html;
-
-        # Cache para arquivos estáticos
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-        }
+    server_name _;
+    
+    # Redirecionar para HTTPS se domínio configurado
+    if (\$host = $DOMAIN) {
+        return 301 https://\$host\$request_uri;
     }
-
-    # API Backend
-    location /api {
+    
+    # Configurações de segurança
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # Rate limiting
+    limit_req_zone \$binary_remote_addr zone=api:10m rate=10r/s;
+    limit_req zone=api burst=20 nodelay;
+    
+    # Proxy para API
+    location /api/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
@@ -305,171 +303,224 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
     }
-
-    # WebSocket
-    location /socket.io {
+    
+    # WebSocket support
+    location /socket.io/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+    
+    # Arquivos estáticos
+    location / {
+        root $APP_DIR/dist;
+        try_files \$uri \$uri/ /index.html;
+        
+        # Cache para arquivos estáticos
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+    }
+    
+    # Health check
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
     }
 }
 EOF
 
-# Ativar site
-ln -sf /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/
+    # Testar configuração do Nginx
+    nginx -t
+    
+    # Recarregar Nginx
+    systemctl reload nginx
+    
+    log_success "Nginx configurado!"
+}
 
-# Testar configuração
-nginx -t && systemctl reload nginx
-success "Nginx configurado (HTTP)"
+# Função para configurar SSL (se domínio fornecido)
+configure_ssl() {
+    if [[ -n "$DOMAIN" ]]; then
+        log_header "Configurando SSL..."
+        
+        log_info "Instalando Certbot..."
+        apt install -y certbot python3-certbot-nginx
+        
+        log_info "Obtendo certificado SSL..."
+        certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN
+        
+        log_success "SSL configurado para $DOMAIN!"
+    else
+        log_info "Domínio não fornecido - SSL não configurado"
+        log_warning "Para usar HTTPS, configure um domínio e execute: certbot --nginx -d seu-dominio.com"
+    fi
+}
 
-# 16. Instalar Certbot
-log "🔒 Instalando Certbot..."
-apt install -y certbot python3-certbot-nginx
-success "Certbot instalado"
+# Função para iniciar SISPAT com PM2
+start_sispat() {
+    log_header "Iniciando SISPAT..."
+    
+    cd $APP_DIR
+    
+    # Parar processos existentes
+    pm2 stop all 2>/dev/null || true
+    pm2 delete all 2>/dev/null || true
+    
+    # Iniciar aplicação
+    log_info "Iniciando aplicação com PM2..."
+    pm2 start ecosystem.production.config.cjs --env production
+    
+    # Salvar configuração do PM2
+    pm2 save
+    
+    log_success "SISPAT iniciado com PM2!"
+}
 
-# 17. Obter certificado SSL
-log "🔒 Obtendo certificado SSL..."
-# Verificar se o domínio está acessível
-log "🔍 Verificando se o domínio $DOMAIN está acessível..."
-if curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN | grep -q "200\|301\|302"; then
-    success "Domínio $DOMAIN está acessível"
-else
-    warning "⚠️ Domínio $DOMAIN pode não estar acessível. Continuando mesmo assim..."
-fi
-
-# Obter certificado SSL
-certbot --nginx -d $DOMAIN -d www.$DOMAIN --email $EMAIL --agree-tos --non-interactive --redirect
-success "Certificado SSL obtido"
-
-# 18. Configurar PM2
-log "⚙️ Configurando PM2..."
-# Criar diretório de logs
-mkdir -p logs
-# Iniciar aplicação com PM2
-pm2 start ecosystem.config.cjs --env production
-pm2 save
-pm2 startup
-success "PM2 configurado"
-
-# 19. Configurar backup automático
-log "💾 Configurando backup automático..."
-cat > /var/www/sispat/scripts/backup.sh << EOF
+# Função para configurar backup automático
+setup_backup() {
+    log_header "Configurando backup automático..."
+    
+    # Criar diretório de backup
+    mkdir -p /var/backups/sispat
+    
+    # Criar script de backup
+    cat > /usr/local/bin/sispat-backup.sh << 'EOF'
 #!/bin/bash
-# Backup automático do SISPAT
-DATE=\$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="/var/backups/sispat"
-mkdir -p \$BACKUP_DIR
+DATE=$(date +%Y%m%d_%H%M%S)
+APP_DIR="/var/www/sispat"
 
-# Backup do banco
-pg_dump -h localhost -U sispat_user -d sispat_production > \$BACKUP_DIR/sispat_db_\$DATE.sql
+# Backup do banco de dados
+pg_dump -h localhost -U sispat_user -d sispat_db > $BACKUP_DIR/db_backup_$DATE.sql
 
-# Backup dos arquivos
-tar -czf \$BACKUP_DIR/sispat_files_\$DATE.tar.gz /var/www/sispat
+# Backup dos arquivos da aplicação
+tar -czf $BACKUP_DIR/app_backup_$DATE.tar.gz -C $APP_DIR .
 
-# Limpar backups antigos (manter últimos 7 dias)
-find \$BACKUP_DIR -name "*.sql" -mtime +7 -delete
-find \$BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
+# Manter apenas os últimos 7 backups
+find $BACKUP_DIR -name "*.sql" -mtime +7 -delete
+find $BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
 
-echo "Backup concluído: \$DATE"
+echo "Backup concluído: $DATE"
 EOF
 
-chmod +x /var/www/sispat/scripts/backup.sh
+    chmod +x /usr/local/bin/sispat-backup.sh
+    
+    # Configurar cron para backup diário às 2h da manhã
+    (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/sispat-backup.sh") | crontab -
+    
+    log_success "Backup automático configurado!"
+}
 
-# Adicionar ao cron
-(crontab -l 2>/dev/null; echo "0 2 * * * /var/www/sispat/scripts/backup.sh") | crontab -
-success "Backup automático configurado"
+# Função para mostrar informações finais
+show_final_info() {
+    log_header "Instalação Concluída!"
+    
+    echo -e "\n${GREEN}🎉 SISPAT instalado com sucesso!${NC}"
+    echo -e "\n${CYAN}📋 INFORMAÇÕES DE ACESSO:${NC}"
+    
+    if [[ -n "$DOMAIN" ]]; then
+        echo -e "🌐 URL: ${YELLOW}https://$DOMAIN${NC}"
+    else
+        IP=$(hostname -I | awk '{print $1}')
+        echo -e "🌐 URL: ${YELLOW}http://$IP:8080${NC}"
+    fi
+    
+    echo -e "\n${CYAN}🔑 LOGIN PADRÃO:${NC}"
+    echo -e "📧 Email: ${YELLOW}admin@sispat.com${NC}"
+    echo -e "🔒 Senha: ${YELLOW}admin123${NC}"
+    echo -e "${RED}⚠️  IMPORTANTE: Altere a senha após o primeiro login!${NC}"
+    
+    echo -e "\n${CYAN}🗄️  BANCO DE DADOS:${NC}"
+    echo -e "📊 Nome: ${YELLOW}$DB_NAME${NC}"
+    echo -e "👤 Usuário: ${YELLOW}$DB_USER${NC}"
+    echo -e "🔑 Senha: ${YELLOW}$DB_PASSWORD${NC}"
+    
+    echo -e "\n${CYAN}🛠️  COMANDOS ÚTEIS:${NC}"
+    echo -e "📊 Status: ${YELLOW}pm2 status${NC}"
+    echo -e "📝 Logs: ${YELLOW}pm2 logs${NC}"
+    echo -e "🔄 Reiniciar: ${YELLOW}pm2 restart all${NC}"
+    echo -e "⏹️  Parar: ${YELLOW}pm2 stop all${NC}"
+    echo -e "▶️  Iniciar: ${YELLOW}pm2 start all${NC}"
+    
+    echo -e "\n${CYAN}📁 DIRETÓRIOS IMPORTANTES:${NC}"
+    echo -e "📂 Aplicação: ${YELLOW}$APP_DIR${NC}"
+    echo -e "💾 Backups: ${YELLOW}/var/backups/sispat${NC}"
+    echo -e "📋 Logs: ${YELLOW}$APP_DIR/logs${NC}"
+    
+    echo -e "\n${GREEN}✅ Próximos passos:${NC}"
+    echo -e "1. 🌐 Acesse o sistema no navegador"
+    echo -e "2. 🔑 Faça login com as credenciais acima"
+    echo -e "3. 🔒 Altere a senha do administrador"
+    echo -e "4. ⚙️  Configure seu município"
+    echo -e "5. 👥 Adicione usuários conforme necessário"
+    
+    echo -e "\n${BLUE}📞 Precisa de ajuda?${NC}"
+    echo -e "📖 Consulte: ${YELLOW}docs/GUIA-INSTALACAO-SIMPLES-VPS.md${NC}"
+    echo -e "🐛 Problemas? Execute: ${YELLOW}pm2 logs${NC}"
+    
+    echo -e "\n${PURPLE}🚀 Seu SISPAT está funcionando!${NC}"
+}
 
-# 19. Verificação final
-log "🔍 Verificação final..."
+# Função principal
+main() {
+    clear
+    echo -e "${PURPLE}"
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║                                                              ║"
+    echo "║           🚀 INSTALAÇÃO SIMPLES - SISPAT VPS                ║"
+    echo "║                                                              ║"
+    echo "║              Para pessoas sem conhecimento técnico           ║"
+    echo "║                                                              ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    
+    # Verificações iniciais
+    check_root
+    check_os
+    
+    # Perguntar sobre domínio
+    echo -e "\n${CYAN}🌐 CONFIGURAÇÃO DE DOMÍNIO${NC}"
+    echo -e "Se você tem um domínio (ex: meusispat.com.br), digite abaixo:"
+    echo -e "Se não tem domínio, apenas pressione Enter para continuar"
+    echo -e "\n${YELLOW}Digite seu domínio ou pressione Enter para pular:${NC}"
+    read -r DOMAIN
+    
+    if [[ -n "$DOMAIN" ]]; then
+        log_info "Domínio configurado: $DOMAIN"
+    else
+        log_info "Continuando sem domínio (usando IP)"
+    fi
+    
+    pause
+    
+    # Executar instalação
+    update_system
+    install_nodejs
+    install_postgresql
+    install_nginx
+    install_pm2
+    setup_sispat
+    build_sispat
+    configure_nginx
+    configure_ssl
+    start_sispat
+    setup_backup
+    
+    # Mostrar informações finais
+    show_final_info
+    
+    echo -e "\n${GREEN}🎉 Instalação concluída com sucesso!${NC}"
+    echo -e "${YELLOW}Pressione Enter para finalizar...${NC}"
+    read -r
+}
 
-# Verificar se todos os serviços estão rodando
-if systemctl is-active --quiet postgresql; then
-    success "✅ PostgreSQL rodando"
-else
-    error "❌ PostgreSQL não está rodando"
-fi
-
-if systemctl is-active --quiet redis-server; then
-    success "✅ Redis rodando"
-else
-    error "❌ Redis não está rodando"
-fi
-
-if systemctl is-active --quiet nginx; then
-    success "✅ Nginx rodando"
-else
-    error "❌ Nginx não está rodando"
-fi
-
-if pm2 list | grep -q "sispat"; then
-    success "✅ Aplicação SISPAT rodando"
-else
-    error "❌ Aplicação SISPAT não está rodando"
-fi
-
-# 20. Configuração automática de domínio
-log "🌐 Configurando domínio automaticamente..."
-if [ -f "scripts/configure-production-domain.sh" ]; then
-    chmod +x scripts/configure-production-domain.sh
-    ./scripts/configure-production-domain.sh
-    success "✅ Domínio configurado automaticamente"
-else
-    warning "⚠️ Script de configuração de domínio não encontrado"
-fi
-
-# 21. Corrigir erro createContext DEFINITIVAMENTE
-log "🔧 Aplicando correção DEFINITIVA para erro createContext..."
-if [ -f "scripts/fix-createcontext-definitive.sh" ]; then
-    chmod +x scripts/fix-createcontext-definitive.sh
-    ./scripts/fix-createcontext-definitive.sh
-    success "✅ Correção DEFINITIVA createContext aplicada"
-else
-    warning "⚠️ Script de correção DEFINITIVA createContext não encontrado"
-fi
-
-# 22. Corrigir erro vite.config.ts se necessário
-log "🔧 Aplicando correção para erro vite.config.ts..."
-if [ -f "scripts/fix-vite-config-error.sh" ]; then
-    chmod +x scripts/fix-vite-config-error.sh
-    ./scripts/fix-vite-config-error.sh
-    success "✅ Correção vite.config.ts aplicada"
-else
-    warning "⚠️ Script de correção vite.config.ts não encontrado"
-fi
-
-# 23. Instruções finais
-log "📝 INSTALAÇÃO CONCLUÍDA!"
-echo ""
-echo "🎉 SISPAT INSTALADO COM SUCESSO!"
-echo "=================================="
-echo ""
-echo "📋 INFORMAÇÕES DA INSTALAÇÃO:"
-echo "🌐 Domínio: https://$DOMAIN"
-echo "🔒 SSL: Configurado automaticamente"
-echo "🗄️ Banco: sispat_production"
-echo "👤 Usuário: sispat_user"
-echo "🔑 Senha: [CONFIGURADA]"
-echo ""
-echo "📋 PRÓXIMOS PASSOS:"
-echo "1. Acesse sua aplicação: https://$DOMAIN"
-echo "2. Crie o usuário administrador"
-echo "3. Configure suas preferências"
-echo ""
-echo "🔧 COMANDOS ÚTEIS:"
-echo "   - Ver logs: pm2 logs"
-echo "   - Status: pm2 status"
-echo "   - Reiniciar: pm2 restart all"
-echo "   - Backup: /var/www/sispat/scripts/backup.sh"
-echo ""
-echo "📞 Para suporte, verifique os logs em:"
-echo "   /var/www/sispat/logs/"
-echo "   /root/.pm2/logs/"
-echo "   /var/log/nginx/"
-echo "   /var/log/postgresql/"
-echo ""
-
-success "🎉 Instalação simplificada VPS concluída com sucesso!"
-success "✅ SISPAT está rodando em produção!"
-success "🚀 Acesse https://$DOMAIN para começar!"
+# Executar função principal
+main "$@"
