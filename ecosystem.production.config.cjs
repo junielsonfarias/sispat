@@ -44,9 +44,7 @@ module.exports = {
       // Configurações de ambiente
       env_file: '.env',
 
-      // Configurações de segurança
-      uid: 'sispat',
-      gid: 'sispat',
+      // Configurações de segurança (removidas para evitar problemas de usuário)
 
       // Configurações de health check
       health_check_grace_period: 3000,

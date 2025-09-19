@@ -291,10 +291,9 @@ pm2 kill 2>/dev/null || true
 # Navegar de volta para o SISPAT
 cd /var/www/sispat
 
-# Criar arquivo de configuração do PM2 se não existir
-if [ ! -f "ecosystem.production.config.cjs" ]; then
-    log_info "Criando arquivo de configuração do PM2..."
-    cat > ecosystem.production.config.cjs << EOF
+# Corrigir arquivo de configuração do PM2
+log_info "Corrigindo configuração do PM2..."
+cat > ecosystem.production.config.cjs << 'EOF'
 module.exports = {
   apps: [{
     name: 'sispat-backend',
@@ -318,7 +317,6 @@ module.exports = {
   }]
 };
 EOF
-fi
 
 # Iniciar aplicação com PM2
 log_info "Iniciando aplicação com PM2..."

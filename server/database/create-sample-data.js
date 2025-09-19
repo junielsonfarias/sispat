@@ -467,6 +467,7 @@ async function createSampleData() {
         `
         INSERT INTO customization_settings (chave, valor, descricao, categoria, created_by)
         VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (chave) DO NOTHING
       `,
         [
           setting.chave,

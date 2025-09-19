@@ -384,12 +384,12 @@ chmod +x fix-errors.sh
     server {
         listen 80;
         server_name sispat.vps-kinghost.net;
-
+    
         location / {
             root /var/www/sispat/dist;
             try_files $uri $uri/ /index.html;
         }
-
+    
         location /api/ {
             proxy_pass http://localhost:3001;
             proxy_set_header Host $host;
@@ -397,10 +397,76 @@ chmod +x fix-errors.sh
         }
     }
     EOF
-
+    
     # Testar e recarregar
     nginx -t && systemctl reload nginx
     ```
+
+### **❌ "User sispat cannot be found" no PM2**
+
+**Causa:** Configuração do PM2 tentando usar usuário inexistente.
+
+**Solução IMEDIATA:**
+
+1.  **Executar script de correção específica:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-pm2-user-error.sh -o fix-pm2.sh
+    chmod +x fix-pm2.sh
+    ./fix-pm2.sh
+    ```
+
+2.  **Ou corrigir manualmente:**
+
+    ```bash
+    # Parar PM2
+    pm2 kill
+    
+    # Navegar para o diretório do SISPAT
+    cd /var/www/sispat
+    
+    # Corrigir configuração do PM2
+    cat > ecosystem.production.config.cjs << 'EOF'
+    module.exports = {
+      apps: [{
+        name: 'sispat-backend',
+        script: 'server/index.js',
+        cwd: '/var/www/sispat',
+        instances: 'max',
+        exec_mode: 'cluster',
+        env: {
+          NODE_ENV: 'production',
+          PORT: 3001
+        },
+        log_file: '/var/www/sispat/logs/pm2.log',
+        out_file: '/var/www/sispat/logs/pm2-out.log',
+        error_file: '/var/www/sispat/logs/pm2-error.log',
+        merge_logs: true,
+        time: true,
+        max_restarts: 10,
+        min_uptime: '10s',
+        max_memory_restart: '1G',
+        node_args: '--max-old-space-size=1024'
+      }]
+    };
+    EOF
+    
+    # Iniciar PM2
+    pm2 start ecosystem.production.config.cjs --env production
+    pm2 save
+    ```
+
+### **❌ "duplicate key value violates unique constraint"**
+
+**Causa:** Script de dados de exemplo tentando inserir dados duplicados.
+
+**Solução IMEDIATA:**
+
+```bash
+# Este erro é normal e não impede o funcionamento
+# Os dados duplicados são ignorados automaticamente
+# O sistema continuará funcionando normalmente
+```
 
 ### **❌ "destination path '.' already exists and is not an empty directory"**
 
