@@ -361,6 +361,12 @@ setup_sispat() {
     
     log_info "Baixando código do SISPAT..."
     
+    # Limpar diretório se já existir
+    if [ -d ".git" ] || [ -f "package.json" ]; then
+        log_info "Diretório já existe, limpando..."
+        rm -rf .git package.json package-lock.json node_modules dist
+    fi
+    
     # Baixar código do GitHub
     git clone https://github.com/junielsonfarias/sispat.git .
     
