@@ -92,6 +92,8 @@ curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts
 - **✅ Tabelas criadas automaticamente**
 - **✅ Dados iniciais inseridos**
 - **✅ Backup automático configurado**
+- **👤 Usuário:** `postgres`
+- **🔑 Senha:** `postgres`
 - **📁 Credenciais salvas em:** `/root/sispat-db-credentials.txt`
 
 ---
@@ -219,7 +221,7 @@ systemctl status postgresql
 
 3.  **Testar conexão manual:**
     ```bash
-    PGPASSWORD=SUA_SENHA psql -h localhost -U sispat_user -d sispat_db -c "SELECT version();"
+    PGPASSWORD=postgres psql -h localhost -U postgres -d sispat_db -c "SELECT version();"
     ```
 
 ---
@@ -336,6 +338,8 @@ tail -f /var/log/postgresql/postgresql-*.log
 - **✅ PostgreSQL configurado automaticamente**
 - **✅ Tabelas criadas automaticamente**
 - **✅ Backup automático configurado**
+- **👤 Usuário:** `postgres`
+- **🔑 Senha:** `postgres`
 - **📁 Credenciais:** `/root/sispat-db-credentials.txt`
 
 ### **Comandos úteis:**
@@ -344,6 +348,7 @@ tail -f /var/log/postgresql/postgresql-*.log
 - **Logs:** `pm2 logs`
 - **Reiniciar:** `pm2 restart all`
 - **Banco:** `systemctl status postgresql`
+- **Conectar:** `PGPASSWORD=postgres psql -h localhost -U postgres -d sispat_db`
 - **Backup:** `/usr/local/bin/sispat-backup.sh`
 
 ---

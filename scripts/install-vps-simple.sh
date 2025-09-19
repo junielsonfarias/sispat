@@ -122,11 +122,11 @@ systemctl enable postgresql
     # Configurar PostgreSQL
     log_info "Configurando PostgreSQL..."
     
-    # Gerar senhas seguras
-    DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+    # Configurar credenciais padrão para produção
+    DB_PASSWORD="postgres"
     DB_NAME="sispat_db"
-    DB_USER="sispat_user"
-    ADMIN_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+    DB_USER="postgres"
+    ADMIN_PASSWORD="postgres"
     
     # Detectar versão do PostgreSQL instalada
     PG_VERSION=$(ls /etc/postgresql/ | head -1)
@@ -233,8 +233,8 @@ EOF
         sleep 5
     fi
 
-    # Criar usuário e banco
-    log_info "Criando usuário e banco de dados..."
+    # Configurar usuário postgres e banco
+    log_info "Configurando usuário postgres e banco de dados..."
     
     # Verificar se o usuário postgres pode conectar
     if ! sudo -u postgres -H psql -c "SELECT 1;" > /dev/null 2>&1; then
@@ -242,9 +242,9 @@ EOF
         exit 1
     fi
     
-    # Criar usuário (ignorar erro se já existir)
-    log_info "Criando usuário $DB_USER..."
-    sudo -u postgres -H psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || log_info "Usuário $DB_USER já existe"
+    # Configurar senha do usuário postgres
+    log_info "Configurando senha do usuário postgres..."
+    sudo -u postgres -H psql -c "ALTER USER postgres PASSWORD '$DB_PASSWORD';" 2>/dev/null || true
     
     # Criar banco de dados (ignorar erro se já existir)
     log_info "Criando banco de dados $DB_NAME..."
@@ -253,11 +253,6 @@ EOF
     # Conceder privilégios
     log_info "Configurando privilégios..."
     sudo -u postgres -H psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" 2>/dev/null || true
-    sudo -u postgres -H psql -c "ALTER USER $DB_USER CREATEDB;" 2>/dev/null || true
-    
-    # Configurar senha do postgres para backup
-    log_info "Configurando senha do usuário postgres..."
-    sudo -u postgres -H psql -c "ALTER USER postgres PASSWORD '$ADMIN_PASSWORD';" 2>/dev/null || true
     
     # Testar conexão
     log_info "Testando conexão com o banco..."
@@ -314,10 +309,6 @@ EOF
 Banco de Dados: $DB_NAME
 Usuário: $DB_USER
 Senha: $DB_PASSWORD
-
-Admin PostgreSQL:
-Usuário: postgres
-Senha: $ADMIN_PASSWORD
 
 IMPORTANTE: Mantenha este arquivo seguro e não compartilhe!
 EOF
@@ -392,9 +383,10 @@ cat > .env << EOF
 # Database Configuration (PostgreSQL)
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=$DB_NAME
-DB_USER=$DB_USER
-DB_PASSWORD=$DB_PASSWORD
+DB_NAME=sispat_db
+DB_USER=postgres
+DB_PASSWORD=postgres
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sispat_db
 DB_MAX_CONNECTIONS=100
 DB_IDLE_TIMEOUT=120000
 DB_CONNECTION_TIMEOUT=60000
@@ -668,11 +660,10 @@ BACKUP_DIR="/var/backups/sispat"
 DATE=\$(date +%Y%m%d_%H%M%S)
 APP_DIR="/var/www/sispat"
 
-# Carregar credenciais do banco
-source /root/sispat-db-credentials.txt 2>/dev/null || {
-    echo "Erro: Não foi possível carregar credenciais do banco"
-    exit 1
-}
+# Configurar credenciais do banco
+DB_NAME="sispat_db"
+DB_USER="postgres"
+DB_PASSWORD="postgres"
 
 # Backup do banco de dados
 echo "Iniciando backup do banco de dados..."

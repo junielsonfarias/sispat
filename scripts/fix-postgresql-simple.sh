@@ -58,11 +58,11 @@ if ! systemctl is-active --quiet postgresql; then
     sleep 5
 fi
 
-# Configurar variáveis
+# Configurar variáveis padrão para produção
 DB_NAME="sispat_db"
-DB_USER="sispat_user"
-DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
-ADMIN_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+DB_USER="postgres"
+DB_PASSWORD="postgres"
+ADMIN_PASSWORD="postgres"
 
 log_info "Configurando banco de dados..."
 
@@ -71,17 +71,16 @@ run_psql() {
     sudo -u postgres -H psql -c "$1" 2>/dev/null || true
 }
 
-# Remover usuário e banco existentes
-log_info "Removendo usuário e banco existentes..."
+# Remover banco existente se houver
+log_info "Removendo banco existente (se houver)..."
 run_psql "DROP DATABASE IF EXISTS $DB_NAME;"
-run_psql "DROP USER IF EXISTS $DB_USER;"
 
 # Aguardar
 sleep 2
 
-# Criar usuário
-log_info "Criando usuário $DB_USER..."
-run_psql "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+# Configurar senha do usuário postgres
+log_info "Configurando senha do usuário postgres..."
+run_psql "ALTER USER postgres PASSWORD '$DB_PASSWORD';"
 
 # Criar banco
 log_info "Criando banco $DB_NAME..."
@@ -90,11 +89,6 @@ run_psql "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
 # Configurar privilégios
 log_info "Configurando privilégios..."
 run_psql "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
-run_psql "ALTER USER $DB_USER CREATEDB;"
-
-# Configurar senha do postgres
-log_info "Configurando senha do postgres..."
-run_psql "ALTER USER postgres PASSWORD '$ADMIN_PASSWORD';"
 
 # Testar conexão
 log_info "Testando conexão..."
@@ -114,10 +108,6 @@ cat > /root/sispat-db-credentials.txt << EOF
 Banco de Dados: $DB_NAME
 Usuário: $DB_USER
 Senha: $DB_PASSWORD
-
-Admin PostgreSQL:
-Usuário: postgres
-Senha: $ADMIN_PASSWORD
 
 IMPORTANTE: Mantenha este arquivo seguro e não compartilhe!
 EOF
