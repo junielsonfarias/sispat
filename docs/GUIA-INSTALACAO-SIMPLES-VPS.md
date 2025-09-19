@@ -204,13 +204,15 @@ systemctl status postgresql
 **Solução:**
 
 1.  **Executar script de correção de autenticação:**
+
     ```bash
-    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-auth.sh -o fix-auth.sh
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-simple.sh -o fix-auth.sh
     chmod +x fix-auth.sh
     ./fix-auth.sh
     ```
 
 2.  **Verificar credenciais:**
+
     ```bash
     cat /root/sispat-db-credentials.txt
     ```

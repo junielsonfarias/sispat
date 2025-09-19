@@ -42,6 +42,9 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+# Configurar diretório de trabalho para evitar problemas de permissão
+cd /tmp
+
 log_header "Corrigindo autenticação do PostgreSQL..."
 
 # Detectar versão do PostgreSQL
@@ -137,18 +140,27 @@ sudo -u postgres -H psql -c "DROP USER IF EXISTS $DB_USER;" 2>/dev/null || true
 log_info "Removendo banco existente (se houver)..."
 sudo -u postgres -H psql -c "DROP DATABASE IF EXISTS $DB_NAME;" 2>/dev/null || true
 
+# Aguardar um pouco para garantir que a remoção foi processada
+sleep 2
+
 # Criar usuário novamente
 log_info "Criando usuário $DB_USER..."
-sudo -u postgres -H psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" || {
-    log_error "Erro ao criar usuário!"
-    exit 1
+sudo -u postgres -H psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || {
+    log_warning "Usuário já existe, tentando alterar senha..."
+    sudo -u postgres -H psql -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" || {
+        log_error "Erro ao configurar usuário!"
+        exit 1
+    }
 }
 
 # Criar banco de dados novamente
 log_info "Criando banco de dados $DB_NAME..."
-sudo -u postgres -H psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" || {
-    log_error "Erro ao criar banco de dados!"
-    exit 1
+sudo -u postgres -H psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null || {
+    log_warning "Banco já existe, tentando alterar proprietário..."
+    sudo -u postgres -H psql -c "ALTER DATABASE $DB_NAME OWNER TO $DB_USER;" || {
+        log_error "Erro ao configurar banco de dados!"
+        exit 1
+    }
 }
 
 # Conceder privilégios

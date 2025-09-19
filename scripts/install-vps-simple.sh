@@ -276,15 +276,15 @@ EOF
                 tail -20 /var/log/postgresql/postgresql-$PG_VERSION-main.log
                 
                 log_warning "Tentando executar script de correção de autenticação..."
-                if [ -f "/root/fix-postgresql-auth.sh" ]; then
-                    log_info "Executando script de correção..."
-                    chmod +x /root/fix-postgresql-auth.sh
-                    /root/fix-postgresql-auth.sh
+                if [ -f "/root/fix-postgresql-simple.sh" ]; then
+                    log_info "Executando script de correção simples..."
+                    chmod +x /root/fix-postgresql-simple.sh
+                    /root/fix-postgresql-simple.sh
                 else
                     log_info "Script de correção não encontrado. Baixando..."
-                    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-auth.sh -o /root/fix-postgresql-auth.sh
-                    chmod +x /root/fix-postgresql-auth.sh
-                    /root/fix-postgresql-auth.sh
+                    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-postgresql-simple.sh -o /root/fix-postgresql-simple.sh
+                    chmod +x /root/fix-postgresql-simple.sh
+                    /root/fix-postgresql-simple.sh
                 fi
                 
                 # Tentar conectar novamente após correção
