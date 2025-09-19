@@ -4,7 +4,8 @@
   "description": "Sistema de Gestão Patrimonial",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"pnpm run dev:frontend\" \"pnpm run dev:backend\"",
+    "dev": "node scripts/start-dev.js",
+    "dev:simple": "concurrently \"pnpm run dev:frontend\" \"pnpm run dev:backend\"",
     "dev:frontend": "vite",
     "dev:backend": "nodemon server/index.js",
     "build": "tsc && vite build",
