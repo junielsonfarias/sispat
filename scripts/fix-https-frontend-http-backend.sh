@@ -48,7 +48,7 @@ APP_DIR="/var/www/sispat"
 cd $APP_DIR || { log_error "Diretório da aplicação não encontrado: $APP_DIR"; exit 1; }
 
 # Detectar domínio
-DOMAIN=$(grep "server_name" /etc/nginx/sites-available/sispat | awk '{print $2}' | sed 's/;//')
+DOMAIN=$(grep "server_name" /etc/nginx/sites-available/sispat | awk '{print $2}' | sed 's/;//' | head -1)
 if [ -z "$DOMAIN" ]; then
     DOMAIN="localhost"
 fi
@@ -207,14 +207,27 @@ EOF
 # 3. Corrigir configuração do backend para aceitar requisições HTTPS
 log_header "3. Corrigindo configuração do backend..."
 
+# Verificar se estamos no diretório correto
+if [ ! -f ".env" ]; then
+    log_error "Arquivo .env não encontrado no diretório atual: $(pwd)"
+    log_info "Tentando encontrar o arquivo .env..."
+    if [ -f "/var/www/sispat/.env" ]; then
+        log_info "Encontrado .env em /var/www/sispat/"
+        cd /var/www/sispat
+    else
+        log_error "Arquivo .env não encontrado em lugar nenhum!"
+        exit 1
+    fi
+fi
+
 # Atualizar .env para aceitar tanto HTTP quanto HTTPS
 if [ -f ".env" ]; then
     # Fazer backup do .env
     cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
     
     # Atualizar configurações CORS
-    sed -i '/^CORS_ORIGIN=/c\CORS_ORIGIN=https://'$DOMAIN',http://'$DOMAIN',http://localhost:3000' .env
-    sed -i '/^ALLOWED_ORIGINS=/c\ALLOWED_ORIGINS=https://'$DOMAIN',http://'$DOMAIN',http://localhost:3000' .env
+    sed -i "/^CORS_ORIGIN=/c\CORS_ORIGIN=https://$DOMAIN,http://$DOMAIN,http://localhost:3000" .env
+    sed -i "/^ALLOWED_ORIGINS=/c\ALLOWED_ORIGINS=https://$DOMAIN,http://$DOMAIN,http://localhost:3000" .env
     
     # Adicionar configurações para funcionar com proxy
     if ! grep -q "TRUST_PROXY" .env; then
@@ -238,14 +251,14 @@ if [ -d "dist" ] && [ -f "dist/index.html" ]; then
     log_info "Arquivos de build encontrados, corrigindo URLs..."
     
     # Corrigir URLs nos arquivos JavaScript
-    find dist -name "*.js" -type f -exec sed -i 's|https://sispat\.vps-kinghost\.net/api|/api|g' {} \;
-    find dist -name "*.js" -type f -exec sed -i 's|http://sispat\.vps-kinghost\.net/api|/api|g' {} \;
+    find dist -name "*.js" -type f -exec sed -i "s|https://$DOMAIN/api|/api|g" {} \;
+    find dist -name "*.js" -type f -exec sed -i "s|http://$DOMAIN/api|/api|g" {} \;
     find dist -name "*.js" -type f -exec sed -i 's|https://localhost:3001/api|/api|g' {} \;
     find dist -name "*.js" -type f -exec sed -i 's|http://localhost:3001/api|/api|g' {} \;
     
     # Corrigir URLs nos arquivos HTML
-    find dist -name "*.html" -type f -exec sed -i 's|https://sispat\.vps-kinghost\.net/api|/api|g' {} \;
-    find dist -name "*.html" -type f -exec sed -i 's|http://sispat\.vps-kinghost\.net/api|/api|g' {} \;
+    find dist -name "*.html" -type f -exec sed -i "s|https://$DOMAIN/api|/api|g" {} \;
+    find dist -name "*.html" -type f -exec sed -i "s|http://$DOMAIN/api|/api|g" {} \;
     
     log_success "URLs nos arquivos de build corrigidas"
 else
