@@ -129,6 +129,9 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 
+// Configurar trust proxy para funcionar com Nginx
+app.set('trust proxy', true);
+
 // Request tracking middleware (deve ser o primeiro)
 app.use(requestTracker);
 
@@ -565,6 +568,14 @@ const globalLimiter = rateLimit({
   },
   standardHeaders: true, // Retorna rate limit info nos headers
   legacyHeaders: false, // Desabilita headers X-RateLimit-*
+  skip: req => {
+    // Pular rate limiting para requisições com X-Forwarded-For (vindas do Nginx)
+    return req.headers['x-forwarded-for'];
+  },
+  keyGenerator: req => {
+    // Usar X-Forwarded-For se disponível, senão usar IP direto
+    return req.headers['x-forwarded-for'] || req.ip;
+  },
   handler: (req, res) => {
     console.warn(`🚨 Rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json({
@@ -584,6 +595,14 @@ const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: req => {
+    // Pular rate limiting para requisições com X-Forwarded-For (vindas do Nginx)
+    return req.headers['x-forwarded-for'];
+  },
+  keyGenerator: req => {
+    // Usar X-Forwarded-For se disponível, senão usar IP direto
+    return req.headers['x-forwarded-for'] || req.ip;
+  },
   handler: (req, res) => {
     console.warn(`🚨 Auth rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json({
