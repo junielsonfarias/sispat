@@ -56,28 +56,12 @@ export default defineConfig(({ mode }) => {
           },
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
-              // React e dependências principais - DEVE SER PRIMEIRO
+              // Simplificar chunks para evitar conflitos
               if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
                 return 'vendor-react';
               }
-              // Radix UI Components
-              if (id.includes('@radix-ui')) {
-                return 'vendor-radix';
-              }
-              // Utility libraries
-              if (id.includes('axios') || id.includes('zod') || id.includes('date-fns') || id.includes('lodash')) {
-                return 'vendor-utils';
-              }
-              // PDF and document libraries
-              if (id.includes('jspdf') || id.includes('xlsx') || id.includes('qrcode')) {
-                return 'vendor-documents';
-              }
-              // Chart libraries - INCLUIR NO BUNDLE PRINCIPAL para evitar conflitos
-              // if (id.includes('recharts') || id.includes('chart')) {
-              //   return 'vendor-charts';
-              // }
-              // Resto das dependências
-              return 'vendor-misc';
+              // Incluir tudo mais no bundle principal para evitar conflitos
+              return null;
             }
             return null;
           },
@@ -85,7 +69,7 @@ export default defineConfig(({ mode }) => {
           assetFileNames: 'assets/[name]-[hash].[ext]',
         },
       },
-      minify: mode === 'production' ? 'esbuild' : false,
+      minify: false, // Desativar minificação para evitar conflitos com recharts
       chunkSizeWarningLimit: 1000,
       target: 'es2015',
       reportCompressedSize: false,
@@ -96,13 +80,13 @@ export default defineConfig(({ mode }) => {
       include: [
         'react', 
         'react-dom', 
-        'react-router-dom',
-        'recharts' // Incluir recharts na otimização para evitar conflitos
+        'react-router-dom'
       ],
       exclude: [
         '@vite/client', 
         '@vite/env',
-        'speakeasy' // Excluir módulo Node que não deve estar no frontend
+        'speakeasy', // Excluir módulo Node que não deve estar no frontend
+        'recharts' // Excluir recharts da otimização para evitar conflitos
       ],
     },
     

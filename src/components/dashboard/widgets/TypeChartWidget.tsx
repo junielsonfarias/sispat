@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Pie, PieChart, Cell, Tooltip, Legend } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { SafeChart } from '@/components/ui/safe-chart';
 import { usePatrimonio } from '@/contexts/PatrimonioContext';
 
 export const TypeChartWidget = () => {
@@ -29,23 +30,25 @@ export const TypeChartWidget = () => {
   }, [patrimonios]);
 
   return (
-    <ChartContainer config={{}} className='h-[300px] w-full'>
-      <PieChart>
-        <Tooltip content={<ChartTooltipContent />} />
-        <Pie
-          data={typeChartData}
-          dataKey='value'
-          nameKey='name'
-          cx='50%'
-          cy='50%'
-          outerRadius={80}
-        >
-          {typeChartData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.fill} />
-          ))}
-        </Pie>
-        <Legend />
-      </PieChart>
-    </ChartContainer>
+    <SafeChart>
+      <ChartContainer config={{}} className='h-[300px] w-full'>
+        <PieChart>
+          <Tooltip content={<ChartTooltipContent />} />
+          <Pie
+            data={typeChartData}
+            dataKey='value'
+            nameKey='name'
+            cx='50%'
+            cy='50%'
+            outerRadius={80}
+          >
+            {typeChartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.fill} />
+            ))}
+          </Pie>
+          <Legend />
+        </PieChart>
+      </ChartContainer>
+    </SafeChart>
   );
 };
