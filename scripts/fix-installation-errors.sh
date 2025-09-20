@@ -138,11 +138,39 @@ CREATE TABLE IF NOT EXISTS label_templates (
 
 # Garantir índices/constraints necessários para ON CONFLICT
 execute_sql "
--- Remover duplicados de usuários por email, mantendo o menor id
-DELETE FROM users a
-USING users b
-WHERE a.email = b.email
-  AND a.id > b.id;
+-- Verificar e remover duplicados de usuários por email
+WITH duplicates AS (
+    SELECT email, MIN(id) as min_id
+    FROM users
+    GROUP BY email
+    HAVING COUNT(*) > 1
+)
+DELETE FROM users
+WHERE id NOT IN (
+    SELECT min_id FROM duplicates
+) AND email IN (SELECT email FROM duplicates);
+"
+
+# Verificar se ainda há duplicados
+execute_sql "
+-- Verificar duplicados restantes
+SELECT email, COUNT(*) as count
+FROM users
+GROUP BY email
+HAVING COUNT(*) > 1;
+"
+
+execute_sql "
+-- Forçar remoção de duplicados restantes (mantendo apenas o primeiro)
+WITH ranked_users AS (
+    SELECT id, email,
+           ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) as rn
+    FROM users
+)
+DELETE FROM users
+WHERE id IN (
+    SELECT id FROM ranked_users WHERE rn > 1
+);
 "
 
 execute_sql "
