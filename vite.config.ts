@@ -72,10 +72,10 @@ export default defineConfig(({ mode }) => {
               if (id.includes('jspdf') || id.includes('xlsx') || id.includes('qrcode')) {
                 return 'vendor-documents';
               }
-              // Chart libraries - DEPOIS do React
-              if (id.includes('recharts') || id.includes('chart')) {
-                return 'vendor-charts';
-              }
+              // Chart libraries - INCLUIR NO BUNDLE PRINCIPAL para evitar conflitos
+              // if (id.includes('recharts') || id.includes('chart')) {
+              //   return 'vendor-charts';
+              // }
               // Resto das dependências
               return 'vendor-misc';
             }
@@ -96,13 +96,13 @@ export default defineConfig(({ mode }) => {
       include: [
         'react', 
         'react-dom', 
-        'react-router-dom'
+        'react-router-dom',
+        'recharts' // Incluir recharts na otimização para evitar conflitos
       ],
       exclude: [
         '@vite/client', 
         '@vite/env',
-        'speakeasy', // Excluir módulo Node que não deve estar no frontend
-        'recharts' // Excluir recharts da otimização para evitar conflitos
+        'speakeasy' // Excluir módulo Node que não deve estar no frontend
       ],
     },
     
