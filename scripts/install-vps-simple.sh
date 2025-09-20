@@ -493,16 +493,16 @@ NODE_ENV=production
 HOST=0.0.0.0
 
 # CORS Configuration
-ALLOWED_ORIGINS=http://localhost:8080,http://$(hostname -I | awk '{print $1}'):8080
-CORS_ORIGIN=http://localhost:8080,http://$(hostname -I | awk '{print $1}'):8080
+ALLOWED_ORIGINS=http://$(hostname -I | awk '{print $1}'),http://$(hostname -I | awk '{print $1}'):80
+CORS_ORIGIN=http://$(hostname -I | awk '{print $1}'),http://$(hostname -I | awk '{print $1}'):80
 CORS_CREDENTIALS=true
 
 # Frontend Configuration
-VITE_PORT=8080
-VITE_API_TARGET=http://localhost:3001
-VITE_API_URL=http://localhost:3001/api
-VITE_BACKEND_URL=http://localhost:3001
-VITE_DOMAIN=http://$(hostname -I | awk '{print $1}'):8080
+VITE_PORT=80
+VITE_API_TARGET=http://$(hostname -I | awk '{print $1}')
+VITE_API_URL=http://$(hostname -I | awk '{print $1}')/api
+VITE_BACKEND_URL=http://$(hostname -I | awk '{print $1}')
+VITE_DOMAIN=http://$(hostname -I | awk '{print $1}')
 
 # Email Configuration (for password reset, notifications)
 SMTP_HOST=
@@ -562,10 +562,15 @@ EOF
     # Se o usuário forneceu um domínio, adicionar ao .env
     if [[ -n "$DOMAIN" ]]; then
         log_info "Configurando domínio: $DOMAIN"
-        sed -i "s|ALLOWED_ORIGINS=.*|ALLOWED_ORIGINS=https://$DOMAIN,http://$DOMAIN|" .env
-        echo "VITE_DOMAIN=https://$DOMAIN" >> .env
-        echo "VITE_BACKEND_URL=https://$DOMAIN" >> .env
-        echo "VITE_API_URL=https://$DOMAIN/api" >> .env
+        # Atualizar configurações CORS para usar domínio
+        sed -i "s|ALLOWED_ORIGINS=.*|ALLOWED_ORIGINS=http://$DOMAIN,https://$DOMAIN|" .env
+        sed -i "s|CORS_ORIGIN=.*|CORS_ORIGIN=http://$DOMAIN,https://$DOMAIN|" .env
+        
+        # Atualizar configurações do frontend para usar domínio
+        sed -i "s|VITE_DOMAIN=.*|VITE_DOMAIN=http://$DOMAIN|" .env
+        sed -i "s|VITE_BACKEND_URL=.*|VITE_BACKEND_URL=http://$DOMAIN|" .env
+        sed -i "s|VITE_API_URL=.*|VITE_API_URL=http://$DOMAIN/api|" .env
+        sed -i "s|VITE_API_TARGET=.*|VITE_API_TARGET=http://$DOMAIN|" .env
     fi
     
     log_success "SISPAT configurado!"
@@ -679,6 +684,42 @@ build_sispat() {
         fi
     fi
     
+    # Corrigir URLs nos arquivos de build para usar domínio/IP correto
+    log_info "Corrigindo URLs nos arquivos de build..."
+    
+    if [[ -n "$DOMAIN" ]]; then
+        # Usar domínio configurado
+        FRONTEND_URL="http://$DOMAIN"
+        API_URL="http://$DOMAIN/api"
+        log_info "Configurando URLs para domínio: $DOMAIN"
+    else
+        # Usar IP da VPS
+        VPS_IP=$(hostname -I | awk '{print $1}')
+        FRONTEND_URL="http://$VPS_IP"
+        API_URL="http://$VPS_IP/api"
+        log_info "Configurando URLs para IP: $VPS_IP"
+    fi
+    
+    # Corrigir URLs nos arquivos JavaScript
+    if [ -d "dist" ]; then
+        find dist -name "*.js" -type f -exec sed -i "s|https://localhost:3001|$FRONTEND_URL|g" {} \;
+        find dist -name "*.js" -type f -exec sed -i "s|http://localhost:3001|$FRONTEND_URL|g" {} \;
+        find dist -name "*.js" -type f -exec sed -i "s|https://localhost:8080|$FRONTEND_URL|g" {} \;
+        find dist -name "*.js" -type f -exec sed -i "s|http://localhost:8080|$FRONTEND_URL|g" {} \;
+        
+        # Corrigir URLs da API
+        find dist -name "*.js" -type f -exec sed -i "s|https://localhost:3001/api|$API_URL|g" {} \;
+        find dist -name "*.js" -type f -exec sed -i "s|http://localhost:3001/api|$API_URL|g" {} \;
+        
+        # Corrigir URLs nos arquivos HTML
+        find dist -name "*.html" -type f -exec sed -i "s|https://localhost:3001|$FRONTEND_URL|g" {} \;
+        find dist -name "*.html" -type f -exec sed -i "s|http://localhost:3001|$FRONTEND_URL|g" {} \;
+        find dist -name "*.html" -type f -exec sed -i "s|https://localhost:8080|$FRONTEND_URL|g" {} \;
+        find dist -name "*.html" -type f -exec sed -i "s|http://localhost:8080|$FRONTEND_URL|g" {} \;
+        
+        log_success "URLs corrigidas nos arquivos de build!"
+    fi
+    
     log_success "Aplicação compilada com sucesso!"
 }
 
@@ -770,10 +811,18 @@ configure_nginx() {
     cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup
     
     # Configurar Nginx para SISPAT
+    if [[ -n "$DOMAIN" ]]; then
+        SERVER_NAME="$DOMAIN"
+        log_info "Configurando Nginx para domínio: $DOMAIN"
+    else
+        SERVER_NAME="_"
+        log_info "Configurando Nginx para IP: $(hostname -I | awk '{print $1}')"
+    fi
+    
     cat > /etc/nginx/sites-available/default << EOF
 server {
     listen 80;
-    server_name _;
+    server_name $SERVER_NAME;
     
     # Configurações de segurança
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -940,10 +989,11 @@ show_final_info() {
     echo -e "\n${CYAN}📋 INFORMAÇÕES DE ACESSO:${NC}"
     
     if [[ -n "$DOMAIN" ]]; then
-        echo -e "🌐 URL: ${YELLOW}https://$DOMAIN${NC}"
+        echo -e "🌐 URL: ${YELLOW}http://$DOMAIN${NC}"
+        echo -e "🌐 URL HTTPS: ${YELLOW}https://$DOMAIN${NC} (após configurar SSL)"
     else
         IP=$(hostname -I | awk '{print $1}')
-        echo -e "🌐 URL: ${YELLOW}http://$IP:8080${NC}"
+        echo -e "🌐 URL: ${YELLOW}http://$IP${NC}"
     fi
     
     echo -e "\n${CYAN}🔑 LOGIN DO SUPERUSUÁRIO:${NC}"
@@ -978,14 +1028,16 @@ show_final_info() {
     echo -e "📋 Logs: ${YELLOW}$APP_DIR/logs${NC}"
     
     echo -e "\n${GREEN}🔧 Correções aplicadas:${NC}"
-    echo -e "✅ Nginx corrigido para evitar erro de limit_req_zone"
-    echo -e "✅ Configuração de build otimizada para evitar erros de gráficos"
+    echo -e "✅ Nginx configurado para usar domínio/IP correto"
+    echo -e "✅ Backend e frontend configurados para usar domínio em vez de localhost"
+    echo -e "✅ URLs corrigidas nos arquivos de build"
+    echo -e "✅ CORS configurado para aceitar requisições do domínio"
+    echo -e "✅ Configuração HTTP por padrão (sem HTTPS forçado)"
     echo -e "✅ Superusuário criado automaticamente"
     echo -e "✅ PM2 configurado e funcionando"
     echo -e "✅ Dependências estáveis e compatíveis"
     echo -e "✅ Trust proxy configurado para funcionar com Nginx"
     echo -e "✅ Rate limiting corrigido para X-Forwarded-For"
-    echo -e "✅ Frontend configurado para usar domínio em vez de localhost"
     echo -e "✅ Scripts de correção automática integrados"
     
     echo -e "\n${GREEN}✅ Próximos passos:${NC}"
@@ -995,12 +1047,6 @@ show_final_info() {
     echo -e "4. ⚙️  Configure seu município"
     echo -e "5. 👥 Adicione usuários conforme necessário"
     
-    echo -e "\n${GREEN}🔧 Correções aplicadas:${NC}"
-    echo -e "✅ Configuração de build otimizada para evitar erros de gráficos"
-    echo -e "✅ Error boundaries para componentes de gráficos"
-    echo -e "✅ Configuração PM2 otimizada para VPS pequena"
-    echo -e "✅ Nginx configurado sem redirecionamento HTTPS forçado"
-    echo -e "✅ Dependências estáveis e compatíveis"
     
     echo -e "\n${BLUE}📞 Precisa de ajuda?${NC}"
     echo -e "📖 Consulte: ${YELLOW}docs/GUIA-INSTALACAO-SIMPLES-VPS.md${NC}"
