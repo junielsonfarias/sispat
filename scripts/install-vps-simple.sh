@@ -709,6 +709,12 @@ apply_post_install_fixes() {
         /tmp/fix-superuser.sh
     fi
     
+    # Aplicar correções de proxy e domínio
+    log_info "Aplicando correções de proxy e domínio..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-proxy-and-domain-issues.sh -o /tmp/fix-proxy.sh
+    chmod +x /tmp/fix-proxy.sh
+    /tmp/fix-proxy.sh
+    
     # Verificar se o backend está funcionando
     log_info "Testando backend..."
     sleep 5  # Aguardar backend inicializar
@@ -977,6 +983,9 @@ show_final_info() {
     echo -e "✅ Superusuário criado automaticamente"
     echo -e "✅ PM2 configurado e funcionando"
     echo -e "✅ Dependências estáveis e compatíveis"
+    echo -e "✅ Trust proxy configurado para funcionar com Nginx"
+    echo -e "✅ Rate limiting corrigido para X-Forwarded-For"
+    echo -e "✅ Frontend configurado para usar domínio em vez de localhost"
     echo -e "✅ Scripts de correção automática integrados"
     
     echo -e "\n${GREEN}✅ Próximos passos:${NC}"

@@ -268,6 +268,27 @@ systemctl status postgresql
     npm install --legacy-peer-deps
     ```
 
+### **❌ "ERR_ERL_UNEXPECTED_X_FORWARDED_FOR" ou "ERR_CONNECTION_REFUSED"**
+
+**Causa:** Problemas de configuração de proxy e domínio - frontend tentando acessar localhost em vez do domínio.
+
+**Solução IMEDIATA:**
+
+1.  **Executar script de correção de proxy e domínio:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-proxy-and-domain-issues.sh -o fix-proxy.sh
+    chmod +x fix-proxy.sh
+    ./fix-proxy.sh
+    ```
+
+2.  **O script corrige automaticamente:**
+    - Configuração de trust proxy no Express
+    - Rate limiting para funcionar com Nginx
+    - Substituição de localhost pelo domínio nos arquivos de build
+    - Configuração de CORS e domínio no .env
+    - Configuração do Nginx para o domínio
+
 ### **❌ "Could not read package.json: ENOENT: no such file or directory"**
 
 **Causa:** O arquivo `package.json` não foi baixado corretamente devido a problemas na limpeza do
@@ -638,12 +659,17 @@ tail -f /var/log/postgresql/postgresql-*.log
 - Coluna `deleted_at` adicionada nas tabelas `patrimonios` e `imoveis`
 - Índices de performance criados automaticamente
 - Speakeasy (2FA) movido para backend (resolve warnings do Vite)
+- Trust proxy configurado para funcionar com Nginx
+- Rate limiting corrigido para X-Forwarded-For
+- Frontend configurado para usar domínio em vez de localhost
 
 ✅ **Scripts de Correção:**
 
 - `scripts/fix-dependencies.sh` - Corrige dependências instáveis
 - `scripts/apply-production-fixes.sh` - Aplica todas as correções
 - `scripts/post-install-check.sh` - Verificação pós-instalação automática
+- `scripts/fix-proxy-and-domain-issues.sh` - Corrige problemas de proxy e domínio
+- `scripts/fix-backend-connection.sh` - Corrige problemas de conectividade do backend
 
 ### **Para aplicar correções em instalação existente:**
 
