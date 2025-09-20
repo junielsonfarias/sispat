@@ -79,7 +79,26 @@ export default defineConfig(({ mode }) => {
           assetFileNames: 'assets/[name]-[hash].[ext]',
         },
       },
-      minify: mode === 'production' ? 'esbuild' : false,
+      minify: mode === 'production' ? 'terser' : false,
+      terserOptions: {
+        compress: {
+          passes: 2,
+          hoist_vars: false,
+          hoist_funs: false,
+          reduce_funcs: false,
+          inline: 1,
+          keep_infinity: true,
+        },
+        mangle: {
+          safari10: true,
+          keep_fnames: true,
+          properties: false,
+        },
+        format: {
+          comments: false,
+        },
+        safari10: true,
+      },
       chunkSizeWarningLimit: 1000,
       target: 'es2015',
       reportCompressedSize: false,
@@ -90,7 +109,9 @@ export default defineConfig(({ mode }) => {
       include: [
         'react', 
         'react-dom', 
-        'react-router-dom'
+        'react-router-dom',
+        'recharts',
+        'recharts-scale'
       ],
       exclude: [
         '@vite/client', 

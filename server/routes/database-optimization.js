@@ -69,13 +69,13 @@ router.get(
     // Estatísticas básicas das tabelas principais
     const tableStats = await getRows(`
     SELECT 
-      tablename,
-      pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size,
+      relname AS tablename,
+      pg_size_pretty(pg_total_relation_size(relid)) as size,
       n_live_tup as rows
     FROM pg_stat_user_tables 
     WHERE schemaname = 'public'
-      AND tablename IN ('patrimonios', 'users', 'activity_logs', 'transfers', 'inventories')
-    ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+      AND relname IN ('patrimonios', 'users', 'transfers', 'inventarios')
+    ORDER BY pg_total_relation_size(relid) DESC
   `);
 
     // Contagem de índices

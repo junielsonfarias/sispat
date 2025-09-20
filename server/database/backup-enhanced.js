@@ -325,12 +325,12 @@ export class BackupManager {
     try {
       const tables = await getRows(`
         SELECT 
-          tablename,
+          relname AS tablename,
           n_live_tup as row_count,
-          pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
+          pg_size_pretty(pg_total_relation_size(relid)) as size
         FROM pg_stat_user_tables 
         WHERE schemaname = 'public'
-        ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+        ORDER BY pg_total_relation_size(relid) DESC
       `);
 
       const totalRecords = tables.reduce(
@@ -502,7 +502,7 @@ export class BackupManager {
 
       // Obter lista de tabelas
       const tables = await testQuery(`
-        SELECT tablename, n_live_tup 
+        SELECT relname AS tablename, n_live_tup 
         FROM pg_stat_user_tables 
         WHERE schemaname = 'public'
       `);
