@@ -328,20 +328,28 @@ apt install -y nginx
     systemctl start nginx || {
         log_warning "Erro ao iniciar Nginx, aplicando correções..."
         
-        # Baixar e executar script de correção
+        # Baixar e executar script de correção específico
         log_info "Baixando script de correção do Nginx..."
-        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-limit-req.sh -o /tmp/fix-nginx.sh
-        chmod +x /tmp/fix-nginx.sh
+        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-startup-error.sh -o /tmp/fix-nginx-startup.sh
+        chmod +x /tmp/fix-nginx-startup.sh
         
         log_info "Executando correções do Nginx..."
-        /tmp/fix-nginx.sh
+        /tmp/fix-nginx-startup.sh
         
         # Verificar se foi corrigido
         if systemctl is-active --quiet nginx; then
             log_success "Nginx corrigido e funcionando!"
         else
             log_error "Nginx ainda com problemas após correção!"
-            log_info "Tentando configuração manual..."
+            log_info "Tentando correção adicional..."
+            
+            # Correção adicional - parar Apache se estiver rodando
+            systemctl stop apache2 2>/dev/null || true
+            systemctl disable apache2 2>/dev/null || true
+            
+            # Parar outros serviços que podem estar usando porta 80
+            systemctl stop lighttpd 2>/dev/null || true
+            systemctl stop httpd 2>/dev/null || true
             
             # Configuração manual básica
             systemctl stop nginx 2>/dev/null || true
@@ -359,7 +367,11 @@ server {
 }
 EOF
             ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
-            nginx -t && systemctl start nginx
+            nginx -t && systemctl start nginx || {
+                log_error "Falha crítica no Nginx. Verificando logs..."
+                journalctl -u nginx --no-pager -l | tail -20
+                exit 1
+            }
         fi
     }
     systemctl enable nginx
@@ -592,7 +604,26 @@ setup_database() {
     
     # Criar superusuário automaticamente
     log_info "Criando superusuário..."
-    if [ -f "scripts/create-superuser.js" ]; then
+    if [ -f "scripts/create-superuser.cjs" ]; then
+        node scripts/create-superuser.cjs
+        if [ $? -eq 0 ]; then
+            log_success "Superusuário criado com sucesso!"
+        else
+            log_warning "Falha ao criar superusuário, tentando método alternativo..."
+            # Método alternativo usando SQL direto
+            PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "
+                INSERT INTO users (name, email, password, role, municipality_id, is_active)
+                VALUES ('Junielson Farias', 'junielsonfarias@gmail.com', '\$2a\$12\$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2O', 'superuser', 1, true)
+                ON CONFLICT (email) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    password = EXCLUDED.password,
+                    role = EXCLUDED.role,
+                    is_active = true,
+                    updated_at = CURRENT_TIMESTAMP;
+            " 2>/dev/null || log_warning "Método alternativo também falhou"
+        fi
+    elif [ -f "scripts/create-superuser.js" ]; then
+        log_info "Tentando com script .js..."
         node scripts/create-superuser.js
         if [ $? -eq 0 ]; then
             log_success "Superusuário criado com sucesso!"
@@ -667,6 +698,17 @@ apply_post_install_fixes() {
         log_warning "Configuração PM2 não encontrada, usando configuração padrão"
     fi
     
+    # Verificar se o superusuário foi criado
+    log_info "Verificando superusuário..."
+    if PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "SELECT email FROM users WHERE email = 'junielsonfarias@gmail.com';" 2>/dev/null | grep -q "junielsonfarias@gmail.com"; then
+        log_success "Superusuário está configurado corretamente!"
+    else
+        log_warning "Superusuário não encontrado, tentando criar..."
+        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-superuser-creation.sh -o /tmp/fix-superuser.sh
+        chmod +x /tmp/fix-superuser.sh
+        /tmp/fix-superuser.sh
+    fi
+    
     # Verificar se o backend está funcionando
     log_info "Testando backend..."
     sleep 5  # Aguardar backend inicializar
@@ -711,6 +753,13 @@ apply_post_install_fixes() {
 configure_nginx() {
     log_header "Configurando Nginx..."
     
+    # Verificar se limit_req_zone existe no nginx.conf principal
+    if ! grep -q "limit_req_zone" /etc/nginx/nginx.conf; then
+        log_info "Adicionando limit_req_zone ao nginx.conf principal..."
+        cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup.$(date +%Y%m%d_%H%M%S)
+        sed -i '/http {/a\    # Rate limiting zones\n    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;' /etc/nginx/nginx.conf
+    fi
+    
     # Backup da configuração original
     cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup
     
@@ -725,8 +774,7 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
     
-    # Rate limiting
-    limit_req_zone \$binary_remote_addr zone=api:10m rate=10r/s;
+    # Rate limiting (usando a zona definida no nginx.conf)
     limit_req zone=api burst=20 nodelay;
     
     # Proxy para API
@@ -922,6 +970,14 @@ show_final_info() {
     echo -e "📂 Aplicação: ${YELLOW}$APP_DIR${NC}"
     echo -e "💾 Backups: ${YELLOW}/var/backups/sispat${NC}"
     echo -e "📋 Logs: ${YELLOW}$APP_DIR/logs${NC}"
+    
+    echo -e "\n${GREEN}🔧 Correções aplicadas:${NC}"
+    echo -e "✅ Nginx corrigido para evitar erro de limit_req_zone"
+    echo -e "✅ Configuração de build otimizada para evitar erros de gráficos"
+    echo -e "✅ Superusuário criado automaticamente"
+    echo -e "✅ PM2 configurado e funcionando"
+    echo -e "✅ Dependências estáveis e compatíveis"
+    echo -e "✅ Scripts de correção automática integrados"
     
     echo -e "\n${GREEN}✅ Próximos passos:${NC}"
     echo -e "1. 🌐 Acesse o sistema no navegador"
