@@ -433,7 +433,12 @@ ON CONFLICT (email) DO NOTHING;
 # Criar município padrão
 log_info "Criando município padrão..."
 execute_sql "
-INSERT INTO municipalities (name, code, state) 
+-- Garantir índice único para code se não existir
+CREATE UNIQUE INDEX IF NOT EXISTS municipalities_code_unique_idx ON municipalities(code);
+"
+
+execute_sql "
+INSERT INTO municipalities (name, code, state)
 VALUES ('Município Padrão', '000001', 'SP')
 ON CONFLICT (code) DO NOTHING;
 "
@@ -441,17 +446,27 @@ ON CONFLICT (code) DO NOTHING;
 # Criar setor padrão
 log_info "Criando setor padrão..."
 execute_sql "
-INSERT INTO sectors (name, code, municipality_id) 
+-- Garantir índice único para code se não existir
+CREATE UNIQUE INDEX IF NOT EXISTS sectors_code_unique_idx ON sectors(code);
+"
+
+execute_sql "
+INSERT INTO sectors (name, code, municipality_id)
 VALUES ('Setor Administrativo', '001', 1)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (code) DO NOTHING;
 "
 
 # Criar local padrão
 log_info "Criando local padrão..."
 execute_sql "
-INSERT INTO locals (name, code, sector_id) 
+-- Garantir índice único para code se não existir
+CREATE UNIQUE INDEX IF NOT EXISTS locals_code_unique_idx ON locals(code);
+"
+
+execute_sql "
+INSERT INTO locals (name, code, sector_id)
 VALUES ('Sala Administrativa', '001', 1)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (code) DO NOTHING;
 "
 
 # Criar índices para melhor performance

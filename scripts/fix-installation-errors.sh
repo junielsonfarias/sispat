@@ -177,6 +177,18 @@ execute_sql "
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx ON users(email);
 "
 
+# Criar outros índices únicos necessários para ON CONFLICT
+execute_sql "
+-- Índices únicos para ON CONFLICT
+CREATE UNIQUE INDEX IF NOT EXISTS municipalities_code_unique_idx ON municipalities(code);
+CREATE UNIQUE INDEX IF NOT EXISTS sectors_code_unique_idx ON sectors(code);
+CREATE UNIQUE INDEX IF NOT EXISTS locals_code_unique_idx ON locals(code);
+CREATE UNIQUE INDEX IF NOT EXISTS patrimonios_numero_unique_idx ON patrimonios(numero_patrimonio);
+CREATE UNIQUE INDEX IF NOT EXISTS imoveis_numero_unique_idx ON imoveis(numero_patrimonio);
+CREATE UNIQUE INDEX IF NOT EXISTS system_config_key_unique_idx ON system_config(key);
+CREATE UNIQUE INDEX IF NOT EXISTS customization_settings_chave_unique_idx ON customization_settings(chave);
+"
+
 # Tabela de campos de formulário
 execute_sql "
 CREATE TABLE IF NOT EXISTS form_fields (
