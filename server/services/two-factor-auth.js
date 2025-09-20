@@ -37,11 +37,7 @@ export const generateTwoFactorSecret = async (
 /**
  * Verifica um token 2FA
  */
-export const verifyTwoFactorToken = (
-  token,
-  secret,
-  window = 2
-) => {
+export const verifyTwoFactorToken = (token, secret, window = 2) => {
   try {
     return speakeasy.totp.verify({
       secret,
@@ -73,10 +69,7 @@ export const generateBackupCodes = (count = 10) => {
 /**
  * Verifica se um código de backup é válido
  */
-export const verifyBackupCode = (
-  code,
-  validCodes
-) => {
+export const verifyBackupCode = (code, validCodes) => {
   const normalizedCode = code.toUpperCase().trim();
   const codeIndex = validCodes.indexOf(normalizedCode);
 
@@ -93,7 +86,7 @@ export const verifyBackupCode = (
 /**
  * Gera um token TOTP atual para testes
  */
-export const generateCurrentToken = (secret) => {
+export const generateCurrentToken = secret => {
   try {
     return speakeasy.totp({
       secret,
@@ -108,7 +101,7 @@ export const generateCurrentToken = (secret) => {
 /**
  * Valida formato de token 2FA
  */
-export const isValidTokenFormat = (token) => {
+export const isValidTokenFormat = token => {
   // Token deve ter 6 dígitos
   return /^\d{6}$/.test(token);
 };

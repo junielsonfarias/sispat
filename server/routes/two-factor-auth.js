@@ -24,10 +24,10 @@ router.post('/generate', authenticateToken, async (req, res) => {
     );
 
     // Salva o secret no banco (sem os códigos de backup ainda)
-    await pool.query(
-      'UPDATE users SET two_factor_secret = $1 WHERE id = $2',
-      [twoFactorSetup.secret, userId]
-    );
+    await pool.query('UPDATE users SET two_factor_secret = $1 WHERE id = $2', [
+      twoFactorSetup.secret,
+      userId,
+    ]);
 
     logInfo(`Configuração 2FA gerada para usuário ${userEmail}`);
 
@@ -102,7 +102,9 @@ router.post('/verify', authenticateToken, async (req, res) => {
     );
 
     if (isValid) {
-      logInfo(`Token 2FA verificado com sucesso para usuário ${req.user.email}`);
+      logInfo(
+        `Token 2FA verificado com sucesso para usuário ${req.user.email}`
+      );
       res.json({
         success: true,
         message: 'Token verificado com sucesso',
@@ -227,7 +229,10 @@ router.post('/disable', authenticateToken, async (req, res) => {
     }
 
     const bcrypt = await import('bcryptjs');
-    const isValidPassword = await bcrypt.compare(password, userResult.rows[0].password);
+    const isValidPassword = await bcrypt.compare(
+      password,
+      userResult.rows[0].password
+    );
 
     if (!isValidPassword) {
       return res.status(400).json({

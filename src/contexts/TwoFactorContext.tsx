@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import {
   TwoFactorSetup,
-  generateTwoFactorSecret,
+  generateTwoFactorSetup,
   verifyTwoFactorToken,
   verifyBackupCode,
-} from '@/services/twoFactorAuth';
+  disableTwoFactor,
+} from '@/services/twoFactorAuthApi';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
@@ -63,7 +64,7 @@ export const TwoFactorProvider: React.FC<TwoFactorProviderProps> = ({
 
     try {
       setIsVerifying(true);
-      const setup = await generateTwoFactorSecret(user.email, 'SISPAT');
+      const setup = await generateTwoFactorSetup();
       setSetupData(setup);
       setIsSetupMode(true);
 
@@ -92,11 +93,8 @@ export const TwoFactorProvider: React.FC<TwoFactorProviderProps> = ({
       try {
         setIsVerifying(true);
 
-        // Verifica o token fornecido pelo usuário
-        const isValid = verifyTwoFactorToken(
-          verificationToken,
-          setupData.secret
-        );
+        // Verifica o token fornecido pelo usuário via API
+        const isValid = await verifyTwoFactorToken(verificationToken);
 
         if (!isValid) {
           toast({
@@ -105,24 +103,6 @@ export const TwoFactorProvider: React.FC<TwoFactorProviderProps> = ({
             variant: 'destructive',
           });
           return false;
-        }
-
-        // Salva a configuração no backend
-        const response = await fetch('/api/auth/2fa/enable', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({
-            secret: setupData.secret,
-            backupCodes: setupData.backupCodes,
-            verificationToken,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Falha ao ativar 2FA');
         }
 
         setIsEnabled(true);
@@ -167,16 +147,9 @@ export const TwoFactorProvider: React.FC<TwoFactorProviderProps> = ({
       try {
         setIsVerifying(true);
 
-        const response = await fetch('/api/auth/2fa/verify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ token }),
-        });
+        const isValid = await verifyTwoFactorToken(token);
 
-        if (!response.ok) {
+        if (!isValid) {
           toast({
             title: 'Código inválido',
             description: 'Verifique o código e tente novamente',
@@ -210,16 +183,9 @@ export const TwoFactorProvider: React.FC<TwoFactorProviderProps> = ({
       try {
         setIsVerifying(true);
 
-        const response = await fetch('/api/auth/2fa/verify-backup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ backupCode: code }),
-        });
+        const result = await verifyBackupCode(code);
 
-        if (!response.ok) {
+        if (!result.isValid) {
           toast({
             title: 'Código inválido',
             description: 'Código de backup inválido ou já utilizado',
@@ -228,12 +194,10 @@ export const TwoFactorProvider: React.FC<TwoFactorProviderProps> = ({
           return false;
         }
 
-        const data = await response.json();
-
-        if (data.remainingCodes <= 2) {
+        if (result.remainingCodes <= 2) {
           toast({
             title: 'Atenção',
-            description: `Restam apenas ${data.remainingCodes} códigos de backup. Considere gerar novos códigos.`,
+            description: `Restam apenas ${result.remainingCodes} códigos de backup. Considere gerar novos códigos.`,
             variant: 'destructive',
           });
         }
@@ -263,16 +227,9 @@ export const TwoFactorProvider: React.FC<TwoFactorProviderProps> = ({
       try {
         setIsVerifying(true);
 
-        const response = await fetch('/api/auth/2fa/disable', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ password }),
-        });
+        const success = await disableTwoFactor(password);
 
-        if (!response.ok) {
+        if (!success) {
           toast({
             title: 'Erro',
             description: 'Senha incorreta ou falha ao desativar 2FA',
@@ -312,19 +269,8 @@ export const TwoFactorProvider: React.FC<TwoFactorProviderProps> = ({
     try {
       setIsVerifying(true);
 
-      const response = await fetch('/api/auth/2fa/regenerate-backup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao regenerar códigos');
-      }
-
-      const data = await response.json();
+      // Para regenerar códigos, precisamos gerar uma nova configuração 2FA
+      const setup = await generateTwoFactorSetup();
 
       toast({
         title: 'Sucesso',
@@ -332,7 +278,7 @@ export const TwoFactorProvider: React.FC<TwoFactorProviderProps> = ({
           'Novos códigos de backup gerados. Guarde-os em local seguro.',
       });
 
-      return data.backupCodes;
+      return setup.backupCodes;
     } catch (error) {
       toast({
         title: 'Erro',

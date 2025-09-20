@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { useTwoFactor } from '@/contexts/TwoFactorContext';
 import { Shield, Clock, Key, ArrowLeft } from 'lucide-react';
-import { getTimeRemaining } from '@/services/twoFactorAuth';
+import { getTimeRemaining } from '@/services/twoFactorAuthApi';
 
 interface TwoFactorVerificationProps {
   onVerified: () => void;

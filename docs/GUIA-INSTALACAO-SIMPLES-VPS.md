@@ -620,23 +620,27 @@ tail -f /var/log/postgresql/postgresql-*.log
 ### **Versão 2025 - Correções Implementadas:**
 
 ✅ **Dependências Estáveis:**
+
 - React downgradeado de 19.1.1 para 18.2.0 estável
 - Helmet atualizado para versão 7.1.0 compatível
 - Express, Socket.io e outras dependências em versões estáveis
 
 ✅ **Configurações de Segurança:**
+
 - CORS configurado para permitir acesso externo em produção
 - CSP (Content Security Policy) flexível para Google Fonts/Maps
 - Rate limiting aplicado apenas na API (não nos assets estáticos)
 - HSTS habilitado apenas quando SSL estiver configurado
 
 ✅ **Performance e Estabilidade:**
+
 - PM2 configurado para 1 instância (adequado para VPS pequena)
 - Coluna `deleted_at` adicionada nas tabelas `patrimonios` e `imoveis`
 - Índices de performance criados automaticamente
 - Speakeasy (2FA) movido para backend (resolve warnings do Vite)
 
 ✅ **Scripts de Correção:**
+
 - `scripts/fix-dependencies.sh` - Corrige dependências instáveis
 - `scripts/apply-production-fixes.sh` - Aplica todas as correções
 - `scripts/post-install-check.sh` - Verificação pós-instalação automática

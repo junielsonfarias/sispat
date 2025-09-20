@@ -19,7 +19,7 @@ export interface TwoFactorStatus {
 export const generateTwoFactorSetup = async (): Promise<TwoFactorSetup> => {
   try {
     const response = await axios.post(`${API_BASE}/two-factor/generate`);
-    
+
     if (response.data.success) {
       return response.data.data;
     } else {
@@ -100,7 +100,7 @@ export const disableTwoFactor = async (password: string): Promise<boolean> => {
 export const getTwoFactorStatus = async (): Promise<TwoFactorStatus> => {
   try {
     const response = await axios.get(`${API_BASE}/two-factor/status`);
-    
+
     if (response.data.success) {
       return response.data.data;
     } else {
