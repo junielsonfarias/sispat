@@ -738,6 +738,7 @@ show_final_info() {
     echo -e "✅ URLs corrigidas nos arquivos de build (localhost e HTTPS)"
     echo -e "✅ Correções robustas de URLs aplicadas automaticamente"
     echo -e "✅ Correções agressivas de URLs aplicadas automaticamente"
+    echo -e "✅ Correção de emergência para HTTPS aplicada automaticamente"
     echo -e "✅ Verificação de status do backend executada"
     echo -e "✅ Proxy configurado para forçar HTTP no backend"
     echo -e "✅ Incompatibilidade HTTPS frontend + HTTP backend corrigida"
@@ -794,6 +795,12 @@ main() {
     curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-urls-aggressive.sh -o /root/fix-urls-aggressive.sh || true
     chmod +x /root/fix-urls-aggressive.sh || true
     /root/fix-urls-aggressive.sh || true
+    
+    # Aplicar correção de emergência para HTTPS
+    log_header "Aplicando correção de emergência para HTTPS..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-emergency.sh -o /root/fix-https-emergency.sh || true
+    chmod +x /root/fix-https-emergency.sh || true
+    /root/fix-https-emergency.sh || true
     
     # Aplicar correções de protocolo HTTPS/HTTP
     log_header "Aplicando correções de protocolo HTTPS/HTTP..."

@@ -76,6 +76,7 @@ curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts
 - ✅ **Correção automática de domínio** - Não usa mais localhost
 - ✅ **URLs corrigidas** nos arquivos de build
 - ✅ **Correções agressivas** de URLs HTTPS por HTTP
+- ✅ **Correção de emergência** para HTTPS forçado
 - ✅ **Verificação de status** do backend automática
 - ✅ **CORS configurado** para o domínio correto
 - ✅ **Nginx otimizado** para domínio específico
@@ -377,7 +378,15 @@ de proxy entre frontend e backend.
 
 **Solução IMEDIATA:**
 
-1.  **Executar script de correção específico:**
+1.  **Executar script de correção de emergência (RECOMENDADO):**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-emergency.sh -o fix-https-emergency.sh
+    chmod +x fix-https-emergency.sh
+    ./fix-https-emergency.sh
+    ```
+
+2.  **Ou executar script de correção específico:**
 
     ```bash
     curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-frontend-http-backend.sh -o fix-https-http.sh
@@ -385,12 +394,44 @@ de proxy entre frontend e backend.
     ./fix-https-http.sh
     ```
 
-2.  **O script corrige automaticamente:**
-    - Configuração do Nginx para funcionar com HTTP e HTTPS
-    - Proxy configurado para forçar HTTP no backend
-    - CORS atualizado para aceitar ambos os protocolos
-    - URLs nos arquivos de build corrigidas
-    - Backend reiniciado com novas configurações
+3.  **O script de emergência corrige automaticamente:**
+    - Para todos os serviços (Nginx, PM2)
+    - Substitui TODAS as URLs HTTPS por HTTP nos arquivos de build
+    - Corrige arquivo .env
+    - Recria configuração do Nginx forçando HTTP
+    - Reinicia todos os serviços
+    - Testa conectividade final
+
+### **❌ "Network Error" ou "ERR_CONNECTION_REFUSED" persistente**
+
+**Causa:** Problemas persistentes de URLs HTTPS hardcoded ou configuração incorreta.
+
+**Solução IMEDIATA:**
+
+1.  **Executar diagnóstico específico:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/diagnose-https-issue.sh -o diagnose-https.sh
+    chmod +x diagnose-https.sh
+    ./diagnose-https.sh
+    ```
+
+2.  **Executar correção de emergência:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-emergency.sh -o fix-https-emergency.sh
+    chmod +x fix-https-emergency.sh
+    ./fix-https-emergency.sh
+    ```
+
+3.  **O diagnóstico verifica:**
+    - URLs HTTPS nos arquivos de build
+    - URLs localhost nos arquivos de build
+    - Configuração do Nginx
+    - Status dos serviços (Nginx, PM2, PostgreSQL)
+    - Conectividade da API
+    - Arquivo .env
+    - Logs recentes
 
 ### **❌ "Could not read package.json: ENOENT: no such file or directory"**
 
@@ -785,6 +826,8 @@ tail -f /var/log/postgresql/postgresql-*.log
 - `scripts/fix-backend-connection.sh` - Corrige problemas de conectividade do backend
 - `scripts/fix-https-frontend-http-backend.sh` - Corrige problemas Frontend HTTPS + Backend HTTP
 - `scripts/fix-urls-aggressive.sh` - Correção agressiva de URLs HTTPS por HTTP
+- `scripts/fix-https-emergency.sh` - Correção de emergência para HTTPS forçado
+- `scripts/diagnose-https-issue.sh` - Diagnóstico específico de problemas HTTPS
 - `scripts/check-backend-status.sh` - Verificação de status do backend
 - **`scripts/install-vps-simple.sh` - Script principal ATUALIZADO com correções de domínio**
 
