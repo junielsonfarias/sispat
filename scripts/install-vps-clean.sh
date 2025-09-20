@@ -737,7 +737,8 @@ show_final_info() {
     echo -e "✅ Configuração de build otimizada para evitar erros de gráficos"
     echo -e "✅ URLs corrigidas nos arquivos de build (localhost e HTTPS)"
     echo -e "✅ Correções robustas de URLs aplicadas automaticamente"
-    echo -e "✅ Diagnóstico final executado para verificar status"
+    echo -e "✅ Correções agressivas de URLs aplicadas automaticamente"
+    echo -e "✅ Verificação de status do backend executada"
     echo -e "✅ Proxy configurado para forçar HTTP no backend"
     echo -e "✅ Incompatibilidade HTTPS frontend + HTTP backend corrigida"
     echo -e "✅ Superusuário criado automaticamente"
@@ -788,17 +789,23 @@ main() {
     chmod +x /root/fix-urls-direct.sh || true
     /root/fix-urls-direct.sh || true
     
+    # Aplicar correções agressivas de URLs
+    log_header "Aplicando correções agressivas de URLs..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-urls-aggressive.sh -o /root/fix-urls-aggressive.sh || true
+    chmod +x /root/fix-urls-aggressive.sh || true
+    /root/fix-urls-aggressive.sh || true
+    
     # Aplicar correções de protocolo HTTPS/HTTP
     log_header "Aplicando correções de protocolo HTTPS/HTTP..."
     curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-frontend-http-backend.sh -o /root/fix-protocol.sh || true
     chmod +x /root/fix-protocol.sh || true
     /root/fix-protocol.sh || true
     
-    # Executar diagnóstico final
-    log_header "Executando diagnóstico final..."
-    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/diagnose-backend-status.sh -o /root/diagnose.sh || true
-    chmod +x /root/diagnose.sh || true
-    /root/diagnose.sh || true
+    # Executar verificação de status do backend
+    log_header "Executando verificação de status do backend..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/check-backend-status.sh -o /root/check-status.sh || true
+    chmod +x /root/check-status.sh || true
+    /root/check-status.sh || true
     
     # Garantir serviços ativos
     systemctl reload nginx || systemctl restart nginx || true

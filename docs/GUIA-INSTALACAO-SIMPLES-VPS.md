@@ -75,6 +75,8 @@ curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts
 
 - ✅ **Correção automática de domínio** - Não usa mais localhost
 - ✅ **URLs corrigidas** nos arquivos de build
+- ✅ **Correções agressivas** de URLs HTTPS por HTTP
+- ✅ **Verificação de status** do backend automática
 - ✅ **CORS configurado** para o domínio correto
 - ✅ **Nginx otimizado** para domínio específico
 - ✅ **HTTP por padrão** (sem HTTPS forçado)
@@ -767,6 +769,8 @@ tail -f /var/log/postgresql/postgresql-*.log
 
 - **Frontend configurado para usar domínio em vez de localhost**
 - **URLs corrigidas automaticamente** nos arquivos de build
+- **Correções agressivas** de URLs HTTPS por HTTP
+- **Verificação de status** do backend automática
 - **Nginx configurado para domínio específico**
 - **CORS configurado para o domínio correto**
 - **HTTP por padrão** (sem HTTPS forçado)
@@ -780,6 +784,8 @@ tail -f /var/log/postgresql/postgresql-*.log
 - `scripts/fix-proxy-and-domain-issues.sh` - Corrige problemas de proxy e domínio
 - `scripts/fix-backend-connection.sh` - Corrige problemas de conectividade do backend
 - `scripts/fix-https-frontend-http-backend.sh` - Corrige problemas Frontend HTTPS + Backend HTTP
+- `scripts/fix-urls-aggressive.sh` - Correção agressiva de URLs HTTPS por HTTP
+- `scripts/check-backend-status.sh` - Verificação de status do backend
 - **`scripts/install-vps-simple.sh` - Script principal ATUALIZADO com correções de domínio**
 
 ### **Para aplicar correções em instalação existente:**
@@ -853,9 +859,11 @@ chmod +x fixes.sh
 1. **Detecção de domínio** - Script pergunta se você tem domínio
 2. **Configuração dinâmica** - URLs baseadas no domínio/IP
 3. **Correção de build** - URLs corrigidas nos arquivos JavaScript/HTML
-4. **Nginx otimizado** - Configurado para domínio específico
-5. **CORS configurado** - Aceita requisições do domínio correto
-6. **HTTP por padrão** - Sem HTTPS forçado
+4. **Correção agressiva** - URLs HTTPS forçadas para HTTP
+5. **Verificação de status** - Backend verificado automaticamente
+6. **Nginx otimizado** - Configurado para domínio específico
+7. **CORS configurado** - Aceita requisições do domínio correto
+8. **HTTP por padrão** - Sem HTTPS forçado
 
 ### **📊 Resultado:**
 

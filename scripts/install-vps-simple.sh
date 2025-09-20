@@ -773,6 +773,12 @@ apply_post_install_fixes() {
     chmod +x /tmp/fix-urls-direct.sh
     /tmp/fix-urls-direct.sh
     
+    # Aplicar correções agressivas de URLs
+    log_info "Aplicando correções agressivas de URLs..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-urls-aggressive.sh -o /tmp/fix-urls-aggressive.sh
+    chmod +x /tmp/fix-urls-aggressive.sh
+    /tmp/fix-urls-aggressive.sh
+    
     # Aplicar correções de protocolo HTTPS/HTTP
     log_info "Aplicando correções de protocolo HTTPS/HTTP..."
     curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-frontend-http-backend.sh -o /tmp/fix-protocol.sh
@@ -790,11 +796,11 @@ apply_post_install_fixes() {
         log_warning "⚠️  Backend pode não estar respondendo, mas continuando..."
     fi
     
-    # Executar diagnóstico final
-    log_info "Executando diagnóstico final..."
-    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/diagnose-backend-status.sh -o /tmp/diagnose.sh
-    chmod +x /tmp/diagnose.sh
-    /tmp/diagnose.sh
+    # Executar verificação de status do backend
+    log_info "Executando verificação de status do backend..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/check-backend-status.sh -o /tmp/check-status.sh
+    chmod +x /tmp/check-status.sh
+    /tmp/check-status.sh
     
     log_success "Correções pós-instalação aplicadas com sucesso!"
 }
@@ -1034,12 +1040,13 @@ show_final_info() {
     echo -e "✅ Nginx configurado para usar domínio/IP correto"
     echo -e "✅ Backend e frontend configurados para usar domínio em vez de localhost"
     echo -e "✅ URLs corrigidas nos arquivos de build (localhost e HTTPS)"
+    echo -e "✅ Correções robustas de URLs aplicadas automaticamente"
+    echo -e "✅ Correções agressivas de URLs aplicadas automaticamente"
+    echo -e "✅ Verificação de status do backend executada"
     echo -e "✅ CORS configurado para aceitar requisições do domínio"
     echo -e "✅ Configuração HTTP por padrão (sem HTTPS forçado)"
     echo -e "✅ Proxy configurado para forçar HTTP no backend"
     echo -e "✅ Incompatibilidade HTTPS frontend + HTTP backend corrigida"
-    echo -e "✅ Correções robustas de URLs aplicadas automaticamente"
-    echo -e "✅ Diagnóstico final executado para verificar status"
     echo -e "✅ Superusuário criado automaticamente"
     echo -e "✅ PM2 configurado e funcionando"
     echo -e "✅ Dependências estáveis e compatíveis"
