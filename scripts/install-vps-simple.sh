@@ -325,7 +325,43 @@ install_nginx() {
 apt install -y nginx
     
     # Iniciar e habilitar Nginx
-    systemctl start nginx
+    systemctl start nginx || {
+        log_warning "Erro ao iniciar Nginx, aplicando correções..."
+        
+        # Baixar e executar script de correção
+        log_info "Baixando script de correção do Nginx..."
+        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-startup.sh -o /tmp/fix-nginx.sh
+        chmod +x /tmp/fix-nginx.sh
+        
+        log_info "Executando correções do Nginx..."
+        /tmp/fix-nginx.sh
+        
+        # Verificar se foi corrigido
+        if systemctl is-active --quiet nginx; then
+            log_success "Nginx corrigido e funcionando!"
+        else
+            log_error "Nginx ainda com problemas após correção!"
+            log_info "Tentando configuração manual..."
+            
+            # Configuração manual básica
+            systemctl stop nginx 2>/dev/null || true
+            rm -f /etc/nginx/sites-enabled/default
+            cat > /etc/nginx/sites-available/default << 'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    root /var/www/html;
+    index index.html index.htm;
+    server_name _;
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+EOF
+            ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+            nginx -t && systemctl start nginx
+        fi
+    }
     systemctl enable nginx
     
     # Configurar firewall básico
