@@ -88,46 +88,32 @@ CREATE TABLE IF NOT EXISTS users (
 );
 "
 
-# Garantir índice único para email (necessário para ON CONFLICT)
-execute_sql "
--- Verificar e remover duplicados de usuários por email
-WITH duplicates AS (
-    SELECT email, MIN(id) as min_id
-    FROM users
-    GROUP BY email
-    HAVING COUNT(*) > 1
-)
-DELETE FROM users
-WHERE id NOT IN (
-    SELECT min_id FROM duplicates
-) AND email IN (SELECT email FROM duplicates);
-"
-
-# Verificar se ainda há duplicados
-execute_sql "
--- Verificar duplicados restantes
-SELECT email, COUNT(*) as count
-FROM users
-GROUP BY email
-HAVING COUNT(*) > 1;
-"
-
-execute_sql "
--- Forçar remoção de duplicados restantes (mantendo apenas o primeiro)
-WITH ranked_users AS (
-    SELECT id, email,
-           ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) as rn
-    FROM users
-)
-DELETE FROM users
-WHERE id IN (
-    SELECT id FROM ranked_users WHERE rn > 1
-);
-"
-
-execute_sql "
-CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx ON users(email);
-"
+# Executar correção completa de duplicados
+log_info "Executando correção completa de duplicados..."
+if [ -f "scripts/fix-all-duplicates.sh" ]; then
+    log_info "Executando script local de correção de duplicados..."
+    bash scripts/fix-all-duplicates.sh
+else
+    log_warning "Script de correção não encontrado, usando correção manual..."
+    
+    # Garantir índice único para email (necessário para ON CONFLICT)
+    execute_sql "
+    -- Forçar remoção de duplicados (mantendo apenas o primeiro)
+    WITH ranked_users AS (
+        SELECT id, email,
+               ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) as rn
+        FROM users
+    )
+    DELETE FROM users
+    WHERE id IN (
+        SELECT id FROM ranked_users WHERE rn > 1
+    );
+    "
+    
+    execute_sql "
+    CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx ON users(email);
+    "
+fi
 
 # Tabela de municípios
 execute_sql "
@@ -433,11 +419,6 @@ ON CONFLICT (email) DO NOTHING;
 # Criar município padrão
 log_info "Criando município padrão..."
 execute_sql "
--- Garantir índice único para code se não existir
-CREATE UNIQUE INDEX IF NOT EXISTS municipalities_code_unique_idx ON municipalities(code);
-"
-
-execute_sql "
 INSERT INTO municipalities (name, code, state)
 VALUES ('Município Padrão', '000001', 'SP')
 ON CONFLICT (code) DO NOTHING;
@@ -446,11 +427,6 @@ ON CONFLICT (code) DO NOTHING;
 # Criar setor padrão
 log_info "Criando setor padrão..."
 execute_sql "
--- Garantir índice único para code se não existir
-CREATE UNIQUE INDEX IF NOT EXISTS sectors_code_unique_idx ON sectors(code);
-"
-
-execute_sql "
 INSERT INTO sectors (name, code, municipality_id)
 VALUES ('Setor Administrativo', '001', 1)
 ON CONFLICT (code) DO NOTHING;
@@ -458,11 +434,6 @@ ON CONFLICT (code) DO NOTHING;
 
 # Criar local padrão
 log_info "Criando local padrão..."
-execute_sql "
--- Garantir índice único para code se não existir
-CREATE UNIQUE INDEX IF NOT EXISTS locals_code_unique_idx ON locals(code);
-"
-
 execute_sql "
 INSERT INTO locals (name, code, sector_id)
 VALUES ('Sala Administrativa', '001', 1)
