@@ -270,7 +270,8 @@ systemctl status postgresql
 
 ### **❌ "ERR_ERL_UNEXPECTED_X_FORWARDED_FOR" ou "ERR_CONNECTION_REFUSED"**
 
-**Causa:** Problemas de configuração de proxy e domínio - frontend tentando acessar localhost em vez do domínio.
+**Causa:** Problemas de configuração de proxy e domínio - frontend tentando acessar localhost em vez
+do domínio.
 
 **Solução IMEDIATA:**
 
@@ -288,6 +289,27 @@ systemctl status postgresql
     - Substituição de localhost pelo domínio nos arquivos de build
     - Configuração de CORS e domínio no .env
     - Configuração do Nginx para o domínio
+
+### **❌ "Failed to ensure superuser exists" ou "ERR_CONNECTION_REFUSED" para API**
+
+**Causa:** Frontend tentando acessar API via HTTPS mas backend rodando apenas em HTTP, ou problemas de proxy entre frontend e backend.
+
+**Solução IMEDIATA:**
+
+1.  **Executar script de correção específico:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-frontend-http-backend.sh -o fix-https-http.sh
+    chmod +x fix-https-http.sh
+    ./fix-https-http.sh
+    ```
+
+2.  **O script corrige automaticamente:**
+    - Configuração do Nginx para funcionar com HTTP e HTTPS
+    - Proxy configurado para forçar HTTP no backend
+    - CORS atualizado para aceitar ambos os protocolos
+    - URLs nos arquivos de build corrigidas
+    - Backend reiniciado com novas configurações
 
 ### **❌ "Could not read package.json: ENOENT: no such file or directory"**
 
@@ -670,6 +692,7 @@ tail -f /var/log/postgresql/postgresql-*.log
 - `scripts/post-install-check.sh` - Verificação pós-instalação automática
 - `scripts/fix-proxy-and-domain-issues.sh` - Corrige problemas de proxy e domínio
 - `scripts/fix-backend-connection.sh` - Corrige problemas de conectividade do backend
+- `scripts/fix-https-frontend-http-backend.sh` - Corrige problemas Frontend HTTPS + Backend HTTP
 
 ### **Para aplicar correções em instalação existente:**
 
