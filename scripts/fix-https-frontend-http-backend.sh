@@ -175,34 +175,13 @@ fix_build_urls() {
     
     cd /var/www/sispat
     
-    if [ -d "dist" ]; then
-        log_info "Corrigindo URLs nos arquivos JavaScript..."
-        
-        # Corrigir URLs nos arquivos JavaScript
-        find dist -name "*.js" -type f -exec sed -i "s|https://$DOMAIN|http://$DOMAIN|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|https://localhost:3001|http://$DOMAIN|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|http://localhost:3001|http://$DOMAIN|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|https://localhost:8080|http://$DOMAIN|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|http://localhost:8080|http://$DOMAIN|g" {} \;
-        
-        # Corrigir URLs da API
-        find dist -name "*.js" -type f -exec sed -i "s|https://$DOMAIN/api|http://$DOMAIN/api|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|https://localhost:3001/api|http://$DOMAIN/api|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|http://localhost:3001/api|http://$DOMAIN/api|g" {} \;
-        
-        log_info "Corrigindo URLs nos arquivos HTML..."
-        
-        # Corrigir URLs nos arquivos HTML
-        find dist -name "*.html" -type f -exec sed -i "s|https://$DOMAIN|http://$DOMAIN|g" {} \;
-        find dist -name "*.html" -type f -exec sed -i "s|https://localhost:3001|http://$DOMAIN|g" {} \;
-        find dist -name "*.html" -type f -exec sed -i "s|http://localhost:3001|http://$DOMAIN|g" {} \;
-        find dist -name "*.html" -type f -exec sed -i "s|https://localhost:8080|http://$DOMAIN|g" {} \;
-        find dist -name "*.html" -type f -exec sed -i "s|http://localhost:8080|http://$DOMAIN|g" {} \;
-        
-        log_success "URLs corrigidas nos arquivos de build!"
-    else
-        log_warning "Diretório dist não encontrado, pulando correção de URLs"
-    fi
+    # Usar script robusto para correção de URLs
+    log_info "Executando correção robusta de URLs..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-frontend-urls-robust.sh -o /tmp/fix-urls-robust.sh
+    chmod +x /tmp/fix-urls-robust.sh
+    /tmp/fix-urls-robust.sh
+    
+    log_success "URLs corrigidas nos arquivos de build!"
 }
 
 # Função para reiniciar backend
