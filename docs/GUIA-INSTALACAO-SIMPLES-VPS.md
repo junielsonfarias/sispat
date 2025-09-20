@@ -61,12 +61,23 @@ curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts
 
 **O que estes comandos fazem:**
 
-- ✅ Baixa o script de instalação
+- ✅ Baixa o script de instalação **ATUALIZADO**
 - ✅ Torna o arquivo executável
 - ✅ Executa a instalação automática
+- ✅ **Configura domínio automaticamente** (se fornecido)
+- ✅ **Corrige URLs** nos arquivos de build
+- ✅ **Backend e frontend online** sem erros de localhost
 - ✅ **Instalação limpa:** Remove instalação anterior e instala do zero
 
 **⏱️ Tempo estimado:** 10-15 minutos
+
+**🆕 NOVIDADES DA VERSÃO 2025:**
+
+- ✅ **Correção automática de domínio** - Não usa mais localhost
+- ✅ **URLs corrigidas** nos arquivos de build
+- ✅ **CORS configurado** para o domínio correto
+- ✅ **Nginx otimizado** para domínio específico
+- ✅ **HTTP por padrão** (sem HTTPS forçado)
 
 ### **PASSO 3: Escolher Tipo de Instalação** 🎯
 
@@ -98,13 +109,15 @@ Se você já tem uma instalação anterior, o script oferecerá opções:
 
 ### **Como acessar:**
 
-- **Com domínio:** `https://seu-dominio.com.br`
-- **Sem domínio:** `http://IP_DA_SUA_VPS:8080`
+- **Com domínio:** `http://seu-dominio.com.br` (HTTPS disponível após configurar SSL)
+- **Sem domínio:** `http://IP_DA_SUA_VPS`
 
 ### **Login padrão:**
 
-- **Email:** `admin@sispat.com`
-- **Senha:** `admin123`
+- **Email:** `junielsonfarias@gmail.com`
+- **Nome:** `Junielson Farias`
+- **Senha:** `Tiko6273@`
+- **Role:** `superuser`
 - **⚠️ IMPORTANTE:** Altere a senha após o primeiro login!
 
 ### **Banco de dados:**
@@ -166,6 +179,59 @@ systemctl restart postgresql
 # Ver credenciais do banco
 cat /root/sispat-db-credentials.txt
 ```
+
+---
+
+## 🔄 **ATUALIZAR INSTALAÇÃO EXISTENTE**
+
+### **Se você já tem o SISPAT instalado e quer atualizar:**
+
+#### **Opção 1: Atualização Automática (Recomendada)**
+
+```bash
+# Baixar e executar script de atualização
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-simple.sh -o install-update.sh
+chmod +x install-update.sh
+./install-update.sh
+```
+
+**Durante a execução, escolha:**
+
+- **1. Instalação normal** (atualiza a instalação existente)
+
+#### **Opção 2: Remoção Completa e Nova Instalação**
+
+```bash
+# Parar todos os serviços
+pm2 stop all
+pm2 delete all
+
+# Remover instalação anterior
+rm -rf /var/www/sispat
+
+# Baixar e executar instalação limpa
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-clean.sh -o install-clean.sh
+chmod +x install-clean.sh
+./install-clean.sh
+```
+
+#### **Opção 3: Correção Rápida (Para problemas de domínio)**
+
+```bash
+# Aplicar apenas correções de domínio
+curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-proxy-and-domain-issues.sh -o fix-domain.sh
+chmod +x fix-domain.sh
+./fix-domain.sh
+```
+
+### **🆕 O que mudou na nova versão:**
+
+- ✅ **Domínio configurado automaticamente** - Não usa mais localhost
+- ✅ **URLs corrigidas** nos arquivos de build
+- ✅ **CORS configurado** para o domínio correto
+- ✅ **Nginx otimizado** para domínio específico
+- ✅ **HTTP por padrão** (sem HTTPS forçado)
+- ✅ **Backend e frontend online** sem erros de conexão
 
 ---
 
@@ -273,7 +339,9 @@ systemctl status postgresql
 **Causa:** Problemas de configuração de proxy e domínio - frontend tentando acessar localhost em vez
 do domínio.
 
-**Solução IMEDIATA:**
+**✅ SOLUÇÃO: Script atualizado já corrige automaticamente!**
+
+**Se ainda tiver problemas, execute:**
 
 1.  **Executar script de correção de proxy e domínio:**
 
@@ -283,16 +351,27 @@ do domínio.
     ./fix-proxy.sh
     ```
 
-2.  **O script corrige automaticamente:**
-    - Configuração de trust proxy no Express
-    - Rate limiting para funcionar com Nginx
-    - Substituição de localhost pelo domínio nos arquivos de build
-    - Configuração de CORS e domínio no .env
-    - Configuração do Nginx para o domínio
+2.  **Ou atualizar para a nova versão:**
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-simple.sh -o install-update.sh
+    chmod +x install-update.sh
+    ./install-update.sh
+    ```
+
+**O script corrige automaticamente:**
+
+- ✅ Configuração de trust proxy no Express
+- ✅ Rate limiting para funcionar com Nginx
+- ✅ Substituição de localhost pelo domínio nos arquivos de build
+- ✅ Configuração de CORS e domínio no .env
+- ✅ Configuração do Nginx para o domínio
+- ✅ URLs corrigidas automaticamente
 
 ### **❌ "Failed to ensure superuser exists" ou "ERR_CONNECTION_REFUSED" para API**
 
-**Causa:** Frontend tentando acessar API via HTTPS mas backend rodando apenas em HTTP, ou problemas de proxy entre frontend e backend.
+**Causa:** Frontend tentando acessar API via HTTPS mas backend rodando apenas em HTTP, ou problemas
+de proxy entre frontend e backend.
 
 **Solução IMEDIATA:**
 
@@ -683,7 +762,15 @@ tail -f /var/log/postgresql/postgresql-*.log
 - Speakeasy (2FA) movido para backend (resolve warnings do Vite)
 - Trust proxy configurado para funcionar com Nginx
 - Rate limiting corrigido para X-Forwarded-For
-- Frontend configurado para usar domínio em vez de localhost
+
+✅ **🆕 NOVIDADES - Correção de Domínio:**
+
+- **Frontend configurado para usar domínio em vez de localhost**
+- **URLs corrigidas automaticamente** nos arquivos de build
+- **Nginx configurado para domínio específico**
+- **CORS configurado para o domínio correto**
+- **HTTP por padrão** (sem HTTPS forçado)
+- **Backend e frontend online** sem erros de conexão
 
 ✅ **Scripts de Correção:**
 
@@ -693,6 +780,7 @@ tail -f /var/log/postgresql/postgresql-*.log
 - `scripts/fix-proxy-and-domain-issues.sh` - Corrige problemas de proxy e domínio
 - `scripts/fix-backend-connection.sh` - Corrige problemas de conectividade do backend
 - `scripts/fix-https-frontend-http-backend.sh` - Corrige problemas Frontend HTTPS + Backend HTTP
+- **`scripts/install-vps-simple.sh` - Script principal ATUALIZADO com correções de domínio**
 
 ### **Para aplicar correções em instalação existente:**
 
@@ -712,12 +800,14 @@ chmod +x fixes.sh
 1. Conecte na VPS: `ssh root@IP_DA_SUA_VPS`
 2. Execute:
    `curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/install-vps-simple.sh -o install.sh && chmod +x install.sh && ./install.sh`
-3. Acesse: `http://IP_DA_SUA_VPS:8080` ou `https://seu-dominio.com.br`
+3. Acesse: `http://IP_DA_SUA_VPS` ou `http://seu-dominio.com.br`
 
 ### **Login padrão:**
 
-- **Email:** `admin@sispat.com`
-- **Senha:** `admin123`
+- **Email:** `junielsonfarias@gmail.com`
+- **Nome:** `Junielson Farias`
+- **Senha:** `Tiko6273@`
+- **Role:** `superuser`
 
 ### **Banco de dados:**
 
@@ -736,6 +826,44 @@ chmod +x fixes.sh
 - **Banco:** `systemctl status postgresql`
 - **Conectar:** `PGPASSWORD=postgres psql -h localhost -U postgres -d sispat_db`
 - **Backup:** `/usr/local/bin/sispat-backup.sh`
+
+---
+
+## 🆕 **MELHORIAS DA VERSÃO 2025**
+
+### **✅ Problemas Resolvidos:**
+
+- **❌ Antes:** Frontend tentando acessar `localhost:3001` ou `localhost:8080`
+- **✅ Agora:** Frontend configurado para usar domínio/IP correto
+
+- **❌ Antes:** Erros `ERR_CONNECTION_REFUSED` para API
+- **✅ Agora:** Backend e frontend online sem erros de conexão
+
+- **❌ Antes:** CORS bloqueando requisições do domínio
+- **✅ Agora:** CORS configurado para aceitar requisições do domínio
+
+- **❌ Antes:** Nginx configurado para qualquer domínio
+- **✅ Agora:** Nginx configurado para domínio específico
+
+- **❌ Antes:** URLs hardcoded nos arquivos de build
+- **✅ Agora:** URLs corrigidas automaticamente nos arquivos de build
+
+### **🔧 Correções Automáticas:**
+
+1. **Detecção de domínio** - Script pergunta se você tem domínio
+2. **Configuração dinâmica** - URLs baseadas no domínio/IP
+3. **Correção de build** - URLs corrigidas nos arquivos JavaScript/HTML
+4. **Nginx otimizado** - Configurado para domínio específico
+5. **CORS configurado** - Aceita requisições do domínio correto
+6. **HTTP por padrão** - Sem HTTPS forçado
+
+### **📊 Resultado:**
+
+- ✅ **Backend online** - `http://seu-dominio.com/api`
+- ✅ **Frontend online** - `http://seu-dominio.com`
+- ✅ **Login funcionando** - Sem mais erros de conexão
+- ✅ **CORS funcionando** - Requisições aceitas
+- ✅ **URLs corretas** - Sem mais localhost
 
 ---
 
