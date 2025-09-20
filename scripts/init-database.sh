@@ -444,6 +444,34 @@ VALUES ('Sala Administrativa', '001', 1)
 ON CONFLICT (code) DO NOTHING;
 "
 
+# Corrigir esquema - adicionar colunas se não existirem
+log_info "Corrigindo esquema do banco..."
+
+# Verificar e adicionar coluna deleted_at na tabela patrimonios
+if ! PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "\d patrimonios" | grep -q "deleted_at"; then
+    log_info "Adicionando coluna deleted_at na tabela patrimonios..."
+    execute_sql "ALTER TABLE patrimonios ADD COLUMN deleted_at TIMESTAMP;"
+else
+    log_info "Coluna deleted_at já existe na tabela patrimonios"
+fi
+
+# Verificar e adicionar coluna deleted_at na tabela imoveis
+if ! PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "\d imoveis" | grep -q "deleted_at"; then
+    log_info "Adicionando coluna deleted_at na tabela imoveis..."
+    execute_sql "ALTER TABLE imoveis ADD COLUMN deleted_at TIMESTAMP;"
+else
+    log_info "Coluna deleted_at já existe na tabela imoveis"
+fi
+
+# Verificar e adicionar colunas 2FA na tabela users
+if ! PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "\d users" | grep -q "two_factor_secret"; then
+    log_info "Adicionando colunas 2FA na tabela users..."
+    execute_sql "ALTER TABLE users ADD COLUMN two_factor_secret VARCHAR(255);"
+    execute_sql "ALTER TABLE users ADD COLUMN two_factor_backup_codes TEXT;"
+else
+    log_info "Colunas 2FA já existem na tabela users"
+fi
+
 # Criar índices para melhor performance
 log_info "Criando índices..."
 execute_sql "

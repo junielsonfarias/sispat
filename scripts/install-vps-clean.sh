@@ -661,11 +661,7 @@ main() {
     setup_backup
     setup_ssl
     
-    # Corrigir esquema do banco de dados
-    log_header "Corrigindo esquema do banco de dados..."
-    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-database-schema.sh -o /root/fix-schema.sh || true
-    chmod +x /root/fix-schema.sh || true
-    /root/fix-schema.sh || true
+    # Esquema do banco será corrigido automaticamente pelo init-database.sh
 
     # Pós-instalação: diagnóstico e correções finais
     log_header "Executando verificação pós-instalação..."
