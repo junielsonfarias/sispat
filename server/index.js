@@ -215,40 +215,48 @@ const allowedOrigins =
         'http://192.168.1.173:8082',
       ];
 
-app.use(
+// Suporte a wildcard e requisições sem Origin em produção quando habilitado por env
+const productionOrigins = isProduction
+  ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
+  : [];
+const allowAnyOriginWildcard =
+  productionOrigins.includes('*') ||
+  process.env.CORS_ORIGIN === '*' ||
+  process.env.ALLOWED_ORIGINS === '*';
+const allowNoOriginInProduction =
+  allowAnyOriginWildcard || process.env.ALLOW_NO_ORIGIN === 'true';
+
+app.use((req, res, next) =>
   cors({
     origin: (origin, callback) => {
-      // Permitir requisições sem origin apenas em desenvolvimento
-      if (!origin && process.env.NODE_ENV !== 'production') {
-        return callback(null, true);
-      }
-
-      // Em produção, NÃO permitir requisições sem origin (segurança)
-      if (!origin && process.env.NODE_ENV === 'production') {
+      // Sem Origin
+      if (!origin) {
+        // Sempre permitir no desenvolvimento
+        if (!isProduction) return callback(null, true);
+        // Em produção, permitir se explicitamente habilitado ou wildcard ativo
+        if (allowNoOriginInProduction) return callback(null, true);
         console.warn('❌ CORS: Requisição sem origin bloqueada em produção');
         return callback(new Error('Not allowed by CORS - No origin provided'));
       }
 
-      // Em produção, permitir apenas origens configuradas
-      const productionOrigins =
-        process.env.NODE_ENV === 'production'
-          ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
-          : [];
+      // Qualquer origem permitida via wildcard
+      if (allowAnyOriginWildcard) {
+        return callback(null, true);
+      }
 
       const allAllowedOrigins = [...allowedOrigins, ...productionOrigins];
-
       if (allAllowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn(`❌ CORS bloqueado para origem: ${origin}`);
-        callback(new Error(`Not allowed by CORS - Origin: ${origin}`));
+        return callback(null, true);
       }
+
+      console.warn(`❌ CORS bloqueado para origem: ${origin}`);
+      return callback(new Error(`Not allowed by CORS - Origin: ${origin}`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     maxAge: 86400, // 24 horas
-  })
+  })(req, res, next)
 );
 
 // Debug endpoint to check public data sync (BEFORE ANY MIDDLEWARE)
