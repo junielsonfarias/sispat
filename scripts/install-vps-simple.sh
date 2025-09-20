@@ -615,8 +615,24 @@ apply_post_install_fixes() {
     if curl -f -s http://localhost:3001/api/health > /dev/null 2>&1; then
         log_success "Backend está funcionando corretamente!"
     else
-        log_warning "Backend pode ter problemas, verificando logs..."
-        pm2 logs --lines 10
+        log_warning "Backend pode ter problemas, aplicando correções..."
+        
+        # Baixar e executar script de correção
+        log_info "Baixando script de correção..."
+        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-backend-connection.sh -o /tmp/fix-backend.sh
+        chmod +x /tmp/fix-backend.sh
+        
+        log_info "Executando correções..."
+        /tmp/fix-backend.sh
+        
+        # Testar novamente
+        sleep 5
+        if curl -f -s http://localhost:3001/api/health > /dev/null 2>&1; then
+            log_success "Backend corrigido e funcionando!"
+        else
+            log_error "Backend ainda com problemas após correção!"
+            pm2 logs --lines 20
+        fi
     fi
     
     # Verificar se o frontend está sendo servido
