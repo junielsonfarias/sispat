@@ -492,17 +492,17 @@ PORT=3001
 NODE_ENV=production
 HOST=0.0.0.0
 
-# CORS Configuration
-ALLOWED_ORIGINS=http://$(hostname -I | awk '{print $1}'),http://$(hostname -I | awk '{print $1}'):80
-CORS_ORIGIN=http://$(hostname -I | awk '{print $1}'),http://$(hostname -I | awk '{print $1}'):80
+# CORS Configuration - SEMPRE HTTP
+ALLOWED_ORIGINS=http://$DOMAIN
+CORS_ORIGIN=http://$DOMAIN
 CORS_CREDENTIALS=true
 
-# Frontend Configuration
+# Frontend Configuration - SEMPRE HTTP
 VITE_PORT=80
-VITE_API_TARGET=http://$(hostname -I | awk '{print $1}')
-VITE_API_URL=http://$(hostname -I | awk '{print $1}')/api
-VITE_BACKEND_URL=http://$(hostname -I | awk '{print $1}')
-VITE_DOMAIN=http://$(hostname -I | awk '{print $1}')
+VITE_API_TARGET=http://$DOMAIN
+VITE_API_URL=http://$DOMAIN/api
+VITE_BACKEND_URL=http://$DOMAIN
+VITE_DOMAIN=http://$DOMAIN
 
 # Email Configuration (for password reset, notifications)
 SMTP_HOST=
@@ -700,35 +700,23 @@ build_sispat() {
         log_info "Configurando URLs para IP: $VPS_IP"
     fi
     
-    # Corrigir URLs nos arquivos JavaScript
+    # Corrigir URLs nos arquivos de build - FORÇANDO HTTP
     if [ -d "dist" ]; then
+        log_info "Aplicando correções de URLs para FORÇAR HTTP..."
+        
+        # Substituir TODAS as URLs HTTPS por HTTP em todos os arquivos
+        find dist -type f \( -name "*.js" -o -name "*.html" -o -name "*.css" -o -name "*.json" \) -exec sed -i 's|https://|http://|g' {} \;
+        
         # Corrigir URLs localhost
-        find dist -name "*.js" -type f -exec sed -i "s|https://localhost:3001|$FRONTEND_URL|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|http://localhost:3001|$FRONTEND_URL|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|https://localhost:8080|$FRONTEND_URL|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|http://localhost:8080|$FRONTEND_URL|g" {} \;
+        find dist -type f \( -name "*.js" -o -name "*.html" -o -name "*.css" -o -name "*.json" \) -exec sed -i "s|localhost:3001|$DOMAIN|g" {} \;
+        find dist -type f \( -name "*.js" -o -name "*.html" -o -name "*.css" -o -name "*.json" \) -exec sed -i "s|localhost:8080|$DOMAIN|g" {} \;
+        find dist -type f \( -name "*.js" -o -name "*.html" -o -name "*.css" -o -name "*.json" \) -exec sed -i "s|localhost|$DOMAIN|g" {} \;
         
-        # Corrigir URLs HTTPS do domínio (se configurado)
-        if [[ -n "$DOMAIN" ]]; then
-            find dist -name "*.js" -type f -exec sed -i "s|https://$DOMAIN|$FRONTEND_URL|g" {} \;
-        fi
+        # Garantir que todas as URLs usem o domínio correto
+        find dist -type f \( -name "*.js" -o -name "*.html" -o -name "*.css" -o -name "*.json" \) -exec sed -i "s|http://$DOMAIN/api|$API_URL|g" {} \;
+        find dist -type f \( -name "*.js" -o -name "*.html" -o -name "*.css" -o -name "*.json" \) -exec sed -i "s|http://$DOMAIN|$FRONTEND_URL|g" {} \;
         
-        # Corrigir URLs da API
-        find dist -name "*.js" -type f -exec sed -i "s|https://localhost:3001/api|$API_URL|g" {} \;
-        find dist -name "*.js" -type f -exec sed -i "s|http://localhost:3001/api|$API_URL|g" {} \;
-        
-        # Corrigir URLs nos arquivos HTML
-        find dist -name "*.html" -type f -exec sed -i "s|https://localhost:3001|$FRONTEND_URL|g" {} \;
-        find dist -name "*.html" -type f -exec sed -i "s|http://localhost:3001|$FRONTEND_URL|g" {} \;
-        find dist -name "*.html" -type f -exec sed -i "s|https://localhost:8080|$FRONTEND_URL|g" {} \;
-        find dist -name "*.html" -type f -exec sed -i "s|http://localhost:8080|$FRONTEND_URL|g" {} \;
-        
-        # Corrigir URLs HTTPS do domínio nos arquivos HTML (se configurado)
-        if [[ -n "$DOMAIN" ]]; then
-            find dist -name "*.html" -type f -exec sed -i "s|https://$DOMAIN|$FRONTEND_URL|g" {} \;
-        fi
-        
-        log_success "URLs corrigidas nos arquivos de build!"
+        log_success "URLs corrigidas nos arquivos de build - SEMPRE HTTP!"
     fi
     
     log_success "Aplicação compilada com sucesso!"
@@ -839,6 +827,9 @@ server {
     listen 80;
     server_name $SERVER_NAME;
     
+    # Headers anti-cache para garantir que o navegador pegue os arquivos corrigidos
+    add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+    
     # Configurações de segurança
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
@@ -847,7 +838,13 @@ server {
     # Rate limiting (usando a zona definida no nginx.conf)
     limit_req zone=api burst=20 nodelay;
     
-    # Proxy para API
+    # Configurações para servir arquivos estáticos
+    location / {
+        root /var/www/sispat/dist;
+        try_files \$uri \$uri/ /index.html;
+    }
+    
+    # Proxy para API - FORÇANDO HTTP
     location /api/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
@@ -856,11 +853,11 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Proto http;
         proxy_cache_bypass \$http_upgrade;
     }
 
-    # WebSocket support
+    # WebSocket support - FORÇANDO HTTP
     location /socket.io/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
@@ -869,7 +866,7 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Proto http;
     }
     
     # Arquivos estáticos
@@ -1047,6 +1044,8 @@ show_final_info() {
     echo -e "✅ Backend e frontend configurados para usar domínio em vez de localhost"
     echo -e "✅ URLs corrigidas nos arquivos de build (localhost e HTTPS)"
     echo -e "✅ Correções robustas de URLs aplicadas automaticamente"
+    echo -e "✅ Configuração HTTP forçada desde a instalação"
+    echo -e "✅ URLs HTTPS substituídas por HTTP automaticamente"
     echo -e "✅ Correções agressivas de URLs aplicadas automaticamente"
     echo -e "✅ Correção de emergência para HTTPS aplicada automaticamente"
     echo -e "✅ Verificação de status do backend executada"

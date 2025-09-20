@@ -73,14 +73,15 @@ curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts
 
 **🆕 NOVIDADES DA VERSÃO 2025:**
 
+- ✅ **HTTP forçado desde a instalação** - Backend e frontend sempre HTTP
 - ✅ **Correção automática de domínio** - Não usa mais localhost
-- ✅ **URLs corrigidas** nos arquivos de build
+- ✅ **URLs HTTPS substituídas por HTTP** automaticamente
 - ✅ **Correções agressivas** de URLs HTTPS por HTTP
 - ✅ **Correção de emergência** para HTTPS forçado
 - ✅ **Verificação de status** do backend automática
 - ✅ **CORS configurado** para o domínio correto
 - ✅ **Nginx otimizado** para domínio específico
-- ✅ **HTTP por padrão** (sem HTTPS forçado)
+- ✅ **Headers anti-cache** para garantir arquivos atualizados
 
 ### **PASSO 3: Escolher Tipo de Instalação** 🎯
 
@@ -806,15 +807,15 @@ tail -f /var/log/postgresql/postgresql-*.log
 - Trust proxy configurado para funcionar com Nginx
 - Rate limiting corrigido para X-Forwarded-For
 
-✅ **🆕 NOVIDADES - Correção de Domínio:**
+✅ **🆕 NOVIDADES - HTTP Forçado desde a Instalação:**
 
-- **Frontend configurado para usar domínio em vez de localhost**
-- **URLs corrigidas automaticamente** nos arquivos de build
-- **Correções agressivas** de URLs HTTPS por HTTP
+- **HTTP forçado desde a instalação** - Backend e frontend sempre HTTP
+- **URLs HTTPS substituídas por HTTP** automaticamente nos arquivos de build
+- **Configuração do Nginx** força HTTP no proxy
+- **Headers anti-cache** garantem arquivos atualizados
+- **CORS configurado** para aceitar apenas HTTP
+- **Frontend configurado** para usar domínio em vez de localhost
 - **Verificação de status** do backend automática
-- **Nginx configurado para domínio específico**
-- **CORS configurado para o domínio correto**
-- **HTTP por padrão** (sem HTTPS forçado)
 - **Backend e frontend online** sem erros de conexão
 
 ✅ **Scripts de Correção:**
@@ -899,14 +900,16 @@ chmod +x fixes.sh
 
 ### **🔧 Correções Automáticas:**
 
-1. **Detecção de domínio** - Script pergunta se você tem domínio
-2. **Configuração dinâmica** - URLs baseadas no domínio/IP
-3. **Correção de build** - URLs corrigidas nos arquivos JavaScript/HTML
-4. **Correção agressiva** - URLs HTTPS forçadas para HTTP
-5. **Verificação de status** - Backend verificado automaticamente
-6. **Nginx otimizado** - Configurado para domínio específico
-7. **CORS configurado** - Aceita requisições do domínio correto
-8. **HTTP por padrão** - Sem HTTPS forçado
+1. **HTTP forçado desde a instalação** - Backend e frontend sempre HTTP
+2. **Detecção de domínio** - Script pergunta se você tem domínio
+3. **Configuração dinâmica** - URLs baseadas no domínio/IP
+4. **Substituição automática** - URLs HTTPS substituídas por HTTP
+5. **Correção de build** - URLs corrigidas nos arquivos JavaScript/HTML
+6. **Correção agressiva** - URLs HTTPS forçadas para HTTP
+7. **Headers anti-cache** - Garantem arquivos atualizados
+8. **Verificação de status** - Backend verificado automaticamente
+9. **Nginx otimizado** - Configurado para domínio específico
+10. **CORS configurado** - Aceita requisições do domínio correto
 
 ### **📊 Resultado:**
 

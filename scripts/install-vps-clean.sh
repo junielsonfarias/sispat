@@ -414,17 +414,17 @@ JWT_EXPIRES_IN=24h
 JWT_REFRESH_SECRET=$REFRESH_TOKEN_SECRET
 JWT_REFRESH_EXPIRES_IN=7d
 
-# CORS e Domínio
-CORS_ORIGIN=https://$DOMAIN,http://$DOMAIN
+# CORS e Domínio - SEMPRE HTTP
+CORS_ORIGIN=http://$DOMAIN
 CORS_CREDENTIALS=true
-ALLOWED_ORIGINS=https://$DOMAIN,http://$DOMAIN
+ALLOWED_ORIGINS=http://$DOMAIN
 
-# Frontend
-VITE_PORT=3000
-VITE_API_TARGET=http://localhost:3001
-VITE_API_URL=http://localhost:3001/api
-VITE_BACKEND_URL=http://localhost:3001
-VITE_DOMAIN=https://$DOMAIN
+# Frontend - SEMPRE HTTP
+VITE_PORT=80
+VITE_API_TARGET=http://$DOMAIN
+VITE_API_URL=http://$DOMAIN/api
+VITE_BACKEND_URL=http://$DOMAIN
+VITE_DOMAIN=http://$DOMAIN
 
 # Habilitar banco de dados
 DISABLE_DATABASE=false
@@ -541,12 +541,13 @@ server {
     # Rate limiting (usando a zona definida no nginx.conf)
     limit_req zone=api burst=20 nodelay;
 
+    # Headers anti-cache para garantir que o navegador pegue os arquivos corrigidos
+    add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+
     # Configurações para servir arquivos estáticos
     location / {
         root /var/www/sispat/dist;
         try_files \$uri \$uri/ /index.html;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
         
         # Headers de segurança
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -554,7 +555,7 @@ server {
         add_header X-XSS-Protection "1; mode=block" always;
     }
 
-    # Proxy para API
+    # Proxy para API - FORÇANDO HTTP
     location /api/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
@@ -563,11 +564,11 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Proto http;
         proxy_cache_bypass \$http_upgrade;
     }
 
-    # WebSocket support
+    # WebSocket support - FORÇANDO HTTP
     location /socket.io/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
@@ -576,7 +577,7 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Proto http;
     }
 
     # Logs
@@ -737,6 +738,8 @@ show_final_info() {
     echo -e "✅ Configuração de build otimizada para evitar erros de gráficos"
     echo -e "✅ URLs corrigidas nos arquivos de build (localhost e HTTPS)"
     echo -e "✅ Correções robustas de URLs aplicadas automaticamente"
+    echo -e "✅ Configuração HTTP forçada desde a instalação"
+    echo -e "✅ URLs HTTPS substituídas por HTTP automaticamente"
     echo -e "✅ Correções agressivas de URLs aplicadas automaticamente"
     echo -e "✅ Correção de emergência para HTTPS aplicada automaticamente"
     echo -e "✅ Verificação de status do backend executada"
