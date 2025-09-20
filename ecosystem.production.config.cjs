@@ -8,8 +8,8 @@ module.exports = {
     {
       name: 'sispat-backend',
       script: 'server/index.js',
-      instances: 'max', // Usar todos os cores disponíveis
-      exec_mode: 'cluster',
+      instances: 1, // Usar 1 instância para VPS pequena
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'development',
         PORT: 3001,

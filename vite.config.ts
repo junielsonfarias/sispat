@@ -94,7 +94,8 @@ export default defineConfig(({ mode }) => {
       ],
       exclude: [
         '@vite/client', 
-        '@vite/env'
+        '@vite/env',
+        'speakeasy' // Excluir módulo Node que não deve estar no frontend
       ],
     },
     

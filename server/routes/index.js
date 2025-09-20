@@ -26,6 +26,7 @@ import rateLimitAdminRoutes from './rate-limit-admin.js';
 import reportsRoutes from './reports.js';
 import sectorsRoutes from './sectors.js';
 import transfersRoutes from './transfers.js';
+import twoFactorAuthRoutes from './two-factor-auth.js';
 import uploadsRoutes from './uploads.js';
 import usersRoutes from './users.js';
 
@@ -60,6 +61,7 @@ export function registerRoutes(app) {
   app.use('/api/uploads', uploadsRoutes);
   app.use('/api/activity-log', activityLogRoutes);
   app.use('/api/customization', customizationRoutes);
+  app.use('/api/two-factor', twoFactorAuthRoutes);
   console.log('✅ Rotas principais registradas');
 
   // Rotas administrativas

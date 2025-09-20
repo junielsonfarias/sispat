@@ -164,29 +164,32 @@ app.use((req, res, next) => {
   next();
 });
 
-// Security middleware - Configuração mais restritiva
+// Security middleware - Configuração flexível para produção
+const isHttpsEnv = process.env.NODE_ENV === 'production' && 
+  (process.env.HTTPS_ENABLED === 'true' || process.env.SSL_ENABLED === 'true');
+
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'blob:'],
-        connectSrc: ["'self'"],
-        fontSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        scriptSrc: ["'self'", "https://maps.googleapis.com"],
+        imgSrc: ["'self'", 'data:', 'blob:', "https://*.googleapis.com", "https://*.gstatic.com"],
+        connectSrc: ["'self'", "https://maps.googleapis.com", "https://*.googleapis.com", "https://*.gstatic.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
-        frameSrc: ["'none'"],
+        frameSrc: ["'self'"],
       },
     },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginEmbedderPolicy: false, // Necessário para alguns recursos
-    hsts: {
+    hsts: isHttpsEnv ? {
       maxAge: 31536000, // 1 ano
       includeSubDomains: true,
       preload: true,
-    },
+    } : false, // Só habilite HSTS se HTTPS estiver configurado
     noSniff: true,
     frameguard: { action: 'deny' },
     xssFilter: true,
@@ -578,8 +581,8 @@ const authLimiter = rateLimit({
   },
 });
 
-// Aplicar rate limiting global
-app.use(globalLimiter);
+// Aplicar rate limiting apenas na API (não nos assets estáticos)
+app.use('/api', globalLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

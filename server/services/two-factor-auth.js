@@ -1,67 +1,65 @@
 import QRCode from 'qrcode';
 import speakeasy from 'speakeasy';
 
-export interface TwoFactorSetup {
-  secret: string;
-  qrCodeUrl: string;
-  backupCodes: string[];
-  manualEntryKey: string;
-}
-
-export interface TwoFactorVerification {
-  token: string;
-  userId: string;
-}
-
 /**
  * Gera uma nova configuração de 2FA para um usuário
  */
 export const generateTwoFactorSecret = async (
-  userEmail: string,
-  serviceName: string = 'SISPAT'
-): Promise<TwoFactorSetup> => {
-  // Gera o secret
-  const secret = speakeasy.generateSecret({
-    name: userEmail,
-    issuer: serviceName,
-    length: 32,
-  });
+  userEmail,
+  serviceName = 'SISPAT'
+) => {
+  try {
+    // Gera o secret
+    const secret = speakeasy.generateSecret({
+      name: userEmail,
+      issuer: serviceName,
+      length: 32,
+    });
 
-  // Gera códigos de backup
-  const backupCodes = generateBackupCodes();
+    // Gera códigos de backup
+    const backupCodes = generateBackupCodes();
 
-  // Gera QR Code URL
-  const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url || '');
+    // Gera QR Code URL
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url || '');
 
-  return {
-    secret: secret.base32!,
-    qrCodeUrl: qrCodeUrl,
-    backupCodes,
-    manualEntryKey: secret.base32!,
-  };
+    return {
+      secret: secret.base32,
+      qrCodeUrl: qrCodeUrl,
+      backupCodes,
+      manualEntryKey: secret.base32,
+    };
+  } catch (error) {
+    console.error('Erro ao gerar secret 2FA:', error);
+    throw new Error('Falha ao gerar configuração 2FA');
+  }
 };
 
 /**
  * Verifica um token 2FA
  */
 export const verifyTwoFactorToken = (
-  token: string,
-  secret: string,
-  window: number = 2
-): boolean => {
-  return speakeasy.totp.verify({
-    secret,
-    encoding: 'base32',
-    token,
-    window, // Permite tokens de até 2 períodos antes/depois (60s cada)
-  });
+  token,
+  secret,
+  window = 2
+) => {
+  try {
+    return speakeasy.totp.verify({
+      secret,
+      encoding: 'base32',
+      token,
+      window, // Permite tokens de até 2 períodos antes/depois (60s cada)
+    });
+  } catch (error) {
+    console.error('Erro ao verificar token 2FA:', error);
+    return false;
+  }
 };
 
 /**
  * Gera códigos de backup para recuperação
  */
-export const generateBackupCodes = (count: number = 10): string[] => {
-  const codes: string[] = [];
+export const generateBackupCodes = (count = 10) => {
+  const codes = [];
 
   for (let i = 0; i < count; i++) {
     // Gera código de 8 dígitos
@@ -76,9 +74,9 @@ export const generateBackupCodes = (count: number = 10): string[] => {
  * Verifica se um código de backup é válido
  */
 export const verifyBackupCode = (
-  code: string,
-  validCodes: string[]
-): { isValid: boolean; remainingCodes: string[] } => {
+  code,
+  validCodes
+) => {
   const normalizedCode = code.toUpperCase().trim();
   const codeIndex = validCodes.indexOf(normalizedCode);
 
@@ -95,17 +93,22 @@ export const verifyBackupCode = (
 /**
  * Gera um token TOTP atual para testes
  */
-export const generateCurrentToken = (secret: string): string => {
-  return speakeasy.totp({
-    secret,
-    encoding: 'base32',
-  });
+export const generateCurrentToken = (secret) => {
+  try {
+    return speakeasy.totp({
+      secret,
+      encoding: 'base32',
+    });
+  } catch (error) {
+    console.error('Erro ao gerar token atual:', error);
+    return null;
+  }
 };
 
 /**
  * Valida formato de token 2FA
  */
-export const isValidTokenFormat = (token: string): boolean => {
+export const isValidTokenFormat = (token) => {
   // Token deve ter 6 dígitos
   return /^\d{6}$/.test(token);
 };
@@ -113,7 +116,7 @@ export const isValidTokenFormat = (token: string): boolean => {
 /**
  * Calcula tempo restante até próximo token
  */
-export const getTimeRemaining = (): number => {
+export const getTimeRemaining = () => {
   const now = Math.floor(Date.now() / 1000);
   const timeStep = 30; // TOTP usa períodos de 30 segundos
   return timeStep - (now % timeStep);

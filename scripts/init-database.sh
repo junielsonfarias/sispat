@@ -83,6 +83,8 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(50) DEFAULT 'user',
     municipality_id INTEGER,
     is_active BOOLEAN DEFAULT true,
+    two_factor_secret VARCHAR(255),
+    two_factor_backup_codes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -169,6 +171,7 @@ CREATE TABLE IF NOT EXISTS patrimonios (
     local_id INTEGER REFERENCES locals(id),
     user_id INTEGER REFERENCES users(id),
     is_active BOOLEAN DEFAULT true,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -194,6 +197,7 @@ CREATE TABLE IF NOT EXISTS imoveis (
     local_id INTEGER REFERENCES locals(id),
     user_id INTEGER REFERENCES users(id),
     is_active BOOLEAN DEFAULT true,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -446,8 +450,10 @@ execute_sql "
 CREATE INDEX IF NOT EXISTS idx_patrimonios_numero ON patrimonios(numero_patrimonio);
 CREATE INDEX IF NOT EXISTS idx_patrimonios_municipality ON patrimonios(municipality_id);
 CREATE INDEX IF NOT EXISTS idx_patrimonios_sector ON patrimonios(sector_id);
+CREATE INDEX IF NOT EXISTS idx_patrimonios_deleted_at ON patrimonios(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_imoveis_numero ON imoveis(numero_patrimonio);
 CREATE INDEX IF NOT EXISTS idx_imoveis_municipality ON imoveis(municipality_id);
+CREATE INDEX IF NOT EXISTS idx_imoveis_deleted_at ON imoveis(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_municipality ON users(municipality_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
