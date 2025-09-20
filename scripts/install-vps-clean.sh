@@ -735,6 +735,8 @@ show_final_info() {
     echo -e "\n${GREEN}🔧 Correções aplicadas:${NC}"
     echo -e "✅ Nginx corrigido para evitar erro de limit_req_zone"
     echo -e "✅ Configuração de build otimizada para evitar erros de gráficos"
+    echo -e "✅ Proxy configurado para forçar HTTP no backend"
+    echo -e "✅ Incompatibilidade HTTPS frontend + HTTP backend corrigida"
     echo -e "✅ Superusuário criado automaticamente"
     echo -e "✅ PM2 configurado e funcionando"
     echo -e "✅ Dependências estáveis e compatíveis"
@@ -776,6 +778,12 @@ main() {
     curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-production-issues.sh -o /root/fix-production.sh || true
     chmod +x /root/fix-production.sh || true
     /root/fix-production.sh || true
+    
+    # Aplicar correções de protocolo HTTPS/HTTP
+    log_header "Aplicando correções de protocolo HTTPS/HTTP..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-frontend-http-backend.sh -o /root/fix-protocol.sh || true
+    chmod +x /root/fix-protocol.sh || true
+    /root/fix-protocol.sh || true
     
     # Garantir serviços ativos
     systemctl reload nginx || systemctl restart nginx || true

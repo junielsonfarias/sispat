@@ -756,6 +756,12 @@ apply_post_install_fixes() {
     chmod +x /tmp/fix-proxy.sh
     /tmp/fix-proxy.sh
     
+    # Aplicar correções de protocolo HTTPS/HTTP
+    log_info "Aplicando correções de protocolo HTTPS/HTTP..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-frontend-http-backend.sh -o /tmp/fix-protocol.sh
+    chmod +x /tmp/fix-protocol.sh
+    /tmp/fix-protocol.sh
+    
     # Verificar se o backend está funcionando
     log_info "Testando backend..."
     sleep 5  # Aguardar backend inicializar
@@ -1033,6 +1039,8 @@ show_final_info() {
     echo -e "✅ URLs corrigidas nos arquivos de build"
     echo -e "✅ CORS configurado para aceitar requisições do domínio"
     echo -e "✅ Configuração HTTP por padrão (sem HTTPS forçado)"
+    echo -e "✅ Proxy configurado para forçar HTTP no backend"
+    echo -e "✅ Incompatibilidade HTTPS frontend + HTTP backend corrigida"
     echo -e "✅ Superusuário criado automaticamente"
     echo -e "✅ PM2 configurado e funcionando"
     echo -e "✅ Dependências estáveis e compatíveis"
