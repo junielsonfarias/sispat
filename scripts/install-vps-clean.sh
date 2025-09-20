@@ -479,7 +479,26 @@ EOF
     
     # Criar superusuário automaticamente
     log_info "Criando superusuário..."
-    if [ -f "scripts/create-superuser.js" ]; then
+    if [ -f "scripts/create-superuser.cjs" ]; then
+        node scripts/create-superuser.cjs
+        if [ $? -eq 0 ]; then
+            log_success "Superusuário criado com sucesso!"
+        else
+            log_warning "Falha ao criar superusuário, tentando método alternativo..."
+            # Método alternativo usando SQL direto
+            PGPASSWORD=postgres psql -h localhost -U postgres -d sispat_db -c "
+                INSERT INTO users (name, email, password, role, municipality_id, is_active)
+                VALUES ('Junielson Farias', 'junielsonfarias@gmail.com', '\$2a\$12\$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2O', 'superuser', 1, true)
+                ON CONFLICT (email) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    password = EXCLUDED.password,
+                    role = EXCLUDED.role,
+                    is_active = true,
+                    updated_at = CURRENT_TIMESTAMP;
+            " 2>/dev/null || log_warning "Método alternativo também falhou"
+        fi
+    elif [ -f "scripts/create-superuser.js" ]; then
+        log_info "Tentando com script .js..."
         node scripts/create-superuser.js
         if [ $? -eq 0 ]; then
             log_success "Superusuário criado com sucesso!"

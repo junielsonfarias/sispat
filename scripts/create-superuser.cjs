@@ -3,17 +3,15 @@
 /**
  * Script para criar superusuário automaticamente
  * Executa durante a instalação para garantir que o admin existe
+ * Versão CommonJS para compatibilidade
  */
 
-import { Pool } from 'pg';
-import bcrypt from 'bcryptjs';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+/* eslint-env node */
+/* eslint-disable no-undef */
 
-// Para compatibilidade com ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+const fs = require('fs');
 
 // Configurações do banco
 const dbConfig = {
@@ -342,11 +340,11 @@ async function main() {
 }
 
 // Executar se chamado diretamente
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   main().catch(error => {
     log(`Erro não tratado: ${error.message}`, 'error');
     process.exit(1);
   });
 }
 
-export { main, SUPERUSER_DATA };
+module.exports = { main, SUPERUSER_DATA };
