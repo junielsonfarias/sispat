@@ -47,19 +47,22 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         external: [],
         output: {
+          // Garantir que React seja carregado primeiro
+          chunkFileNames: (chunkInfo) => {
+            if (chunkInfo.name === 'vendor-react') {
+              return 'assets/[name]-[hash].js';
+            }
+            return 'assets/[name]-[hash].js';
+          },
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
-              // React e dependências principais
+              // React e dependências principais - DEVE SER PRIMEIRO
               if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
                 return 'vendor-react';
               }
               // Radix UI Components
               if (id.includes('@radix-ui')) {
                 return 'vendor-radix';
-              }
-              // Chart libraries
-              if (id.includes('recharts') || id.includes('chart')) {
-                return 'vendor-charts';
               }
               // Utility libraries
               if (id.includes('axios') || id.includes('zod') || id.includes('date-fns') || id.includes('lodash')) {
@@ -69,37 +72,20 @@ export default defineConfig(({ mode }) => {
               if (id.includes('jspdf') || id.includes('xlsx') || id.includes('qrcode')) {
                 return 'vendor-documents';
               }
+              // Chart libraries - DEPOIS do React
+              if (id.includes('recharts') || id.includes('chart')) {
+                return 'vendor-charts';
+              }
               // Resto das dependências
               return 'vendor-misc';
             }
             return null;
           },
-          chunkFileNames: 'assets/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash].[ext]',
         },
       },
-      minify: mode === 'production' ? 'terser' : false,
-      terserOptions: {
-        ecma: 2019,
-        compress: {
-          passes: 2,
-          inline: false,
-          reduce_funcs: false,
-          reduce_vars: false,
-          hoist_vars: false,
-          hoist_funs: false,
-          keep_infinity: true,
-          toplevel: false,
-          module: false,
-        },
-        mangle: false,
-        format: {
-          comments: false,
-          ascii_only: true,
-        },
-        safari10: true,
-      },
+      minify: mode === 'production' ? 'esbuild' : false,
       chunkSizeWarningLimit: 1000,
       target: 'es2015',
       reportCompressedSize: false,
@@ -110,14 +96,13 @@ export default defineConfig(({ mode }) => {
       include: [
         'react', 
         'react-dom', 
-        'react-router-dom',
-        'recharts',
-        'recharts-scale'
+        'react-router-dom'
       ],
       exclude: [
         '@vite/client', 
         '@vite/env',
-        'speakeasy' // Excluir módulo Node que não deve estar no frontend
+        'speakeasy', // Excluir módulo Node que não deve estar no frontend
+        'recharts' // Excluir recharts da otimização para evitar conflitos
       ],
     },
     
