@@ -330,7 +330,7 @@ apt install -y nginx
         
         # Baixar e executar script de correção
         log_info "Baixando script de correção do Nginx..."
-        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-startup.sh -o /tmp/fix-nginx.sh
+        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-limit-req.sh -o /tmp/fix-nginx.sh
         chmod +x /tmp/fix-nginx.sh
         
         log_info "Executando correções do Nginx..."

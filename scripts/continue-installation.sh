@@ -350,6 +350,13 @@ build_sispat() {
 configure_nginx_for_sispat() {
     log_header "Configurando Nginx para SISPAT..."
     
+    # Verificar se limit_req_zone existe no nginx.conf principal
+    if ! grep -q "limit_req_zone" /etc/nginx/nginx.conf; then
+        log_info "Adicionando limit_req_zone ao nginx.conf principal..."
+        cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup.$(date +%Y%m%d_%H%M%S)
+        sed -i '/http {/a\    # Rate limiting zones\n    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;' /etc/nginx/nginx.conf
+    fi
+    
     # Backup da configuração atual
     cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup
     
@@ -364,8 +371,7 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
     
-    # Rate limiting
-    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+    # Rate limiting (usando a zona definida no nginx.conf)
     limit_req zone=api burst=20 nodelay;
     
     # Proxy para API
