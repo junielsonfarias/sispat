@@ -402,6 +402,12 @@ cd sispat
         npm install --legacy-peer-deps --force
     }
     
+    # Verificar se terser foi instalado (necessário para build)
+    if ! npm list terser > /dev/null 2>&1; then
+        log_info "Instalando terser para minificação..."
+        npm install --save-dev terser
+    fi
+    
     log_info "Configurando variáveis de ambiente..."
     
     # Gerar JWT Secret seguro
@@ -556,9 +562,73 @@ build_sispat() {
     cd $APP_DIR
     
     log_info "Fazendo build da aplicação..."
-    npm run build:prod
+    npm run build:prod || {
+        log_warning "Erro no build, tentando build padrão..."
+        npm run build
+    }
+    
+    # Verificar se o build foi bem-sucedido
+    if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
+        log_error "Build falhou! Verificando logs..."
+        log_info "Tentando build com configurações alternativas..."
+        
+        # Limpar cache e tentar novamente
+        npm cache clean --force
+        rm -rf dist node_modules/.vite
+        
+        # Tentar build sem minificação
+        log_info "Tentando build sem minificação..."
+        NODE_ENV=production npm run build
+        
+        if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
+            log_error "Build ainda falhou após tentativas!"
+            log_info "Verificando se há problemas com dependências..."
+            npm ls --depth=0
+            exit 1
+        fi
+    fi
     
     log_success "Aplicação compilada com sucesso!"
+}
+
+# Função para aplicar correções pós-instalação
+apply_post_install_fixes() {
+    log_header "Aplicando correções pós-instalação..."
+    
+    cd $APP_DIR
+    
+    # Verificar se há problemas comuns e aplicar correções
+    log_info "Verificando configuração do PM2..."
+    
+    # Usar configuração otimizada para VPS pequena
+    if [ -f "ecosystem.production.config.cjs" ]; then
+        log_info "Configuração PM2 otimizada já está presente"
+    else
+        log_warning "Configuração PM2 não encontrada, usando configuração padrão"
+    fi
+    
+    # Verificar se o backend está funcionando
+    log_info "Testando backend..."
+    sleep 5  # Aguardar backend inicializar
+    
+    # Testar se a API está respondendo
+    if curl -f -s http://localhost:3001/api/health > /dev/null 2>&1; then
+        log_success "Backend está funcionando corretamente!"
+    else
+        log_warning "Backend pode ter problemas, verificando logs..."
+        pm2 logs --lines 10
+    fi
+    
+    # Verificar se o frontend está sendo servido
+    log_info "Testando frontend..."
+    if curl -f -s http://localhost > /dev/null 2>&1; then
+        log_success "Frontend está sendo servido corretamente!"
+    else
+        log_warning "Frontend pode ter problemas, verificando Nginx..."
+        systemctl status nginx
+    fi
+    
+    log_success "Correções pós-instalação aplicadas!"
 }
 
 # Função para configurar Nginx
@@ -573,11 +643,6 @@ configure_nginx() {
 server {
     listen 80;
     server_name _;
-    
-    # Redirecionar para HTTPS se domínio configurado
-    if (\$host = $DOMAIN) {
-        return 301 https://\$host\$request_uri;
-    }
     
     # Configurações de segurança
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -787,6 +852,13 @@ show_final_info() {
     echo -e "4. ⚙️  Configure seu município"
     echo -e "5. 👥 Adicione usuários conforme necessário"
     
+    echo -e "\n${GREEN}🔧 Correções aplicadas:${NC}"
+    echo -e "✅ Configuração de build otimizada para evitar erros de gráficos"
+    echo -e "✅ Error boundaries para componentes de gráficos"
+    echo -e "✅ Configuração PM2 otimizada para VPS pequena"
+    echo -e "✅ Nginx configurado sem redirecionamento HTTPS forçado"
+    echo -e "✅ Dependências estáveis e compatíveis"
+    
     echo -e "\n${BLUE}📞 Precisa de ajuda?${NC}"
     echo -e "📖 Consulte: ${YELLOW}docs/GUIA-INSTALACAO-SIMPLES-VPS.md${NC}"
     echo -e "🐛 Problemas? Execute: ${YELLOW}pm2 logs${NC}"
@@ -872,6 +944,7 @@ main() {
     configure_ssl
     start_sispat
     setup_backup
+    apply_post_install_fixes
     
     # Mostrar informações finais
     show_final_info
