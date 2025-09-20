@@ -767,11 +767,11 @@ apply_post_install_fixes() {
     chmod +x /tmp/fix-urls-aggressive.sh
     /tmp/fix-urls-aggressive.sh
     
-    # Aplicar correção de emergência para HTTPS
-    log_info "Aplicando correção de emergência para HTTPS..."
-    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-emergency.sh -o /tmp/fix-https-emergency.sh
-    chmod +x /tmp/fix-https-emergency.sh
-    /tmp/fix-https-emergency.sh
+    # Aplicar correção DEFINITIVA para HTTPS
+    log_info "Aplicando correção DEFINITIVA para HTTPS..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-ultimate.sh -o /tmp/fix-https-ultimate.sh
+    chmod +x /tmp/fix-https-ultimate.sh
+    /tmp/fix-https-ultimate.sh
     
     # Aplicar correções de protocolo HTTPS/HTTP
     log_info "Aplicando correções de protocolo HTTPS/HTTP..."
@@ -1047,7 +1047,7 @@ show_final_info() {
     echo -e "✅ Configuração HTTP forçada desde a instalação"
     echo -e "✅ URLs HTTPS substituídas por HTTP automaticamente"
     echo -e "✅ Correções agressivas de URLs aplicadas automaticamente"
-    echo -e "✅ Correção de emergência para HTTPS aplicada automaticamente"
+    echo -e "✅ Correção DEFINITIVA para HTTPS aplicada automaticamente"
     echo -e "✅ Verificação de status do backend executada"
     echo -e "✅ CORS configurado para aceitar requisições do domínio"
     echo -e "✅ Configuração HTTP por padrão (sem HTTPS forçado)"

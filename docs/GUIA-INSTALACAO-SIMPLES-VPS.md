@@ -379,12 +379,12 @@ de proxy entre frontend e backend.
 
 **Solução IMEDIATA:**
 
-1.  **Executar script de correção de emergência (RECOMENDADO):**
+1.  **Executar script de correção DEFINITIVA (RECOMENDADO):**
 
     ```bash
-    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-emergency.sh -o fix-https-emergency.sh
-    chmod +x fix-https-emergency.sh
-    ./fix-https-emergency.sh
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-ultimate.sh -o fix-https-ultimate.sh
+    chmod +x fix-https-ultimate.sh
+    ./fix-https-ultimate.sh
     ```
 
 2.  **Ou executar script de correção específico:**
@@ -395,13 +395,17 @@ de proxy entre frontend e backend.
     ./fix-https-http.sh
     ```
 
-3.  **O script de emergência corrige automaticamente:**
+3.  **O script DEFINITIVO corrige automaticamente:**
     - Para todos os serviços (Nginx, PM2)
+    - Corrige arquivo .env forçando HTTP
+    - Corrige vite.config.ts para forçar HTTP
+    - Corrige arquivos de configuração do Axios
+    - Limpa cache e node_modules
+    - Rebuilda aplicação com HTTP forçado
     - Substitui TODAS as URLs HTTPS por HTTP nos arquivos de build
-    - Corrige arquivo .env
-    - Recria configuração do Nginx forçando HTTP
+    - Recria configuração do Nginx com headers anti-cache
     - Reinicia todos os serviços
-    - Testa conectividade final
+    - Testa conectividade completa
 
 ### **❌ "Network Error" ou "ERR_CONNECTION_REFUSED" persistente**
 
@@ -417,12 +421,12 @@ de proxy entre frontend e backend.
     ./diagnose-https.sh
     ```
 
-2.  **Executar correção de emergência:**
+2.  **Executar correção DEFINITIVA:**
 
     ```bash
-    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-emergency.sh -o fix-https-emergency.sh
-    chmod +x fix-https-emergency.sh
-    ./fix-https-emergency.sh
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-ultimate.sh -o fix-https-ultimate.sh
+    chmod +x fix-https-ultimate.sh
+    ./fix-https-ultimate.sh
     ```
 
 3.  **O diagnóstico verifica:**
@@ -827,7 +831,7 @@ tail -f /var/log/postgresql/postgresql-*.log
 - `scripts/fix-backend-connection.sh` - Corrige problemas de conectividade do backend
 - `scripts/fix-https-frontend-http-backend.sh` - Corrige problemas Frontend HTTPS + Backend HTTP
 - `scripts/fix-urls-aggressive.sh` - Correção agressiva de URLs HTTPS por HTTP
-- `scripts/fix-https-emergency.sh` - Correção de emergência para HTTPS forçado
+- `scripts/fix-https-ultimate.sh` - Correção DEFINITIVA para HTTPS forçado
 - `scripts/diagnose-https-issue.sh` - Diagnóstico específico de problemas HTTPS
 - `scripts/check-backend-status.sh` - Verificação de status do backend
 - **`scripts/install-vps-simple.sh` - Script principal ATUALIZADO com correções de domínio**
