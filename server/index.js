@@ -246,14 +246,12 @@ const allowNoOriginInProduction =
 app.use((req, res, next) =>
   cors({
     origin: (origin, callback) => {
-      // Sem Origin
+      // Sem Origin - permitir em produção para compatibilidade
       if (!origin) {
         // Sempre permitir no desenvolvimento
         if (!isProduction) return callback(null, true);
-        // Em produção, permitir se explicitamente habilitado ou wildcard ativo
-        if (allowNoOriginInProduction) return callback(null, true);
-        console.warn('❌ CORS: Requisição sem origin bloqueada em produção');
-        return callback(new Error('Not allowed by CORS - No origin provided'));
+        // Em produção, permitir requisições sem origin para compatibilidade
+        return callback(null, true);
       }
 
       // Qualquer origem permitida via wildcard

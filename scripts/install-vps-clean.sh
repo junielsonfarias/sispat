@@ -425,17 +425,17 @@ server {
     listen 80;
     server_name $DOMAIN;
 
-    # Redirecionar para HTTPS (se não for localhost)
-    if (\$host != "localhost") {
-        return 301 https://\$server_name\$request_uri;
-    }
-
-    # Configurações para localhost
+    # Configurações para servir arquivos estáticos
     location / {
         root /var/www/sispat/dist;
         try_files \$uri \$uri/ /index.html;
         expires 1y;
         add_header Cache-Control "public, immutable";
+        
+        # Headers de segurança
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
     }
 
     # Proxy para API
@@ -500,31 +500,8 @@ EOF
 setup_pm2() {
     log_header "Configurando PM2..."
     
-    # Criar arquivo de configuração do PM2
-    cat > /var/www/sispat/ecosystem.production.config.cjs << EOF
-module.exports = {
-  apps: [{
-    name: 'sispat-backend',
-    script: 'server/index.js',
-    cwd: '/var/www/sispat',
-    instances: 'max',
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3001
-    },
-    log_file: '/var/www/sispat/logs/pm2.log',
-    out_file: '/var/www/sispat/logs/pm2-out.log',
-    error_file: '/var/www/sispat/logs/pm2-error.log',
-    merge_logs: true,
-    time: true,
-    max_restarts: 10,
-    min_uptime: '10s',
-    max_memory_restart: '1G',
-    node_args: '--max-old-space-size=1024'
-  }]
-};
-EOF
+    # Usar arquivo de configuração PM2 existente (já corrigido)
+    log_info "Usando configuração PM2 otimizada para VPS..."
 
     # Iniciar aplicação com PM2
     cd /var/www/sispat
@@ -669,13 +646,11 @@ main() {
     chmod +x /root/diagnose.sh || true
     /root/diagnose.sh || true
 
-    # Aplicar correções de HTTPS/CORS se necessário
-    if grep -q "CORS: Requisição sem origin bloqueada" /var/www/sispat/logs/pm2-error.log 2>/dev/null; then
-        log_warning "CORS bloqueando requisições - aplicando correção automática..."
-        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-redirect-and-cors.sh -o /root/fix-cors.sh || true
-        chmod +x /root/fix-cors.sh || true
-        /root/fix-cors.sh || true
-    fi
+    # Aplicar correções de produção se necessário
+    log_header "Aplicando correções de produção..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-production-issues.sh -o /root/fix-production.sh || true
+    chmod +x /root/fix-production.sh || true
+    /root/fix-production.sh || true
     
     # Garantir serviços ativos
     systemctl reload nginx || systemctl restart nginx || true
