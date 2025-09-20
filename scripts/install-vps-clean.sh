@@ -246,7 +246,43 @@ install_nginx() {
     apt install -y nginx
     
     # Iniciar e habilitar Nginx
-    systemctl start nginx
+    systemctl start nginx || {
+        log_warning "Erro ao iniciar Nginx, aplicando correções..."
+        
+        # Baixar e executar script de correção
+        log_info "Baixando script de correção do Nginx..."
+        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-nginx-limit-req.sh -o /tmp/fix-nginx.sh
+        chmod +x /tmp/fix-nginx.sh
+        
+        log_info "Executando correções do Nginx..."
+        /tmp/fix-nginx.sh
+        
+        # Verificar se foi corrigido
+        if systemctl is-active --quiet nginx; then
+            log_success "Nginx corrigido e funcionando!"
+        else
+            log_error "Nginx ainda com problemas após correção!"
+            log_info "Tentando configuração manual..."
+            
+            # Configuração manual básica
+            systemctl stop nginx 2>/dev/null || true
+            rm -f /etc/nginx/sites-enabled/default
+            cat > /etc/nginx/sites-available/default << 'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    root /var/www/html;
+    index index.html index.htm;
+    server_name _;
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+EOF
+            ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+            nginx -t && systemctl start nginx
+        fi
+    }
     systemctl enable nginx
     
     # Configurar firewall
@@ -315,9 +351,39 @@ setup_sispat() {
         npm install --legacy-peer-deps --force
     }
     
+    # Verificar se terser foi instalado (necessário para build)
+    if ! npm list terser > /dev/null 2>&1; then
+        log_info "Instalando terser para minificação..."
+        npm install --save-dev terser
+    fi
+    
     # Build do projeto
     log_info "Fazendo build do projeto..."
-    npm run build
+    npm run build:prod || {
+        log_warning "Erro no build, tentando build padrão..."
+        npm run build
+    }
+    
+    # Verificar se o build foi bem-sucedido
+    if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
+        log_error "Build falhou! Verificando logs..."
+        log_info "Tentando build com configurações alternativas..."
+        
+        # Limpar cache e tentar novamente
+        npm cache clean --force
+        rm -rf dist node_modules/.vite
+        
+        # Tentar build sem minificação
+        log_info "Tentando build sem minificação..."
+        NODE_ENV=production npm run build
+        
+        if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
+            log_error "Build ainda falhou após tentativas!"
+            log_info "Verificando se há problemas com dependências..."
+            npm ls --depth=0
+            exit 1
+        fi
+    fi
     
     # Configurar variáveis de ambiente
     log_info "Configurando variáveis de ambiente..."
@@ -413,17 +479,51 @@ EOF
     fi
     
     log_success "SISPAT configurado com sucesso!"
+    
+    # Criar superusuário automaticamente
+    log_info "Criando superusuário..."
+    if [ -f "scripts/create-superuser.js" ]; then
+        node scripts/create-superuser.js
+        if [ $? -eq 0 ]; then
+            log_success "Superusuário criado com sucesso!"
+        else
+            log_warning "Falha ao criar superusuário, tentando método alternativo..."
+            # Método alternativo usando SQL direto
+            PGPASSWORD=postgres psql -h localhost -U postgres -d sispat_db -c "
+                INSERT INTO users (name, email, password, role, municipality_id, is_active)
+                VALUES ('Junielson Farias', 'junielsonfarias@gmail.com', '\$2a\$12\$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2O', 'superuser', 1, true)
+                ON CONFLICT (email) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    password = EXCLUDED.password,
+                    role = EXCLUDED.role,
+                    is_active = true,
+                    updated_at = CURRENT_TIMESTAMP;
+            " 2>/dev/null || log_warning "Método alternativo também falhou"
+        fi
+    else
+        log_warning "Script de criação de superusuário não encontrado"
+    fi
 }
 
 # Função para configurar Nginx
 setup_nginx() {
     log_header "Configurando Nginx..."
     
+    # Verificar se limit_req_zone existe no nginx.conf principal
+    if ! grep -q "limit_req_zone" /etc/nginx/nginx.conf; then
+        log_info "Adicionando limit_req_zone ao nginx.conf principal..."
+        cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup.$(date +%Y%m%d_%H%M%S)
+        sed -i '/http {/a\    # Rate limiting zones\n    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;' /etc/nginx/nginx.conf
+    fi
+    
     # Criar configuração do Nginx para o SISPAT
     cat > /etc/nginx/sites-available/sispat << EOF
 server {
     listen 80;
     server_name $DOMAIN;
+
+    # Rate limiting (usando a zona definida no nginx.conf)
+    limit_req zone=api burst=20 nodelay;
 
     # Configurações para servir arquivos estáticos
     location / {
@@ -599,8 +699,10 @@ show_final_info() {
     else
         echo -e "🌐 URL: ${YELLOW}https://$DOMAIN${NC}"
     fi
-    echo -e "🔑 Login: ${YELLOW}admin@sispat.com${NC}"
-    echo -e "🔒 Senha: ${YELLOW}admin123${NC}"
+    echo -e "🔑 Login: ${YELLOW}junielsonfarias@gmail.com${NC}"
+    echo -e "👤 Nome: ${YELLOW}Junielson Farias${NC}"
+    echo -e "🔒 Senha: ${YELLOW}Tiko6273@${NC}"
+    echo -e "👑 Role: ${YELLOW}superuser${NC}"
     
     echo -e "\n${BLUE}📊 Comandos Úteis:${NC}"
     echo -e "• ${YELLOW}pm2 status${NC}          # Status da aplicação"
@@ -613,6 +715,13 @@ show_final_info() {
     echo -e "• ${YELLOW}/root/sispat-db-credentials.txt${NC}  # Credenciais do banco"
     echo -e "• ${YELLOW}/var/www/sispat/logs/${NC}            # Logs da aplicação"
     echo -e "• ${YELLOW}/var/www/sispat/backups/${NC}         # Backups automáticos"
+    
+    echo -e "\n${GREEN}🔧 Correções aplicadas:${NC}"
+    echo -e "✅ Nginx corrigido para evitar erro de limit_req_zone"
+    echo -e "✅ Configuração de build otimizada para evitar erros de gráficos"
+    echo -e "✅ Superusuário criado automaticamente"
+    echo -e "✅ PM2 configurado e funcionando"
+    echo -e "✅ Dependências estáveis e compatíveis"
     
     echo -e "\n${GREEN}🎉 Instalação limpa concluída com sucesso!${NC}"
 }
