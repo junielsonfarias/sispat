@@ -553,6 +553,30 @@ setup_database() {
     fi
     
     log_success "Banco de dados configurado com sucesso!"
+    
+    # Criar superusuário automaticamente
+    log_info "Criando superusuário..."
+    if [ -f "scripts/create-superuser.js" ]; then
+        node scripts/create-superuser.js
+        if [ $? -eq 0 ]; then
+            log_success "Superusuário criado com sucesso!"
+        else
+            log_warning "Falha ao criar superusuário, tentando método alternativo..."
+            # Método alternativo usando SQL direto
+            PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "
+                INSERT INTO users (name, email, password, role, municipality_id, is_active)
+                VALUES ('Junielson Farias', 'junielsonfarias@gmail.com', '\$2a\$12\$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2O', 'superuser', 1, true)
+                ON CONFLICT (email) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    password = EXCLUDED.password,
+                    role = EXCLUDED.role,
+                    is_active = true,
+                    updated_at = CURRENT_TIMESTAMP;
+            " 2>/dev/null || log_warning "Método alternativo também falhou"
+        fi
+    else
+        log_warning "Script de criação de superusuário não encontrado"
+    fi
 }
 
 # Função para fazer build da aplicação
@@ -832,10 +856,12 @@ show_final_info() {
         echo -e "🌐 URL: ${YELLOW}http://$IP:8080${NC}"
     fi
     
-    echo -e "\n${CYAN}🔑 LOGIN PADRÃO:${NC}"
-    echo -e "📧 Email: ${YELLOW}admin@sispat.com${NC}"
-    echo -e "🔒 Senha: ${YELLOW}admin123${NC}"
-    echo -e "${RED}⚠️  IMPORTANTE: Altere a senha após o primeiro login!${NC}"
+    echo -e "\n${CYAN}🔑 LOGIN DO SUPERUSUÁRIO:${NC}"
+    echo -e "📧 Email: ${YELLOW}junielsonfarias@gmail.com${NC}"
+    echo -e "👤 Nome: ${YELLOW}Junielson Farias${NC}"
+    echo -e "🔒 Senha: ${YELLOW}Tiko6273@${NC}"
+    echo -e "👑 Role: ${YELLOW}superuser${NC}"
+    echo -e "${RED}⚠️  IMPORTANTE: Mantenha essas credenciais seguras!${NC}"
     
     echo -e "\n${CYAN}🗄️  BANCO DE DADOS:${NC}"
     echo -e "📊 Nome: ${YELLOW}$DB_NAME${NC}"
