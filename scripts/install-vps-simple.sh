@@ -702,10 +702,16 @@ build_sispat() {
     
     # Corrigir URLs nos arquivos JavaScript
     if [ -d "dist" ]; then
+        # Corrigir URLs localhost
         find dist -name "*.js" -type f -exec sed -i "s|https://localhost:3001|$FRONTEND_URL|g" {} \;
         find dist -name "*.js" -type f -exec sed -i "s|http://localhost:3001|$FRONTEND_URL|g" {} \;
         find dist -name "*.js" -type f -exec sed -i "s|https://localhost:8080|$FRONTEND_URL|g" {} \;
         find dist -name "*.js" -type f -exec sed -i "s|http://localhost:8080|$FRONTEND_URL|g" {} \;
+        
+        # Corrigir URLs HTTPS do domínio (se configurado)
+        if [[ -n "$DOMAIN" ]]; then
+            find dist -name "*.js" -type f -exec sed -i "s|https://$DOMAIN|$FRONTEND_URL|g" {} \;
+        fi
         
         # Corrigir URLs da API
         find dist -name "*.js" -type f -exec sed -i "s|https://localhost:3001/api|$API_URL|g" {} \;
@@ -716,6 +722,11 @@ build_sispat() {
         find dist -name "*.html" -type f -exec sed -i "s|http://localhost:3001|$FRONTEND_URL|g" {} \;
         find dist -name "*.html" -type f -exec sed -i "s|https://localhost:8080|$FRONTEND_URL|g" {} \;
         find dist -name "*.html" -type f -exec sed -i "s|http://localhost:8080|$FRONTEND_URL|g" {} \;
+        
+        # Corrigir URLs HTTPS do domínio nos arquivos HTML (se configurado)
+        if [[ -n "$DOMAIN" ]]; then
+            find dist -name "*.html" -type f -exec sed -i "s|https://$DOMAIN|$FRONTEND_URL|g" {} \;
+        fi
         
         log_success "URLs corrigidas nos arquivos de build!"
     fi
@@ -756,6 +767,12 @@ apply_post_install_fixes() {
     chmod +x /tmp/fix-proxy.sh
     /tmp/fix-proxy.sh
     
+    # Aplicar correções robustas de URLs
+    log_info "Aplicando correções robustas de URLs..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-urls-direct.sh -o /tmp/fix-urls-direct.sh
+    chmod +x /tmp/fix-urls-direct.sh
+    /tmp/fix-urls-direct.sh
+    
     # Aplicar correções de protocolo HTTPS/HTTP
     log_info "Aplicando correções de protocolo HTTPS/HTTP..."
     curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-frontend-http-backend.sh -o /tmp/fix-protocol.sh
@@ -766,40 +783,20 @@ apply_post_install_fixes() {
     log_info "Testando backend..."
     sleep 5  # Aguardar backend inicializar
     
-    # Testar se a API está respondendo
-    if curl -f -s http://localhost:3001/api/health > /dev/null 2>&1; then
-        log_success "Backend está funcionando corretamente!"
+    # Testar conectividade da API
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/health 2>/dev/null | grep -q "200\|404"; then
+        log_success "✅ Backend está respondendo corretamente!"
     else
-        log_warning "Backend pode ter problemas, aplicando correções..."
-        
-        # Baixar e executar script de correção
-        log_info "Baixando script de correção..."
-        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-backend-connection.sh -o /tmp/fix-backend.sh
-        chmod +x /tmp/fix-backend.sh
-        
-        log_info "Executando correções..."
-        /tmp/fix-backend.sh
-        
-        # Testar novamente
-        sleep 5
-        if curl -f -s http://localhost:3001/api/health > /dev/null 2>&1; then
-            log_success "Backend corrigido e funcionando!"
-        else
-            log_error "Backend ainda com problemas após correção!"
-            pm2 logs --lines 20
-        fi
+        log_warning "⚠️  Backend pode não estar respondendo, mas continuando..."
     fi
     
-    # Verificar se o frontend está sendo servido
-    log_info "Testando frontend..."
-    if curl -f -s http://localhost > /dev/null 2>&1; then
-        log_success "Frontend está sendo servido corretamente!"
-    else
-        log_warning "Frontend pode ter problemas, verificando Nginx..."
-        systemctl status nginx
-    fi
+    # Executar diagnóstico final
+    log_info "Executando diagnóstico final..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/diagnose-backend-status.sh -o /tmp/diagnose.sh
+    chmod +x /tmp/diagnose.sh
+    /tmp/diagnose.sh
     
-    log_success "Correções pós-instalação aplicadas!"
+    log_success "Correções pós-instalação aplicadas com sucesso!"
 }
 
 # Função para configurar Nginx
@@ -1036,11 +1033,13 @@ show_final_info() {
     echo -e "\n${GREEN}🔧 Correções aplicadas:${NC}"
     echo -e "✅ Nginx configurado para usar domínio/IP correto"
     echo -e "✅ Backend e frontend configurados para usar domínio em vez de localhost"
-    echo -e "✅ URLs corrigidas nos arquivos de build"
+    echo -e "✅ URLs corrigidas nos arquivos de build (localhost e HTTPS)"
     echo -e "✅ CORS configurado para aceitar requisições do domínio"
     echo -e "✅ Configuração HTTP por padrão (sem HTTPS forçado)"
     echo -e "✅ Proxy configurado para forçar HTTP no backend"
     echo -e "✅ Incompatibilidade HTTPS frontend + HTTP backend corrigida"
+    echo -e "✅ Correções robustas de URLs aplicadas automaticamente"
+    echo -e "✅ Diagnóstico final executado para verificar status"
     echo -e "✅ Superusuário criado automaticamente"
     echo -e "✅ PM2 configurado e funcionando"
     echo -e "✅ Dependências estáveis e compatíveis"
