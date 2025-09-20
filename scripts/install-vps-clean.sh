@@ -661,6 +661,24 @@ main() {
     setup_backup
     setup_ssl
     
+    # Pós-instalação: diagnóstico e correções finais
+    log_header "Executando verificação pós-instalação..."
+    curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/diagnose-installation.sh -o /root/diagnose.sh || true
+    chmod +x /root/diagnose.sh || true
+    /root/diagnose.sh || true
+
+    # Aplicar correções de HTTPS/CORS se necessário
+    if grep -q "CORS: Requisição sem origin bloqueada" /var/www/sispat/logs/pm2-error.log 2>/dev/null; then
+        log_warning "CORS bloqueando requisições - aplicando correção automática..."
+        curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/scripts/fix-https-redirect-and-cors.sh -o /root/fix-cors.sh || true
+        chmod +x /root/fix-cors.sh || true
+        /root/fix-cors.sh || true
+    fi
+    
+    # Garantir serviços ativos
+    systemctl reload nginx || systemctl restart nginx || true
+    pm2 restart all --update-env || true
+    
     # Mostrar informações finais
     show_final_info
 }
