@@ -1,45 +1,10 @@
-/* Typescript config for the node backend: https://www.typescriptlang.org/tsconfig/ */
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2023"],
-    "module": "ESNext",
+    "composite": true,
     "skipLibCheck": true,
+    "module": "ESNext",
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "allowSyntheticDefaultImports": true
   },
-  "include": [
-    "vite.config.ts",
-    "src/config/**/*.ts",
-    "src/services/**/*.ts",
-    "src/utils/**/*.ts",
-    "src/lib/**/*.ts",
-    "src/types/**/*.ts",
-    "src/pages/**/*.ts",
-    "src/pages/**/*.tsx",
-    "lib/**/*.ts",
-    "scripts/**/*.ts",
-    "components/**/*.ts",
-    "components/**/*.tsx",
-    "pages/**/*.ts",
-    "pages/**/*.tsx",
-    "*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "coverage",
-    "tests"
-  ]
+  "include": ["vite.config.ts"]
 }
