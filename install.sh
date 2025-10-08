@@ -1042,6 +1042,52 @@ setup_database() {
     
     if [ $? -eq 0 ]; then
         echo ""
+        
+        # Verificar se usuário foi realmente criado
+        echo -e "${BLUE}  → Verificando se superusuário foi criado...${NC}"
+        local user_count=$(sudo -u postgres psql -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM users WHERE email = '$SUPERUSER_EMAIL';" 2>/dev/null | tr -d ' ')
+        
+        if [ "$user_count" = "1" ]; then
+            success "✅ Superusuário criado com sucesso!"
+            echo -e "${GREEN}     Email: ${WHITE}$SUPERUSER_EMAIL${NC}"
+        else
+            warning "⚠️  Superusuário não foi criado. Criando manualmente..."
+            
+            # Criar usuário manualmente via Node.js
+            cat > /tmp/create-user.js << USEREOF
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
+const prisma = new PrismaClient();
+
+async function createUser() {
+  const passwordHash = await bcrypt.hash('$SUPERUSER_PASSWORD', 10);
+  const municipality = await prisma.municipality.findFirst();
+  
+  const user = await prisma.user.upsert({
+    where: { email: '$SUPERUSER_EMAIL' },
+    update: { password: passwordHash, role: 'superuser', isActive: true },
+    create: {
+      id: 'user-superuser',
+      email: '$SUPERUSER_EMAIL',
+      name: '$SUPERUSER_NAME',
+      password: passwordHash,
+      role: 'superuser',
+      responsibleSectors: [],
+      municipalityId: municipality.id,
+      isActive: true,
+    },
+  });
+  console.log('✅ Usuário criado:', user.email);
+}
+
+createUser().catch(console.error).finally(() => prisma.\$disconnect());
+USEREOF
+            
+            node /tmp/create-user.js
+            rm -f /tmp/create-user.js
+            success "Superusuário criado manualmente"
+        fi
+        
         success "✨ Banco de dados configurado e populado"
         
         # Salvar credenciais em arquivo temporário para exibir no final
@@ -1060,11 +1106,18 @@ configure_nginx() {
     echo ""
     log "Configurando Nginx..."
     
+    # Determinar domínio da API (mesmo domínio + api. subdomain)
+    local API_SUBDOMAIN="api.${DOMAIN}"
+    
+    echo -e "${BLUE}  → Domínio principal: ${WHITE}${DOMAIN}${NC}"
+    echo -e "${BLUE}  → Subdomínio API: ${WHITE}${API_SUBDOMAIN}${NC}"
+    
     # Criar configuração do site
     cat > /etc/nginx/sites-available/sispat << EOF
 server {
     listen 80;
-    server_name ${DOMAIN} ${API_DOMAIN};
+    listen [::]:80;
+    server_name ${DOMAIN} ${API_SUBDOMAIN};
     
     # Redirecionar para HTTPS (será configurado pelo Certbot)
     location / {
@@ -1793,6 +1846,25 @@ show_success_message() {
     echo -e "  ${WHITE}Reiniciar aplicação:${NC}  ${CYAN}pm2 restart sispat-backend${NC}"
     echo -e "  ${WHITE}Reiniciar Nginx:${NC}      ${CYAN}sudo systemctl restart nginx${NC}"
     echo -e "  ${WHITE}Backup do banco:${NC}      ${CYAN}sudo -u postgres pg_dump sispat_prod > backup.sql${NC}"
+    echo ""
+    
+    echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${YELLOW}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║                                                                   ║${NC}"
+    echo -e "${YELLOW}║  🌐 IMPORTANTE: CONFIGURAR DNS DO SUBDOMÍNIO API                  ║${NC}"
+    echo -e "${YELLOW}║                                                                   ║${NC}"
+    echo -e "${YELLOW}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${CYAN}Para o sistema funcionar completamente, configure no painel da Kinghost:${NC}"
+    echo ""
+    echo -e "  ${WHITE}Tipo:${NC}    ${GREEN}CNAME${NC}"
+    echo -e "  ${WHITE}Nome:${NC}    ${GREEN}api${NC}"
+    echo -e "  ${WHITE}Destino:${NC} ${GREEN}${DOMAIN}${NC}"
+    echo -e "  ${WHITE}TTL:${NC}     ${GREEN}3600${NC}"
+    echo ""
+    echo -e "${YELLOW}Aguarde 5-30 minutos para propagação do DNS, depois teste:${NC}"
+    echo -e "  ${CYAN}curl http://api.${DOMAIN}/health${NC}"
     echo ""
     
     echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
