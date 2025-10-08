@@ -1030,12 +1030,30 @@ setup_database() {
     
     # Popular banco com dados iniciais
     echo ""
-    echo -e "${BLUE}  ⚙️  Criando usuários e dados iniciais...${NC}"
+    echo -e "${BLUE}  ⚙️  Criando superusuário e dados iniciais...${NC}"
     echo ""
+    
+    # Passar credenciais do superusuário para o seed
+    export SUPERUSER_EMAIL="$SUPERUSER_EMAIL"
+    export SUPERUSER_PASSWORD="$SUPERUSER_PASSWORD"
+    export SUPERUSER_NAME="$MUNICIPALITY_NAME - Administrador"
+    
     npm run prisma:seed 2>&1 | tee -a "$LOG_FILE"
     
-    echo ""
-    success "✨ Banco de dados configurado e populado"
+    if [ $? -eq 0 ]; then
+        echo ""
+        success "✨ Banco de dados configurado e populado"
+        
+        # Salvar credenciais em arquivo temporário para exibir no final
+        cat > /tmp/sispat-credentials.txt << EOF
+SUPERUSER_EMAIL=$SUPERUSER_EMAIL
+SUPERUSER_PASSWORD=$SUPERUSER_PASSWORD
+SUPERUSER_NAME=$SUPERUSER_NAME
+DOMAIN=$DOMAIN
+EOF
+    else
+        error "Falha ao popular banco de dados"
+    fi
 }
 
 configure_nginx() {
@@ -1685,6 +1703,20 @@ verify_installation() {
 
 show_success_message() {
     clear
+    
+    # Carregar credenciais do arquivo temporário
+    if [ -f "/tmp/sispat-credentials.txt" ]; then
+        source /tmp/sispat-credentials.txt
+    fi
+    
+    # Determinar URL de acesso
+    local access_url
+    if [ "$CONFIGURE_SSL" = "yes" ]; then
+        access_url="https://${DOMAIN}"
+    else
+        access_url="http://${DOMAIN}"
+    fi
+    
     echo -e "${GREEN}"
     echo "╔═══════════════════════════════════════════════════════════════════╗"
     echo "║                                                                   ║"
@@ -1695,87 +1727,103 @@ show_success_message() {
     echo "╚═══════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     echo ""
-    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
-    echo -e "${WHITE}         COMO ACESSAR O SISTEMA AGORA                ${NC}"
-    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
+    
+    echo -e "${WHITE}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${WHITE}║                                                                   ║${NC}"
+    echo -e "${WHITE}║                   🌐 COMO ACESSAR O SISTEMA                       ║${NC}"
+    echo -e "${WHITE}║                                                                   ║${NC}"
+    echo -e "${WHITE}╚═══════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${CYAN}🌐 PASSO 1: Abra seu navegador e digite:${NC}"
+    echo -e "${CYAN}📍 ENDEREÇO DO SISTEMA:${NC}"
     echo ""
-    if [ "$CONFIGURE_SSL" = "yes" ]; then
-        echo -e "     ${GREEN}${WHITE}https://${DOMAIN}${NC}"
-    else
-        echo -e "     ${GREEN}${WHITE}http://${DOMAIN}${NC}"
-        echo ""
-        echo -e "     ${YELLOW}💡 Para ativar HTTPS depois, execute:${NC}"
+    echo -e "     ${GREEN}${WHITE}${access_url}${NC}"
+    echo ""
+    if [ "$CONFIGURE_SSL" != "yes" ]; then
+        echo -e "     ${YELLOW}💡 Para ativar HTTPS (recomendado), execute:${NC}"
         echo -e "     ${CYAN}sudo certbot --nginx -d $DOMAIN${NC}"
+        echo ""
     fi
+    
+    echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${CYAN}👤 PASSO 2: Faça login com estas credenciais:${NC}"
+    echo -e "${GREEN}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║                                                                   ║${NC}"
+    echo -e "${GREEN}║                  🔐 SUAS CREDENCIAIS DE ACESSO                    ║${NC}"
+    echo -e "${GREEN}║                                                                   ║${NC}"
+    echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "     ${WHITE}Email:${NC} ${GREEN}admin@ssbv.com${NC}"
-    echo -e "     ${WHITE}Senha:${NC} ${GREEN}password123${NC}"
+    echo -e "${CYAN}👤 SUPERUSUÁRIO (Controle Total do Sistema):${NC}"
     echo ""
-    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
+    echo -e "     ${WHITE}📧 Email:${NC} ${GREEN}${SUPERUSER_EMAIL}${NC}"
+    echo -e "     ${WHITE}🔑 Senha:${NC} ${GREEN}${SUPERUSER_PASSWORD}${NC}"
+    echo -e "     ${WHITE}👤 Nome:${NC}  ${GREEN}${SUPERUSER_NAME}${NC}"
     echo ""
-    echo -e "${CYAN}👥 OUTROS USUÁRIOS CRIADOS AUTOMATICAMENTE:${NC}"
+    
+    echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "  ${WHITE}Superusuário (você):${NC}"
-    echo -e "     Email: ${GREEN}${SUPERUSER_EMAIL}${NC}"
-    echo -e "     Senha: ${GREEN}${SUPERUSER_PASSWORD}${NC}"
+    echo -e "${RED}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║                                                                   ║${NC}"
+    echo -e "${RED}║  ⚠️  SEGURANÇA: ALTERE SUA SENHA APÓS O PRIMEIRO ACESSO!          ║${NC}"
+    echo -e "${RED}║                                                                   ║${NC}"
+    echo -e "${RED}╚═══════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "  ${WHITE}Supervisor:${NC}"
-    echo -e "     Email: ${GREEN}supervisor@ssbv.com${NC}"
-    echo -e "     Senha: ${GREEN}password123${NC}"
+    echo -e "${YELLOW}🔐 IMPORTANTE - LEIA COM ATENÇÃO:${NC}"
     echo ""
-    echo -e "  ${WHITE}Usuário padrão:${NC}"
-    echo -e "     Email: ${GREEN}usuario@ssbv.com${NC}"
-    echo -e "     Senha: ${GREEN}password123${NC}"
+    echo -e "  ${WHITE}1.${NC} A senha acima foi ${YELLOW}configurada durante a instalação${NC}"
+    echo -e "  ${WHITE}2.${NC} ${RED}ALTERE ESTA SENHA IMEDIATAMENTE${NC} após o primeiro login"
+    echo -e "  ${WHITE}3.${NC} Use uma senha ${GREEN}forte e única${NC} para produção"
     echo ""
-    echo -e "  ${WHITE}Visualizador:${NC}"
-    echo -e "     Email: ${GREEN}visualizador@ssbv.com${NC}"
-    echo -e "     Senha: ${GREEN}password123${NC}"
+    echo -e "${CYAN}📝 Como alterar sua senha:${NC}"
     echo ""
-    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
-    echo ""
-    echo -e "${RED}╔═══════════════════════════════════════════════════╗${NC}"
-    echo -e "${RED}║  ⚠️  SEGURANÇA: ALTERE AS SENHAS AGORA!          ║${NC}"
-    echo -e "${RED}╚═══════════════════════════════════════════════════╝${NC}"
-    echo ""
-    echo -e "${YELLOW}🔐 IMPORTANTE:${NC}"
-    echo ""
-    echo -e "  ${WHITE}1.${NC} As senhas acima são ${RED}TEMPORÁRIAS${NC} e ${RED}FÁCEIS DE ADIVINHAR${NC}"
-    echo -e "  ${WHITE}2.${NC} ${YELLOW}NUNCA${NC} use em ${YELLOW}PRODUÇÃO COM DADOS REAIS${NC}"
-    echo -e "  ${WHITE}3.${NC} Altere ${YELLOW}TODAS${NC} as senhas no ${GREEN}PRIMEIRO ACESSO${NC}"
-    echo ""
-    echo -e "${CYAN}📝 Como alterar a senha:${NC}"
-    echo ""
-    echo -e "  ${WHITE}→${NC} Faça login no sistema"
-    echo -e "  ${WHITE}→${NC} Clique no seu nome (canto superior direito)"
-    echo -e "  ${WHITE}→${NC} Selecione ${CYAN}\"Perfil\"${NC} ou ${CYAN}\"Configurações\"${NC}"
-    echo -e "  ${WHITE}→${NC} Clique em ${CYAN}\"Alterar Senha\"${NC}"
-    echo -e "  ${WHITE}→${NC} Use senha ${GREEN}forte${NC}: 8+ caracteres, letras, números, símbolos"
+    echo -e "  ${WHITE}1.${NC} Acesse o sistema: ${CYAN}${access_url}${NC}"
+    echo -e "  ${WHITE}2.${NC} Faça login com as credenciais acima"
+    echo -e "  ${WHITE}3.${NC} Clique no seu nome (canto superior direito)"
+    echo -e "  ${WHITE}4.${NC} Selecione ${CYAN}\"Perfil\"${NC} → ${CYAN}\"Alterar Senha\"${NC}"
+    echo -e "  ${WHITE}5.${NC} Crie uma senha forte: ${GREEN}mínimo 8 caracteres${NC}"
     echo ""
     echo -e "${YELLOW}💡 Exemplo de senha forte:${NC} ${GREEN}Sispat@2025!Seguro${NC}"
     echo ""
-    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
+    
+    echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${CYAN}🔧 COMANDOS ÚTEIS (se precisar):${NC}"
+    echo -e "${CYAN}🔧 COMANDOS ÚTEIS PARA GERENCIAR O SISTEMA:${NC}"
     echo ""
-    echo -e "  ${WHITE}Ver se está rodando:${NC}  ${CYAN}pm2 status${NC}"
-    echo -e "  ${WHITE}Ver logs do sistema:${NC}  ${CYAN}pm2 logs sispat-backend${NC}"
-    echo -e "  ${WHITE}Reiniciar sistema:${NC}    ${CYAN}pm2 restart sispat-backend${NC}"
+    echo -e "  ${WHITE}Ver status:${NC}           ${CYAN}pm2 status${NC}"
+    echo -e "  ${WHITE}Ver logs em tempo real:${NC} ${CYAN}pm2 logs sispat-backend${NC}"
+    echo -e "  ${WHITE}Reiniciar aplicação:${NC}  ${CYAN}pm2 restart sispat-backend${NC}"
     echo -e "  ${WHITE}Reiniciar Nginx:${NC}      ${CYAN}sudo systemctl restart nginx${NC}"
-    echo -e "  ${WHITE}Fazer backup:${NC}         ${CYAN}$INSTALL_DIR/scripts/backup.sh${NC}"
+    echo -e "  ${WHITE}Backup do banco:${NC}      ${CYAN}sudo -u postgres pg_dump sispat_prod > backup.sql${NC}"
     echo ""
-    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
+    
+    echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${GREEN}✨ TUDO PRONTO! Acesse ${WHITE}https://${DOMAIN}${GREEN} agora!${NC}"
+    echo -e "${CYAN}📚 RECURSOS ADICIONAIS:${NC}"
     echo ""
-    echo -e "${CYAN}📖 Documentação completa em: ${WHITE}$INSTALL_DIR/${NC}"
-    echo -e "${CYAN}📞 Suporte: ${WHITE}https://github.com/junielsonfarias/sispat/issues${NC}"
+    echo -e "  ${WHITE}Documentação:${NC}      ${CYAN}https://github.com/junielsonfarias/sispat${NC}"
+    echo -e "  ${WHITE}Reportar problemas:${NC} ${CYAN}https://github.com/junielsonfarias/sispat/issues${NC}"
+    echo -e "  ${WHITE}Logs instalação:${NC}   ${CYAN}$LOG_FILE${NC}"
     echo ""
-    echo -e "${GREEN}🎊 Aproveite o SISPAT 2.0!${NC}"
+    
+    echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
     echo ""
+    echo -e "${GREEN}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║                                                                   ║${NC}"
+    echo -e "${GREEN}║  ✨ SISTEMA PRONTO! ACESSE AGORA E COMECE A USAR!  ✨             ║${NC}"
+    echo -e "${GREEN}║                                                                   ║${NC}"
+    echo -e "${GREEN}║  👉 ${WHITE}${access_url}${GREEN}"
+    printf "${GREEN}║"
+    local url_length=${#access_url}
+    local padding=$((64 - url_length))
+    printf "%${padding}s" ""
+    echo "║${NC}"
+    echo -e "${GREEN}║                                                                   ║${NC}"
+    echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${YELLOW}⚠️  Lembre-se: ${RED}ALTERE SUA SENHA${YELLOW} no primeiro acesso!${NC}"
+    echo ""
+    
+    # Limpar arquivo de credenciais
+    rm -f /tmp/sispat-credentials.txt
 }
 
 # ===========================================

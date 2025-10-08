@@ -89,20 +89,30 @@ async function main() {
   ]);
   console.log(`✅ ${locais.length} locais criados`);
 
-  // Hash da senha padrão
-  const defaultPasswordHash = await bcrypt.hash('password123', 10);
-  const superuserPasswordHash = await bcrypt.hash('Tiko6273@', 10);
+  // Obter credenciais do superusuário das variáveis de ambiente
+  const SUPERUSER_EMAIL = process.env.SUPERUSER_EMAIL || 'admin@sistema.com';
+  const SUPERUSER_PASSWORD = process.env.SUPERUSER_PASSWORD || 'Admin@123';
+  const SUPERUSER_NAME = process.env.SUPERUSER_NAME || 'Administrador do Sistema';
 
-  // Criar Usuários
-  console.log('\n👥 Criando usuários...');
+  console.log('\n👥 Criando superusuário...');
+  console.log(`   Email: ${SUPERUSER_EMAIL}`);
   
+  // Hash da senha do superusuário
+  const superuserPasswordHash = await bcrypt.hash(SUPERUSER_PASSWORD, 10);
+
+  // Criar APENAS o Superusuário (usuário principal)
   const superuser = await prisma.user.upsert({
-    where: { email: 'junielsonfarias@gmail.com' },
-    update: {},
+    where: { email: SUPERUSER_EMAIL },
+    update: {
+      name: SUPERUSER_NAME,
+      password: superuserPasswordHash,
+      role: 'superuser',
+      isActive: true,
+    },
     create: {
       id: 'user-superuser',
-      email: 'junielsonfarias@gmail.com',
-      name: 'Junielson Farias',
+      email: SUPERUSER_EMAIL,
+      name: SUPERUSER_NAME,
       password: superuserPasswordHash,
       role: 'superuser',
       responsibleSectors: [],
@@ -110,71 +120,7 @@ async function main() {
       isActive: true,
     },
   });
-  console.log('✅ Superuser criado:', superuser.email);
-
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@ssbv.com' },
-    update: {},
-    create: {
-      id: 'user-admin',
-      email: 'admin@ssbv.com',
-      name: 'Administrador',
-      password: defaultPasswordHash,
-      role: 'admin',
-      responsibleSectors: [],
-      municipalityId: municipality.id,
-      isActive: true,
-    },
-  });
-  console.log('✅ Admin criado:', admin.email);
-
-  const supervisor = await prisma.user.upsert({
-    where: { email: 'supervisor@ssbv.com' },
-    update: {},
-    create: {
-      id: 'user-supervisor',
-      email: 'supervisor@ssbv.com',
-      name: 'Supervisor',
-      password: defaultPasswordHash,
-      role: 'supervisor',
-      responsibleSectors: [sectors[0].name, sectors[1].name],
-      municipalityId: municipality.id,
-      isActive: true,
-    },
-  });
-  console.log('✅ Supervisor criado:', supervisor.email);
-
-  const usuario = await prisma.user.upsert({
-    where: { email: 'usuario@ssbv.com' },
-    update: {},
-    create: {
-      id: 'user-usuario',
-      email: 'usuario@ssbv.com',
-      name: 'Usuário Padrão',
-      password: defaultPasswordHash,
-      role: 'usuario',
-      responsibleSectors: [sectors[0].name],
-      municipalityId: municipality.id,
-      isActive: true,
-    },
-  });
-  console.log('✅ Usuário criado:', usuario.email);
-
-  const visualizador = await prisma.user.upsert({
-    where: { email: 'visualizador@ssbv.com' },
-    update: {},
-    create: {
-      id: 'user-visualizador',
-      email: 'visualizador@ssbv.com',
-      name: 'Visualizador',
-      password: defaultPasswordHash,
-      role: 'visualizador',
-      responsibleSectors: [],
-      municipalityId: municipality.id,
-      isActive: true,
-    },
-  });
-  console.log('✅ Visualizador criado:', visualizador.email);
+  console.log('✅ Superusuário criado com sucesso!');
 
   // Criar Tipos de Bens
   console.log('\n📦 Criando tipos de bens...');
@@ -261,14 +207,18 @@ async function main() {
   console.log(`✅ ${formasAquisicao.length} formas de aquisição criadas`);
 
   console.log('\n✅ Seed concluído com sucesso!');
-  console.log('\n📝 Credenciais de Acesso:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('Superuser: junielsonfarias@gmail.com / Tiko6273@');
-  console.log('Admin:     admin@ssbv.com / password123');
-  console.log('Supervisor: supervisor@ssbv.com / password123');
-  console.log('Usuário:   usuario@ssbv.com / password123');
-  console.log('Visualizador: visualizador@ssbv.com / password123');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  console.log('\n╔═══════════════════════════════════════════════════════════╗');
+  console.log('║                                                           ║');
+  console.log('║         🎉  BANCO DE DADOS INICIALIZADO!  🎉             ║');
+  console.log('║                                                           ║');
+  console.log('╚═══════════════════════════════════════════════════════════╝');
+  console.log('\n🔐 CREDENCIAL DO SUPERUSUÁRIO:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`📧 Email: ${SUPERUSER_EMAIL}`);
+  console.log(`🔑 Senha: ${SUPERUSER_PASSWORD}`);
+  console.log(`👤 Nome:  ${SUPERUSER_NAME}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  console.log('⚠️  IMPORTANTE: Altere esta senha após o primeiro acesso!\n');
 }
 
 main()
