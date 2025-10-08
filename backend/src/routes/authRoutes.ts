@@ -7,15 +7,25 @@ import {
   changePassword,
 } from '../controllers/authController';
 import { authenticateToken } from '../middlewares/auth';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
+
+// ✅ Rate limiting para rotas de autenticação (proteção contra brute force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // Máximo 5 tentativas por IP
+  message: 'Muitas tentativas de login. Tente novamente em 15 minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 /**
  * @route POST /api/auth/login
  * @desc Login de usuário
  * @access Public
  */
-router.post('/login', login);
+router.post('/login', authLimiter, login);
 
 /**
  * @route POST /api/auth/refresh

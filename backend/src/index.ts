@@ -4,13 +4,21 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
+import { validateEnvironment, showEnvironmentInfo } from './config/validate-env';
 
 // Carregar variáveis de ambiente
 dotenv.config();
 
+// ✅ Validar variáveis de ambiente obrigatórias
+validateEnvironment();
+showEnvironmentInfo();
+
 // Inicializar Prisma Client
+// ✅ Logs reduzidos em produção para melhor performance e segurança
 export const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
+  log: process.env.NODE_ENV === 'production' 
+    ? ['error']  // Apenas erros em produção
+    : ['query', 'info', 'warn', 'error'],  // Todos em desenvolvimento
 });
 
 // Criar aplicação Express
@@ -36,8 +44,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Body parser
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// ✅ Limite reduzido para melhor segurança e performance
+const MAX_REQUEST_SIZE = process.env.MAX_REQUEST_SIZE || '10mb';
+app.use(express.json({ limit: MAX_REQUEST_SIZE }));
+app.use(express.urlencoded({ extended: true, limit: MAX_REQUEST_SIZE }));
 
 // Servir arquivos estáticos (uploads)
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

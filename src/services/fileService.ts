@@ -18,7 +18,10 @@ export const uploadFile = async (
   userId: string,
 ) => {
   try {
-    console.log('📤 [V3] Iniciando upload para:', `${BACKEND_URL}/api/upload/single`)
+    // ✅ Logs apenas em desenvolvimento
+    if (import.meta.env.DEV) {
+      console.log('📤 [V3] Iniciando upload para:', `${BACKEND_URL}/api/upload/single`)
+    }
 
     const formData = new FormData()
     formData.append('file', file)
@@ -40,19 +43,27 @@ export const uploadFile = async (
       }
     )
 
-    console.log('📦 [V3] Resposta:', response.data)
+    if (import.meta.env.DEV) {
+      console.log('📦 [V3] Resposta:', response.data)
+    }
 
     if (!response.data || !response.data.file_url) {
-      console.error('❌ Backend retornou dados inválidos:', response.data)
+      if (import.meta.env.DEV) {
+        console.error('❌ Backend retornou dados inválidos:', response.data)
+      }
       throw new Error('Backend não retornou file_url')
     }
 
-    console.log('✅ [V3] Upload concluído!')
+    if (import.meta.env.DEV) {
+      console.log('✅ [V3] Upload concluído!')
+    }
     
     // Retornar os metadados do arquivo
     return response.data
   } catch (error: any) {
-    console.error('❌ [V3] Erro no upload:', error.response?.status, error.message)
+    if (import.meta.env.DEV) {
+      console.error('❌ [V3] Erro no upload:', error.response?.status, error.message)
+    }
     throw new Error('Falha ao fazer upload do arquivo')
   }
 }
@@ -63,7 +74,10 @@ export const uploadMultipleFiles = async (
   userId: string,
 ) => {
   try {
-    console.log(`📤 [V3] Iniciando upload de ${files.length} arquivos`)
+    // ✅ Logs apenas em desenvolvimento
+    if (import.meta.env.DEV) {
+      console.log(`📤 [V3] Iniciando upload de ${files.length} arquivos`)
+    }
 
     const formData = new FormData()
     files.forEach((file) => {
@@ -88,11 +102,15 @@ export const uploadMultipleFiles = async (
 
     const filesMetadata = response.data.files || response.data
 
-    console.log(`✅ [V3] ${filesMetadata.length} arquivo(s) enviado(s)`)
+    if (import.meta.env.DEV) {
+      console.log(`✅ [V3] ${filesMetadata.length} arquivo(s) enviado(s)`)
+    }
 
     return filesMetadata
   } catch (error) {
-    console.error('❌ [V3] Erro no upload múltiplo:', error)
+    if (import.meta.env.DEV) {
+      console.error('❌ [V3] Erro no upload múltiplo:', error)
+    }
     throw new Error('Falha ao fazer upload dos arquivos')
   }
 }
@@ -103,18 +121,25 @@ export const getFilesForAsset = async (assetId: string) => {
 
 export const deleteFile = async (fileId: string, fileUrl: string) => {
   try {
-    console.log('🗑️ [V3] Solicitação para deletar:', fileUrl)
+    // ✅ Logs apenas em desenvolvimento
+    if (import.meta.env.DEV) {
+      console.log('🗑️ [V3] Solicitação para deletar:', fileUrl)
+    }
 
     // ✅ Ignorar URLs blob
     if (fileUrl.startsWith('blob:')) {
-      console.log('⚠️ [V3] URL blob - ignorando')
+      if (import.meta.env.DEV) {
+        console.log('⚠️ [V3] URL blob - ignorando')
+      }
       return
     }
 
     const filename = fileUrl.split('/').pop()
     
     if (!filename) {
-      console.warn('⚠️ [V3] Nome do arquivo inválido')
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ [V3] Nome do arquivo inválido')
+      }
       return
     }
 
@@ -129,14 +154,20 @@ export const deleteFile = async (fileId: string, fileUrl: string) => {
       }
     )
 
-    console.log('✅ [V3] Arquivo deletado')
+    if (import.meta.env.DEV) {
+      console.log('✅ [V3] Arquivo deletado')
+    }
   } catch (error: any) {
     if (error?.response?.status === 404) {
-      console.log('⚠️ [V3] Arquivo não existe (404) - OK')
+      if (import.meta.env.DEV) {
+        console.log('⚠️ [V3] Arquivo não existe (404) - OK')
+      }
       return
     }
     
-    console.error('❌ [V3] Erro ao deletar:', error)
-    console.warn('⚠️ [V3] Continuando...')
+    if (import.meta.env.DEV) {
+      console.error('❌ [V3] Erro ao deletar:', error)
+      console.warn('⚠️ [V3] Continuando...')
+    }
   }
 }

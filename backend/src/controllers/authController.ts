@@ -4,7 +4,19 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../index';
 import { AppError } from '../middlewares/errorHandler';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sispat-secret-key-dev';
+// ✅ Validar JWT_SECRET obrigatório em produção
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('🔴 ERRO CRÍTICO: JWT_SECRET não configurado!');
+  console.error('Configure a variável de ambiente JWT_SECRET antes de iniciar.');
+  process.exit(1);
+}
+if (process.env.NODE_ENV === 'production' && (JWT_SECRET.includes('dev') || JWT_SECRET.includes('test') || JWT_SECRET.length < 32)) {
+  console.error('🔴 ERRO CRÍTICO: JWT_SECRET inseguro em produção!');
+  console.error('Use uma chave de 256+ bits (32+ caracteres).');
+  process.exit(1);
+}
+
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 

@@ -121,8 +121,20 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    if (password.length < 6) {
-      res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
+    // ✅ Validação de senha forte (mínimo 12 caracteres)
+    if (password.length < 12) {
+      res.status(400).json({ 
+        error: 'Senha deve ter pelo menos 12 caracteres com maiúsculas, minúsculas, números e símbolos' 
+      });
+      return;
+    }
+
+    // ✅ Validação de complexidade da senha
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+    if (!passwordRegex.test(password)) {
+      res.status(400).json({ 
+        error: 'Senha deve incluir: letras maiúsculas, minúsculas, números e símbolos especiais (@$!%*?&)' 
+      });
       return;
     }
 
@@ -138,7 +150,9 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
     // Hash da senha
     const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // ✅ Bcrypt rounds aumentado para 12 (mais seguro)
+    const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12');
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     // Criar usuário
     const newUser = await prisma.user.create({

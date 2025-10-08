@@ -17,25 +17,38 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // Pegar token do localStorage (SecureStorage armazena como JSON)
     const tokenData = localStorage.getItem('sispat_token');
-    console.log('[HTTP] Token data from localStorage:', tokenData);
+    
+    // ✅ Logs apenas em desenvolvimento
+    if (import.meta.env.DEV) {
+      console.log('[HTTP] Token data from localStorage:', tokenData);
+    }
     
     if (tokenData) {
       try {
         // SecureStorage armazena como JSON, então precisamos fazer parse
         const token = JSON.parse(tokenData);
         config.headers.Authorization = `Bearer ${token}`;
-        console.log(`[HTTP] Token encontrado (JSON): ${token.substring(0, 20)}...`);
+        
+        if (import.meta.env.DEV) {
+          console.log(`[HTTP] Token encontrado (JSON): ${token.substring(0, 20)}...`);
+        }
       } catch (error) {
         // Se não conseguir fazer parse, usar o valor direto
         config.headers.Authorization = `Bearer ${tokenData}`;
-        console.log(`[HTTP] Token direto: ${tokenData.substring(0, 20)}...`);
+        
+        if (import.meta.env.DEV) {
+          console.log(`[HTTP] Token direto: ${tokenData.substring(0, 20)}...`);
+        }
       }
-    } else {
+    } else if (import.meta.env.DEV) {
       console.log('[HTTP] Nenhum token encontrado no localStorage');
     }
     
-    console.log(`[HTTP] Headers finais:`, config.headers);
-    console.log(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`);
+    if (import.meta.env.DEV) {
+      console.log(`[HTTP] Headers finais:`, config.headers);
+      console.log(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`);
+    }
+    
     return config;
   },
   (error) => {
@@ -46,7 +59,10 @@ axiosInstance.interceptors.request.use(
 // Interceptor de resposta para lidar com erros
 axiosInstance.interceptors.response.use(
   (response) => {
-    console.log(`[HTTP] ✅ ${response.status} ${response.config.url}`);
+    // ✅ Logs apenas em desenvolvimento
+    if (import.meta.env.DEV) {
+      console.log(`[HTTP] ✅ ${response.status} ${response.config.url}`);
+    }
     return response;
   },
   async (error) => {
@@ -72,7 +88,9 @@ axiosInstance.interceptors.response.use(
           return axiosInstance(originalRequest);
         } catch (refreshError) {
           // Refresh falhou, redirecionar para login
-          console.error('[HTTP] Refresh token expirado');
+          if (import.meta.env.DEV) {
+            console.error('[HTTP] Refresh token expirado');
+          }
           localStorage.removeItem('sispat_token');
           localStorage.removeItem('sispat_refresh_token');
           localStorage.removeItem('sispat_user');
@@ -82,7 +100,10 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    console.error(`[HTTP] ❌ ${error.response?.status || 'ERROR'} ${error.config?.url}`, error.response?.data);
+    // ✅ Logs de erro apenas em desenvolvimento
+    if (import.meta.env.DEV) {
+      console.error(`[HTTP] ❌ ${error.response?.status || 'ERROR'} ${error.config?.url}`, error.response?.data);
+    }
     return Promise.reject(error);
   }
 );

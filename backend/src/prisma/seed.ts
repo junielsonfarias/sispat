@@ -98,7 +98,9 @@ async function main() {
   console.log(`   Email: ${SUPERUSER_EMAIL}`);
   
   // Hash da senha do superusuário
-  const superuserPasswordHash = await bcrypt.hash(SUPERUSER_PASSWORD, 10);
+  // ✅ Bcrypt rounds aumentado para 12 (mais seguro em 2025)
+  const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12');
+  const superuserPasswordHash = await bcrypt.hash(SUPERUSER_PASSWORD, BCRYPT_ROUNDS);
 
   // Criar APENAS o Superusuário (usuário principal)
   const superuser = await prisma.user.upsert({
