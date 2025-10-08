@@ -702,12 +702,15 @@ show_spinner() {
     local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     local i=0
     
+    # Mostrar spinner enquanto o processo está rodando
     while kill -0 $pid 2>/dev/null; do
         i=$(( (i+1) % 10 ))
         printf "\r${BLUE}  ${spin:$i:1} $message${NC}"
         sleep 0.1
     done
-    printf "\r"
+    
+    # Limpar linha do spinner
+    printf "\r%*s\r" $(tput cols) ""
 }
 
 build_application() {
@@ -724,13 +727,19 @@ build_application() {
     echo -e "${CYAN}║  ETAPA 1/4: Instalando dependências do frontend  ║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
+    
     pnpm install --frozen-lockfile > /tmp/build-frontend-deps.log 2>&1 &
-    show_spinner $! "Instalando pacotes do frontend (pode levar 2-3 minutos)..."
-    wait $!
-    if [ $? -eq 0 ]; then
-        success "Dependências do frontend instaladas"
+    local deps_pid=$!
+    show_spinner $deps_pid "Instalando pacotes do frontend (pode levar 2-3 minutos)..."
+    wait $deps_pid
+    local deps_status=$?
+    
+    echo ""
+    if [ $deps_status -eq 0 ]; then
+        success "✅ Dependências do frontend instaladas"
     else
-        error "Falha ao instalar dependências do frontend. Log: /tmp/build-frontend-deps.log"
+        echo ""
+        error "❌ Falha ao instalar dependências do frontend! Ver: /tmp/build-frontend-deps.log"
     fi
     
     echo ""
@@ -738,13 +747,19 @@ build_application() {
     echo -e "${CYAN}║  ETAPA 2/4: Compilando frontend (React/TypeScript)║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
+    
     pnpm run build:prod > /tmp/build-frontend.log 2>&1 &
-    show_spinner $! "Compilando frontend (pode levar 2-3 minutos)..."
-    wait $!
-    if [ $? -eq 0 ]; then
-        success "Frontend compilado com sucesso"
+    local build_frontend_pid=$!
+    show_spinner $build_frontend_pid "Compilando frontend (pode levar 2-3 minutos)..."
+    wait $build_frontend_pid
+    local build_frontend_status=$?
+    
+    echo ""
+    if [ $build_frontend_status -eq 0 ]; then
+        success "✅ Frontend compilado com sucesso"
     else
-        error "Falha ao compilar frontend. Log: /tmp/build-frontend.log"
+        echo ""
+        error "❌ Falha ao compilar frontend! Ver: /tmp/build-frontend.log"
     fi
     
     # Build backend - com indicador de progresso
@@ -753,14 +768,20 @@ build_application() {
     echo -e "${CYAN}║  ETAPA 3/4: Instalando dependências do backend   ║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
+    
     cd backend
     npm install --production > /tmp/build-backend-deps.log 2>&1 &
-    show_spinner $! "Instalando pacotes do backend (pode levar 2-3 minutos)..."
-    wait $!
-    if [ $? -eq 0 ]; then
-        success "Dependências do backend instaladas"
+    local backend_deps_pid=$!
+    show_spinner $backend_deps_pid "Instalando pacotes do backend (pode levar 2-3 minutos)..."
+    wait $backend_deps_pid
+    local backend_deps_status=$?
+    
+    echo ""
+    if [ $backend_deps_status -eq 0 ]; then
+        success "✅ Dependências do backend instaladas"
     else
-        error "Falha ao instalar dependências do backend. Log: /tmp/build-backend-deps.log"
+        echo ""
+        error "❌ Falha ao instalar dependências do backend! Ver: /tmp/build-backend-deps.log"
     fi
     
     echo ""
@@ -768,13 +789,34 @@ build_application() {
     echo -e "${CYAN}║  ETAPA 4/4: Compilando backend (Node.js/TypeScript)║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
+    echo -e "${YELLOW}  ⚠️  Esta é a parte que pode demorar mais (1-3 minutos)${NC}"
+    echo -e "${YELLOW}  ⚠️  O spinner pode parecer travado, mas está funcionando!${NC}"
+    echo ""
+    
+    # Executar build do backend
     npm run build > /tmp/build-backend.log 2>&1 &
-    show_spinner $! "Compilando backend (pode levar 1-2 minutos)..."
-    wait $!
-    if [ $? -eq 0 ]; then
-        success "Backend compilado com sucesso"
+    local build_pid=$!
+    
+    # Mostrar spinner
+    show_spinner $build_pid "Compilando backend (aguarde, pode demorar até 3 minutos)..."
+    
+    # Aguardar conclusão
+    wait $build_pid
+    local build_status=$?
+    
+    echo ""
+    
+    if [ $build_status -eq 0 ]; then
+        success "✅ Backend compilado com sucesso!"
     else
-        error "Falha ao compilar backend. Log: /tmp/build-backend.log"
+        echo ""
+        error "❌ Falha ao compilar backend!"
+        echo ""
+        echo -e "${YELLOW}Últimas linhas do log:${NC}"
+        tail -20 /tmp/build-backend.log
+        echo ""
+        echo -e "${CYAN}Log completo em: /tmp/build-backend.log${NC}"
+        exit 1
     fi
     
     echo ""
