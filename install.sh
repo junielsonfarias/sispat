@@ -1419,8 +1419,201 @@ main() {
     success "🎉 Fase 5/5 concluída - Sistema iniciado!"
     sleep 2
     
+    # Verificação final
+    verify_installation
+    
     # Finalização
     show_success_message
+}
+
+verify_installation() {
+    clear
+    show_banner
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║   🔍 VERIFICANDO INSTALAÇÃO                      ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    log "Iniciando verificação pós-instalação..."
+    
+    local errors=0
+    local warnings=0
+    
+    # 1. Verificar diretórios
+    echo -e "${YELLOW}[1/12]${NC} Verificando estrutura de diretórios..."
+    if [ -d "$INSTALL_DIR" ] && [ -d "$INSTALL_DIR/backend" ] && [ -d "$INSTALL_DIR/dist" ]; then
+        success "Diretórios criados corretamente"
+    else
+        error "Estrutura de diretórios incompleta"
+        ((errors++))
+    fi
+    
+    # 2. Verificar compilação do frontend
+    echo -e "${YELLOW}[2/12]${NC} Verificando compilação do frontend..."
+    if [ -f "$INSTALL_DIR/dist/index.html" ] && [ -d "$INSTALL_DIR/dist/assets" ]; then
+        local js_files=$(find "$INSTALL_DIR/dist/assets" -name "*.js" 2>/dev/null | wc -l)
+        if [ "$js_files" -gt 0 ]; then
+            success "Frontend compilado ($js_files arquivos JS)"
+        else
+            error "Frontend sem arquivos JavaScript"
+            ((errors++))
+        fi
+    else
+        error "Frontend não compilado"
+        ((errors++))
+    fi
+    
+    # 3. Verificar compilação do backend
+    echo -e "${YELLOW}[3/12]${NC} Verificando compilação do backend..."
+    if [ -f "$INSTALL_DIR/backend/dist/index.js" ]; then
+        local backend_files=$(find "$INSTALL_DIR/backend/dist" -name "*.js" 2>/dev/null | wc -l)
+        success "Backend compilado ($backend_files arquivos JS)"
+    else
+        error "Backend não compilado"
+        ((errors++))
+    fi
+    
+    # 4. Verificar dependências do backend
+    echo -e "${YELLOW}[4/12]${NC} Verificando dependências do backend..."
+    if [ -d "$INSTALL_DIR/backend/node_modules" ]; then
+        local types_count=$(ls "$INSTALL_DIR/backend/node_modules/@types" 2>/dev/null | wc -l)
+        if [ "$types_count" -gt 5 ]; then
+            success "Dependências instaladas (@types: $types_count pacotes)"
+        else
+            warning "Poucos pacotes @types instalados"
+            ((warnings++))
+        fi
+    else
+        error "node_modules não encontrado"
+        ((errors++))
+    fi
+    
+    # 5. Verificar Prisma Client
+    echo -e "${YELLOW}[5/12]${NC} Verificando Prisma Client..."
+    if [ -d "$INSTALL_DIR/backend/node_modules/.prisma/client" ]; then
+        success "Prisma Client gerado"
+    else
+        error "Prisma Client não gerado"
+        ((errors++))
+    fi
+    
+    # 6. Verificar banco de dados
+    echo -e "${YELLOW}[6/12]${NC} Verificando banco de dados..."
+    if sudo -u postgres psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
+        # Verificar tabelas
+        local table_count=$(sudo -u postgres psql -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null | tr -d ' ')
+        if [ "$table_count" -gt 10 ]; then
+            success "Banco de dados criado ($table_count tabelas)"
+        else
+            warning "Banco com poucas tabelas ($table_count)"
+            ((warnings++))
+        fi
+    else
+        error "Banco de dados não encontrado"
+        ((errors++))
+    fi
+    
+    # 7. Verificar usuários no banco
+    echo -e "${YELLOW}[7/12]${NC} Verificando usuários cadastrados..."
+    local user_count=$(sudo -u postgres psql -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | tr -d ' ')
+    if [ "$user_count" -ge 4 ]; then
+        success "Usuários criados ($user_count usuários)"
+    else
+        warning "Poucos usuários cadastrados ($user_count)"
+        ((warnings++))
+    fi
+    
+    # 8. Verificar PM2
+    echo -e "${YELLOW}[8/12]${NC} Verificando PM2..."
+    if pm2 list 2>/dev/null | grep -q "sispat-backend.*online"; then
+        local uptime=$(pm2 jlist 2>/dev/null | grep -A 20 "sispat-backend" | grep "pm_uptime" | cut -d: -f2 | cut -d, -f1 | tr -d ' ')
+        success "PM2 rodando (processo online)"
+    else
+        error "PM2 não está rodando"
+        ((errors++))
+    fi
+    
+    # 9. Verificar Nginx
+    echo -e "${YELLOW}[9/12]${NC} Verificando Nginx..."
+    if systemctl is-active --quiet nginx; then
+        if [ -f "/etc/nginx/sites-enabled/sispat" ]; then
+            success "Nginx ativo e configurado"
+        else
+            warning "Nginx ativo mas configuração não encontrada"
+            ((warnings++))
+        fi
+    else
+        error "Nginx não está ativo"
+        ((errors++))
+    fi
+    
+    # 10. Verificar API (health check)
+    echo -e "${YELLOW}[10/12]${NC} Verificando API (health check)..."
+    sleep 2  # Aguardar API iniciar
+    local api_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$APP_PORT/health 2>/dev/null)
+    if [ "$api_response" = "200" ]; then
+        success "API respondendo (HTTP 200)"
+    else
+        error "API não está respondendo (HTTP $api_response)"
+        ((errors++))
+    fi
+    
+    # 11. Verificar acesso ao frontend via Nginx
+    echo -e "${YELLOW}[11/12]${NC} Verificando acesso ao frontend..."
+    local frontend_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost 2>/dev/null)
+    if [ "$frontend_response" = "200" ]; then
+        success "Frontend acessível via Nginx (HTTP 200)"
+    else
+        warning "Frontend pode não estar acessível (HTTP $frontend_response)"
+        ((warnings++))
+    fi
+    
+    # 12. Verificar SSL (se configurado)
+    echo -e "${YELLOW}[12/12]${NC} Verificando SSL..."
+    if [ "$CONFIGURE_SSL" = "yes" ]; then
+        if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+            local cert_expiry=$(openssl x509 -enddate -noout -in "/etc/letsencrypt/live/$DOMAIN/cert.pem" 2>/dev/null | cut -d= -f2)
+            success "SSL configurado (expira: $cert_expiry)"
+        else
+            warning "SSL não foi configurado"
+            ((warnings++))
+        fi
+    else
+        info "SSL não solicitado (pode configurar depois)"
+    fi
+    
+    # Resultado da verificação
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}        RESULTADO DA VERIFICAÇÃO                    ${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════${NC}"
+    echo ""
+    
+    if [ $errors -eq 0 ] && [ $warnings -eq 0 ]; then
+        echo -e "${GREEN}✅ PERFEITO! Instalação 100% funcional!${NC}"
+        echo -e "${GREEN}   Todos os 12 testes passaram com sucesso.${NC}"
+    elif [ $errors -eq 0 ]; then
+        echo -e "${YELLOW}⚠️  ATENÇÃO: Instalação funcional com $warnings avisos${NC}"
+        echo -e "${YELLOW}   Sistema está rodando, mas pode precisar de ajustes.${NC}"
+    else
+        echo -e "${RED}❌ ERRO: Instalação com $errors erros e $warnings avisos${NC}"
+        echo -e "${RED}   Sistema pode não funcionar corretamente.${NC}"
+        echo ""
+        echo -e "${YELLOW}Verifique os logs:${NC}"
+        echo -e "  ${CYAN}cat $LOG_FILE${NC}"
+        echo -e "  ${CYAN}pm2 logs sispat-backend${NC}"
+    fi
+    
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════${NC}"
+    echo ""
+    
+    if [ $errors -gt 0 ]; then
+        warning "Pressione ENTER para ver a mensagem de acesso mesmo assim..."
+        read
+    else
+        sleep 3
+    fi
 }
 
 show_success_message() {
@@ -1477,11 +1670,25 @@ show_success_message() {
     echo ""
     echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${YELLOW}⚠️  ATENÇÃO - LEIA COM CUIDADO:${NC}"
+    echo -e "${RED}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║  ⚠️  SEGURANÇA: ALTERE AS SENHAS AGORA!          ║${NC}"
+    echo -e "${RED}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "  ${YELLOW}✓ As senhas acima são FÁCEIS para você testar o sistema${NC}"
-    echo -e "  ${YELLOW}✓ Para uso REAL com dados importantes, ALTERE as senhas!${NC}"
-    echo -e "  ${YELLOW}✓ Altere no sistema: Perfil > Alterar Senha${NC}"
+    echo -e "${YELLOW}🔐 IMPORTANTE:${NC}"
+    echo ""
+    echo -e "  ${WHITE}1.${NC} As senhas acima são ${RED}TEMPORÁRIAS${NC} e ${RED}FÁCEIS DE ADIVINHAR${NC}"
+    echo -e "  ${WHITE}2.${NC} ${YELLOW}NUNCA${NC} use em ${YELLOW}PRODUÇÃO COM DADOS REAIS${NC}"
+    echo -e "  ${WHITE}3.${NC} Altere ${YELLOW}TODAS${NC} as senhas no ${GREEN}PRIMEIRO ACESSO${NC}"
+    echo ""
+    echo -e "${CYAN}📝 Como alterar a senha:${NC}"
+    echo ""
+    echo -e "  ${WHITE}→${NC} Faça login no sistema"
+    echo -e "  ${WHITE}→${NC} Clique no seu nome (canto superior direito)"
+    echo -e "  ${WHITE}→${NC} Selecione ${CYAN}\"Perfil\"${NC} ou ${CYAN}\"Configurações\"${NC}"
+    echo -e "  ${WHITE}→${NC} Clique em ${CYAN}\"Alterar Senha\"${NC}"
+    echo -e "  ${WHITE}→${NC} Use senha ${GREEN}forte${NC}: 8+ caracteres, letras, números, símbolos"
+    echo ""
+    echo -e "${YELLOW}💡 Exemplo de senha forte:${NC} ${GREEN}Sispat@2025!Seguro${NC}"
     echo ""
     echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
