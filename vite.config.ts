@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => ({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
+    // ✅ Copiar arquivos públicos para dist
+    copyPublicDir: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -27,7 +29,15 @@ export default defineConfig(({ mode }) => ({
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
-        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+        // ✅ Manter SVGs e imagens com nome original (não usar hash)
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name?.split('.') || []
+          const ext = info[info.length - 1]
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            return `assets/images/[name].[ext]`
+          }
+          return `assets/[ext]/[name]-[hash].[ext]`
+        }
       },
       onwarn(warning, warn) {
         if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
