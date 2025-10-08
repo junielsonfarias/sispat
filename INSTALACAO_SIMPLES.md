@@ -148,7 +148,18 @@ Qual o domínio do sistema?
 
 Digite aqui: sispat.prefeitura.com.br
 ```
-**O que digitar:** Seu domínio real (ex: `sispat.prefeitura.com.br`)
+**O que digitar:** Seu domínio real
+
+**Exemplos aceitos:**
+- ✅ `sispat.prefeitura.com.br`
+- ✅ `patrimonio.municipio.pb.gov.br`
+- ✅ `sispat.vps-kinghost.net`
+- ✅ `sistema.exemplo.com`
+- ✅ Qualquer domínio válido com extensão
+
+**NÃO digite:**
+- ❌ `http://sispat.com` (sem http://)
+- ❌ `sispat` (precisa ter extensão .com, .net, etc)
 
 ---
 

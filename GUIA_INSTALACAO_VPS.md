@@ -102,13 +102,21 @@ curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/install
 
 ### **Pergunta 1: Domínio**
 ```
-❯ Qual o domínio do sistema? [sispat.exemplo.com.br]:
+Qual o domínio do sistema?
+  Digite aqui (ou pressione ENTER para usar: sispat.exemplo.com.br):
 ```
 
 **Responda com seu domínio:**
 ```
 sispat.prefeitura.com.br
 ```
+
+**Exemplos válidos:**
+- ✅ `sispat.prefeitura.com.br`
+- ✅ `patrimonio.municipio.pb.gov.br`
+- ✅ `sispat.vps-kinghost.net`
+- ✅ `sispat.hostinger.com`
+- ✅ `sistema.exemplo.com`
 
 ---
 

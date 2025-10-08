@@ -207,9 +207,27 @@ check_disk() {
 validate_domain() {
     local domain=$1
     
-    if [[ ! $domain =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$ ]]; then
+    # Validação flexível que aceita:
+    # - Domínios simples: exemplo.com
+    # - Subdomínios: sispat.exemplo.com
+    # - Múltiplos níveis: sispat.vps-kinghost.net
+    # - TLDs variados: .com, .br, .com.br, .net, .gov.br, etc.
+    
+    # Verificar se tem pelo menos um ponto
+    if [[ ! $domain =~ \. ]]; then
         return 1
     fi
+    
+    # Verificar caracteres válidos (letras, números, pontos, hífens)
+    if [[ ! $domain =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$ ]]; then
+        return 1
+    fi
+    
+    # Verificar se não começa ou termina com hífen ou ponto
+    if [[ $domain =~ ^[-.]|[-.]$ ]]; then
+        return 1
+    fi
+    
     return 0
 }
 
@@ -243,8 +261,13 @@ collect_configuration() {
     echo -e "${WHITE}PERGUNTA 1 de 8: DOMÍNIO DO SISTEMA${NC}"
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    echo -e "${CYAN}Exemplo: sispat.prefeitura.com.br${NC}"
-    echo -e "${CYAN}Exemplo: patrimonio.municipio.pb.gov.br${NC}"
+    echo -e "${CYAN}Digite o endereço do seu site (sem http:// ou https://)${NC}"
+    echo ""
+    echo -e "${GREEN}Exemplos válidos:${NC}"
+    echo -e "  • sispat.prefeitura.com.br"
+    echo -e "  • patrimonio.municipio.pb.gov.br"
+    echo -e "  • sispat.vps-kinghost.net"
+    echo -e "  • sistema.exemplo.com"
     echo ""
     
     while true; do
@@ -253,7 +276,25 @@ collect_configuration() {
             success "Domínio válido: $DOMAIN"
             break
         else
-            error "Domínio inválido. Use formato: sispat.prefeitura.com.br"
+            echo ""
+            error "Domínio inválido!"
+            echo -e "${YELLOW}  O domínio deve:${NC}"
+            echo -e "${YELLOW}  • Ter pelo menos um ponto (.)${NC}"
+            echo -e "${YELLOW}  • Não conter espaços${NC}"
+            echo -e "${YELLOW}  • Não conter caracteres especiais (exceto - e .)${NC}"
+            echo -e "${YELLOW}  • Não começar ou terminar com hífen ou ponto${NC}"
+            echo ""
+            echo -e "${GREEN}Exemplos corretos:${NC}"
+            echo -e "  ✅ sispat.prefeitura.com.br"
+            echo -e "  ✅ sispat.vps-kinghost.net"
+            echo -e "  ✅ patrimonio.exemplo.com"
+            echo ""
+            echo -e "${RED}Exemplos errados:${NC}"
+            echo -e "  ❌ sispat (falta extensão)"
+            echo -e "  ❌ http://sispat.com (não coloque http://)"
+            echo -e "  ❌ sispat_.com (caractere _ inválido)"
+            echo ""
+            sleep 2
         fi
     done
     

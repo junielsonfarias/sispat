@@ -27,6 +27,14 @@ Digite aqui (ou pressione ENTER para usar: sispat.exemplo.com.br):
 RESPONDA: sispat.prefeitura.com.br
 ```
 
+**Formatos aceitos:**
+- ✅ `sispat.prefeitura.com.br`
+- ✅ `patrimonio.municipio.pb.gov.br`
+- ✅ `sispat.vps-kinghost.net`
+- ✅ `sispat.hostinger.com`
+- ✅ `sistema.exemplo.com`
+- ✅ Qualquer domínio/subdomínio válido
+
 ### **2️⃣ Seu Email**
 ```
 Qual seu email?
