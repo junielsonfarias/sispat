@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { generateId } from '@/lib/utils'
 
-const BACKEND_URL = 'http://localhost:3000'
+// ✅ Usar URL do backend configurada ou fallback para localhost
+const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
 
 // ✅ Função auxiliar para pegar o token
 const getAuthToken = () => {
