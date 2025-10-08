@@ -460,77 +460,137 @@ collect_configuration() {
 install_dependencies() {
     local step=$1
     
-    show_progress $step 10 "Atualizando sistema..."
-    apt update -qq > /dev/null 2>&1
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║       INSTALANDO DEPENDÊNCIAS DO SISTEMA         ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
     
-    show_progress $((step+1)) 10 "Instalando dependências básicas..."
+    echo -e "${BLUE}  ⚙️  Atualizando lista de pacotes...${NC}"
+    apt update -qq > /tmp/apt-update.log 2>&1 &
+    show_spinner $! "Atualizando sistema (1-2 minutos)..."
+    wait $!
+    success "Sistema atualizado"
+    
+    echo ""
+    echo -e "${BLUE}  ⚙️  Instalando ferramentas básicas...${NC}"
     apt install -y -qq curl wget git build-essential software-properties-common \
-        ca-certificates gnupg lsb-release unzip > /dev/null 2>&1
+        ca-certificates gnupg lsb-release unzip > /tmp/apt-install.log 2>&1 &
+    show_spinner $! "Instalando curl, git, wget, etc (1-2 minutos)..."
+    wait $!
     
-    success "Dependências básicas instaladas"
+    echo ""
+    success "✅ Dependências básicas instaladas"
 }
 
 install_nodejs() {
     local step=$1
     
-    show_progress $step 10 "Instalando Node.js 18..."
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║       INSTALANDO NODE.JS E FERRAMENTAS           ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
     
     if ! command -v node &> /dev/null; then
-        curl -fsSL https://deb.nodesource.com/setup_18.x | bash - > /dev/null 2>&1
-        apt install -y -qq nodejs > /dev/null 2>&1
+        echo -e "${BLUE}  ⚙️  Baixando e instalando Node.js 18...${NC}"
+        curl -fsSL https://deb.nodesource.com/setup_18.x | bash - > /tmp/nodejs-setup.log 2>&1 &
+        show_spinner $! "Configurando repositório do Node.js (1 minuto)..."
+        wait $!
+        
+        apt install -y -qq nodejs > /tmp/nodejs-install.log 2>&1 &
+        show_spinner $! "Instalando Node.js 18 (1-2 minutos)..."
+        wait $!
     fi
     
-    show_progress $((step+1)) 10 "Instalando PNPM..."
-    npm install -g pnpm > /dev/null 2>&1
+    echo ""
+    echo -e "${BLUE}  ⚙️  Instalando PNPM (gerenciador de pacotes)...${NC}"
+    npm install -g pnpm > /tmp/pnpm-install.log 2>&1 &
+    show_spinner $! "Instalando PNPM (30 segundos)..."
+    wait $!
+    success "PNPM instalado"
     
-    show_progress $((step+2)) 10 "Instalando PM2..."
-    npm install -g pm2 > /dev/null 2>&1
+    echo ""
+    echo -e "${BLUE}  ⚙️  Instalando PM2 (gerenciador de processos)...${NC}"
+    npm install -g pm2 > /tmp/pm2-install.log 2>&1 &
+    show_spinner $! "Instalando PM2 (30 segundos)..."
+    wait $!
+    success "PM2 instalado"
     
     local node_version=$(node -v)
     local pnpm_version=$(pnpm -v)
     
-    success "Node.js $node_version e PNPM $pnpm_version instalados"
+    echo ""
+    success "✅ Node.js $node_version e PNPM $pnpm_version instalados"
 }
 
 install_postgresql() {
     local step=$1
     
-    show_progress $step 10 "Instalando PostgreSQL 15..."
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║       INSTALANDO POSTGRESQL (BANCO DE DADOS)     ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
     
     if ! command -v psql &> /dev/null; then
-        apt install -y -qq postgresql postgresql-contrib > /dev/null 2>&1
+        echo -e "${BLUE}  ⚙️  Instalando PostgreSQL 15...${NC}"
+        apt install -y -qq postgresql postgresql-contrib > /tmp/postgres-install.log 2>&1 &
+        show_spinner $! "Instalando PostgreSQL (2-3 minutos)..."
+        wait $!
     fi
     
+    echo ""
+    echo -e "${BLUE}  ⚙️  Iniciando serviço PostgreSQL...${NC}"
     systemctl start postgresql > /dev/null 2>&1
     systemctl enable postgresql > /dev/null 2>&1
     
-    success "PostgreSQL instalado e ativo"
+    echo ""
+    success "✅ PostgreSQL instalado e ativo"
 }
 
 install_nginx() {
     local step=$1
     
-    show_progress $step 10 "Instalando Nginx..."
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║       INSTALANDO NGINX (SERVIDOR WEB)            ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
     
     if ! command -v nginx &> /dev/null; then
-        apt install -y -qq nginx > /dev/null 2>&1
+        echo -e "${BLUE}  ⚙️  Instalando Nginx...${NC}"
+        apt install -y -qq nginx > /tmp/nginx-install.log 2>&1 &
+        show_spinner $! "Instalando Nginx (1-2 minutos)..."
+        wait $!
     fi
     
+    echo ""
+    echo -e "${BLUE}  ⚙️  Iniciando serviço Nginx...${NC}"
     systemctl start nginx > /dev/null 2>&1
     systemctl enable nginx > /dev/null 2>&1
     
-    success "Nginx instalado e ativo"
+    echo ""
+    success "✅ Nginx instalado e ativo"
 }
 
 install_certbot() {
     local step=$1
     
     if [ "$CONFIGURE_SSL" = "yes" ]; then
-        show_progress $step 10 "Instalando Certbot (SSL)..."
-        apt install -y -qq certbot python3-certbot-nginx > /dev/null 2>&1
-        success "Certbot instalado"
+        echo ""
+        echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+        echo -e "${CYAN}║       INSTALANDO CERTBOT (SSL/HTTPS)             ║${NC}"
+        echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "${BLUE}  ⚙️  Instalando Certbot...${NC}"
+        apt install -y -qq certbot python3-certbot-nginx > /tmp/certbot-install.log 2>&1 &
+        show_spinner $! "Instalando Certbot (1-2 minutos)..."
+        wait $!
+        echo ""
+        success "✅ Certbot instalado"
     else
-        show_progress $step 10 "Pulando instalação do Certbot..."
+        info "⏭️  Pulando instalação do Certbot (SSL não será configurado agora)"
     fi
 }
 
@@ -563,7 +623,10 @@ EOF
 
 clone_repository() {
     echo ""
-    log "Baixando código do SISPAT 2.0..."
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║       BAIXANDO CÓDIGO DO GITHUB                   ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
     
     # Remover diretório se existir
     if [ -d "$INSTALL_DIR" ]; then
@@ -574,12 +637,16 @@ clone_repository() {
     # Criar diretório
     mkdir -p "$INSTALL_DIR"
     
-    # Clonar repositório
-    git clone -q https://github.com/junielsonfarias/sispat.git "$INSTALL_DIR" 2>&1 | tee -a "$LOG_FILE"
+    # Clonar repositório com progresso
+    echo -e "${BLUE}  📥 Baixando SISPAT 2.0 do GitHub...${NC}"
+    git clone https://github.com/junielsonfarias/sispat.git "$INSTALL_DIR" 2>&1 | tee -a "$LOG_FILE" &
+    show_spinner $! "Baixando código (pode levar 1-2 minutos)..."
+    wait $!
     
     cd "$INSTALL_DIR"
     
-    success "Código baixado de: https://github.com/junielsonfarias/sispat"
+    echo ""
+    success "✅ Código baixado de: https://github.com/junielsonfarias/sispat"
 }
 
 configure_environment() {
@@ -629,49 +696,131 @@ EOF
     success "Variáveis de ambiente configuradas"
 }
 
+show_spinner() {
+    local pid=$1
+    local message=$2
+    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local i=0
+    
+    while kill -0 $pid 2>/dev/null; do
+        i=$(( (i+1) % 10 ))
+        printf "\r${BLUE}  ${spin:$i:1} $message${NC}"
+        sleep 0.1
+    done
+    printf "\r"
+}
+
 build_application() {
     echo ""
-    log "Fazendo build da aplicação (isso pode levar alguns minutos)..."
+    log "Fazendo build da aplicação..."
+    echo ""
+    echo -e "${YELLOW}⏱️  Esta etapa pode demorar 5-10 minutos. Aguarde...${NC}"
+    echo ""
     
     cd "$INSTALL_DIR"
     
-    # Build frontend
-    echo -e "${BLUE}  → Instalando dependências do frontend...${NC}"
-    pnpm install --frozen-lockfile > /dev/null 2>&1
+    # Build frontend - com indicador de progresso
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║  ETAPA 1/4: Instalando dependências do frontend  ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
+    pnpm install --frozen-lockfile > /tmp/build-frontend-deps.log 2>&1 &
+    show_spinner $! "Instalando pacotes do frontend (pode levar 2-3 minutos)..."
+    wait $!
+    if [ $? -eq 0 ]; then
+        success "Dependências do frontend instaladas"
+    else
+        error "Falha ao instalar dependências do frontend. Log: /tmp/build-frontend-deps.log"
+    fi
     
-    echo -e "${BLUE}  → Compilando frontend para produção...${NC}"
-    pnpm run build:prod > /dev/null 2>&1
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║  ETAPA 2/4: Compilando frontend (React/TypeScript)║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
+    pnpm run build:prod > /tmp/build-frontend.log 2>&1 &
+    show_spinner $! "Compilando frontend (pode levar 2-3 minutos)..."
+    wait $!
+    if [ $? -eq 0 ]; then
+        success "Frontend compilado com sucesso"
+    else
+        error "Falha ao compilar frontend. Log: /tmp/build-frontend.log"
+    fi
     
-    # Build backend
-    echo -e "${BLUE}  → Instalando dependências do backend...${NC}"
+    # Build backend - com indicador de progresso
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║  ETAPA 3/4: Instalando dependências do backend   ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
     cd backend
-    npm install --production > /dev/null 2>&1
+    npm install --production > /tmp/build-backend-deps.log 2>&1 &
+    show_spinner $! "Instalando pacotes do backend (pode levar 2-3 minutos)..."
+    wait $!
+    if [ $? -eq 0 ]; then
+        success "Dependências do backend instaladas"
+    else
+        error "Falha ao instalar dependências do backend. Log: /tmp/build-backend-deps.log"
+    fi
     
-    echo -e "${BLUE}  → Compilando backend para produção...${NC}"
-    npm run build > /dev/null 2>&1
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║  ETAPA 4/4: Compilando backend (Node.js/TypeScript)║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
+    npm run build > /tmp/build-backend.log 2>&1 &
+    show_spinner $! "Compilando backend (pode levar 1-2 minutos)..."
+    wait $!
+    if [ $? -eq 0 ]; then
+        success "Backend compilado com sucesso"
+    else
+        error "Falha ao compilar backend. Log: /tmp/build-backend.log"
+    fi
     
-    success "Build concluído com sucesso"
+    echo ""
+    success "✨ Build completo concluído com sucesso!"
 }
 
 setup_database() {
     echo ""
-    log "Configurando estrutura do banco de dados..."
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║       CONFIGURANDO BANCO DE DADOS                 ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
     
     cd "$INSTALL_DIR/backend"
     
     # Gerar Prisma Client
-    echo -e "${BLUE}  → Gerando Prisma Client...${NC}"
-    npx prisma generate > /dev/null 2>&1
+    echo -e "${BLUE}  ⚙️  Gerando Prisma Client...${NC}"
+    npx prisma generate > /tmp/prisma-generate.log 2>&1 &
+    show_spinner $! "Gerando cliente do banco de dados (30 segundos)..."
+    wait $!
+    if [ $? -eq 0 ]; then
+        success "Prisma Client gerado"
+    else
+        error "Falha ao gerar Prisma Client. Log: /tmp/prisma-generate.log"
+    fi
     
     # Executar migrações
-    echo -e "${BLUE}  → Executando migrações...${NC}"
-    npx prisma migrate deploy > /dev/null 2>&1
+    echo ""
+    echo -e "${BLUE}  ⚙️  Executando migrações do banco...${NC}"
+    npx prisma migrate deploy > /tmp/prisma-migrate.log 2>&1 &
+    show_spinner $! "Criando tabelas no banco de dados (30 segundos)..."
+    wait $!
+    if [ $? -eq 0 ]; then
+        success "Migrações executadas"
+    else
+        error "Falha nas migrações. Log: /tmp/prisma-migrate.log"
+    fi
     
     # Popular banco com dados iniciais
-    echo -e "${BLUE}  → Criando usuários e dados iniciais...${NC}"
+    echo ""
+    echo -e "${BLUE}  ⚙️  Criando usuários e dados iniciais...${NC}"
+    echo ""
     npm run prisma:seed 2>&1 | tee -a "$LOG_FILE"
     
-    success "Banco de dados configurado e populado"
+    echo ""
+    success "✨ Banco de dados configurado e populado"
 }
 
 configure_nginx() {
@@ -945,8 +1094,16 @@ main() {
     collect_configuration
     
     # Instalação
+    clear
+    show_banner
+    echo -e "${WHITE}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${WHITE}║                                                   ║${NC}"
+    echo -e "${WHITE}║         INICIANDO INSTALAÇÃO AUTOMÁTICA           ║${NC}"
+    echo -e "${WHITE}║                                                   ║${NC}"
+    echo -e "${WHITE}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${WHITE}═══ INICIANDO INSTALAÇÃO ═══${NC}"
+    echo -e "${CYAN}📦 FASE 1/5: Instalando dependências do sistema${NC}"
+    echo -e "${YELLOW}   (Tempo estimado: 5-10 minutos)${NC}"
     echo ""
     
     install_dependencies 1
@@ -955,37 +1112,71 @@ main() {
     install_nginx 7
     install_certbot 8
     
-    show_progress 9 10 "Finalizando instalação de dependências..."
-    sleep 1
-    show_progress 10 10 "Dependências instaladas com sucesso!"
     echo ""
+    success "🎉 Fase 1/5 concluída - Todas as dependências instaladas!"
+    sleep 2
     
     # Configuração
+    clear
+    show_banner
+    echo -e "${CYAN}📦 FASE 2/5: Configurando ambiente${NC}"
+    echo -e "${YELLOW}   (Tempo estimado: 2-3 minutos)${NC}"
+    echo ""
+    
     configure_database
     clone_repository
     configure_environment
     
+    echo ""
+    success "🎉 Fase 2/5 concluída - Ambiente configurado!"
+    sleep 2
+    
     # Build
+    clear
+    show_banner
+    echo -e "${CYAN}📦 FASE 3/5: Compilando aplicação${NC}"
+    echo -e "${YELLOW}   (Tempo estimado: 5-10 minutos - A PARTE MAIS DEMORADA!)${NC}"
+    echo -e "${YELLOW}   ☕ Esta é a hora do café... Não se preocupe, está funcionando!${NC}"
+    echo ""
+    
     build_application
     
+    echo ""
+    success "🎉 Fase 3/5 concluída - Aplicação compilada!"
+    sleep 2
+    
     # Setup do banco
+    clear
+    show_banner
+    echo -e "${CYAN}📦 FASE 4/5: Configurando banco de dados e usuários${NC}"
+    echo -e "${YELLOW}   (Tempo estimado: 1-2 minutos)${NC}"
+    echo ""
+    
     setup_database
     
-    # Configurar serviços
+    echo ""
+    success "🎉 Fase 4/5 concluída - Banco de dados pronto!"
+    sleep 2
+    
+    # Configurar serviços e iniciar
+    clear
+    show_banner
+    echo -e "${CYAN}📦 FASE 5/5: Configurando serviços e iniciando sistema${NC}"
+    echo -e "${YELLOW}   (Tempo estimado: 2-3 minutos)${NC}"
+    echo ""
+    
     configure_nginx
     configure_systemd
     configure_firewall
     configure_permissions
-    
-    # Iniciar aplicação
     start_application
-    
-    # Configurar SSL
     configure_ssl
-    
-    # Configurar backup e monitoramento
     configure_backup
     configure_monitoring
+    
+    echo ""
+    success "🎉 Fase 5/5 concluída - Sistema iniciado!"
+    sleep 2
     
     # Finalização
     show_success_message
