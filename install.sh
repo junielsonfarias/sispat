@@ -75,10 +75,12 @@ ask() {
     
     echo ""
     if [ -n "$default" ]; then
-        read -p "$(echo -e ${MAGENTA}❯${NC}) $prompt [${GREEN}$default${NC}]: " input
+        echo -e "${CYAN}${prompt}${NC}"
+        read -p "$(echo -e ${MAGENTA}  Digite aqui${NC}) (ou pressione ENTER para usar: ${GREEN}$default${NC}): " input
         eval "$var_name=\"${input:-$default}\""
     else
-        read -p "$(echo -e ${MAGENTA}❯${NC}) $prompt: " input
+        echo -e "${CYAN}${prompt}${NC}"
+        read -p "$(echo -e ${MAGENTA}  Digite aqui:${NC}) " input
         eval "$var_name=\"$input\""
     fi
 }
@@ -89,12 +91,14 @@ ask_password() {
     local default="$3"
     
     echo ""
+    echo -e "${CYAN}${prompt}${NC}"
     if [ -n "$default" ]; then
-        read -sp "$(echo -e ${MAGENTA}❯${NC}) $prompt [padrão disponível]: " input
+        echo -e "${YELLOW}  (Pressione ENTER para usar senha padrão ou digite sua própria senha)${NC}"
+        read -sp "$(echo -e ${MAGENTA}  Digite a senha:${NC}) " input
         echo ""
         eval "$var_name=\"${input:-$default}\""
     else
-        read -sp "$(echo -e ${MAGENTA}❯${NC}) $prompt: " input
+        read -sp "$(echo -e ${MAGENTA}  Digite a senha:${NC}) " input
         echo ""
         eval "$var_name=\"$input\""
     fi
@@ -106,14 +110,15 @@ ask_yes_no() {
     
     echo ""
     if [ "$default" = "S" ]; then
-        read -p "$(echo -e ${MAGENTA}❯${NC}) $prompt [${GREEN}S${NC}/n]: " response
+        read -p "$(echo -e ${MAGENTA}❯${NC}) $prompt (Digite S para Sim ou N para Não) [${GREEN}Sim${NC}]: " response
         response=${response:-S}
     else
-        read -p "$(echo -e ${MAGENTA}❯${NC}) $prompt [s/${GREEN}N${NC}]: " response
+        read -p "$(echo -e ${MAGENTA}❯${NC}) $prompt (Digite S para Sim ou N para Não) [${GREEN}Não${NC}]: " response
         response=${response:-N}
     fi
     
-    [[ "$response" =~ ^[Ss]$ ]]
+    # Aceitar: S, s, Sim, sim, SIM, Y, y, Yes, yes
+    [[ "$response" =~ ^[SsYy]|[Ss][Ii][Mm]|[Yy][Ee][Ss]$ ]]
 }
 
 show_progress() {
@@ -223,16 +228,29 @@ validate_email() {
 
 collect_configuration() {
     show_banner
-    echo -e "${WHITE}═══ CONFIGURAÇÃO DO SISTEMA ═══${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
+    echo -e "${WHITE}        CONFIGURAÇÃO DO SISTEMA - 8 PERGUNTAS       ${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
-    echo "Vou fazer algumas perguntas para configurar o SISPAT 2.0"
-    echo "Pressione ENTER para usar o valor padrão [entre colchetes]"
+    echo -e "${CYAN}📋 Vou fazer algumas perguntas simples para configurar o SISPAT 2.0${NC}"
     echo ""
+    echo -e "${YELLOW}💡 DICA: Pressione ENTER para usar o valor padrão sugerido${NC}"
+    echo ""
+    sleep 2
     
     # Domínio
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}PERGUNTA 1 de 8: DOMÍNIO DO SISTEMA${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}Exemplo: sispat.prefeitura.com.br${NC}"
+    echo -e "${CYAN}Exemplo: patrimonio.municipio.pb.gov.br${NC}"
+    echo ""
+    
     while true; do
         ask "Qual o domínio do sistema?" DOMAIN "sispat.exemplo.com.br"
         if validate_domain "$DOMAIN"; then
+            success "Domínio válido: $DOMAIN"
             break
         else
             error "Domínio inválido. Use formato: sispat.prefeitura.com.br"
@@ -240,72 +258,156 @@ collect_configuration() {
     done
     
     API_DOMAIN="api.$DOMAIN"
+    info "API será acessível em: $API_DOMAIN"
+    sleep 1
     
     # Email do administrador
+    echo ""
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}PERGUNTA 2 de 8: SEU EMAIL (SUPERUSUÁRIO)${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}Este será o email do administrador principal do sistema${NC}"
+    echo ""
+    
     while true; do
-        ask "Email do superusuário (você)" SUPERUSER_EMAIL "admin@$DOMAIN"
+        ask "Qual seu email?" SUPERUSER_EMAIL "admin@$DOMAIN"
         if validate_email "$SUPERUSER_EMAIL"; then
+            success "Email válido: $SUPERUSER_EMAIL"
             break
         else
-            error "Email inválido"
+            error "Email inválido. Use formato: nome@dominio.com"
         fi
     done
+    sleep 1
     
     # Nome do administrador
-    ask "Seu nome completo" SUPERUSER_NAME "Administrador SISPAT"
+    echo ""
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}PERGUNTA 3 de 8: SEU NOME COMPLETO${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    
+    ask "Qual seu nome completo?" SUPERUSER_NAME "Administrador SISPAT"
+    success "Nome registrado: $SUPERUSER_NAME"
+    sleep 1
     
     # Senha do banco de dados
-    ask_password "Senha do PostgreSQL (banco de dados)" DB_PASSWORD "sispat_password_123"
+    echo ""
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}PERGUNTA 4 de 8: SENHA DO BANCO DE DADOS${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}Esta senha é para o PostgreSQL (banco de dados interno)${NC}"
+    echo -e "${YELLOW}Recomendação: Pressione ENTER para usar a senha padrão${NC}"
+    echo ""
+    
+    ask_password "Senha do PostgreSQL" DB_PASSWORD "sispat_password_123"
+    success "Senha do banco configurada"
+    sleep 1
     
     # Senha do superusuário
     echo ""
-    echo -e "${CYAN}ℹ Para facilitar testes, você pode usar a senha padrão${NC}"
-    ask_password "Senha do superusuário" SUPERUSER_PASSWORD "Tiko6273@"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}PERGUNTA 5 de 8: SUA SENHA DE ACESSO AO SISTEMA${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}Esta será a senha que você usará para fazer login${NC}"
+    echo -e "${YELLOW}Recomendação: Pressione ENTER para usar: Tiko6273@${NC}"
+    echo ""
+    
+    ask_password "Sua senha de login" SUPERUSER_PASSWORD "Tiko6273@"
+    success "Sua senha configurada"
+    sleep 1
     
     # Senha padrão para outros usuários
-    ask_password "Senha padrão para outros usuários (admin, supervisor, etc)" DEFAULT_PASSWORD "password123"
+    echo ""
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}PERGUNTA 6 de 8: SENHA PARA OUTROS USUÁRIOS${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}Esta senha será usada para admin, supervisor, usuário padrão${NC}"
+    echo -e "${YELLOW}Recomendação: Pressione ENTER para usar: password123${NC}"
+    echo ""
+    
+    ask_password "Senha padrão para outros usuários" DEFAULT_PASSWORD "password123"
+    success "Senha padrão configurada"
+    sleep 1
     
     # Gerar JWT secret
     echo ""
-    info "Gerando chave JWT secreta..."
+    echo -e "${CYAN}⚙️  Gerando chave de segurança JWT automaticamente...${NC}"
     JWT_SECRET=$(openssl rand -hex 64)
-    success "Chave JWT gerada automaticamente"
+    success "Chave de segurança gerada"
+    sleep 1
     
     # Nome do município
+    echo ""
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}PERGUNTA 7 de 8: NOME DO MUNICÍPIO/ÓRGÃO${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}Exemplo: Prefeitura Municipal de Vista Serrana${NC}"
+    echo ""
+    
     ask "Nome do município/órgão" MUNICIPALITY_NAME "Prefeitura Municipal"
+    success "Município: $MUNICIPALITY_NAME"
+    sleep 1
     
     # Estado
+    echo ""
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}PERGUNTA 8 de 8: ESTADO (UF)${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}Digite a sigla do estado (ex: PB, SP, RJ, MG)${NC}"
+    echo ""
+    
     ask "Sigla do estado (UF)" STATE "XX"
     STATE=$(echo "$STATE" | tr '[:lower:]' '[:upper:]')
+    success "Estado: $STATE"
+    sleep 1
     
     # SSL
     echo ""
-    if ask_yes_no "Configurar SSL automático com Let's Encrypt?"; then
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}CONFIGURAÇÃO ADICIONAL: SSL/HTTPS${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}SSL/HTTPS deixa seu site seguro (cadeado verde no navegador)${NC}"
+    echo -e "${YELLOW}⚠️  IMPORTANTE: Seu DNS deve estar apontando para este servidor!${NC}"
+    echo ""
+    
+    if ask_yes_no "Deseja configurar SSL/HTTPS automaticamente agora?"; then
         CONFIGURE_SSL="yes"
-        warning "Certifique-se que o DNS já está apontando para este servidor!"
-        sleep 2
+        success "SSL será configurado automaticamente"
     else
         CONFIGURE_SSL="no"
         info "Você poderá configurar SSL depois com: sudo certbot --nginx -d $DOMAIN"
     fi
+    sleep 1
     
     # Confirmação
     echo ""
-    echo -e "${WHITE}═══ RESUMO DA CONFIGURAÇÃO ═══${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
+    echo -e "${WHITE}           RESUMO DAS SUAS CONFIGURAÇÕES           ${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "  ${CYAN}Domínio:${NC}           $DOMAIN"
-    echo -e "  ${CYAN}API:${NC}               $API_DOMAIN"
-    echo -e "  ${CYAN}Email:${NC}             $SUPERUSER_EMAIL"
-    echo -e "  ${CYAN}Nome:${NC}              $SUPERUSER_NAME"
-    echo -e "  ${CYAN}Município:${NC}         $MUNICIPALITY_NAME"
-    echo -e "  ${CYAN}Estado:${NC}            $STATE"
-    echo -e "  ${CYAN}Banco:${NC}             $DB_NAME"
-    echo -e "  ${CYAN}SSL:${NC}               ${CONFIGURE_SSL}"
+    echo -e "  ${CYAN}🌐 Domínio do site:${NC}      $DOMAIN"
+    echo -e "  ${CYAN}🌐 API:${NC}                  $API_DOMAIN"
+    echo -e "  ${CYAN}📧 Seu email:${NC}            $SUPERUSER_EMAIL"
+    echo -e "  ${CYAN}👤 Seu nome:${NC}             $SUPERUSER_NAME"
+    echo -e "  ${CYAN}🏛️  Município:${NC}            $MUNICIPALITY_NAME"
+    echo -e "  ${CYAN}📍 Estado:${NC}               $STATE"
+    echo -e "  ${CYAN}🗃️  Banco de dados:${NC}       $DB_NAME"
+    echo -e "  ${CYAN}🔒 SSL/HTTPS:${NC}            ${CONFIGURE_SSL}"
+    echo ""
+    echo -e "${YELLOW}⚠️  Verifique se está tudo correto antes de continuar!${NC}"
     echo ""
     
-    if ! ask_yes_no "Confirma as configurações acima?"; then
+    if ! ask_yes_no "Tudo certo? Posso começar a instalação?"; then
         echo ""
-        info "Instalação cancelada. Execute novamente para reconfigurar."
+        info "Instalação cancelada. Execute o script novamente para reconfigurar."
         exit 0
     fi
 }
@@ -766,20 +868,29 @@ main() {
     # Banner e informações
     show_banner
     
-    echo -e "${WHITE}Bem-vindo ao instalador do SISPAT 2.0!${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
+    echo -e "${WHITE}    BEM-VINDO AO INSTALADOR DO SISPAT 2.0!          ${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
-    echo "Este instalador vai:"
-    echo "  ✓ Instalar todas as dependências necessárias"
-    echo "  ✓ Configurar PostgreSQL, Nginx e Node.js"
-    echo "  ✓ Baixar e compilar a aplicação"
-    echo "  ✓ Configurar SSL (opcional)"
-    echo "  ✓ Criar usuários e popular banco de dados"
-    echo "  ✓ Iniciar o sistema automaticamente"
+    echo -e "${CYAN}Este instalador vai fazer TUDO automaticamente:${NC}"
     echo ""
-    echo -e "${YELLOW}Tempo estimado: 15-30 minutos${NC}"
+    echo "  ✅ Instalar Node.js, PostgreSQL e Nginx"
+    echo "  ✅ Baixar o código do SISPAT do GitHub"
+    echo "  ✅ Compilar a aplicação"
+    echo "  ✅ Criar banco de dados"
+    echo "  ✅ Criar usuários do sistema"
+    echo "  ✅ Configurar SSL/HTTPS (opcional)"
+    echo "  ✅ Iniciar o sistema"
+    echo ""
+    echo -e "${YELLOW}⏱️  Tempo estimado: 15 a 30 minutos${NC}"
+    echo -e "${YELLOW}☕ Aproveite para tomar um café!${NC}"
+    echo ""
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
     
-    if ! ask_yes_no "Deseja continuar?"; then
+    if ! ask_yes_no "Pronto para começar a instalação?"; then
+        echo ""
+        info "Instalação cancelada. Execute novamente quando estiver pronto."
         exit 0
     fi
     
@@ -846,64 +957,77 @@ show_success_message() {
     echo "║                                                                   ║"
     echo "║              🎉  INSTALAÇÃO CONCLUÍDA COM SUCESSO!  🎉            ║"
     echo "║                                                                   ║"
+    echo "║                  O SISPAT 2.0 ESTÁ FUNCIONANDO!                   ║"
+    echo "║                                                                   ║"
     echo "╚═══════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     echo ""
-    echo -e "${WHITE}═══ INFORMAÇÕES DE ACESSO ═══${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
+    echo -e "${WHITE}         COMO ACESSAR O SISTEMA AGORA                ${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "  ${CYAN}🌐 URL do Sistema:${NC}"
+    echo -e "${CYAN}🌐 PASSO 1: Abra seu navegador e digite:${NC}"
+    echo ""
     if [ "$CONFIGURE_SSL" = "yes" ]; then
-        echo -e "     ${GREEN}https://${DOMAIN}${NC}"
+        echo -e "     ${GREEN}${WHITE}https://${DOMAIN}${NC}"
     else
-        echo -e "     ${GREEN}http://${DOMAIN}${NC}"
-        echo -e "     ${YELLOW}(Configure SSL: sudo certbot --nginx -d $DOMAIN)${NC}"
+        echo -e "     ${GREEN}${WHITE}http://${DOMAIN}${NC}"
+        echo ""
+        echo -e "     ${YELLOW}💡 Para ativar HTTPS depois, execute:${NC}"
+        echo -e "     ${CYAN}sudo certbot --nginx -d $DOMAIN${NC}"
     fi
     echo ""
-    echo -e "  ${CYAN}👤 ACESSO PRINCIPAL (ADMIN):${NC}"
-    echo -e "     Email: ${GREEN}admin@ssbv.com${NC}"
-    echo -e "     Senha: ${GREEN}password123${NC}"
+    echo -e "${CYAN}👤 PASSO 2: Faça login com estas credenciais:${NC}"
     echo ""
-    echo -e "  ${CYAN}👤 ACESSO SUPERUSUÁRIO (VOCÊ):${NC}"
+    echo -e "     ${WHITE}Email:${NC} ${GREEN}admin@ssbv.com${NC}"
+    echo -e "     ${WHITE}Senha:${NC} ${GREEN}password123${NC}"
+    echo ""
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${CYAN}👥 OUTROS USUÁRIOS CRIADOS AUTOMATICAMENTE:${NC}"
+    echo ""
+    echo -e "  ${WHITE}Superusuário (você):${NC}"
     echo -e "     Email: ${GREEN}${SUPERUSER_EMAIL}${NC}"
     echo -e "     Senha: ${GREEN}${SUPERUSER_PASSWORD}${NC}"
     echo ""
-    echo -e "${WHITE}═══ OUTROS USUÁRIOS DISPONÍVEIS ═══${NC}"
+    echo -e "  ${WHITE}Supervisor:${NC}"
+    echo -e "     Email: ${GREEN}supervisor@ssbv.com${NC}"
+    echo -e "     Senha: ${GREEN}password123${NC}"
     echo ""
-    echo -e "  Supervisor:   ${GREEN}supervisor@ssbv.com${NC}   / password123"
-    echo -e "  Usuário:      ${GREEN}usuario@ssbv.com${NC}      / password123"
-    echo -e "  Visualizador: ${GREEN}visualizador@ssbv.com${NC} / password123"
+    echo -e "  ${WHITE}Usuário padrão:${NC}"
+    echo -e "     Email: ${GREEN}usuario@ssbv.com${NC}"
+    echo -e "     Senha: ${GREEN}password123${NC}"
     echo ""
-    echo -e "${WHITE}═══ COMANDOS ÚTEIS ═══${NC}"
+    echo -e "  ${WHITE}Visualizador:${NC}"
+    echo -e "     Email: ${GREEN}visualizador@ssbv.com${NC}"
+    echo -e "     Senha: ${GREEN}password123${NC}"
     echo ""
-    echo -e "  ${CYAN}Ver status:${NC}        sudo systemctl status sispat-backend"
-    echo -e "  ${CYAN}Ver logs:${NC}          pm2 logs sispat-backend"
-    echo -e "  ${CYAN}Reiniciar:${NC}         pm2 restart sispat-backend"
-    echo -e "  ${CYAN}Health check:${NC}      curl http://localhost:$APP_PORT/health"
-    echo -e "  ${CYAN}Backup manual:${NC}     $INSTALL_DIR/scripts/backup.sh"
-    echo -e "  ${CYAN}Monitoramento:${NC}     $INSTALL_DIR/scripts/monitor.sh"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${WHITE}═══ PRÓXIMOS PASSOS ═══${NC}"
+    echo -e "${YELLOW}⚠️  ATENÇÃO - LEIA COM CUIDADO:${NC}"
     echo ""
-    echo "  1. Acesse o sistema: ${GREEN}https://${DOMAIN}${NC}"
-    echo "  2. Faça login com: ${GREEN}admin@ssbv.com${NC} / ${GREEN}password123${NC}"
-    echo "  3. Vá em: Administração > Gerenciar Usuários"
-    echo "  4. Crie seus próprios usuários"
-    echo "  5. Configure o município em: Configurações > Personalização"
+    echo -e "  ${YELLOW}✓ As senhas acima são FÁCEIS para você testar o sistema${NC}"
+    echo -e "  ${YELLOW}✓ Para uso REAL com dados importantes, ALTERE as senhas!${NC}"
+    echo -e "  ${YELLOW}✓ Altere no sistema: Perfil > Alterar Senha${NC}"
     echo ""
-    echo -e "${YELLOW}⚠️  IMPORTANTE:${NC}"
-    echo -e "  ${YELLOW}→ As senhas atuais são para TESTE${NC}"
-    echo -e "  ${YELLOW}→ Para produção REAL, altere TODAS as senhas${NC}"
-    echo -e "  ${YELLOW}→ Documentação: $INSTALL_DIR/CREDENCIAIS_PRODUCAO.md${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${WHITE}═══ LOGS E DOCUMENTAÇÃO ═══${NC}"
+    echo -e "${CYAN}🔧 COMANDOS ÚTEIS (se precisar):${NC}"
     echo ""
-    echo -e "  Log de instalação: ${CYAN}$LOG_FILE${NC}"
-    echo -e "  Documentação:      ${CYAN}$INSTALL_DIR/README_PRODUCTION.md${NC}"
-    echo -e "  Guia de deploy:    ${CYAN}$INSTALL_DIR/DEPLOY_PRODUCTION.md${NC}"
+    echo -e "  ${WHITE}Ver se está rodando:${NC}  ${CYAN}pm2 status${NC}"
+    echo -e "  ${WHITE}Ver logs do sistema:${NC}  ${CYAN}pm2 logs sispat-backend${NC}"
+    echo -e "  ${WHITE}Reiniciar sistema:${NC}    ${CYAN}pm2 restart sispat-backend${NC}"
+    echo -e "  ${WHITE}Reiniciar Nginx:${NC}      ${CYAN}sudo systemctl restart nginx${NC}"
+    echo -e "  ${WHITE}Fazer backup:${NC}         ${CYAN}$INSTALL_DIR/scripts/backup.sh${NC}"
     echo ""
-    echo -e "${GREEN}✨ O SISPAT 2.0 está instalado e rodando!${NC}"
+    echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${CYAN}📞 Suporte: https://github.com/junielsonfarias/sispat/issues${NC}"
+    echo -e "${GREEN}✨ TUDO PRONTO! Acesse ${WHITE}https://${DOMAIN}${GREEN} agora!${NC}"
+    echo ""
+    echo -e "${CYAN}📖 Documentação completa em: ${WHITE}$INSTALL_DIR/${NC}"
+    echo -e "${CYAN}📞 Suporte: ${WHITE}https://github.com/junielsonfarias/sispat/issues${NC}"
+    echo ""
+    echo -e "${GREEN}🎊 Aproveite o SISPAT 2.0!${NC}"
     echo ""
 }
 

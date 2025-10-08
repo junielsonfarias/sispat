@@ -137,84 +137,119 @@ curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/install
 
 #### **4.2 - Responda as perguntas:**
 
-O instalador vai fazer perguntas. Aqui está o que responder:
+O instalador vai fazer **8 perguntas simples**. Veja como responder:
 
 ---
 
-**❯ Qual o domínio do sistema?**
+#### **📋 PERGUNTA 1: Domínio do Sistema**
 ```
-Digite: sispat.prefeitura.com.br
+Qual o domínio do sistema?
+(ou pressione ENTER para usar: sispat.exemplo.com.br)
+
+Digite aqui: sispat.prefeitura.com.br
 ```
-(Use seu domínio real)
+**O que digitar:** Seu domínio real (ex: `sispat.prefeitura.com.br`)
 
 ---
 
-**❯ Email do superusuário (você):**
+#### **📋 PERGUNTA 2: Seu Email**
 ```
-Digite: seu.email@gmail.com
+Qual seu email?
+(ou pressione ENTER para usar: admin@sispat.prefeitura.com.br)
+
+Digite aqui: seu.email@gmail.com
 ```
-(Use seu email real)
+**O que digitar:** Seu email pessoal ou profissional
 
 ---
 
-**❯ Seu nome completo:**
+#### **📋 PERGUNTA 3: Seu Nome**
 ```
-Digite: João da Silva
+Qual seu nome completo?
+(ou pressione ENTER para usar: Administrador SISPAT)
+
+Digite aqui: João da Silva
 ```
-(Use seu nome)
+**O que digitar:** Seu nome completo
 
 ---
 
-**❯ Senha do PostgreSQL (banco de dados):**
+#### **📋 PERGUNTA 4: Senha do Banco de Dados**
 ```
-Opção 1: Pressione ENTER (usa senha padrão)
-Opção 2: Digite uma senha e pressione ENTER
+Senha do PostgreSQL
+(Pressione ENTER para usar senha padrão ou digite sua própria senha)
+
+Digite a senha: 
 ```
+**O que fazer:** 
+- **Recomendado:** Apenas pressione **ENTER** (usa senha padrão)
+- Ou digite uma senha se preferir
 
 ---
 
-**❯ Senha do superusuário:**
+#### **📋 PERGUNTA 5: Sua Senha de Login**
 ```
-Opção 1: Pressione ENTER (usa Tiko6273@)
-Opção 2: Digite sua senha e pressione ENTER
+Sua senha de login
+(Pressione ENTER para usar senha padrão ou digite sua própria senha)
+
+Digite a senha:
 ```
+**O que fazer:**
+- **Recomendado:** Apenas pressione **ENTER** (usa `Tiko6273@`)
+- Ou digite sua própria senha
 
 ---
 
-**❯ Senha padrão para outros usuários:**
+#### **📋 PERGUNTA 6: Senha para Outros Usuários**
 ```
-Pressione ENTER (usa password123)
+Senha padrão para outros usuários
+(Pressione ENTER para usar senha padrão ou digite sua própria senha)
+
+Digite a senha:
 ```
+**O que fazer:** Pressione **ENTER** (usa `password123`)
 
 ---
 
-**❯ Nome do município/órgão:**
+#### **📋 PERGUNTA 7: Nome do Município**
 ```
-Digite: Prefeitura Municipal de Vista Serrana
+Nome do município/órgão
+(ou pressione ENTER para usar: Prefeitura Municipal)
+
+Digite aqui: Prefeitura Municipal de Vista Serrana
 ```
+**O que digitar:** Nome completo do município
 
 ---
 
-**❯ Sigla do estado (UF):**
+#### **📋 PERGUNTA 8: Estado (UF)**
 ```
-Digite: PB
+Sigla do estado (UF)
+(ou pressione ENTER para usar: XX)
+
+Digite aqui: PB
 ```
+**O que digitar:** Sigla do estado (PB, SP, RJ, MG, etc.)
 
 ---
 
-**❯ Configurar SSL automático com Let's Encrypt?**
+#### **📋 CONFIGURAÇÃO ADICIONAL: SSL/HTTPS**
 ```
-Digite: S
+Deseja configurar SSL/HTTPS automaticamente agora?
+(Digite S para Sim ou N para Não) [Sim]:
 ```
-(Isso ativa o HTTPS - conexão segura)
+**O que digitar:** 
+- **S** ou **Sim** ou apenas **ENTER** (ativa HTTPS)
+- **N** ou **Não** (configura depois)
 
 ---
 
-**❯ Confirma as configurações acima?**
+#### **📋 CONFIRMAÇÃO FINAL**
 ```
-Verifique se está tudo certo
-Digite: S
+Tudo certo? Posso começar a instalação?
+(Digite S para Sim ou N para Não) [Sim]:
 ```
+**O que digitar:** **S** ou **Sim** ou apenas **ENTER**
 
 ---
 
