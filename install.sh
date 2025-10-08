@@ -770,7 +770,10 @@ build_application() {
     echo ""
     
     cd backend
-    npm install --production > /tmp/build-backend-deps.log 2>&1 &
+    
+    # IMPORTANTE: Instalar TODAS as dependências (incluindo devDependencies)
+    # porque precisamos dos @types/* para compilar TypeScript
+    npm install > /tmp/build-backend-deps.log 2>&1 &
     local backend_deps_pid=$!
     show_spinner $backend_deps_pid "Instalando pacotes do backend (pode levar 2-3 minutos)..."
     wait $backend_deps_pid
@@ -778,10 +781,11 @@ build_application() {
     
     echo ""
     if [ $backend_deps_status -eq 0 ]; then
-        success "✅ Dependências do backend instaladas"
+        success "✅ Dependências do backend instaladas (incluindo tipos TypeScript)"
     else
         echo ""
         error "❌ Falha ao instalar dependências do backend! Ver: /tmp/build-backend-deps.log"
+        exit 1
     fi
     
     echo ""
@@ -807,10 +811,25 @@ build_application() {
     echo ""
     
     if [ $build_status -eq 0 ]; then
-        success "✅ Backend compilado com sucesso!"
+        # Verificar se realmente criou os arquivos compilados
+        if [ -f "dist/index.js" ]; then
+            success "✅ Backend compilado com sucesso!"
+        else
+            echo ""
+            error "❌ Build reportou sucesso mas arquivos não foram criados!"
+            echo ""
+            echo -e "${YELLOW}Últimas linhas do log:${NC}"
+            tail -30 /tmp/build-backend.log
+            echo ""
+            echo -e "${CYAN}Log completo em: /tmp/build-backend.log${NC}"
+            exit 1
+        fi
     else
         echo ""
         error "❌ Falha ao compilar backend!"
+        echo ""
+        echo -e "${YELLOW}Erros de compilação:${NC}"
+        grep -i "error" /tmp/build-backend.log | head -20
         echo ""
         echo -e "${YELLOW}Últimas linhas do log:${NC}"
         tail -20 /tmp/build-backend.log
