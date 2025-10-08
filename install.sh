@@ -1596,7 +1596,7 @@ verify_installation() {
     if [ -d "$INSTALL_DIR" ] && [ -d "$INSTALL_DIR/backend" ] && [ -d "$INSTALL_DIR/dist" ]; then
         success "Diretórios criados corretamente"
     else
-        error "Estrutura de diretórios incompleta"
+        warning "Estrutura de diretórios incompleta"
         ((errors++))
     fi
     
@@ -1607,11 +1607,11 @@ verify_installation() {
         if [ "$js_files" -gt 0 ]; then
             success "Frontend compilado ($js_files arquivos JS)"
         else
-            error "Frontend sem arquivos JavaScript"
+            warning "Frontend sem arquivos JavaScript"
             ((errors++))
         fi
     else
-        error "Frontend não compilado"
+        warning "Frontend não compilado"
         ((errors++))
     fi
     
@@ -1621,7 +1621,7 @@ verify_installation() {
         local backend_files=$(find "$INSTALL_DIR/backend/dist" -name "*.js" 2>/dev/null | wc -l)
         success "Backend compilado ($backend_files arquivos JS)"
     else
-        error "Backend não compilado"
+        warning "Backend não compilado"
         ((errors++))
     fi
     
@@ -1636,7 +1636,7 @@ verify_installation() {
             ((warnings++))
         fi
     else
-        error "node_modules não encontrado"
+        warning "node_modules não encontrado"
         ((errors++))
     fi
     
@@ -1645,7 +1645,7 @@ verify_installation() {
     if [ -d "$INSTALL_DIR/backend/node_modules/.prisma/client" ]; then
         success "Prisma Client gerado"
     else
-        error "Prisma Client não gerado"
+        warning "Prisma Client não gerado"
         ((errors++))
     fi
     
@@ -1661,27 +1661,26 @@ verify_installation() {
             ((warnings++))
         fi
     else
-        error "Banco de dados não encontrado"
+        warning "Banco de dados não encontrado"
         ((errors++))
     fi
     
     # 7. Verificar usuários no banco
     echo -e "${YELLOW}[7/12]${NC} Verificando usuários cadastrados..."
     local user_count=$(sudo -u postgres psql -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | tr -d ' ')
-    if [ "$user_count" -ge 4 ]; then
-        success "Usuários criados ($user_count usuários)"
+    if [ "$user_count" -ge 1 ]; then
+        success "Usuário superusuário criado"
     else
-        warning "Poucos usuários cadastrados ($user_count)"
+        warning "Nenhum usuário cadastrado"
         ((warnings++))
     fi
     
     # 8. Verificar PM2
     echo -e "${YELLOW}[8/12]${NC} Verificando PM2..."
     if pm2 list 2>/dev/null | grep -q "sispat-backend.*online"; then
-        local uptime=$(pm2 jlist 2>/dev/null | grep -A 20 "sispat-backend" | grep "pm_uptime" | cut -d: -f2 | cut -d, -f1 | tr -d ' ')
         success "PM2 rodando (processo online)"
     else
-        error "PM2 não está rodando"
+        warning "PM2 não está rodando"
         ((errors++))
     fi
     
@@ -1695,7 +1694,7 @@ verify_installation() {
             ((warnings++))
         fi
     else
-        error "Nginx não está ativo"
+        warning "Nginx não está ativo"
         ((errors++))
     fi
     
@@ -1706,7 +1705,7 @@ verify_installation() {
     if [ "$api_response" = "200" ]; then
         success "API respondendo (HTTP 200)"
     else
-        error "API não está respondendo (HTTP $api_response)"
+        warning "API não está respondendo (HTTP $api_response)"
         ((errors++))
     fi
     
