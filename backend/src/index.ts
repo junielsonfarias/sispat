@@ -23,6 +23,10 @@ export const prisma = new PrismaClient({
 
 // Criar aplicação Express
 const app: Express = express();
+
+// ✅ Trust proxy para rate limiting funcionar corretamente atrás do Nginx
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 3000;
 
 // ============================================
