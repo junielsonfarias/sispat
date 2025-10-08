@@ -1,0 +1,11 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="800" fill="#f8fafc"/>
+  <rect x="100" y="100" width="1000" height="600" fill="#e2e8f0" rx="8"/>
+  <rect x="200" y="200" width="200" height="100" fill="#cbd5e1" rx="4"/>
+  <rect x="500" y="250" width="150" height="80" fill="#cbd5e1" rx="4"/>
+  <rect x="750" y="180" width="180" height="120" fill="#cbd5e1" rx="4"/>
+  <circle cx="300" cy="350" r="8" fill="#64748b"/>
+  <circle cx="600" cy="400" r="8" fill="#64748b"/>
+  <circle cx="850" cy="320" r="8" fill="#64748b"/>
+  <text x="600" y="750" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#64748b">Mapa não disponível</text>
+</svg>
