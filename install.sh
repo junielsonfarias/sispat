@@ -1240,21 +1240,88 @@ start_application() {
     
     cd "$INSTALL_DIR/backend"
     
-    # Iniciar com PM2
-    sudo -u www-data pm2 start dist/index.js --name sispat-backend > /dev/null 2>&1
-    sudo -u www-data pm2 save > /dev/null 2>&1
+    # Verificar se dist/index.js existe
+    if [ ! -f "dist/index.js" ]; then
+        error "Arquivo dist/index.js não encontrado! Backend não foi compilado."
+    fi
+    
+    echo -e "${BLUE}  → Verificando arquivos necessários...${NC}"
+    success "Backend compilado encontrado"
+    
+    # Parar PM2 anterior se existir
+    echo -e "${BLUE}  → Parando processos PM2 anteriores...${NC}"
+    pm2 delete sispat-backend 2>/dev/null || true
+    pm2 kill 2>/dev/null || true
+    
+    # Iniciar com PM2 como root primeiro (mais fácil para debug)
+    echo -e "${BLUE}  → Iniciando aplicação com PM2...${NC}"
+    pm2 start dist/index.js --name sispat-backend 2>&1 | tee -a "$LOG_FILE"
+    
+    if [ $? -ne 0 ]; then
+        echo ""
+        error "Falha ao iniciar PM2. Tentando ver o erro..."
+        echo ""
+        echo -e "${YELLOW}Últimas linhas do código:${NC}"
+        tail -20 dist/index.js
+        echo ""
+        echo -e "${YELLOW}Tentando iniciar diretamente para ver erro:${NC}"
+        node dist/index.js &
+        sleep 3
+        pkill -f "node dist/index.js"
+        exit 1
+    fi
+    
+    echo -e "${BLUE}  → Salvando configuração PM2...${NC}"
+    pm2 save 2>&1 | tee -a "$LOG_FILE"
     
     # Configurar PM2 para iniciar com o sistema
-    env PATH=$PATH:/usr/bin pm2 startup systemd -u www-data --hp /var/www > /dev/null 2>&1
+    echo -e "${BLUE}  → Configurando PM2 para iniciar automaticamente...${NC}"
+    env PATH=$PATH:/usr/bin pm2 startup systemd -u root --hp /root 2>&1 | grep -v "sudo" | tee -a "$LOG_FILE" || true
     
     # Aguardar inicialização
-    sleep 5
+    echo -e "${BLUE}  → Aguardando aplicação iniciar (10 segundos)...${NC}"
+    for i in {1..10}; do
+        echo -ne "\r     Aguardando... $i/10 segundos"
+        sleep 1
+    done
+    echo ""
+    
+    # Verificar status do PM2
+    echo -e "${BLUE}  → Verificando status do PM2...${NC}"
+    pm2 list | tee -a "$LOG_FILE"
     
     # Verificar se está rodando
-    if curl -f http://localhost:$APP_PORT/health > /dev/null 2>&1; then
-        success "Aplicação iniciada e respondendo"
+    echo -e "${BLUE}  → Testando health check da API...${NC}"
+    local max_attempts=5
+    local attempt=1
+    local api_ok=false
+    
+    while [ $attempt -le $max_attempts ]; do
+        echo -ne "\r     Tentativa $attempt/$max_attempts..."
+        if curl -f -s http://localhost:$APP_PORT/health > /dev/null 2>&1; then
+            api_ok=true
+            break
+        fi
+        sleep 2
+        ((attempt++))
+    done
+    echo ""
+    
+    if [ "$api_ok" = true ]; then
+        success "Aplicação iniciada e respondendo! ✨"
+        echo -e "${GREEN}     API Health Check: ${WHITE}http://localhost:$APP_PORT/health${NC}"
     else
-        error "Aplicação não está respondendo. Verifique os logs: pm2 logs sispat-backend"
+        echo ""
+        warning "Aplicação iniciou mas API não está respondendo ainda"
+        echo ""
+        echo -e "${YELLOW}Verificando logs do PM2:${NC}"
+        pm2 logs sispat-backend --lines 30 --nostream
+        echo ""
+        echo -e "${CYAN}Para ver logs em tempo real:${NC}"
+        echo -e "  ${WHITE}pm2 logs sispat-backend${NC}"
+        echo ""
+        echo -e "${YELLOW}Continuando instalação...${NC}"
+        sleep 3
     fi
 }
 
