@@ -452,8 +452,8 @@ collect_configuration() {
         fi
     done
     
-    API_DOMAIN="api.$DOMAIN"
-    info "API será acessível em: $API_DOMAIN"
+    # ✅ Removido API_DOMAIN - agora usa mesmo domínio + /api
+    info "API será acessível em: $DOMAIN/api"
     sleep 1
     
     # Email do administrador
@@ -589,7 +589,7 @@ collect_configuration() {
     echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
     echo -e "  ${CYAN}🌐 Domínio do site:${NC}      $DOMAIN"
-    echo -e "  ${CYAN}🌐 API:${NC}                  $API_DOMAIN"
+    echo -e "  ${CYAN}🌐 API:${NC}                  $DOMAIN/api"
     echo -e "  ${CYAN}📧 Seu email:${NC}            $SUPERUSER_EMAIL"
     echo -e "  ${CYAN}👤 Seu nome:${NC}             $SUPERUSER_NAME"
     echo -e "  ${CYAN}🏛️  Município:${NC}            $MUNICIPALITY_NAME"
@@ -807,9 +807,20 @@ configure_environment() {
     echo ""
     log "Configurando variáveis de ambiente..."
     
+    # ✅ Determinar protocolo baseado em SSL
+    local PROTOCOL="http"
+    if [ "$CONFIGURE_SSL" = "yes" ]; then
+        PROTOCOL="https"
+    fi
+    
+    echo -e "${BLUE}  → Protocolo: ${WHITE}${PROTOCOL}${NC}"
+    echo -e "${BLUE}  → URL Frontend: ${WHITE}${PROTOCOL}://${DOMAIN}${NC}"
+    echo -e "${BLUE}  → URL API: ${WHITE}${PROTOCOL}://${DOMAIN}/api${NC}"
+    
     # Configurar frontend
+    # ✅ IMPORTANTE: Usar mesmo domínio + /api (sem subdomain "api.")
     cat > "$INSTALL_DIR/.env" << EOF
-VITE_API_URL=https://${API_DOMAIN}
+VITE_API_URL=${PROTOCOL}://${DOMAIN}/api
 VITE_USE_BACKEND=true
 VITE_APP_NAME=SISPAT 2.0
 VITE_APP_VERSION=2.0.0
@@ -831,23 +842,27 @@ DATABASE_POOL_SIZE=20
 
 JWT_SECRET="${JWT_SECRET}"
 JWT_EXPIRES_IN="24h"
+JWT_REFRESH_EXPIRES_IN="7d"
 
-FRONTEND_URL="https://${DOMAIN}"
-CORS_ORIGIN="https://${DOMAIN}"
+FRONTEND_URL="${PROTOCOL}://${DOMAIN}"
+CORS_ORIGIN="${PROTOCOL}://${DOMAIN}"
 CORS_CREDENTIALS=true
 
-BCRYPT_ROUNDS=10
+BCRYPT_ROUNDS=12
 RATE_LIMIT_WINDOW=15
-RATE_LIMIT_MAX=100
+RATE_LIMIT_MAX=5
+MAX_REQUEST_SIZE=10mb
 
 MAX_FILE_SIZE=10485760
 UPLOAD_PATH="./uploads"
 
-LOG_LEVEL=info
+LOG_LEVEL=error
 LOG_FILE="./logs/app.log"
 EOF
     
     success "Variáveis de ambiente configuradas"
+    echo -e "${GREEN}     Frontend API: ${WHITE}${PROTOCOL}://${DOMAIN}/api${NC}"
+    echo -e "${GREEN}     Backend CORS: ${WHITE}${PROTOCOL}://${DOMAIN}${NC}"
 }
 
 show_spinner() {
@@ -1106,18 +1121,16 @@ configure_nginx() {
     echo ""
     log "Configurando Nginx..."
     
-    # Determinar domínio da API (mesmo domínio + api. subdomain)
-    local API_SUBDOMAIN="api.${DOMAIN}"
-    
-    echo -e "${BLUE}  → Domínio principal: ${WHITE}${DOMAIN}${NC}"
-    echo -e "${BLUE}  → Subdomínio API: ${WHITE}${API_SUBDOMAIN}${NC}"
+    echo -e "${BLUE}  → Domínio: ${WHITE}${DOMAIN}${NC}"
+    echo -e "${BLUE}  → API: ${WHITE}${DOMAIN}/api${NC}"
     
     # Criar configuração do site
+    # ✅ IMPORTANTE: Apenas 1 domínio, API acessível em /api/
     cat > /etc/nginx/sites-available/sispat << EOF
 server {
     listen 80;
     listen [::]:80;
-    server_name ${DOMAIN} ${API_SUBDOMAIN};
+    server_name ${DOMAIN};
     
     # Redirecionar para HTTPS (será configurado pelo Certbot)
     location / {
@@ -1191,7 +1204,8 @@ configure_ssl() {
         
         # Obter certificado
         echo -e "${BLUE}  → Obtendo certificado SSL...${NC}"
-        certbot --nginx -d "$DOMAIN" -d "$API_DOMAIN" --non-interactive --agree-tos --email "$SUPERUSER_EMAIL" --redirect 2>&1 | tee -a "$LOG_FILE"
+        # ✅ Certificado apenas para o domínio principal (API usa mesmo domínio)
+        certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "$SUPERUSER_EMAIL" --redirect 2>&1 | tee -a "$LOG_FILE"
         
         if [ $? -eq 0 ]; then
             success "SSL configurado: https://$DOMAIN"
@@ -1846,25 +1860,6 @@ show_success_message() {
     echo -e "  ${WHITE}Reiniciar aplicação:${NC}  ${CYAN}pm2 restart sispat-backend${NC}"
     echo -e "  ${WHITE}Reiniciar Nginx:${NC}      ${CYAN}sudo systemctl restart nginx${NC}"
     echo -e "  ${WHITE}Backup do banco:${NC}      ${CYAN}sudo -u postgres pg_dump sispat_prod > backup.sql${NC}"
-    echo ""
-    
-    echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
-    echo ""
-    echo -e "${YELLOW}╔═══════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${YELLOW}║                                                                   ║${NC}"
-    echo -e "${YELLOW}║  🌐 IMPORTANTE: CONFIGURAR DNS DO SUBDOMÍNIO API                  ║${NC}"
-    echo -e "${YELLOW}║                                                                   ║${NC}"
-    echo -e "${YELLOW}╚═══════════════════════════════════════════════════════════════════╝${NC}"
-    echo ""
-    echo -e "${CYAN}Para o sistema funcionar completamente, configure no painel da Kinghost:${NC}"
-    echo ""
-    echo -e "  ${WHITE}Tipo:${NC}    ${GREEN}CNAME${NC}"
-    echo -e "  ${WHITE}Nome:${NC}    ${GREEN}api${NC}"
-    echo -e "  ${WHITE}Destino:${NC} ${GREEN}${DOMAIN}${NC}"
-    echo -e "  ${WHITE}TTL:${NC}     ${GREEN}3600${NC}"
-    echo ""
-    echo -e "${YELLOW}Aguarde 5-30 minutos para propagação do DNS, depois teste:${NC}"
-    echo -e "  ${CYAN}curl http://api.${DOMAIN}/health${NC}"
     echo ""
     
     echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
