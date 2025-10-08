@@ -89,7 +89,7 @@ export default function ImoveisList() {
   })
 
   const processedData = useMemo(() => {
-    let filtered = imoveis.filter(
+    const filtered = imoveis.filter(
       (p) =>
         (p.denominacao || '')
           .toLowerCase()

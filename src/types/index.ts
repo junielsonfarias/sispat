@@ -416,7 +416,9 @@ export interface FormFieldConfig {
   isSystem: boolean
 }
 
-export interface ImovelFieldConfig extends FormFieldConfig {}
+export interface ImovelFieldConfig extends FormFieldConfig {
+  // Campos específicos para imóveis podem ser adicionados aqui
+}
 
 export interface ConditionalFormattingRule {
   id: string

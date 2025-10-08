@@ -495,7 +495,7 @@ const ReportView = () => {
         )
       case 'TEXT':
         return <p style={style}>{component.props?.content}</p>
-      case 'FOOTER':
+      case 'FOOTER': {
         const isPageBottom = component.props?.position === 'page-bottom'
         return (
           <div 
@@ -535,6 +535,7 @@ const ReportView = () => {
             </div>
           </div>
         )
+      }
       default:
         return (
           <div className="flex items-center justify-center h-full bg-muted rounded-md">

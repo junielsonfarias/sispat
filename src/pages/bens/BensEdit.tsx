@@ -276,7 +276,7 @@ const BensEdit = () => {
               let url = f
               // Remover domínio se existir (http://localhost:3000/uploads/file.jpg → /uploads/file.jpg)
               if (url.startsWith('http')) {
-                url = url.replace(/^https?:\/\/[^\/]+/, '')
+                url = url.replace(/^https?:\/\/[^/]+/, '')
               }
               // Remover /api/ se existir (/api/uploads/file.jpg → /uploads/file.jpg)
               if (url.startsWith('/api/')) {

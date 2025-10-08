@@ -151,7 +151,7 @@ export default function PublicAssets() {
   const processedData = useMemo(() => {
     if (!selectedMunicipalityId) return []
 
-    let filtered = combinedData.filter((p) => {
+    const filtered = combinedData.filter((p) => {
       const municipalityMatch = p.municipalityId === selectedMunicipalityId
       if (!municipalityMatch) return false
 
