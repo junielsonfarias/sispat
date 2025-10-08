@@ -96,13 +96,14 @@ export const sanitizeInput = (req: Request, res: Response, next: NextFunction) =
 };
 
 // Validação de entrada
-export const validateInput = (req: Request, res: Response, next: NextFunction) => {
+export const validateInput = (req: Request, res: Response, next: NextFunction): void => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Dados inválidos',
       details: errors.array()
     });
+    return;
   }
   next();
 };

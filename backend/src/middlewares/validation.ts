@@ -2,17 +2,18 @@ import { body, param, query, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 
 // Middleware para verificar erros de validação
-export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
+export const handleValidationErrors = (req: Request, res: Response, next: NextFunction): void => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Dados inválidos',
-      details: errors.array().map(error => ({
+      details: errors.array().map((error: any) => ({
         field: error.type === 'field' ? error.path : error.param,
         message: error.msg,
         value: error.value
       }))
     });
+    return;
   }
   next();
 };
