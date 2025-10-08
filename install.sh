@@ -27,6 +27,160 @@ DB_USER="sispat_user"
 APP_PORT=3000
 
 # ===========================================
+# FUNÇÕES DE LIMPEZA
+# ===========================================
+
+clean_previous_installation() {
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║     🧹 REMOVENDO INSTALAÇÃO ANTERIOR             ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    log "Iniciando limpeza de instalação anterior..."
+    
+    # 1. Parar PM2
+    echo -e "${YELLOW}  [1/8]${NC} Parando processos PM2..."
+    pm2 delete all 2>/dev/null || true
+    pm2 kill 2>/dev/null || true
+    success "Processos PM2 parados"
+    
+    # 2. Parar Nginx
+    echo -e "${YELLOW}  [2/8]${NC} Parando Nginx..."
+    systemctl stop nginx 2>/dev/null || true
+    success "Nginx parado"
+    
+    # 3. Remover diretório da aplicação
+    echo -e "${YELLOW}  [3/8]${NC} Removendo diretório de instalação..."
+    if [ -d "$INSTALL_DIR" ]; then
+        # Fazer backup se houver uploads
+        if [ -d "$INSTALL_DIR/backend/uploads" ]; then
+            warning "Fazendo backup de uploads..."
+            mkdir -p /tmp/sispat-backup
+            cp -r "$INSTALL_DIR/backend/uploads" /tmp/sispat-backup/ 2>/dev/null || true
+            success "Backup de uploads salvo em /tmp/sispat-backup/"
+        fi
+        rm -rf "$INSTALL_DIR"
+        success "Diretório removido: $INSTALL_DIR"
+    else
+        info "Diretório não existe: $INSTALL_DIR"
+    fi
+    
+    # 4. Remover configurações do Nginx
+    echo -e "${YELLOW}  [4/8]${NC} Removendo configurações do Nginx..."
+    rm -f /etc/nginx/sites-available/sispat 2>/dev/null || true
+    rm -f /etc/nginx/sites-enabled/sispat 2>/dev/null || true
+    success "Configurações do Nginx removidas"
+    
+    # 5. Remover banco de dados (OPCIONAL)
+    echo ""
+    echo -e "${RED}⚠️  ATENÇÃO: REMOÇÃO DO BANCO DE DADOS${NC}"
+    echo -e "${YELLOW}Deseja remover o banco de dados existente?${NC}"
+    echo -e "${YELLOW}Isso apagará TODOS os dados cadastrados!${NC}"
+    echo ""
+    read -p "$(echo -e ${MAGENTA}Remover banco? [${RED}s${MAGENTA}/${GREEN}N${MAGENTA}]:${NC}) " remove_db
+    
+    if [[ "$remove_db" =~ ^[Ss]$ ]]; then
+        echo -e "${YELLOW}  [5/8]${NC} Removendo banco de dados..."
+        sudo -u postgres psql << EOF 2>/dev/null || true
+DROP DATABASE IF EXISTS $DB_NAME;
+DROP USER IF EXISTS $DB_USER;
+EOF
+        success "Banco de dados removido: $DB_NAME"
+    else
+        echo -e "${YELLOW}  [5/8]${NC} Mantendo banco de dados existente..."
+        success "Banco de dados preservado"
+    fi
+    
+    # 6. Remover logs antigos
+    echo -e "${YELLOW}  [6/8]${NC} Removendo logs antigos..."
+    rm -f /var/log/sispat-*.log 2>/dev/null || true
+    rm -f /tmp/build-*.log 2>/dev/null || true
+    rm -f /tmp/prisma-*.log 2>/dev/null || true
+    success "Logs antigos removidos"
+    
+    # 7. Remover certificados SSL (se existirem)
+    echo -e "${YELLOW}  [7/8]${NC} Verificando certificados SSL..."
+    if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+        warning "Certificados SSL encontrados para $DOMAIN"
+        read -p "$(echo -e ${MAGENTA}Remover certificados SSL? [s/N]:${NC}) " remove_ssl
+        if [[ "$remove_ssl" =~ ^[Ss]$ ]]; then
+            certbot delete --cert-name "$DOMAIN" 2>/dev/null || true
+            success "Certificados SSL removidos"
+        else
+            success "Certificados SSL preservados"
+        fi
+    else
+        info "Nenhum certificado SSL encontrado"
+    fi
+    
+    # 8. Limpar cache do sistema
+    echo -e "${YELLOW}  [8/8]${NC} Limpando cache do sistema..."
+    apt-get clean 2>/dev/null || true
+    npm cache clean --force 2>/dev/null || true
+    pnpm store prune 2>/dev/null || true
+    success "Cache limpo"
+    
+    echo ""
+    success "✨ Limpeza concluída! Sistema pronto para instalação nova."
+    echo ""
+    
+    # Restaurar uploads se existir backup
+    if [ -d "/tmp/sispat-backup/uploads" ]; then
+        echo -e "${CYAN}📦 Backup de uploads disponível em /tmp/sispat-backup/${NC}"
+        echo -e "${YELLOW}Será restaurado automaticamente após a instalação.${NC}"
+    fi
+    
+    sleep 3
+}
+
+check_existing_installation() {
+    local has_installation=false
+    
+    # Verificar se existe instalação
+    if [ -d "$INSTALL_DIR" ] || \
+       pm2 list 2>/dev/null | grep -q "sispat-backend" || \
+       [ -f "/etc/nginx/sites-available/sispat" ] || \
+       sudo -u postgres psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
+        has_installation=true
+    fi
+    
+    if [ "$has_installation" = true ]; then
+        echo ""
+        echo -e "${YELLOW}╔═══════════════════════════════════════════════════╗${NC}"
+        echo -e "${YELLOW}║    ⚠️  INSTALAÇÃO ANTERIOR DETECTADA             ║${NC}"
+        echo -e "${YELLOW}╚═══════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "${CYAN}Foi detectada uma instalação anterior do SISPAT.${NC}"
+        echo ""
+        echo -e "${WHITE}Itens encontrados:${NC}"
+        [ -d "$INSTALL_DIR" ] && echo -e "  ${GREEN}✓${NC} Diretório: $INSTALL_DIR"
+        pm2 list 2>/dev/null | grep -q "sispat-backend" && echo -e "  ${GREEN}✓${NC} Processo PM2: sispat-backend"
+        [ -f "/etc/nginx/sites-available/sispat" ] && echo -e "  ${GREEN}✓${NC} Configuração Nginx"
+        sudo -u postgres psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$DB_NAME" && echo -e "  ${GREEN}✓${NC} Banco de dados: $DB_NAME"
+        echo ""
+        echo -e "${YELLOW}Recomendação: Fazer instalação limpa (remove tudo e instala do zero)${NC}"
+        echo -e "${CYAN}Isso evita conflitos e garante instalação sem erros.${NC}"
+        echo ""
+        read -p "$(echo -e ${MAGENTA}Deseja fazer instalação LIMPA? [${GREEN}S${MAGENTA}/${RED}n${MAGENTA}]:${NC}) " clean_install
+        
+        if [[ ! "$clean_install" =~ ^[Nn]$ ]]; then
+            clean_previous_installation
+            return 0
+        else
+            warning "Continuando com instalação sobre a existente..."
+            warning "Isso pode causar conflitos!"
+            echo ""
+            read -p "$(echo -e ${MAGENTA}Tem certeza? [s/N]:${NC}) " confirm
+            if [[ ! "$confirm" =~ ^[Ss]$ ]]; then
+                echo ""
+                error "Instalação cancelada pelo usuário."
+            fi
+        fi
+    fi
+}
+
+# ===========================================
 # FUNÇÕES DE INTERFACE
 # ===========================================
 
@@ -1057,9 +1211,32 @@ configure_permissions() {
     success "Permissões configuradas"
 }
 
+restore_uploads() {
+    # Restaurar uploads se existir backup
+    if [ -d "/tmp/sispat-backup/uploads" ]; then
+        echo ""
+        log "Restaurando uploads da instalação anterior..."
+        
+        mkdir -p "$INSTALL_DIR/backend/uploads"
+        cp -r /tmp/sispat-backup/uploads/* "$INSTALL_DIR/backend/uploads/" 2>/dev/null || true
+        
+        # Ajustar permissões
+        chown -R www-data:www-data "$INSTALL_DIR/backend/uploads"
+        chmod -R 755 "$INSTALL_DIR/backend/uploads"
+        
+        # Remover backup temporário
+        rm -rf /tmp/sispat-backup
+        
+        success "Uploads restaurados com sucesso!"
+    fi
+}
+
 start_application() {
     echo ""
     log "Iniciando aplicação..."
+    
+    # Restaurar uploads antes de iniciar
+    restore_uploads
     
     cd "$INSTALL_DIR/backend"
     
@@ -1153,6 +1330,9 @@ main() {
     
     # Coletar configurações
     collect_configuration
+    
+    # Verificar instalação anterior
+    check_existing_installation
     
     # Instalação
     clear
