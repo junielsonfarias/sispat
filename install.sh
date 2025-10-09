@@ -487,10 +487,34 @@ collect_configuration() {
     success "Nome registrado: $SUPERUSER_NAME"
     sleep 1
     
+    # Credenciais do Supervisor
+    echo ""
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${WHITE}PERGUNTA 4 de 10: SUPERVISOR (Usuário Operacional)${NC}"
+    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}O supervisor ajudará na gestão operacional do sistema.${NC}"
+    echo -e "${YELLOW}Configure email e senha forte (12+ caracteres) para este usuário.${NC}"
+    echo ""
+    
+    ask "Email do supervisor:" SUPERVISOR_EMAIL "supervisor@sistema.com"
+    success "Email do supervisor: $SUPERVISOR_EMAIL"
+    sleep 1
+    
+    echo ""
+    ask_password "Senha do supervisor (12+ caracteres, maiúsculas, números, símbolos):" SUPERVISOR_PASSWORD "Supervisor@2025!"
+    success "Senha do supervisor configurada"
+    sleep 1
+    
+    echo ""
+    ask "Nome do supervisor:" SUPERVISOR_NAME "Supervisor do Sistema"
+    success "Nome do supervisor: $SUPERVISOR_NAME"
+    sleep 1
+    
     # Senha do banco de dados
     echo ""
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 4 de 8: SENHA DO BANCO DE DADOS${NC}"
+    echo -e "${WHITE}PERGUNTA 5 de 10: SENHA DO BANCO DE DADOS${NC}"
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${CYAN}Esta senha é para o PostgreSQL (banco de dados interno)${NC}"
@@ -515,10 +539,10 @@ collect_configuration() {
     success "Sua senha configurada"
     sleep 1
     
-    # Senha padrão para outros usuários
+    # Nome do município
     echo ""
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 6 de 8: SENHA PARA OUTROS USUÁRIOS${NC}"
+    echo -e "${WHITE}PERGUNTA 6 de 10: NOME DO MUNICÍPIO${NC}"
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${CYAN}Esta senha será usada para admin, supervisor, usuário padrão${NC}"
@@ -1048,10 +1072,16 @@ setup_database() {
     echo -e "${BLUE}  ⚙️  Criando superusuário e dados iniciais...${NC}"
     echo ""
     
-    # Passar credenciais do superusuário para o seed
+    # Passar credenciais para o seed
     export SUPERUSER_EMAIL="$SUPERUSER_EMAIL"
     export SUPERUSER_PASSWORD="$SUPERUSER_PASSWORD"
-    export SUPERUSER_NAME="$MUNICIPALITY_NAME - Administrador"
+    export SUPERUSER_NAME="$SUPERUSER_NAME"
+    export SUPERVISOR_EMAIL="$SUPERVISOR_EMAIL"
+    export SUPERVISOR_PASSWORD="$SUPERVISOR_PASSWORD"
+    export SUPERVISOR_NAME="$SUPERVISOR_NAME"
+    export MUNICIPALITY_NAME="$MUNICIPALITY_NAME"
+    export STATE="$STATE"
+    export BCRYPT_ROUNDS="12"
     
     npm run prisma:seed 2>&1 | tee -a "$LOG_FILE"
     
@@ -1818,11 +1848,18 @@ show_success_message() {
     echo -e "${GREEN}║                                                                   ║${NC}"
     echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${CYAN}👤 SUPERUSUÁRIO (Controle Total do Sistema):${NC}"
+    echo -e "${CYAN}👑 SUPERUSUÁRIO (Controle Total do Sistema):${NC}"
     echo ""
     echo -e "     ${WHITE}📧 Email:${NC} ${GREEN}${SUPERUSER_EMAIL}${NC}"
     echo -e "     ${WHITE}🔑 Senha:${NC} ${GREEN}${SUPERUSER_PASSWORD}${NC}"
     echo -e "     ${WHITE}👤 Nome:${NC}  ${GREEN}${SUPERUSER_NAME}${NC}"
+    echo ""
+    
+    echo -e "${CYAN}👨‍💼 SUPERVISOR (Gestão Operacional):${NC}"
+    echo ""
+    echo -e "     ${WHITE}📧 Email:${NC} ${GREEN}${SUPERVISOR_EMAIL}${NC}"
+    echo -e "     ${WHITE}🔑 Senha:${NC} ${GREEN}${SUPERVISOR_PASSWORD}${NC}"
+    echo -e "     ${WHITE}👤 Nome:${NC}  ${GREEN}${SUPERVISOR_NAME}${NC}"
     echo ""
     
     echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"

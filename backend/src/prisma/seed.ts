@@ -6,103 +6,55 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...\n');
 
+  // Obter nome do município das variáveis de ambiente
+  const MUNICIPALITY_NAME = process.env.MUNICIPALITY_NAME || 'Prefeitura Municipal';
+  const STATE = process.env.STATE || 'PA';
+
   // Criar Município
   console.log('📍 Criando município...');
   const municipality = await prisma.municipality.upsert({
     where: { id: 'municipality-1' },
-    update: {},
+    update: {
+      name: MUNICIPALITY_NAME,
+      state: STATE,
+    },
     create: {
       id: 'municipality-1',
-      name: 'São Sebastião da Boa Vista',
-      state: 'PA',
+      name: MUNICIPALITY_NAME,
+      state: STATE,
       primaryColor: '#3B82F6',
       logoUrl: null,
-      footerText: 'Prefeitura Municipal de São Sebastião da Boa Vista',
+      footerText: `${MUNICIPALITY_NAME} - ${STATE}`,
     },
   });
   console.log('✅ Município criado:', municipality.name);
 
-  // Criar Setores
-  console.log('\n🏢 Criando setores...');
-  const sectors = await Promise.all([
-    prisma.sector.upsert({
-      where: { codigo: '001' },
-      update: {},
-      create: {
-        id: 'sector-1',
-        name: 'Secretaria de Administração',
-        codigo: '001',
-        description: 'Gerencia os recursos administrativos do município',
-        municipalityId: municipality.id,
-      },
-    }),
-    prisma.sector.upsert({
-      where: { codigo: '002' },
-      update: {},
-      create: {
-        id: 'sector-2',
-        name: 'Secretaria de Educação',
-        codigo: '002',
-        description: 'Responsável pela educação municipal',
-        municipalityId: municipality.id,
-      },
-    }),
-    prisma.sector.upsert({
-      where: { codigo: '003' },
-      update: {},
-      create: {
-        id: 'sector-3',
-        name: 'Secretaria de Saúde',
-        codigo: '003',
-        description: 'Gerencia a saúde pública municipal',
-        municipalityId: municipality.id,
-      },
-    }),
-  ]);
-  console.log(`✅ ${sectors.length} setores criados`);
+  // ✅ NÃO criar setores, locais ou tipos
+  // O superusuário e supervisor farão a configuração inicial no sistema
+  console.log('\n📝 Setores, locais e tipos não foram criados.');
+  console.log('   Configure pelo painel administrativo após o primeiro acesso.');
 
-  // Criar Locais
-  console.log('\n📍 Criando locais...');
-  const locais = await Promise.all([
-    prisma.local.upsert({
-      where: { id: 'local-1' },
-      update: {},
-      create: {
-        id: 'local-1',
-        name: 'Prédio Principal',
-        description: 'Prédio principal da prefeitura',
-        sectorId: sectors[0].id,
-        municipalityId: municipality.id,
-      },
-    }),
-    prisma.local.upsert({
-      where: { id: 'local-2' },
-      update: {},
-      create: {
-        id: 'local-2',
-        name: 'Almoxarifado Central',
-        description: 'Almoxarifado para armazenamento de materiais',
-        sectorId: sectors[0].id,
-        municipalityId: municipality.id,
-      },
-    }),
-  ]);
-  console.log(`✅ ${locais.length} locais criados`);
-
-  // Obter credenciais do superusuário das variáveis de ambiente
+  // Obter credenciais dos usuários das variáveis de ambiente
   const SUPERUSER_EMAIL = process.env.SUPERUSER_EMAIL || 'admin@sistema.com';
   const SUPERUSER_PASSWORD = process.env.SUPERUSER_PASSWORD || 'Admin@123';
   const SUPERUSER_NAME = process.env.SUPERUSER_NAME || 'Administrador do Sistema';
-
-  console.log('\n👥 Criando superusuário...');
-  console.log(`   Email: ${SUPERUSER_EMAIL}`);
   
-  // Hash da senha do superusuário
+  const SUPERVISOR_EMAIL = process.env.SUPERVISOR_EMAIL || 'supervisor@sistema.com';
+  const SUPERVISOR_PASSWORD = process.env.SUPERVISOR_PASSWORD || 'Supervisor@123!';
+  const SUPERVISOR_NAME = process.env.SUPERVISOR_NAME || 'Supervisor do Sistema';
+
+  // Hash das senhas
   // ✅ Bcrypt rounds aumentado para 12 (mais seguro em 2025)
   const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12');
+  
+  console.log('\n👥 Criando usuários iniciais...');
+  console.log(`   Superusuário: ${SUPERUSER_EMAIL}`);
+  console.log(`   Supervisor: ${SUPERVISOR_EMAIL}`);
+  
   const superuserPasswordHash = await bcrypt.hash(SUPERUSER_PASSWORD, BCRYPT_ROUNDS);
+  const supervisorPasswordHash = await bcrypt.hash(SUPERVISOR_PASSWORD, BCRYPT_ROUNDS);
 
-  // Criar APENAS o Superusuário (usuário principal)
+  // Criar Superusuário
   const superuser = await prisma.user.upsert({
     where: { email: SUPERUSER_EMAIL },
     update: {
@@ -122,91 +74,32 @@ async function main() {
       isActive: true,
     },
   });
-  console.log('✅ Superusuário criado com sucesso!');
+  console.log('✅ Superusuário criado');
 
-  // Criar Tipos de Bens
-  console.log('\n📦 Criando tipos de bens...');
-  const tiposBens = await Promise.all([
-    prisma.tipoBem.upsert({
-      where: { id: 'tipo-1' },
-      update: {},
-      create: {
-        id: 'tipo-1',
-        nome: 'Móveis e Utensílios',
-        descricao: 'Móveis de escritório, cadeiras, mesas, etc.',
-        vidaUtilPadrao: 10,
-        taxaDepreciacao: 10,
-        ativo: true,
-        municipalityId: municipality.id,
-      },
-    }),
-    prisma.tipoBem.upsert({
-      where: { id: 'tipo-2' },
-      update: {},
-      create: {
-        id: 'tipo-2',
-        nome: 'Equipamentos de Informática',
-        descricao: 'Computadores, notebooks, impressoras, etc.',
-        vidaUtilPadrao: 5,
-        taxaDepreciacao: 20,
-        ativo: true,
-        municipalityId: municipality.id,
-      },
-    }),
-    prisma.tipoBem.upsert({
-      where: { id: 'tipo-3' },
-      update: {},
-      create: {
-        id: 'tipo-3',
-        nome: 'Veículos',
-        descricao: 'Carros, caminhões, motos, etc.',
-        vidaUtilPadrao: 10,
-        taxaDepreciacao: 20,
-        ativo: true,
-        municipalityId: municipality.id,
-      },
-    }),
-  ]);
-  console.log(`✅ ${tiposBens.length} tipos de bens criados`);
+  // Criar Supervisor
+  const supervisor = await prisma.user.upsert({
+    where: { email: SUPERVISOR_EMAIL },
+    update: {
+      name: SUPERVISOR_NAME,
+      password: supervisorPasswordHash,
+      role: 'supervisor',
+      isActive: true,
+    },
+    create: {
+      id: 'user-supervisor',
+      email: SUPERVISOR_EMAIL,
+      name: SUPERVISOR_NAME,
+      password: supervisorPasswordHash,
+      role: 'supervisor',
+      responsibleSectors: [],  // Será configurado depois pelo superusuário
+      municipalityId: municipality.id,
+      isActive: true,
+    },
+  });
+  console.log('✅ Supervisor criado');
 
-  // Criar Formas de Aquisição
-  console.log('\n💰 Criando formas de aquisição...');
-  const formasAquisicao = await Promise.all([
-    prisma.acquisitionForm.upsert({
-      where: { id: 'forma-1' },
-      update: {},
-      create: {
-        id: 'forma-1',
-        nome: 'Compra',
-        descricao: 'Aquisição por meio de compra',
-        ativo: true,
-        municipalityId: municipality.id,
-      },
-    }),
-    prisma.acquisitionForm.upsert({
-      where: { id: 'forma-2' },
-      update: {},
-      create: {
-        id: 'forma-2',
-        nome: 'Doação',
-        descricao: 'Aquisição por meio de doação',
-        ativo: true,
-        municipalityId: municipality.id,
-      },
-    }),
-    prisma.acquisitionForm.upsert({
-      where: { id: 'forma-3' },
-      update: {},
-      create: {
-        id: 'forma-3',
-        nome: 'Transferência',
-        descricao: 'Aquisição por transferência de outro órgão',
-        ativo: true,
-        municipalityId: municipality.id,
-      },
-    }),
-  ]);
-  console.log(`✅ ${formasAquisicao.length} formas de aquisição criadas`);
+  // ✅ NÃO criar tipos de bens ou formas de aquisição
+  // Serão configurados pelo superusuário no painel administrativo
 
   console.log('\n✅ Seed concluído com sucesso!');
   console.log('\n╔═══════════════════════════════════════════════════════════╗');
@@ -214,13 +107,26 @@ async function main() {
   console.log('║         🎉  BANCO DE DADOS INICIALIZADO!  🎉             ║');
   console.log('║                                                           ║');
   console.log('╚═══════════════════════════════════════════════════════════╝');
-  console.log('\n🔐 CREDENCIAL DO SUPERUSUÁRIO:');
+  console.log('\n🔐 CREDENCIAIS DE ACESSO INICIAL:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`📧 Email: ${SUPERUSER_EMAIL}`);
-  console.log(`🔑 Senha: ${SUPERUSER_PASSWORD}`);
-  console.log(`👤 Nome:  ${SUPERUSER_NAME}`);
+  console.log('\n👑 SUPERUSUÁRIO (Controle Total):');
+  console.log(`   📧 Email: ${SUPERUSER_EMAIL}`);
+  console.log(`   🔑 Senha: ${SUPERUSER_PASSWORD}`);
+  console.log(`   👤 Nome:  ${SUPERUSER_NAME}`);
+  console.log('\n👨‍💼 SUPERVISOR (Gestão Operacional):');
+  console.log(`   📧 Email: ${SUPERVISOR_EMAIL}`);
+  console.log(`   🔑 Senha: ${SUPERVISOR_PASSWORD}`);
+  console.log(`   👤 Nome:  ${SUPERVISOR_NAME}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-  console.log('⚠️  IMPORTANTE: Altere esta senha após o primeiro acesso!\n');
+  console.log('📝 CONFIGURAÇÃO INICIAL NECESSÁRIA:');
+  console.log('   1. Faça login como superusuário');
+  console.log('   2. Configure setores (Administração → Gerenciar Setores)');
+  console.log('   3. Configure locais para cada setor');
+  console.log('   4. Configure tipos de bens (Administração → Tipos de Bens)');
+  console.log('   5. Configure formas de aquisição');
+  console.log('   6. Atribua setores ao supervisor');
+  console.log('   7. Altere as senhas padrão!\n');
+  console.log('⚠️  IMPORTANTE: Altere as senhas após o primeiro acesso!\n');
 }
 
 main()
