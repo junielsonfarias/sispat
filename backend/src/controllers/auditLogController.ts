@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { prisma } from '../index'
-import { logInfo, logError } from '../lib/logger'
+import { logInfo, logError } from '../config/logger'
 
 /**
  * Listar logs de auditoria

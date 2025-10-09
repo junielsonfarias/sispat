@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { authenticate } from '../middlewares/auth'
+import { authenticateToken } from '../middlewares/auth'
 import {
   listManutencaoTasks,
   createManutencaoTask,
@@ -11,7 +11,7 @@ import {
 const router = Router()
 
 // Todas as rotas requerem autenticação
-router.use(authenticate)
+router.use(authenticateToken)
 
 // CRUD completo
 router.get('/', listManutencaoTasks)
