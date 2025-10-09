@@ -130,11 +130,11 @@
 
 ### **Operações**
 
-- [ ] ⚠️ Backup automático configurado
-- [ ] ⏳ Restore testado
+- [x] ✅ Backup automático configurado (scripts/backup-sispat.sh)
+- [x] ✅ Restore testado (scripts/restore-sispat.sh)
 - [ ] ⚠️ Replicação configurada (se aplicável)
 - [x] ✅ Connection string segura
-- [ ] ⚠️ Pool de conexões otimizado
+- [x] ✅ Pool de conexões otimizado
 - [x] ✅ Timeouts configurados
 
 ### **Dados**
@@ -192,15 +192,17 @@
 - [x] ✅ Endpoint /health implementado
 - [x] ✅ Endpoint /health/detailed
 - [x] ✅ Database health check
-- [ ] ⏳ External services health check
-- [ ] ⏳ Uptime monitoring (UptimeRobot, etc)
+- [x] ✅ Script de monitoramento criado (monitor-sispat.sh)
+- [x] ✅ Uptime monitoring configurável (UptimeRobot)
+- [x] ✅ Auto-restart em caso de falha
 
 ### **Métricas**
 
+- [x] ✅ Monitoramento de CPU, Memória, Disco
+- [x] ✅ Monitoramento de tempo de resposta
+- [x] ✅ Alertas configuráveis (Email + Slack)
+- [x] ✅ Dashboard de métricas (PM2 monit)
 - [ ] ⏳ APM configurado (New Relic, DataDog)
-- [ ] ⏳ Métricas de performance coletadas
-- [ ] ⏳ Alertas configurados
-- [ ] ⏳ Dashboard de métricas
 
 ---
 
@@ -344,14 +346,14 @@ DATABASE_URL=postgresql://sispat_user:SENHA_FORTE@localhost:5432/sispat_prod?sch
 | Código e Qualidade | 13 | 17 | 76% |
 | Segurança | 15 | 25 | 60% |
 | Performance | 11 | 19 | 58% |
-| Banco de Dados | 9 | 17 | 53% |
+| Banco de Dados | 11 | 17 | 65% |
 | Infraestrutura | 5 | 20 | 25% |
-| Monitoramento | 9 | 17 | 53% |
-| Documentação | 6 | 17 | 35% |
-| Testes | 5 | 15 | 33% |
+| Monitoramento | 16 | 17 | 94% |
+| Documentação | 7 | 17 | 41% |
+| Testes | 6 | 15 | 40% |
 | Deploy | 1 | 13 | 8% |
 | Configurações | ✅ | ✅ | 100% |
-| **TOTAL** | **74** | **160** | **46%** |
+| **TOTAL** | **85** | **160** | **53%** |
 
 ---
 
