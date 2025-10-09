@@ -44,11 +44,21 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true)
     setError(null)
     try {
+      console.log('🔍 [DEV] PatrimonioContext: Buscando patrimônios...')
       const response = await api.get<{ patrimonios: Patrimonio[]; pagination: any }>('/patrimonios')
+      console.log('📊 [DEV] PatrimonioContext: Resposta da API:', response)
+      console.log('📊 [DEV] PatrimonioContext: Tipo da resposta:', typeof response)
+      console.log('📊 [DEV] PatrimonioContext: É array?', Array.isArray(response))
+      
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade patrimonios
       const patrimoniosData = Array.isArray(response) ? response : (response.patrimonios || [])
+      
+      console.log('✅ [DEV] PatrimonioContext: Patrimônios extraídos:', patrimoniosData.length)
+      console.log('📝 [DEV] PatrimonioContext: Primeiros 3 patrimônios:', patrimoniosData.slice(0, 3))
+      
       setPatrimonios(patrimoniosData)
     } catch (err) {
+      console.error('❌ [DEV] PatrimonioContext: Erro ao carregar:', err)
       setError('Falha ao carregar patrimônios.')
     } finally {
       setIsLoading(false)

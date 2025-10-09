@@ -45,7 +45,7 @@ const getStatusColor = (status: string) => {
 }
 
 const BensCadastrados = () => {
-  const { patrimonios } = usePatrimonio()
+  const { patrimonios, isLoading } = usePatrimonio()
   const { isSyncing, startSync } = useSync()
   const { user } = useAuth()
   const { templates: labelTemplates } = useLabelTemplates()
@@ -53,6 +53,13 @@ const BensCadastrados = () => {
   const [qrCodeAsset, setQrCodeAsset] = useState<Patrimonio | null>(null)
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+
+  // Logs de debug
+  console.log('🔍 [DEV] BensCadastrados - patrimonios:', patrimonios)
+  console.log('📊 [DEV] BensCadastrados - Total:', Array.isArray(patrimonios) ? patrimonios.length : 0)
+  console.log('📊 [DEV] BensCadastrados - isLoading:', isLoading)
+  console.log('📊 [DEV] BensCadastrados - É array?:', Array.isArray(patrimonios))
+  console.log('📊 [DEV] BensCadastrados - Primeiro item:', patrimonios[0])
 
   const filteredData = Array.isArray(patrimonios) ? patrimonios.filter((patrimonio) => {
     if (!searchTerm) return true
@@ -64,6 +71,8 @@ const BensCadastrados = () => {
       (patrimonio.setor_responsavel || patrimonio.setorResponsavel)?.toLowerCase().includes(searchLower)
     )
   }) : []
+
+  console.log('🔍 [DEV] BensCadastrados - filteredData:', filteredData.length)
 
   const handleShowQrCode = (patrimonio: Patrimonio) => {
     setQrCodeAsset(patrimonio)
@@ -163,11 +172,49 @@ const BensCadastrados = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredData.map((patrimonio) => (
-                      <TableRow 
-                        key={patrimonio.id} 
-                        className="hover:bg-gray-50 border-gray-200"
-                      >
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                            <span className="text-gray-500">Carregando bens...</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredData.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-12">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="rounded-full bg-gray-100 p-3">
+                              <Search className="h-6 w-6 text-gray-400" />
+                            </div>
+                            <div>
+                              <p className="text-gray-900 font-medium">
+                                {searchTerm ? 'Nenhum bem encontrado' : 'Nenhum bem cadastrado'}
+                              </p>
+                              <p className="text-sm text-gray-500 mt-1">
+                                {searchTerm 
+                                  ? 'Tente ajustar os termos de busca' 
+                                  : 'Comece cadastrando um novo bem'}
+                              </p>
+                            </div>
+                            {!searchTerm && (
+                              <Button asChild className="mt-2">
+                                <Link to="/bens-cadastrados/novo">
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Cadastrar Primeiro Bem
+                                </Link>
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredData.map((patrimonio) => (
+                        <TableRow 
+                          key={patrimonio.id} 
+                          className="hover:bg-gray-50 border-gray-200"
+                        >
                         <TableCell className="font-medium font-mono text-sm text-gray-900">
                           <Link 
                             to={`/bens-cadastrados/ver/${patrimonio.id}`}
@@ -240,7 +287,7 @@ const BensCadastrados = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )))}
                   </TableBody>
                 </Table>
               </div>
