@@ -207,7 +207,7 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
             </FormItem>
           )}
         />
-        {(role === 'usuario' || role === 'visualizador') && (
+        {(role === 'supervisor' || role === 'usuario' || role === 'visualizador') && (
           <FormField
             control={form.control}
             name="responsibleSectors"
@@ -223,8 +223,9 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
                   />
                 </FormControl>
                 <FormDescription>
-                  O usuário terá acesso aos bens destes setores e seus
-                  subsetores.
+                  {role === 'supervisor' 
+                    ? 'O supervisor terá acesso para gerenciar os bens destes setores.'
+                    : 'O usuário terá acesso aos bens destes setores e seus subsetores.'}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
