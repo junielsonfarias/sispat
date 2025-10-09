@@ -57,7 +57,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const [showLoginAnimation, setShowLoginAnimation] = useState(false)
   const [successMessage] = useState<string | null>(
     location.state?.successMessage,
   )
@@ -85,11 +84,6 @@ export default function Login() {
     setError(null)
     try {
       await login(data.email, data.password)
-      // Show login animation for 5 seconds
-      setShowLoginAnimation(true)
-      setTimeout(() => {
-        setShowLoginAnimation(false)
-      }, 5000)
     } catch (e) {
       const errorMessage =
         e instanceof Error
@@ -97,6 +91,7 @@ export default function Login() {
           : 'Ocorreu um erro ao tentar fazer login. Tente novamente.'
       setError(errorMessage)
       form.resetField('password')
+    } finally {
       setIsLoading(false)
     }
   }
@@ -108,37 +103,6 @@ export default function Login() {
         }
       : {}
 
-  // Login Animation Component
-  const LoginAnimation = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="text-center space-y-6">
-        {/* Animated Logo */}
-        <div className="relative">
-          <img
-            src={settings.activeLogoUrl}
-            alt="Logo"
-            className="h-24 w-auto mx-auto animate-pulse drop-shadow-2xl"
-          />
-          <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-ping" />
-        </div>
-        
-        {/* Loading Text */}
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-white animate-pulse">
-            Entrando no Sistema...
-          </h2>
-          <p className="text-blue-200 animate-pulse">
-            Aguarde um momento
-          </p>
-        </div>
-        
-        {/* Loading Spinner */}
-        <div className="flex justify-center">
-          <div className="w-8 h-8 border-4 border-blue-200 border-t-white rounded-full animate-spin"></div>
-        </div>
-      </div>
-    </div>
-  )
 
   return (
     <div
@@ -402,9 +366,6 @@ export default function Login() {
       </Container>
       
       <Toaster />
-      
-      {/* Login Animation */}
-      {showLoginAnimation && <LoginAnimation />}
     </div>
   )
 }
