@@ -105,8 +105,7 @@ import sectorsRoutes from './routes/sectorsRoutes';
 import userRoutes from './routes/userRoutes';
 import customizationRoutes from './routes/customizationRoutes';
 import uploadRoutes from './routes/uploadRoutes';
-// TODO: Importar outras rotas quando criadas
-// import dashboardRoutes from './routes/dashboardRoutes';
+import auditLogRoutes from './routes/auditLogRoutes';
 
 // ✅ Rotas públicas (sem autenticação)
 app.use('/api/public', publicRoutes);
@@ -123,7 +122,7 @@ app.use('/api/sectors', sectorsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/customization', customizationRoutes);
 app.use('/api/upload', uploadRoutes);
-// app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
 
 // ============================================
 // TRATAMENTO DE ERROS

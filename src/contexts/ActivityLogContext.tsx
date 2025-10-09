@@ -42,16 +42,17 @@ export const ActivityLogProvider = ({ children }: { children: ReactNode }) => {
   const [logs, setLogs] = useState<ActivityLogEntry[]>([])
 
   useEffect(() => {
-    // Activity logs endpoint not implemented yet
-    // const loadLogs = async () => {
-    //   try {
-    //     const data = await api.get<ActivityLogEntry[]>('/audit_logs')
-    //     setLogs(data)
-    //   } catch (error) {
-    //     // Failed to load activity logs - handled by error boundary
-    //   }
-    // }
-    // loadLogs()
+    const loadLogs = async () => {
+      try {
+        const response = await api.get<{ logs: ActivityLogEntry[] }>('/audit-logs')
+        const logsData = Array.isArray(response) ? response : (response.logs || [])
+        setLogs(logsData)
+      } catch (error) {
+        // Failed to load activity logs - handled silently
+        console.error('Failed to load audit logs:', error)
+      }
+    }
+    loadLogs()
   }, [])
 
   const logActivity = useCallback(
@@ -65,15 +66,22 @@ export const ActivityLogProvider = ({ children }: { children: ReactNode }) => {
         new_value?: any
       },
     ) => {
-      // Activity logs endpoint not implemented yet
-      // try {
-      //   await api.post('/audit_logs', { action, ...details })
-      // } catch (error) {
-      //   // Failed to log activity - handled by error boundary
-      // }
-      
-      // Log activity locally for now
-      console.log('Activity logged:', { action, ...details })
+      try {
+        await api.post('/audit-logs', {
+          action,
+          entityType: details.table_name,
+          entityId: details.record_id,
+          details: details.details || JSON.stringify({
+            old_value: details.old_value,
+            new_value: details.new_value,
+          }),
+        })
+      } catch (error) {
+        // Failed to log activity - log locally as fallback
+        if (import.meta.env.DEV) {
+          console.log('Activity logged (fallback):', { action, ...details })
+        }
+      }
     },
     [],
   )
