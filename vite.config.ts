@@ -67,6 +67,21 @@ export default defineConfig(({ mode }) => ({
   test: {
     environment: 'happy-dom',
     globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/mockData',
+        'dist/',
+      ],
+    },
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache'],
   },
   preview: {
     port: 4173,
