@@ -17,7 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { GlobalSearch } from '@/components/GlobalSearch'
 import { MobileNavigation, BottomNavigation } from '@/components/MobileNavigation'
-import { Bell, Search, User, LogOut, Settings, Shield, Building2 } from 'lucide-react'
+import { User, LogOut, Settings, Shield, Building2 } from 'lucide-react'
 
 export const Header = () => {
   const { user, logout } = useAuth()
@@ -34,7 +34,6 @@ export const Header = () => {
     }
   }
   
-  const [showSearch, setShowSearch] = useState(false)
   const location = useLocation()
 
   if (!user) return null
@@ -102,43 +101,43 @@ export const Header = () => {
         {/* Desktop Layout (lg and up) */}
         <div className="hidden lg:flex h-32">
           {/* Left Sidebar - Logo and Municipality Info */}
-          <div className="w-[28rem] bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4 px-8 text-center">
+          <div className="w-[32rem] bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-6 px-8 text-center pt-4">
               {/* Logo */}
               <div className="relative">
                 <img
                   src={settings.activeLogoUrl}
                   alt="Logo da Prefeitura"
-                  className="h-40 w-auto object-contain drop-shadow-sm"
+                  className="h-48 w-auto object-contain drop-shadow-sm"
                 />
               </div>
               
               {/* Municipality Information */}
               {settings.prefeituraName ? (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
+                  <h1 className="text-2xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
                     {settings.prefeituraName}
                   </h1>
                   {settings.secretariaResponsavel && (
-                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                    <p className="text-base text-gray-600 uppercase font-medium leading-tight">
                       {settings.secretariaResponsavel}
                     </p>
                   )}
                   {settings.departamentoResponsavel && (
-                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                    <p className="text-base text-gray-600 uppercase font-medium leading-tight">
                       {settings.departamentoResponsavel}
                     </p>
                   )}
                 </>
               ) : (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
+                  <h1 className="text-2xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
                     PREFEITURA MUNICIPAL
                   </h1>
-                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                  <p className="text-base text-gray-600 uppercase font-medium leading-tight">
                     SECRETARIA DE ADMINISTRAÇÃO
                   </p>
-                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                  <p className="text-base text-gray-600 uppercase font-medium leading-tight">
                     DEPARTAMENTO DE PATRIMÔNIO
                   </p>
                 </>
@@ -151,31 +150,6 @@ export const Header = () => {
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-4">
-              {/* Search Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowSearch(!showSearch)}
-                className="h-10 w-10 hover:bg-gray-100"
-                aria-label="Buscar"
-              >
-                <Search className="h-5 w-5 text-gray-600" />
-              </Button>
-
-              {/* Notifications */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 hover:bg-gray-100 relative"
-                aria-label="Notificações"
-              >
-                <Bell className="h-5 w-5 text-gray-600" />
-                {/* Notification Badge */}
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
-              </Button>
-
               {/* User Avatar */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -253,20 +227,20 @@ export const Header = () => {
         </div>
 
         {/* Tablet Layout (md to lg) */}
-        <div className="hidden md:flex lg:hidden h-24 px-6 items-center justify-between">
+        <div className="hidden md:flex lg:hidden h-28 px-6 items-center justify-between">
           {/* Logo and Municipality Info - Stacked */}
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-3 pt-2">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
-              className="h-24 w-auto object-contain drop-shadow-sm"
+              className="h-32 w-auto object-contain drop-shadow-sm"
             />
             {settings.prefeituraName ? (
-              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
+              <h2 className="text-lg font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 {settings.prefeituraName}
               </h2>
             ) : (
-              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
+              <h2 className="text-lg font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 PREFEITURA MUNICIPAL
               </h2>
             )}
@@ -275,24 +249,6 @@ export const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowSearch(!showSearch)}
-              className="h-8 w-8"
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 relative"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                3
-              </span>
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
@@ -347,20 +303,20 @@ export const Header = () => {
         </div>
 
         {/* Mobile Layout (below md) */}
-        <div className="flex md:hidden h-20 px-4 items-center justify-between">
+        <div className="flex md:hidden h-24 px-4 items-center justify-between">
           {/* Logo and Municipality Info - Stacked */}
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-2 pt-1">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
-              className="h-16 w-auto object-contain drop-shadow-sm"
+              className="h-20 w-auto object-contain drop-shadow-sm"
             />
             {settings.prefeituraName ? (
-              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
+              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 {settings.prefeituraName}
               </h2>
             ) : (
-              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
+              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 PREFEITURA
               </h2>
             )}
@@ -369,24 +325,6 @@ export const Header = () => {
 
           {/* Actions - Minimal */}
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowSearch(!showSearch)}
-              className="h-7 w-7"
-            >
-              <Search className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 relative"
-            >
-              <Bell className="h-3 w-3" />
-              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                3
-              </span>
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-7 w-7 rounded-full p-0">
@@ -440,12 +378,6 @@ export const Header = () => {
           </div>
         </div>
 
-        {/* Mobile Search Bar */}
-        {showSearch && (
-          <div className="md:hidden border-t bg-white p-3">
-            <GlobalSearch />
-          </div>
-        )}
       </header>
 
       {/* Bottom Navigation for Mobile */}
