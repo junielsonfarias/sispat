@@ -113,18 +113,31 @@ export const CustomizationProvider = ({
 
   const saveSettings = useCallback(
     async (newSettings: CustomizationSettings) => {
+      console.log('[DEV] 💾 CustomizationContext: Salvando configurações...');
+      console.log('[DEV] 📋 Dados a salvar:', newSettings);
+      
       try {
         // Salvar no banco de dados
-        await api.put('/customization', newSettings)
-        console.log('✅ Customização salva no banco de dados')
+        console.log('[DEV] 🌐 Enviando PUT /customization...');
+        const response = await api.put('/customization', newSettings);
+        console.log('[DEV] ✅ Resposta do backend:', response);
+        console.log('✅ Customização salva no banco de dados');
         
         // Atualizar estado local
         setSettings(newSettings)
         
         // Manter backup no localStorage
         localStorage.setItem('sispat_customization_settings', JSON.stringify(newSettings))
-      } catch (error) {
+        console.log('[DEV] 💾 Backup salvo no localStorage');
+      } catch (error: any) {
+        console.error('[DEV] ❌ ERRO DETALHADO ao salvar customização:');
+        console.error('   Tipo:', error.constructor.name);
+        console.error('   Mensagem:', error.message);
+        console.error('   Response:', error.response?.data);
+        console.error('   Status:', error.response?.status);
+        console.error('   Erro completo:', error);
         console.error('⚠️ Erro ao salvar no banco, salvando apenas no localStorage:', error)
+        
         // Fallback: salvar apenas no localStorage
         localStorage.setItem('sispat_customization_settings', JSON.stringify(newSettings))
         setSettings(newSettings)
