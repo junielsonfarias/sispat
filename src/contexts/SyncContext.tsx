@@ -52,12 +52,17 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
   }, [user, logActivity])
 
   const startSync = useCallback(async () => {
-    if (isSyncing || !user) return
+    if (isSyncing) return
 
     setIsSyncing(true)
-    logActivity('SYNC_START', {
-      details: 'Iniciada a sincronização manual de dados.',
-    })
+    
+    // ✅ Log apenas se usuário estiver autenticado
+    if (user) {
+      logActivity('SYNC_START', {
+        details: 'Iniciada a sincronização manual de dados.',
+      })
+    }
+    
     const toastResult = toast({
       title: 'Sincronizando dados...',
       description: 'Buscando atualizações no servidor.',
@@ -65,8 +70,11 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
     toastIdRef.current = toastResult.id
 
     try {
+      // ✅ Se não estiver autenticado, usar endpoint público
+      const endpoint = user ? '/patrimonios/sync' : '/public/patrimonios'
+      
       // Buscar patrimônios atualizados do servidor
-      const response = await api.get<{ patrimonios: Patrimonio[] } | Patrimonio[]>('/patrimonios/sync')
+      const response = await api.get<{ patrimonios: Patrimonio[] } | Patrimonio[]>(endpoint)
       
       // Extrair os patrimônios da resposta (pode vir como array direto ou objeto)
       const updatedPatrimonios = Array.isArray(response) ? response : (response.patrimonios || [])

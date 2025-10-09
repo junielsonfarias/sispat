@@ -94,6 +94,7 @@ app.use(requestLogger);
 // ============================================
 
 import authRoutes from './routes/authRoutes';
+import publicRoutes from './routes/publicRoutes';
 import patrimonioRoutes from './routes/patrimonioRoutes';
 import imovelRoutes from './routes/imovelRoutes';
 import inventarioRoutes from './routes/inventarioRoutes';
@@ -107,6 +108,10 @@ import uploadRoutes from './routes/uploadRoutes';
 // TODO: Importar outras rotas quando criadas
 // import dashboardRoutes from './routes/dashboardRoutes';
 
+// ✅ Rotas públicas (sem autenticação)
+app.use('/api/public', publicRoutes);
+
+// Rotas autenticadas
 app.use('/api/auth', authRoutes);
 app.use('/api/patrimonios', patrimonioRoutes);
 app.use('/api/imoveis', imovelRoutes);

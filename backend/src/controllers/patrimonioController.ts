@@ -3,6 +3,68 @@ import { prisma } from '../index';
 import { AppError } from '../middlewares/errorHandler';
 
 /**
+ * Listar patrimônios públicos (sem autenticação)
+ * GET /api/public/patrimonios
+ */
+export const listPublicPatrimonios = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Buscar todos os patrimônios ativos
+    const patrimonios = await prisma.patrimonio.findMany({
+      where: {
+        status: {
+          in: ['ativo', 'em_manutencao', 'cedido', 'em_uso']
+        }
+      },
+      include: {
+        sector: true,
+        municipality: true,
+      },
+      orderBy: {
+        numero_patrimonio: 'asc'
+      }
+    });
+
+    res.json({ patrimonios });
+  } catch (error) {
+    console.error('Erro ao listar patrimônios públicos:', error);
+    res.status(500).json({ error: 'Erro ao listar patrimônios' });
+  }
+};
+
+/**
+ * Buscar patrimônio público por número (sem autenticação)
+ * GET /api/public/patrimonios/:numero
+ */
+export const getPublicPatrimonioByNumero = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { numero } = req.params;
+
+    const patrimonio = await prisma.patrimonio.findFirst({
+      where: {
+        numero_patrimonio: numero,
+        status: {
+          in: ['ativo', 'em_manutencao', 'cedido', 'em_uso']
+        }
+      },
+      include: {
+        sector: true,
+        municipality: true,
+      },
+    });
+
+    if (!patrimonio) {
+      res.status(404).json({ error: 'Patrimônio não encontrado' });
+      return;
+    }
+
+    res.json({ patrimonio });
+  } catch (error) {
+    console.error('Erro ao buscar patrimônio público:', error);
+    res.status(500).json({ error: 'Erro ao buscar patrimônio' });
+  }
+};
+
+/**
  * Listar patrimônios com filtros
  * GET /api/patrimonios
  */

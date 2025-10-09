@@ -15,33 +15,40 @@ const axiosInstance: AxiosInstance = axios.create({
 // Interceptor de requisição para adicionar token
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Pegar token do localStorage (SecureStorage armazena como JSON)
-    const tokenData = localStorage.getItem('sispat_token');
+    // ✅ Rotas públicas não precisam de autenticação
+    const isPublicRoute = config.url?.includes('/public/');
     
-    // ✅ Logs apenas em desenvolvimento
-    if (import.meta.env.DEV) {
-      console.log('[HTTP] Token data from localStorage:', tokenData);
-    }
-    
-    if (tokenData) {
-      try {
-        // SecureStorage armazena como JSON, então precisamos fazer parse
-        const token = JSON.parse(tokenData);
-        config.headers.Authorization = `Bearer ${token}`;
-        
-        if (import.meta.env.DEV) {
-          console.log(`[HTTP] Token encontrado (JSON): ${token.substring(0, 20)}...`);
+    if (!isPublicRoute) {
+      // Pegar token do localStorage (SecureStorage armazena como JSON)
+      const tokenData = localStorage.getItem('sispat_token');
+      
+      // ✅ Logs apenas em desenvolvimento
+      if (import.meta.env.DEV) {
+        console.log('[HTTP] Token data from localStorage:', tokenData);
+      }
+      
+      if (tokenData) {
+        try {
+          // SecureStorage armazena como JSON, então precisamos fazer parse
+          const token = JSON.parse(tokenData);
+          config.headers.Authorization = `Bearer ${token}`;
+          
+          if (import.meta.env.DEV) {
+            console.log(`[HTTP] Token encontrado (JSON): ${token.substring(0, 20)}...`);
+          }
+        } catch (error) {
+          // Se não conseguir fazer parse, usar o valor direto
+          config.headers.Authorization = `Bearer ${tokenData}`;
+          
+          if (import.meta.env.DEV) {
+            console.log(`[HTTP] Token direto: ${tokenData.substring(0, 20)}...`);
+          }
         }
-      } catch (error) {
-        // Se não conseguir fazer parse, usar o valor direto
-        config.headers.Authorization = `Bearer ${tokenData}`;
-        
-        if (import.meta.env.DEV) {
-          console.log(`[HTTP] Token direto: ${tokenData.substring(0, 20)}...`);
-        }
+      } else if (import.meta.env.DEV) {
+        console.log('[HTTP] Nenhum token encontrado no localStorage');
       }
     } else if (import.meta.env.DEV) {
-      console.log('[HTTP] Nenhum token encontrado no localStorage');
+      console.log('[HTTP] Rota pública - sem token');
     }
     
     if (import.meta.env.DEV) {

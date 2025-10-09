@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Search,
@@ -43,12 +43,9 @@ import { useDebounce } from '@/hooks/use-debounce'
 import { usePatrimonio } from '@/contexts/PatrimonioContext'
 import { useImovel } from '@/contexts/ImovelContext'
 import { usePublicSearch } from '@/contexts/PublicSearchContext'
+import { useCustomization } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { getCloudImageUrl, formatRelativeDate } from '@/lib/utils'
-import {
-  SearchableSelect,
-  SearchableSelectOption,
-} from '@/components/ui/searchable-select'
 import { Badge } from '@/components/ui/badge'
 import {
   PublicAssetsFilterSheet,
@@ -100,12 +97,10 @@ const initialFilters: PublicFilterValues = {
 
 export default function PublicAssets() {
   const { settings: publicSettings } = usePublicSearch()
+  const { settings: customizationSettings } = useCustomization()
   const { patrimonios } = usePatrimonio()
   const { imoveis } = useImovel()
   const { isSyncing, startSync, lastSync } = useSync()
-  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState<
-    string | null
-  >(null)
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
   const [pagination, setPagination] = useState({ pageIndex: 1, pageSize: 9 })
@@ -119,22 +114,22 @@ export default function PublicAssets() {
     direction: 'asc',
   })
 
-  // Sistema simplificado para município único
-  const publicMunicipalities = useMemo(
-    () => [{ id: '1', name: MUNICIPALITY_NAME }],
-    [],
-  )
-
-  const municipalityOptions: SearchableSelectOption[] =
-    publicMunicipalities.map((m) => ({
-      value: m.id,
-      label: m.name,
-    }))
-
+  // ✅ Sistema single-municipality - carrega automaticamente
+  const selectedMunicipalityId = '1'
+  
   const selectedMunicipality = useMemo(
-    () => publicMunicipalities.find((m) => m.id === selectedMunicipalityId),
-    [publicMunicipalities, selectedMunicipalityId],
+    () => ({
+      id: '1',
+      name: customizationSettings.prefeituraName || MUNICIPALITY_NAME,
+      logoUrl: customizationSettings.activeLogoUrl,
+    }),
+    [customizationSettings],
   )
+
+  // ✅ Sincronizar dados ao carregar a página
+  useEffect(() => {
+    startSync()
+  }, [])
 
   const combinedData: CombinedAsset[] = useMemo(() => {
     const bens: CombinedAsset[] = patrimonios.map((p) => ({
@@ -291,40 +286,26 @@ export default function PublicAssets() {
   return (
     <div className="min-h-screen bg-muted/40 flex flex-col items-center p-4 sm:p-6 md:p-8">
       <div className="w-full max-w-7xl mx-auto">
+        {/* ✅ Header com logo e informações do município */}
         <div className="text-center mb-6">
-          {selectedMunicipality?.logoUrl && (
+          {selectedMunicipality.logoUrl && (
             <img
               src={selectedMunicipality.logoUrl}
               alt={selectedMunicipality.name}
-              className="h-16 w-auto mx-auto mb-4"
+              className="h-20 w-auto mx-auto mb-4 drop-shadow-lg"
             />
           )}
-          <h1 className="text-3xl font-bold">Consulta Pública de Bens</h1>
-          <p className="text-muted-foreground">
-            {selectedMunicipality?.name ||
-              'Selecione um município para começar'}
+          <h1 className="text-3xl font-bold text-primary">Consulta Pública de Bens</h1>
+          <p className="text-lg text-muted-foreground font-medium mt-2">
+            {selectedMunicipality.name}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {customizationSettings.secretariaResponsavel}
           </p>
         </div>
 
-        {!selectedMunicipalityId ? (
-          <Card className="w-full max-w-md mx-auto mt-10 animate-fade-in">
-            <CardHeader>
-              <CardTitle>Selecione um Município</CardTitle>
-              <CardDescription>
-                Escolha um município para visualizar os bens públicos.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SearchableSelect
-                options={municipalityOptions}
-                value={selectedMunicipalityId}
-                onChange={setSelectedMunicipalityId}
-                placeholder="Selecione..."
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="animate-fade-in">
+        {/* ✅ Conteúdo principal - sem necessidade de seleção */}
+        <div className="animate-fade-in">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
               <div className="relative flex-grow w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -513,8 +494,7 @@ export default function PublicAssets() {
                 </PaginationContent>
               </Pagination>
             </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
