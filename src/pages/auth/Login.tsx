@@ -129,7 +129,7 @@ export default function Login() {
                   <img
                     src={settings.activeLogoUrl}
                     alt="Logo"
-                    className="h-24 sm:h-28 lg:h-32 w-auto mx-auto lg:mx-0 img-responsive drop-shadow-2xl"
+                    className="h-24 sm:h-28 lg:h-40 w-auto mx-auto img-responsive drop-shadow-2xl"
                   />
                   <div className="absolute inset-0 bg-white/10 rounded-full blur-xl" />
                 </div>
@@ -145,35 +145,37 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Features */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 max-w-lg mx-auto lg:mx-0">
-              <div className="flex items-center justify-center lg:justify-start gap-3 text-blue-50">
-                <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
-                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+            {/* Features - Hidden on mobile, shown on desktop */}
+            <div className="hidden lg:block">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 max-w-lg mx-auto lg:mx-0">
+                <div className="flex items-center justify-center lg:justify-start gap-3 text-blue-50">
+                  <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
+                    <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-medium drop-shadow-sm">Seguro e Confiável</span>
                 </div>
-                <span className="text-xs sm:text-sm font-medium drop-shadow-sm">Seguro e Confiável</span>
-              </div>
-              <div className="flex items-center justify-center lg:justify-start gap-3 text-blue-50">
-                <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
-                  <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                <div className="flex items-center justify-center lg:justify-start gap-3 text-blue-50">
+                  <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
+                    <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-medium drop-shadow-sm">Gestão Municipal</span>
                 </div>
-                <span className="text-xs sm:text-sm font-medium drop-shadow-sm">Gestão Municipal</span>
               </div>
-            </div>
 
-            {/* Public Consultation Link */}
-            <div className="pt-6 lg:pt-8">
-              <Link
-                to="/consulta-publica"
-                className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white/15 hover:bg-white/25 text-white rounded-lg border border-white/30 transition-all duration-300 hover:scale-105 hover:shadow-lg backdrop-blur-sm drop-shadow-md text-sm sm:text-base"
-              >
-                <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="font-medium">Consulta Pública</span>
-                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
-              </Link>
-              <p className="text-blue-50 text-xs sm:text-sm mt-2 drop-shadow-sm">
-                Acesse informações públicas sobre o patrimônio municipal
-              </p>
+              {/* Public Consultation Link - Desktop */}
+              <div className="pt-6 lg:pt-8">
+                <Link
+                  to="/consulta-publica"
+                  className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white/15 hover:bg-white/25 text-white rounded-lg border border-white/30 transition-all duration-300 hover:scale-105 hover:shadow-lg backdrop-blur-sm drop-shadow-md text-sm sm:text-base"
+                >
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="font-medium">Consulta Pública</span>
+                  <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Link>
+                <p className="text-blue-50 text-xs sm:text-sm mt-2 drop-shadow-sm">
+                  Acesse informações públicas sobre o patrimônio municipal
+                </p>
+              </div>
             </div>
           </div>
 
@@ -319,6 +321,40 @@ export default function Login() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Mobile Features and Consultation Link - Below form */}
+            <div className="lg:hidden mt-6 space-y-6">
+              {/* Features */}
+              <div className="grid grid-cols-1 gap-3 max-w-lg mx-auto">
+                <div className="flex items-center justify-center gap-3 text-blue-50">
+                  <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
+                    <Shield className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-sm font-medium drop-shadow-sm">Seguro e Confiável</span>
+                </div>
+                <div className="flex items-center justify-center gap-3 text-blue-50">
+                  <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
+                    <Building2 className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-sm font-medium drop-shadow-sm">Gestão Municipal</span>
+                </div>
+              </div>
+
+              {/* Public Consultation Link - Mobile */}
+              <div className="text-center">
+                <Link
+                  to="/consulta-publica"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-white/15 hover:bg-white/25 text-white rounded-lg border border-white/30 transition-all duration-300 hover:scale-105 hover:shadow-lg backdrop-blur-sm drop-shadow-md"
+                >
+                  <Search className="h-5 w-5" />
+                  <span className="font-medium">Consulta Pública</span>
+                  <ExternalLink className="h-4 w-4" />
+                </Link>
+                <p className="text-blue-50 text-sm mt-2 drop-shadow-sm">
+                  Acesse informações públicas sobre o patrimônio municipal
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
