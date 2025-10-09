@@ -921,15 +921,18 @@ build_application() {
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    pnpm install --frozen-lockfile > /tmp/build-frontend-deps.log 2>&1 &
+    # Usar npm com --legacy-peer-deps (mais compatível que pnpm)
+    timeout 600 npm install --legacy-peer-deps > /tmp/build-frontend-deps.log 2>&1 &
     local deps_pid=$!
-    show_spinner $deps_pid "Instalando pacotes do frontend (pode levar 2-3 minutos)..."
+    show_spinner $deps_pid "Instalando pacotes do frontend (pode levar 3-5 minutos)..."
     wait $deps_pid
     local deps_status=$?
     
     echo ""
     if [ $deps_status -eq 0 ]; then
         success "✅ Dependências do frontend instaladas"
+    elif [ $deps_status -eq 124 ]; then
+        error "❌ Timeout na instalação (>10 min). Tente aumentar swap ou fazer build local."
     else
         echo ""
         error "❌ Falha ao instalar dependências do frontend! Ver: /tmp/build-frontend-deps.log"
@@ -941,15 +944,18 @@ build_application() {
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    pnpm run build:prod > /tmp/build-frontend.log 2>&1 &
+    # Usar npm run build com timeout
+    timeout 900 npm run build > /tmp/build-frontend.log 2>&1 &
     local build_frontend_pid=$!
-    show_spinner $build_frontend_pid "Compilando frontend (pode levar 2-3 minutos)..."
+    show_spinner $build_frontend_pid "Compilando frontend (pode levar 5-10 minutos)..."
     wait $build_frontend_pid
     local build_frontend_status=$?
     
     echo ""
     if [ $build_frontend_status -eq 0 ]; then
         success "✅ Frontend compilado com sucesso"
+    elif [ $build_frontend_status -eq 124 ]; then
+        error "❌ Timeout no build (>15 min). Servidor pode ter pouca memória. Ver: /tmp/build-frontend.log"
     else
         echo ""
         error "❌ Falha ao compilar frontend! Ver: /tmp/build-frontend.log"
@@ -966,7 +972,7 @@ build_application() {
     
     # IMPORTANTE: Instalar TODAS as dependências (incluindo devDependencies)
     # porque precisamos dos @types/* para compilar TypeScript
-    npm install > /tmp/build-backend-deps.log 2>&1 &
+    timeout 600 npm install > /tmp/build-backend-deps.log 2>&1 &
     local backend_deps_pid=$!
     show_spinner $backend_deps_pid "Instalando pacotes do backend (pode levar 2-3 minutos)..."
     wait $backend_deps_pid
@@ -975,6 +981,9 @@ build_application() {
     echo ""
     if [ $backend_deps_status -eq 0 ]; then
         success "✅ Dependências do backend instaladas (incluindo tipos TypeScript)"
+    elif [ $backend_deps_status -eq 124 ]; then
+        error "❌ Timeout na instalação (>10 min). Ver: /tmp/build-backend-deps.log"
+        exit 1
     else
         echo ""
         error "❌ Falha ao instalar dependências do backend! Ver: /tmp/build-backend-deps.log"
@@ -990,8 +999,8 @@ build_application() {
     echo -e "${YELLOW}  ⚠️  O spinner pode parecer travado, mas está funcionando!${NC}"
     echo ""
     
-    # Executar build do backend
-    npm run build > /tmp/build-backend.log 2>&1 &
+    # Executar build do backend com timeout
+    timeout 600 npm run build > /tmp/build-backend.log 2>&1 &
     local build_pid=$!
     
     # Mostrar spinner
@@ -1003,7 +1012,10 @@ build_application() {
     
     echo ""
     
-    if [ $build_status -eq 0 ]; then
+    if [ $build_status -eq 124 ]; then
+        error "❌ Timeout no build do backend (>10 min). Ver: /tmp/build-backend.log"
+        exit 1
+    elif [ $build_status -eq 0 ]; then
         # Verificar se realmente criou os arquivos compilados
         if [ -f "dist/index.js" ]; then
             success "✅ Backend compilado com sucesso!"
