@@ -63,50 +63,113 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
     const { municipalityId } = req.user;
     const updateData = req.body;
 
-    console.log('💾 Salvando customização para município:', municipalityId);
-    console.log('📋 Dados recebidos:', Object.keys(updateData));
+    console.log('💾 [DEV] Salvando customização para município:', municipalityId);
+    console.log('📋 [DEV] Dados recebidos:', JSON.stringify(updateData, null, 2));
 
-    // Verificar se já existe
-    const existing = await prisma.$queryRaw<any[]>`
-      SELECT * FROM customizations WHERE "municipalityId" = ${municipalityId}
-    `;
+    // Campos permitidos para update
+    const allowedFields = [
+      'activeLogoUrl', 'secondaryLogoUrl', 'backgroundType', 'backgroundColor',
+      'backgroundImageUrl', 'backgroundVideoUrl', 'videoLoop', 'videoMuted',
+      'layout', 'welcomeTitle', 'welcomeSubtitle', 'primaryColor', 'buttonTextColor',
+      'fontFamily', 'browserTitle', 'faviconUrl', 'loginFooterText', 
+      'systemFooterText', 'superUserFooterText', 'prefeituraName', 
+      'secretariaResponsavel', 'departamentoResponsavel'
+    ];
 
-    if (existing.length > 0) {
-      // Atualizar
-      const setClause = Object.keys(updateData)
-        .map(key => `"${key}" = '${String(updateData[key]).replace(/'/g, "''")}'`)
-        .join(', ');
-      
-      await prisma.$executeRawUnsafe(`
-        UPDATE customizations 
-        SET ${setClause}, "updatedAt" = NOW()
-        WHERE "municipalityId" = '${municipalityId}'
-      `);
-    } else {
-      // Criar
-      const fields = ['id', 'municipalityId', ...Object.keys(updateData)];
-      const values = [`gen_random_uuid()::text`, `'${municipalityId}'`, ...Object.values(updateData).map(v => `'${String(v).replace(/'/g, "''")}'`)];
-      
-      await prisma.$executeRawUnsafe(`
-        INSERT INTO customizations (${fields.map(f => `"${f}"`).join(', ')})
-        VALUES (${values.join(', ')})
-      `);
+    // Filtrar apenas campos permitidos
+    const filteredData: Record<string, any> = {};
+    for (const field of allowedFields) {
+      if (updateData[field] !== undefined) {
+        filteredData[field] = updateData[field];
+      }
     }
 
-    // Buscar customização atualizada
-    const customizations = await prisma.$queryRaw<any[]>`
-      SELECT * FROM customizations WHERE "municipalityId" = ${municipalityId}
+    // Adicionar updatedAt
+    filteredData.updatedAt = new Date();
+
+    console.log('📝 [DEV] Campos a salvar:', Object.keys(filteredData));
+
+    // Verificar se já existe customização
+    const existing = await prisma.$queryRaw<any[]>`
+      SELECT id FROM customizations WHERE "municipalityId" = ${municipalityId} LIMIT 1
     `;
 
-    console.log('✅ Customização salva com sucesso');
+    let customization;
+
+    if (existing.length > 0) {
+      // UPDATE usando raw SQL seguro
+      console.log('🔄 [DEV] Atualizando customização existente...');
+      
+      const setStatements: string[] = [];
+      const values: any[] = [];
+      let paramIndex = 1;
+
+      for (const [key, value] of Object.entries(filteredData)) {
+        setStatements.push(`"${key}" = $${paramIndex}`);
+        values.push(value);
+        paramIndex++;
+      }
+
+      // Adicionar municipalityId como último parâmetro
+      values.push(municipalityId);
+
+      const updateQuery = `
+        UPDATE customizations 
+        SET ${setStatements.join(', ')}
+        WHERE "municipalityId" = $${paramIndex}
+        RETURNING *
+      `;
+
+      console.log('📝 [DEV] Query UPDATE:', updateQuery);
+      console.log('📝 [DEV] Valores:', values);
+
+      const result = await prisma.$queryRawUnsafe(updateQuery, ...values);
+      customization = Array.isArray(result) ? result[0] : result;
+
+      console.log('✅ [DEV] UPDATE executado com sucesso');
+    } else {
+      // INSERT usando raw SQL seguro
+      console.log('➕ [DEV] Criando nova customização...');
+      
+      const id = `custom-${municipalityId}-${Date.now()}`;
+      const fields = ['id', 'municipalityId', ...Object.keys(filteredData)];
+      const values = [id, municipalityId, ...Object.values(filteredData)];
+      const placeholders = fields.map((_, index) => `$${index + 1}`);
+
+      const insertQuery = `
+        INSERT INTO customizations (${fields.map(f => `"${f}"`).join(', ')})
+        VALUES (${placeholders.join(', ')})
+        RETURNING *
+      `;
+
+      console.log('📝 [DEV] Query INSERT:', insertQuery);
+      console.log('📝 [DEV] Valores:', values);
+
+      const result = await prisma.$queryRawUnsafe(insertQuery, ...values);
+      customization = Array.isArray(result) ? result[0] : result;
+
+      console.log('✅ [DEV] INSERT executado com sucesso');
+    }
+
+    console.log('✅ [DEV] Customização salva!');
+    console.log('📊 [DEV] Resultado:', JSON.stringify(customization, null, 2));
 
     res.json({ 
       message: 'Customização salva com sucesso', 
-      customization: customizations[0]
+      customization
     });
-  } catch (error) {
-    console.error('❌ Erro ao salvar customização:', error);
-    res.status(500).json({ error: 'Erro ao salvar customização' });
+  } catch (error: any) {
+    console.error('❌ [DEV] ===== ERRO DETALHADO =====');
+    console.error('   Tipo:', error.constructor.name);
+    console.error('   Mensagem:', error.message);
+    console.error('   Código:', error.code);
+    console.error('   Stack:', error.stack);
+    console.error('==============================');
+    
+    res.status(500).json({ 
+      error: 'Erro ao salvar customização',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
