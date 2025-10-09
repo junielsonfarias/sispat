@@ -84,18 +84,33 @@ export function getCloudImageUrl(fileId: string): string {
       ? LOCAL_IMAGES.PLACEHOLDER_IMAGE
       : 'https://img.usecurling.com/p/400/300?q=error%20loading%20image'
   }
+  
+  // ✅ URLs base64 (inline images)
   if (fileId.startsWith('data:image')) {
     return fileId
   }
+  
+  // ✅ URLs do Google Drive
   if (fileId.startsWith('gdrive:')) {
     const id = fileId.replace('gdrive:', '')
     return process.env.NODE_ENV === 'production'
       ? LOCAL_IMAGES.PLACEHOLDER_PHOTO
       : `https://img.usecurling.com/p/400/300?q=cloud%20file&seed=${id}`
   }
+  
+  // ✅ URLs absolutas (http/https)
   if (fileId.startsWith('http')) {
     return fileId
   }
+  
+  // ✅ URLs relativas do backend (/uploads/...)
+  if (fileId.startsWith('/uploads/') || fileId.startsWith('uploads/')) {
+    const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
+    const cleanPath = fileId.startsWith('/') ? fileId : `/${fileId}`
+    return `${BACKEND_URL}${cleanPath}`
+  }
+  
+  // ✅ Fallback para placeholder
   return process.env.NODE_ENV === 'production'
     ? LOCAL_IMAGES.PLACEHOLDER_IMAGE
     : 'https://img.usecurling.com/p/400/300?q=invalid%20image%20id'

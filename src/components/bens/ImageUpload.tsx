@@ -56,9 +56,15 @@ export const ImageUpload = ({
           console.log('✅ ImageUpload - Upload concluído:', newFile)
           console.log('📦 ImageUpload - Files antes de adicionar:', files)
           
-          // ✅ CORREÇÃO: Adicionar apenas a URL da foto ao array
-          const updatedFiles = [...(files || []), newFile.file_url]
-          console.log('📦 ImageUpload - Files após adicionar (apenas URLs):', updatedFiles)
+          // ✅ CORREÇÃO: Adicionar o objeto completo (com id, file_url, file_name)
+          const fileMetadata = {
+            id: newFile.id,
+            file_url: newFile.file_url,
+            file_name: newFile.file_name,
+          }
+          
+          const updatedFiles = [...(files || []), fileMetadata]
+          console.log('📦 ImageUpload - Files após adicionar (objetos completos):', updatedFiles)
           onChange(updatedFiles)
         } catch (error) {
           console.error('❌ ImageUpload - Erro no upload:', error)
@@ -129,24 +135,35 @@ export const ImageUpload = ({
 
       {files && files.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {files.map((file: { id: string; file_url: string; file_name: string }, index: number) => (
-            <div key={`${file.id}-${index}`} className="relative group aspect-square">
-              <img
-                src={file.file_url}
-                alt="Preview"
-                className="w-full h-full object-cover rounded-md"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => handleRemoveImage(file)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+          {files.map((file: string | { id: string; file_url: string; file_name: string }, index: number) => {
+            // ✅ Suportar tanto strings (URLs) quanto objetos
+            const fileUrl = typeof file === 'string' ? file : file.file_url
+            const fileId = typeof file === 'string' ? `photo-${index}` : file.id
+            const fileName = typeof file === 'string' ? `Foto ${index + 1}` : file.file_name
+            
+            return (
+              <div key={`${fileId}-${index}`} className="relative group aspect-square">
+                <img
+                  src={fileUrl}
+                  alt={fileName}
+                  className="w-full h-full object-cover rounded-md"
+                  onError={(e) => {
+                    console.error('❌ Erro ao carregar imagem:', fileUrl)
+                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3ESem Imagem%3C/text%3E%3C/svg%3E'
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => handleRemoveImage(typeof file === 'string' ? { id: fileId, file_url: fileUrl, file_name: fileName } : file)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )
+          })}
         </div>
       )}
       <CameraCapture
