@@ -101,22 +101,40 @@ export const Header = () => {
       >
         {/* Desktop Layout (lg and up) */}
         <div className="hidden lg:flex h-24">
-          {/* Left Sidebar - Logo and Municipality Info */}
-          <div className="w-96 bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4 px-8 text-center">
+          {/* Left Sidebar - Logo and SISPAT */}
+          <div className="w-64 bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
+            <div className="flex items-center gap-4 px-6">
               {/* Logo */}
               <div className="relative">
                 <img
                   src={settings.activeLogoUrl}
                   alt="Logo da Prefeitura"
-                  className="h-40 w-auto object-contain drop-shadow-sm"
+                  className="h-12 w-auto object-contain"
                 />
               </div>
               
-              {/* Municipality Information */}
+              {/* SISPAT Text */}
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-bold text-gray-900 leading-none">
+                  SISPAT
+                </h1>
+                <p className="text-sm text-gray-600 font-medium leading-tight">
+                  Sistema de
+                </p>
+                <p className="text-sm text-gray-600 font-medium leading-tight">
+                  Patrimônio
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex items-center justify-between px-8">
+            {/* Municipality Information */}
+            <div className="flex flex-col">
               {settings.prefeituraName ? (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
+                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight">
                     {settings.prefeituraName}
                   </h1>
                   {settings.secretariaResponsavel && (
@@ -132,7 +150,7 @@ export const Header = () => {
                 </>
               ) : (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
+                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight">
                     PREFEITURA MUNICIPAL
                   </h1>
                   <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
@@ -143,19 +161,6 @@ export const Header = () => {
                   </p>
                 </>
               )}
-            </div>
-          </div>
-
-          {/* Main Content Area */}
-          <div className="flex-1 flex items-center justify-between px-8">
-            {/* SISPAT Branding */}
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-bold text-gray-900 leading-none">
-                SISPAT
-              </h1>
-              <p className="text-sm text-gray-600 font-medium leading-tight">
-                Sistema de Patrimônio
-              </p>
             </div>
 
             {/* Right Side Actions */}
