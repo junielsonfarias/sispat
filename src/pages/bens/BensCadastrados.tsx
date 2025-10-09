@@ -85,16 +85,16 @@ const BensCadastrados = () => {
   }
 
   return (
-    <div className="flex-1 p-4 lg:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="flex-1 p-3 sm:p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-1 sm:mb-2">
                 Bens Cadastrados
               </h1>
-              <p className="text-base lg:text-lg text-gray-600">
+              <p className="text-sm sm:text-base lg:text-lg text-gray-600">
                 Gerencie todos os bens patrimoniais cadastrados no sistema
               </p>
             </div>
@@ -132,8 +132,8 @@ const BensCadastrados = () => {
         </div>
 
         {/* Search */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -141,23 +141,24 @@ const BensCadastrados = () => {
                   placeholder="Buscar por número, descrição, setor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]"
+                  className="pl-10 min-h-[48px] sm:min-h-[44px] lg:min-h-[40px] text-sm sm:text-base"
                 />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table - Desktop */}
         <Card className="border-0 shadow-lg bg-white">
-          <CardHeader className="pb-4 px-6 pt-6">
-            <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Bens Cadastrados</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">
+          <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+            <CardTitle className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900">Bens Cadastrados</CardTitle>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               {filteredData.length} de {Array.isArray(patrimonios) ? patrimonios.length : 0} bens
             </p>
           </CardHeader>
-          <CardContent className="px-6 pb-6">
-            <div className="overflow-x-auto">
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+            {/* Desktop Table */}
+            <div className="hidden lg:block overflow-x-auto">
               <div className="rounded-lg border border-gray-200 overflow-hidden">
                 <Table>
                   <TableHeader className="bg-gray-50">
@@ -291,6 +292,145 @@ const BensCadastrados = () => {
                   </TableBody>
                 </Table>
               </div>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-4">
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    <span className="text-gray-500">Carregando bens...</span>
+                  </div>
+                </div>
+              ) : filteredData.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="rounded-full bg-gray-100 p-3">
+                      <Search className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-gray-900 font-medium">
+                        {searchTerm ? 'Nenhum bem encontrado' : 'Nenhum bem cadastrado'}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {searchTerm 
+                          ? 'Tente ajustar os termos de busca' 
+                          : 'Comece cadastrando um novo bem'}
+                      </p>
+                    </div>
+                    {!searchTerm && (
+                      <Button asChild className="mt-2">
+                        <Link to="/bens-cadastrados/novo">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Cadastrar Primeiro Bem
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                filteredData.map((patrimonio) => (
+                  <Card key={patrimonio.id} className="border border-gray-200 hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      {/* Header com número e situação */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <Link 
+                            to={`/bens-cadastrados/ver/${patrimonio.id}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline font-mono text-sm font-medium"
+                          >
+                            {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+                          </Link>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {patrimonio.descricao_bem || patrimonio.descricaoBem}
+                          </p>
+                        </div>
+                        <Badge 
+                          className={`${getStatusColor(patrimonio.situacao_bem || patrimonio.situacaoBem)} border text-xs ml-2`}
+                        >
+                          {patrimonio.situacao_bem || patrimonio.situacaoBem}
+                        </Badge>
+                      </div>
+
+                      {/* Informações principais */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Valor:</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            R$ {(patrimonio.valor_aquisicao || patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Setor:</span>
+                          <span className="text-sm text-gray-700 text-right flex-1 ml-2">
+                            {patrimonio.setor_responsavel || patrimonio.setorResponsavel}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-xs text-gray-500">Local:</span>
+                          <span className="text-sm text-gray-700 text-right flex-1 ml-2">
+                            {patrimonio.local_objeto || patrimonio.localObjeto}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Ações */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            asChild
+                            className="h-8 px-3 text-xs"
+                          >
+                            <Link to={`/bens-cadastrados/ver/${patrimonio.id}`}>
+                              <Eye className="h-3 w-3 mr-1" />
+                              Ver
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            asChild
+                            className="h-8 px-3 text-xs"
+                          >
+                            <Link to={`/bens-cadastrados/editar/${patrimonio.id}`}>
+                              <Edit className="h-3 w-3 mr-1" />
+                              Editar
+                            </Link>
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleShowQrCode(patrimonio)}
+                            title="QR Code"
+                            className="h-8 w-8"
+                          >
+                            <QrCode className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Excluir"
+                            onClick={() => {
+                              console.log('Excluir:', patrimonio.id)
+                            }}
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
