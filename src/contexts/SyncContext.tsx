@@ -89,9 +89,13 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
         title: 'Sincronização concluída!',
         description: `${updatedPatrimonios.length} bens atualizados com sucesso.`,
       })
-      logActivity('SYNC_SUCCESS', {
-        details: `Sincronização de dados concluída com sucesso. ${updatedPatrimonios.length} bens sincronizados.`,
-      })
+      
+      // ✅ Log apenas se usuário estiver autenticado
+      if (user) {
+        logActivity('SYNC_SUCCESS', {
+          details: `Sincronização de dados concluída com sucesso. ${updatedPatrimonios.length} bens sincronizados.`,
+        })
+      }
       
       // Forçar re-render da página
       window.dispatchEvent(new Event('patrimonios-updated'))
@@ -102,13 +106,17 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
         description: 'Não foi possível sincronizar os dados. Tente novamente.',
         variant: 'destructive',
       })
-      logActivity('SYNC_FAIL', {
-        details: 'Falha na sincronização de dados.',
-      })
+      
+      // ✅ Log apenas se usuário estiver autenticado
+      if (user) {
+        logActivity('SYNC_FAIL', {
+          details: 'Falha na sincronização de dados.',
+        })
+      }
     } finally {
       setIsSyncing(false)
     }
-  }, [isSyncing, user, logActivity, setPatrimonios])
+  }, [isSyncing, user, logActivity, setPatrimonios, dismiss])
 
   return (
     <SyncContext.Provider

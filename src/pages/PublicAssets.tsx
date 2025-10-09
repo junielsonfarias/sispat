@@ -93,10 +93,11 @@ export default function PublicAssets() {
     [customizationSettings],
   )
 
-  // ✅ Sincronizar dados ao carregar a página
+  // ✅ Sincronizar dados ao carregar a página (apenas uma vez)
   useEffect(() => {
     startSync()
-  }, [startSync])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Combinar bens e imóveis
   const combinedData: CombinedAsset[] = useMemo(() => {
