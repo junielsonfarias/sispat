@@ -30,6 +30,7 @@ import {
   Tag,
   Package,
   Hash,
+  TrendingDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -47,7 +48,16 @@ interface NavItem {
 }
 
 const supervisorAndAdminLinks: NavItem[] = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { 
+    label: 'Dashboard', 
+    icon: LayoutDashboard, 
+    isGroupLabel: true,
+    groupColor: 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100',
+    children: [
+      { to: '/', icon: LayoutDashboard, label: 'Visão Geral', exact: true },
+      { to: '/dashboard/depreciacao', icon: TrendingDown, label: 'Depreciação' },
+    ]
+  },
 
   { 
     label: 'Patrimônio', 

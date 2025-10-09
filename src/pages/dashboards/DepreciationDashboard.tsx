@@ -16,6 +16,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import { Button } from '@/components/ui/button'
+import {
   ChartContainer,
   ChartTooltipContent,
   ChartTooltip,
@@ -24,7 +33,7 @@ import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { usePatrimonio } from '@/contexts/PatrimonioContext'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
 import { formatCurrency } from '@/lib/utils'
-import { TrendingDown, TrendingUp, Hourglass } from 'lucide-react'
+import { TrendingDown, TrendingUp, Hourglass, LayoutDashboard, ArrowLeft } from 'lucide-react'
 
 const DepreciationDashboard = () => {
   const { patrimonios } = usePatrimonio()
@@ -95,7 +104,36 @@ const DepreciationDashboard = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Dashboard de Depreciação</h1>
+      {/* Breadcrumb */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/">Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Depreciação</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      {/* Header com navegação */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard de Depreciação</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Análise detalhada da depreciação dos bens patrimoniais
+          </p>
+        </div>
+        <Link to="/">
+          <Button variant="outline" size="sm" className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para Visão Geral
+          </Button>
+        </Link>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">

@@ -45,6 +45,7 @@ import {
   PieChart,
   Calendar,
   Hash,
+  TrendingDown,
 } from 'lucide-react'
 
 interface MobileNavItem {
@@ -70,7 +71,8 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
       icon: LayoutDashboard,
       color: 'text-blue-600 bg-blue-50',
       items: [
-        { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+        { to: '/', icon: LayoutDashboard, label: 'Visão Geral', exact: true },
+        { to: '/dashboard/depreciacao', icon: TrendingDown, label: 'Depreciação' },
       ],
     },
     {
@@ -147,7 +149,8 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
       icon: LayoutDashboard,
       color: 'text-blue-600 bg-blue-50',
       items: [
-        { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+        { to: '/', icon: LayoutDashboard, label: 'Visão Geral', exact: true },
+        { to: '/dashboard/depreciacao', icon: TrendingDown, label: 'Depreciação' },
       ],
     },
     {

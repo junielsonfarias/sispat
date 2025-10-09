@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Package,
   TrendingUp,
@@ -20,6 +21,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import {
   Bar,
   BarChart,
@@ -245,15 +254,28 @@ const UnifiedDashboard = () => {
   return (
     <div className="flex-1 p-3 lg:p-4 xl:p-5">
       <div className="max-w-7xl mx-auto space-y-4 lg:space-y-5">
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Dashboard</BreadcrumbPage>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Visão Geral</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
         {/* Header */}
         <div className="mb-4 lg:mb-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-3">
             <div>
               <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-gray-900 mb-1">
-                Dashboard SISPAT
+                Dashboard - Visão Geral
               </h1>
               <p className="text-sm lg:text-base text-gray-600 leading-relaxed">
-                Visão geral do sistema de patrimônio
+                Visão completa do sistema de patrimônio e imóveis
               </p>
             </div>
             
@@ -330,6 +352,18 @@ const UnifiedDashboard = () => {
               </Alert>
             )}
           </div>
+
+          {/* Quick Links para Outros Dashboards */}
+          {(user?.role === 'admin' || user?.role === 'supervisor') && (
+            <div className="flex gap-2 flex-wrap">
+              <Link to="/dashboard/depreciacao">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <TrendingDown className="h-4 w-4" />
+                  Dashboard Depreciação
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
         
         {/* Stats Cards - Primeira Linha (Valor Total Estimado destacado) */}
