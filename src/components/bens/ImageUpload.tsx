@@ -51,8 +51,17 @@ export const ImageUpload = ({
 
       for (const file of filesToUpload) {
         try {
-          console.log('⬆️ ImageUpload - Fazendo upload:', file.name)
-          const newFile = await uploadFile(file, assetId, user.id)
+          console.log('⬆️ ImageUpload - Processando:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+          
+          // ✅ Comprimir imagem antes do upload
+          let fileToUpload = file
+          if (file.type.startsWith('image/')) {
+            const { compressImage } = await import('@/lib/image-utils')
+            fileToUpload = await compressImage(file)
+          }
+          
+          console.log('⬆️ ImageUpload - Fazendo upload:', fileToUpload.name)
+          const newFile = await uploadFile(fileToUpload, assetId, user.id)
           console.log('✅ ImageUpload - Upload concluído:', newFile)
           console.log('📦 ImageUpload - Files antes de adicionar:', files)
           

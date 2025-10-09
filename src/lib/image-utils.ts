@@ -2,11 +2,84 @@
  * Utilitário para gerenciamento de imagens locais e fallbacks
  */
 
+import imageCompression from 'browser-image-compression'
+
 export interface ImageConfig {
   src: string
   fallback?: string
   alt: string
   loading?: 'lazy' | 'eager'
+}
+
+export interface CompressionOptions {
+  maxSizeMB?: number
+  maxWidthOrHeight?: number
+  useWebWorker?: boolean
+  quality?: number
+}
+
+/**
+ * Comprime uma imagem antes do upload
+ */
+export const compressImage = async (
+  file: File,
+  options: CompressionOptions = {}
+): Promise<File> => {
+  const defaultOptions: CompressionOptions = {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1920,
+    useWebWorker: true,
+    quality: 0.9,
+  }
+
+  const compressionOptions = { ...defaultOptions, ...options }
+
+  try {
+    const compressedFile = await imageCompression(file, compressionOptions)
+    
+    // Log da compressão
+    const originalSizeMB = (file.size / 1024 / 1024).toFixed(2)
+    const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2)
+    const reductionPercent = ((1 - compressedFile.size / file.size) * 100).toFixed(1)
+    
+    if (import.meta.env.DEV) {
+      console.log(`📸 Imagem comprimida: ${originalSizeMB}MB → ${compressedSizeMB}MB (↓${reductionPercent}%)`)
+    }
+
+    return compressedFile
+  } catch (error) {
+    console.error('Erro ao comprimir imagem:', error)
+    // Retornar arquivo original se compressão falhar
+    return file
+  }
+}
+
+/**
+ * Comprime múltiplas imagens
+ */
+export const compressImages = async (
+  files: File[],
+  options?: CompressionOptions
+): Promise<File[]> => {
+  return Promise.all(files.map(file => compressImage(file, options)))
+}
+
+/**
+ * Verifica se arquivo é uma imagem
+ */
+export const isImageFile = (file: File): boolean => {
+  return file.type.startsWith('image/')
+}
+
+/**
+ * Cria thumbnail de uma imagem
+ */
+export const createThumbnail = async (file: File): Promise<File> => {
+  return compressImage(file, {
+    maxSizeMB: 0.1,
+    maxWidthOrHeight: 300,
+    quality: 0.8,
+  })
 }
 
 /**
