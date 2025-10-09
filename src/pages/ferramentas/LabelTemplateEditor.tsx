@@ -116,14 +116,28 @@ const LabelTemplateEditor = () => {
 
   const handleSave = () => {
     console.log('handleSave called with template:', template)
-    if (template) {
-      console.log('Calling saveTemplate...')
-      saveTemplate(template)
-      toast({ description: 'Modelo de etiqueta salvo com sucesso!' })
-      navigate('/etiquetas/templates')
-    } else {
+    if (!template) {
       console.log('No template to save')
+      return
     }
+    
+    // Validar nome vazio
+    if (!template.name || template.name.trim() === '') {
+      toast({
+        title: 'Nome obrigatório',
+        description: 'Por favor, dê um nome para o modelo de etiqueta.',
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    console.log('Calling saveTemplate...')
+    saveTemplate(template)
+    toast({ 
+      title: 'Sucesso!',
+      description: 'Modelo de etiqueta salvo com sucesso!' 
+    })
+    navigate('/etiquetas/templates')
   }
 
   const updateElement = (
@@ -186,13 +200,20 @@ const LabelTemplateEditor = () => {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="flex items-center justify-between">
-        <Input
-          value={template.name}
-          onChange={(e) => setTemplate({ ...template, name: e.target.value })}
-          className="text-2xl font-bold h-auto p-0 border-none focus-visible:ring-0"
-        />
-        <Button onClick={handleSave}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex-1 w-full space-y-2">
+          <Label htmlFor="template-name" className="text-sm font-medium text-gray-700">
+            Nome do Modelo de Etiqueta
+          </Label>
+          <Input
+            id="template-name"
+            placeholder="Ex: Etiqueta Padrão 60x40mm, Placa para Imóveis 100x150mm..."
+            value={template.name}
+            onChange={(e) => setTemplate({ ...template, name: e.target.value })}
+            className="text-xl sm:text-2xl font-bold"
+          />
+        </div>
+        <Button onClick={handleSave} size="lg" className="w-full sm:w-auto">
           <Save className="mr-2 h-4 w-4" /> Salvar Modelo
         </Button>
       </div>
