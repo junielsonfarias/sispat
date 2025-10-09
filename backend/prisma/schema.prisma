@@ -61,8 +61,13 @@ model Municipality {
 model Sector {
   id             String   @id @default(uuid())
   name           String
+  sigla          String?
   codigo         String   @unique
   description    String?
+  endereco       String?
+  cnpj           String?
+  responsavel    String?
+  parentId       String?
   municipalityId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
