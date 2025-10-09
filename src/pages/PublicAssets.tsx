@@ -140,21 +140,34 @@ export default function PublicAssets() {
       ...i,
       assetType: 'imovel',
     }))
+    
+    console.log('[PublicAssets] 📊 Dados combinados:', {
+      bens: bens.length,
+      imoveis: imoveisData.length,
+      total: bens.length + imoveisData.length,
+      sampleBem: bens[0]
+    })
+    
     return [...bens, ...imoveisData]
   }, [patrimonios, imoveis])
 
   const processedData = useMemo(() => {
-    if (!selectedMunicipalityId) return []
+    console.log('[PublicAssets] 🔍 Processando dados:', {
+      combinedDataLength: combinedData.length,
+      selectedMunicipalityId,
+    })
 
+    // ✅ Sistema single-municipality - não filtrar por municipalityId na consulta pública
     const filtered = combinedData.filter((p) => {
-      const municipalityMatch = p.municipalityId === selectedMunicipalityId
-      if (!municipalityMatch) return false
+      // ✅ Remover filtro de município para consulta pública
+      // O backend já retorna apenas os dados do município correto
 
       const description =
         p.assetType === 'bem'
           ? (p as Patrimonio).descricao_bem
           : (p as Imovel).denominacao
       const searchMatch =
+        !debouncedSearchTerm || 
         description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
         p.numero_patrimonio.includes(debouncedSearchTerm)
 
@@ -180,8 +193,23 @@ export default function PublicAssets() {
           (!filters.dataAquisicaoFim ||
             new Date(p.data_aquisicao) <= parseISO(filters.dataAquisicaoFim)))
 
-      return searchMatch && assetTypeMatch && filterMatch
+      const passes = searchMatch && assetTypeMatch && filterMatch
+      
+      if (!passes && combinedData.length > 0 && combinedData.indexOf(p) === 0) {
+        console.log('[PublicAssets] ❌ Primeiro item filtrado:', {
+          asset: p,
+          searchMatch,
+          assetTypeMatch,
+          filterMatch,
+          debouncedSearchTerm,
+          assetTypeFilter
+        })
+      }
+      
+      return passes
     })
+    
+    console.log('[PublicAssets] ✅ Filtrados:', filtered.length, 'de', combinedData.length)
 
     filtered.sort((a, b) => {
       const getSortableValue = (
