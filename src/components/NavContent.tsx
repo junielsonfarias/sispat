@@ -29,6 +29,7 @@ import {
   Laptop,
   Tag,
   Package,
+  Hash,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -159,6 +160,7 @@ const supervisorAndAdminLinks: NavItem[] = [
       },
       { to: '/configuracoes/seguranca', icon: ShieldCheck, label: 'Segurança' },
       { to: '/configuracoes/backup', icon: DatabaseBackup, label: 'Backup' },
+      { to: '/configuracoes/numeracao-bens', icon: Hash, label: 'Numeração de Bens' },
     ]
   },
 ]

@@ -44,6 +44,7 @@ import {
   Package,
   PieChart,
   Calendar,
+  Hash,
 } from 'lucide-react'
 
 interface MobileNavItem {
@@ -136,6 +137,7 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
         { to: '/configuracoes/personalizacao', icon: Palette, label: 'Personalização' },
         { to: '/configuracoes/seguranca', icon: ShieldCheck, label: 'Segurança' },
         { to: '/configuracoes/backup', icon: DatabaseBackup, label: 'Backup' },
+        { to: '/configuracoes/numeracao-bens', icon: Hash, label: 'Numeração de Bens' },
       ],
     },
   ],
@@ -194,7 +196,7 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
     },
     {
       title: 'Administração',
-      icon: Shield,
+      icon: Users,
       color: 'text-red-600 bg-red-50',
       items: [
         { to: '/configuracoes/usuarios', icon: Users, label: 'Gerenciar Usuários' },
@@ -202,9 +204,17 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
         { to: '/configuracoes/tipos', icon: Package, label: 'Gerenciar Tipos de Bens' },
         { to: '/configuracoes/formas-aquisicao', icon: FileText, label: 'Formas de Aquisição' },
         { to: '/registros-de-atividade', icon: History, label: 'Logs de Atividade' },
+      ],
+    },
+    {
+      title: 'Configurações',
+      icon: Settings,
+      color: 'text-gray-600 bg-gray-50',
+      items: [
         { to: '/configuracoes/personalizacao', icon: Palette, label: 'Personalização' },
         { to: '/configuracoes/seguranca', icon: ShieldCheck, label: 'Segurança' },
         { to: '/configuracoes/backup', icon: DatabaseBackup, label: 'Backup' },
+        { to: '/configuracoes/numeracao-bens', icon: Hash, label: 'Numeração de Bens' },
       ],
     },
   ],
