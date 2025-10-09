@@ -240,7 +240,7 @@ export const Header = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                    <Link to="/perfil" className="flex items-center gap-2 cursor-pointer">
                       <User className="h-4 w-4" />
                       <span>Perfil</span>
                     </Link>
