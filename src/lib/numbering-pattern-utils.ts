@@ -16,8 +16,10 @@ export const generatePreview = (
           return comp.value || ''
         case 'year':
           return format(now, comp.format === 'YY' ? 'yy' : 'yyyy')
+        case 'sector':
+          return 'XX'.padStart(comp.sectorCodeLength || 2, 'X')
         case 'sequence':
-          return '1'.padStart(comp.length || 4, '0')
+          return '1'.padStart(comp.length || 6, '0')
         default:
           return ''
       }
@@ -28,6 +30,7 @@ export const generatePreview = (
 export const generateNextAssetNumber = (
   pattern: NumberingPattern,
   existingPatrimonios: Patrimonio[],
+  sectorCode?: string,
 ): string => {
   const now = new Date()
   let prefix = ''
@@ -40,6 +43,9 @@ export const generateNextAssetNumber = (
         break
       case 'year':
         prefix += format(now, comp.format === 'YY' ? 'yy' : 'yyyy')
+        break
+      case 'sector':
+        prefix += (sectorCode || 'XX').padStart(comp.sectorCodeLength || 2, '0')
         break
       case 'sequence':
         sequenceComponent = comp

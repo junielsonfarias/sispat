@@ -438,10 +438,11 @@ export interface ExcelCsvTemplate {
 
 export interface NumberingPatternComponent {
   id: string
-  type: 'text' | 'year' | 'sequence'
+  type: 'text' | 'year' | 'sequence' | 'sector'
   value?: string
   format?: 'YYYY' | 'YY'
   length?: number
+  sectorCodeLength?: number // Para código do setor
 }
 
 export interface NumberingPattern {

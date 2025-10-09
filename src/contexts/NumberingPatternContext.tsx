@@ -21,7 +21,8 @@ const NumberingPatternContext =
 
 const defaultPatternComponents = [
   { id: generateId(), type: 'year' as const, format: 'YYYY' as const },
-  { id: generateId(), type: 'sequence' as const, length: 5 },
+  { id: generateId(), type: 'sector' as const, sectorCodeLength: 2 },
+  { id: generateId(), type: 'sequence' as const, length: 6 },
 ]
 
 export const NumberingPatternProvider = ({
