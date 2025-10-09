@@ -58,6 +58,12 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
         select: { responsibleSectors: true },
       });
 
+      console.log('[DEV] Verificando acesso do usuário:', {
+        userId: req.user.userId,
+        role: req.user.role,
+        responsibleSectors: user?.responsibleSectors,
+      });
+
       if (user && user.responsibleSectors.length > 0) {
         // Buscar IDs dos setores pelos nomes
         const sectors = await prisma.sector.findMany({
@@ -65,17 +71,28 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
             name: { in: user.responsibleSectors },
             municipalityId: req.user.municipalityId
           },
-          select: { id: true }
+          select: { id: true, name: true }
         });
+        
+        console.log('[DEV] Setores encontrados para o usuário:', sectors);
         
         const sectorIds = sectors.map(s => s.id);
         if (sectorIds.length > 0) {
           where.sectorId = { in: sectorIds };
+          console.log('[DEV] Filtrando por setores:', sectorIds);
+        } else {
+          console.log('[DEV] ⚠️ Usuário tem setores atribuídos mas nenhum foi encontrado no banco');
         }
+      } else {
+        console.log('[DEV] ℹ️ Usuário sem setores atribuídos - mostrando TODOS os patrimônios (modo configuração)');
+        // ✅ Se supervisor não tem setores atribuídos ainda, mostrar TODOS
+        // Isso permite que o supervisor veja os bens durante a configuração inicial
       }
     }
 
     // Buscar patrimônios
+    console.log('[DEV] Buscando patrimônios com filtro:', JSON.stringify(where, null, 2));
+    
     const [patrimonios, total] = await Promise.all([
       prisma.patrimonio.findMany({
         where,
@@ -103,6 +120,15 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       prisma.patrimonio.count({ where }),
     ]);
 
+    console.log('[DEV] ✅ Patrimônios encontrados:', patrimonios.length);
+    console.log('[DEV] 📊 Total no banco:', total);
+    console.log('[DEV] 📝 Primeiros 2:', patrimonios.slice(0, 2).map(p => ({
+      id: p.id,
+      numero: p.numero_patrimonio,
+      descricao: p.descricao_bem,
+      setor: p.sector?.name,
+    })));
+
     res.json({
       patrimonios,
       pagination: {
@@ -113,7 +139,7 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       },
     });
   } catch (error) {
-    console.error('Erro ao listar patrimônios:', error);
+    console.error('[DEV] ❌ Erro ao listar patrimônios:', error);
     res.status(500).json({ error: 'Erro ao listar patrimônios' });
   }
 };
