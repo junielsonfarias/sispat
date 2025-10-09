@@ -22,20 +22,20 @@ export const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header com sidebar integrada */}
+      {/* Header responsivo */}
       <div className="sticky top-0 z-10">
         <Header />
       </div>
       
       {/* Conteúdo principal */}
       <div className="flex-1 flex">
-        {/* Sidebar de navegação */}
+        {/* Sidebar de navegação - apenas desktop */}
         <SidebarProvider>
-          <div className="sticky top-20 h-[calc(100vh-5rem)]">
+          <div className="hidden lg:block sticky top-20 h-[calc(100vh-5rem)]">
             <Sidebar />
           </div>
           <div className="flex-1">
-            <main className="flex-1 overflow-auto p-6">
+            <main className="flex-1 overflow-auto p-3 md:p-4 lg:p-6">
               {children || <Outlet />}
             </main>
           </div>

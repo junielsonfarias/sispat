@@ -295,7 +295,7 @@ const MobileNavItem = ({ item }: { item: MobileNavItem }) => {
     <NavLink
       to={item.to}
       className={cn(
-        'flex items-center gap-4 p-fluid-sm rounded-lg transition-all duration-200 touch-target',
+        'flex items-center gap-4 p-3 rounded-lg transition-all duration-200 touch-target min-h-[44px]',
         isActive
           ? 'bg-primary text-primary-foreground shadow-sm'
           : 'hover:bg-accent hover:text-accent-foreground'
@@ -355,7 +355,7 @@ export const MobileNavigation = () => {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-80 p-0">
+      <SheetContent side="left" className="w-80 max-w-[90vw] p-0">
         <SheetHeader className="p-fluid-md border-b">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-fluid-lg font-semibold">Menu</SheetTitle>

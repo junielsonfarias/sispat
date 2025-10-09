@@ -99,7 +99,8 @@ export const Header = () => {
         role="banner"
         aria-label="Cabeçalho principal"
       >
-        <div className="flex h-20">
+        {/* Desktop Layout (lg and up) */}
+        <div className="hidden lg:flex h-20">
           {/* Left Sidebar - Logo and SISPAT */}
           <div className="w-64 bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
             <div className="flex items-center gap-4 px-6">
@@ -265,9 +266,220 @@ export const Header = () => {
           </div>
         </div>
 
+        {/* Tablet Layout (md to lg) */}
+        <div className="hidden md:flex lg:hidden h-16 px-4 items-center justify-between">
+          {/* Logo and SISPAT - Compact */}
+          <div className="flex items-center gap-3">
+            <img
+              src={settings.activeLogoUrl}
+              alt="Logo"
+              className="h-8 w-auto object-contain"
+            />
+            <div className="flex flex-col">
+              <h1 className="text-lg font-bold text-gray-900 leading-none">
+                SISPAT
+              </h1>
+              <p className="text-xs text-gray-600 font-medium">
+                Sistema de Patrimônio
+              </p>
+            </div>
+          </div>
+
+          {/* Municipality Info - Truncated */}
+          <div className="flex-1 px-4">
+            <div className="text-center">
+              {settings.prefeituraName ? (
+                <h2 className="text-sm font-bold text-gray-900 uppercase truncate">
+                  {settings.prefeituraName}
+                </h2>
+              ) : (
+                <h2 className="text-sm font-bold text-gray-900 uppercase truncate">
+                  PREFEITURA MUNICIPAL
+                </h2>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowSearch(!showSearch)}
+              className="h-8 w-8"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 relative"
+            >
+              <Bell className="h-4 w-4" />
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                3
+              </span>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
+                  <Avatar className="h-6 w-6">
+                    {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    )}
+                    <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                      {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64" align="end">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
+                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      )}
+                      <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                        {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-semibold">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">{user.role}</p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/perfil" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>Perfil</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/configuracoes/personalizacao" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Configurações</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Mobile Layout (below md) */}
+        <div className="flex md:hidden h-14 px-3 items-center justify-between">
+          {/* Logo and SISPAT - Very Compact */}
+          <div className="flex items-center gap-2">
+            <img
+              src={settings.activeLogoUrl}
+              alt="Logo"
+              className="h-6 w-auto object-contain"
+            />
+            <div>
+              <h1 className="text-sm font-bold text-gray-900 leading-none">
+                SISPAT
+              </h1>
+            </div>
+          </div>
+
+          {/* Municipality Info - Single Line */}
+          <div className="flex-1 px-2">
+            <div className="text-center">
+              {settings.prefeituraName ? (
+                <h2 className="text-xs font-bold text-gray-900 uppercase truncate">
+                  {settings.prefeituraName}
+                </h2>
+              ) : (
+                <h2 className="text-xs font-bold text-gray-900 uppercase truncate">
+                  PREFEITURA MUNICIPAL
+                </h2>
+              )}
+            </div>
+          </div>
+
+          {/* Actions - Minimal */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowSearch(!showSearch)}
+              className="h-7 w-7"
+            >
+              <Search className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 relative"
+            >
+              <Bell className="h-3 w-3" />
+              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                3
+              </span>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-7 w-7 rounded-full p-0">
+                  <Avatar className="h-5 w-5">
+                    {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    )}
+                    <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                      {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
+                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      )}
+                      <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                        {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-xs font-semibold">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">{user.role}</p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/perfil" className="flex items-center gap-2 text-xs">
+                    <User className="h-3 w-3" />
+                    <span>Perfil</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/configuracoes/personalizacao" className="flex items-center gap-2 text-xs">
+                    <Settings className="h-3 w-3" />
+                    <span>Configurações</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 text-xs">
+                  <LogOut className="h-3 w-3 mr-2" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
         {/* Mobile Search Bar */}
         {showSearch && (
-          <div className="md:hidden border-t bg-white p-4">
+          <div className="md:hidden border-t bg-white p-3">
             <GlobalSearch />
           </div>
         )}

@@ -427,7 +427,8 @@ export default function PublicAssets() {
         <Card className="border-none shadow-md">
           <CardContent className="p-0">
             <div className="rounded-lg overflow-hidden">
-              <Table>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead className="font-bold">Tipo</TableHead>
@@ -523,6 +524,7 @@ export default function PublicAssets() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
 
             {/* Paginação */}
