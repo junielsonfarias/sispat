@@ -100,7 +100,7 @@ export const Header = () => {
         aria-label="Cabeçalho principal"
       >
         {/* Desktop Layout (lg and up) */}
-        <div className="hidden lg:flex h-24">
+        <div className="hidden lg:flex h-28">
           {/* Main Content Area - Centered Layout */}
           <div className="flex-1 flex items-center justify-between px-8">
             {/* Left Side - Logo */}
@@ -109,7 +109,7 @@ export const Header = () => {
                 <img
                   src={settings.activeLogoUrl}
                   alt="Logo da Prefeitura"
-                  className="h-16 w-auto object-contain"
+                  className="h-20 w-auto object-contain drop-shadow-lg"
                 />
               </div>
             </div>
@@ -118,29 +118,29 @@ export const Header = () => {
             <div className="flex flex-col items-center text-center">
               {settings.prefeituraName ? (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight">
+                  <h1 className="text-2xl font-black text-gray-900 uppercase leading-tight tracking-wider">
                     {settings.prefeituraName}
                   </h1>
                   {settings.secretariaResponsavel && (
-                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                    <p className="text-base text-gray-700 uppercase font-semibold leading-tight tracking-wide">
                       {settings.secretariaResponsavel}
                     </p>
                   )}
                   {settings.departamentoResponsavel && (
-                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight tracking-wide">
                       {settings.departamentoResponsavel}
                     </p>
                   )}
                 </>
               ) : (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight">
+                  <h1 className="text-2xl font-black text-gray-900 uppercase leading-tight tracking-wider">
                     PREFEITURA MUNICIPAL
                   </h1>
-                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                  <p className="text-base text-gray-700 uppercase font-semibold leading-tight tracking-wide">
                     SECRETARIA DE ADMINISTRAÇÃO
                   </p>
-                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight tracking-wide">
                     DEPARTAMENTO DE PATRIMÔNIO
                   </p>
                 </>
@@ -148,28 +148,28 @@ export const Header = () => {
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* Search Button */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowSearch(!showSearch)}
-                className="h-10 w-10 hover:bg-gray-100"
+                className="h-12 w-12 hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all duration-200"
                 aria-label="Buscar"
               >
-                <Search className="h-5 w-5 text-gray-600" />
+                <Search className="h-5 w-5 text-blue-600" />
               </Button>
 
               {/* Notifications */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 hover:bg-gray-100 relative"
+                className="h-12 w-12 hover:bg-orange-50 hover:border-orange-200 border border-transparent transition-all duration-200 relative"
                 aria-label="Notificações"
               >
-                <Bell className="h-5 w-5 text-gray-600" />
+                <Bell className="h-5 w-5 text-orange-600" />
                 {/* Notification Badge */}
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
                   3
                 </span>
               </Button>
@@ -179,14 +179,14 @@ export const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="h-10 w-10 rounded-full hover:bg-gray-100 p-0"
+                    className="h-12 w-12 rounded-full hover:bg-green-50 hover:border-green-200 border border-transparent transition-all duration-200 p-0"
                     aria-label="Menu do usuário"
                   >
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-10 w-10 ring-2 ring-green-200">
                       {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
                         <AvatarImage src={user.avatarUrl} alt={user.name} />
                       )}
-                      <AvatarFallback className="bg-gray-200 text-gray-700 text-sm font-medium">
+                      <AvatarFallback className="bg-green-100 text-green-700 text-sm font-bold">
                         {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
