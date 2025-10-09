@@ -19,13 +19,13 @@ router.get('/', getUsers);
 // GET /api/users/:id - Buscar usuário por ID
 router.get('/:id', getUserById);
 
-// POST /api/users - Criar usuário (apenas admin/superuser)
-router.post('/', authorize('superuser'), createUser);
+// POST /api/users - Criar usuário (superuser e supervisor)
+router.post('/', authorize('superuser', 'supervisor'), createUser);
 
-// PUT /api/users/:id - Atualizar usuário (apenas admin/superuser)
-router.put('/:id', authorize('superuser'), updateUser);
+// PUT /api/users/:id - Atualizar usuário (superuser e supervisor)
+router.put('/:id', authorize('superuser', 'supervisor'), updateUser);
 
-// DELETE /api/users/:id - Deletar usuário (apenas superuser)
-router.delete('/:id', authorize('superuser'), deleteUser);
+// DELETE /api/users/:id - Deletar usuário (superuser e supervisor)
+router.delete('/:id', authorize('superuser', 'supervisor'), deleteUser);
 
 export default router;

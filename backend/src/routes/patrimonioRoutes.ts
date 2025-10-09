@@ -65,7 +65,7 @@ router.put('/:id', authorize('superuser', 'supervisor', 'usuario'), updatePatrim
  * @desc Deletar patrimônio
  * @access Private (Admin, Superuser only)
  */
-router.delete('/:id', authorize('superuser'), deletePatrimonio);
+router.delete('/:id', authorize('superuser', 'supervisor'), deletePatrimonio);
 
 /**
  * @route POST /api/patrimonios/:id/notes

@@ -56,7 +56,7 @@ router.put('/:id', authorize('superuser', 'supervisor', 'usuario'), updateImovel
  * @desc Deletar imóvel
  * @access Private (Admin, Superuser only)
  */
-router.delete('/:id', authorize('superuser'), deleteImovel);
+router.delete('/:id', authorize('superuser', 'supervisor'), deleteImovel);
 
 export default router;
 

@@ -470,9 +470,9 @@ export const deleteImovel = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Apenas admin e superuser podem deletar
-    if (req.user.role !== 'admin' && req.user.role !== 'superuser') {
-      res.status(403).json({ error: 'Acesso negado: apenas admin pode deletar' });
+    // Apenas superuser e supervisor podem deletar
+    if (req.user.role !== 'superuser' && req.user.role !== 'supervisor') {
+      res.status(403).json({ error: 'Acesso negado: apenas superuser/supervisor podem deletar' });
       return;
     }
 

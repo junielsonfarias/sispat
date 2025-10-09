@@ -107,8 +107,8 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Apenas admin e superuser podem criar usuários
-    if (!['admin', 'superuser'].includes(req.user.role)) {
+    // Apenas superuser e supervisor podem criar usuários
+    if (!['superuser', 'supervisor'].includes(req.user.role)) {
       res.status(403).json({ error: 'Acesso negado' });
       return;
     }
@@ -226,8 +226,8 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Apenas admin e superuser podem atualizar usuários
-    if (!['admin', 'superuser'].includes(req.user.role)) {
+    // Apenas superuser e supervisor podem atualizar usuários
+    if (!['superuser', 'supervisor'].includes(req.user.role)) {
       res.status(403).json({ error: 'Acesso negado' });
       return;
     }
@@ -310,8 +310,8 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Apenas superuser pode deletar usuários
-    if (req.user.role !== 'superuser') {
+    // Apenas superuser e supervisor podem deletar usuários
+    if (req.user.role !== 'superuser' && req.user.role !== 'supervisor') {
       res.status(403).json({ error: 'Acesso negado' });
       return;
     }
