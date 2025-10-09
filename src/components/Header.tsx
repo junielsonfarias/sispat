@@ -103,8 +103,8 @@ export const Header = () => {
         <div className="hidden lg:flex h-28">
           {/* Main Content Area - Centered Layout */}
           <div className="flex-1 flex items-center justify-between px-8">
-            {/* Left Side - Logo */}
-            <div className="flex items-center">
+            {/* Left Side - Logo (Aligned with menu) */}
+            <div className="flex items-center w-64 justify-center">
               <div className="relative">
                 <img
                   src={settings.activeLogoUrl}
@@ -115,32 +115,32 @@ export const Header = () => {
             </div>
 
             {/* Center - Municipality Information */}
-            <div className="flex flex-col items-center text-center">
+            <div className="flex flex-col items-center text-center flex-1">
               {settings.prefeituraName ? (
                 <>
-                  <h1 className="text-2xl font-black text-gray-900 uppercase leading-tight tracking-wider">
+                  <h1 className="text-3xl font-black text-gray-900 uppercase leading-tight tracking-widest">
                     {settings.prefeituraName}
                   </h1>
                   {settings.secretariaResponsavel && (
-                    <p className="text-base text-gray-700 uppercase font-semibold leading-tight tracking-wide">
+                    <p className="text-lg text-gray-700 uppercase font-bold leading-tight tracking-wider">
                       {settings.secretariaResponsavel}
                     </p>
                   )}
                   {settings.departamentoResponsavel && (
-                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight tracking-wide">
+                    <p className="text-base text-gray-600 uppercase font-semibold leading-tight tracking-wide">
                       {settings.departamentoResponsavel}
                     </p>
                   )}
                 </>
               ) : (
                 <>
-                  <h1 className="text-2xl font-black text-gray-900 uppercase leading-tight tracking-wider">
+                  <h1 className="text-3xl font-black text-gray-900 uppercase leading-tight tracking-widest">
                     PREFEITURA MUNICIPAL
                   </h1>
-                  <p className="text-base text-gray-700 uppercase font-semibold leading-tight tracking-wide">
+                  <p className="text-lg text-gray-700 uppercase font-bold leading-tight tracking-wider">
                     SECRETARIA DE ADMINISTRAÇÃO
                   </p>
-                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight tracking-wide">
+                  <p className="text-base text-gray-600 uppercase font-semibold leading-tight tracking-wide">
                     DEPARTAMENTO DE PATRIMÔNIO
                   </p>
                 </>
@@ -148,28 +148,28 @@ export const Header = () => {
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-64 justify-end">
               {/* Search Button */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowSearch(!showSearch)}
-                className="h-12 w-12 hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all duration-200"
+                className="h-14 w-14 hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all duration-200"
                 aria-label="Buscar"
               >
-                <Search className="h-5 w-5 text-blue-600" />
+                <Search className="h-7 w-7 text-blue-600" />
               </Button>
 
               {/* Notifications */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-12 w-12 hover:bg-orange-50 hover:border-orange-200 border border-transparent transition-all duration-200 relative"
+                className="h-14 w-14 hover:bg-orange-50 hover:border-orange-200 border border-transparent transition-all duration-200 relative"
                 aria-label="Notificações"
               >
-                <Bell className="h-5 w-5 text-orange-600" />
+                <Bell className="h-7 w-7 text-orange-600" />
                 {/* Notification Badge */}
-                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
+                <span className="absolute -top-1 -right-1 h-6 w-6 bg-red-500 text-white text-sm rounded-full flex items-center justify-center font-bold shadow-lg">
                   3
                 </span>
               </Button>
@@ -354,20 +354,20 @@ export const Header = () => {
         </div>
 
         {/* Mobile Layout (below md) */}
-        <div className="flex md:hidden h-24 px-4 items-center justify-between">
-          {/* Logo and Municipality Info - Stacked */}
+        <div className="flex md:hidden h-24 px-4 items-center justify-center">
+          {/* Logo and Municipality Info - Centered */}
           <div className="flex flex-col items-center gap-2 pt-1">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
-              className="h-20 w-auto object-contain drop-shadow-sm"
+              className="h-20 w-auto object-contain drop-shadow-lg"
             />
             {settings.prefeituraName ? (
-              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
+              <h2 className="text-base font-black text-gray-900 uppercase text-center leading-tight tracking-wider">
                 {settings.prefeituraName}
               </h2>
             ) : (
-              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
+              <h2 className="text-base font-black text-gray-900 uppercase text-center leading-tight tracking-wider">
                 PREFEITURA
               </h2>
             )}
