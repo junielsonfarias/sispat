@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { logError, logWarn } from '../config/logger';
 
 /**
  * Interface para erros customizados
@@ -25,17 +26,33 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  // Log do erro
-  console.error('❌ Erro capturado:', {
+  // Log estruturado do erro
+  const errorContext = {
     message: err.message,
     stack: err.stack,
     url: req.url,
     method: req.method,
+    params: req.params,
+    query: req.query,
+    body: process.env.NODE_ENV === 'development' ? req.body : '[REDACTED]',
+    user: req.user ? {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role
+    } : null,
+    ip: req.ip || req.socket.remoteAddress,
+    userAgent: req.get('user-agent'),
     timestamp: new Date().toISOString(),
-  });
+  };
 
   // Erro customizado
   if (err instanceof AppError) {
+    if (err.statusCode >= 500) {
+      logError('AppError (Server)', err, errorContext);
+    } else {
+      logWarn('AppError (Client)', errorContext);
+    }
+    
     res.status(err.statusCode).json({
       error: err.message,
       statusCode: err.statusCode,
@@ -45,6 +62,7 @@ export const errorHandler = (
 
   // Erro de validação do Prisma
   if (err.name === 'PrismaClientValidationError') {
+    logWarn('Prisma Validation Error', errorContext);
     res.status(400).json({
       error: 'Dados inválidos fornecidos',
       message: err.message,
@@ -54,13 +72,16 @@ export const errorHandler = (
 
   // Erro de registro não encontrado do Prisma
   if (err.name === 'NotFoundError') {
+    logWarn('Not Found Error', errorContext);
     res.status(404).json({
       error: 'Registro não encontrado',
     });
     return;
   }
 
-  // Erro genérico
+  // Erro genérico - sempre logar erros 500
+  logError('Unhandled Error', err, errorContext);
+  
   res.status(500).json({
     error: 'Erro interno do servidor',
     ...(process.env.NODE_ENV === 'development' && {
@@ -74,6 +95,13 @@ export const errorHandler = (
  * Middleware para capturar rotas não encontradas
  */
 export const notFound = (req: Request, res: Response): void => {
+  logWarn('Route Not Found', {
+    path: req.path,
+    method: req.method,
+    url: req.url,
+    ip: req.ip || req.socket.remoteAddress,
+  });
+
   res.status(404).json({
     error: 'Rota não encontrada',
     path: req.path,

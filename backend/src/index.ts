@@ -60,25 +60,6 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // ROTAS
 // ============================================
 
-// Health check
-app.get('/health', (req: Request, res: Response) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-  });
-});
-
-// Rota principal
-app.get('/', (req: Request, res: Response) => {
-  res.json({
-    message: 'SISPAT API v1.0.0',
-    documentation: '/api-docs',
-    health: '/health',
-  });
-});
-
 // ============================================
 // MIDDLEWARES CUSTOMIZADOS
 // ============================================
@@ -88,6 +69,25 @@ import { errorHandler, notFound } from './middlewares/errorHandler';
 
 // Logger de requisições
 app.use(requestLogger);
+
+// ============================================
+// ROTAS DE SAÚDE (antes das rotas principais)
+// ============================================
+
+import healthRoutes from './routes/healthRoutes';
+app.use('/api/health', healthRoutes);
+
+// Rota principal
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    message: 'SISPAT API v2.1.0',
+    documentation: '/api-docs',
+    health: '/api/health',
+    healthDetailed: '/api/health/detailed',
+    ready: '/api/health/ready',
+    live: '/api/health/live',
+  });
+});
 
 // ============================================
 // IMPORTAR E USAR ROTAS
