@@ -14,6 +14,7 @@ const Login = lazy(() => import('@/pages/auth/Login'))
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'))
 const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'))
 const PublicAssets = lazy(() => import('@/pages/PublicAssets'))
+const PublicBemDetalhes = lazy(() => import('@/pages/PublicBemDetalhes'))
 const PublicConsultation = lazy(() => import('@/pages/PublicConsultation'))
 const PublicImovelDetalhe = lazy(() => import('@/pages/PublicImovelDetalhe'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
@@ -160,6 +161,10 @@ function App() {
             <Route path="/esqueci-minha-senha" element={<ForgotPassword />} />
             <Route path="/redefinir-senha/:token" element={<ResetPassword />} />
             <Route path="/consulta-publica" element={<PublicAssets />} />
+            <Route
+              path="/consulta-publica/bem/:numero"
+              element={<PublicBemDetalhes />}
+            />
             <Route
               path="/consulta-publica/:id"
               element={<PublicConsultation />}

@@ -1,15 +1,14 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Search,
   Building,
   Archive,
-  Filter,
   RefreshCw,
   Loader2,
-  ArrowUp,
-  ArrowDown,
-  ChevronsUpDown,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,19 +16,16 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardFooter,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card'
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationLink,
-  PaginationEllipsis,
-  PaginationNext,
-} from '@/components/ui/pagination'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Select,
   SelectContent,
@@ -37,7 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Sheet, SheetTrigger } from '@/components/ui/sheet'
 import { Patrimonio, Imovel } from '@/types'
 import { useDebounce } from '@/hooks/use-debounce'
 import { usePatrimonio } from '@/contexts/PatrimonioContext'
@@ -45,78 +40,50 @@ import { useImovel } from '@/contexts/ImovelContext'
 import { usePublicSearch } from '@/contexts/PublicSearchContext'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
-import { getCloudImageUrl, formatRelativeDate } from '@/lib/utils'
+import { formatRelativeDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import {
-  PublicAssetsFilterSheet,
-  PublicFilterValues,
-} from '@/components/public/PublicAssetsFilterSheet'
-import { parseISO } from 'date-fns'
 import { useSync } from '@/contexts/SyncContext'
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
-type SortConfig = {
-  column: keyof CombinedAsset | 'descricao'
-  direction: 'asc' | 'desc'
+
+// Helper para obter badge de situação
+const getSituacaoBadge = (situacao: string) => {
+  const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    ativo: 'default',
+    em_uso: 'default',
+    em_manutencao: 'secondary',
+    baixado: 'destructive',
+    cedido: 'outline',
+  }
+  return variants[situacao] || 'secondary'
 }
 
-const getPaginationItems = (currentPage: number, pageCount: number) => {
-  const delta = 1
-  const range = []
-  for (
-    let i = Math.max(2, currentPage - delta);
-    i <= Math.min(pageCount - 1, currentPage + delta);
-    i++
-  ) {
-    range.push(i)
+// Helper para formatar situação
+const formatSituacao = (situacao: string) => {
+  const labels: Record<string, string> = {
+    ativo: 'Ativo',
+    em_uso: 'Em Uso',
+    em_manutencao: 'Em Manutenção',
+    baixado: 'Baixado',
+    cedido: 'Cedido',
   }
-
-  if (currentPage - delta > 2) {
-    range.unshift('...')
-  }
-  if (currentPage + delta < pageCount - 1) {
-    range.push('...')
-  }
-
-  range.unshift(1)
-  if (pageCount > 1) {
-    range.push(pageCount)
-  }
-
-  return [...new Set(range)]
-}
-
-const initialFilters: PublicFilterValues = {
-  tipo: '',
-  status: undefined,
-  situacao: undefined,
-  setor: '',
-  dataAquisicaoInicio: '',
-  dataAquisicaoFim: '',
+  return labels[situacao] || situacao
 }
 
 export default function PublicAssets() {
+  const navigate = useNavigate()
   const { settings: publicSettings } = usePublicSearch()
   const { settings: customizationSettings } = useCustomization()
   const { patrimonios } = usePatrimonio()
   const { imoveis } = useImovel()
   const { isSyncing, startSync, lastSync } = useSync()
+  
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
-  const [pagination, setPagination] = useState({ pageIndex: 1, pageSize: 9 })
-  const [assetTypeFilter, setAssetTypeFilter] = useState<
-    'all' | 'bem' | 'imovel'
-  >('all')
-  const [filters, setFilters] = useState<PublicFilterValues>(initialFilters)
-  const [isFilterSheetOpen, setFilterSheetOpen] = useState(false)
-  const [sorting, setSorting] = useState<SortConfig>({
-    column: 'numero_patrimonio',
-    direction: 'asc',
-  })
+  const [assetTypeFilter, setAssetTypeFilter] = useState<'all' | 'bem' | 'imovel'>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
 
-  // ✅ Sistema single-municipality - carrega automaticamente
-  const selectedMunicipalityId = '1'
-  
   const selectedMunicipality = useMemo(
     () => ({
       id: '1',
@@ -129,168 +96,68 @@ export default function PublicAssets() {
   // ✅ Sincronizar dados ao carregar a página
   useEffect(() => {
     startSync()
-  }, [])
+  }, [startSync])
 
+  // Combinar bens e imóveis
   const combinedData: CombinedAsset[] = useMemo(() => {
     const bens: CombinedAsset[] = patrimonios.map((p) => ({
       ...p,
-      assetType: 'bem',
+      assetType: 'bem' as const,
     }))
     const imoveisData: CombinedAsset[] = imoveis.map((i) => ({
       ...i,
-      assetType: 'imovel',
+      assetType: 'imovel' as const,
     }))
-    
-    console.log('[PublicAssets] 📊 Dados combinados:', {
-      bens: bens.length,
-      imoveis: imoveisData.length,
-      total: bens.length + imoveisData.length,
-      sampleBem: bens[0]
-    })
-    
     return [...bens, ...imoveisData]
   }, [patrimonios, imoveis])
 
-  const processedData = useMemo(() => {
-    console.log('[PublicAssets] 🔍 Processando dados:', {
-      combinedDataLength: combinedData.length,
-      selectedMunicipalityId,
-    })
-
-    // ✅ Sistema single-municipality - não filtrar por municipalityId na consulta pública
-    const filtered = combinedData.filter((p) => {
-      // ✅ Remover filtro de município para consulta pública
-      // O backend já retorna apenas os dados do município correto
-
-      const description =
-        p.assetType === 'bem'
-          ? (p as Patrimonio).descricao_bem
-          : (p as Imovel).denominacao
-      const searchMatch =
-        !debouncedSearchTerm || 
-        description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        p.numero_patrimonio.includes(debouncedSearchTerm)
-
-      const assetTypeMatch =
-        assetTypeFilter === 'all' || p.assetType === assetTypeFilter
-
-      const filterMatch =
-        p.assetType === 'imovel' ||
-        ((!filters.tipo ||
-          (p as Patrimonio).tipo
-            .toLowerCase()
-            .includes(filters.tipo.toLowerCase())) &&
-          (!filters.status || (p as Patrimonio).status === filters.status) &&
-          (!filters.situacao ||
-            (p as Patrimonio).situacao_bem === filters.situacao) &&
-          (!filters.setor ||
-            (p as Patrimonio).setor_responsavel
-              .toLowerCase()
-              .includes(filters.setor.toLowerCase())) &&
-          (!filters.dataAquisicaoInicio ||
-            new Date(p.data_aquisicao) >=
-              parseISO(filters.dataAquisicaoInicio)) &&
-          (!filters.dataAquisicaoFim ||
-            new Date(p.data_aquisicao) <= parseISO(filters.dataAquisicaoFim)))
-
-      const passes = searchMatch && assetTypeMatch && filterMatch
-      
-      if (!passes && combinedData.length > 0 && combinedData.indexOf(p) === 0) {
-        console.log('[PublicAssets] ❌ Primeiro item filtrado:', {
-          asset: p,
-          searchMatch,
-          assetTypeMatch,
-          filterMatch,
-          debouncedSearchTerm,
-          assetTypeFilter
-        })
-      }
-      
-      return passes
-    })
-    
-    console.log('[PublicAssets] ✅ Filtrados:', filtered.length, 'de', combinedData.length)
-
-    filtered.sort((a, b) => {
-      const getSortableValue = (
-        item: CombinedAsset,
-        key: SortConfig['column'],
-      ) => {
-        if (key === 'descricao') {
-          return item.assetType === 'bem'
-            ? (item as Patrimonio).descricao_bem
-            : (item as Imovel).denominacao
-        }
-        return item[key as keyof CombinedAsset]
+  // Filtrar e ordenar dados
+  const filteredData = useMemo(() => {
+    return combinedData.filter((item) => {
+      // Filtro de tipo
+      if (assetTypeFilter !== 'all' && item.assetType !== assetTypeFilter) {
+        return false
       }
 
-      const aValue = getSortableValue(a, sorting.column)
-      const bValue = getSortableValue(b, sorting.column)
+      // Filtro de busca
+      if (debouncedSearchTerm) {
+        const description = item.assetType === 'bem' 
+          ? (item as Patrimonio).descricao_bem 
+          : (item as Imovel).denominacao
+        const setor = item.assetType === 'bem'
+          ? (item as Patrimonio).setor_responsavel
+          : (item as Imovel).setor || ''
+        const local = item.assetType === 'bem'
+          ? (item as Patrimonio).localizacao
+          : (item as Imovel).endereco || ''
 
-      if (aValue < bValue) return sorting.direction === 'asc' ? -1 : 1
-      if (aValue > bValue) return sorting.direction === 'asc' ? 1 : -1
-      return 0
-    })
+        const searchLower = debouncedSearchTerm.toLowerCase()
+        return (
+          item.numero_patrimonio.toLowerCase().includes(searchLower) ||
+          description.toLowerCase().includes(searchLower) ||
+          setor.toLowerCase().includes(searchLower) ||
+          local.toLowerCase().includes(searchLower)
+        )
+      }
 
-    return filtered
-  }, [
-    combinedData,
-    debouncedSearchTerm,
-    selectedMunicipalityId,
-    assetTypeFilter,
-    filters,
-    sorting,
-  ])
+      return true
+    }).sort((a, b) => a.numero_patrimonio.localeCompare(b.numero_patrimonio))
+  }, [combinedData, assetTypeFilter, debouncedSearchTerm])
 
+  // Paginação
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
   const paginatedData = useMemo(() => {
-    const startIndex = (pagination.pageIndex - 1) * pagination.pageSize
-    return processedData.slice(startIndex, startIndex + pagination.pageSize)
-  }, [processedData, pagination])
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredData.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredData, currentPage, itemsPerPage])
 
-  const pageCount = Math.ceil(processedData.length / pagination.pageSize)
-  const paginationItems = getPaginationItems(pagination.pageIndex, pageCount)
-
-  const handleApplyFilters = (newFilters: PublicFilterValues) => {
-    setPagination({ ...pagination, pageIndex: 1 })
-    setFilters(newFilters)
-  }
-
-  const handleClearFilters = () => {
-    setPagination({ ...pagination, pageIndex: 1 })
-    setFilters(initialFilters)
-  }
-
-  const handleSort = (column: SortConfig['column']) => {
-    setSorting((prev) => ({
-      column,
-      direction:
-        prev.column === column && prev.direction === 'asc' ? 'desc' : 'asc',
-    }))
-  }
-
-  const SortableHeader = ({
-    column,
-    label,
-  }: {
-    column: SortConfig['column']
-    label: string
-  }) => {
-    const isSorted = sorting.column === column
-    const Icon = isSorted
-      ? sorting.direction === 'asc'
-        ? ArrowUp
-        : ArrowDown
-      : ChevronsUpDown
-    return (
-      <Button
-        variant="ghost"
-        onClick={() => handleSort(column)}
-        className="px-0 hover:bg-transparent"
-      >
-        {label}
-        <Icon className="ml-2 h-4 w-4" />
-      </Button>
-    )
+  // Navegar para detalhes
+  const handleViewDetails = (item: CombinedAsset) => {
+    if (item.assetType === 'bem') {
+      navigate(`/consulta-publica/bem/${item.numero_patrimonio}`)
+    } else {
+      navigate(`/consulta-publica/imovel/${item.id}`)
+    }
   }
 
   if (!publicSettings.isPublicSearchEnabled) {
@@ -312,217 +179,240 @@ export default function PublicAssets() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/40 flex flex-col items-center p-4 sm:p-6 md:p-8">
-      <div className="w-full max-w-7xl mx-auto">
-        {/* ✅ Header com logo e informações do município */}
-        <div className="text-center mb-6">
-          {selectedMunicipality.logoUrl && (
-            <img
-              src={selectedMunicipality.logoUrl}
-              alt={selectedMunicipality.name}
-              className="h-20 w-auto mx-auto mb-4 drop-shadow-lg"
-            />
-          )}
-          <h1 className="text-3xl font-bold text-primary">Consulta Pública de Bens</h1>
-          <p className="text-lg text-muted-foreground font-medium mt-2">
-            {selectedMunicipality.name}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {customizationSettings.secretariaResponsavel}
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-8 px-4">
+      <div className="container mx-auto max-w-7xl">
+        {/* Header */}
+        <Card className="mb-6 border-none shadow-lg">
+          <CardHeader className="text-center space-y-4 pb-6">
+            {selectedMunicipality.logoUrl && (
+              <img
+                src={selectedMunicipality.logoUrl}
+                alt={selectedMunicipality.name}
+                className="h-20 w-auto mx-auto drop-shadow-lg"
+              />
+            )}
+            <div>
+              <h1 className="text-3xl font-bold text-primary">
+                Consulta Pública de Bens e Imóveis
+              </h1>
+              <p className="text-lg text-muted-foreground font-medium mt-2">
+                {selectedMunicipality.name}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {customizationSettings.secretariaResponsavel}
+              </p>
+            </div>
+          </CardHeader>
+        </Card>
 
-        {/* ✅ Conteúdo principal - sem necessidade de seleção */}
-        <div className="animate-fade-in">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-              <div className="relative flex-grow w-full sm:w-auto">
+        {/* Filtros e Busca */}
+        <Card className="mb-6 border-none shadow-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4 mb-4">
+              {/* Busca */}
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por número ou descrição..."
+                  placeholder="Buscar por número, descrição, setor ou local..."
                   className="pl-10"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                    setCurrentPage(1)
+                  }}
                 />
               </div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Select
-                  value={assetTypeFilter}
-                  onValueChange={(v) => setAssetTypeFilter(v as any)}
-                >
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os Bens</SelectItem>
-                    <SelectItem value="bem">Bens Móveis</SelectItem>
-                    <SelectItem value="imovel">Imóveis</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Sheet
-                  open={isFilterSheetOpen}
-                  onOpenChange={setFilterSheetOpen}
-                >
-                  <SheetTrigger asChild>
-                    <Button variant="outline">
-                      <Filter className="mr-2 h-4 w-4" /> Filtros
-                    </Button>
-                  </SheetTrigger>
-                  <PublicAssetsFilterSheet
-                    onApplyFilters={handleApplyFilters}
-                    onClearFilters={handleClearFilters}
-                    initialFilters={filters}
-                    onClose={() => setFilterSheetOpen(false)}
-                  />
-                </Sheet>
-                <Button
-                  variant="outline"
-                  onClick={startSync}
-                  disabled={isSyncing}
-                >
-                  {isSyncing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+
+              {/* Filtro de tipo */}
+              <Select
+                value={assetTypeFilter}
+                onValueChange={(v) => {
+                  setAssetTypeFilter(v as any)
+                  setCurrentPage(1)
+                }}
+              >
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="bem">
+                    <div className="flex items-center gap-2">
+                      <Archive className="h-4 w-4" />
+                      Bens Móveis
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="imovel">
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Imóveis
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Botão atualizar */}
+              <Button
+                variant="outline"
+                onClick={startSync}
+                disabled={isSyncing}
+                className="w-full md:w-auto"
+              >
+                {isSyncing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                Atualizar
+              </Button>
+            </div>
+
+            {/* Info */}
+            <div className="flex justify-between items-center text-sm">
+              <p className="text-muted-foreground">
+                {filteredData.length} resultado(s) encontrado(s)
+              </p>
+              {lastSync && (
+                <p className="text-muted-foreground">
+                  Atualizado {formatRelativeDate(lastSync)}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tabela de Bens */}
+        <Card className="border-none shadow-md">
+          <CardContent className="p-0">
+            <div className="rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-bold">Tipo</TableHead>
+                    <TableHead className="font-bold">Nº Patrimônio</TableHead>
+                    <TableHead className="font-bold">Descrição</TableHead>
+                    <TableHead className="font-bold">Setor</TableHead>
+                    <TableHead className="font-bold">Local</TableHead>
+                    <TableHead className="font-bold">Situação</TableHead>
+                    <TableHead className="font-bold text-center">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                        {isSyncing ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            Carregando dados...
+                          </div>
+                        ) : (
+                          'Nenhum bem encontrado'
+                        )}
+                      </TableCell>
+                    </TableRow>
                   ) : (
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                  )}
-                  Atualizar
-                </Button>
-              </div>
-            </div>
-            <div className="flex justify-between items-center mb-4">
-              <p className="text-sm text-muted-foreground">
-                {processedData.length} resultado(s) encontrado(s).
-              </p>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Ordenar por:</span>
-                <SortableHeader column="descricao" label="Descrição" />
-                <SortableHeader
-                  column="numero_patrimonio"
-                  label="Nº Patrimônio"
-                />
-                <SortableHeader
-                  column="data_aquisicao"
-                  label="Data de Aquisição"
-                />
-              </div>
-            </div>
-            {lastSync && (
-              <p className="text-xs text-muted-foreground text-center mb-4">
-                Dados atualizados {formatRelativeDate(lastSync)}.
-              </p>
-            )}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {paginatedData.map((item) => (
-                <Card
-                  key={item.id}
-                  className="flex flex-col hover:shadow-md transition-shadow"
-                >
-                  <CardHeader className="p-0">
-                    <img
-                      src={getCloudImageUrl(item.fotos[0])}
-                      alt={
-                        item.assetType === 'bem'
-                          ? (item as Patrimonio).descricao_bem
-                          : (item as Imovel).denominacao
-                      }
-                      className="w-full h-48 object-cover rounded-t-lg"
-                    />
-                  </CardHeader>
-                  <CardContent className="p-4 flex-grow">
-                    <Badge
-                      variant="secondary"
-                      className="mb-2 flex items-center w-fit"
-                    >
-                      {item.assetType === 'bem' ? (
-                        <Archive className="h-3 w-3 mr-1" />
-                      ) : (
-                        <Building className="h-3 w-3 mr-1" />
-                      )}
-                      {item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel'}
-                    </Badge>
-                    <CardTitle className="text-lg">
-                      {item.assetType === 'bem'
+                    paginatedData.map((item) => {
+                      const description = item.assetType === 'bem'
                         ? (item as Patrimonio).descricao_bem
-                        : (item as Imovel).denominacao}
-                    </CardTitle>
-                    <CardDescription>
-                      Nº: {item.numero_patrimonio}
-                    </CardDescription>
-                  </CardContent>
-                  <CardFooter className="p-4">
-                    <Button asChild className="w-full">
-                      <Link
-                        to={
-                          item.assetType === 'bem'
-                            ? `/consulta-publica/${item.numero_patrimonio}`
-                            : `/consulta-publica/imovel/${item.id}`
-                        }
-                      >
-                        Ver Detalhes
-                      </Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-            <div className="mt-6">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setPagination((p) => ({
-                          ...p,
-                          pageIndex: Math.max(1, p.pageIndex - 1),
-                        }))
-                      }}
-                      className={
-                        pagination.pageIndex === 1
-                          ? 'pointer-events-none opacity-50'
-                          : ''
-                      }
-                    />
-                  </PaginationItem>
-                  {paginationItems.map((item, index) => (
-                    <PaginationItem key={index}>
-                      {item === '...' ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          href="#"
-                          isActive={pagination.pageIndex === item}
-                          onClick={(e) => {
-                            e.preventDefault()
-                            setPagination((p) => ({ ...p, pageIndex: item }))
-                          }}
+                        : (item as Imovel).denominacao
+                      const setor = item.assetType === 'bem'
+                        ? (item as Patrimonio).setor_responsavel
+                        : (item as Imovel).setor || '-'
+                      const local = item.assetType === 'bem'
+                        ? (item as Patrimonio).localizacao
+                        : (item as Imovel).endereco || '-'
+                      const situacao = item.assetType === 'bem'
+                        ? (item as Patrimonio).status
+                        : 'ativo'
+
+                      return (
+                        <TableRow
+                          key={`${item.assetType}-${item.id}`}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => handleViewDetails(item)}
                         >
-                          {item}
-                        </PaginationLink>
-                      )}
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setPagination((p) => ({
-                          ...p,
-                          pageIndex: Math.min(pageCount, p.pageIndex + 1),
-                        }))
-                      }}
-                      className={
-                        pagination.pageIndex === pageCount
-                          ? 'pointer-events-none opacity-50'
-                          : ''
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+                          <TableCell>
+                            {item.assetType === 'bem' ? (
+                              <Badge variant="secondary" className="gap-1">
+                                <Archive className="h-3 w-3" />
+                                Bem Móvel
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="gap-1">
+                                <Building className="h-3 w-3" />
+                                Imóvel
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {item.numero_patrimonio}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {description}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {setor}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {local}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getSituacaoBadge(situacao)}>
+                              {formatSituacao(situacao)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleViewDetails(item)
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Ver
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
             </div>
-        </div>
+
+            {/* Paginação */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próxima
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
