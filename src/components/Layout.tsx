@@ -31,7 +31,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <div className="flex-1 flex">
         {/* Sidebar de navegação - apenas desktop */}
         <SidebarProvider>
-          <div className="hidden lg:block sticky top-24 h-[calc(100vh-6rem)]">
+          <div className="hidden lg:block sticky top-24 h-[calc(100vh-6rem)] w-64">
             <Sidebar />
           </div>
           <div className="flex-1">

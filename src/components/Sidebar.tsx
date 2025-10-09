@@ -39,11 +39,11 @@ export const Sidebar = ({ className }: SidebarProps) => {
   return (
     <SidebarPrimitive className={cn(className, 'no-print')}>
       <SidebarContent className="bg-white border-r border-gray-200">
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto p-4">
           <NavContent />
         </div>
-        <div className="p-fluid-md border-t bg-muted/30">
-          <div className="text-fluid-xs text-muted-foreground text-center">
+        <div className="p-4 border-t bg-muted/30">
+          <div className="text-xs text-muted-foreground text-center">
             SISPAT v2.0.0
           </div>
         </div>
