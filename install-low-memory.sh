@@ -136,8 +136,8 @@ echo -e "${YELLOW}  ⏱️  Isso pode demorar 3-5 minutos...${NC}"
 
 cd "$APP_DIR"
 
-# Instalar com limite de memória e sem optional
-NODE_OPTIONS="--max-old-space-size=1024" pnpm install --prod --no-optional --prefer-offline 2>&1 | grep -v "^Progress" || true
+# Instalar com limite de memória (incluindo devDependencies para o build)
+NODE_OPTIONS="--max-old-space-size=1024" pnpm install --prefer-offline 2>&1 | grep -v "^Progress" || true
 
 echo -e "${GREEN}✅ Dependências do frontend instaladas${NC}"
 
@@ -206,10 +206,14 @@ fi
 # 9. BUILD DO BACKEND
 # ============================================
 
-echo -e "${BLUE}[9/10]${NC} Compilando backend..."
+echo -e "${BLUE}[9/10]${NC} Instalando dependências e compilando backend..."
 
 cd "$APP_DIR/backend"
 
+# Instalar dependências do backend (incluindo devDependencies para o build)
+NODE_OPTIONS="--max-old-space-size=512" pnpm install --prefer-offline 2>&1 | grep -v "^Progress" || true
+
+echo "  Compilando backend..."
 NODE_OPTIONS="--max-old-space-size=512" pnpm exec tsc
 
 if [ $? -eq 0 ]; then
