@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { prisma } from '../index'
-import { logInfo, logError } from '../config/logger'
+import { logInfo, logError } from '../lib/logger'
 
 /**
  * Listar logs de auditoria
@@ -44,7 +44,7 @@ export const listAuditLogs = async (req: Request, res: Response): Promise<void> 
     ])
 
     logInfo('Audit logs listed', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       count: logs.length,
       filters: where,
     })
@@ -59,7 +59,7 @@ export const listAuditLogs = async (req: Request, res: Response): Promise<void> 
       },
     })
   } catch (error) {
-    logError('Failed to list audit logs', error, { userId: req.user?.id })
+    logError('Failed to list audit logs', error, { userId: req.user?.userId })
     res.status(500).json({ error: 'Erro ao listar logs de auditoria' })
   }
 }
@@ -79,7 +79,7 @@ export const createAuditLog = async (req: Request, res: Response): Promise<void>
 
     const log = await prisma.activityLog.create({
       data: {
-        userId: req.user!.id,
+        userId: req.user!.userId,
         action,
         entityType: entityType || null,
         entityId: entityId || null,
@@ -101,7 +101,7 @@ export const createAuditLog = async (req: Request, res: Response): Promise<void>
 
     logInfo('Audit log created', {
       logId: log.id,
-      userId: req.user!.id,
+      userId: req.user!.userId,
       action,
       entityType,
     })
@@ -109,7 +109,7 @@ export const createAuditLog = async (req: Request, res: Response): Promise<void>
     res.status(201).json(log)
   } catch (error) {
     logError('Failed to create audit log', error, {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       action: req.body.action,
     })
     res.status(500).json({ error: 'Erro ao criar log de auditoria' })
@@ -200,7 +200,7 @@ export const getAuditLogStats = async (req: Request, res: Response): Promise<voi
       dailyStats,
     })
   } catch (error) {
-    logError('Failed to get audit log stats', error, { userId: req.user?.id })
+    logError('Failed to get audit log stats', error, { userId: req.user?.userId })
     res.status(500).json({ error: 'Erro ao obter estatísticas' })
   }
 }
@@ -225,7 +225,7 @@ export const cleanupOldLogs = async (req: Request, res: Response): Promise<void>
     })
 
     logInfo('Old audit logs cleaned up', {
-      userId: req.user!.id,
+      userId: req.user!.userId,
       deletedCount: result.count,
       days,
     })
@@ -236,7 +236,7 @@ export const cleanupOldLogs = async (req: Request, res: Response): Promise<void>
       olderThan: cutoffDate,
     })
   } catch (error) {
-    logError('Failed to cleanup old logs', error, { userId: req.user?.id })
+    logError('Failed to cleanup old logs', error, { userId: req.user?.userId })
     res.status(500).json({ error: 'Erro ao limpar logs antigos' })
   }
 }
