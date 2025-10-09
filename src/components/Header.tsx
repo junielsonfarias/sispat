@@ -251,20 +251,20 @@ export const Header = () => {
         </div>
 
         {/* Tablet Layout (md to lg) */}
-        <div className="hidden md:flex lg:hidden h-20 px-6 items-center justify-between">
+        <div className="hidden md:flex lg:hidden h-24 px-6 items-center justify-between">
           {/* Logo and Municipality Info - Stacked */}
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-1 py-2">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
-              className="h-24 w-auto object-contain drop-shadow-sm"
+              className="h-14 w-auto object-contain drop-shadow-sm"
             />
             {settings.prefeituraName ? (
-              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
+              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
                 {settings.prefeituraName}
               </h2>
             ) : (
-              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
+              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
                 PREFEITURA MUNICIPAL
               </h2>
             )}
@@ -272,10 +272,10 @@ export const Header = () => {
 
           {/* SISPAT Branding - Center */}
           <div className="flex flex-col items-center">
-            <h1 className="text-xl font-bold text-gray-900 leading-none">
+            <h1 className="text-lg font-bold text-gray-900 leading-none">
               SISPAT
             </h1>
-            <p className="text-sm text-gray-600 font-medium">
+            <p className="text-xs text-gray-600 font-medium">
               Sistema de Patrimônio
             </p>
           </div>
@@ -286,24 +286,24 @@ export const Header = () => {
               variant="ghost"
               size="icon"
               onClick={() => setShowSearch(!showSearch)}
-              className="h-8 w-8"
+              className="h-10 w-10"
             >
-              <Search className="h-4 w-4" />
+              <Search className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 relative"
+              className="h-10 w-10 relative"
             >
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
                 3
               </span>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
-                  <Avatar className="h-6 w-6">
+                <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
+                  <Avatar className="h-8 w-8">
                     {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
                       <AvatarImage src={user.avatarUrl} alt={user.name} />
                     )}
