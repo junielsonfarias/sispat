@@ -10,7 +10,6 @@ import {
   Building2,
   AlertTriangle,
   Clock,
-  PlusCircle,
   RefreshCw,
   Loader2,
   GitBranch,
@@ -64,7 +63,6 @@ import { subMonths, format } from 'date-fns'
 import { Flex } from '@/components/ui/responsive-container'
 
 const UnifiedDashboard = () => {
-  const [isAddWidgetDialogOpen, setAddWidgetDialogOpen] = useState(false)
   const { user } = useAuth()
   const { isSyncing, startSync } = useSync()
   const { patrimonios } = usePatrimonio()
@@ -301,14 +299,6 @@ const UnifiedDashboard = () => {
                 )}
               </Button>
               
-              <Button
-                onClick={() => setAddWidgetDialogOpen(true)}
-                size="sm"
-                className="h-8 text-xs"
-              >
-                <PlusCircle className="mr-1 h-3 w-3" />
-                Widget
-              </Button>
             </Flex>
           </div>
 

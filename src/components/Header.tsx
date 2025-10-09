@@ -101,66 +101,61 @@ export const Header = () => {
       >
         {/* Desktop Layout (lg and up) */}
         <div className="hidden lg:flex h-20">
-          {/* Left Sidebar - Logo and SISPAT */}
-          <div className="w-64 bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
-            <div className="flex items-center gap-4 px-6">
+          {/* Left Sidebar - Logo and Municipality Info */}
+          <div className="w-80 bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3 px-6 text-center">
               {/* Logo */}
               <div className="relative">
                 <img
                   src={settings.activeLogoUrl}
-                  alt="Logo da Câmara Municipal"
-                  className="h-12 w-auto object-contain"
+                  alt="Logo da Prefeitura"
+                  className="h-16 w-auto object-contain"
                 />
               </div>
               
-              {/* SISPAT Text */}
-              <div className="flex flex-col">
-                <h1 className="text-2xl font-bold text-gray-900 leading-none">
-                  SISPAT
-                </h1>
-                <p className="text-sm text-gray-600 font-medium leading-tight">
-                  Sistema de
-                </p>
-                <p className="text-sm text-gray-600 font-medium leading-tight">
-                  Patrimônio
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content Area */}
-          <div className="flex-1 flex items-center justify-between px-8">
-            {/* Municipality Information */}
-            <div className="flex flex-col">
+              {/* Municipality Information */}
               {settings.prefeituraName ? (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight">
+                  <h1 className="text-lg font-bold text-gray-900 uppercase leading-tight">
                     {settings.prefeituraName}
                   </h1>
                   {settings.secretariaResponsavel && (
-                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                    <p className="text-xs text-gray-600 uppercase font-medium leading-tight">
                       {settings.secretariaResponsavel}
                     </p>
                   )}
                   {settings.departamentoResponsavel && (
-                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                    <p className="text-xs text-gray-600 uppercase font-medium leading-tight">
                       {settings.departamentoResponsavel}
                     </p>
                   )}
                 </>
               ) : (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight">
+                  <h1 className="text-lg font-bold text-gray-900 uppercase leading-tight">
                     PREFEITURA MUNICIPAL
                   </h1>
-                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                  <p className="text-xs text-gray-600 uppercase font-medium leading-tight">
                     SECRETARIA DE ADMINISTRAÇÃO
                   </p>
-                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                  <p className="text-xs text-gray-600 uppercase font-medium leading-tight">
                     DEPARTAMENTO DE PATRIMÔNIO
                   </p>
                 </>
               )}
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex items-center justify-between px-8">
+            {/* SISPAT Branding */}
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-bold text-gray-900 leading-none">
+                SISPAT
+              </h1>
+              <p className="text-sm text-gray-600 font-medium leading-tight">
+                Sistema de Patrimônio
+              </p>
             </div>
 
             {/* Right Side Actions */}
@@ -268,36 +263,32 @@ export const Header = () => {
 
         {/* Tablet Layout (md to lg) */}
         <div className="hidden md:flex lg:hidden h-16 px-4 items-center justify-between">
-          {/* Logo and SISPAT - Compact */}
-          <div className="flex items-center gap-3">
+          {/* Logo and Municipality Info - Stacked */}
+          <div className="flex flex-col items-center gap-1">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
               className="h-8 w-auto object-contain"
             />
-            <div className="flex flex-col">
-              <h1 className="text-lg font-bold text-gray-900 leading-none">
-                SISPAT
-              </h1>
-              <p className="text-xs text-gray-600 font-medium">
-                Sistema de Patrimônio
-              </p>
-            </div>
+            {settings.prefeituraName ? (
+              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+                {settings.prefeituraName}
+              </h2>
+            ) : (
+              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+                PREFEITURA MUNICIPAL
+              </h2>
+            )}
           </div>
 
-          {/* Municipality Info - Truncated */}
-          <div className="flex-1 px-4">
-            <div className="text-center">
-              {settings.prefeituraName ? (
-                <h2 className="text-sm font-bold text-gray-900 uppercase truncate">
-                  {settings.prefeituraName}
-                </h2>
-              ) : (
-                <h2 className="text-sm font-bold text-gray-900 uppercase truncate">
-                  PREFEITURA MUNICIPAL
-                </h2>
-              )}
-            </div>
+          {/* SISPAT Branding - Center */}
+          <div className="flex flex-col items-center">
+            <h1 className="text-lg font-bold text-gray-900 leading-none">
+              SISPAT
+            </h1>
+            <p className="text-xs text-gray-600 font-medium">
+              Sistema de Patrimônio
+            </p>
           </div>
 
           {/* Actions */}
@@ -375,33 +366,29 @@ export const Header = () => {
 
         {/* Mobile Layout (below md) */}
         <div className="flex md:hidden h-14 px-3 items-center justify-between">
-          {/* Logo and SISPAT - Very Compact */}
-          <div className="flex items-center gap-2">
+          {/* Logo and Municipality Info - Stacked */}
+          <div className="flex flex-col items-center gap-0.5">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
-              className="h-6 w-auto object-contain"
+              className="h-5 w-auto object-contain"
             />
-            <div>
-              <h1 className="text-sm font-bold text-gray-900 leading-none">
-                SISPAT
-              </h1>
-            </div>
+            {settings.prefeituraName ? (
+              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+                {settings.prefeituraName}
+              </h2>
+            ) : (
+              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+                PREFEITURA
+              </h2>
+            )}
           </div>
 
-          {/* Municipality Info - Single Line */}
-          <div className="flex-1 px-2">
-            <div className="text-center">
-              {settings.prefeituraName ? (
-                <h2 className="text-xs font-bold text-gray-900 uppercase truncate">
-                  {settings.prefeituraName}
-                </h2>
-              ) : (
-                <h2 className="text-xs font-bold text-gray-900 uppercase truncate">
-                  PREFEITURA MUNICIPAL
-                </h2>
-              )}
-            </div>
+          {/* SISPAT Branding - Center */}
+          <div className="flex flex-col items-center">
+            <h1 className="text-sm font-bold text-gray-900 leading-none">
+              SISPAT
+            </h1>
           </div>
 
           {/* Actions - Minimal */}
