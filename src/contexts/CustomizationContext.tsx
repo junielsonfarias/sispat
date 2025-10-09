@@ -83,25 +83,48 @@ export const CustomizationProvider = ({
     const fetchSettings = async () => {
       setIsLoading(true)
       try {
-        // Tentar buscar do banco de dados
+        console.log('[DEV] 🔍 CustomizationContext: Buscando customização...');
+        
+        // Tentar endpoint público primeiro (para tela de login)
+        try {
+          const publicResponse = await api.get<{ customization: CustomizationSettings }>('/customization/public')
+          if (publicResponse.customization) {
+            const loadedSettings = { ...defaultSettings, ...publicResponse.customization }
+            setSettings(loadedSettings)
+            localStorage.setItem('sispat_customization_settings', JSON.stringify(loadedSettings))
+            console.log('[DEV] ✅ Customização carregada do endpoint público');
+            setIsLoading(false)
+            return
+          }
+        } catch (publicError) {
+          console.log('[DEV] ℹ️ Endpoint público não disponível, tentando autenticado...');
+        }
+        
+        // Tentar buscar do banco de dados (autenticado)
         const response = await api.get<{ customization: CustomizationSettings }>('/customization')
         if (response.customization) {
           const loadedSettings = { ...defaultSettings, ...response.customization }
           setSettings(loadedSettings)
           // Sincronizar com localStorage
           localStorage.setItem('sispat_customization_settings', JSON.stringify(loadedSettings))
+          console.log('[DEV] ✅ Customização carregada do endpoint autenticado');
         }
       } catch (error) {
-        console.log('⚠️ Banco de dados indisponível, usando localStorage')
+        console.log('[DEV] ⚠️ Banco de dados indisponível, usando localStorage')
         // Fallback para localStorage
         const stored = localStorage.getItem('sispat_customization_settings')
         if (stored) {
           try {
             const parsedSettings = JSON.parse(stored)
             setSettings({ ...defaultSettings, ...parsedSettings })
+            console.log('[DEV] 📦 Customização carregada do localStorage');
           } catch {
             setSettings(defaultSettings)
+            console.log('[DEV] ⚠️ Erro ao parsear localStorage, usando padrão');
           }
+        } else {
+          setSettings(defaultSettings)
+          console.log('[DEV] ℹ️ Nenhuma customização encontrada, usando padrão');
         }
       } finally {
         setIsLoading(false)

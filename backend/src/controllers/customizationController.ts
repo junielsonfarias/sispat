@@ -4,7 +4,56 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
- * Buscar customização do município
+ * Buscar customização do município (público - para tela de login)
+ * GET /api/customization/public
+ */
+export const getPublicCustomization = async (req: Request, res: Response): Promise<void> => {
+  try {
+    console.log('[DEV] 🌐 Buscando customização pública (sem autenticação)...');
+    
+    // Buscar primeiro município (sistema single-municipality)
+    const municipality = await prisma.municipality.findFirst();
+    
+    if (!municipality) {
+      console.log('[DEV] ❌ Nenhum município encontrado');
+      res.status(404).json({ error: 'Município não encontrado' });
+      return;
+    }
+
+    const municipalityId = municipality.id;
+    console.log('[DEV] 📍 Município:', municipalityId);
+
+    // Buscar customização usando SQL raw
+    const customizations = await prisma.$queryRaw<any[]>`
+      SELECT * FROM customizations WHERE "municipalityId" = ${municipalityId}
+    `;
+
+    let customization = customizations[0];
+
+    // Se não existir, retornar valores padrão
+    if (!customization) {
+      console.log('[DEV] ℹ️ Nenhuma customização encontrada, usando padrão');
+      customization = {
+        id: 'default',
+        municipalityId,
+        primaryColor: '#2563eb',
+        backgroundColor: '#f1f5f9',
+        welcomeTitle: 'Bem-vindo ao SISPAT',
+        welcomeSubtitle: 'Sistema de Gestão de Patrimônio',
+      };
+    }
+
+    console.log('[DEV] ✅ Customização pública carregada');
+
+    res.json({ customization });
+  } catch (error) {
+    console.error('[DEV] ❌ Erro ao buscar customização pública:', error);
+    res.status(500).json({ error: 'Erro ao buscar customização' });
+  }
+};
+
+/**
+ * Buscar customização do município (autenticado)
  * GET /api/customization
  */
 export const getCustomization = async (req: Request, res: Response): Promise<void> => {
