@@ -203,15 +203,20 @@ else
 fi
 
 # ============================================
-# 9. BUILD DO BACKEND
+# 9. BACKEND - DEPENDÊNCIAS E BUILD
 # ============================================
 
-echo -e "${BLUE}[9/10]${NC} Instalando dependências e compilando backend..."
+echo -e "${BLUE}[9/10]${NC} Configurando backend..."
 
 cd "$APP_DIR/backend"
 
+echo "  Instalando dependências do backend..."
+echo -e "${YELLOW}  ⏱️  Isso pode demorar 2-3 minutos...${NC}"
+
 # Instalar dependências do backend (incluindo devDependencies para o build)
 NODE_OPTIONS="--max-old-space-size=512" pnpm install --prefer-offline 2>&1 | grep -v "^Progress" || true
+
+echo -e "${GREEN}✅ Dependências do backend instaladas${NC}"
 
 echo "  Compilando backend..."
 NODE_OPTIONS="--max-old-space-size=512" pnpm exec tsc
