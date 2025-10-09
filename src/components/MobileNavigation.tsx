@@ -42,6 +42,8 @@ import {
   History,
   ChevronRight,
   Package,
+  PieChart,
+  Calendar,
 } from 'lucide-react'
 
 interface MobileNavItem {
@@ -97,6 +99,8 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
       color: 'text-purple-600 bg-purple-50',
       items: [
         { to: '/analise/setor', icon: Building, label: 'Análise por Setor' },
+        { to: '/analise/tipo', icon: PieChart, label: 'Análise por Tipo' },
+        { to: '/analise/temporal', icon: Calendar, label: 'Análise Temporal' },
         { to: '/relatorios', icon: FileText, label: 'Gerar Relatórios' },
         { to: '/exportacao', icon: Download, label: 'Exportação de Dados' },
       ],
@@ -171,6 +175,8 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
       color: 'text-purple-600 bg-purple-50',
       items: [
         { to: '/analise/setor', icon: Building, label: 'Análise por Setor' },
+        { to: '/analise/tipo', icon: PieChart, label: 'Análise por Tipo' },
+        { to: '/analise/temporal', icon: Calendar, label: 'Análise Temporal' },
         { to: '/relatorios', icon: FileText, label: 'Gerar Relatórios' },
         { to: '/exportacao', icon: Download, label: 'Exportação de Dados' },
       ],
@@ -180,8 +186,10 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
       icon: Settings,
       color: 'text-cyan-600 bg-cyan-50',
       items: [
-        { to: '/ferramentas/gerar-etiquetas', icon: Tag, label: 'Gerar Etiquetas' },
-        { to: '/ferramentas/label-templates', icon: FileText, label: 'Templates de Etiquetas' },
+        { to: '/gerar-etiquetas', icon: QrCode, label: 'Gerar Etiquetas' },
+        { to: '/etiquetas/templates', icon: LayoutTemplate, label: 'Modelos de Etiqueta' },
+        { to: '/ferramentas/sync-client', icon: Laptop, label: 'Cliente de Sincronização' },
+        { to: '/downloads', icon: Download, label: 'Downloads' },
       ],
     },
     {
