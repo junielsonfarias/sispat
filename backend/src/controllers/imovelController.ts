@@ -38,7 +38,9 @@ export const listImoveis = async (req: Request, res: Response): Promise<void> =>
     }
 
     // Verificar acesso por perfil
-    if (req.user?.role === 'supervisor' || req.user?.role === 'usuario') {
+    // ✅ Admin e Supervisor veem TODOS os setores
+    // Apenas usuário e visualizador tem filtro por setor
+    if (req.user?.role === 'usuario' || req.user?.role === 'visualizador') {
       const user = await prisma.user.findUnique({
         where: { id: req.user.userId },
         select: { responsibleSectors: true },

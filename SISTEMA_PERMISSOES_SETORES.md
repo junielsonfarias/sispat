@@ -39,12 +39,13 @@ VISUALIZADOR (Apenas Visualização)
 - ✅ Gera relatórios de todo o município
 - ✅ Gerencia usuários e setores
 
-### **3. SUPERVISOR** ⭐ (Agora Corrigido!)
-- ✅ Vê apenas bens dos **setores vinculados a ele**
-- ✅ Pode criar/editar bens **apenas nos seus setores**
-- ✅ Gera relatórios **apenas dos seus setores**
-- ✅ Pode transferir bens **entre seus setores**
-- ✅ Pode dar baixa em bens **dos seus setores**
+### **3. SUPERVISOR** ⭐ (Mesmos Privilégios do Admin!)
+- ✅ Vê bens de **TODOS os setores** (igual ao admin)
+- ✅ Pode criar/editar bens em **qualquer setor**
+- ✅ Gera relatórios de **todo o município**
+- ✅ Pode transferir bens **entre quaisquer setores**
+- ✅ Pode dar baixa em **qualquer bem**
+- ✅ Acesso total exceto criação de usuários e configurações
 
 ### **4. USUÁRIO**
 - ✅ Vê apenas bens dos **setores vinculados**
@@ -156,21 +157,22 @@ const allSectors = useMemo(
 **Supervisor Maria:**
 - Setores vinculados: `Obras`, `Transporte`
 
-### **Quando João faz login:**
+### **Quando Supervisor João faz login:**
 
-**Vê:**
+**Vê (TODOS os setores):**
 - ✅ Computadores da Secretaria de Educação
 - ✅ Cadeiras das escolas
 - ✅ Equipamentos de hospitais
 - ✅ Ambulâncias da Saúde
+- ✅ Tratores da Secretaria de Obras
+- ✅ Ônibus da Secretaria de Transporte
+- ✅ **TUDO** (igual ao admin!)
 
-**NÃO Vê:**
-- ❌ Tratores da Secretaria de Obras
-- ❌ Ônibus da Secretaria de Transporte
+### **Quando Usuário Maria faz login:**
 
-### **Quando Maria faz login:**
+**Setores vinculados:** Apenas Obras e Transporte
 
-**Vê:**
+**Vê (apenas seus setores):**
 - ✅ Tratores, retroescavadeiras (Obras)
 - ✅ Ônibus, caminhões (Transporte)
 
@@ -184,21 +186,19 @@ const allSectors = useMemo(
 
 | Ação | Superuser | Admin | Supervisor | Usuário | Visualizador |
 |------|-----------|-------|------------|---------|--------------|
-| **Ver todos os setores** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Ver todos os setores** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Ver seus setores** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Criar bem em qualquer setor** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Criar bem em qualquer setor** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Criar bem nos seus setores** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Editar bem de qualquer setor** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Editar bem de qualquer setor** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Editar bem dos seus setores** | ✅ | ✅ | ✅ | ✅ | ❌ |
 | **Deletar bem** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Dar baixa** | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Transferir entre setores** | ✅ | ✅ | ✅* | ❌ | ❌ |
-| **Relatórios gerais** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Transferir entre setores** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Relatórios gerais** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Relatórios dos seus setores** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Criar usuários** | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Gerenciar setores** | ✅ | ✅ | ❌ | ❌ | ❌ |
-
-*Supervisor pode transferir apenas entre seus próprios setores
 
 ---
 
@@ -209,17 +209,17 @@ const allSectors = useMemo(
 ```typescript
 // No backend (patrimonioController.ts)
 
-// 1. Admin vê tudo
-if (user.role === 'admin') {
-  // Sem filtro de setor
+// 1. Admin e Supervisor veem TUDO (sem filtro)
+if (user.role === 'admin' || user.role === 'supervisor') {
+  // Sem filtro de setor - acesso total
 }
 
-// 2. Supervisor/Usuário vê apenas seus setores
-else if (user.role === 'supervisor' || user.role === 'usuario') {
+// 2. Usuário e Visualizador veem apenas seus setores
+else if (user.role === 'usuario' || user.role === 'visualizador') {
   const userSectors = user.responsibleSectors || []
   // Filtra bens por setor
-  where.setor_responsavel = {
-    in: userSectors
+  where.sectorId = {
+    in: sectorIds
   }
 }
 ```

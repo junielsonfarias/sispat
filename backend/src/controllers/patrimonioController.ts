@@ -114,7 +114,9 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
     }
 
     // Verificar acesso por perfil
-    if (req.user?.role === 'supervisor' || req.user?.role === 'usuario') {
+    // ✅ Admin e Supervisor veem TODOS os setores
+    // Apenas usuário e visualizador tem filtro por setor
+    if (req.user?.role === 'usuario' || req.user?.role === 'visualizador') {
       const user = await prisma.user.findUnique({
         where: { id: req.user.userId },
         select: { responsibleSectors: true },
@@ -147,8 +149,8 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
         }
       } else {
         console.log('[DEV] ℹ️ Usuário sem setores atribuídos - mostrando TODOS os patrimônios (modo configuração)');
-        // ✅ Se supervisor não tem setores atribuídos ainda, mostrar TODOS
-        // Isso permite que o supervisor veja os bens durante a configuração inicial
+        // ✅ Se usuário não tem setores atribuídos ainda, mostrar TODOS
+        // Isso permite visualização durante a configuração inicial
       }
     }
 
