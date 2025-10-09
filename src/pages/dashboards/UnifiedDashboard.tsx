@@ -270,10 +270,10 @@ const UnifiedDashboard = () => {
         <div className="mb-4 lg:mb-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-3">
             <div>
-              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900 mb-1">
+              <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-gray-900 mb-1">
                 Dashboard - Visão Geral
               </h1>
-              <p className="text-base lg:text-lg text-gray-600 leading-relaxed">
+              <p className="text-sm lg:text-base text-gray-600 leading-relaxed">
                 Visão completa do sistema de patrimônio e imóveis
               </p>
             </div>
@@ -284,16 +284,16 @@ const UnifiedDashboard = () => {
                 disabled={isSyncing}
                 variant="outline"
                 size="sm"
-                className="h-10 text-sm"
+                className="h-8 text-xs"
               >
                 {isSyncing ? (
                   <>
-                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                     Sincronizando...
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="mr-1 h-4 w-4" />
+                    <RefreshCw className="mr-1 h-3 w-3" />
                     Sincronizar
                   </>
                 )}
@@ -348,7 +348,7 @@ const UnifiedDashboard = () => {
           {(user?.role === 'admin' || user?.role === 'supervisor') && (
             <div className="flex gap-2 flex-wrap">
               <Link to="/dashboard/depreciacao">
-                <Button variant="outline" size="sm" className="gap-2 h-10 text-sm">
+                <Button variant="outline" size="sm" className="gap-2">
                   <TrendingDown className="h-4 w-4" />
                   Dashboard Depreciação
                 </Button>
