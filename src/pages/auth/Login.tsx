@@ -85,11 +85,11 @@ export default function Login() {
     setError(null)
     try {
       await login(data.email, data.password)
-      // Show login animation for 2 seconds
+      // Show login animation for 5 seconds
       setShowLoginAnimation(true)
       setTimeout(() => {
         setShowLoginAnimation(false)
-      }, 2000)
+      }, 5000)
     } catch (e) {
       const errorMessage =
         e instanceof Error
