@@ -148,19 +148,47 @@ const UnifiedDashboard = () => {
     }
   }, [dashboardData])
 
-  // Dados para gráficos
+  // Dados para gráficos - Evolução Patrimonial com dados reais
   const evolutionData = useMemo(() => {
     const months = []
     for (let i = 5; i >= 0; i--) {
       const date = subMonths(new Date(), i)
+      const monthStr = format(date, 'yyyy-MM')
+      
+      // Contar aquisições reais do mês
+      const aquisicoes = dashboardData.filter(p => {
+        try {
+          const dataAquisicao = p.data_aquisicao || p.dataAquisicao
+          if (!dataAquisicao) return false
+          const data = new Date(dataAquisicao)
+          if (isNaN(data.getTime())) return false
+          return format(data, 'yyyy-MM') === monthStr
+        } catch {
+          return false
+        }
+      }).length
+      
+      // Contar baixas reais do mês
+      const baixas = dashboardData.filter(p => {
+        try {
+          const dataBaixa = p.data_baixa || p.dataBaixa
+          if (!dataBaixa) return false
+          const data = new Date(dataBaixa)
+          if (isNaN(data.getTime())) return false
+          return format(data, 'yyyy-MM') === monthStr
+        } catch {
+          return false
+        }
+      }).length
+      
       months.push({
         month: format(date, 'MMM'),
-        aquisicoes: Math.floor(Math.random() * 5) + 1,
-        baixas: Math.floor(Math.random() * 3),
+        aquisicoes,
+        baixas,
       })
     }
     return months
-  }, [])
+  }, [dashboardData])
 
   const distributionData = useMemo(() => {
     const types = dashboardData.reduce((acc, p) => {
