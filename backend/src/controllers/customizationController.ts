@@ -54,8 +54,8 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Apenas admin e superuser podem alterar
-    if (req.user.role !== 'admin' && req.user.role !== 'superuser') {
+    // Apenas superuser e supervisor podem alterar
+    if (req.user.role !== 'superuser' && req.user.role !== 'supervisor') {
       res.status(403).json({ error: 'Sem permissão para alterar customização' });
       return;
     }
@@ -184,8 +184,8 @@ export const resetCustomization = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    // Apenas admin e superuser podem resetar
-    if (req.user.role !== 'admin' && req.user.role !== 'superuser') {
+    // Apenas superuser e supervisor podem resetar
+    if (req.user.role !== 'superuser' && req.user.role !== 'supervisor') {
       res.status(403).json({ error: 'Sem permissão para resetar customização' });
       return;
     }
