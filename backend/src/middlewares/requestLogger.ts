@@ -17,7 +17,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     ip: req.ip || req.socket.remoteAddress,
     userAgent: req.get('user-agent'),
     user: req.user ? {
-      id: req.user.id,
+      id: req.user.userId,
       email: req.user.email,
       role: req.user.role
     } : null,
@@ -63,7 +63,7 @@ export const auditLogger = (action: string) => {
     const auditData = {
       action,
       user: req.user ? {
-        id: req.user.id,
+        id: req.user.userId,
         email: req.user.email,
         role: req.user.role
       } : null,

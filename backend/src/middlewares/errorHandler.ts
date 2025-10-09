@@ -36,7 +36,7 @@ export const errorHandler = (
     query: req.query,
     body: process.env.NODE_ENV === 'development' ? req.body : '[REDACTED]',
     user: req.user ? {
-      id: req.user.id,
+      id: req.user.userId,
       email: req.user.email,
       role: req.user.role
     } : null,
