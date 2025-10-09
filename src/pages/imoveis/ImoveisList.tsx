@@ -400,7 +400,7 @@ export default function ImoveisList() {
                     }
                   />
                 </PaginationItem>
-                {/* Mobile: Show only current page */}
+                {/* Desktop: Show all pages */}
                 <div className="hidden sm:flex">
                   {paginationItems.map((item, index) => (
                     <PaginationItem key={index}>
@@ -453,7 +453,8 @@ export default function ImoveisList() {
               </PaginationContent>
             </Pagination>
           </CardFooter>
-      </Card>
+        </Card>
+      </div>
     </div>
   )
 }
