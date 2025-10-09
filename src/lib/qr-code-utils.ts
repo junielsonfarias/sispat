@@ -78,16 +78,20 @@ export const generateQRCodeSVG = async (
 
 /**
  * Gera um código QR para consulta pública de patrimônio
+ * @param patrimonioNumero - Número do patrimônio (ex: 2025-001)
+ * @param assetType - Tipo do bem ('bem' para móveis, 'imovel' para imóveis)
+ * @param baseUrl - URL base opcional (usa window.location.origin se não fornecido)
+ * @returns Promise com data URL do QR code gerado
  */
 export const generatePatrimonioQRCode = async (
-  patrimonioId: string,
+  patrimonioNumero: string,
   assetType: 'bem' | 'imovel' = 'bem',
   baseUrl?: string
 ): Promise<string> => {
   const origin = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
   const path = assetType === 'imovel' 
-    ? `/consulta-publica/imovel/${patrimonioId}`
-    : `/consulta-publica/${patrimonioId}`
+    ? `/consulta-publica/imovel/${patrimonioNumero}`
+    : `/consulta-publica/bem/${patrimonioNumero}`
   
   const publicUrl = `${origin}${path}`
   

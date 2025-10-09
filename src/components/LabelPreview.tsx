@@ -24,20 +24,20 @@ export const LabelPreview = forwardRef<HTMLDivElement, LabelPreviewProps>(
 
     // Gerar QR code local quando o asset mudar
     useEffect(() => {
-      if (asset?.id) {
-        generatePatrimonioQRCode(asset.id, asset.assetType)
+      if (asset?.numero_patrimonio) {
+        generatePatrimonioQRCode(asset.numero_patrimonio, asset.assetType)
           .then(setQrCodeUrl)
           .catch(() => {
             // Fallback para QR code externo se falhar
             const baseUrl = window.location.origin
             const path = asset.assetType === 'imovel'
-              ? `/consulta-publica/imovel/${asset.id}`
-              : `/consulta-publica/${asset.numero_patrimonio ?? 'sem-numero'}`
+              ? `/consulta-publica/imovel/${asset.numero_patrimonio}`
+              : `/consulta-publica/bem/${asset.numero_patrimonio}`
             const publicUrl = `${baseUrl}${path}`
             setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(publicUrl)}&q=H`)
           })
       }
-    }, [asset?.id, asset?.assetType, asset?.numero_patrimonio])
+    }, [asset?.numero_patrimonio, asset?.assetType])
 
     const getFieldValue = (field: keyof Patrimonio | keyof Imovel | string) => {
       const value = asset?.[field as keyof Asset]
