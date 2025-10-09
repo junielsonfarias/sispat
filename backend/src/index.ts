@@ -106,6 +106,8 @@ import userRoutes from './routes/userRoutes';
 import customizationRoutes from './routes/customizationRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import auditLogRoutes from './routes/auditLogRoutes';
+import manutencaoRoutes from './routes/manutencaoRoutes';
+import imovelFieldRoutes from './routes/imovelFieldRoutes';
 
 // ✅ Rotas públicas (sem autenticação)
 app.use('/api/public', publicRoutes);
@@ -123,6 +125,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/customization', customizationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/manutencoes', manutencaoRoutes);
+app.use('/api/imovel-fields', imovelFieldRoutes);
 
 // ============================================
 // TRATAMENTO DE ERROS

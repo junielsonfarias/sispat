@@ -64,54 +64,81 @@ export const ImovelFieldProvider = ({ children }: { children: ReactNode }) => {
   const [allFields, setAllFields] = useState<ImovelFieldConfig[]>(initialFields)
   const { user } = useAuth()
 
-  useEffect(() => {
-    const stored = localStorage.getItem('sispat_imovel_fields')
-    if (stored) {
-      setAllFields(JSON.parse(stored))
-    } else {
-      localStorage.setItem(
-        'sispat_imovel_fields',
-        JSON.stringify(initialFields),
-      )
+  const fetchFields = useCallback(async () => {
+    if (!user) return
+    try {
+      const response = await api.get<ImovelFieldConfig[]>('/imovel-fields')
+      const fieldsData = Array.isArray(response) ? response : []
+      setAllFields(fieldsData)
+    } catch (error) {
+      console.error('Failed to load imovel fields:', error)
+      // Tentar carregar do localStorage como fallback
+      const stored = localStorage.getItem('sispat_imovel_fields')
+      if (stored) {
+        setAllFields(JSON.parse(stored))
+      } else {
+        setAllFields(initialFields)
+      }
     }
-  }, [])
+  }, [user])
+
+  useEffect(() => {
+    fetchFields()
+  }, [fetchFields])
 
   const fields = useMemo(() => {
-    // In a real multi-tenant app, you'd filter by municipalityId
     return allFields
   }, [allFields])
 
-  const persist = (newFields: ImovelFieldConfig[]) => {
-    localStorage.setItem('sispat_imovel_fields', JSON.stringify(newFields))
-    setAllFields(newFields)
-  }
-
   const addField = useCallback(
-    (field: Omit<ImovelFieldConfig, 'id'>) => {
-      const newField = { ...field, id: generateId() }
-      persist([...allFields, newField])
-      toast({ description: 'Campo personalizado adicionado.' })
+    async (field: Omit<ImovelFieldConfig, 'id'>) => {
+      try {
+        const newField = await api.post<ImovelFieldConfig>('/imovel-fields', field)
+        setAllFields(prev => [...prev, newField])
+        toast({ description: 'Campo personalizado adicionado.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao adicionar campo personalizado.',
+        })
+      }
     },
-    [allFields],
+    [],
   )
 
   const updateField = useCallback(
-    (fieldId: string, updates: Partial<ImovelFieldConfig>) => {
-      const newFields = allFields.map((f) =>
-        f.id === fieldId ? { ...f, ...updates } : f,
-      )
-      persist(newFields)
-      toast({ description: 'Campo personalizado atualizado.' })
+    async (fieldId: string, updates: Partial<ImovelFieldConfig>) => {
+      try {
+        const updatedField = await api.put<ImovelFieldConfig>(`/imovel-fields/${fieldId}`, updates)
+        setAllFields(prev => prev.map(f => f.id === fieldId ? updatedField : f))
+        toast({ description: 'Campo personalizado atualizado.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao atualizar campo personalizado.',
+        })
+      }
     },
-    [allFields],
+    [],
   )
 
   const deleteField = useCallback(
-    (fieldId: string) => {
-      persist(allFields.filter((f) => f.id !== fieldId))
-      toast({ description: 'Campo personalizado excluído.' })
+    async (fieldId: string) => {
+      try {
+        await api.delete(`/imovel-fields/${fieldId}`)
+        setAllFields(prev => prev.filter(f => f.id !== fieldId))
+        toast({ description: 'Campo personalizado excluído.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao excluir campo personalizado.',
+        })
+      }
     },
-    [allFields],
+    [],
   )
 
   const value = useMemo(

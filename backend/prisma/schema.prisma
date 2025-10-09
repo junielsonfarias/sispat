@@ -476,3 +476,26 @@ model SystemConfiguration {
   @@map("system_configuration")
 }
 
+model ImovelCustomField {
+  id              String    @id @default(uuid())
+  name            String
+  label           String
+  type            String    // 'text', 'number', 'date', 'boolean', 'select'
+  required        Boolean   @default(false)
+  defaultValue    String?
+  options         String?   // JSON array para tipo select
+  placeholder     String?
+  helpText        String?
+  validationRules String?   // JSON com regras de validação
+  displayOrder    Int       @default(0)
+  isActive        Boolean   @default(true)
+  isSystem        Boolean   @default(false)
+  municipalityId  String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([municipalityId])
+  @@index([isActive])
+  @@map("imovel_custom_fields")
+}
+
