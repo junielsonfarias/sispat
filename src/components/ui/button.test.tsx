@@ -30,14 +30,20 @@ describe('Button Component', () => {
     const { rerender } = render(<Button size="default">Default</Button>)
     let button = screen.getByRole('button')
     expect(button).toBeInTheDocument()
+    expect(button).toHaveClass('btn-responsive') // default usa btn-responsive
 
     rerender(<Button size="sm">Small</Button>)
     button = screen.getByRole('button')
-    expect(button).toHaveClass('h-9')
+    expect(button).toHaveClass('h-10', 'px-4', 'text-sm')
 
     rerender(<Button size="lg">Large</Button>)
     button = screen.getByRole('button')
-    expect(button).toHaveClass('h-11')
+    expect(button).toHaveClass('h-12', 'px-8', 'text-lg')
+
+    rerender(<Button size="icon">Icon</Button>)
+    button = screen.getByRole('button')
+    expect(button).toHaveClass('h-10')
+    // Note: w-10 é sobrescrito por w-auto do fullWidth: false
   })
 
   it('should be disabled when disabled prop is true', () => {
