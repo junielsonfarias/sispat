@@ -151,174 +151,308 @@ export default function ImoveisList() {
   const canDelete = user?.role === 'supervisor' || user?.role === 'admin'
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Cadastro de Imóveis</h1>
-        <Button asChild>
-          <Link to="/imoveis/novo">
-            <Plus className="mr-2 h-4 w-4" /> Cadastrar Imóvel
-          </Link>
-        </Button>
-      </div>
-      <Card>
-        <CardHeader>
+    <div className="flex-1 p-3 sm:p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-1 sm:mb-2">
+                Cadastro de Imóveis
+              </h1>
+              <p className="text-sm sm:text-base lg:text-lg text-gray-600">
+                Gerencie todos os imóveis cadastrados no sistema
+              </p>
+            </div>
+            <Button asChild className="min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]">
+              <Link to="/imoveis/novo">
+                <Plus className="mr-2 h-4 w-4" /> Cadastrar Imóvel
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="mb-4 sm:mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por número, denominação ou endereço..."
-              className="pl-10"
+              className="pl-10 min-h-[48px] sm:min-h-[44px] lg:min-h-[40px] text-sm sm:text-base"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <SortableHeader
-                      column="numero_patrimonio"
-                      label="Nº Patrimônio"
-                    />
-                  </TableHead>
-                  <TableHead>
-                    <SortableHeader column="denominacao" label="Denominação" />
-                  </TableHead>
-                  <TableHead>
-                    <SortableHeader column="endereco" label="Endereço" />
-                  </TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedData.map((item: Imovel) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      <Link
-                        to={`/imoveis/ver/${item.id}`}
-                        className="hover:underline text-primary"
-                      >
-                        {item.numero_patrimonio}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{item.denominacao}</TableCell>
-                    <TableCell>{item.endereco}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link to={`/imoveis/ver/${item.id}`}>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Ver Detalhes
+        </div>
+
+        <Card className="border-0 shadow-lg bg-white">
+          <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900">Imóveis Cadastrados</h2>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                  {paginatedData.length} de {processedData.length} imóveis
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+            {/* Desktop Table */}
+            <div className="hidden lg:block overflow-x-auto">
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-gray-50">
+                    <TableRow className="border-gray-200">
+                      <TableHead className="text-sm font-semibold text-gray-700">
+                        <SortableHeader
+                          column="numero_patrimonio"
+                          label="Nº Patrimônio"
+                        />
+                      </TableHead>
+                      <TableHead className="text-sm font-semibold text-gray-700">
+                        <SortableHeader column="denominacao" label="Denominação" />
+                      </TableHead>
+                      <TableHead className="text-sm font-semibold text-gray-700">
+                        <SortableHeader column="endereco" label="Endereço" />
+                      </TableHead>
+                      <TableHead className="text-right text-sm font-semibold text-gray-700">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedData.map((item: Imovel) => (
+                      <TableRow key={item.id} className="hover:bg-gray-50 border-gray-200">
+                        <TableCell className="font-medium font-mono text-sm text-gray-900">
+                          <Link
+                            to={`/imoveis/ver/${item.id}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            {item.numero_patrimonio}
                           </Link>
-                        </Button>
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link to={`/imoveis/editar/${item.id}`}>
-                            <Edit className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        {canDelete && (
-                          <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash className="h-4 w-4" />
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-700">{item.denominacao}</TableCell>
+                        <TableCell className="text-sm text-gray-700">{item.endereco}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button variant="outline" size="sm" asChild>
+                              <Link to={`/imoveis/ver/${item.id}`}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Ver Detalhes
+                              </Link>
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Tem certeza que deseja excluir este imóvel?
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteImovel(item.id)}
-                              >
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                        )}
+                            <Button variant="ghost" size="icon" asChild>
+                              <Link to={`/imoveis/editar/${item.id}`}>
+                                <Edit className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            {canDelete && (
+                              <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Tem certeza que deseja excluir este imóvel?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteImovel(item.id)}
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-4">
+              {paginatedData.map((item: Imovel) => (
+                <Card key={item.id} className="border border-gray-200 hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    {/* Header com número */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <Link
+                          to={`/imoveis/ver/${item.id}`}
+                          className="text-blue-600 hover:text-blue-800 hover:underline font-mono text-sm font-medium"
+                        >
+                          {item.numero_patrimonio}
+                        </Link>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {item.denominacao}
+                        </p>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-        <CardFooter className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Mostrando {paginatedData.length} de {processedData.length}{' '}
-            resultados.
-          </div>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    setPagination((p) => ({
-                      ...p,
-                      pageIndex: Math.max(1, p.pageIndex - 1),
-                    }))
-                  }}
-                  className={
-                    pagination.pageIndex === 1
-                      ? 'pointer-events-none opacity-50'
-                      : ''
-                  }
-                />
-              </PaginationItem>
-              {paginationItems.map((item, index) => (
-                <PaginationItem key={index}>
-                  {item === '...' ? (
-                    <PaginationEllipsis />
-                  ) : (
+                    </div>
+
+                    {/* Informações principais */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs text-gray-500">Endereço:</span>
+                        <span className="text-sm text-gray-700 text-right flex-1 ml-2">
+                          {item.endereco}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Ações */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Link to={`/imoveis/ver/${item.id}`}>
+                            <FileText className="h-3 w-3 mr-1" />
+                            Ver
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Link to={`/imoveis/editar/${item.id}`}>
+                            <Edit className="h-3 w-3 mr-1" />
+                            Editar
+                          </Link>
+                        </Button>
+                      </div>
+                      {canDelete && (
+                        <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash className="h-3 w-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Tem certeza que deseja excluir este imóvel?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteImovel(item.id)}
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4">
+            <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+              Mostrando {paginatedData.length} de {processedData.length} resultados.
+            </div>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setPagination((p) => ({
+                        ...p,
+                        pageIndex: Math.max(1, p.pageIndex - 1),
+                      }))
+                    }}
+                    className={
+                      pagination.pageIndex === 1
+                        ? 'pointer-events-none opacity-50'
+                        : ''
+                    }
+                  />
+                </PaginationItem>
+                {/* Mobile: Show only current page */}
+                <div className="hidden sm:flex">
+                  {paginationItems.map((item, index) => (
+                    <PaginationItem key={index}>
+                      {item === '...' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          href="#"
+                          isActive={pagination.pageIndex === item}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            setPagination((p) => ({ ...p, pageIndex: item }))
+                          }}
+                        >
+                          {item}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                </div>
+                {/* Mobile: Show current page only */}
+                <div className="sm:hidden">
+                  <PaginationItem>
                     <PaginationLink
                       href="#"
-                      isActive={pagination.pageIndex === item}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setPagination((p) => ({ ...p, pageIndex: item }))
-                      }}
+                      isActive={true}
+                      onClick={(e) => e.preventDefault()}
                     >
-                      {item}
+                      {pagination.pageIndex}
                     </PaginationLink>
-                  )}
+                  </PaginationItem>
+                </div>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setPagination((p) => ({
+                        ...p,
+                        pageIndex: Math.min(pageCount, p.pageIndex + 1),
+                      }))
+                    }}
+                    className={
+                      pagination.pageIndex === pageCount
+                        ? 'pointer-events-none opacity-50'
+                        : ''
+                    }
+                  />
                 </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    setPagination((p) => ({
-                      ...p,
-                      pageIndex: Math.min(pageCount, p.pageIndex + 1),
-                    }))
-                  }}
-                  className={
-                    pagination.pageIndex === pageCount
-                      ? 'pointer-events-none opacity-50'
-                      : ''
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </CardFooter>
+              </PaginationContent>
+            </Pagination>
+          </CardFooter>
       </Card>
     </div>
   )
