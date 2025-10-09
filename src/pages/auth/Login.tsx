@@ -108,14 +108,14 @@ export default function Login() {
       className="min-h-screen flex items-center justify-center relative overflow-hidden"
       style={backgroundStyle}
     >
-      {/* Modern Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-blue-800/80 to-indigo-900/90" />
+      {/* Modern Gradient Overlay - Better contrast */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-indigo-900/95" />
       
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400/15 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-400/15 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-400/10 rounded-full blur-3xl animate-pulse delay-500" />
       </div>
       
       <Container size="lg" padding="lg" className="relative z-10 w-full">
@@ -129,17 +129,17 @@ export default function Login() {
                   <img
                     src={settings.activeLogoUrl}
                     alt="Logo"
-                    className="h-20 w-auto mx-auto lg:mx-0 img-responsive drop-shadow-2xl"
+                    className="h-32 w-auto mx-auto lg:mx-0 img-responsive drop-shadow-2xl"
                   />
                   <div className="absolute inset-0 bg-white/10 rounded-full blur-xl" />
                 </div>
               </div>
               
               <div className="space-y-4">
-                <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
+                <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-lg">
                   {settings.welcomeTitle || 'SISPAT'}
                 </h1>
-                <p className="text-xl text-blue-100 leading-relaxed max-w-md mx-auto lg:mx-0">
+                <p className="text-xl text-blue-50 leading-relaxed max-w-md mx-auto lg:mx-0 drop-shadow-md">
                   {settings.welcomeSubtitle || 'Sistema Integrado de Patrimônio Municipal'}
                 </p>
               </div>
@@ -147,17 +147,17 @@ export default function Login() {
 
             {/* Features */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto lg:mx-0">
-              <div className="flex items-center gap-3 text-blue-100">
-                <div className="p-2 bg-white/10 rounded-lg">
+              <div className="flex items-center gap-3 text-blue-50">
+                <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
                   <Shield className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-sm font-medium">Seguro e Confiável</span>
+                <span className="text-sm font-medium drop-shadow-sm">Seguro e Confiável</span>
               </div>
-              <div className="flex items-center gap-3 text-blue-100">
-                <div className="p-2 bg-white/10 rounded-lg">
+              <div className="flex items-center gap-3 text-blue-50">
+                <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
                   <Building2 className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-sm font-medium">Gestão Municipal</span>
+                <span className="text-sm font-medium drop-shadow-sm">Gestão Municipal</span>
               </div>
             </div>
 
@@ -165,13 +165,13 @@ export default function Login() {
             <div className="pt-8">
               <Link
                 to="/consulta-publica"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-lg backdrop-blur-sm"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white/15 hover:bg-white/25 text-white rounded-lg border border-white/30 transition-all duration-300 hover:scale-105 hover:shadow-lg backdrop-blur-sm drop-shadow-md"
               >
                 <Search className="h-5 w-5" />
                 <span className="font-medium">Consulta Pública</span>
                 <ExternalLink className="h-4 w-4" />
               </Link>
-              <p className="text-blue-200 text-sm mt-2">
+              <p className="text-blue-50 text-sm mt-2 drop-shadow-sm">
                 Acesse informações públicas sobre o patrimônio municipal
               </p>
             </div>
@@ -227,20 +227,18 @@ export default function Login() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-gray-700 font-medium">
+                          <FormLabel className="text-gray-700 font-medium flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-gray-500" />
                             E-mail
                           </FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                              <Input
-                                placeholder="seu@email.com"
-                                className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                                type="email"
-                                autoComplete="email"
-                                {...field}
-                              />
-                            </div>
+                            <Input
+                              placeholder="seu@email.com"
+                              className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                              type="email"
+                              autoComplete="email"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -253,15 +251,15 @@ export default function Login() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-gray-700 font-medium">
+                          <FormLabel className="text-gray-700 font-medium flex items-center gap-2">
+                            <Lock className="h-4 w-4 text-gray-500" />
                             Senha
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                               <Input
                                 placeholder="Digite sua senha"
-                                className="pl-10 pr-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                                className="pr-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                                 type={showPassword ? 'text' : 'password'}
                                 autoComplete="current-password"
                                 {...field}
@@ -325,7 +323,7 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-12 text-blue-200 text-sm">
+        <div className="text-center mt-12 text-blue-50 text-sm drop-shadow-sm">
           <p>{settings.loginFooterText || 'Sistema de Gestão de Patrimônio Municipal'}</p>
         </div>
       </Container>
