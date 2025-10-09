@@ -44,9 +44,9 @@ router.put('/:id', authorize('superuser', 'supervisor'), updateLocal);
 /**
  * @route DELETE /api/locais/:id
  * @desc Deletar local
- * @access Superuser only
+ * @access Superuser/Supervisor
  */
-router.delete('/:id', authorize('superuser'), deleteLocal);
+router.delete('/:id', authorize('superuser', 'supervisor'), deleteLocal);
 
 export default router;
 

@@ -44,9 +44,9 @@ router.put('/:id', updateInventario);
 /**
  * @route DELETE /api/inventarios/:id
  * @desc Deletar inventário
- * @access Superuser only
+ * @access Superuser/Supervisor
  */
-router.delete('/:id', authorize('superuser'), deleteInventario);
+router.delete('/:id', authorize('superuser', 'supervisor'), deleteInventario);
 
 export default router;
 

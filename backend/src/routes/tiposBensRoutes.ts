@@ -46,7 +46,7 @@ router.put('/:id', authorize('superuser', 'supervisor'), updateTipoBem);
  * @desc Deletar tipo de bem
  * @access Admin only
  */
-router.delete('/:id', authorize('superuser'), deleteTipoBem);
+router.delete('/:id', authorize('superuser', 'supervisor'), deleteTipoBem);
 
 export default router;
 

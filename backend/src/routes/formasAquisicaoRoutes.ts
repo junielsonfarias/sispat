@@ -44,9 +44,9 @@ router.put('/:id', authorize('superuser', 'supervisor'), updateFormaAquisicao);
 /**
  * @route DELETE /api/formas-aquisicao/:id
  * @desc Deletar forma de aquisição
- * @access Superuser only
+ * @access Superuser/Supervisor
  */
-router.delete('/:id', authorize('superuser'), deleteFormaAquisicao);
+router.delete('/:id', authorize('superuser', 'supervisor'), deleteFormaAquisicao);
 
 export default router;
 
