@@ -1,30 +1,30 @@
 # 🚀 EXECUTE NO SERVIDOR AGORA
 
-**Problema:** Git pull bloqueado por mudanças locais
+**Problema:** Dependência `browser-image-compression` faltando
 
 ---
 
-## ✅ SOLUÇÃO (Execute no servidor SSH)
+## ✅ SOLUÇÃO ATUALIZADA (Execute no servidor SSH)
 
 ```bash
-# 1. Descartar mudanças locais e atualizar
+# 1. Atualizar repositório
 cd /var/www/sispat
 git reset --hard HEAD
 git pull origin main
 
-# 2. Dar permissão de execução
-chmod +x install-low-memory.sh
+# 2. Reinstalar dependências (incluindo a nova)
+pnpm install
 
-# 3. Executar instalador corrigido
+# 3. Executar build novamente
 ./install-low-memory.sh
 ```
 
 ---
 
-## 📋 COMANDOS COMPLETOS (Copie e Cole)
+## 📋 COMANDO ÚNICO (Copie e Cole)
 
 ```bash
-cd /var/www/sispat && git reset --hard HEAD && git pull origin main && chmod +x install-low-memory.sh && ./install-low-memory.sh
+cd /var/www/sispat && git reset --hard HEAD && git pull origin main && pnpm install && ./install-low-memory.sh
 ```
 
 **Este comando único vai:**
