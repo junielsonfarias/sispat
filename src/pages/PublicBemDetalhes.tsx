@@ -135,7 +135,7 @@ export default function PublicBemDetalhes() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       
       {/* Header Superior Fixo com Informações da Prefeitura */}
-      <div className="sticky top-0 z-50 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-xl">
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-2xl border-b border-white/10">
         <div className="container mx-auto px-4">
           {/* Linha Superior - Logo e Informações */}
           <div className="flex items-center justify-between py-4 border-b border-white/20">
@@ -213,7 +213,7 @@ export default function PublicBemDetalhes() {
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pb-16">
         <div className="max-w-7xl mx-auto">
           
           {/* Main Grid */}
@@ -221,9 +221,9 @@ export default function PublicBemDetalhes() {
             
             {/* Galeria de Fotos - 3 colunas */}
             <div className="lg:col-span-3">
-              <Card className="border-none shadow-2xl overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-1">
-                  <CardContent className="p-6 bg-white dark:bg-slate-900">
+              <Card className="border-none shadow-2xl overflow-hidden bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-900 dark:to-purple-950/20 backdrop-blur-sm">
+                <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 p-1">
+                  <CardContent className="p-6 bg-gradient-to-br from-white to-purple-50/20 dark:from-slate-900 dark:to-purple-950/10">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
                         <Sparkles className="h-6 w-6 text-white" />
@@ -333,9 +333,9 @@ export default function PublicBemDetalhes() {
             <div className="lg:col-span-2 space-y-6">
               
               {/* Identificação */}
-              <Card className="border-none shadow-2xl overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-                <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-1">
-                  <CardContent className="p-6 bg-white dark:bg-slate-900">
+              <Card className="border-none shadow-2xl overflow-hidden bg-gradient-to-br from-white to-amber-50/30 dark:from-slate-900 dark:to-amber-950/20 backdrop-blur-sm hover:shadow-amber-500/20 transition-all duration-300">
+                <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-1">
+                  <CardContent className="p-6 bg-gradient-to-br from-white to-amber-50/20 dark:from-slate-900 dark:to-amber-950/10">
                     <div className="flex items-center gap-3 mb-5">
                       <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
                         <Tag className="h-5 w-5 text-white" />
@@ -378,9 +378,9 @@ export default function PublicBemDetalhes() {
               </Card>
 
               {/* Localização */}
-              <Card className="border-none shadow-2xl overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-                <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-1">
-                  <CardContent className="p-6 bg-white dark:bg-slate-900">
+              <Card className="border-none shadow-2xl overflow-hidden bg-gradient-to-br from-white to-green-50/30 dark:from-slate-900 dark:to-green-950/20 backdrop-blur-sm hover:shadow-green-500/20 transition-all duration-300">
+                <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 p-1">
+                  <CardContent className="p-6 bg-gradient-to-br from-white to-green-50/20 dark:from-slate-900 dark:to-green-950/10">
                     <div className="flex items-center gap-3 mb-5">
                       <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
                         <MapPin className="h-5 w-5 text-white" />
@@ -412,9 +412,9 @@ export default function PublicBemDetalhes() {
               </Card>
 
               {/* Informações Financeiras */}
-              <Card className="border-none shadow-2xl overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-                <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-1">
-                  <CardContent className="p-6 bg-white dark:bg-slate-900">
+              <Card className="border-none shadow-2xl overflow-hidden bg-gradient-to-br from-white to-blue-50/30 dark:from-slate-900 dark:to-blue-950/20 backdrop-blur-sm hover:shadow-blue-500/20 transition-all duration-300">
+                <div className="bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 p-1">
+                  <CardContent className="p-6 bg-gradient-to-br from-white to-blue-50/20 dark:from-slate-900 dark:to-blue-950/10">
                     <div className="flex items-center gap-3 mb-5">
                       <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
                         <DollarSign className="h-5 w-5 text-white" />
@@ -459,9 +459,9 @@ export default function PublicBemDetalhes() {
 
               {/* Observações */}
               {patrimonio.observacoes && (
-                <Card className="border-none shadow-2xl overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-1">
-                    <CardContent className="p-6 bg-white dark:bg-slate-900">
+                <Card className="border-none shadow-2xl overflow-hidden bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-900 dark:to-purple-950/20 backdrop-blur-sm hover:shadow-purple-500/20 transition-all duration-300">
+                  <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 p-1">
+                    <CardContent className="p-6 bg-gradient-to-br from-white to-purple-50/20 dark:from-slate-900 dark:to-purple-950/10">
                       <div className="flex items-center gap-3 mb-5">
                         <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
                           <FileText className="h-5 w-5 text-white" />
@@ -480,35 +480,6 @@ export default function PublicBemDetalhes() {
             </div>
           </div>
 
-          {/* Footer Elegante */}
-          <div className="mt-8">
-            <Card className="border-none shadow-xl bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
-              <CardContent className="p-8 text-center">
-                <Separator className="mb-6 bg-gradient-to-r from-transparent via-primary to-transparent" />
-                <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-                  {settings.activeLogoUrl && (
-                    <img
-                      src={settings.activeLogoUrl}
-                      alt="Logo"
-                      className="h-16 w-auto opacity-80"
-                    />
-                  )}
-                  <div className="text-center md:text-left space-y-1">
-                    <p className="font-bold text-lg">
-                      {settings.prefeituraName || MUNICIPALITY_NAME}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {settings.secretariaResponsavel}
-                    </p>
-                    <p className="text-xs text-muted-foreground/70 mt-2 flex items-center justify-center md:justify-start gap-1">
-                      <ShieldCheck className="h-3 w-3" />
-                      Consulta Pública de Patrimônio - Sistema SISPAT
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </div>
