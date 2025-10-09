@@ -20,10 +20,10 @@ router.get('/', getUsers);
 router.get('/:id', getUserById);
 
 // POST /api/users - Criar usuário (apenas admin/superuser)
-router.post('/', authorize('admin', 'superuser'), createUser);
+router.post('/', authorize('superuser'), createUser);
 
 // PUT /api/users/:id - Atualizar usuário (apenas admin/superuser)
-router.put('/:id', authorize('admin', 'superuser'), updateUser);
+router.put('/:id', authorize('superuser'), updateUser);
 
 // DELETE /api/users/:id - Deletar usuário (apenas superuser)
 router.delete('/:id', authorize('superuser'), deleteUser);

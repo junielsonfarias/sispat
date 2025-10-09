@@ -30,23 +30,23 @@ router.get('/:id', getLocalById);
 /**
  * @route POST /api/locais
  * @desc Criar novo local
- * @access Admin/Gestor
+ * @access Superuser/Supervisor
  */
-router.post('/', authorize('admin', 'gestor'), createLocal);
+router.post('/', authorize('superuser', 'supervisor'), createLocal);
 
 /**
  * @route PUT /api/locais/:id
  * @desc Atualizar local
- * @access Admin/Gestor
+ * @access Superuser/Supervisor
  */
-router.put('/:id', authorize('admin', 'gestor'), updateLocal);
+router.put('/:id', authorize('superuser', 'supervisor'), updateLocal);
 
 /**
  * @route DELETE /api/locais/:id
  * @desc Deletar local
- * @access Admin only
+ * @access Superuser only
  */
-router.delete('/:id', authorize('admin'), deleteLocal);
+router.delete('/:id', authorize('superuser'), deleteLocal);
 
 export default router;
 

@@ -51,21 +51,21 @@ router.get('/:id', getPatrimonio);
  * @desc Criar patrimônio
  * @access Private (Admin, Supervisor, Usuario)
  */
-router.post('/', authorize('superuser', 'admin', 'supervisor', 'usuario'), createPatrimonio);
+router.post('/', authorize('superuser', 'supervisor', 'usuario'), createPatrimonio);
 
 /**
  * @route PUT /api/patrimonios/:id
  * @desc Atualizar patrimônio
  * @access Private (Admin, Supervisor, Usuario)
  */
-router.put('/:id', authorize('superuser', 'admin', 'supervisor', 'usuario'), updatePatrimonio);
+router.put('/:id', authorize('superuser', 'supervisor', 'usuario'), updatePatrimonio);
 
 /**
  * @route DELETE /api/patrimonios/:id
  * @desc Deletar patrimônio
  * @access Private (Admin, Superuser only)
  */
-router.delete('/:id', authorize('superuser', 'admin'), deletePatrimonio);
+router.delete('/:id', authorize('superuser'), deletePatrimonio);
 
 /**
  * @route POST /api/patrimonios/:id/notes
@@ -79,7 +79,7 @@ router.post('/:id/notes', addNote);
  * @desc Registrar baixa de patrimônio
  * @access Private (Admin, Supervisor, Usuario)
  */
-router.post('/:id/baixa', authorize('superuser', 'admin', 'supervisor', 'usuario'), registrarBaixaPatrimonio);
+router.post('/:id/baixa', authorize('superuser', 'supervisor', 'usuario'), registrarBaixaPatrimonio);
 
 export default router;
 

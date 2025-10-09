@@ -30,23 +30,23 @@ router.get('/:id', getFormaAquisicaoById);
 /**
  * @route POST /api/formas-aquisicao
  * @desc Criar nova forma de aquisição
- * @access Admin/Gestor
+ * @access Superuser/Supervisor
  */
-router.post('/', authorize('admin', 'gestor'), createFormaAquisicao);
+router.post('/', authorize('superuser', 'supervisor'), createFormaAquisicao);
 
 /**
  * @route PUT /api/formas-aquisicao/:id
  * @desc Atualizar forma de aquisição
- * @access Admin/Gestor
+ * @access Superuser/Supervisor
  */
-router.put('/:id', authorize('admin', 'gestor'), updateFormaAquisicao);
+router.put('/:id', authorize('superuser', 'supervisor'), updateFormaAquisicao);
 
 /**
  * @route DELETE /api/formas-aquisicao/:id
  * @desc Deletar forma de aquisição
- * @access Admin only
+ * @access Superuser only
  */
-router.delete('/:id', authorize('admin'), deleteFormaAquisicao);
+router.delete('/:id', authorize('superuser'), deleteFormaAquisicao);
 
 export default router;
 

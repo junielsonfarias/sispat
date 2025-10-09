@@ -30,23 +30,23 @@ router.get('/:id', getSectorById);
 /**
  * @route POST /api/sectors
  * @desc Criar novo setor
- * @access Admin only
+ * @access Superuser only
  */
-router.post('/', authorize('admin'), createSector);
+router.post('/', authorize('superuser'), createSector);
 
 /**
  * @route PUT /api/sectors/:id
  * @desc Atualizar setor
- * @access Admin only
+ * @access Superuser only
  */
-router.put('/:id', authorize('admin'), updateSector);
+router.put('/:id', authorize('superuser'), updateSector);
 
 /**
  * @route DELETE /api/sectors/:id
  * @desc Deletar setor
- * @access Admin only
+ * @access Superuser only
  */
-router.delete('/:id', authorize('admin'), deleteSector);
+router.delete('/:id', authorize('superuser'), deleteSector);
 
 export default router;
 

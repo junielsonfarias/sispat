@@ -42,21 +42,21 @@ router.get('/:id', getImovel);
  * @desc Criar imóvel
  * @access Private (Admin, Supervisor, Usuario)
  */
-router.post('/', authorize('superuser', 'admin', 'supervisor', 'usuario'), createImovel);
+router.post('/', authorize('superuser', 'supervisor', 'usuario'), createImovel);
 
 /**
  * @route PUT /api/imoveis/:id
  * @desc Atualizar imóvel
  * @access Private (Admin, Supervisor, Usuario)
  */
-router.put('/:id', authorize('superuser', 'admin', 'supervisor', 'usuario'), updateImovel);
+router.put('/:id', authorize('superuser', 'supervisor', 'usuario'), updateImovel);
 
 /**
  * @route DELETE /api/imoveis/:id
  * @desc Deletar imóvel
  * @access Private (Admin, Superuser only)
  */
-router.delete('/:id', authorize('superuser', 'admin'), deleteImovel);
+router.delete('/:id', authorize('superuser'), deleteImovel);
 
 export default router;
 

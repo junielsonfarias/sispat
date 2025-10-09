@@ -32,21 +32,21 @@ router.get('/:id', getTipoBemById);
  * @desc Criar novo tipo de bem
  * @access Admin/Supervisor
  */
-router.post('/', authorize('admin', 'supervisor', 'superuser'), createTipoBem);
+router.post('/', authorize('superuser', 'supervisor'), createTipoBem);
 
 /**
  * @route PUT /api/tipos-bens/:id
  * @desc Atualizar tipo de bem
  * @access Admin/Supervisor
  */
-router.put('/:id', authorize('admin', 'supervisor', 'superuser'), updateTipoBem);
+router.put('/:id', authorize('superuser', 'supervisor'), updateTipoBem);
 
 /**
  * @route DELETE /api/tipos-bens/:id
  * @desc Deletar tipo de bem
  * @access Admin only
  */
-router.delete('/:id', authorize('admin', 'superuser'), deleteTipoBem);
+router.delete('/:id', authorize('superuser'), deleteTipoBem);
 
 export default router;
 
