@@ -100,45 +100,45 @@ export const Header = () => {
         aria-label="Cabeçalho principal"
       >
         {/* Desktop Layout (lg and up) */}
-        <div className="hidden lg:flex h-20">
+        <div className="hidden lg:flex h-24">
           {/* Left Sidebar - Logo and Municipality Info */}
-          <div className="w-80 bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 px-6 text-center">
+          <div className="w-96 bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4 px-8 text-center">
               {/* Logo */}
               <div className="relative">
                 <img
                   src={settings.activeLogoUrl}
                   alt="Logo da Prefeitura"
-                  className="h-16 w-auto object-contain"
+                  className="h-20 w-auto object-contain drop-shadow-sm"
                 />
               </div>
               
               {/* Municipality Information */}
               {settings.prefeituraName ? (
                 <>
-                  <h1 className="text-lg font-bold text-gray-900 uppercase leading-tight">
+                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
                     {settings.prefeituraName}
                   </h1>
                   {settings.secretariaResponsavel && (
-                    <p className="text-xs text-gray-600 uppercase font-medium leading-tight">
+                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
                       {settings.secretariaResponsavel}
                     </p>
                   )}
                   {settings.departamentoResponsavel && (
-                    <p className="text-xs text-gray-600 uppercase font-medium leading-tight">
+                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
                       {settings.departamentoResponsavel}
                     </p>
                   )}
                 </>
               ) : (
                 <>
-                  <h1 className="text-lg font-bold text-gray-900 uppercase leading-tight">
+                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
                     PREFEITURA MUNICIPAL
                   </h1>
-                  <p className="text-xs text-gray-600 uppercase font-medium leading-tight">
+                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
                     SECRETARIA DE ADMINISTRAÇÃO
                   </p>
-                  <p className="text-xs text-gray-600 uppercase font-medium leading-tight">
+                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
                     DEPARTAMENTO DE PATRIMÔNIO
                   </p>
                 </>
@@ -262,20 +262,20 @@ export const Header = () => {
         </div>
 
         {/* Tablet Layout (md to lg) */}
-        <div className="hidden md:flex lg:hidden h-16 px-4 items-center justify-between">
+        <div className="hidden md:flex lg:hidden h-20 px-6 items-center justify-between">
           {/* Logo and Municipality Info - Stacked */}
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-2">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
-              className="h-8 w-auto object-contain"
+              className="h-12 w-auto object-contain drop-shadow-sm"
             />
             {settings.prefeituraName ? (
-              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 {settings.prefeituraName}
               </h2>
             ) : (
-              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 PREFEITURA MUNICIPAL
               </h2>
             )}
@@ -283,10 +283,10 @@ export const Header = () => {
 
           {/* SISPAT Branding - Center */}
           <div className="flex flex-col items-center">
-            <h1 className="text-lg font-bold text-gray-900 leading-none">
+            <h1 className="text-xl font-bold text-gray-900 leading-none">
               SISPAT
             </h1>
-            <p className="text-xs text-gray-600 font-medium">
+            <p className="text-sm text-gray-600 font-medium">
               Sistema de Patrimônio
             </p>
           </div>
@@ -365,20 +365,20 @@ export const Header = () => {
         </div>
 
         {/* Mobile Layout (below md) */}
-        <div className="flex md:hidden h-14 px-3 items-center justify-between">
+        <div className="flex md:hidden h-16 px-4 items-center justify-between">
           {/* Logo and Municipality Info - Stacked */}
-          <div className="flex flex-col items-center gap-0.5">
+          <div className="flex flex-col items-center gap-1">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
-              className="h-5 w-auto object-contain"
+              className="h-8 w-auto object-contain drop-shadow-sm"
             />
             {settings.prefeituraName ? (
-              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 {settings.prefeituraName}
               </h2>
             ) : (
-              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 PREFEITURA
               </h2>
             )}
@@ -386,9 +386,12 @@ export const Header = () => {
 
           {/* SISPAT Branding - Center */}
           <div className="flex flex-col items-center">
-            <h1 className="text-sm font-bold text-gray-900 leading-none">
+            <h1 className="text-base font-bold text-gray-900 leading-none">
               SISPAT
             </h1>
+            <p className="text-xs text-gray-600 font-medium">
+              Sistema
+            </p>
           </div>
 
           {/* Actions - Minimal */}
