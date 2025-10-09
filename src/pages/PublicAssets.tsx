@@ -9,7 +9,14 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  FileSpreadsheet,
+  FileText,
+  Download,
 } from 'lucide-react'
+import * as XLSX from 'xlsx'
+import { saveAs } from 'file-saver'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -161,6 +168,103 @@ export default function PublicAssets() {
     }
   }
 
+  // Exportar para Excel
+  const handleExportExcel = () => {
+    const data = filteredData.map((item) => ({
+      'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
+      'Nº Patrimônio': item.numero_patrimonio,
+      'Descrição': item.assetType === 'bem' 
+        ? (item as Patrimonio).descricao_bem 
+        : (item as Imovel).denominacao,
+      'Setor': item.assetType === 'bem'
+        ? (item as Patrimonio).setor_responsavel
+        : (item as Imovel).setor || '-',
+      'Local': item.assetType === 'bem'
+        ? (item as Patrimonio).localizacao
+        : (item as Imovel).endereco || '-',
+      'Situação': item.assetType === 'bem'
+        ? formatSituacao((item as Patrimonio).status)
+        : 'Ativo',
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Bens')
+    
+    const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
+  }
+
+  // Exportar para CSV
+  const handleExportCSV = () => {
+    const data = filteredData.map((item) => ({
+      'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
+      'Nº Patrimônio': item.numero_patrimonio,
+      'Descrição': item.assetType === 'bem' 
+        ? (item as Patrimonio).descricao_bem 
+        : (item as Imovel).denominacao,
+      'Setor': item.assetType === 'bem'
+        ? (item as Patrimonio).setor_responsavel
+        : (item as Imovel).setor || '-',
+      'Local': item.assetType === 'bem'
+        ? (item as Patrimonio).localizacao
+        : (item as Imovel).endereco || '-',
+      'Situação': item.assetType === 'bem'
+        ? formatSituacao((item as Patrimonio).status)
+        : 'Ativo',
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(data)
+    const csv = XLSX.utils.sheet_to_csv(ws)
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
+    
+    const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.csv`
+    saveAs(blob, fileName)
+  }
+
+  // Exportar para PDF
+  const handleExportPDF = () => {
+    const doc = new jsPDF()
+    
+    // Adicionar título
+    doc.setFontSize(18)
+    doc.text('Consulta Pública de Bens', 14, 20)
+    doc.setFontSize(12)
+    doc.text(selectedMunicipality.name, 14, 28)
+    doc.setFontSize(10)
+    doc.text(`Gerado em: ${formatDate(new Date().toISOString())}`, 14, 35)
+
+    // Preparar dados
+    const tableData = filteredData.map((item) => [
+      item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
+      item.numero_patrimonio,
+      item.assetType === 'bem' 
+        ? (item as Patrimonio).descricao_bem 
+        : (item as Imovel).denominacao,
+      item.assetType === 'bem'
+        ? (item as Patrimonio).setor_responsavel
+        : (item as Imovel).setor || '-',
+      item.assetType === 'bem'
+        ? (item as Patrimonio).localizacao
+        : (item as Imovel).endereco || '-',
+      item.assetType === 'bem'
+        ? formatSituacao((item as Patrimonio).status)
+        : 'Ativo',
+    ])
+
+    // Gerar tabela
+    autoTable(doc, {
+      head: [['Tipo', 'Nº Patrimônio', 'Descrição', 'Setor', 'Local', 'Situação']],
+      body: tableData,
+      startY: 42,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] },
+    })
+
+    const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.pdf`
+    doc.save(fileName)
+  }
+
   if (!publicSettings.isPublicSearchEnabled) {
     return (
       <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
@@ -209,63 +313,100 @@ export default function PublicAssets() {
         {/* Filtros e Busca */}
         <Card className="mb-6 border-none shadow-md">
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4 mb-4">
-              {/* Busca */}
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por número, descrição, setor ou local..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value)
+            <div className="space-y-4">
+              {/* Linha 1: Busca e Filtros */}
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Busca */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por número, descrição, setor ou local..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value)
+                      setCurrentPage(1)
+                    }}
+                  />
+                </div>
+
+                {/* Filtro de tipo */}
+                <Select
+                  value={assetTypeFilter}
+                  onValueChange={(v) => {
+                    setAssetTypeFilter(v as any)
                     setCurrentPage(1)
                   }}
-                />
+                >
+                  <SelectTrigger className="w-full md:w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="bem">
+                      <div className="flex items-center gap-2">
+                        <Archive className="h-4 w-4" />
+                        Bens Móveis
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="imovel">
+                      <div className="flex items-center gap-2">
+                        <Building className="h-4 w-4" />
+                        Imóveis
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Botão atualizar */}
+                <Button
+                  variant="outline"
+                  onClick={startSync}
+                  disabled={isSyncing}
+                  className="w-full md:w-auto"
+                >
+                  {isSyncing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Atualizar
+                </Button>
               </div>
 
-              {/* Filtro de tipo */}
-              <Select
-                value={assetTypeFilter}
-                onValueChange={(v) => {
-                  setAssetTypeFilter(v as any)
-                  setCurrentPage(1)
-                }}
-              >
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="bem">
-                    <div className="flex items-center gap-2">
-                      <Archive className="h-4 w-4" />
-                      Bens Móveis
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="imovel">
-                    <div className="flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      Imóveis
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Botão atualizar */}
-              <Button
-                variant="outline"
-                onClick={startSync}
-                disabled={isSyncing}
-                className="w-full md:w-auto"
-              >
-                {isSyncing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                Atualizar
-              </Button>
+              {/* Linha 2: Botões de Exportação */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportExcel}
+                  className="gap-2"
+                  disabled={filteredData.length === 0}
+                >
+                  <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                  Exportar Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCSV}
+                  className="gap-2"
+                  disabled={filteredData.length === 0}
+                >
+                  <FileText className="h-4 w-4 text-blue-600" />
+                  Exportar CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportPDF}
+                  className="gap-2"
+                  disabled={filteredData.length === 0}
+                >
+                  <Download className="h-4 w-4 text-red-600" />
+                  Exportar PDF
+                </Button>
+              </div>
             </div>
 
             {/* Info */}
