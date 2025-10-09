@@ -276,7 +276,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 };
 
 /**
- * Deletar usuário
+ * Deletar usuário (Soft Delete)
  * DELETE /api/users/:id
  */
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
@@ -293,6 +293,15 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       where: {
         id,
         municipalityId: req.user.municipalityId,
+      },
+      include: {
+        _count: {
+          select: {
+            patrimoniosCreated: true,
+            imoveisCreated: true,
+            activityLogs: true,
+          },
+        },
       },
     });
 
@@ -313,27 +322,96 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Deletar usuário
-    await prisma.user.delete({
-      where: { id },
+    console.log(`[DEV] Tentando deletar usuário: ${existingUser.name}`);
+    console.log(`[DEV] Registros vinculados:`, {
+      patrimonios: existingUser._count.patrimoniosCreated,
+      imoveis: existingUser._count.imoveisCreated,
+      activityLogs: existingUser._count.activityLogs,
     });
 
-    // Log de atividade
-    await prisma.activityLog.create({
-      data: {
-        userId: req.user.userId,
-        action: 'DELETE_USER',
-        entityType: 'USER',
-        entityId: id,
-        details: `Usuário deletado: ${existingUser.name}`,
-        ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
-        userAgent: req.get('user-agent') || 'unknown',
-      },
-    });
+    // Verificar se há registros vinculados
+    const hasRelatedRecords =
+      existingUser._count.patrimoniosCreated > 0 ||
+      existingUser._count.imoveisCreated > 0;
 
-    res.json({ message: 'Usuário deletado com sucesso' });
-  } catch (error) {
-    console.error('Erro ao deletar usuário:', error);
-    res.status(500).json({ error: 'Erro ao deletar usuário' });
+    if (hasRelatedRecords) {
+      // Soft Delete: Marcar como inativo ao invés de deletar
+      console.log('[DEV] Usuário tem registros vinculados. Fazendo soft delete...');
+
+      await prisma.user.update({
+        where: { id },
+        data: {
+          isActive: false,
+          email: `deleted_${Date.now()}_${existingUser.email}`, // Liberar o email para reutilização
+        },
+      });
+
+      // Log de atividade
+      await prisma.activityLog.create({
+        data: {
+          userId: req.user.userId,
+          action: 'DEACTIVATE_USER',
+          entityType: 'USER',
+          entityId: id,
+          details: `Usuário desativado (soft delete): ${existingUser.name}. Registros vinculados preservados.`,
+          ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
+          userAgent: req.get('user-agent') || 'unknown',
+        },
+      });
+
+      console.log('[DEV] ✅ Soft delete concluído');
+
+      res.json({
+        message: 'Usuário desativado com sucesso',
+        type: 'soft_delete',
+        reason: 'Usuário possui registros vinculados (patrimônios ou imóveis)',
+      });
+    } else {
+      // Hard Delete: Deletar permanentemente (sem registros vinculados)
+      console.log('[DEV] Usuário sem registros vinculados. Fazendo hard delete...');
+
+      // Deletar logs de atividade primeiro (cascade manual)
+      if (existingUser._count.activityLogs > 0) {
+        await prisma.activityLog.deleteMany({
+          where: { userId: id },
+        });
+        console.log(`[DEV] ${existingUser._count.activityLogs} logs deletados`);
+      }
+
+      // Deletar usuário
+      await prisma.user.delete({
+        where: { id },
+      });
+
+      // Log de atividade
+      await prisma.activityLog.create({
+        data: {
+          userId: req.user.userId,
+          action: 'DELETE_USER',
+          entityType: 'USER',
+          entityId: id,
+          details: `Usuário deletado permanentemente: ${existingUser.name}`,
+          ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
+          userAgent: req.get('user-agent') || 'unknown',
+        },
+      });
+
+      console.log('[DEV] ✅ Hard delete concluído');
+
+      res.json({
+        message: 'Usuário deletado com sucesso',
+        type: 'hard_delete',
+      });
+    }
+  } catch (error: any) {
+    console.error('[DEV] ❌ Erro ao deletar usuário:');
+    console.error('   Mensagem:', error.message);
+    console.error('   Código:', error.code);
+    console.error('   Stack:', error.stack);
+
+    res.status(500).json({
+      error: 'Erro ao deletar usuário',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
   }
 };
