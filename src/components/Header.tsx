@@ -17,6 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { GlobalSearch } from '@/components/GlobalSearch'
 import { MobileNavigation, BottomNavigation } from '@/components/MobileNavigation'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Bell, Search, User, LogOut, Settings, Shield, Building2 } from 'lucide-react'
 
 export const Header = () => {
@@ -149,6 +150,9 @@ export const Header = () => {
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-2 w-64 justify-end">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+
               {/* Search Button */}
               <Button
                 variant="ghost"
