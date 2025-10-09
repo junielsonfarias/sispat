@@ -70,9 +70,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
 
   const allSectors = useMemo(
     () =>
-      sectors
-        .filter((s) => s.municipalityId === MUNICIPALITY_ID)
-        .map((s) => ({ value: s.name, label: s.name })),
+      sectors.map((s) => ({ value: s.name, label: s.name })),
     [sectors],
   )
 
