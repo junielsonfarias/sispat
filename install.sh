@@ -1425,7 +1425,7 @@ start_application() {
     
     while [ $attempt -le $max_attempts ]; do
         echo -ne "\r     Tentativa $attempt/$max_attempts..."
-        if curl -f -s http://localhost:$APP_PORT/health > /dev/null 2>&1; then
+        if curl -f -s http://localhost:$APP_PORT/api/health > /dev/null 2>&1; then
             api_ok=true
             break
         fi
@@ -1436,7 +1436,7 @@ start_application() {
     
     if [ "$api_ok" = true ]; then
         success "Aplicação iniciada e respondendo! ✨"
-        echo -e "${GREEN}     API Health Check: ${WHITE}http://localhost:$APP_PORT/health${NC}"
+        echo -e "${GREEN}     API Health Check: ${WHITE}http://localhost:$APP_PORT/api/health${NC}"
     else
         echo ""
         warning "Aplicação iniciou mas API não está respondendo ainda"
@@ -1743,7 +1743,7 @@ verify_installation() {
     # 10. Verificar API (health check)
     echo -e "${YELLOW}[10/12]${NC} Verificando API (health check)..."
     sleep 2  # Aguardar API iniciar
-    local api_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$APP_PORT/health 2>/dev/null)
+    local api_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$APP_PORT/api/health 2>/dev/null)
     if [ "$api_response" = "200" ]; then
         success "API respondendo (HTTP 200)"
     else
