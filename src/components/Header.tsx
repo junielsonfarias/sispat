@@ -100,47 +100,47 @@ export const Header = () => {
         aria-label="Cabeçalho principal"
       >
         {/* Desktop Layout (lg and up) */}
-        <div className="hidden lg:flex h-28">
+        <div className="hidden lg:flex h-24">
           {/* Main Content Area - Centered Layout */}
-          <div className="flex-1 flex items-center justify-between px-8">
+          <div className="flex-1 flex items-center justify-between px-6">
             {/* Left Side - Logo (Aligned with menu) */}
             <div className="flex items-center w-64 justify-center">
               <div className="relative">
                 <img
                   src={settings.activeLogoUrl}
                   alt="Logo da Prefeitura"
-                  className="h-20 w-auto object-contain drop-shadow-lg"
+                  className="h-16 w-auto object-contain drop-shadow-md"
                 />
               </div>
             </div>
 
             {/* Center - Municipality Information */}
-            <div className="flex flex-col items-center text-center flex-1">
+            <div className="flex flex-col items-center text-center flex-1 px-4">
               {settings.prefeituraName ? (
                 <>
-                  <h1 className="text-3xl font-black text-gray-900 uppercase leading-tight tracking-widest">
+                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
                     {settings.prefeituraName}
                   </h1>
                   {settings.secretariaResponsavel && (
-                    <p className="text-lg text-gray-700 uppercase font-bold leading-tight tracking-wider">
+                    <p className="text-sm text-gray-700 uppercase font-semibold leading-tight tracking-wide">
                       {settings.secretariaResponsavel}
                     </p>
                   )}
                   {settings.departamentoResponsavel && (
-                    <p className="text-base text-gray-600 uppercase font-semibold leading-tight tracking-wide">
+                    <p className="text-xs text-gray-600 uppercase font-medium leading-tight tracking-wide">
                       {settings.departamentoResponsavel}
                     </p>
                   )}
                 </>
               ) : (
                 <>
-                  <h1 className="text-3xl font-black text-gray-900 uppercase leading-tight tracking-widest">
+                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
                     PREFEITURA MUNICIPAL
                   </h1>
-                  <p className="text-lg text-gray-700 uppercase font-bold leading-tight tracking-wider">
+                  <p className="text-sm text-gray-700 uppercase font-semibold leading-tight tracking-wide">
                     SECRETARIA DE ADMINISTRAÇÃO
                   </p>
-                  <p className="text-base text-gray-600 uppercase font-semibold leading-tight tracking-wide">
+                  <p className="text-xs text-gray-600 uppercase font-medium leading-tight tracking-wide">
                     DEPARTAMENTO DE PATRIMÔNIO
                   </p>
                 </>
@@ -148,7 +148,7 @@ export const Header = () => {
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-3 w-64 justify-end">
+            <div className="flex items-center gap-2 w-64 justify-end">
               {/* Search Button */}
               <Button
                 variant="ghost"
@@ -356,18 +356,18 @@ export const Header = () => {
         {/* Mobile Layout (below md) */}
         <div className="flex md:hidden h-24 px-4 items-center justify-center">
           {/* Logo and Municipality Info - Centered */}
-          <div className="flex flex-col items-center gap-2 pt-1">
+          <div className="flex flex-col items-center gap-1 pt-1">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
-              className="h-20 w-auto object-contain drop-shadow-lg"
+              className="h-16 w-auto object-contain drop-shadow-lg"
             />
             {settings.prefeituraName ? (
-              <h2 className="text-base font-black text-gray-900 uppercase text-center leading-tight tracking-wider">
+              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 {settings.prefeituraName}
               </h2>
             ) : (
-              <h2 className="text-base font-black text-gray-900 uppercase text-center leading-tight tracking-wider">
+              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
                 PREFEITURA
               </h2>
             )}
