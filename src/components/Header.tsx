@@ -101,37 +101,21 @@ export const Header = () => {
       >
         {/* Desktop Layout (lg and up) */}
         <div className="hidden lg:flex h-24">
-          {/* Left Sidebar - Logo and SISPAT */}
-          <div className="w-64 bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
-            <div className="flex items-center gap-4 px-6">
-              {/* Logo */}
+          {/* Main Content Area - Centered Layout */}
+          <div className="flex-1 flex items-center justify-between px-8">
+            {/* Left Side - Logo */}
+            <div className="flex items-center">
               <div className="relative">
                 <img
                   src={settings.activeLogoUrl}
                   alt="Logo da Prefeitura"
-                  className="h-12 w-auto object-contain"
+                  className="h-16 w-auto object-contain"
                 />
               </div>
-              
-              {/* SISPAT Text */}
-              <div className="flex flex-col">
-                <h1 className="text-2xl font-bold text-gray-900 leading-none">
-                  SISPAT
-                </h1>
-                <p className="text-sm text-gray-600 font-medium leading-tight">
-                  Sistema de
-                </p>
-                <p className="text-sm text-gray-600 font-medium leading-tight">
-                  Patrimônio
-                </p>
-              </div>
             </div>
-          </div>
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex items-center justify-between px-8">
-            {/* Municipality Information */}
-            <div className="flex flex-col">
+            {/* Center - Municipality Information */}
+            <div className="flex flex-col items-center text-center">
               {settings.prefeituraName ? (
                 <>
                   <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight">
