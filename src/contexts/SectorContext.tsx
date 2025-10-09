@@ -76,7 +76,15 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
     id: string,
     data: Omit<Sector, 'id' | 'municipalityId'>,
   ) => {
+    console.log('[DEV] 🔄 SectorContext.updateSector chamado:', {
+      id,
+      dadosEnviados: data,
+    });
+    
     const updatedSector = await api.put<Sector>(`/sectors/${id}`, data)
+    
+    console.log('[DEV] ✅ SectorContext: Resposta do backend:', updatedSector);
+    
     setSectors((prev) => prev.map((s) => (s.id === id ? updatedSector : s)))
     toast({ description: 'Setor atualizado com sucesso.' })
   }
