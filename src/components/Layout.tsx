@@ -21,22 +21,26 @@ export const Layout = ({ children }: LayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <SidebarProvider>
-        {/* ✅ CORREÇÃO: Sidebar fixo que acompanha a rolagem */}
-        <div className="sticky top-0 h-screen">
-          <Sidebar />
-        </div>
-        <div className="flex-1 flex flex-col">
-          {/* ✅ CORREÇÃO: Header fixo que acompanha a rolagem */}
-          <div className="sticky top-0 z-10">
-            <Header />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header com sidebar integrada */}
+      <div className="sticky top-0 z-10">
+        <Header />
+      </div>
+      
+      {/* Conteúdo principal */}
+      <div className="flex-1 flex">
+        {/* Sidebar de navegação */}
+        <SidebarProvider>
+          <div className="sticky top-20 h-[calc(100vh-5rem)]">
+            <Sidebar />
           </div>
-          <main className="flex-1 overflow-auto p-4">
-            {children || <Outlet />}
-          </main>
-        </div>
-      </SidebarProvider>
+          <div className="flex-1">
+            <main className="flex-1 overflow-auto p-6">
+              {children || <Outlet />}
+            </main>
+          </div>
+        </SidebarProvider>
+      </div>
       <Toaster />
     </div>
   )

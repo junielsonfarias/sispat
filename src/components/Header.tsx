@@ -1,4 +1,4 @@
-// Header component - Updated to fix Building2 error and improve typography
+// Header component - Enhanced with modern design based on image reference
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -17,7 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { GlobalSearch } from '@/components/GlobalSearch'
 import { MobileNavigation, BottomNavigation } from '@/components/MobileNavigation'
-import { Bell, Search, User, LogOut, Settings, Shield } from 'lucide-react'
+import { Bell, Search, User, LogOut, Settings, Shield, Building2 } from 'lucide-react'
 
 export const Header = () => {
   const { user, logout } = useAuth()
@@ -95,174 +95,179 @@ export const Header = () => {
   return (
     <>
       <header 
-        className="header-responsive safe-top no-print"
+        className="bg-white border-b border-gray-200 shadow-sm no-print"
         role="banner"
         aria-label="Cabeçalho principal"
       >
-        <div className="container-fluid flex items-center justify-between h-16 lg:h-20 px-4 lg:px-6">
-          {/* Logo and Title */}
-          <div className="flex items-center gap-4 flex-1">
-            {/* Mobile Menu Button - Only visible on mobile */}
-            <div className="block md:hidden">
-              <MobileNavigation />
-            </div>
-            
-            {/* Logo and Municipality Info - Only show on mobile/tablet, hidden on desktop since it's in sidebar */}
-            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity lg:hidden">
+        <div className="flex h-20">
+          {/* Left Sidebar - Logo and SISPAT */}
+          <div className="w-64 bg-gradient-to-br from-blue-50 to-blue-100 border-r border-blue-200 flex items-center justify-center">
+            <div className="flex items-center gap-4 px-6">
+              {/* Logo */}
               <div className="relative">
                 <img
                   src={settings.activeLogoUrl}
-                  alt="Logo"
-                  className="img-responsive rounded-lg shadow-sm border border-border/20"
-                  style={{ height: 'clamp(1.5rem, 1.25rem + 1.25vw, 2rem)' }}
+                  alt="Logo da Câmara Municipal"
+                  className="h-12 w-auto object-contain"
                 />
               </div>
-              <div className="hidden sm:block">
-                {settings.prefeituraName ? (
-                  <div className="flex flex-col">
-                    <h1 className="text-fluid-sm font-semibold leading-none text-foreground mb-0.5">
-                      {settings.prefeituraName}
-                    </h1>
-                    {settings.secretariaResponsavel && (
-                      <p className="text-fluid-xs text-muted-foreground leading-tight font-normal truncate max-w-[200px]">
-                        {settings.secretariaResponsavel}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col">
-                    <h1 className="text-fluid-sm font-semibold leading-none">SISPAT</h1>
-                    <p className="text-fluid-xs text-muted-foreground font-normal leading-tight">Sistema de Patrimônio</p>
-                  </div>
-                )}
+              
+              {/* SISPAT Text */}
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-bold text-gray-900 leading-none">
+                  SISPAT
+                </h1>
+                <p className="text-sm text-gray-600 font-medium leading-tight">
+                  Sistema de
+                </p>
+                <p className="text-sm text-gray-600 font-medium leading-tight">
+                  Patrimônio
+                </p>
               </div>
-            </Link>
-            
-            {/* Desktop: Show municipality info with proper alignment */}
-            <div className="hidden lg:flex lg:items-center lg:gap-6 flex-1">
-              {settings.prefeituraName && (
-                <div className="flex flex-col justify-center">
-                  <h1 className="text-lg font-semibold text-foreground leading-tight mb-0.5">
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex items-center justify-between px-8">
+            {/* Municipality Information */}
+            <div className="flex flex-col">
+              {settings.prefeituraName ? (
+                <>
+                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight">
                     {settings.prefeituraName}
                   </h1>
                   {settings.secretariaResponsavel && (
-                    <p className="text-sm text-muted-foreground leading-tight font-normal">
+                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
                       {settings.secretariaResponsavel}
                     </p>
                   )}
                   {settings.departamentoResponsavel && (
-                    <p className="text-xs text-muted-foreground/70 leading-tight font-normal mt-0.5">
+                    <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
                       {settings.departamentoResponsavel}
                     </p>
                   )}
-                </div>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight">
+                    PREFEITURA MUNICIPAL
+                  </h1>
+                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                    SECRETARIA DE ADMINISTRAÇÃO
+                  </p>
+                  <p className="text-sm text-gray-600 uppercase font-medium leading-tight">
+                    DEPARTAMENTO DE PATRIMÔNIO
+                  </p>
+                </>
               )}
             </div>
-          </div>
 
-          {/* Search Bar - Desktop */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <GlobalSearch />
-          </div>
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-4">
+              {/* Search Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSearch(!showSearch)}
+                className="h-10 w-10 hover:bg-gray-100"
+                aria-label="Buscar"
+              >
+                <Search className="h-5 w-5 text-gray-600" />
+              </Button>
 
-          {/* Right Side Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Search Button - Mobile */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowSearch(!showSearch)}
-              className="mobile-only touch-target"
-              aria-label="Abrir busca global"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
+              {/* Notifications */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 hover:bg-gray-100 relative"
+                aria-label="Notificações"
+              >
+                <Bell className="h-5 w-5 text-gray-600" />
+                {/* Notification Badge */}
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  3
+                </span>
+              </Button>
 
-            {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="touch-target"
-              aria-label="Notificações"
-            >
-              <Bell className="h-5 w-5" />
-            </Button>
-
-            {/* User Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-10 w-10 rounded-full touch-target"
-                  aria-label="Menu do usuário"
-                  aria-expanded="false"
-                >
-                  <Avatar className="h-8 w-8">
-                    {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && <AvatarImage src={user.avatarUrl} alt={user.name} />}
-                    <AvatarFallback className="text-xs">
-                      {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && <AvatarImage src={user.avatarUrl} alt={user.name} />}
-                        <AvatarFallback>
-                          {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <p className="text-sm font-medium leading-none">{user.name}</p>
-                        <p className="text-xs leading-none text-muted-foreground mt-1">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant="outline" 
-                      className={cn(
-                        'w-fit text-xs',
-                        getRoleBadgeColor(user.role)
+              {/* User Avatar */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-10 w-10 rounded-full hover:bg-gray-100 p-0"
+                    aria-label="Menu do usuário"
+                  >
+                    <Avatar className="h-8 w-8">
+                      {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
+                        <AvatarImage src={user.avatarUrl} alt={user.name} />
                       )}
-                    >
-                      <RoleIcon className="h-3 w-3 mr-1" />
-                      {user.role}
-                    </Badge>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
-                    <User className="h-4 w-4" />
-                    <span>Perfil</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/configuracoes/personalizacao" className="flex items-center gap-2 cursor-pointer">
-                    <Settings className="h-4 w-4" />
-                    <span>Configurações</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Sair</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                      <AvatarFallback className="bg-gray-200 text-gray-700 text-sm font-medium">
+                        {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-72" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12">
+                          {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
+                            <AvatarImage src={user.avatarUrl} alt={user.name} />
+                          )}
+                          <AvatarFallback className="bg-gray-200 text-gray-700">
+                            {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <p className="text-sm font-semibold leading-none">{user.name}</p>
+                          <p className="text-xs leading-none text-muted-foreground mt-1">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          'w-fit text-xs',
+                          getRoleBadgeColor(user.role)
+                        )}
+                      >
+                        <RoleIcon className="h-3 w-3 mr-1" />
+                        {user.role}
+                      </Badge>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                      <User className="h-4 w-4" />
+                      <span>Perfil</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/configuracoes/personalizacao" className="flex items-center gap-2 cursor-pointer">
+                      <Settings className="h-4 w-4" />
+                      <span>Configurações</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sair</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
 
         {/* Mobile Search Bar */}
         {showSearch && (
-          <div className="mobile-only border-t bg-background p-4">
+          <div className="md:hidden border-t bg-white p-4">
             <GlobalSearch />
           </div>
         )}
