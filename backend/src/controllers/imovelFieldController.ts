@@ -21,13 +21,13 @@ export const listImovelFields = async (req: Request, res: Response): Promise<voi
     })
 
     logInfo('Imovel fields listed', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       count: fields.length,
     })
 
     res.json(fields)
   } catch (error) {
-    logError('Failed to list imovel fields', error, { userId: req.user?.id })
+    logError('Failed to list imovel fields', error, { userId: req.user?.userId })
     res.status(500).json({ error: 'Erro ao listar campos personalizados' })
   }
 }
@@ -71,14 +71,14 @@ export const createImovelField = async (req: Request, res: Response): Promise<vo
     })
 
     logInfo('Imovel field created', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       fieldId: field.id,
       name: field.name,
     })
 
     res.status(201).json(field)
   } catch (error) {
-    logError('Failed to create imovel field', error, { userId: req.user?.id })
+    logError('Failed to create imovel field', error, { userId: req.user?.userId })
     res.status(500).json({ error: 'Erro ao criar campo personalizado' })
   }
 }
@@ -106,7 +106,7 @@ export const updateImovelField = async (req: Request, res: Response): Promise<vo
     })
 
     logInfo('Imovel field updated', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       fieldId: field.id,
       updates: Object.keys(updates),
     })
@@ -114,7 +114,7 @@ export const updateImovelField = async (req: Request, res: Response): Promise<vo
     res.json(field)
   } catch (error) {
     logError('Failed to update imovel field', error, {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       fieldId: req.params.id,
     })
     res.status(500).json({ error: 'Erro ao atualizar campo personalizado' })
@@ -144,14 +144,14 @@ export const deleteImovelField = async (req: Request, res: Response): Promise<vo
     })
 
     logInfo('Imovel field deleted', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       fieldId: id,
     })
 
     res.json({ message: 'Campo personalizado excluído com sucesso' })
   } catch (error) {
     logError('Failed to delete imovel field', error, {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       fieldId: req.params.id,
     })
     res.status(500).json({ error: 'Erro ao excluir campo personalizado' })
@@ -182,13 +182,13 @@ export const reorderImovelFields = async (req: Request, res: Response): Promise<
     )
 
     logInfo('Imovel fields reordered', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       count: fieldOrders.length,
     })
 
     res.json({ message: 'Campos reordenados com sucesso' })
   } catch (error) {
-    logError('Failed to reorder imovel fields', error, { userId: req.user?.id })
+    logError('Failed to reorder imovel fields', error, { userId: req.user?.userId })
     res.status(500).json({ error: 'Erro ao reordenar campos' })
   }
 }

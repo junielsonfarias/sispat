@@ -39,14 +39,14 @@ export const listManutencaoTasks = async (req: Request, res: Response): Promise<
     })
 
     logInfo('Maintenance tasks listed', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       count: tasks.length,
       filters: where,
     })
 
     res.json(tasks)
   } catch (error) {
-    logError('Failed to list maintenance tasks', error, { userId: req.user?.id })
+    logError('Failed to list maintenance tasks', error, { userId: req.user?.userId })
     res.status(500).json({ error: 'Erro ao listar tarefas de manutenção' })
   }
 }
@@ -101,14 +101,14 @@ export const createManutencaoTask = async (req: Request, res: Response): Promise
     })
 
     logInfo('Maintenance task created', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       taskId: task.id,
       titulo: task.titulo,
     })
 
     res.status(201).json(task)
   } catch (error) {
-    logError('Failed to create maintenance task', error, { userId: req.user?.id })
+    logError('Failed to create maintenance task', error, { userId: req.user?.userId })
     res.status(500).json({ error: 'Erro ao criar tarefa de manutenção' })
   }
 }
@@ -140,7 +140,7 @@ export const updateManutencaoTask = async (req: Request, res: Response): Promise
     })
 
     logInfo('Maintenance task updated', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       taskId: task.id,
       updates: Object.keys(updates),
     })
@@ -148,7 +148,7 @@ export const updateManutencaoTask = async (req: Request, res: Response): Promise
     res.json(task)
   } catch (error) {
     logError('Failed to update maintenance task', error, {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       taskId: req.params.id,
     })
     res.status(500).json({ error: 'Erro ao atualizar tarefa de manutenção' })
@@ -168,14 +168,14 @@ export const deleteManutencaoTask = async (req: Request, res: Response): Promise
     })
 
     logInfo('Maintenance task deleted', {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       taskId: id,
     })
 
     res.json({ message: 'Tarefa de manutenção excluída com sucesso' })
   } catch (error) {
     logError('Failed to delete maintenance task', error, {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       taskId: req.params.id,
     })
     res.status(500).json({ error: 'Erro ao excluir tarefa de manutenção' })
@@ -206,7 +206,7 @@ export const getManutencaoTask = async (req: Request, res: Response): Promise<vo
     res.json(task)
   } catch (error) {
     logError('Failed to get maintenance task', error, {
-      userId: req.user?.id,
+      userId: req.user?.userId,
       taskId: req.params.id,
     })
     res.status(500).json({ error: 'Erro ao buscar tarefa de manutenção' })
