@@ -14,13 +14,15 @@ import { SecureStorage, SafeWindow } from '@/lib/storage-utils'
 
 const MOCK_AVAILABLE_VERSIONS: Version[] = [
   {
-    version: '0.0.193',
+    version: '2.1.0',
     releaseDate: new Date().toISOString(),
     changelog: [
-      'Release: Official version 0.0.193 deployed.',
-      'Fix: Resolved authentication error "Unexpected token \'<\', "<html> <h"... is not valid JSON" by improving API error handling.',
-      'Fix: Corrected "Uncaught TypeError: municipalities.map is not a function" on the login page by ensuring municipality data is always an array.',
-      'Enhancement: Increased robustness of the login process.',
+      'Release: Official version 2.1.0 deployed.',
+      'Enhancement: Modernized header design with elegant sidebar and improved visual hierarchy.',
+      'Enhancement: Enhanced login screen with modern design and public consultation access.',
+      'Fix: Improved photo upload and display functionality for asset management.',
+      'Enhancement: Better responsive design and mobile experience.',
+      'Feature: Added public consultation link on login screen for better accessibility.',
     ],
   },
   {
@@ -115,7 +117,7 @@ interface VersionContextType {
 const VersionContext = createContext<VersionContextType | null>(null)
 
 export const VersionProvider = ({ children }: { children: ReactNode }) => {
-  const [currentVersion, setCurrentVersion] = useState('0.0.193')
+  const [currentVersion, setCurrentVersion] = useState('2.1.0')
   const [isUpdating, setIsUpdating] = useState(false)
   const [rollbackHistory, setRollbackHistory] = useState<
     RollbackHistoryEntry[]
