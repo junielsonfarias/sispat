@@ -119,76 +119,76 @@ export default function Login() {
       </div>
       
       <Container size="lg" padding="lg" className="relative z-10 w-full">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Side - Branding */}
-          <div className="text-center lg:text-left space-y-8">
-            {/* Logo and Title */}
-            <div className="space-y-6">
-              <div className="flex justify-center lg:justify-start">
+          <div className="text-center lg:text-left space-y-6 lg:space-y-8">
+            {/* Logo and Title - Centered */}
+            <div className="space-y-4 lg:space-y-6 text-center lg:text-left">
+              <div className="flex flex-col items-center lg:items-start space-y-3 lg:space-y-4">
                 <div className="relative">
                   <img
                     src={settings.activeLogoUrl}
                     alt="Logo"
-                    className="h-32 w-auto mx-auto lg:mx-0 img-responsive drop-shadow-2xl"
+                    className="h-24 sm:h-28 lg:h-32 w-auto mx-auto lg:mx-0 img-responsive drop-shadow-2xl"
                   />
                   <div className="absolute inset-0 bg-white/10 rounded-full blur-xl" />
                 </div>
-              </div>
-              
-              <div className="space-y-4">
-                <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-lg">
-                  {settings.welcomeTitle || 'SISPAT'}
-                </h1>
-                <p className="text-xl text-blue-50 leading-relaxed max-w-md mx-auto lg:mx-0 drop-shadow-md">
-                  {settings.welcomeSubtitle || 'Sistema Integrado de Patrimônio Municipal'}
-                </p>
+                
+                <div className="space-y-3 lg:space-y-4">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight drop-shadow-lg">
+                    {settings.welcomeTitle || 'SISPAT'}
+                  </h1>
+                  <p className="text-lg sm:text-xl text-blue-50 leading-relaxed max-w-md mx-auto lg:mx-0 drop-shadow-md">
+                    {settings.welcomeSubtitle || 'Sistema Integrado de Patrimônio Municipal'}
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Features */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto lg:mx-0">
-              <div className="flex items-center gap-3 text-blue-50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 max-w-lg mx-auto lg:mx-0">
+              <div className="flex items-center justify-center lg:justify-start gap-3 text-blue-50">
                 <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
-                  <Shield className="h-5 w-5 text-white" />
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <span className="text-sm font-medium drop-shadow-sm">Seguro e Confiável</span>
+                <span className="text-xs sm:text-sm font-medium drop-shadow-sm">Seguro e Confiável</span>
               </div>
-              <div className="flex items-center gap-3 text-blue-50">
+              <div className="flex items-center justify-center lg:justify-start gap-3 text-blue-50">
                 <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
-                  <Building2 className="h-5 w-5 text-white" />
+                  <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <span className="text-sm font-medium drop-shadow-sm">Gestão Municipal</span>
+                <span className="text-xs sm:text-sm font-medium drop-shadow-sm">Gestão Municipal</span>
               </div>
             </div>
 
             {/* Public Consultation Link */}
-            <div className="pt-8">
+            <div className="pt-6 lg:pt-8">
               <Link
                 to="/consulta-publica"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white/15 hover:bg-white/25 text-white rounded-lg border border-white/30 transition-all duration-300 hover:scale-105 hover:shadow-lg backdrop-blur-sm drop-shadow-md"
+                className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white/15 hover:bg-white/25 text-white rounded-lg border border-white/30 transition-all duration-300 hover:scale-105 hover:shadow-lg backdrop-blur-sm drop-shadow-md text-sm sm:text-base"
               >
-                <Search className="h-5 w-5" />
+                <Search className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="font-medium">Consulta Pública</span>
-                <ExternalLink className="h-4 w-4" />
+                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
               </Link>
-              <p className="text-blue-50 text-sm mt-2 drop-shadow-sm">
+              <p className="text-blue-50 text-xs sm:text-sm mt-2 drop-shadow-sm">
                 Acesse informações públicas sobre o patrimônio municipal
               </p>
             </div>
           </div>
 
           {/* Right Side - Login Form */}
-          <div className="w-full max-w-md mx-auto lg:mx-0">
+          <div className="w-full max-w-md mx-auto lg:mx-0 px-4 sm:px-0">
             <Card className="backdrop-blur-xl bg-white/95 border-white/20 shadow-2xl">
-              <CardHeader className="space-y-2 text-center pb-6">
-                <CardTitle className="text-2xl font-bold text-gray-900">
+              <CardHeader className="space-y-2 text-center pb-4 sm:pb-6 px-4 sm:px-6">
+                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
                   Acesso ao Sistema
                 </CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardDescription className="text-sm sm:text-base text-gray-600">
                   Digite suas credenciais para continuar
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
                 {/* Success Message */}
                 {successMessage && (
                   <Alert className="border-green-200 bg-green-50 text-green-800">
@@ -220,7 +220,7 @@ export default function Login() {
 
                 {/* Login Form */}
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
                     {/* Email Field */}
                     <FormField
                       control={form.control}
@@ -234,7 +234,7 @@ export default function Login() {
                           <FormControl>
                             <Input
                               placeholder="seu@email.com"
-                              className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                              className="h-10 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                               type="email"
                               autoComplete="email"
                               {...field}
@@ -259,7 +259,7 @@ export default function Login() {
                             <div className="relative">
                               <Input
                                 placeholder="Digite sua senha"
-                                className="pr-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                                className="pr-12 h-10 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                 type={showPassword ? 'text' : 'password'}
                                 autoComplete="current-password"
                                 {...field}
@@ -288,7 +288,7 @@ export default function Login() {
                     {/* Submit Button */}
                     <Button
                       type="submit"
-                      className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium transition-all duration-300 hover:shadow-lg"
+                      className="w-full h-10 sm:h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium transition-all duration-300 hover:shadow-lg text-sm sm:text-base"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -304,10 +304,10 @@ export default function Login() {
                 </Form>
 
                 {/* Links */}
-                <div className="text-center space-y-4 pt-4">
+                <div className="text-center space-y-3 sm:space-y-4 pt-3 sm:pt-4">
                   <Link
                     to="/forgot-password"
-                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                    className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
                   >
                     Esqueceu sua senha?
                   </Link>
@@ -323,7 +323,7 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-12 text-blue-50 text-sm drop-shadow-sm">
+        <div className="text-center mt-8 sm:mt-12 text-blue-50 text-xs sm:text-sm drop-shadow-sm px-4">
           <p>{settings.loginFooterText || 'Sistema de Gestão de Patrimônio Municipal'}</p>
         </div>
       </Container>
