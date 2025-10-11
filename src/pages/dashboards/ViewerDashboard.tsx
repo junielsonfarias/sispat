@@ -95,14 +95,14 @@ const ViewerDashboard = () => {
       <div className="grid gap-4 md:grid-cols-3">
         {statsCards.map((card) => (
           <Card key={card.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-2">
+              <CardTitle className="text-base md:text-lg lg:text-sm font-medium">
                 {card.title}
               </CardTitle>
-              <card.icon className="h-4 w-4 text-muted-foreground" />
+              <card.icon className="h-5 w-5 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
+            <CardContent className="pt-2">
+              <div className="text-3xl md:text-4xl lg:text-2xl font-bold">{card.value}</div>
             </CardContent>
           </Card>
         ))}

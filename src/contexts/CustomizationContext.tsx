@@ -82,9 +82,19 @@ export const CustomizationProvider = ({
   useEffect(() => {
     const fetchSettings = async () => {
       setIsLoading(true)
+      
+      // Verificar localStorage primeiro (cache)
+      const stored = localStorage.getItem('sispat_customization_settings')
+      if (stored) {
+        try {
+          const parsedSettings = JSON.parse(stored)
+          setSettings({ ...defaultSettings, ...parsedSettings })
+        } catch {
+          setSettings(defaultSettings)
+        }
+      }
+      
       try {
-        console.log('[DEV] 🔍 CustomizationContext: Buscando customização...');
-        
         // Tentar endpoint público primeiro (para tela de login)
         try {
           const publicResponse = await api.get<{ customization: CustomizationSettings }>('/customization/public')
@@ -92,12 +102,11 @@ export const CustomizationProvider = ({
             const loadedSettings = { ...defaultSettings, ...publicResponse.customization }
             setSettings(loadedSettings)
             localStorage.setItem('sispat_customization_settings', JSON.stringify(loadedSettings))
-            console.log('[DEV] ✅ Customização carregada do endpoint público');
             setIsLoading(false)
             return
           }
         } catch (publicError) {
-          console.log('[DEV] ℹ️ Endpoint público não disponível, tentando autenticado...');
+          // Endpoint público não existe - ignorar silenciosamente
         }
         
         // Tentar buscar do banco de dados (autenticado)
@@ -105,27 +114,11 @@ export const CustomizationProvider = ({
         if (response.customization) {
           const loadedSettings = { ...defaultSettings, ...response.customization }
           setSettings(loadedSettings)
-          // Sincronizar com localStorage
           localStorage.setItem('sispat_customization_settings', JSON.stringify(loadedSettings))
-          console.log('[DEV] ✅ Customização carregada do endpoint autenticado');
         }
       } catch (error) {
-        console.log('[DEV] ⚠️ Banco de dados indisponível, usando localStorage')
-        // Fallback para localStorage
-        const stored = localStorage.getItem('sispat_customization_settings')
-        if (stored) {
-          try {
-            const parsedSettings = JSON.parse(stored)
-            setSettings({ ...defaultSettings, ...parsedSettings })
-            console.log('[DEV] 📦 Customização carregada do localStorage');
-          } catch {
-            setSettings(defaultSettings)
-            console.log('[DEV] ⚠️ Erro ao parsear localStorage, usando padrão');
-          }
-        } else {
-          setSettings(defaultSettings)
-          console.log('[DEV] ℹ️ Nenhuma customização encontrada, usando padrão');
-        }
+        // Usar configurações do localStorage ou padrão (já carregado acima)
+        // Silenciar erro se não estiver autenticado
       } finally {
         setIsLoading(false)
       }

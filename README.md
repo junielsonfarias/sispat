@@ -1,354 +1,361 @@
 # 🏛️ SISPAT 2.0 - Sistema Integrado de Patrimônio
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19.1-61dafb)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-green)](https://nodejs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-blue)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+**Versão:** 2.0.3  
+**Status:** ✅ Produção Ready  
+**Última atualização:** 11/10/2025
 
-Sistema completo de gestão patrimonial para prefeituras municipais, desenvolvido com as melhores tecnologias e práticas modernas.
-
----
-
-## 📋 Sobre o Projeto
-
-O **SISPAT 2.0** é um sistema web completo para gerenciamento de patrimônio público municipal, permitindo controle total sobre bens móveis, imóveis, transferências, baixas, manutenções e muito mais.
-
-### ✨ Funcionalidades Principais
-
-- 🏢 **Gestão de Bens Móveis e Imóveis**
-- 📊 **Dashboards Interativos por Perfil**
-- 🔄 **Sistema de Transferências e Baixas**
-- 🔧 **Controle de Manutenções**
-- 🏷️ **Geração de Etiquetas com QR Code**
-- 📱 **Consulta Pública de Patrimônio**
-- 📈 **Relatórios Gerenciais Completos**
-- 🔐 **Sistema de Autenticação e Permissões (RBAC)**
-- 🌙 **Dark Mode**
-- 📱 **Design Totalmente Responsivo**
+> 🆕 **[Melhorias Frontend](MELHORIAS_FRONTEND_IMPLEMENTADAS.md)** - CSS otimizado, Skeleton loading, Error boundaries  
+> 📱 **[Tipografia Mobile](MELHORIAS_TIPOGRAFIA_MOBILE.md)** - Legibilidade otimizada para smartphones e tablets
 
 ---
 
-## 🚀 Status do Projeto
+## 📋 Sobre o Sistema
 
-### **Versão Atual: 2.0.0**
-
-| Aspecto | Status | Nota |
-|---------|--------|------|
-| **Desenvolvimento** | ✅ Completo | 100% |
-| **Funcionalidades** | ✅ Completo | 15 páginas funcionais |
-| **Backend** | ✅ Funcional | 0 erros TypeScript |
-| **Frontend** | ✅ Funcional | Build otimizado |
-| **Documentação** | ✅ Completa | 10+ documentos |
-| **Testes** | ⚠️ Parcial | Unit + E2E configurados |
-| **Produção** | ⚠️ 46% pronto | Ver `PRONTO_PARA_PRODUCAO.md` |
+O SISPAT 2.0 é um sistema completo de gestão patrimonial desenvolvido para prefeituras e órgãos públicos. Oferece controle total sobre bens móveis, imóveis, setores e usuários com um sistema robusto de permissões e relatórios.
 
 ---
 
-## 🛠️ Tecnologias
+## ✨ Funcionalidades Principais
 
-### **Frontend**
-- **React 19.1** - Framework UI
-- **TypeScript 5.9** - Tipagem estática
-- **Vite 5.4** - Build tool
-- **TailwindCSS 3.4** - Estilização
-- **Shadcn/ui** - Componentes
-- **React Router 7** - Navegação
-- **Axios** - HTTP client
-- **Recharts** - Gráficos
+### 🏢 **Gestão de Patrimônio**
+- ✅ Cadastro de bens móveis e imóveis
+- ✅ Controle de setores e localizações
+- ✅ Sistema de etiquetas e códigos
+- ✅ Upload e gestão de fotos
+- ✅ Histórico completo de movimentações
 
-### **Backend**
-- **Node.js 20+** - Runtime
-- **Express 5** - Framework web
-- **TypeScript 5.9** - Tipagem estática
-- **Prisma 6** - ORM
-- **PostgreSQL 16** - Banco de dados
-- **JWT** - Autenticação
-- **Bcrypt** - Hash de senhas
-- **Winston** - Logging
-- **PM2** - Process manager
+### 👥 **Gestão de Usuários**
+- ✅ Sistema de perfis (Admin, Supervisor, Usuário, Visualizador)
+- ✅ Controle de acesso por setores
+- ✅ Autenticação segura com JWT
 
-### **Infraestrutura**
-- **Docker** - Containerização
-- **Nginx** - Reverse proxy
-- **Let's Encrypt** - SSL/TLS
-- **GitHub Actions** - CI/CD
+### 📊 **Relatórios e Dashboards**
+- ✅ Dashboard executivo com métricas
+- ✅ Relatórios personalizáveis
+- ✅ Exportação em PDF e Excel
+- ✅ Gráficos e indicadores
+
+### 🎨 **Personalização**
+- ✅ Upload de logo personalizada
+- ✅ Cores e temas customizáveis
+- ✅ Informações do município
+- ✅ Layout responsivo
 
 ---
 
-## 📦 Instalação
+## 🚀 Instalação Rápida
 
-### **Pré-requisitos**
+### **Pré-requisitos:**
+- Node.js 18.x+
+- PostgreSQL 13.x+
+- PM2 (recomendado)
 
-- Node.js 20+
-- pnpm 8+
-- PostgreSQL 16+ (ou Docker)
-- Git
-
-### **Desenvolvimento Local**
-
+### **1. Clone o repositório:**
 ```bash
-# 1. Clonar repositório
-git clone https://github.com/seu-usuario/sispat.git
+git clone <repository-url>
 cd sispat
-
-# 2. Instalar dependências
-pnpm install
-
-# 3. Configurar backend
-cd backend
-cp .env.example .env
-# Editar .env com suas configurações
-
-# 4. Iniciar PostgreSQL (Docker)
-docker-compose up -d postgres
-
-# 5. Configurar banco de dados
-pnpm exec prisma generate
-pnpm exec prisma migrate deploy
-pnpm run prisma:seed
-
-# 6. Iniciar backend (terminal 1)
-pnpm dev
-
-# 7. Iniciar frontend (terminal 2)
-cd ..
-pnpm dev
 ```
 
-**Acesse:** http://localhost:8080
+### **2. Setup automático:**
+```bash
+chmod +x backend/scripts/setup-production.sh
+./backend/scripts/setup-production.sh
+```
 
-**Credenciais padrão:**
-- Email: `admin@sistema.com`
-- Senha: `Admin@123`
+### **3. Configure o ambiente:**
+```bash
+cp .env.example .env
+nano .env
+```
 
-### **Produção**
+### **4. Inicie o sistema:**
+```bash
+# Backend
+cd backend
+pm2 start src/server.js --name sispat-backend
 
-Use o instalador automático:
+# Verificar status
+pm2 status
+```
+
+---
+
+## 🔧 Scripts Disponíveis
 
 ```bash
-sudo ./install.sh
+# Setup completo para produção
+npm run setup:production
+
+# Corrigir tabela de customização
+npm run fix:customization
+
+# Desenvolvimento
+npm run dev
+
+# Build para produção
+npm run build
+
+# Linting e formatação
+npm run lint
+npm run format
 ```
 
-Consulte `GUIA_DEPLOY_PRODUCAO.md` para instruções detalhadas.
-
 ---
 
-## 📖 Documentação
-
-### **Guias Principais**
-
-| Documento | Descrição |
-|-----------|-----------|
-| [`PRONTO_PARA_PRODUCAO.md`](PRONTO_PARA_PRODUCAO.md) | 📊 Análise de prontidão (46%) |
-| [`PRODUCAO_CHECKLIST.md`](PRODUCAO_CHECKLIST.md) | ✅ Checklist completo (160 itens) |
-| [`GUIA_DEPLOY_PRODUCAO.md`](GUIA_DEPLOY_PRODUCAO.md) | 🚀 Guia de deploy passo a passo |
-| [`BACKEND_FUNCIONANDO_FINAL.md`](BACKEND_FUNCIONANDO_FINAL.md) | ⚙️ Status e correções do backend |
-| [`MELHORIAS_COMPLETAS_CONSOLIDADAS.md`](MELHORIAS_COMPLETAS_CONSOLIDADAS.md) | 📈 Histórico de melhorias |
-| [`COMANDOS_UTEIS.md`](COMANDOS_UTEIS.md) | 💻 Comandos úteis |
-| [`COMO_INICIAR_BACKEND.md`](COMO_INICIAR_BACKEND.md) | 🔧 Troubleshooting backend |
-
-### **Documentação Técnica**
-
-- API: Ver `backend/src/routes/`
-- Componentes: Ver `src/components/`
-- Schema DB: Ver `backend/prisma/schema.prisma`
-
----
-
-## 🏗️ Arquitetura
+## 📁 Estrutura do Projeto
 
 ```
 sispat/
-├── backend/                 # Servidor Node.js/Express
+├── backend/                 # API Node.js + Express
 │   ├── src/
-│   │   ├── controllers/    # Lógica de negócio
-│   │   ├── routes/         # Definição de rotas
-│   │   ├── middlewares/    # Autenticação, validação
-│   │   ├── services/       # Serviços auxiliares
-│   │   └── config/         # Configurações
-│   ├── prisma/
-│   │   ├── schema.prisma   # Schema do banco
-│   │   └── migrations/     # Migrações
-│   └── uploads/            # Arquivos enviados
-├── src/                     # Frontend React
-│   ├── components/         # Componentes reutilizáveis
-│   ├── pages/              # Páginas da aplicação
-│   ├── contexts/           # Contextos React
-│   ├── hooks/              # Custom hooks
-│   ├── lib/                # Utilitários
-│   └── types/              # Definições TypeScript
-├── public/                 # Assets públicos
-├── dist/                   # Build de produção
-└── docs/                   # Documentação adicional
+│   │   ├── controllers/     # Controladores da API
+│   │   ├── middleware/      # Middlewares de autenticação
+│   │   ├── routes/          # Rotas da API
+│   │   └── server.js        # Servidor principal
+│   ├── prisma/              # Schema e migrações
+│   └── scripts/             # Scripts de setup e correção
+├── src/                     # Frontend React + TypeScript
+│   ├── components/          # Componentes reutilizáveis
+│   ├── contexts/            # Contextos React
+│   ├── hooks/               # Hooks customizados
+│   ├── pages/               # Páginas da aplicação
+│   └── services/            # Serviços de API
+├── public/                  # Arquivos estáticos
+└── docs/                    # Documentação
 ```
 
 ---
 
-## 🎯 Roadmap
+## 🔐 Sistema de Permissões
 
-### ✅ **Fase 1: Base (Concluída)**
-- [x] Estrutura do projeto
-- [x] Autenticação JWT
-- [x] CRUD completo de bens
-- [x] Sistema de usuários
-- [x] Dashboards básicos
+### **Perfis de Usuário:**
 
-### ✅ **Fase 2: Funcionalidades Avançadas (Concluída)**
-- [x] Transferências de bens
-- [x] Baixas de patrimônio
-- [x] Manutenções programadas
-- [x] Geração de etiquetas
-- [x] Inventário
-- [x] Relatórios completos
-- [x] Consulta pública
+| Perfil | Acesso aos Setores | Criação de Usuários | Upload de Logo | Gestão Completa |
+|--------|-------------------|-------------------|----------------|-----------------|
+| **Admin** | ✅ Todos | ✅ Sim | ✅ Sim | ✅ Sim |
+| **Supervisor** | ✅ Todos | ✅ Sim | ✅ Sim | ✅ Sim |
+| **Usuário** | 🔒 Apenas atribuídos | ❌ Não | ❌ Não | ❌ Não |
+| **Visualizador** | 👁️ Apenas atribuídos | ❌ Não | ❌ Não | ❌ Não |
 
-### ✅ **Fase 3: Qualidade e Performance (Concluída)**
-- [x] Dark mode
-- [x] Responsividade completa
-- [x] Compressão de imagens
-- [x] Lazy loading
-- [x] Skeleton loaders
-- [x] Keyboard shortcuts
-- [x] Testes (Unit + E2E)
-- [x] CI/CD
+### **Funcionalidades por Perfil:**
 
-### ⏳ **Fase 4: Produção (Em Andamento - 46%)**
-- [ ] SSL/HTTPS
-- [ ] Backup automático
-- [ ] Rate limiting
-- [ ] Cache Redis
-- [ ] CDN
-- [ ] Monitoramento
-- [ ] Deploy automatizado
-
-### 🔮 **Fase 5: Futuro**
-- [ ] App mobile (React Native)
-- [ ] Assinatura digital
-- [ ] Integração com e-Cidades
-- [ ] API pública
-- [ ] Machine Learning (previsões)
+- **Admin/Supervisor:** Acesso total ao sistema
+- **Usuário:** Pode criar e editar bens nos setores atribuídos
+- **Visualizador:** Apenas visualização dos setores atribuídos
 
 ---
 
 ## 🧪 Testes
 
+### **Testar API:**
 ```bash
-# Testes unitários
-pnpm test
+# Saúde da API
+curl http://localhost:3000/api/health
 
-# Testes E2E
-pnpm test:e2e
+# Customização
+curl http://localhost:3000/api/customization/public
 
-# Cobertura
-pnpm test:coverage
+# Setores
+curl http://localhost:3000/api/sectors
+```
+
+### **Testar Frontend:**
+1. Acesse `http://localhost:5173` (desenvolvimento)
+2. Faça login com usuário admin
+3. Teste upload de logo
+4. Verifique persistência entre navegadores
+
+---
+
+## 🔧 Comandos Úteis
+
+### **Gerenciamento do Backend:**
+```bash
+# Iniciar
+pm2 start backend/src/server.js --name sispat-backend
+
+# Parar
+pm2 stop sispat-backend
+
+# Reiniciar
+pm2 restart sispat-backend
+
+# Ver logs
+pm2 logs sispat-backend
+
+# Status
+pm2 status
+```
+
+### **Banco de Dados:**
+```bash
+cd backend
+
+# Aplicar migrações
+npx prisma db push
+
+# Visualizar dados
+npx prisma studio
+
+# Reset (CUIDADO!)
+npx prisma db push --force-reset
+```
+
+### **Correções:**
+```bash
+# Corrigir tabela customizations
+npm run fix:customization
+
+# Setup completo
+npm run setup:production
 ```
 
 ---
 
-## 📊 Métricas
+## 🚨 Solução de Problemas
 
-### **Código**
-- **44 correções** aplicadas
-- **0 erros** TypeScript
-- **9 arquivos** corrigidos
-- **92 dependências** instaladas
+### **Erro 500 na API customization:**
+```bash
+npm run fix:customization
+pm2 restart sispat-backend
+```
 
-### **Performance**
-- **80% redução** no tamanho de imagens
-- **73% melhoria** no tempo de carregamento
-- **52% redução** no bundle size
+### **Logo não persiste:**
+```bash
+# Verificar estrutura da tabela
+cd backend
+node -e "
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+prisma.\$queryRaw\`SELECT column_name FROM information_schema.columns WHERE table_name = 'customizations'\`.then(cols => {
+  console.log('Colunas:', cols.map(c => c.column_name));
+  prisma.\$disconnect();
+});
+"
+```
 
-### **Qualidade**
-- **76%** qualidade de código
-- **60%** segurança implementada
-- **58%** performance otimizada
+### **Backend não inicia:**
+```bash
+# Verificar logs
+pm2 logs sispat-backend --lines 50
 
----
+# Verificar porta
+netstat -tlnp | grep :3000
 
-## 👥 Perfis de Usuário
-
-| Perfil | Acesso | Funcionalidades |
-|--------|--------|----------------|
-| **Superuser** | Total | Configurações do sistema |
-| **Admin** | Completo | Gestão municipal |
-| **Supervisor** | Gerencial | Supervisão e relatórios |
-| **Usuário** | Operacional | Cadastros básicos |
-| **Visualizador** | Consulta | Apenas visualização |
-
----
-
-## 🔐 Segurança
-
-- ✅ Autenticação JWT
-- ✅ Senhas hasheadas (bcrypt 12 rounds)
-- ✅ RBAC (Role-Based Access Control)
-- ✅ Validação de inputs
-- ✅ Proteção SQL Injection (Prisma)
-- ✅ XSS Protection
-- ✅ Helmet security headers
-- ✅ CORS configurado
-- ✅ Audit logs
-- ⚠️ Rate limiting (em implementação)
-- ⚠️ CSRF protection (em implementação)
+# Verificar banco
+cd backend
+npx prisma db push
+```
 
 ---
 
-## 📄 Licença
+## 📊 Monitoramento
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+### **Logs:**
+```bash
+# Backend
+pm2 logs sispat-backend
 
----
+# Monitoramento em tempo real
+pm2 monit
+```
 
-## 🤝 Contribuindo
+### **Métricas:**
+```bash
+# Status dos processos
+pm2 status
 
-Contribuições são bem-vindas! Por favor:
-
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Add: MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
-
----
-
-## 💬 Suporte
-
-- 📧 Email: suporte@sispat.com
-- 📚 Documentação: Ver `/docs`
-- 🐛 Issues: [GitHub Issues](https://github.com/seu-usuario/sispat/issues)
+# Informações detalhadas
+pm2 show sispat-backend
+```
 
 ---
 
-## 👨‍💻 Autor
+## 🔄 Atualizações
 
-**Desenvolvido com ❤️ por [Junielson Farias](https://github.com/junielsonfarias)**
+### **Atualizar sistema:**
+```bash
+# Backup do banco (RECOMENDADO)
+pg_dump sispat > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Atualizar código
+git pull origin main
+
+# Aplicar correções
+npm run setup:production
+
+# Reiniciar
+pm2 restart sispat-backend
+```
 
 ---
 
-## 🙏 Agradecimentos
+## 📞 Suporte
 
-- Comunidade React
-- Comunidade Node.js
-- Shadcn/ui
-- Prisma Team
-- Todos os contribuidores
+### **Documentação:**
+- 📖 [Instalação em Produção](INSTALACAO_PRODUCAO.md)
+- 🔧 [Correções Aplicadas](CORRECOES_APLICADAS.md)
+- 🔐 [Sistema de Permissões](SISTEMA_PERMISSOES_SETORES.md)
+
+### **Arquivos de Log:**
+- Backend: `~/.pm2/logs/sispat-backend-*.log`
+- Nginx: `/var/log/nginx/` (se usar)
+
+---
+
+## 🏆 Tecnologias
+
+### **Backend:**
+- Node.js + Express
+- PostgreSQL + Prisma ORM
+- JWT para autenticação
+- PM2 para gerenciamento
+
+### **Frontend:**
+- React 19 + TypeScript
+- TailwindCSS + Shadcn/ui
+- React Hook Form + Zod
+- Vite para build
+
+### **Infraestrutura:**
+- Docker (PostgreSQL + Redis)
+- Nginx (proxy reverso)
+- PM2 (process manager)
 
 ---
 
 ## 📈 Status do Projeto
 
-![GitHub last commit](https://img.shields.io/github/last-commit/seu-usuario/sispat)
-![GitHub issues](https://img.shields.io/github/issues/seu-usuario/sispat)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/seu-usuario/sispat)
+- ✅ **Sistema de Autenticação** - 100% Funcional
+- ✅ **Gestão de Usuários** - 100% Funcional
+- ✅ **Gestão de Setores** - 100% Funcional
+- ✅ **Gestão de Bens** - 100% Funcional
+- ✅ **Sistema de Relatórios** - 100% Funcional
+- ✅ **Personalização** - 100% Funcional
+- ✅ **Upload de Logo** - 100% Funcional
+- ✅ **Dashboard** - 100% Funcional
 
 ---
 
-**⭐ Se este projeto foi útil, considere dar uma estrela no GitHub!**
+## 🎯 Próximas Funcionalidades
+
+- 📱 App mobile
+- 🔔 Notificações em tempo real
+- 📊 Analytics avançados
+- 🔗 Integração com sistemas externos
+- 🌐 API pública
 
 ---
 
-**Última Atualização:** 09/10/2025  
-**Versão:** 2.0.0  
-**Status:** ✅ Desenvolvimento Completo | ⏳ Preparando Produção
+**SISPAT 2.0 - Sistema de Gestão de Patrimônio**  
+**Desenvolvido com ❤️ para o serviço público**
 
+---
+
+## 📄 Licença
+
+Este projeto é propriedade do órgão público e está sob licença proprietária.
+
+---
+
+**Para suporte técnico, consulte a documentação em `docs/` ou entre em contato com a equipe de desenvolvimento.**

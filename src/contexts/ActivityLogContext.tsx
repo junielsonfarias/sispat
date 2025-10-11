@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { ActivityLogAction } from '@/types'
 import { api } from '@/services/api-adapter'
+import { useAuth } from './AuthContext'
 
 interface ActivityLogEntry {
   id: string
@@ -40,20 +41,24 @@ const ActivityLogContext = createContext<ActivityLogContextType | null>(null)
 
 export const ActivityLogProvider = ({ children }: { children: ReactNode }) => {
   const [logs, setLogs] = useState<ActivityLogEntry[]>([])
+  const { user } = useAuth()
 
   useEffect(() => {
+    // Apenas carregar logs se o usuário estiver autenticado
+    if (!user) return
+    
     const loadLogs = async () => {
       try {
         const response = await api.get<{ logs: ActivityLogEntry[] }>('/audit-logs')
         const logsData = Array.isArray(response) ? response : (response.logs || [])
         setLogs(logsData)
       } catch (error) {
-        // Failed to load activity logs - handled silently
-        console.error('Failed to load audit logs:', error)
+        // Rota não implementada ainda - silenciar erro
+        // console.error('Failed to load audit logs:', error)
       }
     }
     loadLogs()
-  }, [])
+  }, [user])
 
   const logActivity = useCallback(
     async (

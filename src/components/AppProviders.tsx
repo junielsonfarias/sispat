@@ -33,19 +33,19 @@ import { AcquisitionFormProvider } from '@/contexts/AcquisitionFormContext'
 // Agrupamento de providers por funcionalidade para melhor organização
 const CoreProviders = ({ children }: { children: ReactNode }) => (
   <TooltipProvider>
-    <ActivityLogProvider>
-      <AuthProvider>
-        <PermissionProvider>
-          <VersionProvider>
-            <CustomizationProvider>
+    <AuthProvider>
+      <PermissionProvider>
+        <VersionProvider>
+          <CustomizationProvider>
+            <ActivityLogProvider>
               <ThemeProvider>
                 {children}
               </ThemeProvider>
-            </CustomizationProvider>
-          </VersionProvider>
-        </PermissionProvider>
-      </AuthProvider>
-    </ActivityLogProvider>
+            </ActivityLogProvider>
+          </CustomizationProvider>
+        </VersionProvider>
+      </PermissionProvider>
+    </AuthProvider>
   </TooltipProvider>
 )
 

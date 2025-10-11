@@ -20,7 +20,9 @@
     "test:watch": "vitest",
     "clean": "rm -rf dist node_modules/.vite",
     "deploy:build": "pnpm run clean && pnpm run build:prod",
-    "deploy:check": "pnpm run lint && pnpm run test"
+    "deploy:check": "pnpm run lint && pnpm run test",
+    "setup:production": "./backend/scripts/setup-production.sh",
+    "fix:customization": "cd backend && node scripts/fix-customization-table.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

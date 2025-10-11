@@ -103,11 +103,24 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Apenas superuser e supervisor podem alterar
-    if (req.user.role !== 'superuser' && req.user.role !== 'supervisor') {
-      res.status(403).json({ error: 'Sem permissão para alterar customização' });
+    console.log('🔐 [DEV] Verificando permissões...');
+    console.log('   Usuário:', req.user.email);
+    console.log('   Role:', req.user.role);
+    console.log('   MunicipalityId:', req.user.municipalityId);
+
+    // Supervisor, admin e superuser podem alterar customização
+    const allowedRoles = ['superuser', 'supervisor', 'admin'];
+    if (!allowedRoles.includes(req.user.role)) {
+      console.log('❌ [DEV] Acesso negado - Role não permitido:', req.user.role);
+      res.status(403).json({ 
+        error: 'Sem permissão para alterar customização',
+        userRole: req.user.role,
+        allowedRoles 
+      });
       return;
     }
+
+    console.log('✅ [DEV] Permissão concedida para role:', req.user.role);
 
     const { municipalityId } = req.user;
     const updateData = req.body;
@@ -233,9 +246,14 @@ export const resetCustomization = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    // Apenas superuser e supervisor podem resetar
-    if (req.user.role !== 'superuser' && req.user.role !== 'supervisor') {
-      res.status(403).json({ error: 'Sem permissão para resetar customização' });
+    // Supervisor, admin e superuser podem resetar customização
+    const allowedRoles = ['superuser', 'supervisor', 'admin'];
+    if (!allowedRoles.includes(req.user.role)) {
+      res.status(403).json({ 
+        error: 'Sem permissão para resetar customização',
+        userRole: req.user.role,
+        allowedRoles
+      });
       return;
     }
 

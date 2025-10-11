@@ -232,32 +232,6 @@
     @apply flex flex-col sm:flex-row gap-3 sm:gap-4;
   }
   
-  /* Button responsivo otimizado */
-  .btn-responsive {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: clamp(0.375rem, 0.25rem + 0.625vw, 0.5rem);
-    font-weight: 500;
-    transition: all 0.2s ease-in-out;
-    cursor: pointer;
-    border: none;
-    outline: none;
-    min-height: clamp(2.5rem, 2rem + 2.5vw, 2.75rem);
-    min-width: clamp(2.5rem, 2rem + 2.5vw, 2.75rem);
-    padding: clamp(0.5rem, 0.375rem + 0.625vw, 0.75rem) clamp(1rem, 0.75rem + 1.25vw, 1.5rem);
-    font-size: clamp(0.875rem, 0.8rem + 0.375vw, 1rem);
-  }
-  
-  @media (min-width: 768px) {
-    .btn-responsive {
-      min-height: clamp(2.25rem, 1.75rem + 2.5vw, 2.5rem);
-      min-width: clamp(2.25rem, 1.75rem + 2.5vw, 2.5rem);
-      padding: clamp(0.375rem, 0.25rem + 0.625vw, 0.625rem) clamp(0.875rem, 0.625rem + 1.25vw, 1.25rem);
-      font-size: clamp(0.8125rem, 0.75rem + 0.3125vw, 0.9375rem);
-    }
-  }
-  
   /* Grid responsivo otimizado */
   .grid-responsive {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
@@ -354,6 +328,31 @@
     .form-responsive {
       flex-direction: row;
       gap: clamp(1.5rem, 1.2rem + 1.5vw, 2rem);
+    }
+  }
+  
+  /* Form fields mobile-friendly */
+  .form-field-mobile {
+    @apply space-y-2;
+  }
+  
+  .form-field-mobile label {
+    @apply block text-sm font-medium text-foreground mb-2 touch-target;
+  }
+  
+  .form-field-mobile input,
+  .form-field-mobile textarea,
+  .form-field-mobile select {
+    @apply w-full min-h-[48px] px-4 py-3 text-base rounded-lg border border-input bg-background;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+    @apply transition-all duration-200;
+  }
+  
+  @media (min-width: 768px) {
+    .form-field-mobile input,
+    .form-field-mobile textarea,
+    .form-field-mobile select {
+      @apply min-h-[44px] px-3 py-2 text-sm;
     }
   }
   
@@ -633,8 +632,17 @@
   }
 }
 
-/* Dark mode transitions */
-* {
+/* Dark mode transitions - Aplicado apenas em elementos que precisam */
+.theme-transition,
+body,
+[data-theme],
+.card,
+.button,
+button,
+a,
+input,
+select,
+textarea {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
@@ -687,6 +695,16 @@
   .hover-shadow {
     @apply shadow-md;
   }
+  
+  /* Aumentar áreas de toque em dispositivos touch */
+  button, a, input, select, textarea {
+    @apply touch-manipulation;
+  }
+  
+  /* Feedback visual para interações touch */
+  .touch-feedback {
+    @apply active:bg-gray-100 dark:active:bg-gray-800 active:scale-95;
+  }
 }
 
 /* Landscape mobile optimizations */
@@ -698,23 +716,7 @@
   .landscape-hide {
     @apply hidden;
   }
-
-  /* Responsive visibility utilities */
-  .mobile-only {
-    @apply block md:hidden;
-  }
-
-  .tablet-only {
-    @apply hidden md:block lg:hidden;
-  }
-
-  .desktop-only {
-    @apply hidden lg:block;
-  }
-
-  .tablet-desktop {
-    @apply hidden md:block;
-  }
+}
 
   /* Report Paper Sizes */
   .a4-size {
@@ -849,4 +851,3 @@
       font-weight: bold;
     }
   }
-}

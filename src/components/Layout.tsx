@@ -28,7 +28,7 @@ export const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors">
       {/* Header responsivo */}
-      <div className="sticky top-0 z-10">
+      <div className="sticky top-0 z-40">
         <Header />
       </div>
       
@@ -39,8 +39,9 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="hidden lg:block sticky top-24 h-[calc(100vh-6rem)] w-64">
             <Sidebar />
           </div>
-          <div className="flex-1">
-            <main className="flex-1 overflow-auto p-3 md:p-4 lg:p-6">
+          <div className="flex-1 w-full">
+            {/* Main com padding-bottom para o bottom navigation em mobile */}
+            <main className="flex-1 overflow-auto p-4 md:p-4 lg:p-6 pb-20 md:pb-4">
               {children || <Outlet />}
             </main>
           </div>

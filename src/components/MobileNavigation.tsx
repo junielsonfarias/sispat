@@ -41,6 +41,7 @@ import {
   Laptop,
   History,
   ChevronRight,
+  ChevronDown,
   Package,
   PieChart,
   Calendar,
@@ -313,17 +314,47 @@ const MobileNavItem = ({ item }: { item: MobileNavItem }) => {
   )
 }
 
-const MobileNavGroup = ({ group }: { group: MobileNavGroup }) => {
+const MobileNavGroup = ({ 
+  group, 
+  isOpen, 
+  onToggle 
+}: { 
+  group: MobileNavGroup
+  isOpen: boolean
+  onToggle: () => void
+}) => {
   return (
-    <div className="space-fluid-sm">
-      <div className={cn('flex items-center gap-3 p-fluid-sm rounded-lg', group.color)}>
-        <group.icon className="h-5 w-5" />
-        <h3 className="font-semibold text-fluid-base">{group.title}</h3>
-      </div>
-      <div className="space-y-1 ml-4">
-        {group.items.map((item, index) => (
-          <MobileNavItem key={`${item.label}-${index}`} item={item} />
-        ))}
+    <div className="space-y-2">
+      <button
+        onClick={onToggle}
+        className={cn(
+          'flex items-center gap-3 px-3 py-2 rounded-lg w-full transition-all duration-200',
+          'hover:bg-accent active:scale-[0.98]',
+          group.color
+        )}
+      >
+        <group.icon className="h-5 w-5 flex-shrink-0" />
+        <h3 className="font-semibold text-base flex-1 text-left">{group.title}</h3>
+        <ChevronDown 
+          className={cn(
+            'h-5 w-5 transition-transform duration-200 flex-shrink-0',
+            isOpen && 'rotate-180'
+          )} 
+        />
+      </button>
+      
+      {/* Conteúdo expansível com animação */}
+      <div 
+        className={cn(
+          'overflow-hidden transition-all duration-300 ease-in-out',
+          isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+        )}
+      >
+        <div className="space-y-1 ml-2 pt-1">
+          {group.items.map((item, index) => (
+            <MobileNavItem key={`${item.label}-${index}`} item={item} />
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -332,6 +363,7 @@ const MobileNavGroup = ({ group }: { group: MobileNavGroup }) => {
 export const MobileNavigation = () => {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
+  const [openGroupIndex, setOpenGroupIndex] = useState<number | null>(0) // Primeiro grupo aberto por padrão
   const location = useLocation()
 
   const groups = user ? mobileNavGroups[user.role] || [] : []
@@ -340,6 +372,11 @@ export const MobileNavigation = () => {
   React.useEffect(() => {
     setOpen(false)
   }, [location.pathname])
+
+  // Toggle group - fecha outros ao abrir um
+  const handleToggleGroup = (index: number) => {
+    setOpenGroupIndex(openGroupIndex === index ? null : index)
+  }
 
   if (!user) return null
 
@@ -355,32 +392,37 @@ export const MobileNavigation = () => {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-80 max-w-[90vw] p-0">
-        <SheetHeader className="p-fluid-md border-b">
+      <SheetContent side="left" className="w-80 max-w-[90vw] p-0 flex flex-col h-full">
+        <SheetHeader className="p-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
-            <SheetTitle className="text-fluid-lg font-semibold">Menu</SheetTitle>
+            <SheetTitle className="text-lg font-semibold">Menu</SheetTitle>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setOpen(false)}
-              className="touch-target"
+              className="touch-target h-10 w-10"
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
-          <div className="text-fluid-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground">
             {user.name} - {user.role}
           </div>
         </SheetHeader>
         
-        <div className="flex-1 overflow-auto p-fluid-md space-fluid-lg">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3">
           {groups.map((group, index) => (
-            <MobileNavGroup key={`${group.title}-${index}`} group={group} />
+            <MobileNavGroup 
+              key={`${group.title}-${index}`} 
+              group={group}
+              isOpen={openGroupIndex === index}
+              onToggle={() => handleToggleGroup(index)}
+            />
           ))}
         </div>
         
-        <div className="p-fluid-md border-t">
-          <div className="text-fluid-xs text-muted-foreground text-center">
+        <div className="p-4 border-t flex-shrink-0">
+          <div className="text-xs text-muted-foreground text-center">
             SISPAT v2.0.0
           </div>
         </div>
@@ -389,7 +431,7 @@ export const MobileNavigation = () => {
   )
 }
 
-// Bottom navigation for mobile
+// Bottom navigation for mobile - Redesenhado e otimizado
 export const BottomNavigation = () => {
   const { user } = useAuth()
   const location = useLocation()
@@ -405,8 +447,11 @@ export const BottomNavigation = () => {
   ]
 
   return (
-    <div className="mobile-only fixed bottom-0 left-0 right-0 bg-background border-t safe-bottom no-print">
-      <div className="flex items-center justify-around p-fluid-xs">
+    <nav 
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-lg no-print z-50 safe-bottom"
+      aria-label="Navegação inferior"
+    >
+      <div className="grid grid-cols-5 gap-0 px-1 py-2 max-w-screen-xl mx-auto">
         {bottomNavItems.map((item, index) => {
           const isActive = item.exact
             ? location.pathname === item.to
@@ -417,18 +462,30 @@ export const BottomNavigation = () => {
               key={`${item.label}-${index}`}
               to={item.to}
               className={cn(
-                'flex flex-col items-center gap-1 p-fluid-xs rounded-lg touch-target transition-all duration-200',
+                'flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all duration-200 touch-target min-h-[56px]',
                 isActive
                   ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-foreground'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 active:scale-95'
               )}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-fluid-xs font-medium">{item.label}</span>
+              <item.icon 
+                className={cn(
+                  'h-6 w-6 transition-transform',
+                  isActive && 'scale-110'
+                )} 
+              />
+              <span className={cn(
+                'text-xs font-medium leading-none',
+                isActive && 'font-semibold'
+              )}>
+                {item.label}
+              </span>
             </NavLink>
           )
         })}
       </div>
-    </div>
+    </nav>
   )
 }

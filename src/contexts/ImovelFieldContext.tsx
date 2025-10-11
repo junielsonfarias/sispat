@@ -11,6 +11,7 @@ import { ImovelFieldConfig } from '@/types'
 import { generateId } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
+import { api } from '@/services/api-adapter'
 
 interface ImovelFieldContextType {
   fields: ImovelFieldConfig[]

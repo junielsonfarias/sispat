@@ -357,77 +357,103 @@ export const Header = () => {
           </div>
         </div>
 
-        {/* Mobile Layout (below md) */}
-        <div className="flex md:hidden h-24 px-4 items-center justify-center">
-          {/* Logo and Municipality Info - Centered */}
-          <div className="flex flex-col items-center gap-1 pt-1">
+        {/* Mobile Layout (below md) - Padrão de mercado otimizado */}
+        <div className="flex md:hidden h-14 px-4 items-center justify-between gap-3">
+          {/* Menu Hamburguer - Esquerda */}
+          <div className="flex-shrink-0">
+            <MobileNavigation />
+          </div>
+
+          {/* Logo - Centro (apenas logo, sem texto) */}
+          <div className="flex items-center justify-center flex-1 min-w-0">
             <img
               src={settings.activeLogoUrl}
               alt="Logo"
-              className="h-16 w-auto object-contain drop-shadow-lg"
+              className="h-10 w-auto max-w-[120px] object-contain"
             />
-            {settings.prefeituraName ? (
-              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
-                {settings.prefeituraName}
-              </h2>
-            ) : (
-              <h2 className="text-sm font-bold text-gray-900 uppercase text-center leading-tight tracking-wide">
-                PREFEITURA
-              </h2>
-            )}
           </div>
 
-
-          {/* Actions - Minimal */}
-          <div className="flex items-center gap-1">
+          {/* Avatar - Direita (apenas avatar, sem botão de busca) */}
+          <div className="flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-7 w-7 rounded-full p-0">
-                  <Avatar className="h-5 w-5">
+                <Button variant="ghost" className="h-10 w-10 rounded-full p-0 touch-target">
+                  <Avatar className="h-9 w-9 ring-2 ring-offset-1 ring-border">
                     {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
                       <AvatarImage src={user.avatarUrl} alt={user.name} />
                     )}
-                    <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
                       {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
+              <DropdownMenuContent className="w-72 mr-2" align="end" sideOffset={8}>
+                {/* Header do Menu */}
+                <DropdownMenuLabel className="font-normal p-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-12 w-12 ring-2 ring-primary/20">
                       {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
                         <AvatarImage src={user.avatarUrl} alt={user.name} />
                       )}
-                      <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="text-xs font-semibold">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.role}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate text-foreground">{user.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 capitalize">{user.role}</p>
                     </div>
                   </div>
                 </DropdownMenuLabel>
+                
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/perfil" className="flex items-center gap-2 text-xs">
-                    <User className="h-3 w-3" />
-                    <span>Perfil</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/configuracoes/personalizacao" className="flex items-center gap-2 text-xs">
-                    <Settings className="h-3 w-3" />
-                    <span>Configurações</span>
-                  </Link>
-                </DropdownMenuItem>
+                
+                {/* Opções do Menu */}
+                <div className="py-1">
+                  <DropdownMenuItem asChild>
+                    <Link to="/perfil" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Perfil</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem asChild>
+                    <Link to="/configuracoes/personalizacao" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer">
+                      <Settings className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Configurações</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  {/* Theme Toggle dentro do menu */}
+                  <DropdownMenuItem 
+                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer"
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <Settings className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">Tema</span>
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <ThemeToggle />
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                </div>
+                
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 text-xs">
-                  <LogOut className="h-3 w-3 mr-2" />
-                  <span>Sair</span>
-                </DropdownMenuItem>
+                
+                {/* Sair */}
+                <div className="py-1">
+                  <DropdownMenuItem 
+                    onClick={handleLogout} 
+                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span className="text-sm font-medium">Sair</span>
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

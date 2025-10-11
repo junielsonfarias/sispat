@@ -389,20 +389,20 @@ const UnifiedDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-4 xl:gap-5 mb-4 lg:mb-5">
           {/* Card 1: Total de Bens - Menor */}
           <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 overflow-hidden group cursor-pointer">
-            <CardContent className="p-2 lg:p-3 xl:p-4 min-h-[70px] lg:min-h-[80px] h-full">
+            <CardContent className="p-3 sm:p-3 lg:p-3 xl:p-4 min-h-[80px] lg:min-h-[80px] h-full">
               <div className="flex flex-col justify-between h-full">
                 <div className="mb-1 lg:mb-2">
-                  <p className="text-xs lg:text-sm font-semibold text-blue-600 mb-1 leading-tight tracking-wide">
+                  <p className="text-sm md:text-base lg:text-sm font-semibold text-blue-600 mb-1 leading-tight tracking-wide">
                     {firstRowCards[0].title}
                   </p>
-                  <p className="text-sm lg:text-base xl:text-lg font-bold text-blue-900 leading-tight break-words">
+                  <p className="text-lg md:text-xl lg:text-base xl:text-lg font-bold text-blue-900 leading-tight break-words">
                     {firstRowCards[0].value}
                   </p>
                 </div>
                 <div className="flex justify-end">
                   <div className="p-1 lg:p-1.5 bg-blue-200 rounded-md group-hover:scale-110 transition-transform duration-300">
                     {React.createElement(firstRowCards[0].icon, { 
-                      className: "h-3 w-3 lg:h-4 lg:w-4 text-blue-700" 
+                      className: "h-4 w-4 lg:h-4 lg:w-4 text-blue-700" 
                     })}
                   </div>
                 </div>
@@ -422,7 +422,7 @@ const UnifiedDashboard = () => {
                     {firstRowCards[1].value}
                   </p>
                   {firstRowCards[1].subtitle && (
-                    <p className="text-xs lg:text-sm text-green-600 leading-tight break-words line-clamp-2">
+                    <p className="text-sm md:text-base lg:text-sm text-green-600 leading-tight break-words line-clamp-2">
                       {firstRowCards[1].subtitle}
                     </p>
                   )}
@@ -440,20 +440,20 @@ const UnifiedDashboard = () => {
 
           {/* Card 3: Bens Ativos - Menor */}
           <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 overflow-hidden group cursor-pointer">
-            <CardContent className="p-2 lg:p-3 xl:p-4 min-h-[70px] lg:min-h-[80px] h-full">
+            <CardContent className="p-3 sm:p-3 lg:p-3 xl:p-4 min-h-[80px] lg:min-h-[80px] h-full">
               <div className="flex flex-col justify-between h-full">
                 <div className="mb-1 lg:mb-2">
-                  <p className="text-xs lg:text-sm font-semibold text-green-600 mb-1 leading-tight tracking-wide">
+                  <p className="text-sm md:text-base lg:text-sm font-semibold text-green-600 mb-1 leading-tight tracking-wide">
                     {firstRowCards[2].title}
                   </p>
-                  <p className="text-sm lg:text-base xl:text-lg font-bold text-green-900 leading-tight break-words">
+                  <p className="text-lg md:text-xl lg:text-base xl:text-lg font-bold text-green-900 leading-tight break-words">
                     {firstRowCards[2].value}
                   </p>
                 </div>
                 <div className="flex justify-end">
                   <div className="p-1 lg:p-1.5 bg-green-200 rounded-md group-hover:scale-110 transition-transform duration-300">
                     {React.createElement(firstRowCards[2].icon, { 
-                      className: "h-3 w-3 lg:h-4 lg:w-4 text-green-700" 
+                      className: "h-4 w-4 lg:h-4 lg:w-4 text-green-700" 
                     })}
                   </div>
                 </div>
@@ -478,20 +478,20 @@ const UnifiedDashboard = () => {
                 key={card.title} 
                 className={`border-0 shadow-md bg-gradient-to-br ${scheme.bg} hover:shadow-lg hover:scale-[1.02] transition-all duration-300 overflow-hidden group cursor-pointer`}
               >
-                <CardContent className="p-3 lg:p-4 xl:p-5 min-h-[80px] lg:min-h-[90px] h-full">
+                <CardContent className="p-3 sm:p-4 lg:p-4 xl:p-5 min-h-[90px] lg:min-h-[90px] h-full">
                   <div className="flex flex-col justify-between h-full">
                     <div className="mb-2 lg:mb-3">
-                      <p className={`text-xs lg:text-sm font-semibold ${scheme.text} mb-1 lg:mb-2 leading-tight tracking-wide`}>
+                      <p className={`text-sm md:text-base lg:text-sm font-semibold ${scheme.text} mb-1 lg:mb-2 leading-tight tracking-wide`}>
                         {card.title}
                       </p>
-                      <p className={`text-base lg:text-lg xl:text-xl font-bold ${scheme.textDark} leading-tight break-words`}>
+                      <p className={`text-lg md:text-xl lg:text-lg xl:text-xl font-bold ${scheme.textDark} leading-tight break-words`}>
                         {card.value}
                       </p>
                     </div>
                     <div className="flex justify-end">
                       <div className={`p-1.5 lg:p-2 ${scheme.iconBg} rounded-md group-hover:scale-110 transition-transform duration-300`}>
                         {React.createElement(card.icon, { 
-                          className: `h-3 w-3 lg:h-4 lg:w-4 ${scheme.iconColor}` 
+                          className: `h-4 w-4 lg:h-4 lg:w-4 ${scheme.iconColor}` 
                         })}
                       </div>
                     </div>
