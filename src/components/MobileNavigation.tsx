@@ -116,6 +116,7 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
       items: [
         { to: '/gerar-etiquetas', icon: QrCode, label: 'Gerar Etiquetas' },
         { to: '/etiquetas/templates', icon: LayoutTemplate, label: 'Modelos de Etiqueta' },
+        { to: '/gerenciador-fichas', icon: FileText, label: 'Gerenciador de Fichas' },
         { to: '/ferramentas/sync-client', icon: Laptop, label: 'Cliente de Sincronização' },
         { to: '/downloads', icon: Download, label: 'Downloads' },
       ],
@@ -194,6 +195,7 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
       items: [
         { to: '/gerar-etiquetas', icon: QrCode, label: 'Gerar Etiquetas' },
         { to: '/etiquetas/templates', icon: LayoutTemplate, label: 'Modelos de Etiqueta' },
+        { to: '/gerenciador-fichas', icon: FileText, label: 'Gerenciador de Fichas' },
         { to: '/ferramentas/sync-client', icon: Laptop, label: 'Cliente de Sincronização' },
         { to: '/downloads', icon: Download, label: 'Downloads' },
       ],

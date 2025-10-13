@@ -98,6 +98,133 @@ async function main() {
   });
   console.log('✅ Supervisor criado');
 
+  // Criar Templates de Ficha Padrão
+  console.log('\n📄 Criando templates de ficha padrão...');
+  
+  const defaultBensConfig = {
+    header: {
+      showLogo: true,
+      logoSize: 'medium',
+      showDate: true,
+      showSecretariat: true,
+      customTexts: {
+        secretariat: 'SECRETARIA MUNICIPAL DE ADMINISTRAÇÃO E FINANÇAS',
+        department: 'DEPARTAMENTO DE GESTÃO E CONTROLE DE PATRIMÔNIO'
+      }
+    },
+    sections: {
+      patrimonioInfo: {
+        enabled: true,
+        layout: 'grid',
+        fields: ['descricao_bem', 'tipo', 'marca', 'modelo', 'cor', 'numero_serie'],
+        showPhoto: true,
+        photoSize: 'medium'
+      },
+      acquisition: { 
+        enabled: true, 
+        fields: ['data_aquisicao', 'valor_aquisicao', 'forma_aquisicao'] 
+      },
+      location: { 
+        enabled: true, 
+        fields: ['setor_responsavel', 'local_objeto', 'status'] 
+      },
+      depreciation: { 
+        enabled: true, 
+        fields: ['metodo_depreciacao', 'vida_util_anos', 'valor_residual'] 
+      }
+    },
+    signatures: {
+      enabled: true,
+      count: 2,
+      layout: 'horizontal',
+      labels: ['Responsável pelo Setor', 'Responsável pelo Patrimônio'],
+      showDates: true
+    },
+    styling: {
+      margins: { top: 40, bottom: 20, left: 15, right: 15 },
+      fonts: { family: 'Arial', size: 12 }
+    }
+  };
+
+  const defaultImoveisConfig = {
+    header: {
+      showLogo: true,
+      logoSize: 'medium',
+      showDate: true,
+      showSecretariat: true,
+      customTexts: {
+        secretariat: 'SECRETARIA MUNICIPAL DE ADMINISTRAÇÃO E FINANÇAS',
+        department: 'DEPARTAMENTO DE GESTÃO E CONTROLE DE PATRIMÔNIO'
+      }
+    },
+    sections: {
+      patrimonioInfo: {
+        enabled: true,
+        layout: 'grid',
+        fields: ['denominacao', 'endereco', 'tipo_imovel', 'area_terreno', 'area_construida'],
+        showPhoto: true,
+        photoSize: 'medium'
+      },
+      acquisition: { 
+        enabled: true, 
+        fields: ['data_aquisicao', 'valor_aquisicao'] 
+      },
+      location: { 
+        enabled: true, 
+        fields: ['setor', 'situacao'] 
+      },
+      depreciation: { 
+        enabled: false, 
+        fields: [] 
+      }
+    },
+    signatures: {
+      enabled: true,
+      count: 2,
+      layout: 'horizontal',
+      labels: ['Responsável pelo Setor', 'Responsável pelo Patrimônio'],
+      showDates: true
+    },
+    styling: {
+      margins: { top: 40, bottom: 20, left: 15, right: 15 },
+      fonts: { family: 'Arial', size: 12 }
+    }
+  };
+
+  await prisma.fichaTemplate.upsert({
+    where: { id: 'template-bens-padrao' },
+    update: {},
+    create: {
+      id: 'template-bens-padrao',
+      name: 'Modelo Padrão - Bens Móveis',
+      description: 'Template padrão para fichas de bens móveis',
+      type: 'bens',
+      isDefault: true,
+      isActive: true,
+      config: defaultBensConfig,
+      municipalityId: municipality.id,
+      createdBy: superuser.id
+    }
+  });
+
+  await prisma.fichaTemplate.upsert({
+    where: { id: 'template-imoveis-padrao' },
+    update: {},
+    create: {
+      id: 'template-imoveis-padrao',
+      name: 'Modelo Padrão - Imóveis',
+      description: 'Template padrão para fichas de imóveis',
+      type: 'imoveis',
+      isDefault: true,
+      isActive: true,
+      config: defaultImoveisConfig,
+      municipalityId: municipality.id,
+      createdBy: superuser.id
+    }
+  });
+
+  console.log('✅ Templates de ficha padrão criados');
+
   // ✅ NÃO criar tipos de bens ou formas de aquisição
   // Serão configurados pelo superusuário no painel administrativo
 

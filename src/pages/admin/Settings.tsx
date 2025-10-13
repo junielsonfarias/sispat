@@ -6,6 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   Users,
   Building,
@@ -72,6 +73,29 @@ export default function Settings() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-bold">Configurações</h1>
+
+      {/* ✅ Card de Tema (Desktop) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Tema do Sistema
+          </CardTitle>
+          <CardDescription>Alterne entre modo claro e escuro</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Aparência</p>
+              <p className="text-sm text-muted-foreground">
+                Escolha o tema que preferir
+              </p>
+            </div>
+            <ThemeToggle />
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {settingsLinks.map((link) => (
           <Link to={link.to} key={link.to}>

@@ -135,7 +135,7 @@ const ThemeManagement = () => {
         </Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {themes.map((theme) => (
+        {themes && themes.length > 0 ? themes.map((theme) => (
           <Card key={theme.id}>
             <CardHeader>
               <CardTitle>{theme.name}</CardTitle>
@@ -169,7 +169,11 @@ const ThemeManagement = () => {
               )}
             </CardFooter>
           </Card>
-        ))}
+        )) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-muted-foreground">Nenhum tema encontrado. Crie um novo tema para começar.</p>
+          </div>
+        )}
       </div>
       <Dialog open={isEditorOpen} onOpenChange={setEditorOpen}>
         {editingTheme && (

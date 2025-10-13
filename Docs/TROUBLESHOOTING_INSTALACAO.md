@@ -1,488 +1,409 @@
-# 🔧 TROUBLESHOOTING - INSTALAÇÃO SISPAT 2.0
+# 🔧 TROUBLESHOOTING - INSTALAÇÃO TRAVADA
 
-**Soluções para problemas comuns durante a instalação**
+**Problema:** Instalação parou em "Compilando frontend"  
+**Servidor:** Debian 12 VPS  
+**Causa Provável:** Falta de memória RAM
 
 ---
 
-## 🐛 **PROBLEMA: Script parece travado**
+## 🚨 SINTOMAS
 
-### **Sintoma:**
 ```
 ╔═══════════════════════════════════════════════════╗
-║  ETAPA 4/4: Compilando backend (Node.js/TypeScript)║
+║  ETAPA 2/4: Compilando frontend (React/TypeScript)║
 ╚═══════════════════════════════════════════════════╝
 
 root@sispat:~#
 ```
 
-O prompt `root@sispat:~#` aparece mas o script não terminou.
+O processo simplesmente para e volta para o prompt sem erro.
 
 ---
 
-### **✅ SOLUÇÃO 1: Verificar se ainda está rodando**
+## 🔍 DIAGNÓSTICO RÁPIDO
+
+Execute no servidor:
 
 ```bash
-# Ver processos do instalador
-ps aux | grep -E "npm|pnpm|node" | grep -v grep
-```
-
-**Se mostrar processos:**
-```
-root  12345  npm run build
-root  12346  node dist/index.js
-```
-
-✅ **Ainda está rodando!** Aguarde mais alguns minutos.
-
----
-
-### **✅ SOLUÇÃO 2: Verificar logs em tempo real**
-
-```bash
-# Ver o que está acontecendo
-tail -f /tmp/build-backend.log
-```
-
-**Se mostrar:**
-```
-Compiling TypeScript files...
-src/controllers/...
-src/middlewares/...
-```
-
-✅ **Está compilando!** Aguarde terminar (pode levar 3-5 minutos).
-
-**Para sair do log:** Pressione `Ctrl+C`
-
----
-
-### **✅ SOLUÇÃO 3: Aguardar mais tempo**
-
-A compilação do backend pode demorar:
-- **VPS com 2GB RAM:** 2-3 minutos
-- **VPS com 1GB RAM:** 5-8 minutos
-- **VPS compartilhado:** até 10 minutos
-
-**Aguarde pelo menos 10 minutos antes de considerar que travou.**
-
----
-
-### **✅ SOLUÇÃO 4: Verificar se completou**
-
-```bash
-# Verificar se o build foi concluído
-ls -lh /var/www/sispat/backend/dist/
-
-# Deve mostrar arquivos .js
-# Se a pasta está vazia ou não existe, o build não completou
-```
-
----
-
-## 🐛 **PROBLEMA: Erro durante instalação de dependências**
-
-### **Sintoma:**
-```
-❌ Falha ao instalar dependências do frontend!
-Ver: /tmp/build-frontend-deps.log
-```
-
----
-
-### **✅ SOLUÇÃO: Ver o log e reinstalar**
-
-```bash
-# 1. Ver o erro
-cat /tmp/build-frontend-deps.log
-
-# 2. Se for erro de rede, tente novamente
-cd /var/www/sispat
-pnpm install --frozen-lockfile
-
-# 3. Se for erro de memória, adicione swap
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-
-# 4. Tente o build novamente
-pnpm run build:prod
-```
-
----
-
-## 🐛 **PROBLEMA: Erro ao compilar backend**
-
-### **Sintoma:**
-```
-❌ Falha ao compilar backend!
-Últimas linhas do log:
-error TS2307: Cannot find module...
-```
-
----
-
-### **✅ SOLUÇÃO: Reinstalar dependências**
-
-```bash
-cd /var/www/sispat/backend
-
-# 1. Limpar node_modules
-rm -rf node_modules package-lock.json
-
-# 2. Reinstalar
-npm install
-
-# 3. Tentar build novamente
-npm run build
-
-# 4. Verificar se criou os arquivos
-ls -lh dist/
-```
-
----
-
-## 🐛 **PROBLEMA: Falta de memória**
-
-### **Sintoma:**
-```
-FATAL ERROR: Reached heap limit Allocation failed
-JavaScript heap out of memory
-```
-
----
-
-### **✅ SOLUÇÃO: Adicionar memória swap**
-
-```bash
-# 1. Criar arquivo de swap de 2GB
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-
-# 2. Tornar permanente
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-
-# 3. Verificar
+# 1. Verificar memória
 free -h
 
-# 4. Tentar instalação novamente
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/install.sh | sudo bash
-```
+# 2. Verificar se há processos Node travados
+ps aux | grep node
 
----
+# 3. Verificar logs do sistema
+dmesg | tail -20
 
-## 🐛 **PROBLEMA: Script retorna ao prompt sem terminar**
-
-### **Sintoma:**
-```
-  ⠸ Compilando backend (aguarde, pode demorar até 3 minutos)...
-root@sispat:~#
-```
-
----
-
-### **✅ SOLUÇÃO: Completar instalação manualmente**
-
-```bash
-# 1. Ir para o diretório
-cd /var/www/sispat/backend
-
-# 2. Verificar se o build completou
-ls -lh dist/
-
-# Se a pasta dist/ existe e tem arquivos:
-
-# 3. Gerar Prisma Client
-npx prisma generate
-
-# 4. Executar migrações
-npx prisma migrate deploy
-
-# 5. Popular banco
-npm run prisma:seed
-
-# 6. Iniciar aplicação
-pm2 start dist/index.js --name sispat-backend
-pm2 save
-pm2 startup
-
-# 7. Reiniciar Nginx
-sudo systemctl restart nginx
-
-# 8. Verificar
-curl http://localhost:3000/health
-```
-
----
-
-## 🐛 **PROBLEMA: Erro ao clonar repositório**
-
-### **Sintoma:**
-```
-fatal: unable to access 'https://github.com/...': 
-Could not resolve host: github.com
-```
-
----
-
-### **✅ SOLUÇÃO: Verificar conexão**
-
-```bash
-# 1. Testar conexão com internet
-ping -c 3 8.8.8.8
-
-# 2. Testar DNS
-ping -c 3 github.com
-
-# 3. Se DNS não funciona, configurar
-echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
-
-# 4. Tentar novamente
-git clone https://github.com/junielsonfarias/sispat.git /var/www/sispat
-```
-
----
-
-## 🐛 **PROBLEMA: PostgreSQL não inicia**
-
-### **Sintoma:**
-```
-✗ ERRO: Banco de dados não está acessível
-```
-
----
-
-### **✅ SOLUÇÃO: Reiniciar PostgreSQL**
-
-```bash
-# 1. Verificar status
-sudo systemctl status postgresql
-
-# 2. Reiniciar
-sudo systemctl restart postgresql
-
-# 3. Verificar se está rodando
-sudo systemctl is-active postgresql
-
-# 4. Testar conexão
-sudo -u postgres psql -c "SELECT 1"
-```
-
----
-
-## 🐛 **PROBLEMA: Permissões negadas**
-
-### **Sintoma:**
-```
-EACCES: permission denied, mkdir '/var/www/sispat'
-```
-
----
-
-### **✅ SOLUÇÃO: Executar como root**
-
-```bash
-# Certifique-se de usar sudo
-sudo bash install.sh
-
-# Ou se já baixou o script:
-sudo bash /caminho/para/install.sh
-```
-
----
-
-## 🔍 **VERIFICAR STATUS DA INSTALAÇÃO**
-
-### **Script de verificação rápida:**
-
-```bash
-cat << 'EOF' > /tmp/check-install.sh
-#!/bin/bash
-
-echo "🔍 VERIFICANDO STATUS DA INSTALAÇÃO..."
-echo ""
-
-# Verificar diretórios
-echo "📁 Diretórios:"
-[ -d "/var/www/sispat" ] && echo "  ✅ /var/www/sispat existe" || echo "  ❌ /var/www/sispat NÃO existe"
-[ -d "/var/www/sispat/dist" ] && echo "  ✅ Frontend compilado" || echo "  ❌ Frontend NÃO compilado"
-[ -d "/var/www/sispat/backend/dist" ] && echo "  ✅ Backend compilado" || echo "  ❌ Backend NÃO compilado"
-
-echo ""
-echo "🗃️  Banco de Dados:"
-if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw sispat_prod; then
-    echo "  ✅ Banco sispat_prod existe"
-else
-    echo "  ❌ Banco sispat_prod NÃO existe"
-fi
-
-echo ""
-echo "🚀 Serviços:"
-pm2 list | grep -q "sispat-backend" && echo "  ✅ PM2 configurado" || echo "  ❌ PM2 NÃO configurado"
-sudo systemctl is-active nginx >/dev/null 2>&1 && echo "  ✅ Nginx ativo" || echo "  ❌ Nginx NÃO ativo"
-sudo systemctl is-active postgresql >/dev/null 2>&1 && echo "  ✅ PostgreSQL ativo" || echo "  ❌ PostgreSQL NÃO ativo"
-
-echo ""
-echo "🌐 Conectividade:"
-curl -f -s http://localhost:3000/health >/dev/null 2>&1 && echo "  ✅ API respondendo" || echo "  ❌ API NÃO responde"
-
-echo ""
-echo "📝 Logs disponíveis:"
-[ -f "/var/log/sispat-install.log" ] && echo "  ✅ /var/log/sispat-install.log" || echo "  ❌ Log de instalação não encontrado"
-[ -f "/tmp/build-backend.log" ] && echo "  ✅ /tmp/build-backend.log" || echo "  ❌ Log de build não encontrado"
-
-EOF
-
-bash /tmp/check-install.sh
-```
-
----
-
-## 🔄 **CONTINUAR INSTALAÇÃO MANUALMENTE**
-
-Se o script parou, você pode continuar manualmente:
-
-```bash
-# 1. Verificar em qual etapa parou
-cat /var/log/sispat-install.log | tail -20
-
-# 2. Se parou no build do backend:
-cd /var/www/sispat/backend
-npm run build
-
-# 3. Se parou no Prisma:
-npx prisma generate
-npx prisma migrate deploy
-npm run prisma:seed
-
-# 4. Se parou ao iniciar:
-pm2 start dist/index.js --name sispat-backend
-pm2 save
-
-# 5. Configurar Nginx (se não foi feito):
-sudo cp /var/www/sispat/nginx/conf.d/sispat.conf /etc/nginx/sites-available/sispat
-sudo ln -sf /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
-
-# 6. Configurar SSL (se necessário):
-sudo certbot --nginx -d sispat.vps-kinghost.net
-```
-
----
-
-## 🆘 **REINSTALAÇÃO LIMPA**
-
-Se tudo falhar, faça uma reinstalação limpa:
-
-```bash
-# 1. Parar tudo
-pm2 delete all 2>/dev/null || true
-sudo systemctl stop nginx
-
-# 2. Remover instalação
-sudo rm -rf /var/www/sispat
-sudo rm -rf /tmp/build-*.log
-sudo rm -rf /tmp/prisma-*.log
-
-# 3. Remover banco (CUIDADO: Apaga dados!)
-sudo -u postgres psql << EOF
-DROP DATABASE IF EXISTS sispat_prod;
-DROP USER IF EXISTS sispat_user;
-EOF
-
-# 4. Reinstalar
-curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/install.sh | sudo bash
-```
-
----
-
-## 📞 **OBTER AJUDA**
-
-### **1. Coletar informações para suporte:**
-
-```bash
-# Criar arquivo com todas as informações
-cat << 'EOF' > /tmp/sispat-debug.txt
-=== INFORMAÇÕES DO SISTEMA ===
-$(uname -a)
-$(free -h)
-$(df -h)
-
-=== STATUS DOS SERVIÇOS ===
-$(pm2 list)
-$(sudo systemctl status nginx --no-pager)
-$(sudo systemctl status postgresql --no-pager)
-
-=== LOGS DE INSTALAÇÃO ===
-$(tail -100 /var/log/sispat-install.log)
-
-=== LOGS DE BUILD ===
-$(cat /tmp/build-backend.log 2>/dev/null || echo "Log não encontrado")
-
-=== ESTRUTURA DE ARQUIVOS ===
-$(ls -lR /var/www/sispat/ 2>/dev/null | head -50)
-EOF
-
-# Ver o arquivo
-cat /tmp/sispat-debug.txt
-
-# Copiar e colar no GitHub Issues
-```
-
-### **2. Abrir issue no GitHub:**
-https://github.com/junielsonfarias/sispat/issues/new
-
-Cole as informações do arquivo `/tmp/sispat-debug.txt`
-
----
-
-## ✅ **COMANDOS ÚTEIS**
-
-### **Ver se algo está rodando:**
-```bash
-ps aux | grep -E "npm|pnpm|node|tsc" | grep -v grep
-```
-
-### **Matar processos travados:**
-```bash
-pkill -f "npm run build"
-pkill -f "pnpm run build"
-```
-
-### **Ver uso de CPU/Memória:**
-```bash
-top
-# Pressione 'q' para sair
-```
-
-### **Ver espaço em disco:**
-```bash
+# 4. Verificar uso de disco
 df -h
 ```
 
-### **Ver logs do sistema:**
+---
+
+## ✅ SOLUÇÃO 1: ADICIONAR SWAP (RECOMENDADA)
+
+### **Passo a Passo:**
+
 ```bash
-journalctl -xe | tail -50
+# 1. Cancelar instalação atual
+# Pressione Ctrl+C se ainda estiver rodando
+
+# 2. Matar processos Node travados
+killall node 2>/dev/null || true
+
+# 3. Criar swap de 2GB
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# 4. Tornar permanente
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# 5. Verificar
+free -h
+
+# 6. Limpar instalação anterior
+cd ~
+rm -rf /var/www/sispat
+
+# 7. Clonar novamente
+git clone https://github.com/junielsonfarias/sispat.git /var/www/sispat
+
+# 8. Executar instalação otimizada
+cd /var/www/sispat
+chmod +x install-low-memory.sh
+./install-low-memory.sh
+```
+
+**Tempo:** 10-15 minutos
+
+---
+
+## ✅ SOLUÇÃO 2: BUILD LOCAL (MAIS RÁPIDA)
+
+### **No seu computador Windows:**
+
+```powershell
+# 1. Abrir PowerShell na raiz do projeto
+cd "d:\novo ambiente\sispat - Copia"
+
+# 2. Fazer build do frontend
+pnpm install
+pnpm build
+
+# 3. Fazer build do backend
+cd backend
+pnpm install
+pnpm build
+cd ..
+
+# 4. Comprimir os builds
+# Instalar 7-Zip se não tiver
+tar -czf sispat-builds.tar.gz dist backend/dist node_modules backend/node_modules
+
+# OU usar 7-Zip GUI
+# Comprimir: dist/, backend/dist/, node_modules/, backend/node_modules/
+```
+
+### **Transferir para o servidor:**
+
+**Opção A: SCP (se tiver SSH configurado)**
+```powershell
+scp sispat-builds.tar.gz root@SEU_IP:/tmp/
+```
+
+**Opção B: SFTP (mais fácil)**
+1. Use WinSCP ou FileZilla
+2. Conecte ao servidor
+3. Envie `sispat-builds.tar.gz` para `/tmp/`
+
+### **No servidor:**
+
+```bash
+# 1. Navegar para diretório
+cd /var/www/sispat
+
+# 2. Extrair builds
+tar -xzf /tmp/sispat-builds.tar.gz
+
+# 3. Configurar backend
+cd backend
+
+# Criar .env
+nano .env
+# Adicionar configurações (ver env.production.example)
+
+# 4. Configurar banco
+pnpm exec prisma generate
+pnpm exec prisma migrate deploy
+pnpm run prisma:seed
+
+# 5. Iniciar com PM2
+pm2 start ecosystem.config.js --env production
+pm2 save
+
+# 6. Configurar Nginx
+# (ver GUIA_DEPLOY_PRODUCAO.md)
+```
+
+**Tempo:** 15-20 minutos
+
+---
+
+## ✅ SOLUÇÃO 3: MODIFICAR install.sh
+
+### **Se quiser usar o install.sh original:**
+
+```bash
+# 1. Editar install.sh
+nano install.sh
+
+# 2. Encontrar a linha de build do frontend (por volta da linha 800)
+# Procurar por: pnpm run build
+
+# 3. Substituir por:
+NODE_OPTIONS="--max-old-space-size=1024" timeout 900 pnpm run build || {
+    echo "Build falhou ou timeout. Tentando com configuração mínima..."
+    NODE_OPTIONS="--max-old-space-size=512" pnpm exec vite build --minify false
+}
+
+# 4. Salvar (Ctrl+X, Y, Enter)
+
+# 5. Executar novamente
+./install.sh
 ```
 
 ---
 
-## 🎯 **CHECKLIST DE DIAGNÓSTICO**
+## ✅ SOLUÇÃO 4: INSTALAÇÃO MANUAL PASSO A PASSO
 
-Execute cada comando e anote os resultados:
+Se tudo falhar, faça instalação manual:
 
-- [ ] `pm2 status` → Sistema rodando?
-- [ ] `curl localhost:3000/health` → API respondendo?
-- [ ] `ls /var/www/sispat/dist/` → Frontend compilado?
-- [ ] `ls /var/www/sispat/backend/dist/` → Backend compilado?
-- [ ] `sudo systemctl status nginx` → Nginx ativo?
-- [ ] `sudo systemctl status postgresql` → PostgreSQL ativo?
-- [ ] `free -h` → Memória disponível?
-- [ ] `df -h` → Espaço em disco?
+```bash
+# ============================================
+# INSTALAÇÃO MANUAL COMPLETA
+# ============================================
+
+# 1. Criar swap
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# 2. Clonar repositório
+cd /var/www
+git clone https://github.com/junielsonfarias/sispat.git
+cd sispat
+
+# 3. Instalar pnpm
+npm install -g pnpm
+
+# 4. Frontend - Instalar dependências
+echo "Instalando dependências do frontend (5 min)..."
+NODE_OPTIONS="--max-old-space-size=1024" pnpm install --prod
+
+# 5. Frontend - Build
+echo "Compilando frontend (10 min)..."
+NODE_OPTIONS="--max-old-space-size=1024" pnpm run build
+
+# 6. Backend - Instalar dependências
+cd backend
+echo "Instalando dependências do backend (3 min)..."
+NODE_OPTIONS="--max-old-space-size=512" pnpm install --prod
+
+# 7. Backend - Build
+echo "Compilando backend (2 min)..."
+NODE_OPTIONS="--max-old-space-size=512" pnpm run build
+
+# 8. Configurar .env
+cp env.production.example .env
+nano .env
+# Preencher: DATABASE_URL, JWT_SECRET, etc.
+
+# 9. PostgreSQL via Docker
+cd ..
+docker-compose up -d postgres
+
+# Aguardar 10 segundos
+sleep 10
+
+# 10. Configurar banco
+cd backend
+pnpm exec prisma generate
+pnpm exec prisma migrate deploy
+pnpm run prisma:seed
+
+# 11. PM2
+npm install -g pm2
+pm2 start ecosystem.config.js --env production
+pm2 save
+pm2 startup  # Executar comando gerado
+
+# 12. Nginx
+# Ver GUIA_DEPLOY_PRODUCAO.md para configuração completa
+
+echo "✅ Instalação manual concluída!"
+```
 
 ---
 
-**📞 Suporte:** https://github.com/junielsonfarias/sispat/issues
+## 📊 COMPARAÇÃO DAS SOLUÇÕES
+
+| Solução | Tempo | Dificuldade | Quando Usar |
+|---------|-------|-------------|-------------|
+| **Solução 1: Swap** | 15 min | Fácil | RAM < 4GB |
+| **Solução 2: Build Local** | 20 min | Média | Mais rápido, requer Windows |
+| **Solução 3: Modificar script** | 30 min | Média | Quer usar install.sh |
+| **Solução 4: Manual** | 40 min | Difícil | Máximo controle |
+
+---
+
+## 🆘 ERROS COMUNS
+
+### **Erro: "JavaScript heap out of memory"**
+
+**Causa:** Node sem memória  
+**Solução:**
+```bash
+export NODE_OPTIONS="--max-old-space-size=2048"
+# Ou adicionar swap
+```
+
+### **Erro: "ENOSPC: no space left on device"**
+
+**Causa:** Disco cheio  
+**Solução:**
+```bash
+# Verificar espaço
+df -h
+
+# Limpar cache do npm/pnpm
+pnpm store prune
+npm cache clean --force
+
+# Remover builds antigos
+rm -rf node_modules/.vite
+rm -rf dist
+```
+
+### **Erro: "Process killed"**
+
+**Causa:** Sistema matou processo por falta de memória  
+**Solução:**
+```bash
+# Adicionar swap (ver Solução 1)
+# OU fazer build local (ver Solução 2)
+```
+
+### **Timeout / Travou sem erro**
+
+**Causa:** Processo travou silenciosamente  
+**Solução:**
+```bash
+# Matar processos travados
+killall node
+
+# Limpar cache
+rm -rf node_modules/.vite
+
+# Tentar novamente com timeout
+timeout 900 pnpm run build
+```
+
+---
+
+## 🔍 DEBUG AVANÇADO
+
+### **Ver o que está acontecendo:**
+
+```bash
+# Terminal 1: Monitorar recursos
+watch -n 1 'free -h; echo ""; ps aux | grep node | grep -v grep'
+
+# Terminal 2: Executar build
+NODE_OPTIONS="--max-old-space-size=1024" pnpm run build
+
+# Terminal 3: Monitorar logs do sistema
+tail -f /var/log/syslog
+```
+
+### **Verificar se Node está rodando:**
+
+```bash
+# Ver processos Node
+ps aux | grep node
+
+# Ver uso de memória
+top -bn1 | grep node
+
+# Ver arquivos abertos
+lsof -p $(pgrep -f node) | wc -l
+```
+
+---
+
+## 💡 DICAS
+
+### **Servidor com pouca memória (<2GB):**
+- ✅ Use **Solução 2** (Build local)
+- ✅ Ou upgrade do servidor
+
+### **Servidor com 2-4GB RAM:**
+- ✅ Use **Solução 1** (Swap)
+- ✅ Funciona perfeitamente
+
+### **Servidor com 4GB+ RAM:**
+- ✅ install.sh normal deve funcionar
+- ✅ Se travar, adicione swap mesmo assim
+
+---
+
+## 📞 PRÓXIMOS PASSOS
+
+### **Depois que o build funcionar:**
+
+1. ✅ Configurar Nginx
+2. ✅ Configurar SSL (certbot)
+3. ✅ Executar testes: `./scripts/test-deploy.sh`
+4. ✅ Configurar backup: cron job
+5. ✅ Configurar monitoramento: UptimeRobot
+
+---
+
+## 🎯 RECOMENDAÇÃO
+
+### **Para o seu caso (Debian 12):**
+
+**EXECUTE A SOLUÇÃO 1:**
+
+```bash
+# No servidor SSH:
+
+# 1. Criar swap
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# 2. Verificar
+free -h
+
+# 3. Limpar e recomeçar
+cd ~
+rm -rf /var/www/sispat
+git clone https://github.com/junielsonfarias/sispat.git /var/www/sispat
+
+# 4. Executar script otimizado
+cd /var/www/sispat
+chmod +x install-low-memory.sh
+./install-low-memory.sh
+```
+
+**Isso deve funcionar perfeitamente! 🚀**
+
+---
+
+**Me avise se funcionou ou se precisa de mais ajuda!**
+

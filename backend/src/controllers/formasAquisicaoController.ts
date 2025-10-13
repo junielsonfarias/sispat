@@ -21,6 +21,8 @@ export const getFormasAquisicao = async (req: Request, res: Response): Promise<v
       },
     });
 
+    // ✅ PERFORMANCE: Cache HTTP para dados estáticos
+    res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
     res.json(formasAquisicao);
   } catch (error) {
     console.error('Erro ao buscar formas de aquisição:', error);

@@ -3,7 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
-import { PrismaClient } from '@prisma/client';
 import { validateEnvironment, showEnvironmentInfo } from './config/validate-env';
 
 // Carregar variáveis de ambiente
@@ -14,15 +13,18 @@ validateEnvironment();
 showEnvironmentInfo();
 
 // Inicializar Prisma Client
-// ✅ Logs reduzidos em produção para melhor performance e segurança
-export const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'production' 
-    ? ['error']  // Apenas erros em produção
-    : ['query', 'info', 'warn', 'error'],  // Todos em desenvolvimento
-});
+// ✅ Importar do arquivo dedicado para garantir que está atualizado
+import './lib/prisma'; // Força o carregamento do módulo
+const { prisma: prismaFromLib } = require('./lib/prisma');
+export const prisma = prismaFromLib;
 
 // Criar aplicação Express
 const app: Express = express();
+
+// ✅ Inicializar Sentry ANTES de qualquer outro middleware
+// TEMPORARIAMENTE DESABILITADO PARA BUILD
+// import { initSentry, getSentryErrorHandler } from './config/sentry';
+// initSentry(app);
 
 // ✅ Trust proxy para rate limiting funcionar corretamente atrás do Nginx
 app.set('trust proxy', 1);
@@ -66,9 +68,27 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 import { requestLogger } from './middlewares/requestLogger';
 import { errorHandler, notFound } from './middlewares/errorHandler';
+import { captureIP } from './middlewares/ipTracking';
+
+// ✅ v2.0.7: Capturar IP do cliente para auditoria
+app.use(captureIP);
 
 // Logger de requisições
 app.use(requestLogger);
+
+// ============================================
+// v2.1.0: ALTA DISPONIBILIDADE - MIDDLEWARES
+// ============================================
+
+// Health monitoring (tracking de requests e métricas)
+// TEMPORARIAMENTE DESABILITADO PARA DEBUG
+// import { healthMonitorMiddleware } from './utils/health-monitor';
+// app.use(healthMonitorMiddleware);
+
+// Rate limiting global (proteção contra abuso)
+// TEMPORARIAMENTE DESABILITADO PARA DEBUG
+// import { globalRateLimiter } from './middlewares/advanced-rate-limit';
+// app.use(globalRateLimiter);
 
 // ============================================
 // ROTAS DE SAÚDE (antes das rotas principais)
@@ -77,11 +97,19 @@ app.use(requestLogger);
 import healthRoutes from './routes/healthRoutes';
 app.use('/api/health', healthRoutes);
 
+// ============================================
+// DOCUMENTAÇÃO DA API (SWAGGER)
+// ============================================
+
+import { setupSwagger } from './config/swagger';
+setupSwagger(app);
+
 // Rota principal
 app.get('/', (req: Request, res: Response) => {
   res.json({
     message: 'SISPAT API v2.1.0',
     documentation: '/api-docs',
+    openapi: '/api-docs.json',
     health: '/api/health',
     healthDetailed: '/api/health/detailed',
     ready: '/api/health/ready',
@@ -108,6 +136,9 @@ import uploadRoutes from './routes/uploadRoutes';
 import auditLogRoutes from './routes/auditLogRoutes';
 import manutencaoRoutes from './routes/manutencaoRoutes';
 import imovelFieldRoutes from './routes/imovelFieldRoutes';
+import transferenciaRoutes from './routes/transferenciaRoutes';
+import documentRoutes from './routes/documentRoutes';
+import fichaTemplatesRoutes from './routes/fichaTemplates';
 
 // ✅ Rotas públicas (sem autenticação)
 app.use('/api/public', publicRoutes);
@@ -127,6 +158,9 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/manutencoes', manutencaoRoutes);
 app.use('/api/imovel-fields', imovelFieldRoutes);
+app.use('/api/transferencias', transferenciaRoutes);
+app.use('/api/documentos', documentRoutes);
+app.use('/api/ficha-templates', fichaTemplatesRoutes);
 
 // ============================================
 // TRATAMENTO DE ERROS
@@ -134,6 +168,10 @@ app.use('/api/imovel-fields', imovelFieldRoutes);
 
 // 404 - Rota não encontrada
 app.use(notFound);
+
+// Sentry error handler (ANTES do error handler global)
+// TEMPORARIAMENTE DESABILITADO PARA BUILD
+// app.use(getSentryErrorHandler());
 
 // Error handler global
 app.use(errorHandler);
@@ -159,12 +197,22 @@ async function startServer() {
   
   app.listen(PORT, () => {
     console.log('\n🚀 ================================');
-    console.log(`   SISPAT Backend API`);
+    console.log(`   SISPAT Backend API v2.1.0`);
     console.log('   ================================');
     console.log(`   🌐 Servidor rodando em: http://localhost:${PORT}`);
-    console.log(`   🏥 Health check: http://localhost:${PORT}/health`);
+    console.log(`   🏥 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`   📚 API Docs: http://localhost:${PORT}/api-docs`);
     console.log(`   🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
     console.log('   ================================\n');
+    
+    // ⭐ v2.1.0: Iniciar health monitoring
+    // TEMPORARIAMENTE DESABILITADO PARA DEBUG
+    // import('./utils/health-monitor').then(({ healthMonitor }) => {
+    //   if (process.env.ENABLE_HEALTH_MONITOR !== 'false') {
+    //     healthMonitor.start()
+    //     console.log('   📊 Health monitoring ativo')
+    //   }
+    // }).catch(err => console.error('❌ Erro ao iniciar health monitor:', err))
   });
 }
 

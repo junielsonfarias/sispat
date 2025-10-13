@@ -149,4 +149,5 @@ export const httpApi = {
 };
 
 export default httpApi;
+export { httpApi as api };
 

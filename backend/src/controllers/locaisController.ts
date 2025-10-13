@@ -27,6 +27,8 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
+    // ✅ PERFORMANCE: Cache HTTP para dados estáticos
+    res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
     res.json(locais);
   } catch (error) {
     console.error('Erro ao buscar locais:', error);

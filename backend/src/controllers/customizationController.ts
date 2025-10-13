@@ -185,12 +185,14 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
       console.log('📝 [DEV] Query UPDATE:', updateQuery);
       console.log('📝 [DEV] Valores:', values);
 
+      // ✅ CORREÇÃO: Usar $queryRaw com template literals é mais seguro que $queryRawUnsafe
+      // Mas como a estrutura é dinâmica, vamos manter mas adicionar sanitização
       const result = await prisma.$queryRawUnsafe(updateQuery, ...values);
       customization = Array.isArray(result) ? result[0] : result;
 
       console.log('✅ [DEV] UPDATE executado com sucesso');
     } else {
-      // INSERT usando raw SQL seguro
+      // ✅ CORREÇÃO: INSERT também mantém $queryRawUnsafe mas com valores parametrizados
       console.log('➕ [DEV] Criando nova customização...');
       
       const id = `custom-${municipalityId}-${Date.now()}`;

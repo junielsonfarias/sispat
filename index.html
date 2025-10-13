@@ -1,13 +1,23 @@
-<!-- HTML template for the frontend react app: https://developer.mozilla.org/en-US/docs/Web/HTML -->
+<!-- HTML template for SISPAT - Sistema Integrado de Patrimônio -->
 <!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SISPAT</title>
-    <meta name="description" content="Skip (https://goskip.dev)" />
-    <meta name="author" content="Skip (https://goskip.dev)" />
+    <title>SISPAT - Sistema Integrado de Patrimônio</title>
+    <meta name="description" content="Sistema Integrado de Patrimônio - Gestão completa de bens móveis e imóveis municipais" />
+    <meta name="author" content="SISPAT - Sistema Integrado de Patrimônio" />
+    <meta name="keywords" content="patrimônio, gestão, bens, imóveis, prefeitura, sistema" />
+    <meta property="og:title" content="SISPAT - Sistema Integrado de Patrimônio" />
+    <meta property="og:description" content="Sistema Integrado de Patrimônio - Gestão completa de bens móveis e imóveis municipais" />
     <meta property="og:image" content="/og-image.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/favicon.ico" />
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/main.tsx" as="script" crossorigin="anonymous" />
   </head>
 
   <body>
@@ -15,3 +25,4 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

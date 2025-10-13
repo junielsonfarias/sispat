@@ -19,12 +19,25 @@ export const fetchAuditLogs = async ({
 }: FetchLogsParams) => {
   const queryParams = new URLSearchParams({
     page: String(page),
-    pageSize: String(pageSize),
+    limit: String(pageSize), // Backend usa 'limit' em vez de 'pageSize'
     ...filters,
   }).toString()
 
-  const data = await api.get<any[]>(`/audit_logs?${queryParams}`)
-  return { data, count: data.length } // Mock count
+  const response = await api.get<{
+    logs: any[]
+    pagination: {
+      page: number
+      limit: number
+      total: number
+      pages: number
+    }
+  }>(`/audit-logs?${queryParams}`)
+  
+  // ✅ CORREÇÃO: Mapear resposta do backend corretamente
+  return { 
+    data: response.logs || [], 
+    count: response.pagination?.total || 0 
+  }
 }
 
 export const logAction = async (
@@ -37,5 +50,5 @@ export const logAction = async (
     new_value?: unknown
   },
 ) => {
-  await api.post('/audit_logs', { action, ...details })
+  await api.post('/audit-logs', { action, ...details })
 }

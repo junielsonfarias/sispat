@@ -17,8 +17,19 @@ export const listAuditLogs = async (req: Request, res: Response): Promise<void> 
     if (userId) where.userId = userId
     if (startDate || endDate) {
       where.createdAt = {}
-      if (startDate) where.createdAt.gte = new Date(startDate as string)
-      if (endDate) where.createdAt.lte = new Date(endDate as string)
+      // ✅ CORREÇÃO: Validar datas antes de usar
+      if (startDate && startDate !== 'undefined' && startDate !== 'null') {
+        const start = new Date(startDate as string)
+        if (!isNaN(start.getTime())) {
+          where.createdAt.gte = start
+        }
+      }
+      if (endDate && endDate !== 'undefined' && endDate !== 'null') {
+        const end = new Date(endDate as string)
+        if (!isNaN(end.getTime())) {
+          where.createdAt.lte = end
+        }
+      }
     }
 
     const skip = (Number(page) - 1) * Number(limit)
@@ -127,8 +138,19 @@ export const getAuditLogStats = async (req: Request, res: Response): Promise<voi
     const where: any = {}
     if (startDate || endDate) {
       where.createdAt = {}
-      if (startDate) where.createdAt.gte = new Date(startDate as string)
-      if (endDate) where.createdAt.lte = new Date(endDate as string)
+      // ✅ CORREÇÃO: Validar datas antes de usar
+      if (startDate && startDate !== 'undefined' && startDate !== 'null') {
+        const start = new Date(startDate as string)
+        if (!isNaN(start.getTime())) {
+          where.createdAt.gte = start
+        }
+      }
+      if (endDate && endDate !== 'undefined' && endDate !== 'null') {
+        const end = new Date(endDate as string)
+        if (!isNaN(end.getTime())) {
+          where.createdAt.lte = end
+        }
+      }
     }
 
     // Agrupar por ação

@@ -2,12 +2,14 @@ import { Patrimonio } from '@/types'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { api } from '@/services/http-api'
 
 interface PatrimonioPDFGeneratorProps {
   patrimonio: Patrimonio
   municipalityName?: string
   municipalityLogo?: string
   selectedSections?: string[]
+  templateId?: string
 }
 
 export const generatePatrimonioPDF = async ({
@@ -15,7 +17,26 @@ export const generatePatrimonioPDF = async ({
   municipalityName = 'Prefeitura Municipal',
   municipalityLogo = '/logo-government.svg',
   selectedSections = ['header', 'numero', 'identificacao', 'aquisicao', 'localizacao', 'status', 'baixa', 'depreciacao', 'observacoes', 'fotos', 'sistema', 'rodape'],
+  templateId,
 }: PatrimonioPDFGeneratorProps) => {
+  // Buscar template se fornecido
+  let template: any = null
+  if (templateId) {
+    try {
+      template = await api.get(`/ficha-templates/${templateId}`)
+      console.log('[PDF Generator] Usando template:', template.name)
+    } catch (error) {
+      console.error('[PDF Generator] Erro ao carregar template:', error)
+    }
+  }
+
+  // Aplicar configurações do template se disponível
+  const config = template?.config || {}
+  const margins = config.styling?.margins || { top: 40, bottom: 20, left: 15, right: 15 }
+  const fonts = config.styling?.fonts || { family: 'Arial', size: 12 }
+  const headerConfig = config.header || {}
+  const signaturesConfig = config.signatures || { enabled: true, count: 2, layout: 'horizontal', labels: ['Responsável pelo Setor', 'Responsável pelo Patrimônio'], showDates: true }
+
   // Função auxiliar para verificar se uma seção deve ser incluída
   const shouldInclude = (sectionId: string) => selectedSections.includes(sectionId)
   // Criar elemento temporário para renderizar o conteúdo
@@ -23,68 +44,120 @@ export const generatePatrimonioPDF = async ({
   container.style.position = 'absolute'
   container.style.left = '-9999px'
   container.style.width = '210mm' // A4 width
-  container.style.padding = '20mm'
+  container.style.paddingTop = `${margins.top}px`
+  container.style.paddingBottom = `${margins.bottom}px`
+  container.style.paddingLeft = `${margins.left}px`
+  container.style.paddingRight = `${margins.right}px`
   container.style.backgroundColor = '#ffffff'
-  container.style.fontFamily = 'Arial, sans-serif'
+  container.style.fontFamily = fonts.family
+  container.style.fontSize = `${fonts.size}px`
   
   // HTML do PDF
   container.innerHTML = `
-    <div style="width: 100%; max-width: 170mm;">
+    <div style="width: 100%; max-width: 180mm;">
       ${shouldInclude('header') ? `
       <!-- Cabeçalho -->
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #3B82F6;">
-        <div style="display: flex; align-items: center; gap: 15px;">
-          <img src="${municipalityLogo}" alt="Logo" style="height: 60px; width: auto;" onerror="this.style.display='none'" />
-          <div>
-            <h1 style="margin: 0; font-size: 20px; color: #1e40af; font-weight: bold;">${municipalityName}</h1>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #64748b;">Ficha de Cadastro de Bem Móvel</p>
+      <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #000;">
+        <!-- Logo e Nome do Município -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            ${headerConfig.showLogo !== false ? `<img src="${municipalityLogo}" alt="Logo" style="height: ${headerConfig.logoSize === 'small' ? '60px' : headerConfig.logoSize === 'large' ? '120px' : '90px'}; width: auto;" onerror="this.style.display='none'" />` : ''}
+            <div style="flex: 1;">
+              <h1 style="margin: 0; font-size: 20px; color: #000; font-weight: bold; line-height: 1.1;">${municipalityName}</h1>
+            </div>
           </div>
+          ${headerConfig.showDate !== false ? `
+          <div style="text-align: right;">
+            <p style="margin: 0; font-size: 11px; color: #000; font-weight: 500;">Data de Emissão</p>
+            <p style="margin: 3px 0 0 0; font-size: 12px;">${formatDate(new Date())}</p>
+          </div>
+          ` : ''}
         </div>
-        <div style="text-align: right;">
-          <p style="margin: 0; font-size: 11px; color: #64748b;">Data de Emissão</p>
-          <p style="margin: 3px 0 0 0; font-size: 12px; font-weight: bold;">${formatDate(new Date())}</p>
+
+        ${headerConfig.showSecretariat !== false ? `
+        <!-- Informações da Secretaria Gestora -->
+        <div style="margin-bottom: 12px; text-align: center;">
+          <p style="margin: 0; font-size: 12px; color: #000; font-weight: 500;">${headerConfig.customTexts?.secretariat || 'SECRETARIA MUNICIPAL DE ADMINISTRAÇÃO E FINANÇAS'}</p>
+          <p style="margin: 0; font-size: 12px; color: #000; font-weight: 500;">${headerConfig.customTexts?.department || 'DEPARTAMENTO DE GESTÃO E CONTROLE DE PATRIMÔNIO'}</p>
+          <p style="margin: 5px 0 0 0; font-size: 14px; color: #000; font-weight: bold;">Ficha de Cadastro de Bem Móvel</p>
+        </div>
+        ` : ''}
+
+        <!-- Linha Separadora -->
+        <div style="border-top: 1px solid #ccc; padding-top: 8px; text-align: center;">
+          <p style="margin: 0; font-size: 14px; color: #000; font-weight: bold;">${patrimonio.setor_responsavel ? patrimonio.setor_responsavel.toUpperCase() : 'SECRETARIA RESPONSÁVEL'}</p>
         </div>
       </div>
       ` : ''}
 
       ${shouldInclude('numero') ? `
-      <!-- Número do Patrimônio em Destaque -->
-      <div style="background: linear-gradient(135deg, #3B82F6 0%, #1e40af 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-        <p style="margin: 0; font-size: 12px; opacity: 0.9;">NÚMERO DO PATRIMÔNIO</p>
-        <p style="margin: 5px 0 0 0; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${patrimonio.numero_patrimonio}</p>
+      <!-- Número do Patrimônio e Dados de Cadastro/Atualização -->
+      <div style="margin-bottom: 25px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+          <!-- Número do Patrimônio - Reduzido -->
+          <div style="padding: 12px; background: #f3f4f6; border-left: 4px solid #3B82F6; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px; font-weight: bold; color: #3B82F6;">#</span>
+              <div>
+                <p style="margin: 0; font-size: 10px; color: #6b7280; font-weight: 500;">NÚMERO DO PATRIMÔNIO</p>
+                <p style="margin: 0; font-size: 16px; font-weight: bold; color: #000;">${patrimonio.numero_patrimonio}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Dados de Cadastro -->
+          <div style="padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; text-align: center;">
+            <p style="margin: 0; font-size: 10px; color: #6b7280; font-weight: 500; margin-bottom: 4px;">CADASTRADO EM</p>
+            <p style="margin: 0; font-size: 12px; font-weight: 600; color: #000;">${formatDate(new Date(patrimonio.createdAt))}</p>
+          </div>
+          
+          <!-- Dados de Atualização -->
+          <div style="padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; text-align: center;">
+            <p style="margin: 0; font-size: 10px; color: #6b7280; font-weight: 500; margin-bottom: 4px;">ÚLTIMA ATUALIZAÇÃO</p>
+            <p style="margin: 0; font-size: 12px; font-weight: 600; color: #000;">${formatDate(new Date(patrimonio.updatedAt))}</p>
+          </div>
+        </div>
       </div>
       ` : ''}
 
       ${shouldInclude('identificacao') ? `
       <!-- Seção 1: Identificação -->
       <div style="margin-bottom: 20px;">
-        <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #1e40af; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
-          📋 IDENTIFICAÇÃO DO BEM
+        <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px;">
+          IDENTIFICAÇÃO DO BEM
         </h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        
+        <!-- Layout com foto integrada e melhorada -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+          <!-- Descrição, Tipo e Número de Série -->
           <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">DESCRIÇÃO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.descricao_bem || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">DESCRIÇÃO</p>
+            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000; line-height: 1.4;">${patrimonio.descricao_bem || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">TIPO</p>
+            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.tipo || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">NÚMERO DE SÉRIE</p>
+            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.numero_serie || '-'}</p>
           </div>
+          
+          <!-- Marca, Modelo e Cor -->
           <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">TIPO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.tipo || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">MARCA</p>
+            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000; line-height: 1.4;">${patrimonio.marca || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">MODELO</p>
+            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.modelo || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">COR</p>
+            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.cor || '-'}</p>
           </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">MARCA</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.marca || '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">MODELO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.modelo || '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">COR</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.cor || '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">NÚMERO DE SÉRIE</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.numero_serie || '-'}</p>
+          
+          <!-- Foto - Altura Aumentada -->
+          <div style="text-align: center;">
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 8px;">FOTO</p>
+            <div style="width: 100%; height: 160px; border: 2px solid #d1d5db; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+              ${patrimonio.fotos && patrimonio.fotos.length > 0 ? `
+                <img src="${patrimonio.fotos[0]}" alt="Foto do bem" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                <span style="display: none; font-size: 12px; color: #6b7280;">Sem foto</span>
+              ` : '<span style="font-size: 12px; color: #6b7280;">Sem foto</span>'}
+            </div>
           </div>
         </div>
       </div>
@@ -93,29 +166,21 @@ export const generatePatrimonioPDF = async ({
       ${shouldInclude('aquisicao') ? `
       <!-- Seção 2: Aquisição -->
       <div style="margin-bottom: 20px;">
-        <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #1e40af; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
-          💰 DADOS DE AQUISIÇÃO
+        <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #000; border-bottom: 2px solid #d1d5db; padding-bottom: 8px;">
+          INFORMAÇÕES DE AQUISIÇÃO
         </h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
           <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">DATA DE AQUISIÇÃO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.data_aquisicao ? formatDate(patrimonio.data_aquisicao) : '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">DATA DE AQUISIÇÃO</p>
+            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.data_aquisicao ? formatDate(patrimonio.data_aquisicao) : '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">VALOR DE AQUISIÇÃO</p>
+            <p style="margin: 0; font-size: 14px; color: #000; font-weight: bold;">${patrimonio.valor_aquisicao ? formatCurrency(patrimonio.valor_aquisicao) : '-'}</p>
           </div>
           <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">VALOR DE AQUISIÇÃO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b; font-weight: bold;">${patrimonio.valor_aquisicao ? formatCurrency(patrimonio.valor_aquisicao) : '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">FORMA DE AQUISIÇÃO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.forma_aquisicao || '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">NOTA FISCAL</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.numero_nota_fiscal || '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">QUANTIDADE</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.quantidade || 1}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">NOTA FISCAL</p>
+            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.numero_nota_fiscal || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">FORMA DE AQUISIÇÃO</p>
+            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.forma_aquisicao || '-'}</p>
           </div>
         </div>
       </div>
@@ -124,59 +189,24 @@ export const generatePatrimonioPDF = async ({
       ${shouldInclude('localizacao') ? `
       <!-- Seção 3: Localização -->
       <div style="margin-bottom: 20px;">
-        <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #1e40af; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
-          📍 LOCALIZAÇÃO
+        <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #000; border-bottom: 2px solid #d1d5db; padding-bottom: 8px;">
+          LOCALIZAÇÃO E ESTADO
         </h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
           <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">SETOR RESPONSÁVEL</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.setor_responsavel || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">LOCALIZAÇÃO</p>
+            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.local_objeto || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">STATUS</p>
+            <p style="margin: 0; font-size: 14px; color: #000; font-weight: bold;">${patrimonio.status?.toUpperCase() || '-'}</p>
           </div>
           <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">LOCAL DO OBJETO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.local_objeto || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">SITUAÇÃO DO BEM</p>
+            <p style="margin: 0; font-size: 14px; color: #000; font-weight: bold;">${patrimonio.situacao_bem || '-'}</p>
           </div>
         </div>
       </div>
       ` : ''}
 
-      ${shouldInclude('status') ? `
-      <!-- Seção 4: Status e Situação -->
-      <div style="margin-bottom: 20px;">
-        <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #1e40af; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
-          📊 STATUS E SITUAÇÃO
-        </h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">STATUS</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px;">
-              <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-weight: 600; ${
-                patrimonio.status === 'ativo' ? 'background: #dcfce7; color: #166534;' :
-                patrimonio.status === 'baixado' ? 'background: #fee2e2; color: #991b1b;' :
-                patrimonio.status === 'manutencao' ? 'background: #fef3c7; color: #92400e;' :
-                'background: #f3f4f6; color: #374151;'
-              }">
-                ${patrimonio.status?.toUpperCase() || '-'}
-              </span>
-            </p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">SITUAÇÃO DO BEM</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px;">
-              <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-weight: 600; ${
-                patrimonio.situacao_bem === 'bom' ? 'background: #dcfce7; color: #166534;' :
-                patrimonio.situacao_bem === 'regular' ? 'background: #fef3c7; color: #92400e;' :
-                patrimonio.situacao_bem === 'ruim' ? 'background: #fed7aa; color: #9a3412;' :
-                patrimonio.situacao_bem === 'pessimo' ? 'background: #fee2e2; color: #991b1b;' :
-                'background: #f3f4f6; color: #374151;'
-              }">
-                ${patrimonio.situacao_bem?.toUpperCase() || '-'}
-              </span>
-            </p>
-          </div>
-        </div>
-      </div>
-      ` : ''}
 
       ${shouldInclude('baixa') && patrimonio.status === 'baixado' && patrimonio.data_baixa ? `
       <!-- Seção 5: Informações de Baixa -->
@@ -230,38 +260,6 @@ export const generatePatrimonioPDF = async ({
       </div>
       ` : ''}
 
-      ${shouldInclude('fotos') && patrimonio.fotos && patrimonio.fotos.length > 0 ? `
-      <!-- Seção 8: Fotos do Bem -->
-      <div style="margin-bottom: 20px;">
-        <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #1e40af; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
-          📷 FOTOS DO BEM (${patrimonio.fotos.length})
-        </h2>
-        <div style="display: grid; grid-template-columns: repeat(${patrimonio.fotos.length === 1 ? '1' : patrimonio.fotos.length === 2 ? '2' : '3'}, 1fr); gap: 10px; margin-top: 12px;">
-          ${patrimonio.fotos.slice(0, 6).map((foto, index) => `
-            <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #f9fafb;">
-              <img 
-                src="${foto.startsWith('http') ? foto : foto}" 
-                alt="Foto ${index + 1}" 
-                style="width: 100%; height: 120px; object-fit: cover; display: block;"
-                crossorigin="anonymous"
-                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-              />
-              <div style="display: none; width: 100%; height: 120px; align-items: center; justify-content: center; background: #f3f4f6; color: #9ca3af; font-size: 10px;">
-                Imagem indisponível
-              </div>
-              <p style="margin: 0; padding: 6px; font-size: 9px; color: #64748b; text-align: center; background: white;">
-                Foto ${index + 1}
-              </p>
-            </div>
-          `).join('')}
-        </div>
-        ${patrimonio.fotos.length > 6 ? `
-          <p style="margin: 10px 0 0 0; font-size: 10px; color: #64748b; text-align: center;">
-            + ${patrimonio.fotos.length - 6} foto(s) adicional(is)
-          </p>
-        ` : ''}
-      </div>
-      ` : ''}
 
       ${shouldInclude('sistema') ? `
       <!-- Seção 9: Informações do Sistema -->
@@ -281,13 +279,29 @@ export const generatePatrimonioPDF = async ({
       </div>
       ` : ''}
 
+      ${signaturesConfig.enabled !== false ? `
+      <!-- Linhas para Assinaturas -->
+      <div style="margin-top: 50px;">
+        <div style="display: grid; grid-template-columns: ${signaturesConfig.layout === 'vertical' ? '1fr' : `repeat(${signaturesConfig.count || 2}, 1fr)`}; gap: ${signaturesConfig.layout === 'vertical' ? '30px' : '40px'};">
+          ${[...Array(signaturesConfig.count || 2)].map((_, i) => `
+            <div style="text-align: center;">
+              <div style="border-top: 1px solid #000; width: 100%; padding-top: 8px;">
+                <p style="margin: 0; font-size: 11px; color: #000; font-weight: 500;">${signaturesConfig.labels?.[i] || `Assinatura ${i + 1}`}</p>
+                ${signaturesConfig.showDates !== false ? `<p style="margin: 5px 0 0 0; font-size: 10px; color: #666;">Data: ___/___/_______</p>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
+
       ${shouldInclude('rodape') ? `
       <!-- Rodapé -->
-      <div style="margin-top: 30px; padding-top: 15px; border-top: 2px solid #e5e7eb; text-align: center;">
-        <p style="margin: 0; font-size: 10px; color: #94a3b8;">
+      <div style="margin-top: 30px; padding-top: 15px; border-top: 2px solid #ccc; text-align: center;">
+        <p style="margin: 0; font-size: 10px; color: #666;">
           Documento gerado automaticamente pelo SISPAT - Sistema de Patrimônio
         </p>
-        <p style="margin: 5px 0 0 0; font-size: 9px; color: #cbd5e1;">
+        <p style="margin: 5px 0 0 0; font-size: 9px; color: #999;">
           ${new Date().toLocaleString('pt-BR')}
         </p>
       </div>

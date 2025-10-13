@@ -10,10 +10,17 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "strict": true,
     "noImplicitAny": true,
-    "noUnusedParameters": true,
-    "allowJs": true,
     "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "allowJs": true,
     "skipLibCheck": true
   }
 }

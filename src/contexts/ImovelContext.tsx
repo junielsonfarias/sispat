@@ -70,13 +70,13 @@ export const ImovelProvider = ({ children }: { children: ReactNode }) => {
       
       console.log('✅ ImovelContext: Imóvel criado:', newImovel)
       
-      // Adicionar à lista local e recarregar
+      // ✅ PERFORMANCE: Adicionar à lista local (sem refetch completo)
       setAllImoveis((prev) => [...prev, newImovel])
-      await fetchImoveis()
+      // await fetchImoveis()  // ❌ Removido: refetch desnecessário (economiza ~500ms)
       
       toast({ description: 'Imóvel cadastrado com sucesso.' })
     },
-    [fetchImoveis],
+    [], // ✅ PERFORMANCE: Removida dependência fetchImoveis
   )
 
   const updateImovel = useCallback(

@@ -15,23 +15,25 @@ datasource db {
 // ============================================
 
 model User {
-  id                   String   @id @default(uuid())
-  email                String   @unique
-  name                 String
-  password             String
-  avatar               String?
-  role                 String   // 'superuser', 'admin', 'supervisor', 'usuario', 'visualizador'
-  responsibleSectors   String[] // Array de setores responsáveis
-  municipalityId       String
-  isActive             Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  name               String
+  password           String
+  avatar             String?
+  role               String // 'superuser', 'admin', 'supervisor', 'usuario', 'visualizador'
+  responsibleSectors String[] // Array de setores responsáveis
+  municipalityId     String
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Relacionamentos
-  municipality         Municipality @relation(fields: [municipalityId], references: [id])
-  patrimoniosCreated   Patrimonio[] @relation("PatrimonioCreator")
-  imoveisCreated       Imovel[]     @relation("ImovelCreator")
-  activityLogs         ActivityLog[]
+  municipality       Municipality    @relation(fields: [municipalityId], references: [id])
+  patrimoniosCreated Patrimonio[]    @relation("PatrimonioCreator")
+  imoveisCreated     Imovel[]        @relation("ImovelCreator")
+  activityLogs       ActivityLog[]
+  documentsUploaded  Documento[]     @relation("DocumentosUploader")
+  fichaTemplates     FichaTemplate[] @relation("FichaTemplateCreator")
 
   @@index([email])
   @@index([municipalityId])
@@ -39,22 +41,22 @@ model User {
 }
 
 model Municipality {
-  id            String   @id @default(uuid())
-  name          String
-  state         String
-  logoUrl       String?
-  footerText    String?
-  primaryColor  String   @default("#3B82F6")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(uuid())
+  name         String
+  state        String
+  logoUrl      String?
+  footerText   String?
+  primaryColor String   @default("#3B82F6")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relacionamentos
-  users         User[]
-  sectors       Sector[]
-  locais        Local[]
-  patrimonios   Patrimonio[]
-  imoveis       Imovel[]
-  
+  users       User[]
+  sectors     Sector[]
+  locais      Local[]
+  patrimonios Patrimonio[]
+  imoveis     Imovel[]
+
   @@map("municipalities")
 }
 
@@ -73,10 +75,10 @@ model Sector {
   updatedAt      DateTime @updatedAt
 
   // Relacionamentos
-  municipality   Municipality @relation(fields: [municipalityId], references: [id])
-  locais         Local[]
-  patrimonios    Patrimonio[]
-  imoveis        Imovel[]
+  municipality Municipality @relation(fields: [municipalityId], references: [id])
+  locais       Local[]
+  patrimonios  Patrimonio[]
+  imoveis      Imovel[]
 
   @@index([municipalityId])
   @@index([codigo])
@@ -93,9 +95,9 @@ model Local {
   updatedAt      DateTime @updatedAt
 
   // Relacionamentos
-  sector         Sector       @relation(fields: [sectorId], references: [id])
-  municipality   Municipality @relation(fields: [municipalityId], references: [id])
-  patrimonios    Patrimonio[]
+  sector       Sector       @relation(fields: [sectorId], references: [id])
+  municipality Municipality @relation(fields: [municipalityId], references: [id])
+  patrimonios  Patrimonio[]
 
   @@index([sectorId])
   @@index([municipalityId])
@@ -103,18 +105,18 @@ model Local {
 }
 
 model TipoBem {
-  id               String   @id @default(uuid())
-  nome             String
-  descricao        String?
-  vidaUtilPadrao   Int?     // em anos
-  taxaDepreciacao  Float?   // em %
-  ativo            Boolean  @default(true)
-  municipalityId   String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(uuid())
+  nome            String
+  descricao       String?
+  vidaUtilPadrao  Int? // em anos
+  taxaDepreciacao Float? // em %
+  ativo           Boolean  @default(true)
+  municipalityId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relacionamentos
-  patrimonios      Patrimonio[]
+  patrimonios Patrimonio[]
 
   @@index([municipalityId])
   @@map("tipos_bens")
@@ -130,83 +132,88 @@ model AcquisitionForm {
   updatedAt      DateTime @updatedAt
 
   // Relacionamentos
-  patrimonios    Patrimonio[]
+  patrimonios Patrimonio[]
 
   @@index([municipalityId])
   @@map("formas_aquisicao")
 }
 
 model Patrimonio {
-  id                      String    @id @default(uuid())
-  numero_patrimonio       String    @unique
-  descricao_bem           String
-  tipo                    String
-  marca                   String?
-  modelo                  String?
-  cor                     String?
-  numero_serie            String?
-  data_aquisicao          DateTime
-  valor_aquisicao         Float
-  quantidade              Int       @default(1)
-  numero_nota_fiscal      String?
-  forma_aquisicao         String
-  setor_responsavel       String
-  local_objeto            String
-  status                  String    @default("ativo") // 'ativo', 'inativo', 'baixado', 'manutencao'
-  situacao_bem            String?   // 'OTIMO', 'BOM', 'REGULAR', 'RUIM', 'PESSIMO'
-  observacoes             String?
-  fotos                   String[]  @default([])
-  documentos              String[]  @default([])
-  
+  id                 String   @id @default(uuid())
+  numero_patrimonio  String   @unique
+  descricao_bem      String
+  tipo               String
+  marca              String?
+  modelo             String?
+  cor                String?
+  numero_serie       String?
+  data_aquisicao     DateTime
+  valor_aquisicao    Float    // TODO: Adicionar @check(valor_aquisicao >= 0) quando Prisma suportar
+  quantidade         Int      @default(1) // TODO: @check(quantidade > 0)
+  numero_nota_fiscal String?
+  forma_aquisicao    String
+  setor_responsavel  String
+  local_objeto       String
+  status             String   @default("ativo") // 'ativo', 'inativo', 'baixado', 'manutencao'
+  situacao_bem       String? // 'OTIMO', 'BOM', 'REGULAR', 'RUIM', 'PESSIMO'
+  observacoes        String?
+  fotos              String[] @default([])
+  documentos         String[] @default([])
+
   // Baixa de bem
-  data_baixa              DateTime?
-  motivo_baixa            String?
-  documentos_baixa        String[]  @default([])
-  
+  data_baixa       DateTime?
+  motivo_baixa     String?
+  documentos_baixa String[]  @default([])
+
   // Depreciação
-  metodo_depreciacao      String?   @default("Linear")
-  vida_util_anos          Int?
-  valor_residual          Float?
-  
+  metodo_depreciacao String? @default("Linear")
+  vida_util_anos     Int?
+  valor_residual     Float?
+
   // Campos de auditoria
-  createdAt               DateTime  @default(now())
-  createdBy               String
-  updatedAt               DateTime  @updatedAt
-  updatedBy               String?
-  
+  createdAt DateTime @default(now())
+  createdBy String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
   // Relacionamentos
-  municipalityId          String
-  sectorId                String
-  localId                 String?
-  tipoId                  String?
-  acquisitionFormId       String?
-  
-  municipality            Municipality      @relation(fields: [municipalityId], references: [id])
-  sector                  Sector            @relation(fields: [sectorId], references: [id])
-  local                   Local?            @relation(fields: [localId], references: [id])
-  tipoBem                 TipoBem?          @relation(fields: [tipoId], references: [id])
-  acquisitionForm         AcquisitionForm?  @relation(fields: [acquisitionFormId], references: [id])
-  creator                 User              @relation("PatrimonioCreator", fields: [createdBy], references: [id])
-  
+  municipalityId    String
+  sectorId          String
+  localId           String?
+  tipoId            String?
+  acquisitionFormId String?
+
+  municipality    Municipality     @relation(fields: [municipalityId], references: [id])
+  sector          Sector           @relation(fields: [sectorId], references: [id])
+  local           Local?           @relation(fields: [localId], references: [id])
+  tipoBem         TipoBem?         @relation(fields: [tipoId], references: [id])
+  acquisitionForm AcquisitionForm? @relation(fields: [acquisitionFormId], references: [id])
+  creator         User             @relation("PatrimonioCreator", fields: [createdBy], references: [id])
+
   // Relacionamentos de movimentação
-  historico               HistoricoEntry[]
-  notes                   Note[]
-  transferencias          Transferencia[]   @relation("TransferenciaOrigem")
-  emprestimos             Emprestimo[]
-  subPatrimonios          SubPatrimonio[]
-  inventoryItems          InventoryItem[]
-  manutencoes             ManutencaoTask[]
+  historico       HistoricoEntry[]
+  notes           Note[]
+  transferencias  Transferencia[]  @relation("TransferenciaPatrimonio")
+  emprestimos     Emprestimo[]
+  subPatrimonios  SubPatrimonio[]
+  inventoryItems  InventoryItem[]
+  manutencoes     ManutencaoTask[]
+  documentosFiles Documento[]      @relation("DocumentosPatrimonio")
 
   @@index([numero_patrimonio])
   @@index([municipalityId])
   @@index([sectorId])
   @@index([status])
+  @@index([createdAt])
+  @@index([data_aquisicao])
+  @@index([municipalityId, status])
+  @@index([sectorId, status])
   @@map("patrimonios")
 }
 
 model Imovel {
-  id                String    @id @default(uuid())
-  numero_patrimonio String    @unique
+  id                String   @id @default(uuid())
+  numero_patrimonio String   @unique
   denominacao       String
   endereco          String
   setor             String
@@ -220,30 +227,34 @@ model Imovel {
   observacoes       String?
   tipo_imovel       String?
   situacao          String?
-  fotos             String[]  @default([])
-  documentos        String[]  @default([])
+  fotos             String[] @default([])
+  documentos        String[] @default([])
   url_documentos    String?
-  
+
   // Campos de auditoria
-  createdAt         DateTime  @default(now())
-  createdBy         String
-  updatedAt         DateTime  @updatedAt
-  updatedBy         String?
-  
+  createdAt DateTime @default(now())
+  createdBy String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
   // Relacionamentos
-  municipalityId    String
-  sectorId          String
-  
-  municipality      Municipality @relation(fields: [municipalityId], references: [id])
-  sector            Sector       @relation(fields: [sectorId], references: [id])
-  creator           User         @relation("ImovelCreator", fields: [createdBy], references: [id])
-  
-  historico         HistoricoEntry[]
-  manutencoes       ManutencaoTask[]
+  municipalityId String
+  sectorId       String
+
+  municipality Municipality @relation(fields: [municipalityId], references: [id])
+  sector       Sector       @relation(fields: [sectorId], references: [id])
+  creator      User         @relation("ImovelCreator", fields: [createdBy], references: [id])
+
+  historico       HistoricoEntry[]
+  manutencoes     ManutencaoTask[]
+  documentosFiles Documento[]      @relation("DocumentosImovel")
 
   @@index([numero_patrimonio])
   @@index([municipalityId])
   @@index([sectorId])
+  @@index([createdAt])
+  @@index([data_aquisicao])
+  @@index([municipalityId, sectorId])
   @@map("imoveis")
 }
 
@@ -252,59 +263,59 @@ model Imovel {
 // ============================================
 
 model HistoricoEntry {
-  id            String    @id @default(uuid())
-  date          DateTime  @default(now())
-  action        String
-  details       String
-  user          String
-  origem        String?
-  destino       String?
-  
-  patrimonioId  String?
-  imovelId      String?
-  
-  patrimonio    Patrimonio? @relation(fields: [patrimonioId], references: [id], onDelete: Cascade)
-  imovel        Imovel?     @relation(fields: [imovelId], references: [id], onDelete: Cascade)
-  
+  id      String   @id @default(uuid())
+  date    DateTime @default(now())
+  action  String
+  details String
+  user    String
+  origem  String?
+  destino String?
+
+  patrimonioId String?
+  imovelId     String?
+
+  patrimonio Patrimonio? @relation(fields: [patrimonioId], references: [id], onDelete: Cascade)
+  imovel     Imovel?     @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+
   @@index([patrimonioId])
   @@index([imovelId])
   @@map("historico_entries")
 }
 
 model Note {
-  id            String    @id @default(uuid())
-  text          String
-  date          DateTime  @default(now())
-  userId        String
-  userName      String
-  patrimonioId  String
-  
-  patrimonio    Patrimonio @relation(fields: [patrimonioId], references: [id], onDelete: Cascade)
-  
+  id           String   @id @default(uuid())
+  text         String
+  date         DateTime @default(now())
+  userId       String
+  userName     String
+  patrimonioId String
+
+  patrimonio Patrimonio @relation(fields: [patrimonioId], references: [id], onDelete: Cascade)
+
   @@index([patrimonioId])
   @@map("notes")
 }
 
 model Transferencia {
-  id                  String    @id @default(uuid())
-  patrimonioId        String
-  numero_patrimonio   String
-  descricao_bem       String
-  setorOrigem         String
-  setorDestino        String
-  localOrigem         String
-  localDestino        String
-  motivo              String
-  dataTransferencia   DateTime
-  responsavelOrigem   String
-  responsavelDestino  String
-  status              String    @default("pendente") // 'pendente', 'aprovada', 'rejeitada'
-  observacoes         String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  
-  patrimonio          Patrimonio @relation("TransferenciaOrigem", fields: [patrimonioId], references: [id])
-  
+  id                 String   @id @default(uuid())
+  patrimonioId       String
+  numero_patrimonio  String
+  descricao_bem      String
+  setorOrigem        String
+  setorDestino       String
+  localOrigem        String
+  localDestino       String
+  motivo             String
+  dataTransferencia  DateTime
+  responsavelOrigem  String
+  responsavelDestino String
+  status             String   @default("pendente") // 'pendente', 'aprovada', 'rejeitada'
+  observacoes        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  patrimonio Patrimonio @relation("TransferenciaPatrimonio", fields: [patrimonioId], references: [id])
+
   @@index([patrimonioId])
   @@index([status])
   @@map("transferencias")
@@ -325,27 +336,27 @@ model Emprestimo {
   status            String    @default("ativo") // 'ativo', 'devolvido', 'atrasado'
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  
-  patrimonio        Patrimonio @relation(fields: [patrimonioId], references: [id])
-  
+
+  patrimonio Patrimonio @relation(fields: [patrimonioId], references: [id])
+
   @@index([patrimonioId])
   @@index([status])
   @@map("emprestimos")
 }
 
 model SubPatrimonio {
-  id                String    @id @default(uuid())
-  patrimonioId      String
-  descricao         String
-  quantidade        Int
-  valor             Float
-  status            String    @default("ativo")
-  observacoes       String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  patrimonio        Patrimonio @relation(fields: [patrimonioId], references: [id], onDelete: Cascade)
-  
+  id           String   @id @default(uuid())
+  patrimonioId String
+  descricao    String
+  quantidade   Int
+  valor        Float
+  status       String   @default("ativo")
+  observacoes  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  patrimonio Patrimonio @relation(fields: [patrimonioId], references: [id], onDelete: Cascade)
+
   @@index([patrimonioId])
   @@map("sub_patrimonios")
 }
@@ -355,39 +366,39 @@ model SubPatrimonio {
 // ============================================
 
 model Inventory {
-  id                  String    @id @default(uuid())
-  title               String
-  description         String?
-  responsavel         String
-  setor               String?
-  local               String?
-  scope               String    // 'sector', 'location', 'specific_location'
-  specificLocationId  String?
-  status              String    @default("em_andamento") // 'em_andamento', 'concluido', 'cancelado'
-  dataInicio          DateTime  @default(now())
-  dataFim             DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  
-  items               InventoryItem[]
-  
+  id                 String    @id @default(uuid())
+  title              String
+  description        String?
+  responsavel        String
+  setor              String?
+  local              String?
+  scope              String // 'sector', 'location', 'specific_location'
+  specificLocationId String?
+  status             String    @default("em_andamento") // 'em_andamento', 'concluido', 'cancelado'
+  dataInicio         DateTime  @default(now())
+  dataFim            DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  items InventoryItem[]
+
   @@index([status])
   @@index([setor])
   @@map("inventarios")
 }
 
 model InventoryItem {
-  id              String    @id @default(uuid())
-  inventoryId     String
-  patrimonioId    String
-  encontrado      Boolean   @default(false)
-  observacoes     String?
-  verificadoEm    DateTime?
-  verificadoPor   String?
-  
-  inventory       Inventory  @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  patrimonio      Patrimonio @relation(fields: [patrimonioId], references: [id])
-  
+  id            String    @id @default(uuid())
+  inventoryId   String
+  patrimonioId  String
+  encontrado    Boolean   @default(false)
+  observacoes   String?
+  verificadoEm  DateTime?
+  verificadoPor String?
+
+  inventory  Inventory  @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  patrimonio Patrimonio @relation(fields: [patrimonioId], references: [id])
+
   @@index([inventoryId])
   @@index([patrimonioId])
   @@map("inventory_items")
@@ -398,25 +409,25 @@ model InventoryItem {
 // ============================================
 
 model ManutencaoTask {
-  id                String    @id @default(uuid())
-  patrimonioId      String?
-  imovelId          String?
-  tipo              String    // 'preventiva', 'corretiva', 'preditiva'
-  titulo            String
-  descricao         String
-  prioridade        String    // 'baixa', 'media', 'alta', 'urgente'
-  status            String    @default("pendente") // 'pendente', 'em_andamento', 'concluida', 'cancelada'
-  responsavel       String?
-  dataPrevista      DateTime
-  dataConclusao     DateTime?
-  custo             Float?
-  observacoes       String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  patrimonio        Patrimonio? @relation(fields: [patrimonioId], references: [id])
-  imovel            Imovel?     @relation(fields: [imovelId], references: [id])
-  
+  id            String    @id @default(uuid())
+  patrimonioId  String?
+  imovelId      String?
+  tipo          String // 'preventiva', 'corretiva', 'preditiva'
+  titulo        String
+  descricao     String
+  prioridade    String // 'baixa', 'media', 'alta', 'urgente'
+  status        String    @default("pendente") // 'pendente', 'em_andamento', 'concluida', 'cancelada'
+  responsavel   String?
+  dataPrevista  DateTime
+  dataConclusao DateTime?
+  custo         Float?
+  observacoes   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  patrimonio Patrimonio? @relation(fields: [patrimonioId], references: [id])
+  imovel     Imovel?     @relation(fields: [imovelId], references: [id])
+
   @@index([patrimonioId])
   @@index([imovelId])
   @@index([status])
@@ -428,18 +439,18 @@ model ManutencaoTask {
 // ============================================
 
 model ActivityLog {
-  id          String    @id @default(uuid())
-  userId      String
-  action      String
-  entityType  String?
-  entityId    String?
-  details     String?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime  @default(now())
-  
-  user        User      @relation(fields: [userId], references: [id])
-  
+  id         String   @id @default(uuid())
+  userId     String
+  action     String
+  entityType String?
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
   @@index([userId])
   @@index([action])
   @@index([createdAt])
@@ -447,55 +458,145 @@ model ActivityLog {
 }
 
 model Notification {
-  id          String    @id @default(uuid())
-  userId      String
-  tipo        String
-  titulo      String
-  mensagem    String
-  link        String?
-  lida        Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  
+  id        String   @id @default(uuid())
+  userId    String
+  tipo      String
+  titulo    String
+  mensagem  String
+  link      String?
+  lida      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([lida])
   @@map("notifications")
 }
 
 model SystemConfiguration {
-  id                      String    @id @default(uuid())
-  autoBackupEnabled       Boolean   @default(false)
-  backupFrequency         String    @default("daily")
-  maintenanceMode         Boolean   @default(false)
-  allowPublicSearch       Boolean   @default(true)
-  maxUploadSize           Int       @default(10485760) // 10MB
-  sessionTimeout          Int       @default(3600) // 1 hora
-  passwordExpiryDays      Int       @default(90)
-  requirePasswordChange   Boolean   @default(false)
-  updatedAt               DateTime  @updatedAt
-  
+  id                    String   @id @default(uuid())
+  autoBackupEnabled     Boolean  @default(false)
+  backupFrequency       String   @default("daily")
+  maintenanceMode       Boolean  @default(false)
+  allowPublicSearch     Boolean  @default(true)
+  maxUploadSize         Int      @default(10485760) // 10MB
+  sessionTimeout        Int      @default(3600) // 1 hora
+  passwordExpiryDays    Int      @default(90)
+  requirePasswordChange Boolean  @default(false)
+  updatedAt             DateTime @updatedAt
+
   @@map("system_configuration")
 }
 
+model Customization {
+  id                      String   @id @default(uuid())
+  municipalityId          String   @unique
+  activeLogoUrl           String?
+  secondaryLogoUrl        String?
+  backgroundType          String   @default("color") // 'color', 'image', 'video'
+  backgroundColor         String   @default("#f1f5f9")
+  backgroundImageUrl      String?
+  backgroundVideoUrl      String?
+  videoLoop               Boolean  @default(true)
+  videoMuted              Boolean  @default(true)
+  layout                  String   @default("center") // 'left', 'center', 'right'
+  welcomeTitle            String   @default("Bem-vindo ao SISPAT")
+  welcomeSubtitle         String   @default("Sistema de Gestão de Patrimônio")
+  primaryColor            String   @default("#2563eb")
+  buttonTextColor         String   @default("#ffffff")
+  fontFamily              String   @default("'Inter var', sans-serif")
+  browserTitle            String   @default("SISPAT - Sistema de Gestão de Patrimônio")
+  faviconUrl              String?
+  loginFooterText         String   @default("© 2025 Curling. Todos os direitos reservados.")
+  systemFooterText        String   @default("SISPAT - Desenvolvido por Curling")
+  superUserFooterText     String?
+  prefeituraName          String   @default("PREFEITURA DE SÃO SEBASTIÃO DA BOA VISTA")
+  secretariaResponsavel   String   @default("SECRETARIA MUNICIPAL DE ADMINISTRAÇÃO")
+  departamentoResponsavel String   @default("DEPARTAMENTO DE PATRIMÔNIO")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@map("customizations")
+}
+
+// ============================================
+// CAMPOS CUSTOMIZADOS DE IMÓVEIS
+// ============================================
+
 model ImovelCustomField {
-  id              String    @id @default(uuid())
+  id              String   @id @default(uuid())
   name            String
   label           String
-  type            String    // 'text', 'number', 'date', 'boolean', 'select'
-  required        Boolean   @default(false)
+  type            String // 'text', 'number', 'date', 'select', 'checkbox'
+  required        Boolean  @default(false)
   defaultValue    String?
-  options         String?   // JSON array para tipo select
+  options         String? // JSON string para tipo 'select'
   placeholder     String?
   helpText        String?
-  validationRules String?   // JSON com regras de validação
-  displayOrder    Int       @default(0)
-  isActive        Boolean   @default(true)
-  isSystem        Boolean   @default(false)
+  validationRules String? // JSON string
+  displayOrder    Int      @default(0)
+  isActive        Boolean  @default(true)
+  isSystem        Boolean  @default(false)
   municipalityId  String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
   @@index([municipalityId])
   @@index([isActive])
+  @@index([displayOrder])
   @@map("imovel_custom_fields")
 }
 
+// ============================================
+// DOCUMENTOS (v2.0.7)
+// ============================================
+
+model Documento {
+  id            String   @id @default(uuid())
+  patrimonioId  String?
+  imovelId      String?
+  name          String
+  type          String
+  url           String
+  fileSize      Int?
+  description   String?
+  uploadedBy    String
+  uploadedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patrimonio Patrimonio? @relation("DocumentosPatrimonio", fields: [patrimonioId], references: [id], onDelete: Cascade)
+  imovel     Imovel?     @relation("DocumentosImovel", fields: [imovelId], references: [id], onDelete: Cascade)
+  uploader   User        @relation("DocumentosUploader", fields: [uploadedBy], references: [id])
+
+  @@index([patrimonioId])
+  @@index([imovelId])
+  @@index([uploadedBy])
+  @@map("documents")
+}
+
+// ============================================
+// TEMPLATES DE FICHAS
+// ============================================
+
+model FichaTemplate {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  type           String // 'bens' ou 'imoveis'
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  config         Json // Configurações do template (header, sections, signatures, styling)
+  municipalityId String
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relacionamentos
+  creator User @relation("FichaTemplateCreator", fields: [createdBy], references: [id])
+
+  @@index([municipalityId])
+  @@index([type])
+  @@index([isDefault])
+  @@index([isActive])
+  @@map("ficha_templates")
+}

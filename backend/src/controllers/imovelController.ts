@@ -14,8 +14,9 @@ export const listImoveis = async (req: Request, res: Response): Promise<void> =>
       limit = '50',
     } = req.query;
 
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    // ✅ CORREÇÃO: Validar e sanitizar query params
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 50));
     const skip = (pageNum - 1) * limitNum;
 
     // Construir filtros
@@ -375,8 +376,15 @@ export const updateImovel = async (req: Request, res: Response): Promise<void> =
         select: { responsibleSectors: true },
       });
 
-      if (user && !user.responsibleSectors.includes(existing.sectorId)) {
-        res.status(403).json({ error: 'Acesso negado' });
+      const imovelSector = await prisma.sector.findUnique({
+        where: { id: existing.sectorId },
+        select: { name: true },
+      });
+
+      // ✅ CORREÇÃO: Comparar nomes dos setores e verificar array vazio
+      // Se responsibleSectors está vazio, usuário tem acesso a todos os setores
+      if (user && imovelSector && user.responsibleSectors.length > 0 && !user.responsibleSectors.includes(imovelSector.name)) {
+        res.status(403).json({ error: 'Acesso negado: sem permissão para este setor' });
         return;
       }
     }
@@ -500,6 +508,85 @@ export const deleteImovel = async (req: Request, res: Response): Promise<void> =
   } catch (error) {
     console.error('Erro ao deletar imóvel:', error);
     res.status(500).json({ error: 'Erro ao deletar imóvel' });
+  }
+};
+
+/**
+ * Gerar próximo número de imóvel
+ * GET /api/imoveis/gerar-numero
+ */
+export const gerarNumeroImovel = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sectorId } = req.query;
+    const currentYear = new Date().getFullYear();
+
+    if (!sectorId) {
+      res.status(400).json({ error: 'ID do setor é obrigatório' });
+      return;
+    }
+
+    // Buscar código do setor
+    const sector = await prisma.sector.findUnique({
+      where: { id: sectorId as string },
+      select: { codigo: true },
+    });
+
+    if (!sector) {
+      res.status(404).json({ error: 'Setor não encontrado' });
+      return;
+    }
+
+    // Formato: IML + ano + código do setor + sequencial de 4 dígitos
+    // Exemplo: IML2025010001 (IML + 2025 + 01 + 0001)
+    const prefix = `IML${currentYear}${sector.codigo}`;
+
+    // Buscar último número com este prefixo
+    const ultimoImovel = await prisma.imovel.findFirst({
+      where: {
+        numero_patrimonio: {
+          startsWith: prefix,
+        },
+      },
+      orderBy: {
+        numero_patrimonio: 'desc',
+      },
+      select: {
+        numero_patrimonio: true,
+      },
+    });
+
+    let proximoSequencial = 1;
+
+    if (ultimoImovel) {
+      // Extrair sequencial (últimos 4 dígitos)
+      const sequencialAtual = ultimoImovel.numero_patrimonio.slice(-4);
+      proximoSequencial = parseInt(sequencialAtual) + 1;
+    }
+
+    // Formatar: IML202501000 1
+    const numeroGerado = `${prefix}${proximoSequencial.toString().padStart(4, '0')}`;
+
+    console.log('📋 Número de imóvel gerado:', {
+      prefix,
+      sectorCodigo: sector.codigo,
+      year: currentYear,
+      sequencial: proximoSequencial,
+      numeroCompleto: numeroGerado,
+    });
+
+    res.json({
+      numero: numeroGerado,
+      preview: numeroGerado,
+      pattern: {
+        prefix: 'IML',
+        year: currentYear,
+        sectorCode: sector.codigo,
+        sequence: proximoSequencial,
+      },
+    });
+  } catch (error) {
+    console.error('Erro ao gerar número de imóvel:', error);
+    res.status(500).json({ error: 'Erro ao gerar número de imóvel' });
   }
 };
 

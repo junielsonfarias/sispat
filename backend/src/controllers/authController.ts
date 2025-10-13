@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../index';
 import { AppError } from '../middlewares/errorHandler';
+import { logActivity } from '../utils/activityLogger';
 
 // ✅ Validar JWT_SECRET obrigatório em produção
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -77,9 +78,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Verificar se está ativo
+    // ✅ CORREÇÃO: Verificar se está ativo (usar 403 em vez de 401)
     if (!user.isActive) {
-      res.status(401).json({ error: 'Usuário inativo' });
+      res.status(403).json({ error: 'Conta desativada. Entre em contato com o administrador.' });
       return;
     }
 
@@ -94,18 +95,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const token = generateToken(user.id, user.email, user.role, user.municipalityId);
     const refreshToken = generateRefreshToken(user.id);
 
-    // Log de atividade
-    await prisma.activityLog.create({
-      data: {
-        userId: user.id,
-        action: 'LOGIN',
-        entityType: 'USER',
-        entityId: user.id,
-        details: 'Login realizado com sucesso',
-        ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
-        userAgent: req.get('user-agent') || 'unknown',
-      },
-    });
+    // ✅ v2.0.7: Log de atividade com IP automático
+    await logActivity(req, 'LOGIN', 'USER', user.id, 'Login realizado com sucesso');
 
     // Resposta
     res.json({

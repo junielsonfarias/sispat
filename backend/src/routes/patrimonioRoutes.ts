@@ -3,6 +3,7 @@ import {
   listPatrimonios,
   getPatrimonio,
   getByNumero,
+  gerarNumeroPatrimonial,
   createPatrimonio,
   updatePatrimonio,
   deletePatrimonio,
@@ -31,6 +32,13 @@ router.get('/', listPatrimonios);
  * @access Private (All authenticated users)
  */
 router.get('/sync', listPatrimonios);
+
+/**
+ * @route GET /api/patrimonios/gerar-numero
+ * @desc Gerar próximo número patrimonial (DEVE VIR ANTES DE /:id)
+ * @access Private (Admin, Supervisor, Usuario)
+ */
+router.get('/gerar-numero', authorize('superuser', 'supervisor', 'usuario'), gerarNumeroPatrimonial);
 
 /**
  * @route GET /api/patrimonios/numero/:numero

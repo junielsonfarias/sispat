@@ -182,24 +182,42 @@ function BensView() {
 
     setIsSavingNote(true)
     try {
+      // Criar nota usando rota específica
+      const response = await api.post(`/patrimonios/${patrimonio.id}/notes`, {
+        text: newNote.trim()
+      })
+
+      // Extrair nota da resposta
+      const noteData = response.note || response
+
+      // Atualizar patrimônio localmente com a nova nota
       const newNoteObj: Note = {
-        id: Date.now().toString(),
-        content: newNote.trim(),
-        author: user?.name || 'Usuário',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        id: noteData.id,
+        content: noteData.text,
+        author: noteData.userName,
+        createdAt: noteData.date,
+        updatedAt: noteData.date,
       }
 
       const updatedPatrimonio = {
         ...patrimonio,
-        notas: [...(patrimonio.notas || []), newNoteObj],
+        notes: [...(patrimonio.notes || []), newNoteObj],
       }
 
-      await updatePatrimonio(updatedPatrimonio)
       setPatrimonio(updatedPatrimonio)
       setNewNote('')
+      
+      toast({
+        title: 'Nota adicionada!',
+        description: 'A nota foi salva com sucesso.',
+      })
     } catch (error) {
       console.error('Erro ao salvar nota:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar nota',
+        description: 'Não foi possível salvar a nota. Tente novamente.',
+      })
     } finally {
       setIsSavingNote(false)
     }
@@ -228,18 +246,19 @@ function BensView() {
     setIsPDFConfigOpen(true)
   }
 
-  const handleGeneratePDF = async (selectedSections: string[]) => {
+  const handleGeneratePDF = async (selectedSections: string[], templateId?: string) => {
     if (!patrimonio) return
     
     setIsGeneratingPDF(true)
     
     try {
-      // Gerar PDF com as seções selecionadas
+      // Gerar PDF com as seções selecionadas e template
       const success = await generatePatrimonioPDF({
         patrimonio,
         municipalityName: settings.prefeituraName || 'Prefeitura Municipal',
         municipalityLogo: settings.activeLogoUrl || '/logo-government.svg',
         selectedSections,
+        templateId,
       })
       
       if (success) {
@@ -471,11 +490,11 @@ function BensView() {
                           return fotos
                         })().map((fotoId, index) => (
                           <CarouselItem key={index}>
-                            <div className="relative">
+                            <div className="relative flex items-center justify-center bg-gray-100 rounded-lg min-h-[400px]">
                               <img
                                 src={getCloudImageUrl(fotoId)}
                                 alt={`${patrimonio.descricao_bem || patrimonio.descricaoBem} - Foto ${index + 1}`}
-                                className="rounded-lg object-cover w-full aspect-square"
+                                className="rounded-lg object-contain w-full h-full max-h-[600px]"
                               />
                             </div>
                           </CarouselItem>

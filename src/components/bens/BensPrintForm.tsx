@@ -2,6 +2,7 @@ import { forwardRef } from 'react'
 import { Patrimonio } from '@/types'
 import { formatCurrency, formatDate, getCloudImageUrl } from '@/lib/utils'
 import { useCustomization } from '@/contexts/CustomizationContext'
+import { LazyImage } from '@/components/ui/lazy-image'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 
 interface BensPrintFormProps {
@@ -60,161 +61,326 @@ export const BensPrintForm = forwardRef<HTMLDivElement, BensPrintFormProps>(
                 visibility: visible;
               }
             }
+
+            /* Melhorias de qualidade de fonte */
+            .print-form {
+              font-family: 'Arial', 'Helvetica', sans-serif !important;
+              font-smooth: always !important;
+              -webkit-font-smoothing: antialiased !important;
+              -moz-osx-font-smoothing: grayscale !important;
+              text-rendering: optimizeLegibility !important;
+            }
+
+            .print-form h1, .print-form h2, .print-form h3 {
+              font-weight: 700 !important;
+              letter-spacing: 0.025em !important;
+            }
+
+            .print-form dt {
+              font-weight: 600 !important;
+              letter-spacing: 0.025em !important;
+            }
+
+            .print-form dd {
+              font-weight: 400 !important;
+              letter-spacing: 0.01em !important;
+            }
+
+            /* Melhor contraste para impressão */
+            .print-form .text-gray-700 {
+              color: #1f2937 !important;
+            }
+
+            .print-form .text-gray-900 {
+              color: #000000 !important;
+            }
+
+            /* Bordas mais definidas para impressão */
+            .print-form .border-b-2 {
+              border-bottom-width: 2px !important;
+              border-bottom-color: #000000 !important;
+            }
+
+            .print-form .border-2 {
+              border-width: 2px !important;
+              border-color: #374151 !important;
+            }
+
+            /* Otimização para A4 */
+            @media print {
+              .print-form {
+                width: 100% !important;
+                max-width: 180mm !important;
+                margin: 0 !important;
+                padding: 40mm 15mm 20mm 15mm !important;
+              }
+            }
           `}
         </style>
         <div 
           ref={ref} 
-          className="print-form p-4 bg-white text-black font-sans text-sm"
+          className="print-form pt-12 pb-8 px-4 bg-white text-black font-sans text-sm"
         >
-        <header className="flex items-center justify-between pb-4 border-b-2 border-black">
-          <div className="flex items-center gap-4">
-            <img
-              src={settings.activeLogoUrl}
-              alt="Logo"
-              className="h-20 w-auto"
-            />
-            <div>
-              {shouldPrint('entityName') && (
-                <h1 className="text-xl font-bold">{MUNICIPALITY_NAME}</h1>
-              )}
-              <h2 className="text-lg">Ficha de Cadastro Patrimonial</h2>
+        {/* Header Principal */}
+        <header className="pb-4 border-b-2 border-black">
+          {/* Logo e Nome do Município */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-4">
+              <img
+                src={settings.activeLogoUrl}
+                alt="Logo"
+                className="h-24 w-auto"
+              />
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold leading-tight">{MUNICIPALITY_NAME}</h1>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium">Data de Emissão</p>
+              <p className="text-sm">{formatDate(new Date())}</p>
             </div>
           </div>
-          <div className="text-right">
-            {shouldPrint('numero_patrimonio') && (
-              <p className="font-bold text-lg">
-                Nº: {patrimonio.numero_patrimonio}
-              </p>
-            )}
-            <p>Data: {formatDate(new Date())}</p>
+
+          {/* Informações da Secretaria Gestora */}
+          <div className="mb-3">
+            <p className="text-sm font-medium text-center">SECRETARIA MUNICIPAL DE ADMINISTRAÇÃO E FINANÇAS</p>
+            <p className="text-sm font-medium text-center">DEPARTAMENTO DE GESTÃO E CONTROLE DE PATRIMÔNIO</p>
+            <p className="text-base font-bold text-center mt-1">Ficha de Cadastro de Bem Móvel</p>
+          </div>
+
+          {/* Linha Separadora */}
+          <div className="border-t border-gray-300 pt-2">
+            <p className="text-base font-bold text-center">
+              {patrimonio.setor_responsavel ? `${patrimonio.setor_responsavel.toUpperCase()}` : 'SECRETARIA RESPONSÁVEL'}
+            </p>
           </div>
         </header>
 
-        <main className="mt-4 grid grid-cols-3 gap-4">
-          <section className="col-span-2">
-            <h3 className="font-bold text-base mb-2 border-b">
-              INFORMAÇÕES DO BEM
-            </h3>
-            <dl>
-              {shouldPrint('descricao_bem') && (
-                <DetailRow label="Descrição" value={patrimonio.descricao_bem} />
-              )}
-              {shouldPrint('tipo') && (
-                <DetailRow label="Tipo" value={patrimonio.tipo} />
-              )}
-              {shouldPrint('marca') && (
-                <DetailRow label="Marca" value={patrimonio.marca} />
-              )}
-              {shouldPrint('modelo') && (
-                <DetailRow label="Modelo" value={patrimonio.modelo} />
-              )}
-              {shouldPrint('numero_serie') && (
-                <DetailRow
-                  label="Nº de Série"
-                  value={patrimonio.numero_serie}
-                />
-              )}
-              {shouldPrint('cor') && (
-                <DetailRow label="Cor" value={patrimonio.cor} />
-              )}
-            </dl>
-          </section>
-
-          {shouldPrint('fotos') && (
-            <section className="col-span-1">
-              <h3 className="font-bold text-base mb-2 border-b">FOTO</h3>
-              <div className="w-full h-40 border flex items-center justify-center bg-gray-100">
-                {patrimonio.fotos && patrimonio.fotos.length > 0 ? (
-                  <img
-                    src={getCloudImageUrl(patrimonio.fotos[0])}
-                    alt="Foto do bem"
-                    className="max-w-full max-h-full object-contain"
-                  />
-                ) : (
-                  <span className="text-gray-500">Sem foto</span>
-                )}
+        {/* Número do Patrimônio e Dados de Cadastro/Atualização */}
+        <div className="mt-6 mb-8">
+          <div className="grid grid-cols-3 gap-6">
+            {/* Número do Patrimônio - Reduzido */}
+            {shouldPrint('numero_patrimonio') && (
+              <div className="p-3 bg-gray-100 border-l-4 border-blue-500 rounded">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-bold text-blue-600">#</span>
+                  <div>
+                    <p className="text-xs font-medium text-gray-600">NÚMERO DO PATRIMÔNIO</p>
+                    <p className="text-lg font-bold text-gray-900">{patrimonio.numero_patrimonio}</p>
+                  </div>
+                </div>
               </div>
-            </section>
-          )}
-
-          <section className="col-span-3">
-            <h3 className="font-bold text-base mb-2 mt-2 border-b">
-              INFORMAÇÕES DE AQUISIÇÃO
-            </h3>
-            <dl>
-              {shouldPrint('data_aquisicao') && (
-                <DetailRow
-                  label="Data de Aquisição"
-                  value={formatDate(new Date(patrimonio.data_aquisicao))}
-                />
-              )}
-              {shouldPrint('valor_aquisicao') && (
-                <DetailRow
-                  label="Valor de Aquisição"
-                  value={formatCurrency(patrimonio.valor_aquisicao)}
-                />
-              )}
-              {shouldPrint('numero_nota_fiscal') && (
-                <DetailRow
-                  label="Nota Fiscal"
-                  value={patrimonio.numero_nota_fiscal}
-                />
-              )}
-              {shouldPrint('forma_aquisicao') && (
-                <DetailRow
-                  label="Forma de Aquisição"
-                  value={patrimonio.forma_aquisicao}
-                />
-              )}
-            </dl>
-          </section>
-
-          <section className="col-span-3">
-            <h3 className="font-bold text-base mb-2 mt-2 border-b">
-              LOCALIZAÇÃO E ESTADO
-            </h3>
-            <dl>
-              {shouldPrint('setor_responsavel') && (
-                <DetailRow
-                  label="Setor Responsável"
-                  value={patrimonio.setor_responsavel}
-                />
-              )}
-              {shouldPrint('local_objeto') && (
-                <DetailRow
-                  label="Localização"
-                  value={patrimonio.local_objeto}
-                />
-              )}
-              {shouldPrint('status') && (
-                <DetailRow
-                  label="Status"
-                  value={patrimonio.status.toUpperCase()}
-                />
-              )}
-              {shouldPrint('situacao_bem') && (
-                <DetailRow
-                  label="Situação do Bem"
-                  value={patrimonio.situacao_bem}
-                />
-              )}
-            </dl>
-          </section>
-        </main>
-
-        <footer className="mt-12 space-y-8">
-          <div className="grid grid-cols-2 gap-8 text-center">
-            <div>
-              <div className="border-t border-black w-2/3 mx-auto pt-1">
-                <p>Responsável pelo Setor</p>
+            )}
+            
+            {/* Dados de Cadastro */}
+            <div className="p-3 bg-gray-50 border rounded">
+              <div className="text-center">
+                <p className="text-xs font-medium text-gray-600 mb-1">CADASTRADO EM</p>
+                <p className="text-sm font-semibold text-gray-800">{formatDate(new Date(patrimonio.createdAt))}</p>
               </div>
             </div>
-            <div>
-              <div className="border-t border-black w-2/3 mx-auto pt-1">
-                <p>Responsável pelo Patrimônio</p>
+            
+            {/* Dados de Atualização */}
+            <div className="p-3 bg-gray-50 border rounded">
+              <div className="text-center">
+                <p className="text-xs font-medium text-gray-600 mb-1">ÚLTIMA ATUALIZAÇÃO</p>
+                <p className="text-sm font-semibold text-gray-800">{formatDate(new Date(patrimonio.updatedAt))}</p>
               </div>
             </div>
           </div>
+        </div>
+
+        <main className="mt-4">
+          {/* Seção de Identificação do Bem com Foto */}
+          <section className="mb-6">
+            <h3 className="font-bold text-base mb-3 border-b pb-1">
+              IDENTIFICAÇÃO DO BEM
+            </h3>
+            
+            <div className="grid grid-cols-3 gap-6">
+              {/* Descrição e Número de Série */}
+              <div className="col-span-1">
+                <dl className="space-y-3">
+                  {shouldPrint('descricao_bem') && (
+                    <div className="py-1">
+                      <dt className="font-semibold text-gray-700 text-sm mb-1">DESCRIÇÃO</dt>
+                      <dd className="text-gray-900 text-base">{patrimonio.descricao_bem || '-'}</dd>
+                    </div>
+                  )}
+                  {shouldPrint('tipo') && (
+                    <div className="py-1">
+                      <dt className="font-semibold text-gray-700 text-sm mb-1">TIPO</dt>
+                      <dd className="text-gray-900 text-base">{patrimonio.tipo || '-'}</dd>
+                    </div>
+                  )}
+                  {shouldPrint('numero_serie') && (
+                    <div className="py-1">
+                      <dt className="font-semibold text-gray-700 text-sm mb-1">NÚMERO DE SÉRIE</dt>
+                      <dd className="text-gray-900 text-base">{patrimonio.numero_serie || '-'}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+              {/* Marca, Modelo e Cor */}
+              <div className="col-span-1">
+                <dl className="space-y-3">
+                  {shouldPrint('marca') && (
+                    <div className="py-1">
+                      <dt className="font-semibold text-gray-700 text-sm mb-1">MARCA</dt>
+                      <dd className="text-gray-900 text-base">{patrimonio.marca || '-'}</dd>
+                    </div>
+                  )}
+                  {shouldPrint('modelo') && (
+                    <div className="py-1">
+                      <dt className="font-semibold text-gray-700 text-sm mb-1">MODELO</dt>
+                      <dd className="text-gray-900 text-base">{patrimonio.modelo || '-'}</dd>
+                    </div>
+                  )}
+                  {shouldPrint('cor') && (
+                    <div className="py-1">
+                      <dt className="font-semibold text-gray-700 text-sm mb-1">COR</dt>
+                      <dd className="text-gray-900 text-base">{patrimonio.cor || '-'}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+              {/* Foto - Altura Aumentada */}
+              <div className="col-span-1">
+                <div className="text-center">
+                  <dt className="font-semibold text-gray-700 text-sm mb-3">FOTO</dt>
+                  <div className="w-full h-56 border-2 border-gray-300 flex items-center justify-center bg-gray-50 rounded-lg shadow-sm">
+                    {shouldPrint('fotos') && patrimonio.fotos && patrimonio.fotos.length > 0 ? (
+                      <img
+                        src={getCloudImageUrl(patrimonio.fotos[0])}
+                        alt="Foto do bem"
+                        className="w-full h-full object-cover rounded"
+                        style={{ objectFit: 'cover', objectPosition: 'center' }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = '<span class="text-gray-500 text-sm">Sem foto</span>';
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span className="text-gray-500 text-sm">Sem foto</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Seção de Informações de Aquisição */}
+          <section className="mb-6">
+            <h3 className="font-bold text-lg mb-4 border-b-2 border-gray-300 pb-2 text-gray-800">
+              INFORMAÇÕES DE AQUISIÇÃO
+            </h3>
+            <div className="grid grid-cols-2 gap-8">
+              <dl className="space-y-3">
+                {shouldPrint('data_aquisicao') && (
+                  <div className="py-2">
+                    <dt className="font-semibold text-gray-700 text-sm mb-1">DATA DE AQUISIÇÃO</dt>
+                    <dd className="text-gray-900 text-base">{formatDate(new Date(patrimonio.data_aquisicao))}</dd>
+                  </div>
+                )}
+                {shouldPrint('valor_aquisicao') && (
+                  <div className="py-2">
+                    <dt className="font-semibold text-gray-700 text-sm mb-1">VALOR DE AQUISIÇÃO</dt>
+                    <dd className="text-gray-900 text-base font-bold">{formatCurrency(patrimonio.valor_aquisicao)}</dd>
+                  </div>
+                )}
+              </dl>
+              <dl className="space-y-3">
+                {shouldPrint('numero_nota_fiscal') && (
+                  <div className="py-2">
+                    <dt className="font-semibold text-gray-700 text-sm mb-1">NOTA FISCAL</dt>
+                    <dd className="text-gray-900 text-base">{patrimonio.numero_nota_fiscal}</dd>
+                  </div>
+                )}
+                {shouldPrint('forma_aquisicao') && (
+                  <div className="py-2">
+                    <dt className="font-semibold text-gray-700 text-sm mb-1">FORMA DE AQUISIÇÃO</dt>
+                    <dd className="text-gray-900 text-base">{patrimonio.forma_aquisicao}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          </section>
+
+          {/* Seção de Localização e Estado */}
+          <section className="mb-6">
+            <h3 className="font-bold text-lg mb-4 border-b-2 border-gray-300 pb-2 text-gray-800">
+              LOCALIZAÇÃO E ESTADO
+            </h3>
+            <div className="grid grid-cols-2 gap-8">
+              <dl className="space-y-3">
+                {shouldPrint('local_objeto') && (
+                  <div className="py-2">
+                    <dt className="font-semibold text-gray-700 text-sm mb-1">LOCALIZAÇÃO</dt>
+                    <dd className="text-gray-900 text-base">{patrimonio.local_objeto}</dd>
+                  </div>
+                )}
+                {shouldPrint('status') && (
+                  <div className="py-2">
+                    <dt className="font-semibold text-gray-700 text-sm mb-1">STATUS</dt>
+                    <dd className="text-gray-900 text-base font-semibold">{patrimonio.status.toUpperCase()}</dd>
+                  </div>
+                )}
+              </dl>
+              <dl className="space-y-3">
+                {shouldPrint('situacao_bem') && (
+                  <div className="py-2">
+                    <dt className="font-semibold text-gray-700 text-sm mb-1">SITUAÇÃO DO BEM</dt>
+                    <dd className="text-gray-900 text-base font-semibold">{patrimonio.situacao_bem}</dd>
+                  </div>
+                )}
+                {shouldPrint('observacoes') && patrimonio.observacoes && (
+                  <div className="py-2">
+                    <dt className="font-semibold text-gray-700 text-sm mb-1">OBSERVAÇÕES</dt>
+                    <dd className="text-gray-900 text-base">{patrimonio.observacoes}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          </section>
+        </main>
+
+        {/* Linhas para Assinaturas */}
+        <div className="mt-16 space-y-10">
+          <div className="grid grid-cols-2 gap-12">
+            <div className="text-center">
+              <div className="border-t border-black w-full pt-2">
+                <p className="text-sm font-medium">Responsável pelo Setor</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="border-t border-black w-full pt-2">
+                <p className="text-sm font-medium">Responsável pelo Patrimônio</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-12 mt-6">
+            <div className="text-center">
+              <div className="border-t border-black w-full pt-2">
+                <p className="text-sm font-medium">Data: ___/___/_______</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="border-t border-black w-full pt-2">
+                <p className="text-sm font-medium">Data: ___/___/_______</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Rodapé */}
+        <footer className="mt-8 pt-4 border-t border-gray-300">
           <p className="text-center text-xs text-gray-500">
             Documento gerado por SISPAT em{' '}
             {formatDate(new Date(), "dd/MM/yyyy 'às' HH:mm")}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -12,16 +12,26 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { FileText, CheckSquare, Square } from 'lucide-react'
+import { FileText, CheckSquare, Square, Sparkles } from 'lucide-react'
+import { api } from '@/services/http-api'
 
 interface PDFConfigDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onGenerate: (selectedSections: string[]) => void
+  onGenerate: (selectedSections: string[], templateId?: string) => void
   hasPhotos?: boolean
   hasObservations?: boolean
   hasDepreciation?: boolean
   isBaixado?: boolean
+}
+
+interface FichaTemplate {
+  id: string
+  name: string
+  description?: string
+  type: string
+  isDefault: boolean
+  isActive: boolean
 }
 
 interface Section {
@@ -41,6 +51,39 @@ export const PDFConfigDialog = ({
   hasDepreciation = false,
   isBaixado = false,
 }: PDFConfigDialogProps) => {
+  const [templates, setTemplates] = useState<FichaTemplate[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      loadTemplates()
+    }
+  }, [open])
+
+  const loadTemplates = async () => {
+    try {
+      setLoadingTemplates(true)
+      const response = await api.get('/ficha-templates')
+      const bensTemplates = (Array.isArray(response) ? response : []).filter(
+        (t: FichaTemplate) => t.type === 'bens' && t.isActive
+      )
+      setTemplates(bensTemplates)
+      // Selecionar template padrão automaticamente
+      const defaultTemplate = bensTemplates.find((t: FichaTemplate) => t.isDefault)
+      if (defaultTemplate) {
+        setSelectedTemplateId(defaultTemplate.id)
+      } else if (bensTemplates.length > 0) {
+        setSelectedTemplateId(bensTemplates[0].id)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar templates:', error)
+      setTemplates([])
+    } finally {
+      setLoadingTemplates(false)
+    }
+  }
+
   const sections: Section[] = [
     {
       id: 'header',
@@ -145,7 +188,7 @@ export const PDFConfigDialog = ({
   }
 
   const handleGenerate = () => {
-    onGenerate(selectedSections)
+    onGenerate(selectedSections, selectedTemplateId || undefined)
     onOpenChange(false)
   }
 
@@ -161,12 +204,45 @@ export const PDFConfigDialog = ({
             Configurar Ficha PDF
           </DialogTitle>
           <DialogDescription>
-            Selecione as seções que deseja incluir na ficha do bem.
-            Seções obrigatórias não podem ser desmarcadas.
+            Selecione o template e as seções que deseja incluir na ficha do bem.
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
+          {/* Seleção de Template */}
+          <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <Label className="text-sm font-semibold">Template de Ficha</Label>
+            </div>
+            {loadingTemplates ? (
+              <div className="text-sm text-muted-foreground">Carregando templates...</div>
+            ) : templates.length > 0 ? (
+              <>
+                <select
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  aria-label="Selecionar template de ficha"
+                >
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name} {template.isDefault ? '(Padrão)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {templates.find(t => t.id === selectedTemplateId)?.description && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {templates.find(t => t.id === selectedTemplateId)?.description}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Nenhum template disponível. Use o Gerenciador de Fichas para criar um.
+              </div>
+            )}
+          </div>
           {/* Botão Selecionar/Desmarcar Todos */}
           <div className="flex items-center justify-between mb-4 pb-3 border-b">
             <div className="flex items-center gap-2">

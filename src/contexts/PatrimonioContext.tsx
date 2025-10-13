@@ -99,7 +99,27 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
       fotosLength: updatedPatrimonio.fotos?.length,
     })
     
-    const response = await api.put(`/patrimonios/${updatedPatrimonio.id}`, updatedPatrimonio)
+    // Remover campos de relacionamentos que não devem ser enviados
+    const { 
+      sector, 
+      local, 
+      tipoBem, 
+      municipality, 
+      acquisitionForm, 
+      creator, 
+      historico, 
+      notes,
+      notas,
+      transferencias, 
+      emprestimos,
+      subPatrimonios, 
+      inventoryItems, 
+      manutencoes, 
+      documentosFiles,
+      ...patrimonioData 
+    } = updatedPatrimonio as any
+    
+    const response = await api.put(`/patrimonios/${updatedPatrimonio.id}`, patrimonioData)
     
     console.log('✅ PatrimonioContext - Resposta do backend:', response)
     

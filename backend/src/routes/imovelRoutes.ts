@@ -3,6 +3,7 @@ import {
   listImoveis,
   getImovel,
   getByNumero,
+  gerarNumeroImovel,
   createImovel,
   updateImovel,
   deleteImovel,
@@ -22,6 +23,13 @@ router.use(authenticateToken);
  * @access Private (All authenticated users)
  */
 router.get('/', listImoveis);
+
+/**
+ * @route GET /api/imoveis/gerar-numero
+ * @desc Gerar próximo número de imóvel
+ * @access Private
+ */
+router.get('/gerar-numero', gerarNumeroImovel);
 
 /**
  * @route GET /api/imoveis/numero/:numero

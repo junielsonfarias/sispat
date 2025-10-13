@@ -1,0 +1,83 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ============================================
+  # ANÁLISE DE QUALIDADE DE CÓDIGO
+  # ============================================
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Para análise completa
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      # Frontend
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Frontend Lint
+        run: npm run lint
+
+      - name: Frontend Type Check
+        run: npm run type-check
+
+      # Backend
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Backend Type Check
+        working-directory: ./backend
+        run: npx tsc --noEmit
+
+  # ============================================
+  # ANÁLISE DE SEGURANÇA
+  # ============================================
+  security:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Run npm audit (Frontend)
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run npm audit (Backend)
+        working-directory: ./backend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+  # ============================================
+  # ANÁLISE DE DEPENDÊNCIAS
+  # ============================================
+  dependencies:
+    name: Dependency Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Check for outdated packages (Frontend)
+        run: npm outdated || true
+
+      - name: Check for outdated packages (Backend)
+        working-directory: ./backend
+        run: npm outdated || true
+

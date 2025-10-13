@@ -29,8 +29,9 @@ import { TransferProvider } from '@/contexts/TransferContext'
 import { UserReportConfigProvider } from '@/contexts/UserReportConfigContext'
 import { TiposBensProvider } from '@/contexts/TiposBensContext'
 import { AcquisitionFormProvider } from '@/contexts/AcquisitionFormContext'
+import { ReactQueryProviders } from '@/components/ReactQueryProviders'
 
-// Agrupamento de providers por funcionalidade para melhor organização
+// ✅ MELHORIA: Agrupamento de providers otimizado com React Query
 const CoreProviders = ({ children }: { children: ReactNode }) => (
   <TooltipProvider>
     <AuthProvider>
@@ -49,30 +50,27 @@ const CoreProviders = ({ children }: { children: ReactNode }) => (
   </TooltipProvider>
 )
 
-const SystemProviders = ({ children }: { children: ReactNode }) => (
-  <>
-    {children}
-  </>
-)
-
+// ✅ MELHORIA: DataProviders com React Query (mantém providers necessários temporariamente)
 const DataProviders = ({ children }: { children: ReactNode }) => (
-  <SectorProvider>
-    <LocalProvider>
-      <AcquisitionFormProvider>
-        <TiposBensProvider>
-          <PatrimonioProvider>
-            <ImovelProvider>
-              <ImovelFieldProvider>
-                <InventoryProvider>
-                  {children}
-                </InventoryProvider>
-              </ImovelFieldProvider>
-            </ImovelProvider>
-          </PatrimonioProvider>
-        </TiposBensProvider>
-      </AcquisitionFormProvider>
-    </LocalProvider>
-  </SectorProvider>
+  <ReactQueryProviders>
+    <SectorProvider>
+      <LocalProvider>
+        <AcquisitionFormProvider>
+          <TiposBensProvider>
+            <PatrimonioProvider>
+              <ImovelProvider>
+                <ImovelFieldProvider>
+                  <InventoryProvider>
+                    {children}
+                  </InventoryProvider>
+                </ImovelFieldProvider>
+              </ImovelProvider>
+            </PatrimonioProvider>
+          </TiposBensProvider>
+        </AcquisitionFormProvider>
+      </LocalProvider>
+    </SectorProvider>
+  </ReactQueryProviders>
 )
 
 const TemplateProviders = ({ children }: { children: ReactNode }) => (
@@ -115,14 +113,12 @@ const FeatureProviders = ({ children }: { children: ReactNode }) => (
 
 export const AppProviders = ({ children }: { children: ReactNode }) => (
   <CoreProviders>
-    <SystemProviders>
-      <DataProviders>
-        <TemplateProviders>
-          <FeatureProviders>
-            {children}
-          </FeatureProviders>
-        </TemplateProviders>
-      </DataProviders>
-    </SystemProviders>
+    <DataProviders>
+      <TemplateProviders>
+        <FeatureProviders>
+          {children}
+        </FeatureProviders>
+      </TemplateProviders>
+    </DataProviders>
   </CoreProviders>
 )

@@ -115,6 +115,11 @@ const supervisorAndAdminLinks: NavItem[] = [
         label: 'Modelos de Etiqueta',
       },
       {
+        to: '/gerenciador-fichas',
+        icon: FileText,
+        label: 'Gerenciador de Fichas',
+      },
+      {
         to: '/ferramentas/sync-client',
         icon: Laptop,
         label: 'Cliente de Sincronização',

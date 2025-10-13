@@ -21,6 +21,51 @@ const authLimiter = rateLimit({
 });
 
 /**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     tags: [Autenticação]
+ *     summary: Login de usuário
+ *     description: Autentica um usuário e retorna um token JWT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: admin@sistema.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: admin123
+ *     responses:
+ *       200:
+ *         description: Login realizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Token JWT para autenticação
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Credenciais inválidas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Muitas tentativas de login
  * @route POST /api/auth/login
  * @desc Login de usuário
  * @access Public
@@ -35,6 +80,23 @@ router.post('/login', authLimiter, login);
 router.post('/refresh', refreshToken);
 
 /**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     tags: [Autenticação]
+ *     summary: Obter dados do usuário autenticado
+ *     description: Retorna as informações do usuário logado
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dados do usuário
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Não autenticado
  * @route GET /api/auth/me
  * @desc Obter dados do usuário autenticado
  * @access Private

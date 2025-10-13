@@ -21,6 +21,8 @@ export const getTiposBens = async (req: Request, res: Response): Promise<void> =
       },
     });
 
+    // ✅ PERFORMANCE: Cache HTTP para dados estáticos (mudam pouco)
+    res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
     res.json(tiposBens);
   } catch (error) {
     console.error('Erro ao buscar tipos de bens:', error);

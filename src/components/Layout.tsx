@@ -1,11 +1,9 @@
 import { ReactNode } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { cn } from '@/lib/utils'
 import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
-import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp'
 import { Toaster } from '@/components/ui/toaster'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -17,9 +15,6 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const { user } = useAuth()
-  
-  // Ativar atalhos de teclado
-  useKeyboardShortcuts()
 
   if (!user) {
     return <ProtectedRoute>{children}</ProtectedRoute>
@@ -47,9 +42,6 @@ export const Layout = ({ children }: LayoutProps) => {
           </div>
         </SidebarProvider>
       </div>
-      
-      {/* Keyboard Shortcuts Helper */}
-      <KeyboardShortcutsHelp />
       
       <Toaster />
     </div>

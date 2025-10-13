@@ -113,7 +113,8 @@ const ActivityLogPage = () => {
             endDate: filters.dateRange?.to?.toISOString(),
           },
         })
-        setLogs(data)
+        // ✅ CORREÇÃO: Garantir que logs seja sempre um array
+        setLogs(Array.isArray(data) ? data : [])
         setTotalCount(count || 0)
       } catch (error) {
         // Error handled by error boundary
@@ -190,7 +191,7 @@ const ActivityLogPage = () => {
                   <TableRow key={log.id}>
                     <TableCell>
                       {format(
-                        new Date(log.timestamp),
+                        new Date(log.createdAt || log.timestamp),
                         "dd/MM/yyyy 'às' HH:mm:ss",
                         { locale: ptBR },
                       )}

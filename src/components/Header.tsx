@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useCustomization } from '@/contexts/CustomizationContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,13 +16,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { GlobalSearch } from '@/components/GlobalSearch'
 import { MobileNavigation, BottomNavigation } from '@/components/MobileNavigation'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { Bell, Search, User, LogOut, Settings, Shield, Building2 } from 'lucide-react'
+import { User, LogOut, Settings, Shield, Building2, Sun, Moon } from 'lucide-react'
 
 export const Header = () => {
   const { user, logout } = useAuth()
+  const { theme, setTheme, actualTheme } = useTheme()
   
   // Fallback para quando o contexto não estiver disponível
   let settings
@@ -35,7 +36,6 @@ export const Header = () => {
     }
   }
   
-  const [showSearch, setShowSearch] = useState(false)
   const location = useLocation()
 
   if (!user) return null
@@ -106,13 +106,13 @@ export const Header = () => {
           <div className="flex-1 flex items-center justify-between px-6">
             {/* Left Side - Logo (Aligned with menu) */}
             <div className="flex items-center w-64 justify-center">
-              <div className="relative">
+              <Link to="/dashboard" className="relative cursor-pointer hover:opacity-80 transition-opacity">
                 <img
                   src={settings.activeLogoUrl}
                   alt="Logo da Prefeitura"
-                  className="h-16 w-auto object-contain drop-shadow-md"
+                  className="h-20 w-auto object-contain drop-shadow-md"
                 />
-              </div>
+              </Link>
             </div>
 
             {/* Center - Municipality Information */}
@@ -150,33 +150,6 @@ export const Header = () => {
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-2 w-64 justify-end">
-              {/* Theme Toggle */}
-              <ThemeToggle />
-
-              {/* Search Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowSearch(!showSearch)}
-                className="h-14 w-14 hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all duration-200"
-                aria-label="Buscar"
-              >
-                <Search className="h-7 w-7 text-blue-600" />
-              </Button>
-
-              {/* Notifications */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-14 w-14 hover:bg-orange-50 hover:border-orange-200 border border-transparent transition-all duration-200 relative"
-                aria-label="Notificações"
-              >
-                <Bell className="h-7 w-7 text-orange-600" />
-                {/* Notification Badge */}
-                <span className="absolute -top-1 -right-1 h-6 w-6 bg-red-500 text-white text-sm rounded-full flex items-center justify-center font-bold shadow-lg">
-                  3
-                </span>
-              </Button>
 
               {/* User Avatar */}
               <DropdownMenu>
@@ -240,6 +213,24 @@ export const Header = () => {
                       <span>Configurações</span>
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setTheme(actualTheme === 'light' ? 'dark' : 'light')}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    {actualTheme === 'light' ? (
+                      <Moon className="h-4 w-4" />
+                    ) : (
+                      <Sun className="h-4 w-4" />
+                    )}
+                    <span>Tema</span>
+                    <div className="ml-auto">
+                      {actualTheme === 'light' ? (
+                        <Sun className="h-4 w-4" />
+                      ) : (
+                        <Moon className="h-4 w-4" />
+                      )}
+                    </div>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleLogout}
@@ -255,14 +246,16 @@ export const Header = () => {
         </div>
 
         {/* Tablet Layout (md to lg) */}
-        <div className="hidden md:flex lg:hidden h-24 px-6 items-center justify-between">
+        <div className="hidden md:flex lg:hidden h-28 px-6 items-center justify-between">
           {/* Logo and Municipality Info - Stacked */}
           <div className="flex flex-col items-center gap-1 py-2">
-            <img
-              src={settings.activeLogoUrl}
-              alt="Logo"
-              className="h-14 w-auto object-contain drop-shadow-sm"
-            />
+            <Link to="/dashboard" className="cursor-pointer hover:opacity-80 transition-opacity">
+              <img
+                src={settings.activeLogoUrl}
+                alt="Logo"
+                className="h-18 w-auto object-contain drop-shadow-sm"
+              />
+            </Link>
             {settings.prefeituraName ? (
               <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
                 {settings.prefeituraName}
@@ -286,70 +279,92 @@ export const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowSearch(!showSearch)}
-              className="h-10 w-10"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 relative"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                3
-              </span>
-            </Button>
+            {/* User Avatar - Tablet */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
-                  <Avatar className="h-8 w-8">
+                <Button
+                  variant="ghost"
+                  className="h-10 w-10 rounded-full hover:bg-green-50 hover:border-green-200 border border-transparent transition-all duration-200 p-0"
+                  aria-label="Menu do usuário"
+                >
+                  <Avatar className="h-8 w-8 ring-2 ring-green-200">
                     {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
                       <AvatarImage src={user.avatarUrl} alt={user.name} />
                     )}
-                    <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
+                    <AvatarFallback className="bg-green-100 text-green-700 text-xs font-bold">
                       {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64" align="end">
+              <DropdownMenuContent className="w-72" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
-                      )}
-                      <AvatarFallback className="bg-gray-200 text-gray-700 text-xs">
-                        {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-semibold">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.role}</p>
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
+                          <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        )}
+                        <AvatarFallback className="bg-gray-200 text-gray-700">
+                          {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <p className="text-sm font-semibold leading-none">{user.name}</p>
+                        <p className="text-xs leading-none text-muted-foreground mt-1">
+                          {user.email}
+                        </p>
+                      </div>
                     </div>
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        'w-fit text-xs',
+                        getRoleBadgeColor(user.role)
+                      )}
+                    >
+                      <RoleIcon className="h-3 w-3 mr-1" />
+                      {user.role}
+                    </Badge>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/perfil" className="flex items-center gap-2">
+                  <Link to="/perfil" className="flex items-center gap-2 cursor-pointer">
                     <User className="h-4 w-4" />
                     <span>Perfil</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/configuracoes/personalizacao" className="flex items-center gap-2">
+                  <Link to="/configuracoes/personalizacao" className="flex items-center gap-2 cursor-pointer">
                     <Settings className="h-4 w-4" />
                     <span>Configurações</span>
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setTheme(actualTheme === 'light' ? 'dark' : 'light')}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  {actualTheme === 'light' ? (
+                    <Moon className="h-4 w-4" />
+                  ) : (
+                    <Sun className="h-4 w-4" />
+                  )}
+                  <span>Tema</span>
+                  <div className="ml-auto">
+                    {actualTheme === 'light' ? (
+                      <Sun className="h-4 w-4" />
+                    ) : (
+                      <Moon className="h-4 w-4" />
+                    )}
+                  </div>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                  <LogOut className="h-4 w-4 mr-2" />
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600"
+                >
+                  <LogOut className="h-4 w-4" />
                   <span>Sair</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -358,7 +373,7 @@ export const Header = () => {
         </div>
 
         {/* Mobile Layout (below md) - Padrão de mercado otimizado */}
-        <div className="flex md:hidden h-14 px-4 items-center justify-between gap-3">
+        <div className="flex md:hidden h-18 px-4 items-center justify-between gap-3">
           {/* Menu Hamburguer - Esquerda */}
           <div className="flex-shrink-0">
             <MobileNavigation />
@@ -366,11 +381,13 @@ export const Header = () => {
 
           {/* Logo - Centro (apenas logo, sem texto) */}
           <div className="flex items-center justify-center flex-1 min-w-0">
-            <img
-              src={settings.activeLogoUrl}
-              alt="Logo"
-              className="h-10 w-auto max-w-[120px] object-contain"
-            />
+            <Link to="/dashboard" className="cursor-pointer hover:opacity-80 transition-opacity">
+              <img
+                src={settings.activeLogoUrl}
+                alt="Logo"
+                className="h-13 w-auto max-w-[120px] object-contain"
+              />
+            </Link>
           </div>
 
           {/* Avatar - Direita (apenas avatar, sem botão de busca) */}
@@ -459,12 +476,6 @@ export const Header = () => {
           </div>
         </div>
 
-        {/* Mobile Search Bar */}
-        {showSearch && (
-          <div className="md:hidden border-t bg-white p-3">
-            <GlobalSearch />
-          </div>
-        )}
       </header>
 
       {/* Bottom Navigation for Mobile */}

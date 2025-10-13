@@ -10,6 +10,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel'
 import { Card, CardContent } from '@/components/ui/card'
+import { LazyImage } from '@/components/ui/lazy-image'
 import { Image as ImageIcon } from 'lucide-react'
 
 const DetailItem = ({
@@ -40,14 +41,12 @@ export const BensQuickView = ({ patrimonio }: BensQuickViewProps) => {
                 <CarouselItem key={index}>
                   <Card>
                     <CardContent className="flex aspect-video items-center justify-center p-0">
-                      <img
+                      <LazyImage
                         src={getCloudImageUrl(fotoId)}
                         alt={`${patrimonio.descricao_bem} - Foto ${index + 1}`}
+                        fallback={LOCAL_IMAGES.PLACEHOLDER_IMAGE}
                         className="rounded-lg object-cover w-full h-full"
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            LOCAL_IMAGES.PLACEHOLDER_IMAGE
-                        }}
+                        aspectRatio={16/9}
                       />
                     </CardContent>
                   </Card>

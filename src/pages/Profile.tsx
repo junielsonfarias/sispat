@@ -11,8 +11,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { toast } from '@/hooks/use-toast'
-import { Edit } from 'lucide-react'
+import { Edit, Palette } from 'lucide-react'
 import { ImageEditor } from '@/components/profile/ImageEditor'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { Badge } from '@/components/ui/badge'
@@ -140,6 +141,29 @@ const Profile = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* ✅ Card de Tema (Desktop) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Aparência
+          </CardTitle>
+          <CardDescription>Personalize o tema da interface</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base">Tema do Sistema</Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Alterne entre modo claro e escuro
+              </p>
+            </div>
+            <ThemeToggle />
+          </div>
+        </CardContent>
+      </Card>
+
       <ImageEditor
         imageSrc={imageToEdit}
         open={isEditorOpen}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -17,7 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
-import { Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft, RefreshCw } from 'lucide-react'
 import { ImageUpload } from '@/components/bens/ImageUpload'
 import { useImovel } from '@/contexts/ImovelContext'
 import { useImovelField } from '@/contexts/ImovelFieldContext'
@@ -26,6 +26,7 @@ import { ImovelFieldConfig } from '@/types'
 import { Label } from '@/components/ui/label'
 import { useSectors } from '@/contexts/SectorContext'
 import { SearchableSelect } from '@/components/ui/searchable-select'
+import { api } from '@/services/http-api'
 
 const baseSchema = z.object({
   numero_patrimonio: z.string().min(1, 'O número de patrimônio é obrigatório.'),
@@ -118,6 +119,70 @@ export default function ImoveisCreate() {
     },
   })
 
+  const [isGeneratingNumber, setIsGeneratingNumber] = useState(false)
+  const selectedSector = form.watch('setor')
+
+  // Função para gerar número do imóvel
+  const handleGenerateNumber = async () => {
+    const sectorName = form.getValues('setor')
+    
+    if (!sectorName) {
+      toast({
+        title: 'Atenção',
+        description: 'Selecione um setor antes de gerar o número',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Encontrar o ID do setor pelo nome
+    const sector = sectors.find(s => s.name === sectorName)
+    if (!sector) {
+      toast({
+        title: 'Erro',
+        description: 'Setor não encontrado',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsGeneratingNumber(true)
+    try {
+      const response = await api.get('/imoveis/gerar-numero', {
+        params: { sectorId: sector.id }
+      })
+      
+      form.setValue('numero_patrimonio', response.numero)
+      
+      toast({
+        title: 'Número Gerado',
+        description: `Número: ${response.numero}`,
+      })
+    } catch (error) {
+      console.error('Erro ao gerar número:', error)
+      toast({
+        title: 'Erro',
+        description: 'Erro ao gerar número do imóvel',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsGeneratingNumber(false)
+    }
+  }
+
+  // Gerar número automaticamente quando o setor for selecionado
+  useEffect(() => {
+    const currentNumber = form.getValues('numero_patrimonio')
+    
+    // Só gera automaticamente se:
+    // 1. Um setor foi selecionado
+    // 2. O campo de número está vazio
+    if (selectedSector && !currentNumber && sectors.length > 0) {
+      handleGenerateNumber()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSector, sectors])
+
   const onSubmit = async (data: ImovelFormValues) => {
     if (!user) return
 
@@ -193,9 +258,28 @@ export default function ImoveisCreate() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Número do Patrimônio</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Ex: 12345" />
-                        </FormControl>
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <Input {...field} placeholder="Ex: IML2025010001" />
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={handleGenerateNumber}
+                            disabled={isGeneratingNumber || !form.getValues('setor')}
+                            title="Gerar número automaticamente"
+                          >
+                            {isGeneratingNumber ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Formato: IML + Ano + Cód.Setor + Sequencial
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -79,8 +79,9 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       limit = '50',
     } = req.query;
 
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    // ✅ CORREÇÃO: Validar e sanitizar query params
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 50));
     const skip = (pageNum - 1) * limitNum;
 
     // Construir filtros
@@ -338,6 +339,53 @@ export const getByNumero = async (req: Request, res: Response): Promise<void> =>
 };
 
 /**
+ * Gerar próximo número patrimonial
+ * GET /api/patrimonios/gerar-numero
+ */
+export const gerarNumeroPatrimonial = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { prefix = 'PAT', year } = req.query
+    const currentYear = year || new Date().getFullYear()
+
+    // Buscar último número do ano
+    const ultimoPatrimonio = await prisma.patrimonio.findFirst({
+      where: {
+        numero_patrimonio: {
+          startsWith: `${prefix}-${currentYear}`,
+        },
+      },
+      orderBy: {
+        numero_patrimonio: 'desc',
+      },
+      select: {
+        numero_patrimonio: true,
+      },
+    })
+
+    let proximoNumero = 1
+
+    if (ultimoPatrimonio) {
+      // Extrair número sequencial
+      const partes = ultimoPatrimonio.numero_patrimonio.split('-')
+      const ultimoSequencial = parseInt(partes[partes.length - 1])
+      proximoNumero = ultimoSequencial + 1
+    }
+
+    // Formatar: PAT-2025-0001
+    const numeroGerado = `${prefix}-${currentYear}-${proximoNumero.toString().padStart(4, '0')}`
+
+    res.json({
+      numero: numeroGerado,
+      year: currentYear,
+      sequencial: proximoNumero,
+    })
+  } catch (error) {
+    console.error('Erro ao gerar número patrimonial:', error)
+    res.status(500).json({ error: 'Erro ao gerar número patrimonial' })
+  }
+}
+
+/**
  * Criar patrimônio
  * POST /api/patrimonios
  */
@@ -403,68 +451,73 @@ export const createPatrimonio = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Criar patrimônio
-    const patrimonio = await prisma.patrimonio.create({
-      data: {
-        numero_patrimonio,
-        descricao_bem,
-        tipo: tipo || 'Não especificado',
-        marca,
-        modelo,
-        cor,
-        numero_serie,
-        data_aquisicao: new Date(data_aquisicao),
-        valor_aquisicao: parseFloat(valor_aquisicao),
-        quantidade: parseInt(quantidade) || 1,
-        numero_nota_fiscal,
-        forma_aquisicao: forma_aquisicao || 'Não especificado',
-        setor_responsavel: setor_responsavel || 'Não especificado',
-        local_objeto: local_objeto || 'Não especificado',
-        status: status || 'ativo',
-        situacao_bem,
-        observacoes,
-        fotos: Array.isArray(fotos) ? fotos.map(foto => typeof foto === 'string' ? foto : foto.file_url || foto.fileName || String(foto)) : [],
-        documentos: Array.isArray(documentos) ? documentos.map(doc => typeof doc === 'string' ? doc : doc.file_url || doc.fileName || String(doc)) : [],
-        metodo_depreciacao: metodo_depreciacao || 'Linear',
-        vida_util_anos: vida_util_anos ? parseInt(vida_util_anos) : null,
-        valor_residual: valor_residual ? parseFloat(valor_residual) : null,
-        municipalityId: req.user.municipalityId,
-        sectorId,
-        localId: localId || null,
-        tipoId: tipoId || null,
-        acquisitionFormId: acquisitionFormId || null,
-        createdBy: req.user.userId,
-        updatedBy: req.user.userId,
-      },
-      include: {
-        sector: { select: { id: true, name: true } },
-        local: { select: { id: true, name: true } },
-        tipoBem: { select: { id: true, nome: true } },
-      },
-    });
+    // ✅ CORREÇÃO: Criar patrimônio com transaction atômica
+    const patrimonio = await prisma.$transaction(async (tx) => {
+      // 1. Criar patrimônio
+      const novoPatrimonio = await tx.patrimonio.create({
+        data: {
+          numero_patrimonio,
+          descricao_bem,
+          tipo: tipo || 'Não especificado',
+          marca,
+          modelo,
+          cor,
+          numero_serie,
+          data_aquisicao: new Date(data_aquisicao),
+          valor_aquisicao: parseFloat(valor_aquisicao),
+          quantidade: parseInt(quantidade) || 1,
+          numero_nota_fiscal,
+          forma_aquisicao: forma_aquisicao || 'Não especificado',
+          setor_responsavel: setor_responsavel || 'Não especificado',
+          local_objeto: local_objeto || 'Não especificado',
+          status: status || 'ativo',
+          situacao_bem,
+          observacoes,
+          fotos: Array.isArray(fotos) ? fotos.map(foto => typeof foto === 'string' ? foto : foto.file_url || foto.fileName || String(foto)) : [],
+          documentos: Array.isArray(documentos) ? documentos.map(doc => typeof doc === 'string' ? doc : doc.file_url || doc.fileName || String(doc)) : [],
+          metodo_depreciacao: metodo_depreciacao || 'Linear',
+          vida_util_anos: vida_util_anos ? parseInt(vida_util_anos) : null,
+          valor_residual: valor_residual ? parseFloat(valor_residual) : null,
+          municipalityId: req.user!.municipalityId,
+          sectorId,
+          localId: localId || null,
+          tipoId: tipoId || null,
+          acquisitionFormId: acquisitionFormId || null,
+          createdBy: req.user!.userId,
+          updatedBy: req.user!.userId,
+        },
+        include: {
+          sector: { select: { id: true, name: true } },
+          local: { select: { id: true, name: true } },
+          tipoBem: { select: { id: true, nome: true } },
+        },
+      });
 
-    // Criar entrada no histórico
-    await prisma.historicoEntry.create({
-      data: {
-        patrimonioId: patrimonio.id,
-        date: new Date(),
-        action: 'CADASTRO',
-        details: `Patrimônio cadastrado por ${req.user.userId}`,
-        user: req.user.userId,
-      },
-    });
+      // 2. Criar entrada no histórico (apenas se patrimônio criar com sucesso)
+      await tx.historicoEntry.create({
+        data: {
+          patrimonioId: novoPatrimonio.id,
+          date: new Date(),
+          action: 'CADASTRO',
+          details: `Patrimônio cadastrado por ${req.user!.userId}`,
+          user: req.user!.userId,
+        },
+      });
 
-    // Log de atividade
-    await prisma.activityLog.create({
-      data: {
-        userId: req.user.userId,
-        action: 'CREATE_PATRIMONIO',
-        entityType: 'PATRIMONIO',
-        entityId: patrimonio.id,
-        details: `Criado patrimônio ${numero_patrimonio}`,
-        ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
-        userAgent: req.get('user-agent') || 'unknown',
-      },
+      // 3. Log de atividade
+      await tx.activityLog.create({
+        data: {
+          userId: req.user!.userId,
+          action: 'CREATE_PATRIMONIO',
+          entityType: 'PATRIMONIO',
+          entityId: novoPatrimonio.id,
+          details: `Criado patrimônio ${numero_patrimonio}`,
+          ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
+          userAgent: req.get('user-agent') || 'unknown',
+        },
+      });
+
+      return novoPatrimonio;
     });
 
     res.status(201).json({ message: 'Patrimônio criado com sucesso', patrimonio });
@@ -535,7 +588,8 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
       console.log('🔍 DEBUG - Nome do setor do patrimônio:', patrimonioSector?.name);
 
       // ✅ CORREÇÃO: Comparar nomes dos setores, não IDs
-      if (user && patrimonioSector && !user.responsibleSectors.includes(patrimonioSector.name)) {
+      // Se responsibleSectors está vazio, usuário tem acesso a todos os setores
+      if (user && patrimonioSector && user.responsibleSectors.length > 0 && !user.responsibleSectors.includes(patrimonioSector.name)) {
         console.log('❌ DEBUG - Acesso negado: usuário não tem permissão para este setor');
         res.status(403).json({ 
           error: 'Acesso negado',
@@ -544,6 +598,8 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
           patrimonioSector: patrimonioSector.name
         });
         return;
+      } else if (user && user.responsibleSectors.length === 0) {
+        console.log('✅ DEBUG - Supervisor com acesso total (responsibleSectors vazio)');
       }
     }
 
@@ -556,8 +612,8 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
     const readonlyFields = [
       'id', 'createdAt', 'createdBy', 'updatedAt',
       'sector', 'local', 'tipoBem', 'municipality', 'acquisitionForm',
-      'creator', 'historico', 'notes', 'transferencias', 'emprestimos',
-      'subPatrimonios', 'inventoryItems', 'manutencoes'
+      'creator', 'historico', 'notes', 'notas', 'transferencias', 'emprestimos',
+      'subPatrimonios', 'inventoryItems', 'manutencoes', 'documentosFiles'
     ];
 
     // Filtrar apenas campos válidos e que podem ser atualizados
@@ -832,7 +888,8 @@ export const registrarBaixaPatrimonio = async (req: Request, res: Response): Pro
         select: { name: true },
       });
 
-      if (!user?.responsibleSectors?.includes(patrimonioSector?.name || '')) {
+      // ✅ CORREÇÃO: Se responsibleSectors está vazio, usuário tem acesso a todos os setores
+      if (user && patrimonioSector && user.responsibleSectors.length > 0 && !user.responsibleSectors.includes(patrimonioSector.name)) {
         res.status(403).json({ error: 'Acesso negado: sem permissão para este setor' });
         return;
       }

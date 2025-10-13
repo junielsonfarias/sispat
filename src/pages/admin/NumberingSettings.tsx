@@ -17,6 +17,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useNumberingPattern } from '@/contexts/NumberingPatternContext'
 import { generatePreview } from '@/lib/numbering-pattern-utils'
 import { NumberingPatternComponent } from '@/types'
@@ -30,6 +31,8 @@ import {
   Calendar,
   Hash,
   Building,
+  Home,
+  Package,
 } from 'lucide-react'
 import {
   Select,
@@ -53,6 +56,7 @@ const componentIcons = {
 export default function NumberingSettings() {
   const { pattern, savePattern } = useNumberingPattern()
   const [components, setComponents] = useState<NumberingPatternComponent[]>([])
+  const [activeTab, setActiveTab] = useState<'bens' | 'imoveis'>('bens')
 
   useEffect(() => {
     if (pattern) {
@@ -61,6 +65,9 @@ export default function NumberingSettings() {
   }, [pattern])
 
   const preview = useMemo(() => generatePreview(components), [components])
+  
+  // Preview fixo para imóveis
+  const imovelPreview = 'IML2025010001'
 
   const handleAddComponent = (type: NumberingPatternComponent['type']) => {
     const newComponent: NumberingPatternComponent = {
@@ -116,35 +123,50 @@ export default function NumberingSettings() {
       </Breadcrumb>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Padrão de Numeração de Bens</h1>
+          <h1 className="text-2xl font-bold">Padrão de Numeração Patrimonial</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Configure o formato de numeração dos patrimônios
+            Configure o formato de numeração de bens móveis e imóveis
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              setComponents([
-                { id: generateId(), type: 'year', format: 'YYYY' },
-                { id: generateId(), type: 'sector', sectorCodeLength: 2 },
-                { id: generateId(), type: 'sequence', length: 6 },
-              ])
-              toast({ 
-                description: 'Padrão recomendado aplicado! Clique em Salvar para confirmar.' 
-              })
-            }}
-          >
-            <Hash className="mr-2 h-4 w-4" /> Usar Padrão Recomendado
-          </Button>
-          <Button variant="outline" onClick={handleReset}>
-            <Undo className="mr-2 h-4 w-4" /> Redefinir
-          </Button>
-          <Button onClick={handleSave}>
-            <Save className="mr-2 h-4 w-4" /> Salvar Padrão
-          </Button>
-        </div>
       </div>
+      
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'bens' | 'imoveis')}>
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="bens" className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Bens Móveis
+          </TabsTrigger>
+          <TabsTrigger value="imoveis" className="flex items-center gap-2">
+            <Home className="h-4 w-4" />
+            Imóveis
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Aba de Bens Móveis */}
+        <TabsContent value="bens" className="space-y-6">
+          <div className="flex gap-2 justify-end">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setComponents([
+                  { id: generateId(), type: 'year', format: 'YYYY' },
+                  { id: generateId(), type: 'sector', sectorCodeLength: 2 },
+                  { id: generateId(), type: 'sequence', length: 6 },
+                ])
+                toast({ 
+                  description: 'Padrão recomendado aplicado! Clique em Salvar para confirmar.' 
+                })
+              }}
+            >
+              <Hash className="mr-2 h-4 w-4" /> Usar Padrão Recomendado
+            </Button>
+            <Button variant="outline" onClick={handleReset}>
+              <Undo className="mr-2 h-4 w-4" /> Redefinir
+            </Button>
+            <Button onClick={handleSave}>
+              <Save className="mr-2 h-4 w-4" /> Salvar Padrão
+            </Button>
+          </div>
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -308,6 +330,142 @@ export default function NumberingSettings() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* Aba de Imóveis */}
+        <TabsContent value="imoveis" className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Formato de Numeração</CardTitle>
+                <CardDescription>
+                  IML + Ano + Código Setor + Sequencial de 4 dígitos
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">Formato Fixo:</p>
+                  <p className="font-mono text-2xl text-blue-700 text-center">IML2025XX0001</p>
+                </div>
+                <div className="text-sm space-y-2 text-muted-foreground">
+                  <p>• <strong>IML</strong> = Prefixo fixo para imóveis</p>
+                  <p>• <strong>2025</strong> = Ano de cadastro</p>
+                  <p>• <strong>XX</strong> = Código do setor (2 dígitos)</p>
+                  <p>• <strong>0001</strong> = Sequencial (4 dígitos)</p>
+                </div>
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    ℹ️ O formato de numeração de imóveis é fixo e não pode ser personalizado. Esta configuração garante consistência e compatibilidade com sistemas de gestão pública.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Exemplo de Numeração</CardTitle>
+                <CardDescription>
+                  Visualize como o número será gerado
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg">
+                  <p className="text-xs text-green-700 mb-2 font-semibold uppercase">Número Gerado:</p>
+                  <p className="font-mono text-3xl font-bold text-green-700 text-center break-all">
+                    {imovelPreview}
+                  </p>
+                </div>
+                <div className="mt-4 space-y-2 text-sm">
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-muted-foreground">Prefixo:</span>
+                    <span className="font-mono font-semibold">IML</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-muted-foreground">Ano:</span>
+                    <span className="font-mono font-semibold">2025</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-muted-foreground">Código do Setor:</span>
+                    <span className="font-mono font-semibold">01</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted-foreground">Sequencial:</span>
+                    <span className="font-mono font-semibold">0001</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Como Funciona</CardTitle>
+              <CardDescription>
+                A numeração de imóveis é gerada automaticamente pelo sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                      1
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Prefixo Fixo</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Todos os imóveis iniciam com "IML" (Imóvel)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                      2
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Ano de Cadastro</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Ano atual com 4 dígitos (ex: 2025)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                      3
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Código do Setor</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Código do setor responsável (2 dígitos)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                      4
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Sequencial</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Número sequencial automático (4 dígitos)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

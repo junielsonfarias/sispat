@@ -31,8 +31,7 @@ const TestDashboard = lazy(
 const AdminDashboard = lazy(() => import('@/pages/dashboards/AdminDashboard'))
 const UserDashboard = lazy(() => import('@/pages/dashboards/UserDashboard'))
 const ViewerDashboard = lazy(() => import('@/pages/dashboards/ViewerDashboard'))
-// const BensCadastrados = lazy(() => import('@/pages/bens/BensCadastrados'))
-import BensCadastrados from '@/pages/bens/BensCadastrados'
+const BensCadastrados = lazy(() => import('@/pages/bens/BensCadastrados'))
 const BensCreate = lazy(() => import('@/pages/bens/BensCreate'))
 const BensBulkCreate = lazy(() => import('@/pages/bens/BensBulkCreate'))
 const BensEdit = lazy(() => import('@/pages/bens/BensEdit'))
@@ -100,6 +99,9 @@ const GeneralDocuments = lazy(
 )
 const SyncClient = lazy(() => import('@/pages/ferramentas/SyncClient'))
 const Downloads = lazy(() => import('@/pages/ferramentas/Downloads'))
+const GerenciadorFichas = lazy(() => import('@/pages/GerenciadorFichas'))
+const NovoTemplateFicha = lazy(() => import('@/pages/NovoTemplateFicha'))
+const EditorTemplateFicha = lazy(() => import('@/pages/EditorTemplateFicha'))
 const Settings = lazy(() => import('@/pages/admin/Settings'))
 const UserManagement = lazy(() => import('@/pages/admin/UserManagement'))
 const SectorManagement = lazy(() => import('@/pages/admin/SectorManagement'))
@@ -241,6 +243,7 @@ function App() {
               }
             >
               <Route path="/" element={<UnifiedDashboard />} />
+              <Route path="/dashboard" element={<UnifiedDashboard />} />
               <Route
                 path="/dashboard/admin"
                 element={
@@ -522,6 +525,32 @@ function App() {
               />
               <Route path="/ferramentas/sync-client" element={<SyncClient />} />
               <Route path="/downloads" element={<Downloads />} />
+              
+              {/* Gerenciador de Fichas */}
+              <Route 
+                path="/gerenciador-fichas" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+                    <GerenciadorFichas />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/gerenciador-fichas/novo" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+                    <NovoTemplateFicha />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/gerenciador-fichas/editor/:id" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+                    <EditorTemplateFicha />
+                  </ProtectedRoute>
+                } 
+              />
 
               <Route
                 path="/configuracoes"

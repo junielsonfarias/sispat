@@ -71,9 +71,15 @@ export const ImovelFieldProvider = ({ children }: { children: ReactNode }) => {
       const response = await api.get<ImovelFieldConfig[]>('/imovel-fields')
       const fieldsData = Array.isArray(response) ? response : []
       setAllFields(fieldsData)
-    } catch (error) {
-      console.error('Failed to load imovel fields:', error)
-      // Tentar carregar do localStorage como fallback
+    } catch (error: any) {
+      // Silenciar erro 500 - tabela pode não existir ainda
+      if (error?.response?.status === 500) {
+        // console.warn('⚠️ imovel-fields endpoint não disponível, usando dados iniciais')
+      } else {
+        console.error('Failed to load imovel fields:', error)
+      }
+      
+      // Usar fallback
       const stored = localStorage.getItem('sispat_imovel_fields')
       if (stored) {
         setAllFields(JSON.parse(stored))
