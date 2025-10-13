@@ -45,8 +45,10 @@ O SISPAT 2.0 passou por uma **análise técnica completa** realizada por equipe 
 | DevOps | 90/100 | 🏆 Excelente |
 
 📄 **Documentos:**
+- [📚 Índice da Análise](INDICE_ANALISE_TECNICA.md) - Navegação completa
 - [📊 Análise Técnica Completa](ANALISE_COMPLETA_SISPAT_2.0.md) - Relatório detalhado (1.600+ linhas)
 - [📋 Resumo Executivo](RESUMO_EXECUTIVO_ANALISE.md) - Visão geral e recomendações
+- [📊 Visualização Rápida](ANALISE_VISUAL_RAPIDA.md) - Dashboard e gráficos
 
 **Destaques:**
 - ✅ Arquitetura sólida e bem estruturada
