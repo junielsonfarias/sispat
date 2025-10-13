@@ -25,6 +25,7 @@ LOG_FILE="/var/log/sispat-install.log"
 DB_NAME="sispat_prod"
 DB_USER="sispat_user"
 APP_PORT=3000
+GITHUB_REPO="https://github.com/junielsonfarias/sispat.git"
 
 # ===========================================
 # FUNÇÕES DE LIMPEZA
@@ -817,14 +818,14 @@ clone_repository() {
     
     # Clonar repositório com progresso
     echo -e "${BLUE}  📥 Baixando SISPAT 2.0 do GitHub...${NC}"
-    git clone https://github.com/junielsonfarias/sispat.git "$INSTALL_DIR" 2>&1 | tee -a "$LOG_FILE" &
+    git clone "$GITHUB_REPO" "$INSTALL_DIR" 2>&1 | tee -a "$LOG_FILE" &
     show_spinner $! "Baixando código (pode levar 1-2 minutos)..."
     wait $!
     
     cd "$INSTALL_DIR"
     
     echo ""
-    success "✅ Código baixado de: https://github.com/junielsonfarias/sispat"
+    success "✅ Código baixado de: $GITHUB_REPO"
 }
 
 configure_environment() {

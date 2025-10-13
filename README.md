@@ -1,11 +1,15 @@
 # 🏛️ SISPAT 2.0 - Sistema Integrado de Patrimônio
 
-**Versão:** 2.0.3  
-**Status:** ✅ Produção Ready  
+**Versão:** 2.0.4  
+**Status:** ✅ Produção Ready + Infraestrutura Enterprise  
 **Última atualização:** 11/10/2025
 
 > 🆕 **[Melhorias Frontend](MELHORIAS_FRONTEND_IMPLEMENTADAS.md)** - CSS otimizado, Skeleton loading, Error boundaries  
-> 📱 **[Tipografia Mobile](MELHORIAS_TIPOGRAFIA_MOBILE.md)** - Legibilidade otimizada para smartphones e tablets
+> 📱 **[Tipografia Mobile](MELHORIAS_TIPOGRAFIA_MOBILE.md)** - Legibilidade otimizada para smartphones e tablets  
+> 🏗️ **[Arquitetura v2.0.4](GUIA_MELHORIAS_ARQUITETURA.md)** - React Query ✅, Redis, Testes ✅, CI/CD ✅, Lazy Loading  
+> 🗄️ **[Análise do Banco](ANALISE_BANCO_DADOS_COMPLETA.md)** - 93/100, 36 índices, 21 tabelas, Performance +90%  
+> 🧠 **[Análise Lógica](ANALISE_LOGICA_COMPLETA.md)** - 92/100, Fluxos de negócio, Permissões, Validações  
+> ⚡ **[Status Ativação](STATUS_ATIVACAO_FINAL.md)** - React Query ATIVO, DevTools disponível, Erro 500 corrigido
 
 ---
 
@@ -43,39 +47,111 @@ O SISPAT 2.0 é um sistema completo de gestão patrimonial desenvolvido para pre
 
 ---
 
-## 🚀 Instalação Rápida
+## 🚀 Instalação
 
-### **Pré-requisitos:**
+### 📦 Instalação em VPS (Recomendado)
+
+Para instalação completa em servidor VPS Linux, use nosso **instalador automático**:
+
+```bash
+# Baixar script de instalação
+wget https://raw.githubusercontent.com/junielsonfarias/sispat/main/install.sh
+
+# Executar instalador (como root)
+sudo bash install.sh
+```
+
+O instalador automaticamente:
+- ✅ Instala todas as dependências (Node.js, PostgreSQL, Nginx)
+- ✅ Clona e compila o projeto
+- ✅ Configura banco de dados
+- ✅ Cria usuários administrativos
+- ✅ Configura SSL/HTTPS (opcional)
+- ✅ Inicia o sistema com PM2
+
+**Tempo estimado:** 15-30 minutos
+
+📖 **Documentação completa:** [GUIA_INSTALACAO_VPS_COMPLETO.md](GUIA_INSTALACAO_VPS_COMPLETO.md)
+
+---
+
+### 💻 Instalação Local (Desenvolvimento)
+
+#### **Pré-requisitos:**
 - Node.js 18.x+
 - PostgreSQL 13.x+
-- PM2 (recomendado)
+- PNPM ou NPM
 
-### **1. Clone o repositório:**
+#### **1. Clone o repositório:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/junielsonfarias/sispat.git
 cd sispat
 ```
 
-### **2. Setup automático:**
+#### **2. Configure variáveis de ambiente:**
 ```bash
-chmod +x backend/scripts/setup-production.sh
-./backend/scripts/setup-production.sh
-```
-
-### **3. Configure o ambiente:**
-```bash
+# Frontend
 cp .env.example .env
-nano .env
+
+# Backend
+cp backend/.env.example backend/.env
 ```
 
-### **4. Inicie o sistema:**
+Edite os arquivos `.env` com suas configurações.
+
+#### **3. Instale dependências:**
 ```bash
+# Frontend
+npm install --legacy-peer-deps
+
 # Backend
 cd backend
-pm2 start src/server.js --name sispat-backend
+npm install
+cd ..
+```
 
-# Verificar status
-pm2 status
+#### **4. Configure o banco de dados:**
+```bash
+cd backend
+
+# Gerar Prisma Client
+npx prisma generate
+
+# Executar migrações
+npx prisma migrate dev
+
+# Popular com dados iniciais
+npm run prisma:seed
+
+cd ..
+```
+
+#### **5. Inicie o sistema:**
+```bash
+# Terminal 1 - Backend
+cd backend
+npm run dev
+
+# Terminal 2 - Frontend
+npm run dev
+```
+
+Acesse: `http://localhost:5173`
+
+---
+
+### 🐳 Instalação com Docker (Experimental)
+
+```bash
+# Iniciar serviços (PostgreSQL)
+cd backend
+docker-compose up -d
+
+# Configurar aplicação
+npm install
+npm run prisma:generate
+npm run prisma:migrate
+npm run dev
 ```
 
 ---
