@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -25,6 +25,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useInventory } from '@/contexts/InventoryContext'
 import { useSectors } from '@/contexts/SectorContext'
 import { useLocais } from '@/contexts/LocalContext'
+import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import {
   SearchableSelect,
@@ -71,15 +72,27 @@ const locationTypeOptions: SearchableSelectOption[] = [
 
 export default function InventarioCreate() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { createInventory } = useInventory()
   const { sectors } = useSectors()
   const { locais, getLocaisBySectorId } = useLocais()
   const [isLoading, setIsLoading] = useState(false)
 
-  const sectorOptions: SearchableSelectOption[] = sectors.map((s) => ({
-    value: s.name,
-    label: s.name,
-  }))
+  // ✅ Filtrar setores baseado em role e responsibleSectors
+  const allowedSectors = useMemo(() => {
+    if (!user) return []
+    // Admin e Supervisor veem TODOS os setores
+    if (user.role === 'admin' || user.role === 'supervisor') {
+      return sectors.map((s) => ({ value: s.name, label: s.name }))
+    }
+    // Usuário normal vê apenas seus setores responsáveis
+    const userSectors = user.responsibleSectors || []
+    return sectors
+      .filter((s) => userSectors.includes(s.name))
+      .map((s) => ({ value: s.name, label: s.name }))
+  }, [sectors, user])
+
+  const sectorOptions: SearchableSelectOption[] = allowedSectors
 
   const form = useForm<CreateFormValues>({
     resolver: zodResolver(createSchema),

@@ -28,6 +28,7 @@ import { usePatrimonio } from '@/contexts/PatrimonioContext'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useSectors } from '@/contexts/SectorContext'
+import { useAuth } from '@/hooks/useAuth'
 import { DatePickerWithRange } from '@/components/ui/date-picker'
 import { DateRange } from 'react-day-picker'
 import {
@@ -43,6 +44,7 @@ import { toast } from '@/hooks/use-toast'
 const RelatoriosDepreciacao = () => {
   const { patrimonios } = usePatrimonio()
   const { sectors } = useSectors()
+  const { user } = useAuth()
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [selectedSector, setSelectedSector] = useState<string | null>(null)
   const [isExportDialogOpen, setExportDialogOpen] = useState(false)
@@ -50,10 +52,21 @@ const RelatoriosDepreciacao = () => {
     'csv' | 'pdf' | 'xlsx' | null
   >(null)
 
-  const sectorOptions: SearchableSelectOption[] = sectors.map((s) => ({
-    value: s.name,
-    label: s.name,
-  }))
+  // ✅ Filtrar setores baseado em role e responsibleSectors
+  const allowedSectors = useMemo(() => {
+    if (!user) return []
+    // Admin e Supervisor veem TODOS os setores
+    if (user.role === 'admin' || user.role === 'supervisor') {
+      return sectors.map((s) => ({ value: s.name, label: s.name }))
+    }
+    // Usuário normal vê apenas seus setores responsáveis
+    const userSectors = user.responsibleSectors || []
+    return sectors
+      .filter((s) => userSectors.includes(s.name))
+      .map((s) => ({ value: s.name, label: s.name }))
+  }, [sectors, user])
+
+  const sectorOptions: SearchableSelectOption[] = allowedSectors
 
   const filteredData = useMemo(() => {
     return patrimonios

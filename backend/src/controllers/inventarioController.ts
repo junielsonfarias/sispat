@@ -98,29 +98,38 @@ export const getInventarioById = async (req: Request, res: Response): Promise<vo
 export const createInventario = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.userId;
-    const { title, description, setor, local, dataInicio } = req.body;
+    const { title, description, setor, local, dataInicio, scope } = req.body;
 
-    // Validações
-    if (!title || !dataInicio) {
-      res.status(400).json({ error: 'Campos obrigatórios faltando' });
+    console.log('📝 [DEV] Criando inventário:', { title, description, setor, local, dataInicio, scope });
+
+    // ✅ Validações melhoradas
+    if (!title) {
+      res.status(400).json({ error: 'O título do inventário é obrigatório' });
+      return;
+    }
+
+    if (!setor) {
+      res.status(400).json({ error: 'O setor é obrigatório' });
       return;
     }
 
     const inventario = await prisma.inventory.create({
       data: {
         title,
-        description,
+        description: description || '',
         responsavel: userId!,
         setor,
-        local,
-        dataInicio: new Date(dataInicio),
+        local: local || '',
+        dataInicio: dataInicio ? new Date(dataInicio) : new Date(),
         status: 'em_andamento',
-        scope: 'sector',
+        scope: scope || 'sector', // ✅ Usar scope enviado pelo frontend
       },
       include: {
         items: true,
       },
     });
+
+    console.log('✅ [DEV] Inventário criado:', inventario);
 
     // Registrar atividade
     await prisma.activityLog.create({
@@ -135,7 +144,7 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
 
     res.status(201).json(inventario);
   } catch (error) {
-    console.error('Erro ao criar inventário:', error);
+    console.error('❌ [DEV] Erro ao criar inventário:', error);
     res.status(500).json({ error: 'Erro ao criar inventário' });
   }
 };

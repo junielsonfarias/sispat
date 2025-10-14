@@ -113,21 +113,34 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         status: 'not_found',
       }))
 
-      const inventoryData = {
-        name,
-        sectorName,
+      // ✅ Mapear campos para o formato que o backend espera
+      const inventoryPayload = {
+        title: name, // Backend espera 'title' ao invés de 'name'
+        description: `Inventário do setor ${sectorName}`,
+        setor: sectorName, // Backend espera 'setor' ao invés de 'sectorName'
+        local: specificLocationId || locationType || '', // Backend espera 'local'
+        dataInicio: new Date().toISOString(), // Backend espera 'dataInicio' ao invés de 'createdAt'
+        scope,
+        municipalityId: '1', // Hardcoded para São Sebastião da Boa Vista
+      }
+      
+      const newInventory = await api.post<Inventory>('/inventarios', inventoryPayload)
+      
+      // ✅ Mapear resposta do backend para o formato do frontend
+      const inventoryData: Inventory = {
+        ...newInventory,
+        name: newInventory.title || name,
+        sectorName: newInventory.setor || sectorName,
         status: 'in_progress' as const,
-        createdAt: new Date(),
+        createdAt: newInventory.dataInicio || new Date(),
         items,
         scope,
         locationType,
         specificLocationId,
-        municipalityId: '1', // Hardcoded para São Sebastião da Boa Vista
       }
       
-      const newInventory = await api.post<Inventory>('/inventarios', inventoryData)
       await fetchInventories() // Recarregar a lista
-      return newInventory
+      return inventoryData
     },
     [allInventories, patrimonios],
   )

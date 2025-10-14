@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,6 +27,7 @@ import { ReportFilters } from '@/types'
 import { DatePickerWithRange } from '@/components/ui/date-picker'
 import { useSectors } from '@/contexts/SectorContext'
 import { useTiposBens } from '@/contexts/TiposBensContext'
+import { useAuth } from '@/hooks/useAuth'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Filter } from 'lucide-react'
 
@@ -40,6 +42,7 @@ export const ReportFilterDialog = ({
 }: ReportFilterDialogProps) => {
   const { sectors } = useSectors()
   const { tiposBens } = useTiposBens()
+  const { user } = useAuth()
   const form = useForm<ReportFilters>({
     defaultValues: {
       status: undefined,
@@ -50,7 +53,21 @@ export const ReportFilterDialog = ({
     }
   })
 
-  const sectorOptions = sectors.map((s) => ({ value: s.name, label: s.name }))
+  // ✅ Filtrar setores baseado em role e responsibleSectors
+  const allowedSectors = useMemo(() => {
+    if (!user) return []
+    // Admin e Supervisor veem TODOS os setores
+    if (user.role === 'admin' || user.role === 'supervisor') {
+      return sectors.map((s) => ({ value: s.name, label: s.name }))
+    }
+    // Usuário normal vê apenas seus setores responsáveis
+    const userSectors = user.responsibleSectors || []
+    return sectors
+      .filter((s) => userSectors.includes(s.name))
+      .map((s) => ({ value: s.name, label: s.name }))
+  }, [sectors, user])
+
+  const sectorOptions = allowedSectors
   const tipoOptions = tiposBens.map((t) => ({ value: t.nome, label: t.nome }))
 
   const onSubmit = (data: ReportFilters) => {
