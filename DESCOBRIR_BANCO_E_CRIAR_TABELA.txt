@@ -1,0 +1,179 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║   🔍 DESCOBRIR NOME DO BANCO E CRIAR TABELA                          ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+
+════════════════════════════════════════════════════════════════════════
+  PASSO 1: DESCOBRIR NOME DO BANCO
+════════════════════════════════════════════════════════════════════════
+
+Execute NO SERVIDOR:
+
+cat /var/www/sispat/backend/.env | grep DATABASE_URL
+
+
+════════════════════════════════════════════════════════════════════════
+  PASSO 2: VERIFICAR SE TABELA JÁ EXISTE
+════════════════════════════════════════════════════════════════════════
+
+Copie o nome do banco que aparecer (ex: sispat, postgres, etc)
+Substitua NOME_DO_BANCO pelo nome correto:
+
+sudo -u postgres psql NOME_DO_BANCO -c "\dt label_templates"
+
+
+Se a tabela NÃO existir, verá:
+"Did not find any relation named "label_templates""
+
+Se a tabela JÁ existir, verá a estrutura da tabela.
+
+
+════════════════════════════════════════════════════════════════════════
+  OPÇÃO A: SE TABELA NÃO EXISTE (Execute no servidor)
+════════════════════════════════════════════════════════════════════════
+
+cd /var/www/sispat/backend
+node create-label-templates-table.js
+
+
+════════════════════════════════════════════════════════════════════════
+  OPÇÃO B: SE SCRIPT DER ERRO, USE SQL DIRETO
+════════════════════════════════════════════════════════════════════════
+
+Substitua NOME_DO_BANCO pelo nome correto:
+
+sudo -u postgres psql NOME_DO_BANCO << 'EOF'
+
+-- Criar tabela
+CREATE TABLE IF NOT EXISTS label_templates (
+  id TEXT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  "isDefault" BOOLEAN DEFAULT false,
+  "isActive" BOOLEAN DEFAULT true,
+  elements JSONB NOT NULL,
+  "municipalityId" TEXT NOT NULL,
+  "createdBy" TEXT NOT NULL,
+  "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  CONSTRAINT fk_label_template_municipality 
+    FOREIGN KEY ("municipalityId") 
+    REFERENCES municipalities(id) 
+    ON DELETE CASCADE,
+  
+  CONSTRAINT fk_label_template_creator 
+    FOREIGN KEY ("createdBy") 
+    REFERENCES users(id)
+);
+
+-- Criar índices
+CREATE INDEX IF NOT EXISTS idx_label_templates_municipality 
+  ON label_templates("municipalityId");
+
+CREATE INDEX IF NOT EXISTS idx_label_templates_default 
+  ON label_templates("isDefault");
+
+CREATE INDEX IF NOT EXISTS idx_label_templates_active 
+  ON label_templates("isActive");
+
+-- Ver resultado
+\dt label_templates
+
+EOF
+
+
+════════════════════════════════════════════════════════════════════════
+  PASSO 3: INSERIR TEMPLATE PADRÃO
+════════════════════════════════════════════════════════════════════════
+
+Após criar a tabela, insira o template padrão.
+Substitua NOME_DO_BANCO, MUNICIPALITY_ID, e USER_ID:
+
+# Descobrir Municipality ID
+sudo -u postgres psql NOME_DO_BANCO -c "SELECT id, name FROM municipalities LIMIT 1;"
+
+# Descobrir User ID (admin ou supervisor)
+sudo -u postgres psql NOME_DO_BANCO -c "SELECT id, email, role FROM users WHERE role IN ('admin', 'supervisor') LIMIT 1;"
+
+# Inserir template padrão (substitua os IDs)
+sudo -u postgres psql NOME_DO_BANCO << 'EOF'
+
+INSERT INTO label_templates 
+  (id, name, width, height, "isDefault", "isActive", elements, "municipalityId", "createdBy", "createdAt", "updatedAt")
+VALUES 
+  (
+    'default-60x40',
+    'Padrão 60x40mm',
+    60,
+    40,
+    true,
+    true,
+    '[
+      {
+        "id": "logo",
+        "type": "LOGO",
+        "x": 5,
+        "y": 5,
+        "width": 25,
+        "height": 20,
+        "content": "logo",
+        "fontSize": 12,
+        "fontWeight": "normal",
+        "textAlign": "left"
+      },
+      {
+        "id": "patrimonio",
+        "type": "PATRIMONIO_FIELD",
+        "content": "numero_patrimonio",
+        "x": 5,
+        "y": 70,
+        "width": 55,
+        "height": 25,
+        "fontSize": 16,
+        "fontWeight": "bold",
+        "textAlign": "left"
+      }
+    ]'::jsonb,
+    'MUNICIPALITY_ID_AQUI',
+    'USER_ID_AQUI',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+  )
+ON CONFLICT (id) DO NOTHING;
+
+-- Verificar inserção
+SELECT id, name, width, height, "isDefault" FROM label_templates;
+
+EOF
+
+
+════════════════════════════════════════════════════════════════════════
+  ✅ VERIFICAÇÃO FINAL
+════════════════════════════════════════════════════════════════════════
+
+Confirme que tudo está OK:
+
+# Ver tabela
+sudo -u postgres psql NOME_DO_BANCO -c "\d label_templates"
+
+# Ver templates
+sudo -u postgres psql NOME_DO_BANCO -c "SELECT id, name, width, height FROM label_templates;"
+
+
+════════════════════════════════════════════════════════════════════════
+  🎯 PRÓXIMO PASSO
+════════════════════════════════════════════════════════════════════════
+
+Me envie:
+1. O nome do banco (do DATABASE_URL)
+2. O resultado do comando de verificar tabela
+
+Assim posso te dar os comandos exatos para seu ambiente!
+
+
+════════════════════════════════════════════════════════════════════════
+
