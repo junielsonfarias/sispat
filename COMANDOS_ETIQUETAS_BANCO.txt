@@ -1,0 +1,214 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║   🗄️  IMPLEMENTAÇÃO: Templates de Etiqueta no Banco de Dados        ║
+║                                                                        ║
+║   Agora compartilhados entre TODOS os usuários! ✅                    ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+
+════════════════════════════════════════════════════════════════════════
+  🎯 O QUE MUDA
+════════════════════════════════════════════════════════════════════════
+
+ANTES:
+❌ Templates salvos no localStorage (navegador)
+❌ Cada usuário tinha seus próprios templates
+❌ Se limpar cache, perde tudo
+
+DEPOIS:
+✅ Templates salvos no PostgreSQL
+✅ TODOS os usuários veem os mesmos templates
+✅ Persistência permanente (não perde com cache)
+
+
+════════════════════════════════════════════════════════════════════════
+  🚀 COMANDO ÚNICO (COPIE TUDO)
+════════════════════════════════════════════════════════════════════════
+
+cd /var/www/sispat && \
+git pull origin main && \
+echo "✅ Código atualizado" && \
+cd backend && \
+node create-label-templates-table.js && \
+echo "" && \
+npm run build && \
+cd .. && \
+echo "✅ Backend compilado" && \
+npm run build && \
+echo "✅ Frontend compilado" && \
+pm2 restart sispat-backend && \
+sleep 3 && \
+sudo systemctl reload nginx && \
+echo "✅ Serviços reiniciados" && \
+pm2 logs sispat-backend --lines 30 --nostream
+
+
+════════════════════════════════════════════════════════════════════════
+  📊 SAÍDA ESPERADA
+════════════════════════════════════════════════════════════════════════
+
+Você verá:
+
+🔄 Criando tabela label_templates...
+✅ Tabela label_templates criada
+🔄 Criando índices...
+✅ Índices criados
+🔄 Inserindo template padrão...
+✅ Template padrão inserido
+🎉 Processo concluído com sucesso!
+
+
+════════════════════════════════════════════════════════════════════════
+  ✅ TESTES APÓS DEPLOY
+════════════════════════════════════════════════════════════════════════
+
+TESTE 1: Criar Template como Supervisor
+────────────────────────────────────────────────────
+1. Login: supervisor@ssbv.com / Master6273@
+2. Ir em Ferramentas > Gerenciar Etiquetas
+3. Clicar em "Criar Novo Template"
+4. Configurar nome, dimensões e elementos
+5. Marcar "Definir como padrão"
+6. Salvar
+7. ✅ Toast: "Template criado com sucesso"
+8. ✅ Console: "✅ Template salvo com sucesso"
+
+
+TESTE 2: Ver Template como Outro Usuário (CRÍTICO)
+────────────────────────────────────────────────────
+1. Abrir sistema em OUTRO NAVEGADOR (ou aba anônima)
+2. Login com USUÁRIO diferente (não supervisor)
+3. Ir em Bens Cadastrados > Ver qualquer bem
+4. Clicar em "Imprimir Etiqueta"
+5. ✅ Template criado pelo supervisor DEVE APARECER
+6. ✅ Template padrão deve estar selecionado
+
+
+TESTE 3: Persistência após Limpar Cache
+────────────────────────────────────────────────────
+1. Criar um template
+2. Limpar TODO o cache (Ctrl+Shift+Delete)
+3. Fazer login novamente
+4. Ir em Imprimir Etiqueta
+5. ✅ Template AINDA está lá (não foi perdido)
+
+
+════════════════════════════════════════════════════════════════════════
+  🔐 PERMISSÕES
+════════════════════════════════════════════════════════════════════════
+
+VER TEMPLATES:
+✅ Admin        - Vê todos
+✅ Supervisor   - Vê todos
+✅ Usuário      - Vê todos
+✅ Visualizador - Vê todos
+
+CRIAR/EDITAR/DELETAR:
+✅ Admin        - Pode tudo
+✅ Supervisor   - Pode tudo
+❌ Usuário      - NÃO pode
+❌ Visualizador - NÃO pode
+
+
+════════════════════════════════════════════════════════════════════════
+  📊 VERIFICAR NO BANCO
+════════════════════════════════════════════════════════════════════════
+
+Após criar templates, verifique no banco:
+
+# Conectar ao PostgreSQL
+sudo -u postgres psql sispat_db
+
+# Ver templates
+SELECT id, name, width, height, "isDefault", "createdBy" 
+FROM label_templates 
+WHERE "isActive" = true;
+
+# Sair
+\q
+
+
+════════════════════════════════════════════════════════════════════════
+  🔍 LOGS DE DEBUG
+════════════════════════════════════════════════════════════════════════
+
+Ver logs do backend:
+pm2 logs sispat-backend --lines 100
+
+Procure por:
+🔍 [DEV] GET /api/label-templates - Municipality: xxx
+✅ [DEV] Templates encontrados: 3
+💾 [DEV] Criando template: "Nome do Template"
+✅ [DEV] Template criado: { id: xxx, name: "..." }
+
+
+════════════════════════════════════════════════════════════════════════
+  🆘 TROUBLESHOOTING
+════════════════════════════════════════════════════════════════════════
+
+PROBLEMA: "Erro ao criar tabela"
+────────────────────────────────────────────────────
+SOLUÇÃO:
+cd /var/www/sispat/backend
+node create-label-templates-table.js
+# Se der erro de permissão:
+sudo -u postgres psql -d sispat_db -f <(cat create-label-templates-table.js)
+
+
+PROBLEMA: Templates não aparecem
+────────────────────────────────────────────────────
+SOLUÇÃO:
+# Ver se tabela existe
+sudo -u postgres psql sispat_db -c "\dt label_templates"
+
+# Ver se tem dados
+sudo -u postgres psql sispat_db -c "SELECT * FROM label_templates;"
+
+# Ver logs do backend
+pm2 logs sispat-backend --err --lines 50
+
+
+PROBLEMA: "Acesso negado" ao criar template
+────────────────────────────────────────────────────
+SOLUÇÃO:
+Fazer login como admin ou supervisor
+
+
+════════════════════════════════════════════════════════════════════════
+  📚 DOCUMENTAÇÃO COMPLETA
+════════════════════════════════════════════════════════════════════════
+
+Guia técnico detalhado:
+- IMPLEMENTACAO_ETIQUETAS_BANCO.md
+
+Comandos de deploy:
+- Este arquivo (COMANDOS_ETIQUETAS_BANCO.txt)
+
+
+════════════════════════════════════════════════════════════════════════
+  ✅ CHECKLIST
+════════════════════════════════════════════════════════════════════════
+
+[ ] Comando único executado
+[ ] Tabela label_templates criada
+[ ] Template padrão inserido
+[ ] Frontend compilado
+[ ] Backend compilado
+[ ] Serviços reiniciados
+[ ] Logs verificados (sem erros)
+[ ] Teste 1: Criar template como supervisor
+[ ] Teste 2: Ver template como outro usuário
+[ ] Teste 3: Persistência após limpar cache
+
+
+════════════════════════════════════════════════════════════════════════
+
+        🎯 Execute os comandos e teste o compartilhamento!
+
+════════════════════════════════════════════════════════════════════════
+
+
+IMPORTANTE: Após executar, teste criar um template como supervisor
+            e verificar se aparece para outros usuários! 🔍
+
