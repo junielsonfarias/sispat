@@ -139,6 +139,7 @@ import imovelFieldRoutes from './routes/imovelFieldRoutes';
 import transferenciaRoutes from './routes/transferenciaRoutes';
 import documentRoutes from './routes/documentRoutes';
 import fichaTemplatesRoutes from './routes/fichaTemplates';
+import labelTemplateRoutes from './routes/labelTemplateRoutes';
 
 // ✅ Rotas públicas (sem autenticação)
 app.use('/api/public', publicRoutes);
@@ -161,6 +162,7 @@ app.use('/api/imovel-fields', imovelFieldRoutes);
 app.use('/api/transferencias', transferenciaRoutes);
 app.use('/api/documentos', documentRoutes);
 app.use('/api/ficha-templates', fichaTemplatesRoutes);
+app.use('/api/label-templates', labelTemplateRoutes);
 
 // ============================================
 // TRATAMENTO DE ERROS

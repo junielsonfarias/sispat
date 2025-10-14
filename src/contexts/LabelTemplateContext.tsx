@@ -10,6 +10,8 @@ import {
 import { LabelTemplate } from '@/types'
 import { generateId } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
+import { api } from '@/services/api-adapter'
+import { toast } from '@/hooks/use-toast'
 
 interface LabelTemplateContextType {
   templates: LabelTemplate[]
@@ -73,23 +75,35 @@ export const LabelTemplateProvider = ({
     console.log('LabelTemplateContext user:', user)
   }
 
-  useEffect(() => {
-    // ✅ CORREÇÃO: Só carregar templates quando há usuário logado
+  // ✅ Buscar templates da API
+  const fetchTemplates = useCallback(async () => {
     if (!user) return
     
-    // In a real app, this would fetch from an API
-    console.log('Loading templates from localStorage...')
-    const stored = localStorage.getItem('sispat_label_templates')
-    if (stored) {
-      console.log('Found stored templates:', stored)
-      const parsedTemplates = JSON.parse(stored)
-      console.log('Parsed templates:', parsedTemplates)
-      setAllTemplates(parsedTemplates)
-    } else {
-      console.log('No stored templates found, using initial templates')
-      console.log('Initial templates:', initialTemplates)
+    try {
+      console.log('🔍 Buscando templates da API...')
+      const response = await api.get<LabelTemplate[]>('/label-templates')
+      const templatesData = Array.isArray(response) ? response : []
+      
+      console.log('✅ Templates carregados da API:', templatesData.length)
+      
+      if (templatesData.length > 0) {
+        setAllTemplates(templatesData)
+      } else {
+        console.log('⚠️  Nenhum template no banco, usando template padrão inicial')
+        setAllTemplates(initialTemplates)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao buscar templates:', error)
+      // Em caso de erro, usar template padrão
+      setAllTemplates(initialTemplates)
     }
   }, [user])
+
+  useEffect(() => {
+    if (user) {
+      fetchTemplates()
+    }
+  }, [user, fetchTemplates])
 
   const templates = useMemo(() => {
     // ✅ CORREÇÃO: Só logar quando há usuário logado
@@ -109,13 +123,7 @@ export const LabelTemplateProvider = ({
     return allTemplates
   }, [allTemplates, user])
 
-  const persist = (newTemplates: LabelTemplate[]) => {
-    console.log('Persisting templates to localStorage:', newTemplates)
-    // In a real app, this would be an API call
-    localStorage.setItem('sispat_label_templates', JSON.stringify(newTemplates))
-    setAllTemplates(newTemplates)
-    console.log('Templates persisted successfully')
-  }
+  // ✅ Removido persist do localStorage - agora usa API
 
   const getTemplateById = useCallback(
     (id: string) => templates.find((t) => t.id === id),
@@ -123,49 +131,98 @@ export const LabelTemplateProvider = ({
   )
 
   const saveTemplate = useCallback(
-    (template: LabelTemplate) => {
-      console.log('saveTemplate called:', { template, user, municipalityId: user?.municipalityId, role: user?.role })
+    async (template: LabelTemplate) => {
+      if (!user) return
       
-      // ✅ CORREÇÃO: Aplicação é para um único município, não precisa verificar municipalityId
-
-      console.log('Saving template...')
-      setAllTemplates((prev) => {
-        const newTemplates = [...prev]
-        const index = newTemplates.findIndex((t) => t.id === template.id)
-        const templateToSave = {
-          ...template,
-          municipalityId: '1', // ✅ CORREÇÃO: Sempre usar '1' para o município único
+      try {
+        console.log('💾 Salvando template na API:', template.name)
+        
+        // Verificar se é atualização ou criação
+        const existingIndex = allTemplates.findIndex(t => t.id === template.id)
+        
+        if (existingIndex > -1) {
+          // Atualizar template existente
+          console.log('🔄 Atualizando template existente:', template.id)
+          const updated = await api.put<LabelTemplate>(
+            `/label-templates/${template.id}`,
+            {
+              name: template.name,
+              width: template.width,
+              height: template.height,
+              isDefault: template.isDefault,
+              elements: template.elements,
+            }
+          )
+          
+          // Atualizar estado local
+          setAllTemplates(prev => prev.map(t => t.id === updated.id ? updated : t))
+          
+          toast({
+            title: 'Sucesso',
+            description: 'Template atualizado com sucesso.',
+          })
+        } else {
+          // Criar novo template
+          console.log('➕ Criando novo template')
+          const created = await api.post<LabelTemplate>('/label-templates', {
+            name: template.name,
+            width: template.width,
+            height: template.height,
+            isDefault: template.isDefault || false,
+            elements: template.elements,
+          })
+          
+          // Adicionar ao estado local
+          setAllTemplates(prev => [...prev, created])
+          
+          toast({
+            title: 'Sucesso',
+            description: 'Template criado com sucesso.',
+          })
         }
-        console.log('Template to save:', { 
-          originalTemplate: template,
-          templateToSave,
-          userMunicipalityId: user?.municipalityId,
-          finalMunicipalityId: templateToSave.municipalityId
+        
+        console.log('✅ Template salvo com sucesso')
+      } catch (error) {
+        console.error('❌ Erro ao salvar template:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao salvar template. Tente novamente.',
+        })
+      }
+    },
+    [user, allTemplates],
+  )
+
+  const deleteTemplate = useCallback(
+    async (templateId: string) => {
+      if (!user) return
+      
+      try {
+        console.log('🗑️  Deletando template:', templateId)
+        
+        await api.delete(`/label-templates/${templateId}`)
+        
+        // Remover do estado local
+        setAllTemplates(prev => prev.filter(t => t.id !== templateId))
+        
+        toast({
+          title: 'Sucesso',
+          description: 'Template excluído com sucesso.',
         })
         
-        if (index > -1) {
-          console.log('Updating existing template at index:', index)
-          newTemplates[index] = templateToSave
-        } else {
-          console.log('Adding new template')
-          newTemplates.push(templateToSave)
-        }
-        
-        console.log('New templates array:', newTemplates)
-        persist(newTemplates)
-        return newTemplates
-      })
+        console.log('✅ Template deletado com sucesso')
+      } catch (error) {
+        console.error('❌ Erro ao deletar template:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao excluir template. Tente novamente.',
+        })
+      }
     },
     [user],
   )
-
-  const deleteTemplate = useCallback((templateId: string) => {
-    setAllTemplates((prev) => {
-      const newTemplates = prev.filter((t) => t.id !== templateId)
-      persist(newTemplates)
-      return newTemplates
-    })
-  }, [])
 
   return (
     <LabelTemplateContext.Provider

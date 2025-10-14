@@ -28,12 +28,13 @@ model User {
   updatedAt          DateTime @updatedAt
 
   // Relacionamentos
-  municipality       Municipality    @relation(fields: [municipalityId], references: [id])
-  patrimoniosCreated Patrimonio[]    @relation("PatrimonioCreator")
-  imoveisCreated     Imovel[]        @relation("ImovelCreator")
-  activityLogs       ActivityLog[]
-  documentsUploaded  Documento[]     @relation("DocumentosUploader")
-  fichaTemplates     FichaTemplate[] @relation("FichaTemplateCreator")
+  municipality          Municipality    @relation(fields: [municipalityId], references: [id])
+  patrimoniosCreated    Patrimonio[]    @relation("PatrimonioCreator")
+  imoveisCreated        Imovel[]        @relation("ImovelCreator")
+  activityLogs          ActivityLog[]
+  documentsUploaded     Documento[]     @relation("DocumentosUploader")
+  fichaTemplates        FichaTemplate[] @relation("FichaTemplateCreator")
+  labelTemplatesCreated LabelTemplate[] @relation("LabelTemplateCreator")
 
   @@index([email])
   @@index([municipalityId])
@@ -51,11 +52,12 @@ model Municipality {
   updatedAt    DateTime @updatedAt
 
   // Relacionamentos
-  users       User[]
-  sectors     Sector[]
-  locais      Local[]
-  patrimonios Patrimonio[]
-  imoveis     Imovel[]
+  users          User[]
+  sectors        Sector[]
+  locais         Local[]
+  patrimonios    Patrimonio[]
+  imoveis        Imovel[]
+  labelTemplates LabelTemplate[] @relation("LabelTemplates")
 
   @@map("municipalities")
 }
@@ -599,4 +601,27 @@ model FichaTemplate {
   @@index([isDefault])
   @@index([isActive])
   @@map("ficha_templates")
+}
+
+model LabelTemplate {
+  id             String   @id @default(uuid())
+  name           String
+  width          Int // Largura em mm
+  height         Int // Altura em mm
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  elements       Json // Array de elementos da etiqueta (TEXT, QR_CODE, LOGO, etc)
+  municipalityId String
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relacionamentos
+  municipality Municipality @relation("LabelTemplates", fields: [municipalityId], references: [id], onDelete: Cascade)
+  creator      User         @relation("LabelTemplateCreator", fields: [createdBy], references: [id])
+
+  @@index([municipalityId])
+  @@index([isDefault])
+  @@index([isActive])
+  @@map("label_templates")
 }
