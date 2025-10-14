@@ -1,0 +1,215 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║   🚀 COMANDO ÚNICO - APLICAR TODAS AS CORREÇÕES                      ║
+║                                                                        ║
+║   Data: 14/10/2025                                                     ║
+║   Total de correções: 4                                                ║
+║   Status: Pronto para deploy                                           ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+
+════════════════════════════════════════════════════════════════════════
+  📋 O QUE SERÁ APLICADO
+════════════════════════════════════════════════════════════════════════
+
+✅ CORREÇÃO 1: Erro "b is not a function" no SearchableSelect
+✅ CORREÇÃO 2: Filtros de setores no frontend (relatórios/inventários)
+✅ CORREÇÃO 3: Filtros de setores no backend (SEGURANÇA CRÍTICA)
+✅ CORREÇÃO 4: Etiquetas usando templates reais do sistema
+
+
+════════════════════════════════════════════════════════════════════════
+  🔴 URGÊNCIA: ALTA
+════════════════════════════════════════════════════════════════════════
+
+⚠️  CORREÇÃO DE SEGURANÇA INCLUÍDA
+   - Vazamento de dados entre setores será corrigido
+   - Usuários verão apenas dados dos seus setores
+
+
+════════════════════════════════════════════════════════════════════════
+  🚀 COMANDO ÚNICO (COPIE E COLE TUDO)
+════════════════════════════════════════════════════════════════════════
+
+cd /var/www/sispat && \
+echo "════════════════════════════════════════════════════════════" && \
+echo "  🚀 INICIANDO DEPLOY DE CORREÇÕES" && \
+echo "════════════════════════════════════════════════════════════" && \
+echo "" && \
+mkdir -p backup_$(date +%Y%m%d_%H%M%S) && \
+cp -r dist backup_$(date +%Y%m%d_%H%M%S)/dist_backup 2>/dev/null || true && \
+cp -r backend/dist backup_$(date +%Y%m%d_%H%M%S)/backend_dist 2>/dev/null || true && \
+echo "✅ Backup criado" && \
+echo "" && \
+git pull origin main && \
+echo "" && \
+echo "✅ Código atualizado" && \
+echo "" && \
+npm run build && \
+echo "" && \
+echo "✅ Frontend compilado" && \
+echo "" && \
+cd backend && npm run build && cd .. && \
+echo "" && \
+echo "✅ Backend compilado" && \
+echo "" && \
+pm2 restart sispat-backend && \
+sleep 3 && \
+sudo systemctl reload nginx && \
+echo "" && \
+echo "✅ Serviços reiniciados" && \
+echo "" && \
+echo "════════════════════════════════════════════════════════════" && \
+echo "  ✅ DEPLOY CONCLUÍDO COM SUCESSO!" && \
+echo "════════════════════════════════════════════════════════════" && \
+echo "" && \
+echo "📊 Logs do backend (últimas 30 linhas):" && \
+echo "" && \
+pm2 logs sispat-backend --lines 30 --nostream
+
+
+════════════════════════════════════════════════════════════════════════
+  ✅ TESTES APÓS DEPLOY
+════════════════════════════════════════════════════════════════════════
+
+🔴 TESTE CRÍTICO 1: Permissões de Setores
+────────────────────────────────────────────────────
+1. Fazer login como USUÁRIO (não admin/supervisor)
+2. Ir em "Locais"
+3. ✅ Deve ver APENAS locais dos setores atribuídos
+4. Ir em "Gerar Inventário"
+5. ✅ Deve ver APENAS setores atribuídos
+6. Ir em "Gerar Relatório"
+7. ✅ Deve ver APENAS setores atribuídos
+
+
+🟡 TESTE 2: Supervisor
+────────────────────────────────────────────────────
+1. Login: supervisor@ssbv.com / Master6273@
+2. Ir em "Locais"
+3. ✅ Deve ver TODOS os locais
+4. Ir em qualquer funcionalidade
+5. ✅ Deve ver TODOS os setores
+
+
+🟢 TESTE 3: SearchableSelect
+────────────────────────────────────────────────────
+1. Ir em "Gerar Relatório"
+2. Clicar em "Filtrar por setor..."
+3. Selecionar um setor
+4. ✅ Console SEM erro "b is not a function"
+
+
+🟢 TESTE 4: Etiquetas
+────────────────────────────────────────────────────
+1. Ir em "Bens Cadastrados > Ver qualquer bem"
+2. Clicar em "Imprimir Etiqueta"
+3. ✅ Template real do sistema deve aparecer
+4. ✅ Template padrão selecionado automaticamente
+
+
+════════════════════════════════════════════════════════════════════════
+  📊 VERIFICAÇÃO RÁPIDA
+════════════════════════════════════════════════════════════════════════
+
+Execute após o deploy:
+
+# Ver status do PM2
+pm2 list
+
+# Ver status do Nginx
+sudo systemctl status nginx
+
+# Ver últimos 50 logs
+pm2 logs sispat-backend --lines 50 --nostream
+
+
+════════════════════════════════════════════════════════════════════════
+  🔍 LOGS ESPERADOS
+════════════════════════════════════════════════════════════════════════
+
+Ao fazer uma requisição como usuário, você verá:
+
+🔍 [DEV] GET /api/locais - Usuário: { role: 'usuario', email: '...' }
+🔍 [DEV] Setores responsáveis do usuário: ['Setor X']
+✅ [DEV] Locais encontrados: 5
+
+Isso confirma que o filtro está funcionando!
+
+
+════════════════════════════════════════════════════════════════════════
+  🆘 EM CASO DE PROBLEMA
+════════════════════════════════════════════════════════════════════════
+
+Rollback:
+────────────────────────────────────────────────────
+cd /var/www/sispat
+BACKUP_DIR=$(ls -td backup_* | head -1)
+echo "Restaurando de: $BACKUP_DIR"
+cp -r $BACKUP_DIR/dist_backup dist 2>/dev/null || true
+cp -r $BACKUP_DIR/backend_dist backend/dist 2>/dev/null || true
+pm2 restart sispat-backend
+sudo systemctl reload nginx
+
+
+Ver erros:
+────────────────────────────────────────────────────
+pm2 logs sispat-backend --err --lines 100
+
+
+════════════════════════════════════════════════════════════════════════
+  ℹ️  IMPORTANTE
+════════════════════════════════════════════════════════════════════════
+
+✅ Backup automático criado antes do deploy
+✅ Frontend + Backend compilados
+✅ Serviços reiniciados automaticamente
+✅ Logs exibidos ao final
+
+⚠️  Limpe o cache do navegador após deploy:
+   Ctrl + Shift + Delete
+
+
+════════════════════════════════════════════════════════════════════════
+  📚 DOCUMENTAÇÃO COMPLETA
+════════════════════════════════════════════════════════════════════════
+
+Resumo da sessão:
+- RESUMO_SESSAO_14_10_2025.md
+
+Correções individuais:
+- CORRECAO_SEARCHABLE_SELECT.md
+- CORRECOES_SETORES_E_INVENTARIO.md
+- CORRECAO_PERMISSOES_SETORES.md
+- CORRECAO_ETIQUETAS_BEM.md
+
+
+════════════════════════════════════════════════════════════════════════
+  ✅ CHECKLIST FINAL
+════════════════════════════════════════════════════════════════════════
+
+[ ] Comando único executado
+[ ] Backup criado
+[ ] Código atualizado (git pull)
+[ ] Frontend compilado
+[ ] Backend compilado
+[ ] Serviços reiniciados
+[ ] Logs verificados (sem erros)
+[ ] Cache do navegador limpo
+[ ] Teste 1: Permissões OK
+[ ] Teste 2: Supervisor OK
+[ ] Teste 3: SearchableSelect OK
+[ ] Teste 4: Etiquetas OK
+
+
+════════════════════════════════════════════════════════════════════════
+
+        🎯 EXECUTE O COMANDO E ME AVISE O RESULTADO!
+
+════════════════════════════════════════════════════════════════════════
+
+
+NOTA: Este comando é SEGURO e pode ser executado a qualquer momento.
+      Um backup é criado automaticamente antes de qualquer mudança.
+
