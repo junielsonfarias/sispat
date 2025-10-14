@@ -12,17 +12,18 @@ async function createLabelTemplatesTable() {
     console.log('🔄 Criando tabela label_templates...');
 
     // Criar tabela usando SQL direto
+    // ✅ CORREÇÃO: Usar TEXT para compatibilidade com schema Prisma (String = TEXT)
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS label_templates (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        id TEXT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         width INTEGER NOT NULL,
         height INTEGER NOT NULL,
         "isDefault" BOOLEAN DEFAULT false,
         "isActive" BOOLEAN DEFAULT true,
         elements JSONB NOT NULL,
-        "municipalityId" UUID NOT NULL,
-        "createdBy" UUID NOT NULL,
+        "municipalityId" TEXT NOT NULL,
+        "createdBy" TEXT NOT NULL,
         "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         
