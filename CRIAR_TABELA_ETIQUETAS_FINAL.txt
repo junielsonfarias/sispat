@@ -1,0 +1,184 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║   🗄️  CRIAR TABELA label_templates NO BANCO sispat_prod             ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+
+════════════════════════════════════════════════════════════════════════
+  🚀 COMANDO COMPLETO (COPIE TUDO DE UMA VEZ)
+════════════════════════════════════════════════════════════════════════
+
+sudo -u postgres psql sispat_prod << 'EOF'
+
+-- Criar tabela label_templates
+CREATE TABLE IF NOT EXISTS label_templates (
+  id TEXT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  "isDefault" BOOLEAN DEFAULT false,
+  "isActive" BOOLEAN DEFAULT true,
+  elements JSONB NOT NULL,
+  "municipalityId" TEXT NOT NULL,
+  "createdBy" TEXT NOT NULL,
+  "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  CONSTRAINT fk_label_template_municipality 
+    FOREIGN KEY ("municipalityId") 
+    REFERENCES municipalities(id) 
+    ON DELETE CASCADE,
+  
+  CONSTRAINT fk_label_template_creator 
+    FOREIGN KEY ("createdBy") 
+    REFERENCES users(id)
+);
+
+-- Criar índices
+CREATE INDEX IF NOT EXISTS idx_label_templates_municipality 
+  ON label_templates("municipalityId");
+
+CREATE INDEX IF NOT EXISTS idx_label_templates_default 
+  ON label_templates("isDefault");
+
+CREATE INDEX IF NOT EXISTS idx_label_templates_active 
+  ON label_templates("isActive");
+
+-- Mensagem de sucesso
+\echo '✅ Tabela e índices criados'
+
+-- Buscar Municipality e User IDs
+\echo ''
+\echo '📊 Dados do sistema:'
+SELECT 'Municipality ID:' as info, id as valor FROM municipalities LIMIT 1;
+SELECT 'User ID (Supervisor):' as info, id as valor FROM users WHERE email = 'supervisor@ssbv.com' LIMIT 1;
+
+EOF
+
+
+════════════════════════════════════════════════════════════════════════
+  📋 APÓS EXECUTAR O COMANDO ACIMA
+════════════════════════════════════════════════════════════════════════
+
+Você verá algo como:
+
+✅ Tabela e índices criados
+
+📊 Dados do sistema:
+        info         |              valor               
+---------------------+----------------------------------
+ Municipality ID:    | xxx-municipality-id-xxx
+
+        info                |              valor               
+----------------------------+----------------------------------
+ User ID (Supervisor):      | yyy-user-id-yyy
+
+
+════════════════════════════════════════════════════════════════════════
+  🎯 COPIE OS IDs E EXECUTE O PRÓXIMO COMANDO
+════════════════════════════════════════════════════════════════════════
+
+IMPORTANTE: Substitua os valores abaixo pelos IDs que apareceram:
+
+sudo -u postgres psql sispat_prod << 'EOF'
+
+INSERT INTO label_templates 
+  (id, name, width, height, "isDefault", "isActive", elements, "municipalityId", "createdBy", "createdAt", "updatedAt")
+VALUES 
+  (
+    'default-60x40',
+    'Padrão 60x40mm',
+    60,
+    40,
+    true,
+    true,
+    '[
+      {
+        "id": "logo",
+        "type": "LOGO",
+        "x": 5,
+        "y": 5,
+        "width": 25,
+        "height": 20,
+        "content": "logo",
+        "fontSize": 12,
+        "fontWeight": "normal",
+        "textAlign": "left"
+      },
+      {
+        "id": "patrimonio",
+        "type": "PATRIMONIO_FIELD",
+        "content": "numero_patrimonio",
+        "x": 5,
+        "y": 70,
+        "width": 55,
+        "height": 25,
+        "fontSize": 16,
+        "fontWeight": "bold",
+        "textAlign": "left"
+      }
+    ]'::jsonb,
+    'COLE_MUNICIPALITY_ID_AQUI',
+    'COLE_USER_ID_AQUI',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+  )
+ON CONFLICT (id) DO NOTHING;
+
+-- Verificar inserção
+SELECT id, name, width, height, "isDefault", "municipalityId", "createdBy" 
+FROM label_templates;
+
+EOF
+
+
+════════════════════════════════════════════════════════════════════════
+  ✅ VERIFICAÇÃO FINAL
+════════════════════════════════════════════════════════════════════════
+
+Após inserir o template, verifique:
+
+sudo -u postgres psql sispat_prod -c "SELECT id, name, width, height, \"isDefault\" FROM label_templates;"
+
+
+Deve mostrar:
+      id       |      name       | width | height | isDefault
+---------------+-----------------+-------+--------+-----------
+ default-60x40 | Padrão 60x40mm  |    60 |     40 | t
+
+
+════════════════════════════════════════════════════════════════════════
+  🧪 TESTAR NO SISTEMA
+════════════════════════════════════════════════════════════════════════
+
+Após criar a tabela e inserir o template:
+
+1. Abrir navegador: http://sispat.vps-kinghost.net
+2. Login: supervisor@ssbv.com / Master6273@
+3. Ir em Ferramentas > Gerenciar Etiquetas
+4. ✅ Deve ver template "Padrão 60x40mm"
+5. Ir em Bens > Ver qualquer bem > Imprimir Etiqueta
+6. ✅ Template deve aparecer e estar selecionado
+
+
+════════════════════════════════════════════════════════════════════════
+  📝 RESUMO
+════════════════════════════════════════════════════════════════════════
+
+Banco descoberto: ✅ sispat_prod
+
+Próximos passos:
+[ ] Executar primeiro comando (criar tabela)
+[ ] Copiar Municipality ID e User ID
+[ ] Executar segundo comando (inserir template)
+[ ] Verificar no banco
+[ ] Testar no navegador
+
+
+════════════════════════════════════════════════════════════════════════
+
+        🎯 Execute os comandos e me envie os IDs que aparecerem!
+
+════════════════════════════════════════════════════════════════════════
+
