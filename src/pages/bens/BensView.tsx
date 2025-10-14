@@ -34,6 +34,7 @@ import { Patrimonio, Note, TransferenciaType } from '@/types'
 import { usePatrimonio } from '@/contexts/PatrimonioContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useCustomization } from '@/contexts/CustomizationContext'
+import { useLabelTemplates } from '@/contexts/LabelTemplateContext'
 import { toast } from '@/hooks/use-toast'
 import { LabelPreview } from '@/components/LabelPreview'
 import { Textarea } from '@/components/ui/textarea'
@@ -85,6 +86,7 @@ function BensView() {
   const { getPatrimonioById, fetchPatrimonioById, updatePatrimonio, deletePatrimonio } = usePatrimonio()
   const { user } = useAuth()
   const { settings } = useCustomization()
+  const { templates: labelTemplates } = useLabelTemplates()
   
   const [patrimonio, setPatrimonio] = useState<Patrimonio | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -106,39 +108,15 @@ function BensView() {
   const [transferType, setTransferType] = useState<TransferenciaType>('transferencia')
   const [isPDFConfigOpen, setIsPDFConfigOpen] = useState(false)
 
-  // Mock label templates
-  const labelTemplates = [
-    {
-      id: '1',
-      name: 'Etiqueta Simples',
-      width: 80,
-      height: 40,
-      elements: [
-        { 
-          id: '1',
-          type: 'TEXT', 
-          content: 'numero_patrimonio', 
-          x: 5, y: 5, 
-          width: 70, 
-          height: 15, 
-          fontSize: 12,
-          fontWeight: 'bold',
-          textAlign: 'left'
-        },
-        { 
-          id: '2',
-          type: 'TEXT', 
-          content: 'descricao_bem', 
-          x: 5, y: 20, 
-          width: 70, 
-          height: 15, 
-          fontSize: 8,
-          fontWeight: 'normal',
-          textAlign: 'left'
-        }
-      ]
+  // ✅ Selecionar automaticamente o template padrão quando disponível
+  useEffect(() => {
+    if (isLabelDialogOpen && labelTemplates.length > 0 && !selectedLabelTemplate) {
+      // Buscar template padrão ou usar o primeiro
+      const defaultTemplate = labelTemplates.find(t => t.isDefault) || labelTemplates[0]
+      setSelectedLabelTemplate(defaultTemplate)
+      console.log('✅ Template padrão selecionado automaticamente:', defaultTemplate?.name)
     }
-  ]
+  }, [isLabelDialogOpen, labelTemplates, selectedLabelTemplate])
 
   const loadPatrimonio = useCallback(async () => {
     if (!id) return
@@ -835,77 +813,43 @@ function BensView() {
                 {/* Template Selection */}
                 <div>
                   <h3 className="text-lg font-medium mb-3">Selecione o Modelo de Etiqueta</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {labelTemplates?.map((template) => (
-                      <div
-                        key={template.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                          selectedLabelTemplate?.id === template.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                        onClick={() => setSelectedLabelTemplate(template)}
-                      >
-                        <div className="font-medium text-sm mb-2">{template.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {template.width}x{template.height}mm
-                        </div>
-                      </div>
-                    ))}
-                    {/* Template Padrão */}
-                    <div
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        selectedLabelTemplate?.id === 'default'
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => setSelectedLabelTemplate({
-                        id: 'default',
-                        name: 'Etiqueta Padrão',
-                        width: 100,
-                        height: 60,
-                        elements: [
-                          { 
-                            id: '1',
-                            type: 'TEXT', 
-                            content: 'numero_patrimonio', 
-                            x: 5, y: 5, 
-                            width: 50, 
-                            height: 15, 
-                            fontSize: 12,
-                            fontWeight: 'bold',
-                            textAlign: 'left'
-                          },
-                          { 
-                            id: '2',
-                            type: 'TEXT', 
-                            content: 'descricao_bem', 
-                            x: 5, y: 20, 
-                            width: 50, 
-                            height: 15, 
-                            fontSize: 10,
-                            fontWeight: 'normal',
-                            textAlign: 'left'
-                          },
-                          { 
-                            id: '3',
-                            type: 'QR_CODE', 
-                            x: 60, y: 5, 
-                            width: 35, 
-                            height: 35, 
-                            content: 'numero_patrimonio',
-                            fontSize: 8,
-                            fontWeight: 'normal',
-                            textAlign: 'center'
-                          }
-                        ],
-                        municipalityId: user?.municipalityId || ''
-                      })}
-                    >
-                      <div className="font-medium text-sm mb-2">Etiqueta Padrão</div>
-                      <div className="text-xs text-gray-500">100x60mm</div>
+                  {labelTemplates.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <p className="mb-2">Nenhum modelo de etiqueta encontrado.</p>
+                      <p className="text-sm">
+                        Crie um novo modelo em{' '}
+                        <Link to="/ferramentas/gerenciar-etiquetas" className="text-blue-600 hover:underline">
+                          Gerenciar Etiquetas
+                        </Link>
+                      </p>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {labelTemplates.map((template) => (
+                        <div
+                          key={template.id}
+                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                            selectedLabelTemplate?.id === template.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setSelectedLabelTemplate(template)}
+                        >
+                          <div className="font-medium text-sm mb-2">
+                            {template.name}
+                            {template.isDefault && (
+                              <Badge variant="outline" className="ml-2 text-xs">
+                                Padrão
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {template.width}x{template.height}mm
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Preview */}
