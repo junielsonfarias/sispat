@@ -1,0 +1,165 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║   🎯 COMANDOS FINAIS - APLICAR TODAS AS CORREÇÕES                    ║
+║                                                                        ║
+║   Correções incluídas:                                                ║
+║   ✅ Filtro de setores por permissão                                  ║
+║   ✅ Erro 400 ao criar inventário                                     ║
+║   ✅ Erro "b is not a function" no SearchableSelect                   ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+
+═══════════════════════════════════════════════════════════════════════
+  PASSO 1: CONECTAR AO SERVIDOR
+═══════════════════════════════════════════════════════════════════════
+
+ssh root@sispat.vps-kinghost.net
+
+
+═══════════════════════════════════════════════════════════════════════
+  PASSO 2: EXECUTAR COMANDOS (COPIE TUDO DE UMA VEZ)
+═══════════════════════════════════════════════════════════════════════
+
+cd /var/www/sispat && \
+mkdir -p backup_$(date +%Y%m%d_%H%M%S) && \
+cp -r dist backup_$(date +%Y%m%d_%H%M%S)/dist_backup && \
+cp -r backend/dist backup_$(date +%Y%m%d_%H%M%S)/backend_dist && \
+echo "✅ Backup criado" && \
+git pull origin main && \
+echo "✅ Código atualizado" && \
+npm run build && \
+echo "✅ Frontend compilado" && \
+cd backend && npm run build && cd .. && \
+echo "✅ Backend compilado" && \
+pm2 restart sispat-backend && \
+sleep 3 && \
+sudo systemctl reload nginx && \
+echo "✅ Serviços reiniciados" && \
+pm2 logs sispat-backend --lines 30 --nostream
+
+
+═══════════════════════════════════════════════════════════════════════
+  PASSO 3: VERIFICAR SE DEU CERTO
+═══════════════════════════════════════════════════════════════════════
+
+Após os comandos terminarem, você verá os últimos 30 logs.
+
+Se tudo estiver OK, verá mensagens como:
+✓ Server running on port XXXX
+✓ Database connected
+
+
+═══════════════════════════════════════════════════════════════════════
+  PASSO 4: TESTAR NO NAVEGADOR
+═══════════════════════════════════════════════════════════════════════
+
+Abra: http://sispat.vps-kinghost.net
+
+Pressione: Ctrl + Shift + Delete (limpar cache)
+
+
+TESTE 1: Filtro de Setores (Usuário)
+────────────────────────────────────────
+1. Login com usuário normal
+2. Gerar Inventário → Ver apenas setores atribuídos ✅
+3. Gerar Relatório → Ver apenas setores atribuídos ✅
+
+
+TESTE 2: Filtro de Setores (Supervisor)
+────────────────────────────────────────
+1. Login: supervisor@ssbv.com / Master6273@
+2. Gerar Inventário → Ver TODOS os setores ✅
+3. Gerar Relatório → Ver TODOS os setores ✅
+4. Conseguir selecionar setor específico ✅
+
+
+TESTE 3: Criar Inventário
+────────────────────────────────────────
+1. Preencher formulário
+2. Clicar em "Criar"
+3. NÃO dar erro 400 ✅
+4. Inventário criado com sucesso ✅
+
+
+TESTE 4: Selecionar Setor (SearchableSelect)
+────────────────────────────────────────
+1. Ir em Gerar Relatório
+2. Clicar em "Filtrar por setor..."
+3. Selecionar um setor
+4. Console SEM erro "b is not a function" ✅
+
+
+═══════════════════════════════════════════════════════════════════════
+  📊 MONITORAMENTO
+═══════════════════════════════════════════════════════════════════════
+
+Ver logs em tempo real:
+pm2 logs sispat-backend
+
+Ver status dos serviços:
+pm2 list
+sudo systemctl status nginx
+
+
+═══════════════════════════════════════════════════════════════════════
+  🆘 SE DER PROBLEMA
+═══════════════════════════════════════════════════════════════════════
+
+Restaurar backup:
+
+cd /var/www/sispat
+BACKUP_DIR=$(ls -td backup_* | head -1)
+cp -r $BACKUP_DIR/dist_backup dist
+cp -r $BACKUP_DIR/backend_dist backend/dist
+pm2 restart sispat-backend
+sudo systemctl reload nginx
+
+
+═══════════════════════════════════════════════════════════════════════
+  ✅ CHECKLIST FINAL
+═══════════════════════════════════════════════════════════════════════
+
+[ ] Backup criado
+[ ] Git pull executado
+[ ] Frontend compilado (npm run build)
+[ ] Backend compilado (cd backend && npm run build)
+[ ] Serviços reiniciados (pm2 + nginx)
+[ ] Logs verificados (sem erros)
+[ ] Cache do navegador limpo
+[ ] Teste 1: Usuário vê apenas seus setores
+[ ] Teste 2: Supervisor vê todos os setores
+[ ] Teste 3: Criar inventário sem erro 400
+[ ] Teste 4: Selecionar setor sem erro no console
+
+
+═══════════════════════════════════════════════════════════════════════
+  📝 O QUE FOI CORRIGIDO
+═══════════════════════════════════════════════════════════════════════
+
+Commit 5693c40:
+✅ Filtro de setores por role (admin/supervisor/usuário)
+✅ Erro 400 ao criar inventário (mapeamento de campos)
+
+Commit 6d69cf2:
+✅ Erro "b is not a function" no SearchableSelect
+✅ Props onValueChange → onChange
+✅ Adicionado suporte para isClearable
+
+
+═══════════════════════════════════════════════════════════════════════
+  📚 DOCUMENTAÇÃO
+═══════════════════════════════════════════════════════════════════════
+
+Documentação completa:
+- CORRECOES_SETORES_E_INVENTARIO.md
+- CORRECAO_SEARCHABLE_SELECT.md
+- EXECUTAR_NO_SERVIDOR.txt
+
+
+═══════════════════════════════════════════════════════════════════════
+
+        🚀 Pronto! Execute os comandos e me avise o resultado! 
+
+═══════════════════════════════════════════════════════════════════════
+
