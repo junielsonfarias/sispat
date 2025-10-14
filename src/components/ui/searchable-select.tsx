@@ -31,6 +31,7 @@ interface SearchableSelectProps {
   emptyMessage?: string
   isLoading?: boolean
   disabled?: boolean
+  isClearable?: boolean
 }
 
 export const SearchableSelect = ({
@@ -42,6 +43,7 @@ export const SearchableSelect = ({
   emptyMessage = 'Nenhum resultado encontrado.',
   isLoading = false,
   disabled = false,
+  isClearable = false,
 }: SearchableSelectProps) => {
   const [open, setOpen] = React.useState(false)
 

@@ -46,7 +46,7 @@ const RelatoriosDepreciacao = () => {
   const { sectors } = useSectors()
   const { user } = useAuth()
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const [selectedSector, setSelectedSector] = useState<string | null>(null)
+  const [selectedSector, setSelectedSector] = useState<string>('')
   const [isExportDialogOpen, setExportDialogOpen] = useState(false)
   const [exportFormat, setExportFormat] = useState<
     'csv' | 'pdf' | 'xlsx' | null
@@ -165,7 +165,6 @@ const RelatoriosDepreciacao = () => {
               value={selectedSector}
               onChange={setSelectedSector}
               placeholder="Filtrar por setor..."
-              isClearable
             />
           </div>
         </CardHeader>

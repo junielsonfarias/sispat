@@ -170,7 +170,7 @@ export const ReportFilterDialog = ({
                     ...sectorOptions
                   ]}
                   value={field.value}
-                  onValueChange={field.onChange}
+                  onChange={field.onChange}
                   placeholder="Selecione um setor"
                 />
                 <FormDescription className="text-xs">
@@ -193,7 +193,7 @@ export const ReportFilterDialog = ({
                     ...tipoOptions
                   ]}
                   value={field.value}
-                  onValueChange={field.onChange}
+                  onChange={field.onChange}
                   placeholder="Selecione um tipo"
                 />
                 <FormDescription className="text-xs">
