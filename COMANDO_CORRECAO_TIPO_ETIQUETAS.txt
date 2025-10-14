@@ -1,0 +1,94 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║   🔧 CORREÇÃO: Tipo de Dados TEXT (não UUID)                         ║
+║                                                                        ║
+║   Problema: Foreign key com tipos incompatíveis                        ║
+║   Solução: Usar TEXT conforme schema real                             ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+
+════════════════════════════════════════════════════════════════════════
+  🚀 COMANDO ATUALIZADO (COPIE TUDO)
+════════════════════════════════════════════════════════════════════════
+
+cd /var/www/sispat && \
+git pull origin main && \
+echo "✅ Código atualizado (script corrigido)" && \
+cd backend && \
+node create-label-templates-table.js && \
+echo "" && \
+npm run build && \
+cd .. && \
+echo "✅ Backend compilado" && \
+npm run build && \
+echo "✅ Frontend compilado" && \
+pm2 restart sispat-backend && \
+sleep 3 && \
+sudo systemctl reload nginx && \
+echo "✅ Serviços reiniciados" && \
+pm2 logs sispat-backend --lines 30 --nostream
+
+
+════════════════════════════════════════════════════════════════════════
+  ✅ SAÍDA ESPERADA
+════════════════════════════════════════════════════════════════════════
+
+Você deve ver:
+
+🔄 Criando tabela label_templates...
+✅ Tabela label_templates criada
+🔄 Criando índices...
+✅ Índices criados
+🔄 Inserindo template padrão...
+✅ Template padrão inserido
+🎉 Processo concluído com sucesso!
+
+
+════════════════════════════════════════════════════════════════════════
+  🔍 O QUE FOI CORRIGIDO
+════════════════════════════════════════════════════════════════════════
+
+ANTES (ERRADO):
+❌ id UUID
+❌ municipalityId UUID
+❌ createdBy UUID
+❌ Erro: tipos incompatíveis
+
+DEPOIS (CORRETO):
+✅ id TEXT
+✅ municipalityId TEXT
+✅ createdBy TEXT
+✅ Compatível com schema Prisma
+
+
+════════════════════════════════════════════════════════════════════════
+  🧪 TESTE APÓS DEPLOY
+════════════════════════════════════════════════════════════════════════
+
+1. Verificar tabela criada:
+   sudo -u postgres psql sispat_db -c "\\d label_templates"
+
+2. Ver template padrão inserido:
+   sudo -u postgres psql sispat_db -c "SELECT id, name, width, height FROM label_templates;"
+
+3. Testar no sistema:
+   - Login como supervisor
+   - Ferramentas > Gerenciar Etiquetas
+   - ✅ Deve ver template padrão
+
+
+════════════════════════════════════════════════════════════════════════
+  🎯 COMMIT
+════════════════════════════════════════════════════════════════════════
+
+Commit: b9193d9
+Descrição: Correção de tipo TEXT em label_templates
+
+
+════════════════════════════════════════════════════════════════════════
+
+        🚀 Execute o comando e me avise o resultado!
+
+════════════════════════════════════════════════════════════════════════
+
