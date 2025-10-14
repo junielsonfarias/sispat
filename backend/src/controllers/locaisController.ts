@@ -9,8 +9,54 @@ import { prisma } from '../index';
 export const getLocais = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sectorId } = req.query;
+    const userRole = req.user?.role;
+    const userEmail = req.user?.email;
 
-    const where = sectorId ? { sectorId: sectorId as string } : {};
+    console.log('🔍 [DEV] GET /api/locais - Usuário:', { role: userRole, email: userEmail });
+
+    let where: any = {};
+
+    // ✅ FILTRO POR SETOR (se especificado na query)
+    if (sectorId) {
+      where.sectorId = sectorId as string;
+    }
+
+    // ✅ FILTRO POR PERMISSÃO DE USUÁRIO
+    // Admin e Supervisor veem TODOS os locais
+    // Usuário e Visualizador veem apenas locais dos seus setores
+    if (userRole !== 'admin' && userRole !== 'supervisor') {
+      // Buscar setores do usuário
+      const user = await prisma.user.findUnique({
+        where: { email: userEmail },
+        select: { responsibleSectors: true },
+      });
+
+      const responsibleSectors = user?.responsibleSectors || [];
+      console.log('🔍 [DEV] Setores responsáveis do usuário:', responsibleSectors);
+
+      if (responsibleSectors.length > 0) {
+        // Buscar IDs dos setores pelos nomes
+        const sectors = await prisma.sector.findMany({
+          where: {
+            name: { in: responsibleSectors },
+          },
+          select: { id: true },
+        });
+
+        const sectorIds = sectors.map(s => s.id);
+        console.log('🔍 [DEV] IDs dos setores:', sectorIds);
+
+        // Aplicar filtro de setores
+        where.sectorId = { in: sectorIds };
+      } else {
+        // Usuário sem setores atribuídos não vê nada
+        console.log('⚠️  [DEV] Usuário sem setores atribuídos - retornando vazio');
+        res.json([]);
+        return;
+      }
+    } else {
+      console.log('✅ [DEV] Admin/Supervisor - retornando TODOS os locais');
+    }
 
     const locais = await prisma.local.findMany({
       where,
@@ -27,11 +73,13 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
+    console.log('✅ [DEV] Locais encontrados:', locais.length);
+
     // ✅ PERFORMANCE: Cache HTTP para dados estáticos
     res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
     res.json(locais);
   } catch (error) {
-    console.error('Erro ao buscar locais:', error);
+    console.error('❌ [DEV] Erro ao buscar locais:', error);
     res.status(500).json({ error: 'Erro ao buscar locais' });
   }
 };

@@ -8,7 +8,41 @@ import { prisma } from '../index';
  */
 export const getSectors = async (req: Request, res: Response): Promise<void> => {
   try {
+    const userRole = req.user?.role;
+    const userEmail = req.user?.email;
+
+    console.log('🔍 [DEV] GET /api/sectors - Usuário:', { role: userRole, email: userEmail });
+
+    let where: any = {};
+
+    // ✅ FILTRO POR PERMISSÃO DE USUÁRIO
+    // Admin e Supervisor veem TODOS os setores
+    // Usuário e Visualizador veem apenas seus setores responsáveis
+    if (userRole !== 'admin' && userRole !== 'supervisor') {
+      // Buscar setores do usuário
+      const user = await prisma.user.findUnique({
+        where: { email: userEmail },
+        select: { responsibleSectors: true },
+      });
+
+      const responsibleSectors = user?.responsibleSectors || [];
+      console.log('🔍 [DEV] Setores responsáveis do usuário:', responsibleSectors);
+
+      if (responsibleSectors.length > 0) {
+        // Filtrar por nomes dos setores
+        where.name = { in: responsibleSectors };
+      } else {
+        // Usuário sem setores atribuídos não vê nada
+        console.log('⚠️  [DEV] Usuário sem setores atribuídos - retornando vazio');
+        res.json([]);
+        return;
+      }
+    } else {
+      console.log('✅ [DEV] Admin/Supervisor - retornando TODOS os setores');
+    }
+
     const sectors = await prisma.sector.findMany({
+      where,
       include: {
         _count: {
           select: {
@@ -22,11 +56,13 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
       },
     });
 
+    console.log('✅ [DEV] Setores encontrados:', sectors.length);
+
     // ✅ PERFORMANCE: Cache HTTP para dados estáticos
     res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
     res.json(sectors);
   } catch (error) {
-    console.error('Erro ao buscar setores:', error);
+    console.error('❌ [DEV] Erro ao buscar setores:', error);
     res.status(500).json({ error: 'Erro ao buscar setores' });
   }
 };
