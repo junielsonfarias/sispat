@@ -1,0 +1,223 @@
+================================================================================
+  COMANDOS PARA DEPLOY EM PRODUÇÃO - CORREÇÕES SETORES E INVENTÁRIO
+================================================================================
+
+📅 Data: 14/10/2025
+🔗 Commit: 5693c40
+📝 Correções: Filtro de setores + Erro 400 inventário
+
+================================================================================
+  OPÇÃO 1: SCRIPT AUTOMÁTICO (RECOMENDADO)
+================================================================================
+
+Execute NO SERVIDOR:
+
+cd /var/www/sispat
+wget https://raw.githubusercontent.com/junielsonfarias/sispat/main/DEPLOY_PRODUCAO_CORRECOES.sh
+chmod +x DEPLOY_PRODUCAO_CORRECOES.sh
+./DEPLOY_PRODUCAO_CORRECOES.sh
+
+
+================================================================================
+  OPÇÃO 2: COMANDOS MANUAIS
+================================================================================
+
+1️⃣ NAVEGUE PARA O DIRETÓRIO DO PROJETO
+----------------------------------------
+cd /var/www/sispat
+
+
+2️⃣ FAÇA BACKUP DO SISTEMA ATUAL
+----------------------------------------
+mkdir -p backup_$(date +%Y%m%d_%H%M%S)
+cp -r dist backup_$(date +%Y%m%d_%H%M%S)/dist_backup
+cp -r backend/dist backup_$(date +%Y%m%d_%H%M%S)/backend_dist_backup
+
+
+3️⃣ ATUALIZE O CÓDIGO
+----------------------------------------
+# Backup dos arquivos .env
+cp .env .env.backup
+cp backend/.env backend/.env.backup
+
+# Pull do repositório
+git fetch origin
+git pull origin main
+
+# Restaurar .env
+cp .env.backup .env
+cp backend/.env.backup backend/.env
+
+
+4️⃣ COMPILE O FRONTEND
+----------------------------------------
+# Instalar dependências (se necessário)
+npm install --legacy-peer-deps --production=false
+
+# Remover build anterior
+rm -rf dist
+
+# Compilar
+npm run build
+
+# Verificar se compilou
+ls -la dist/
+
+
+5️⃣ COMPILE O BACKEND
+----------------------------------------
+cd backend
+
+# Instalar dependências (se necessário)
+npm install --production=false
+
+# Remover build anterior
+rm -rf dist
+
+# Compilar
+npm run build
+
+# Verificar se compilou
+ls -la dist/
+
+cd ..
+
+
+6️⃣ REINICIE OS SERVIÇOS
+----------------------------------------
+# Reiniciar backend
+pm2 restart sispat-backend
+
+# Aguardar 3 segundos
+sleep 3
+
+# Recarregar Nginx
+sudo systemctl reload nginx
+
+
+7️⃣ VERIFIQUE O DEPLOY
+----------------------------------------
+# Status do PM2
+pm2 list
+
+# Status do Nginx
+sudo systemctl status nginx
+
+# Logs do backend (últimas 50 linhas)
+pm2 logs sispat-backend --lines 50
+
+
+================================================================================
+  TESTES PÓS-DEPLOY
+================================================================================
+
+✅ TESTE 1: USUÁRIO NORMAL
+--------------------------
+1. Faça login como USUÁRIO (não admin/supervisor)
+2. Vá em "Gerar Inventário"
+3. ✅ Deve ver APENAS os setores atribuídos a você
+4. Vá em "Gerar Relatório"
+5. ✅ Deve ver APENAS os setores atribuídos a você
+
+
+✅ TESTE 2: SUPERVISOR
+--------------------------
+1. Faça login como SUPERVISOR
+   Email: supervisor@ssbv.com
+   Senha: Master6273@
+2. Vá em "Gerar Inventário"
+3. ✅ Deve ver TODOS os setores
+4. ✅ Deve conseguir selecionar setor específico
+5. Vá em "Gerar Relatório"
+6. ✅ Deve ver TODOS os setores
+
+
+✅ TESTE 3: CRIAR INVENTÁRIO
+--------------------------
+1. Faça login como USUÁRIO ou SUPERVISOR
+2. Vá em "Gerar Inventário"
+3. Preencha o formulário:
+   - Nome: Inventário Teste
+   - Setor: [Selecione um setor]
+   - Escopo: Setor Completo
+4. Clique em "Criar Inventário"
+5. ✅ NÃO deve dar erro 400
+6. ✅ Inventário deve ser criado com sucesso
+
+
+================================================================================
+  MONITORAMENTO
+================================================================================
+
+📊 VER LOGS EM TEMPO REAL:
+pm2 logs sispat-backend
+
+📊 VER ÚLTIMAS 100 LINHAS:
+pm2 logs sispat-backend --lines 100 --nostream
+
+📊 VER APENAS ERROS:
+pm2 logs sispat-backend --err
+
+📊 STATUS DOS SERVIÇOS:
+pm2 status
+sudo systemctl status nginx
+
+
+================================================================================
+  ROLLBACK (EM CASO DE PROBLEMA)
+================================================================================
+
+Se algo der errado, você pode restaurar o backup:
+
+# Encontrar o backup
+ls -la | grep backup_
+
+# Restaurar (substitua XXXXX pelo nome do backup)
+cp -r backup_XXXXX/dist_backup dist
+cp -r backup_XXXXX/backend_dist_backup backend/dist
+
+# Reiniciar serviços
+pm2 restart sispat-backend
+sudo systemctl reload nginx
+
+
+================================================================================
+  DOCUMENTAÇÃO
+================================================================================
+
+📄 Documentação completa: CORRECOES_SETORES_E_INVENTARIO.md
+🔗 Commit: https://github.com/junielsonfarias/sispat/commit/5693c40
+
+
+================================================================================
+  SUPORTE
+================================================================================
+
+Se encontrar problemas:
+1. Verifique os logs: pm2 logs sispat-backend --lines 100
+2. Verifique o console do navegador (F12)
+3. Limpe o cache do navegador (Ctrl+Shift+Delete)
+4. Tente em uma aba anônima
+
+
+================================================================================
+  ✅ CHECKLIST DE DEPLOY
+================================================================================
+
+[ ] Navegou para /var/www/sispat
+[ ] Fez backup do sistema atual
+[ ] Fez git pull origin main
+[ ] Compilou o frontend (npm run build)
+[ ] Compilou o backend (cd backend && npm run build)
+[ ] Reiniciou o backend (pm2 restart sispat-backend)
+[ ] Recarregou o Nginx (sudo systemctl reload nginx)
+[ ] Verificou os logs (pm2 logs sispat-backend --lines 50)
+[ ] Testou com usuário normal
+[ ] Testou com supervisor
+[ ] Testou criar inventário
+
+
+================================================================================
+  🎉 FIM
+================================================================================
+
