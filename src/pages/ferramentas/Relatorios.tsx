@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { FileText, PlusCircle, Settings } from 'lucide-react'
 import { useReportTemplates } from '@/contexts/ReportTemplateContext'
+import { useSectorFilter } from '@/hooks/useSectorFilter'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -25,6 +26,7 @@ import { ReportFilters, ReportTemplate } from '@/types'
 
 const Relatorios = () => {
   const { templates } = useReportTemplates()
+  const { accessInfo } = useSectorFilter()
   const navigate = useNavigate()
   const [isFilterOpen, setFilterOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] =
@@ -59,6 +61,11 @@ const Relatorios = () => {
         params.append('dateTo', filters.dateRange.to.toISOString())
       }
 
+      // ✅ CORREÇÃO: Adicionar informações de filtro por setor
+      if (!accessInfo.canViewAllData) {
+        params.append('userSectors', accessInfo.userSectors.join(','))
+      }
+      
       const queryString = params.toString()
       const url = queryString 
         ? `/relatorios/ver/${selectedTemplate.id}?${queryString}`
@@ -84,7 +91,14 @@ const Relatorios = () => {
         </BreadcrumbList>
       </Breadcrumb>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Relatórios</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Relatórios</h1>
+          {!accessInfo.canViewAllData && (
+            <div className="text-sm text-muted-foreground bg-blue-50 px-3 py-1 rounded-lg mt-2 inline-block">
+              📊 Relatórios filtrados pelos setores: {accessInfo.userSectors.join(', ') || 'Nenhum setor atribuído'}
+            </div>
+          )}
+        </div>
         <Button asChild variant="outline">
           <Link to="/relatorios/templates">
             <Settings className="mr-2 h-4 w-4" /> Gerenciar Modelos

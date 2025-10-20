@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Eye, Archive, Building, X, Plus } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/http-api'
 import { FichaPreview } from '@/components/FichaPreview'
+import { FichaPreviewReal } from '@/components/FichaPreviewReal'
 
 interface FichaTemplate {
   id: string
@@ -112,12 +113,111 @@ export default function EditorTemplateFicha() {
     }
   }, [id])
 
+  // Função para normalizar o config do template
+  const normalizeConfig = (rawConfig: any): TemplateConfig => {
+    if (!rawConfig) {
+      return getDefaultConfig()
+    }
+
+    return {
+      header: {
+        showLogo: rawConfig.header?.showLogo ?? true,
+        logoSize: rawConfig.header?.logoSize ?? 'medium',
+        showDate: rawConfig.header?.showDate ?? true,
+        showSecretariat: rawConfig.header?.showSecretariat ?? true,
+        customTexts: {
+          secretariat: rawConfig.header?.customTexts?.secretariat ?? 'SECRETARIA MUNICIPAL DE ADMINISTRAÇÃO E FINANÇAS',
+          department: rawConfig.header?.customTexts?.department ?? 'DEPARTAMENTO DE GESTÃO E CONTROLE DE PATRIMÔNIO'
+        }
+      },
+      sections: {
+        patrimonioInfo: {
+          enabled: rawConfig.sections?.patrimonioInfo?.enabled ?? rawConfig.sections?.identificacao?.enabled ?? true,
+          layout: rawConfig.sections?.patrimonioInfo?.layout ?? 'grid',
+          fields: rawConfig.sections?.patrimonioInfo?.fields ?? ['descricao_bem', 'tipo', 'marca', 'modelo'],
+          showPhoto: rawConfig.sections?.patrimonioInfo?.showPhoto ?? true,
+          photoSize: rawConfig.sections?.patrimonioInfo?.photoSize ?? 'medium'
+        },
+        acquisition: {
+          enabled: rawConfig.sections?.acquisition?.enabled ?? rawConfig.sections?.aquisicao?.enabled ?? true,
+          fields: rawConfig.sections?.acquisition?.fields ?? ['data_aquisicao', 'valor_aquisicao', 'forma_aquisicao']
+        },
+        location: {
+          enabled: rawConfig.sections?.location?.enabled ?? rawConfig.sections?.localizacao?.enabled ?? true,
+          fields: rawConfig.sections?.location?.fields ?? ['setor_responsavel', 'local_objeto']
+        },
+        depreciation: {
+          enabled: rawConfig.sections?.depreciation?.enabled ?? rawConfig.sections?.depreciacao?.enabled ?? true,
+          fields: rawConfig.sections?.depreciation?.fields ?? ['valor_residual', 'vida_util']
+        }
+      },
+      signatures: {
+        enabled: rawConfig.signatures?.enabled ?? true,
+        count: rawConfig.signatures?.count ?? 2,
+        layout: rawConfig.signatures?.layout ?? 'horizontal',
+        labels: rawConfig.signatures?.labels ?? ['Responsável pelo Setor', 'Responsável pelo Patrimônio'],
+        showDates: rawConfig.signatures?.showDates ?? true
+      },
+      styling: {
+        margins: rawConfig.styling?.margins ?? { top: 40, bottom: 20, left: 15, right: 15 },
+        fonts: rawConfig.styling?.fonts ?? { family: 'Arial', size: 12 }
+      }
+    }
+  }
+
+  // Configuração padrão
+  const getDefaultConfig = (): TemplateConfig => ({
+    header: {
+      showLogo: true,
+      logoSize: 'medium',
+      showDate: true,
+      showSecretariat: true,
+      customTexts: {
+        secretariat: 'SECRETARIA MUNICIPAL DE ADMINISTRAÇÃO E FINANÇAS',
+        department: 'DEPARTAMENTO DE GESTÃO E CONTROLE DE PATRIMÔNIO'
+      }
+    },
+    sections: {
+      patrimonioInfo: {
+        enabled: true,
+        layout: 'grid',
+        fields: ['descricao_bem', 'tipo', 'marca', 'modelo'],
+        showPhoto: true,
+        photoSize: 'medium'
+      },
+      acquisition: {
+        enabled: true,
+        fields: ['data_aquisicao', 'valor_aquisicao', 'forma_aquisicao']
+      },
+      location: {
+        enabled: true,
+        fields: ['setor_responsavel', 'local_objeto']
+      },
+      depreciation: {
+        enabled: true,
+        fields: ['valor_residual', 'vida_util']
+      }
+    },
+    signatures: {
+      enabled: true,
+      count: 2,
+      layout: 'horizontal',
+      labels: ['Responsável pelo Setor', 'Responsável pelo Patrimônio'],
+      showDates: true
+    },
+    styling: {
+      margins: { top: 40, bottom: 20, left: 15, right: 15 },
+      fonts: { family: 'Arial', size: 12 }
+    }
+  })
+
   const loadTemplate = async () => {
     try {
       setLoading(true)
       const response = await api.get(`/ficha-templates/${id}`)
       setTemplate(response)
-      setConfig(response.config)
+      const normalizedConfig = normalizeConfig(response.config)
+      setConfig(normalizedConfig)
     } catch (error) {
       console.error('Erro ao carregar template:', error)
       navigate('/gerenciador-fichas')
@@ -806,8 +906,8 @@ export default function EditorTemplateFicha() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg overflow-hidden bg-white shadow-sm scale-75 origin-top-left" style={{ width: '133%' }}>
-                <FichaPreview config={config} type={template.type} />
+              <div className="border rounded-lg overflow-hidden bg-white shadow-sm scale-50 origin-top-left" style={{ width: '200%' }}>
+                <FichaPreviewReal config={config} type={template.type} />
               </div>
             </CardContent>
           </Card>
@@ -830,7 +930,7 @@ export default function EditorTemplateFicha() {
             </DialogTitle>
           </DialogHeader>
           <div className="mt-4">
-            <FichaPreview config={config} type={template.type} />
+            <FichaPreviewReal config={config} type={template.type} />
           </div>
         </DialogContent>
       </Dialog>

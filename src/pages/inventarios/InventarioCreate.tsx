@@ -54,8 +54,7 @@ const createSchema = z
       return true
     },
     {
-      message:
-        'O local é obrigatório quando o escopo é "Local Específico".',
+      message: 'Para inventários por localização, é necessário especificar o tipo ou local específico.',
       path: ['specificLocationId'],
     },
   )
@@ -114,16 +113,35 @@ export default function InventarioCreate() {
   }))
 
   const onSubmit = async (data: CreateFormValues) => {
+    console.log('🔍 [DEBUG] Formulário submetido com dados:', data)
     setIsLoading(true)
+    
     try {
+      console.log('🔍 [DEBUG] Chamando createInventory...')
       const newInventory = await createInventory(data)
-      navigate(`/inventarios/${newInventory.id}`)
+      console.log('✅ [DEBUG] Inventário criado com sucesso:', newInventory)
+      
+      // ✅ Verificar se o inventário foi criado corretamente
+      if (newInventory && newInventory.id) {
+        console.log('🔍 [DEBUG] Navegando para:', `/inventarios/${newInventory.id}`)
+        navigate(`/inventarios/${newInventory.id}`)
+      } else {
+        console.error('❌ [ERROR] Inventário criado mas sem ID válido:', newInventory)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Inventário criado mas com dados inválidos.',
+        })
+        navigate('/inventarios')
+      }
     } catch (error) {
+      console.error('❌ [ERROR] Erro ao criar inventário:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Falha ao criar inventário.',
+        description: `Falha ao criar inventário: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
       })
+      // Não navegar em caso de erro, deixar o usuário tentar novamente
     } finally {
       setIsLoading(false)
     }

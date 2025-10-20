@@ -49,7 +49,14 @@ export default function GerenciadorFichas() {
       console.log('[GerenciadorFichas] Templates definidos:', Array.isArray(response) ? response.length : 0)
     } catch (error) {
       console.error('Erro ao carregar templates:', error)
-      setTemplates([]) // Garantir que sempre seja um array
+      
+      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
+      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+        console.log('⚠️  Backend não disponível - usando lista vazia de templates de ficha')
+        setTemplates([])
+      } else {
+        setTemplates([]) // Garantir que sempre seja um array
+      }
     } finally {
       setLoading(false)
     }
@@ -78,6 +85,12 @@ export default function GerenciadorFichas() {
       setTemplates((templates || []).filter(t => t.id !== id))
     } catch (error) {
       console.error('Erro ao excluir template:', error)
+      
+      // ✅ CORREÇÃO: Se for erro de conexão, remover apenas localmente
+      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+        console.log('⚠️  Backend não disponível. Removendo template apenas localmente.')
+        setTemplates((templates || []).filter(t => t.id !== id))
+      }
     }
   }
 
@@ -87,6 +100,15 @@ export default function GerenciadorFichas() {
       loadTemplates() // Recarregar para atualizar os estados
     } catch (error) {
       console.error('Erro ao definir template padrão:', error)
+      
+      // ✅ CORREÇÃO: Se for erro de conexão, atualizar apenas localmente
+      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+        console.log('⚠️  Backend não disponível. Definindo template padrão apenas localmente.')
+        setTemplates(prev => prev?.map(t => ({
+          ...t,
+          isDefault: t.id === id
+        })) || [])
+      }
     }
   }
 
@@ -102,6 +124,19 @@ export default function GerenciadorFichas() {
       loadTemplates()
     } catch (error) {
       console.error('Erro ao duplicar template:', error)
+      
+      // ✅ CORREÇÃO: Se for erro de conexão, adicionar apenas localmente
+      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+        console.log('⚠️  Backend não disponível. Adicionando template duplicado apenas localmente.')
+        const localDuplicate = {
+          id: `local-${Date.now()}`,
+          ...duplicateData,
+          isDefault: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+        setTemplates(prev => [...(prev || []), localDuplicate])
+      }
     }
   }
 

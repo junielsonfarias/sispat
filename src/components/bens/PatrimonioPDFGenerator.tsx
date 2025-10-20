@@ -19,15 +19,37 @@ export const generatePatrimonioPDF = async ({
   selectedSections = ['header', 'numero', 'identificacao', 'aquisicao', 'localizacao', 'status', 'baixa', 'depreciacao', 'observacoes', 'fotos', 'sistema', 'rodape'],
   templateId,
 }: PatrimonioPDFGeneratorProps) => {
+  console.log('🔍 [PDF Generator] Iniciando geração de PDF:', {
+    patrimonioId: patrimonio.id,
+    numeroPatrimonio: patrimonio.numero_patrimonio,
+    templateId,
+    selectedSections,
+    municipalityName
+  })
+
   // Buscar template se fornecido
   let template: any = null
   if (templateId) {
     try {
+      console.log('🔍 [PDF Generator] Buscando template com ID:', templateId)
       template = await api.get(`/ficha-templates/${templateId}`)
-      console.log('[PDF Generator] Usando template:', template.name)
+      console.log('✅ [PDF Generator] Template carregado com sucesso:', {
+        id: template.id,
+        name: template.name,
+        type: template.type,
+        isDefault: template.isDefault,
+        config: template.config
+      })
     } catch (error) {
-      console.error('[PDF Generator] Erro ao carregar template:', error)
+      console.error('❌ [PDF Generator] Erro ao carregar template:', error)
+      console.error('❌ [PDF Generator] Detalhes do erro:', {
+        templateId,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        response: error.response?.data || 'N/A'
+      })
     }
+  } else {
+    console.log('⚠️ [PDF Generator] Nenhum templateId fornecido, usando configurações padrão')
   }
 
   // Aplicar configurações do template se disponível
@@ -36,6 +58,15 @@ export const generatePatrimonioPDF = async ({
   const fonts = config.styling?.fonts || { family: 'Arial', size: 12 }
   const headerConfig = config.header || {}
   const signaturesConfig = config.signatures || { enabled: true, count: 2, layout: 'horizontal', labels: ['Responsável pelo Setor', 'Responsável pelo Patrimônio'], showDates: true }
+
+  console.log('🔧 [PDF Generator] Configurações aplicadas:', {
+    templateName: template?.name || 'Padrão',
+    margins,
+    fonts,
+    headerConfig,
+    signaturesConfig,
+    selectedSectionsCount: selectedSections.length
+  })
 
   // Função auxiliar para verificar se uma seção deve ser incluída
   const shouldInclude = (sectionId: string) => selectedSections.includes(sectionId)
@@ -54,32 +85,32 @@ export const generatePatrimonioPDF = async ({
   
   // HTML do PDF
   container.innerHTML = `
-    <div style="width: 100%; max-width: 180mm;">
+    <div style="width: 100%; max-width: ${210 - margins.left - margins.right}mm; margin: 0 auto;">
       ${shouldInclude('header') ? `
       <!-- Cabeçalho -->
       <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #000;">
         <!-- Logo e Nome do Município -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            ${headerConfig.showLogo !== false ? `<img src="${municipalityLogo}" alt="Logo" style="height: ${headerConfig.logoSize === 'small' ? '60px' : headerConfig.logoSize === 'large' ? '120px' : '90px'}; width: auto;" onerror="this.style.display='none'" />` : ''}
-            <div style="flex: 1;">
-              <h1 style="margin: 0; font-size: 20px; color: #000; font-weight: bold; line-height: 1.1;">${municipalityName}</h1>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 20px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+            ${headerConfig.showLogo !== false ? `<img src="${municipalityLogo}" alt="Logo" style="height: ${headerConfig.logoSize === 'small' ? '45px' : headerConfig.logoSize === 'large' ? '70px' : '60px'}; width: auto; flex-shrink: 0;" onerror="this.style.display='none'" />` : ''}
+            <div style="flex: 1; min-width: 0;">
+              <h1 style="margin: 0; font-size: 18px; color: #000; font-weight: bold; line-height: 1.1; word-wrap: break-word; hyphens: auto; text-align: left;">${municipalityName}</h1>
             </div>
           </div>
           ${headerConfig.showDate !== false ? `
-          <div style="text-align: right;">
-            <p style="margin: 0; font-size: 11px; color: #000; font-weight: 500;">Data de Emissão</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px;">${formatDate(new Date())}</p>
+          <div style="text-align: right; flex-shrink: 0; min-width: 80px;">
+            <p style="margin: 0; font-size: 10px; color: #000; font-weight: 500;">Data de Emissão</p>
+            <p style="margin: 2px 0 0 0; font-size: 11px;">${formatDate(new Date())}</p>
           </div>
           ` : ''}
         </div>
 
         ${headerConfig.showSecretariat !== false ? `
         <!-- Informações da Secretaria Gestora -->
-        <div style="margin-bottom: 12px; text-align: center;">
+        <div style="margin-bottom: 8px; text-align: center;">
           <p style="margin: 0; font-size: 12px; color: #000; font-weight: 500;">${headerConfig.customTexts?.secretariat || 'SECRETARIA MUNICIPAL DE ADMINISTRAÇÃO E FINANÇAS'}</p>
           <p style="margin: 0; font-size: 12px; color: #000; font-weight: 500;">${headerConfig.customTexts?.department || 'DEPARTAMENTO DE GESTÃO E CONTROLE DE PATRIMÔNIO'}</p>
-          <p style="margin: 5px 0 0 0; font-size: 14px; color: #000; font-weight: bold;">Ficha de Cadastro de Bem Móvel</p>
+          <p style="margin: 3px 0 0 0; font-size: 14px; color: #000; font-weight: bold;">Ficha de Cadastro de Bem Móvel</p>
         </div>
         ` : ''}
 
@@ -128,7 +159,7 @@ export const generatePatrimonioPDF = async ({
         </h2>
         
         <!-- Layout com foto integrada e melhorada -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start;">
           <!-- Descrição, Tipo e Número de Série -->
           <div>
             <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">DESCRIÇÃO</p>
@@ -166,7 +197,7 @@ export const generatePatrimonioPDF = async ({
       ${shouldInclude('aquisicao') ? `
       <!-- Seção 2: Aquisição -->
       <div style="margin-bottom: 20px;">
-        <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #000; border-bottom: 2px solid #d1d5db; padding-bottom: 8px;">
+        <h2 style="margin: 0 0 15px 0; font-size: 16px; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px; text-align: left;">
           INFORMAÇÕES DE AQUISIÇÃO
         </h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -189,7 +220,7 @@ export const generatePatrimonioPDF = async ({
       ${shouldInclude('localizacao') ? `
       <!-- Seção 3: Localização -->
       <div style="margin-bottom: 20px;">
-        <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #000; border-bottom: 2px solid #d1d5db; padding-bottom: 8px;">
+        <h2 style="margin: 0 0 15px 0; font-size: 16px; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px; text-align: left;">
           LOCALIZAÇÃO E ESTADO
         </h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -230,21 +261,21 @@ export const generatePatrimonioPDF = async ({
       ${shouldInclude('depreciacao') && patrimonio.metodo_depreciacao ? `
       <!-- Seção 6: Depreciação -->
       <div style="margin-bottom: 20px;">
-        <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #1e40af; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
-          📉 INFORMAÇÕES DE DEPRECIAÇÃO
+        <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px; text-align: left;">
+          INFORMAÇÕES DE DEPRECIAÇÃO
         </h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
           <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">MÉTODO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.metodo_depreciacao}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">MÉTODO</p>
+            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.metodo_depreciacao}</p>
           </div>
           <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">VIDA ÚTIL (ANOS)</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.vida_util_anos || '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">VIDA ÚTIL (ANOS)</p>
+            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.vida_util_anos || '-'}</p>
           </div>
           <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">VALOR RESIDUAL</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${patrimonio.valor_residual ? formatCurrency(patrimonio.valor_residual) : '-'}</p>
+            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">VALOR RESIDUAL</p>
+            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.valor_residual ? formatCurrency(patrimonio.valor_residual) : '-'}</p>
           </div>
         </div>
       </div>
@@ -337,7 +368,15 @@ export const generatePatrimonioPDF = async ({
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
 
     // Salvar PDF
-    pdf.save(`Ficha_Patrimonio_${patrimonio.numero_patrimonio}.pdf`)
+    const fileName = `Ficha_Patrimonio_${patrimonio.numero_patrimonio}.pdf`
+    pdf.save(fileName)
+
+    console.log('✅ [PDF Generator] PDF gerado com sucesso:', {
+      fileName,
+      templateUsed: template?.name || 'Padrão',
+      sectionsIncluded: selectedSections,
+      patrimonioId: patrimonio.id
+    })
 
     return true
   } catch (error) {

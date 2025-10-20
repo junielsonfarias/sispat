@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast'
 import { api } from '@/services/api-adapter'
 import { useAuth } from './AuthContext'
 import { useActivityLog } from './ActivityLogContext'
+import { MUNICIPALITY_ID } from '@/config/constants'
 
 interface AcquisitionForm {
   id: string
@@ -46,7 +47,7 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
   const { user } = useAuth()
   const { logActivity } = useActivityLog()
 
-  const municipalityId = '1' // ✅ CORREÇÃO: Sistema single-municipality
+  const municipalityId = MUNICIPALITY_ID // ✅ CORREÇÃO: Sistema single-municipality
 
   const activeAcquisitionForms = acquisitionForms.filter((form) => form.ativo)
 
@@ -75,12 +76,18 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
       setAcquisitionForms(forms)
     } catch (error) {
       console.error('❌ AcquisitionFormContext: Erro ao buscar formas de aquisição:', error)
-      // Error handled by error boundary
-      toast({
-        title: 'Erro ao carregar formas de aquisição',
-        description: 'Não foi possível carregar as formas de aquisição.',
-        variant: 'destructive',
-      })
+      
+      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
+      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
+        console.log('⚠️  Backend não disponível - usando lista vazia de formas de aquisição')
+        setAcquisitionForms([])
+      } else {
+        toast({
+          title: 'Erro ao carregar formas de aquisição',
+          description: 'Não foi possível carregar as formas de aquisição.',
+          variant: 'destructive',
+        })
+      }
     } finally {
       setIsLoading(false)
     }

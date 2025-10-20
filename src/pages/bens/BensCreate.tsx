@@ -98,6 +98,7 @@ const BensCreate = () => {
       setor_responsavel: isSectorDisabled ? allowedSectors[0].label : '',
       local_objeto: '',
       situacao_bem: undefined,
+      status: 'ativo',
       fotos: [],
       documentos: [],
       metodo_depreciacao: 'Linear',
@@ -333,6 +334,29 @@ const BensCreate = () => {
                           <SelectItem value="regular">Regular</SelectItem>
                           <SelectItem value="ruim">Ruim</SelectItem>
                           <SelectItem value="pessimo">Péssimo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status do Bem</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ativo">Ativo</SelectItem>
+                          <SelectItem value="inativo">Inativo</SelectItem>
+                          <SelectItem value="manutencao">Em Manutenção</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

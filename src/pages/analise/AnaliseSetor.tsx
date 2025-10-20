@@ -24,22 +24,36 @@ import {
 } from 'recharts'
 import { usePatrimonio } from '@/contexts/PatrimonioContext'
 import { useSectors } from '@/contexts/SectorContext'
+import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { formatCurrency } from '@/lib/utils'
 
 const AnaliseSetor = () => {
   const { patrimonios } = usePatrimonio()
   const { sectors } = useSectors()
-  const [selectedSectors, setSelectedSectors] = useState<string[]>([])
+  const { filterPatrimonios, accessInfo, userSectors } = useSectorFilter()
+  // ✅ CORREÇÃO: Inicializar com setores do usuário se não pode ver todos os dados
+  const [selectedSectors, setSelectedSectors] = useState<string[]>(() => {
+    if (!accessInfo.canViewAllData && userSectors.length > 0) {
+      return userSectors
+    }
+    return []
+  })
 
-  const sectorOptions = useMemo(
-    () => sectors.map((s) => ({ value: s.name, label: s.name })),
-    [sectors],
-  )
+  // ✅ CORREÇÃO: Filtrar patrimônios por setor do usuário
+  const filteredPatrimonios = useMemo(() => filterPatrimonios(patrimonios), [patrimonios, filterPatrimonios])
+
+  const sectorOptions = useMemo(() => {
+    // Se usuário não pode ver todos os dados, filtrar apenas seus setores
+    if (!accessInfo.canViewAllData) {
+      return userSectors.map((sectorName) => ({ value: sectorName, label: sectorName }))
+    }
+    return sectors.map((s) => ({ value: s.name, label: s.name }))
+  }, [sectors, accessInfo.canViewAllData, userSectors])
 
   const sectorStats = useMemo(() => {
     return selectedSectors.map((sectorName) => {
-      const sectorPatrimonios = patrimonios.filter(
+      const sectorPatrimonios = filteredPatrimonios.filter(
         (p) => (p.setor_responsavel || p.setorResponsavel) === sectorName,
       )
       const totalValue = sectorPatrimonios.reduce(
@@ -52,7 +66,7 @@ const AnaliseSetor = () => {
         totalValue,
       }
     })
-  }, [selectedSectors, patrimonios])
+  }, [selectedSectors, filteredPatrimonios])
 
   const radarData = useMemo(() => {
     const subjects = [
@@ -109,7 +123,14 @@ const AnaliseSetor = () => {
         </BreadcrumbList>
       </Breadcrumb>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Análise por Setor</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Análise por Setor</h1>
+          {!accessInfo.canViewAllData && (
+            <div className="text-sm text-muted-foreground bg-blue-50 px-3 py-1 rounded-lg mt-2 inline-block">
+              📊 Visualizando dados dos setores: {accessInfo.userSectors.join(', ') || 'Nenhum setor atribuído'}
+            </div>
+          )}
+        </div>
         <div className="w-96">
           <MultiSelect
             options={sectorOptions}

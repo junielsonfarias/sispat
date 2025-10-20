@@ -111,6 +111,12 @@ axiosInstance.interceptors.response.use(
     if (import.meta.env.DEV) {
       console.error(`[HTTP] ❌ ${error.response?.status || 'ERROR'} ${error.config?.url}`, error.response?.data);
     }
+    
+    // ✅ Melhorar informações de erro para facilitar debugging
+    if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED') {
+      error.message = `Backend não disponível (${error.config?.url})`
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -119,7 +125,17 @@ axiosInstance.interceptors.response.use(
 export const httpApi = {
   // GET
   async get<T>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await axiosInstance.get(endpoint, config);
+    // ✅ Adicionar headers no-cache para evitar cache do navegador
+    const configWithNoCache = {
+      ...config,
+      headers: {
+        ...config?.headers,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    };
+    const response: AxiosResponse<T> = await axiosInstance.get(endpoint, configWithNoCache);
     return response.data;
   },
 

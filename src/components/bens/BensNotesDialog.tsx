@@ -15,6 +15,7 @@ import { formatRelativeDate, generateId } from '@/lib/utils'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { api } from '@/services/api-adapter'
 
 interface BensNotesDialogProps {
   patrimonio: Patrimonio
@@ -32,26 +33,55 @@ export const BensNotesDialog = ({
 
   const handleAddNote = async () => {
     if (!newNote.trim() || !user) return
+    
+    console.log('🔍 [DEBUG] BensNotesDialog - Salvando nota:', {
+      patrimonioId: patrimonio.id,
+      texto: newNote.trim(),
+      userId: user.id
+    })
+    
     setIsSaving(true)
 
-    const newNoteEntry: Note = {
-      id: generateId(),
-      text: newNote,
-      date: new Date(),
-      userId: user.id,
-      userName: user.name,
-    }
+    try {
+      // ✅ CORREÇÃO: Usar API para salvar nota no backend
+      const response = await api.post(`/patrimonios/${patrimonio.id}/notes`, {
+        text: newNote.trim()
+      })
 
-    const updatedPatrimonio = {
-      ...patrimonio,
-      notes: [newNoteEntry, ...(patrimonio.notes || [])],
-    }
+      console.log('✅ [DEBUG] BensNotesDialog - Resposta da API:', response)
 
-    updatePatrimonio(updatedPatrimonio)
-    onNoteAdded(updatedPatrimonio)
-    setNewNote('')
-    toast({ description: 'Nota adicionada com sucesso.' })
-    setIsSaving(false)
+      const noteData = response.note || response
+
+      // ✅ CORREÇÃO: Mapear campos corretamente do backend
+      const newNoteEntry: Note = {
+        id: noteData.id,
+        text: noteData.text,
+        date: new Date(noteData.date),
+        userId: noteData.userId,
+        userName: noteData.userName,
+      }
+
+      console.log('✅ [DEBUG] BensNotesDialog - Nota mapeada:', newNoteEntry)
+
+      const updatedPatrimonio = {
+        ...patrimonio,
+        notes: [newNoteEntry, ...(patrimonio.notes || [])],
+      }
+
+      updatePatrimonio(updatedPatrimonio)
+      onNoteAdded(updatedPatrimonio)
+      setNewNote('')
+      toast({ description: 'Nota adicionada com sucesso.' })
+    } catch (error) {
+      console.error('❌ [ERROR] BensNotesDialog - Erro ao salvar nota:', error)
+      toast({ 
+        variant: 'destructive',
+        title: 'Erro',
+        description: `Não foi possível salvar a nota. ${error instanceof Error ? error.message : 'Tente novamente.'}`
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (

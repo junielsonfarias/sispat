@@ -72,6 +72,7 @@ import { BaixaBemModal } from '@/components/BaixaBemModal'
 import { AssetTransferForm } from '@/components/bens/AssetTransferForm'
 import { generatePatrimonioPDF } from '@/components/bens/PatrimonioPDFGenerator'
 import { PDFConfigDialog } from '@/components/bens/PDFConfigDialog'
+import { api } from '@/services/api-adapter'
 
 const DetailItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="space-y-1">
@@ -158,6 +159,9 @@ function BensView() {
   const handleSaveNote = async () => {
     if (!patrimonio || !newNote.trim()) return
 
+    console.log('🔍 [DEBUG] Salvando nota para patrimônio:', patrimonio.id)
+    console.log('🔍 [DEBUG] Texto da nota:', newNote.trim())
+
     setIsSavingNote(true)
     try {
       // Criar nota usando rota específica
@@ -165,22 +169,33 @@ function BensView() {
         text: newNote.trim()
       })
 
+      console.log('✅ [DEBUG] Resposta da API:', response)
+
       // Extrair nota da resposta
       const noteData = response.note || response
 
-      // Atualizar patrimônio localmente com a nova nota
+      console.log('🔍 [DEBUG] Dados da nota extraídos:', noteData)
+
+      // ✅ CORREÇÃO: Mapear campos corretamente do backend para o frontend
       const newNoteObj: Note = {
         id: noteData.id,
-        content: noteData.text,
-        author: noteData.userName,
-        createdAt: noteData.date,
-        updatedAt: noteData.date,
+        text: noteData.text, // Backend usa 'text', não 'content'
+        date: new Date(noteData.date), // Backend usa 'date', não 'createdAt'
+        userId: noteData.userId,
+        userName: noteData.userName, // Backend usa 'userName', não 'author'
       }
+
+      console.log('✅ [DEBUG] Objeto nota mapeado:', newNoteObj)
 
       const updatedPatrimonio = {
         ...patrimonio,
         notes: [...(patrimonio.notes || []), newNoteObj],
       }
+
+      console.log('✅ [DEBUG] Patrimônio atualizado:', {
+        id: updatedPatrimonio.id,
+        notasCount: updatedPatrimonio.notes?.length || 0
+      })
 
       setPatrimonio(updatedPatrimonio)
       setNewNote('')
@@ -190,11 +205,16 @@ function BensView() {
         description: 'A nota foi salva com sucesso.',
       })
     } catch (error) {
-      console.error('Erro ao salvar nota:', error)
+      console.error('❌ [ERROR] Erro ao salvar nota:', error)
+      console.error('❌ [ERROR] Detalhes do erro:', {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        response: error.response?.data || 'N/A'
+      })
+      
       toast({
         variant: 'destructive',
         title: 'Erro ao salvar nota',
-        description: 'Não foi possível salvar a nota. Tente novamente.',
+        description: `Não foi possível salvar a nota. ${error instanceof Error ? error.message : 'Tente novamente.'}`,
       })
     } finally {
       setIsSavingNote(false)
@@ -226,6 +246,14 @@ function BensView() {
 
   const handleGeneratePDF = async (selectedSections: string[], templateId?: string) => {
     if (!patrimonio) return
+    
+    console.log('🔍 [BensView] handleGeneratePDF chamado:', {
+      patrimonioId: patrimonio.id,
+      numeroPatrimonio: patrimonio.numero_patrimonio,
+      templateId,
+      selectedSections,
+      sectionsCount: selectedSections.length
+    })
     
     setIsGeneratingPDF(true)
     

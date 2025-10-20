@@ -402,7 +402,7 @@ validate_email() {
 collect_configuration() {
     show_banner
     echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
-    echo -e "${WHITE}        CONFIGURAÇÃO DO SISTEMA - 8 PERGUNTAS       ${NC}"
+    echo -e "${WHITE}        CONFIGURAÇÃO DO SISTEMA - 5 PERGUNTAS       ${NC}"
     echo -e "${WHITE}═══════════════════════════════════════════════════${NC}"
     echo ""
     echo -e "${CYAN}📋 Vou fazer algumas perguntas simples para configurar o SISPAT 2.0${NC}"
@@ -413,7 +413,7 @@ collect_configuration() {
     
     # Domínio
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 1 de 8: DOMÍNIO DO SISTEMA${NC}"
+    echo -e "${WHITE}PERGUNTA 1 de 5: DOMÍNIO DO SISTEMA${NC}"
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${CYAN}Digite o endereço do seu site (sem http:// ou https://)${NC}"
@@ -460,7 +460,7 @@ collect_configuration() {
     # Email do administrador
     echo ""
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 2 de 8: SEU EMAIL (SUPERUSUÁRIO)${NC}"
+    echo -e "${WHITE}PERGUNTA 2 de 5: SEU EMAIL (SUPERUSUÁRIO)${NC}"
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${CYAN}Este será o email do administrador principal do sistema${NC}"
@@ -480,7 +480,7 @@ collect_configuration() {
     # Nome do administrador
     echo ""
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 3 de 8: SEU NOME COMPLETO${NC}"
+    echo -e "${WHITE}PERGUNTA 3 de 5: SEU NOME COMPLETO${NC}"
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     
@@ -488,48 +488,35 @@ collect_configuration() {
     success "Nome registrado: $SUPERUSER_NAME"
     sleep 1
     
-    # Credenciais do Supervisor
+    # Credenciais do Supervisor (FIXAS)
     echo ""
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 4 de 10: SUPERVISOR (Usuário Operacional)${NC}"
+    echo -e "${WHITE}CONFIGURAÇÃO: SUPERVISOR (Usuário Operacional)${NC}"
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${CYAN}O supervisor ajudará na gestão operacional do sistema.${NC}"
-    echo -e "${YELLOW}Configure email e senha forte (12+ caracteres) para este usuário.${NC}"
+    echo -e "${GREEN}Credenciais pré-configuradas do supervisor:${NC}"
     echo ""
     
-    ask "Email do supervisor:" SUPERVISOR_EMAIL "supervisor@sistema.com"
-    success "Email do supervisor: $SUPERVISOR_EMAIL"
+    # Definir credenciais fixas do supervisor
+    SUPERVISOR_EMAIL="supervisor@ssbv.com"
+    SUPERVISOR_PASSWORD="Master6273@"
+    SUPERVISOR_NAME="Supervisor"
+    
+    echo -e "  ${CYAN}📧 Email:${NC} ${WHITE}${SUPERVISOR_EMAIL}${NC}"
+    echo -e "  ${CYAN}🔑 Senha:${NC} ${WHITE}${SUPERVISOR_PASSWORD}${NC}"
+    echo -e "  ${CYAN}👤 Nome:${NC}  ${WHITE}${SUPERVISOR_NAME}${NC}"
+    echo ""
+    success "Supervisor configurado automaticamente"
     sleep 1
     
-    echo ""
-    ask_password "Senha do supervisor (12+ caracteres, maiúsculas, números, símbolos):" SUPERVISOR_PASSWORD "Supervisor@2025!"
-    success "Senha do supervisor configurada"
-    sleep 1
-    
-    echo ""
-    ask "Nome do supervisor:" SUPERVISOR_NAME "Supervisor do Sistema"
-    success "Nome do supervisor: $SUPERVISOR_NAME"
-    sleep 1
-    
-    # Senha do banco de dados
-    echo ""
-    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 5 de 10: SENHA DO BANCO DE DADOS${NC}"
-    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    echo -e "${CYAN}Esta senha é para o PostgreSQL (banco de dados interno)${NC}"
-    echo -e "${YELLOW}Recomendação: Pressione ENTER para usar a senha padrão${NC}"
-    echo ""
-    
-    ask_password "Senha do PostgreSQL" DB_PASSWORD "sispat_password_123"
-    success "Senha do banco configurada"
-    sleep 1
+    # Senha do banco de dados (AUTOMÁTICA)
+    DB_PASSWORD="sispat_password_$(openssl rand -hex 8)"
     
     # Senha do superusuário
     echo ""
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 5 de 8: SUA SENHA DE ACESSO AO SISTEMA${NC}"
+    echo -e "${WHITE}PERGUNTA 4 de 5: SUA SENHA DE ACESSO AO SISTEMA${NC}"
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${CYAN}Esta será a senha que você usará para fazer login${NC}"
@@ -540,20 +527,6 @@ collect_configuration() {
     success "Sua senha configurada"
     sleep 1
     
-    # Nome do município
-    echo ""
-    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 6 de 10: NOME DO MUNICÍPIO${NC}"
-    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    echo -e "${CYAN}Esta senha será usada para admin, supervisor, usuário padrão${NC}"
-    echo -e "${YELLOW}Recomendação: Pressione ENTER para usar: password123${NC}"
-    echo ""
-    
-    ask_password "Senha padrão para outros usuários" DEFAULT_PASSWORD "password123"
-    success "Senha padrão configurada"
-    sleep 1
-    
     # Gerar JWT secret
     echo ""
     echo -e "${CYAN}⚙️  Gerando chave de segurança JWT automaticamente...${NC}"
@@ -561,37 +534,21 @@ collect_configuration() {
     success "Chave de segurança gerada"
     sleep 1
     
-    # Nome do município
-    echo ""
-    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 7 de 8: NOME DO MUNICÍPIO/ÓRGÃO${NC}"
-    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    echo -e "${CYAN}Exemplo: Prefeitura Municipal de Vista Serrana${NC}"
-    echo ""
+    # Nome do município (AUTOMÁTICO - Padrão SSBV)
+    MUNICIPALITY_NAME="Prefeitura Municipal de Vista Serrana"
+    STATE="PB"
     
-    ask "Nome do município/órgão" MUNICIPALITY_NAME "Prefeitura Municipal"
-    success "Município: $MUNICIPALITY_NAME"
-    sleep 1
-    
-    # Estado
     echo ""
-    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}PERGUNTA 8 de 8: ESTADO (UF)${NC}"
-    echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    echo -e "${CYAN}Digite a sigla do estado (ex: PB, SP, RJ, MG)${NC}"
-    echo ""
-    
-    ask "Sigla do estado (UF)" STATE "XX"
-    STATE=$(echo "$STATE" | tr '[:lower:]' '[:upper:]')
-    success "Estado: $STATE"
+    echo -e "${CYAN}⚙️  Configurando município automaticamente...${NC}"
+    echo -e "${GREEN}   Município: ${WHITE}${MUNICIPALITY_NAME}${NC}"
+    echo -e "${GREEN}   Estado: ${WHITE}${STATE}${NC}"
+    success "Município configurado"
     sleep 1
     
     # SSL
     echo ""
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${WHITE}CONFIGURAÇÃO ADICIONAL: SSL/HTTPS${NC}"
+    echo -e "${WHITE}PERGUNTA 5 de 5: CONFIGURAR SSL/HTTPS?${NC}"
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${CYAN}SSL/HTTPS deixa seu site seguro (cadeado verde no navegador)${NC}"
@@ -617,6 +574,8 @@ collect_configuration() {
     echo -e "  ${CYAN}🌐 API:${NC}                  $DOMAIN/api"
     echo -e "  ${CYAN}📧 Seu email:${NC}            $SUPERUSER_EMAIL"
     echo -e "  ${CYAN}👤 Seu nome:${NC}             $SUPERUSER_NAME"
+    echo -e "  ${CYAN}📧 Email Supervisor:${NC}     $SUPERVISOR_EMAIL"
+    echo -e "  ${CYAN}👤 Nome Supervisor:${NC}      $SUPERVISOR_NAME"
     echo -e "  ${CYAN}🏛️  Município:${NC}            $MUNICIPALITY_NAME"
     echo -e "  ${CYAN}📍 Estado:${NC}               $STATE"
     echo -e "  ${CYAN}🗃️  Banco de dados:${NC}       $DB_NAME"
@@ -792,12 +751,24 @@ END
 SELECT 'CREATE DATABASE $DB_NAME OWNER $DB_USER ENCODING ''UTF8'''
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME')\gexec
 
--- Conceder privilégios
+-- Conceder privilégios no banco
 GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;
 ALTER DATABASE $DB_NAME OWNER TO $DB_USER;
 EOF
     
-    success "Banco de dados '$DB_NAME' criado"
+    # Conceder privilégios no schema public
+    sudo -u postgres psql -d "$DB_NAME" > /dev/null 2>&1 << EOF
+-- Conceder privilégios no schema public
+GRANT ALL PRIVILEGES ON SCHEMA public TO $DB_USER;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO $DB_USER;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $DB_USER;
+
+-- Configurar privilégios padrão para objetos futuros
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO $DB_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO $DB_USER;
+EOF
+    
+    success "Banco de dados '$DB_NAME' criado e permissões configuradas"
 }
 
 clone_repository() {
@@ -922,19 +893,55 @@ build_application() {
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
     
+    # Limpar instalação anterior se existir
+    if [ -d "node_modules" ]; then
+        echo -e "${BLUE}  → Removendo node_modules anterior...${NC}"
+        rm -rf node_modules package-lock.json
+    fi
+    
     # Usar npm com --legacy-peer-deps (mais compatível que pnpm)
-    timeout 600 npm install --legacy-peer-deps > /tmp/build-frontend-deps.log 2>&1 &
-    local deps_pid=$!
-    show_spinner $deps_pid "Instalando pacotes do frontend (pode levar 3-5 minutos)..."
-    wait $deps_pid
+    echo -e "${BLUE}  → Instalando pacotes do frontend...${NC}"
+    
+    # Instalar SEM background para ver erros em tempo real
+    npm install --legacy-peer-deps > /tmp/build-frontend-deps.log 2>&1
     local deps_status=$?
     
     echo ""
     if [ $deps_status -eq 0 ]; then
-        success "✅ Dependências do frontend instaladas"
-    elif [ $deps_status -eq 124 ]; then
-        error "❌ Timeout na instalação (>10 min). Tente aumentar swap ou fazer build local."
+        # Verificar se vite foi instalado corretamente
+        if [ -f "node_modules/.bin/vite" ]; then
+            success "✅ Dependências do frontend instaladas"
+        else
+            warning "⚠️  Vite não encontrado após npm install, tentando solução..."
+            
+            echo -e "${BLUE}  → Limpando e reinstalando com --force...${NC}"
+            rm -rf node_modules package-lock.json ~/.npm
+            
+            npm install --legacy-peer-deps --force 2>&1 | tee /tmp/build-frontend-deps-retry.log
+            
+            if [ -f "node_modules/.bin/vite" ]; then
+                success "✅ Vite instalado após retry"
+            else
+                echo ""
+                echo -e "${RED}❌ ERRO CRÍTICO: Vite não pode ser instalado!${NC}"
+                echo ""
+                echo -e "${YELLOW}Últimas linhas do log:${NC}"
+                tail -30 /tmp/build-frontend-deps-retry.log
+                echo ""
+                echo -e "${CYAN}Possíveis causas:${NC}"
+                echo "  • Problema de rede ao baixar pacotes"
+                echo "  • Memória insuficiente durante instalação"
+                echo "  • Conflito de dependências"
+                echo ""
+                error "Não foi possível instalar dependências do frontend"
+            fi
+        fi
     else
+        echo ""
+        echo -e "${RED}❌ npm install falhou!${NC}"
+        echo ""
+        echo -e "${YELLOW}Últimas 50 linhas do log:${NC}"
+        tail -50 /tmp/build-frontend-deps.log
         echo ""
         error "❌ Falha ao instalar dependências do frontend! Ver: /tmp/build-frontend-deps.log"
     fi
@@ -945,6 +952,13 @@ build_application() {
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
     
+    # Verificar novamente se vite existe antes de fazer build
+    if [ ! -f "node_modules/.bin/vite" ]; then
+        error "❌ Vite não está instalado! Não é possível fazer build do frontend."
+    fi
+    
+    echo -e "${BLUE}  → Compilando código React/TypeScript...${NC}"
+    
     # Usar npm run build com timeout
     timeout 900 npm run build > /tmp/build-frontend.log 2>&1 &
     local build_frontend_pid=$!
@@ -954,12 +968,24 @@ build_application() {
     
     echo ""
     if [ $build_frontend_status -eq 0 ]; then
-        success "✅ Frontend compilado com sucesso"
+        # Verificar se gerou os arquivos
+        if [ -f "dist/index.html" ] && [ -d "dist/assets" ]; then
+            success "✅ Frontend compilado com sucesso"
+        else
+            warning "⚠️  Build reportou sucesso mas arquivos não foram gerados"
+            echo ""
+            echo -e "${YELLOW}Últimas linhas do log:${NC}"
+            tail -20 /tmp/build-frontend.log
+            error "❌ Frontend não foi compilado corretamente"
+        fi
     elif [ $build_frontend_status -eq 124 ]; then
         error "❌ Timeout no build (>15 min). Servidor pode ter pouca memória. Ver: /tmp/build-frontend.log"
     else
         echo ""
-        error "❌ Falha ao compilar frontend! Ver: /tmp/build-frontend.log"
+        echo -e "${YELLOW}Erro no build do frontend:${NC}"
+        tail -30 /tmp/build-frontend.log
+        echo ""
+        error "❌ Falha ao compilar frontend! Ver log completo: /tmp/build-frontend.log"
     fi
     
     # Build backend - com indicador de progresso
@@ -971,6 +997,14 @@ build_application() {
     
     cd backend
     
+    # Limpar instalação anterior se existir
+    if [ -d "node_modules" ]; then
+        echo -e "${BLUE}  → Removendo node_modules anterior do backend...${NC}"
+        rm -rf node_modules package-lock.json
+    fi
+    
+    echo -e "${BLUE}  → Instalando pacotes do backend...${NC}"
+    
     # IMPORTANTE: Instalar TODAS as dependências (incluindo devDependencies)
     # porque precisamos dos @types/* para compilar TypeScript
     timeout 600 npm install > /tmp/build-backend-deps.log 2>&1 &
@@ -981,14 +1015,30 @@ build_application() {
     
     echo ""
     if [ $backend_deps_status -eq 0 ]; then
-        success "✅ Dependências do backend instaladas (incluindo tipos TypeScript)"
+        # Verificar se TypeScript foi instalado
+        if [ -f "node_modules/.bin/tsc" ]; then
+            local types_count=$(ls node_modules/@types 2>/dev/null | wc -l)
+            success "✅ Dependências do backend instaladas (@types: $types_count pacotes)"
+        else
+            warning "⚠️  TypeScript não encontrado, reinstalando..."
+            rm -rf node_modules package-lock.json
+            npm install > /tmp/build-backend-deps-retry.log 2>&1
+            
+            if [ -f "node_modules/.bin/tsc" ]; then
+                success "✅ Dependências reinstaladas com sucesso"
+            else
+                echo ""
+                error "❌ Falha ao instalar TypeScript! Ver: /tmp/build-backend-deps-retry.log"
+            fi
+        fi
     elif [ $backend_deps_status -eq 124 ]; then
         error "❌ Timeout na instalação (>10 min). Ver: /tmp/build-backend-deps.log"
-        exit 1
     else
         echo ""
+        echo -e "${YELLOW}Erro ao instalar dependências:${NC}"
+        tail -20 /tmp/build-backend-deps.log
+        echo ""
         error "❌ Falha ao instalar dependências do backend! Ver: /tmp/build-backend-deps.log"
-        exit 1
     fi
     
     echo ""
@@ -999,6 +1049,13 @@ build_application() {
     echo -e "${YELLOW}  ⚠️  Esta é a parte que pode demorar mais (1-3 minutos)${NC}"
     echo -e "${YELLOW}  ⚠️  O spinner pode parecer travado, mas está funcionando!${NC}"
     echo ""
+    
+    # Verificar se TypeScript existe antes de compilar
+    if [ ! -f "node_modules/.bin/tsc" ]; then
+        error "❌ TypeScript não está instalado! Não é possível compilar o backend."
+    fi
+    
+    echo -e "${BLUE}  → Compilando código TypeScript do backend...${NC}"
     
     # Executar build do backend com timeout
     timeout 600 npm run build > /tmp/build-backend.log 2>&1 &
@@ -1014,34 +1071,38 @@ build_application() {
     echo ""
     
     if [ $build_status -eq 124 ]; then
+        echo ""
+        echo -e "${YELLOW}Últimas linhas do log:${NC}"
+        tail -30 /tmp/build-backend.log
+        echo ""
         error "❌ Timeout no build do backend (>10 min). Ver: /tmp/build-backend.log"
-        exit 1
     elif [ $build_status -eq 0 ]; then
         # Verificar se realmente criou os arquivos compilados
         if [ -f "dist/index.js" ]; then
-            success "✅ Backend compilado com sucesso!"
+            local compiled_files=$(find dist -name "*.js" 2>/dev/null | wc -l)
+            success "✅ Backend compilado com sucesso! ($compiled_files arquivos JS)"
         else
             echo ""
-            error "❌ Build reportou sucesso mas arquivos não foram criados!"
+            warning "⚠️  Build reportou sucesso mas arquivos não foram criados!"
             echo ""
             echo -e "${YELLOW}Últimas linhas do log:${NC}"
             tail -30 /tmp/build-backend.log
             echo ""
             echo -e "${CYAN}Log completo em: /tmp/build-backend.log${NC}"
-            exit 1
+            error "❌ Backend não foi compilado corretamente"
         fi
     else
         echo ""
-        error "❌ Falha ao compilar backend!"
+        echo -e "${RED}❌ Falha ao compilar backend!${NC}"
         echo ""
-        echo -e "${YELLOW}Erros de compilação:${NC}"
-        grep -i "error" /tmp/build-backend.log | head -20
+        echo -e "${YELLOW}Erros de compilação encontrados:${NC}"
+        grep -i "error" /tmp/build-backend.log | head -20 | sed 's/^/  /'
         echo ""
         echo -e "${YELLOW}Últimas linhas do log:${NC}"
-        tail -20 /tmp/build-backend.log
+        tail -20 /tmp/build-backend.log | sed 's/^/  /'
         echo ""
         echo -e "${CYAN}Log completo em: /tmp/build-backend.log${NC}"
-        exit 1
+        error "❌ Compilação do backend falhou!"
     fi
     
     echo ""
@@ -1078,6 +1139,98 @@ setup_database() {
         success "Migrações executadas"
     else
         error "Falha nas migrações. Log: /tmp/prisma-migrate.log"
+    fi
+    
+    # Criar tabelas adicionais usando scripts Node.js (correção de bugs)
+    echo ""
+    echo -e "${BLUE}  ⚙️  Criando tabelas adicionais (customizations, documents, fields, templates)...${NC}"
+    
+    # 1. Customizations
+    if [ -f "create-customizations-table.js" ]; then
+        node create-customizations-table.js > /tmp/create-customizations.log 2>&1
+        if [ $? -eq 0 ]; then
+            success "Tabela customizations criada"
+        else
+            warning "Erro ao criar customizations (pode já existir)"
+        fi
+    else
+        warning "Script create-customizations-table.js não encontrado"
+    fi
+    
+    # 2. Imovel Custom Fields
+    if [ -f "create-imovel-fields-table.js" ]; then
+        node create-imovel-fields-table.js > /tmp/create-imovel-fields.log 2>&1
+        if [ $? -eq 0 ]; then
+            success "Tabela imovel_custom_fields criada"
+        else
+            warning "Erro ao criar imovel_custom_fields (pode já existir)"
+        fi
+    else
+        warning "Script create-imovel-fields-table.js não encontrado"
+    fi
+    
+    # 3. Documents
+    if [ -f "create-documents-table.js" ]; then
+        node create-documents-table.js > /tmp/create-documents.log 2>&1
+        if [ $? -eq 0 ]; then
+            success "Tabela documents criada"
+        else
+            warning "Erro ao criar documents (pode já existir)"
+        fi
+    else
+        warning "Script create-documents-table.js não encontrado"
+    fi
+    
+    # 4. Ficha Templates
+    if [ -f "create-ficha-templates-table.js" ]; then
+        node create-ficha-templates-table.js > /tmp/create-ficha-templates.log 2>&1
+        if [ $? -eq 0 ]; then
+            success "Tabela ficha_templates criada"
+        else
+            warning "Erro ao criar ficha_templates (pode já existir)"
+        fi
+    else
+        warning "Script create-ficha-templates-table.js não encontrado"
+    fi
+    
+    # Conceder permissões em TODAS as tabelas (incluindo as recém-criadas)
+    echo ""
+    echo -e "${BLUE}  ⚙️  Concedendo permissões finais em todas as tabelas...${NC}"
+    sudo -u postgres psql -d "$DB_NAME" > /dev/null 2>&1 << 'PERMEOF'
+GRANT ALL PRIVILEGES ON SCHEMA public TO sispat_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sispat_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO sispat_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO sispat_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO sispat_user;
+PERMEOF
+    
+    if [ $? -eq 0 ]; then
+        success "Permissões concedidas em todas as tabelas"
+    else
+        warning "Erro ao conceder permissões"
+    fi
+    
+    # Verificar tabelas criadas
+    echo ""
+    echo -e "${BLUE}  → Verificando tabelas essenciais...${NC}"
+    local tables_ok=0
+    local tables_missing=0
+    
+    for table in users municipalities sectors customizations ficha_templates documents imovel_custom_fields; do
+        if sudo -u postgres psql -d "$DB_NAME" -t -c "\d $table" > /dev/null 2>&1; then
+            echo -e "  ${GREEN}✓${NC} Tabela $table existe"
+            ((tables_ok++))
+        else
+            echo -e "  ${YELLOW}⚠${NC} Tabela $table NÃO encontrada"
+            ((tables_missing++))
+        fi
+    done
+    
+    echo ""
+    if [ $tables_missing -eq 0 ]; then
+        success "Todas as tabelas essenciais foram criadas ($tables_ok/7)"
+    else
+        warning "$tables_missing tabelas não foram encontradas (pode causar problemas)"
     fi
     
     # Popular banco com dados iniciais
@@ -1175,7 +1328,7 @@ server {
     listen [::]:80;
     server_name ${DOMAIN};
     
-    # Redirecionar para HTTPS (será configurado pelo Certbot)
+    # Frontend - Servir arquivos estáticos
     location / {
         root ${INSTALL_DIR}/dist;
         try_files \$uri \$uri/ /index.html;
@@ -1189,7 +1342,7 @@ server {
     
     # API Backend
     location /api/ {
-        proxy_pass http://localhost:${APP_PORT};
+        proxy_pass http://localhost:${APP_PORT}/api/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -1198,6 +1351,11 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
     
     # Uploads
@@ -1209,23 +1367,53 @@ server {
     
     # Health check
     location /health {
-        proxy_pass http://localhost:${APP_PORT}/health;
+        proxy_pass http://localhost:${APP_PORT}/api/health;
         access_log off;
     }
 }
 EOF
     
-    # Ativar site
-    ln -sf /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/
-    rm -f /etc/nginx/sites-enabled/default
-    
-    # Testar configuração
-    if nginx -t > /dev/null 2>&1; then
-        systemctl reload nginx
-        success "Nginx configurado: $DOMAIN"
+    echo -e "${BLUE}  → Verificando diretório dist...${NC}"
+    if [ ! -d "${INSTALL_DIR}/dist" ]; then
+        warning "Diretório dist não encontrado!"
+        echo -e "${YELLOW}  Verificando se build foi executado...${NC}"
+        ls -la "${INSTALL_DIR}/" | grep dist || warning "Frontend pode não ter sido compilado"
     else
-        error "Erro na configuração do Nginx"
+        success "Diretório dist encontrado"
     fi
+    
+    echo -e "${BLUE}  → Removendo configuração padrão do Nginx...${NC}"
+    rm -f /etc/nginx/sites-enabled/default
+    success "Configuração padrão removida"
+    
+    echo -e "${BLUE}  → Ativando site SISPAT...${NC}"
+    ln -sf /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/
+    success "Site SISPAT ativado"
+    
+    echo -e "${BLUE}  → Testando configuração do Nginx...${NC}"
+    if nginx -t 2>&1 | tee /tmp/nginx-test.log; then
+        success "Configuração do Nginx válida"
+        
+        echo -e "${BLUE}  → Recarregando Nginx...${NC}"
+        systemctl reload nginx
+        success "Nginx recarregado"
+        
+        echo -e "${BLUE}  → Verificando status do Nginx...${NC}"
+        if systemctl is-active --quiet nginx; then
+            success "Nginx está ativo e rodando"
+        else
+            warning "Nginx não está ativo!"
+            systemctl status nginx --no-pager
+        fi
+    else
+        echo ""
+        error "Erro na configuração do Nginx! Ver: /tmp/nginx-test.log"
+    fi
+    
+    echo ""
+    success "✅ Nginx configurado para: $DOMAIN"
+    echo -e "${GREEN}   Frontend: ${WHITE}http://${DOMAIN}${NC}"
+    echo -e "${GREEN}   API: ${WHITE}http://${DOMAIN}/api${NC}"
 }
 
 configure_ssl() {
@@ -1868,11 +2056,13 @@ show_success_message() {
     echo -e "     ${WHITE}👤 Nome:${NC}  ${GREEN}${SUPERUSER_NAME}${NC}"
     echo ""
     
-    echo -e "${CYAN}👨‍💼 SUPERVISOR (Gestão Operacional):${NC}"
+    echo -e "${CYAN}👨‍💼 SUPERVISOR (Gestão Operacional - Pré-configurado):${NC}"
     echo ""
-    echo -e "     ${WHITE}📧 Email:${NC} ${GREEN}${SUPERVISOR_EMAIL}${NC}"
-    echo -e "     ${WHITE}🔑 Senha:${NC} ${GREEN}${SUPERVISOR_PASSWORD}${NC}"
-    echo -e "     ${WHITE}👤 Nome:${NC}  ${GREEN}${SUPERVISOR_NAME}${NC}"
+    echo -e "     ${WHITE}📧 Email:${NC} ${GREEN}supervisor@ssbv.com${NC}"
+    echo -e "     ${WHITE}🔑 Senha:${NC} ${GREEN}Master6273@${NC}"
+    echo -e "     ${WHITE}👤 Nome:${NC}  ${GREEN}Supervisor${NC}"
+    echo ""
+    echo -e "     ${YELLOW}💡 Esta conta já vem criada e pronta para uso!${NC}"
     echo ""
     
     echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"

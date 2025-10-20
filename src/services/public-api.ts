@@ -1,4 +1,4 @@
-import { mockApi } from './mock-api'
+import { httpApi } from './http-api'
 
 interface PublicPatrimonio {
   id: string
@@ -16,25 +16,28 @@ interface PublicPatrimonio {
 
 class PublicApi {
   private async request<T>(endpoint: string): Promise<T> {
-    // Simular delay de rede
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // Simular erro ocasional
-    if (Math.random() < 0.05) {
-      throw new Error('Erro de conexão')
+    try {
+      console.log('🔍 [PublicApi] Fazendo requisição:', endpoint)
+      
+      // ✅ CORREÇÃO: Usar API real em vez de mock
+      const response = await httpApi.get<T>(endpoint)
+      
+      console.log('✅ [PublicApi] Resposta recebida:', response)
+      return response
+    } catch (error) {
+      console.error('❌ [PublicApi] Erro na requisição:', error)
+      throw error
     }
-    
-    // Mapear endpoints para métodos do mockApi
-    if (endpoint.startsWith('/public/consulta/')) {
-      const id = endpoint.split('/')[3]
-      return mockApi.getPublicPatrimonioById(id) as Promise<T>
-    }
-    
-    throw new Error(`Endpoint não encontrado: ${endpoint}`)
   }
   
   async getPatrimonioById(patrimonioId: string): Promise<PublicPatrimonio> {
-    return this.request<PublicPatrimonio>(`/public/consulta/${patrimonioId}`)
+    // ✅ CORREÇÃO: Usar endpoint real do backend
+    return this.request<PublicPatrimonio>(`/public/patrimonios/${patrimonioId}`)
+  }
+  
+  async getPatrimonioByNumero(numeroPatrimonio: string): Promise<PublicPatrimonio> {
+    // ✅ CORREÇÃO: Buscar por número de patrimônio
+    return this.request<PublicPatrimonio>(`/public/patrimonios/numero/${numeroPatrimonio}`)
   }
 }
 

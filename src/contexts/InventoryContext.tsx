@@ -84,65 +84,79 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       locationType?: string
       specificLocationId?: string
     }) => {
-      const { name, sectorName, scope, locationType, specificLocationId } = data
+      try {
+        const { name, sectorName, scope, locationType, specificLocationId } = data
 
-      const patrimoniosInScope = patrimonios.filter((p) => {
-        const inSector = p.setor_responsavel === sectorName
-        if (!inSector) return false
-        if (scope === 'location') {
-          return (
-            locationType &&
-            p.local_objeto.toLowerCase().includes(locationType.toLowerCase())
-          )
+        console.log('🔍 [DEBUG] Dados recebidos para criar inventário:', data)
+
+        const patrimoniosInScope = patrimonios.filter((p) => {
+          const inSector = p.setor_responsavel === sectorName
+          if (!inSector) return false
+          if (scope === 'location') {
+            return (
+              locationType &&
+              p.local_objeto.toLowerCase().includes(locationType.toLowerCase())
+            )
+          }
+          if (scope === 'specific_location') {
+            // Para local específico, vamos filtrar por nome do local
+            // Assumindo que o local_objeto contém o nome do local
+            return (
+              specificLocationId &&
+              p.local_objeto.toLowerCase().includes(specificLocationId.toLowerCase())
+            )
+          }
+          return true
+        })
+
+        console.log('🔍 [DEBUG] Patrimônios encontrados no escopo:', patrimoniosInScope.length)
+
+        const items: InventoryItem[] = patrimoniosInScope.map((p) => ({
+          patrimonioId: p.id,
+          numero_patrimonio: p.numero_patrimonio,
+          descricao_bem: p.descricao_bem,
+          status: 'not_found',
+        }))
+
+        // ✅ Mapear campos para o formato que o backend espera
+        const inventoryPayload = {
+          title: name, // Backend espera 'title' ao invés de 'name'
+          description: `Inventário do setor ${sectorName}`,
+          setor: sectorName, // Backend espera 'setor' ao invés de 'sectorName'
+          local: specificLocationId || locationType || '', // Backend espera 'local'
+          dataInicio: new Date().toISOString(), // Backend espera 'dataInicio' ao invés de 'createdAt'
+          scope,
         }
-        if (scope === 'specific_location') {
-          // Para local específico, vamos filtrar por nome do local
-          // Assumindo que o local_objeto contém o nome do local
-          return (
-            specificLocationId &&
-            p.local_objeto.toLowerCase().includes(specificLocationId.toLowerCase())
-          )
+        
+        console.log('🔍 [DEBUG] Payload enviado para o backend:', inventoryPayload)
+        
+        const newInventory = await api.post<Inventory>('/inventarios', inventoryPayload)
+        
+        console.log('✅ [DEBUG] Resposta do backend:', newInventory)
+        
+        // ✅ Mapear resposta do backend para o formato do frontend
+        const inventoryData: Inventory = {
+          ...newInventory,
+          name: newInventory.title || name,
+          sectorName: newInventory.setor || sectorName,
+          status: 'in_progress' as const,
+          createdAt: newInventory.dataInicio || new Date(),
+          items,
+          scope,
+          locationType,
+          specificLocationId,
         }
-        return true
-      })
-
-      const items: InventoryItem[] = patrimoniosInScope.map((p) => ({
-        patrimonioId: p.id,
-        numero_patrimonio: p.numero_patrimonio,
-        descricao_bem: p.descricao_bem,
-        status: 'not_found',
-      }))
-
-      // ✅ Mapear campos para o formato que o backend espera
-      const inventoryPayload = {
-        title: name, // Backend espera 'title' ao invés de 'name'
-        description: `Inventário do setor ${sectorName}`,
-        setor: sectorName, // Backend espera 'setor' ao invés de 'sectorName'
-        local: specificLocationId || locationType || '', // Backend espera 'local'
-        dataInicio: new Date().toISOString(), // Backend espera 'dataInicio' ao invés de 'createdAt'
-        scope,
-        municipalityId: '1', // Hardcoded para São Sebastião da Boa Vista
+        
+        console.log('✅ [DEBUG] Inventário mapeado para o frontend:', inventoryData)
+        
+        await fetchInventories() // Recarregar a lista
+        return inventoryData
+      } catch (error) {
+        console.error('❌ [ERROR] Erro ao criar inventário:', error)
+        throw error // Re-throw para que o componente possa capturar
       }
-      
-      const newInventory = await api.post<Inventory>('/inventarios', inventoryPayload)
-      
-      // ✅ Mapear resposta do backend para o formato do frontend
-      const inventoryData: Inventory = {
-        ...newInventory,
-        name: newInventory.title || name,
-        sectorName: newInventory.setor || sectorName,
-        status: 'in_progress' as const,
-        createdAt: newInventory.dataInicio || new Date(),
-        items,
-        scope,
-        locationType,
-        specificLocationId,
-      }
-      
-      await fetchInventories() // Recarregar a lista
-      return inventoryData
     },
-    [allInventories, patrimonios],
+    [patrimonios, fetchInventories],
   )
 
   const updateInventory = useCallback(

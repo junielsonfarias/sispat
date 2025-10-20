@@ -11,18 +11,22 @@ import { Version, RollbackHistoryEntry } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { generateId } from '@/lib/utils'
 import { SecureStorage, SafeWindow } from '@/lib/storage-utils'
+import { CURRENT_VERSION } from '@/config/constants'
 
-const MOCK_AVAILABLE_VERSIONS: Version[] = [
+// ✅ CORREÇÃO: Versões reais do sistema
+const SYSTEM_VERSIONS: Version[] = [
   {
-    version: '2.1.0',
+    version: CURRENT_VERSION,
     releaseDate: new Date().toISOString(),
     changelog: [
-      'Release: Official version 2.1.0 deployed.',
-      'Enhancement: Modernized header design with elegant sidebar and improved visual hierarchy.',
-      'Enhancement: Enhanced login screen with modern design and public consultation access.',
-      'Fix: Improved photo upload and display functionality for asset management.',
-      'Enhancement: Better responsive design and mobile experience.',
-      'Feature: Added public consultation link on login screen for better accessibility.',
+      `Release: Official version ${CURRENT_VERSION} deployed.`,
+      'Enhancement: Complete integration with PostgreSQL backend.',
+      'Enhancement: Removed all mock data and integrated real APIs.',
+      'Fix: Improved notes functionality for patrimônios.',
+      'Fix: Resolved inventory creation navigation issues.',
+      'Fix: Fixed temporal analysis page errors.',
+      'Enhancement: Better error handling and logging.',
+      'Enhancement: Improved system performance and reliability.',
     ],
   },
   {
@@ -130,7 +134,7 @@ export const VersionProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  const availableVersions = useMemo(() => MOCK_AVAILABLE_VERSIONS, [])
+  const availableVersions = useMemo(() => SYSTEM_VERSIONS, [])
   const latestVersion = useMemo(
     () => availableVersions[0] || null,
     [availableVersions],

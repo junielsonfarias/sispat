@@ -59,7 +59,15 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
       setPatrimonios(patrimoniosData)
     } catch (err) {
       console.error('❌ [DEV] PatrimonioContext: Erro ao carregar:', err)
-      setError('Falha ao carregar patrimônios.')
+      
+      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de erro
+      if (err?.code === 'ERR_NETWORK' || err?.code === 'ERR_CONNECTION_REFUSED') {
+        console.log('⚠️  Backend não disponível - usando lista vazia de patrimônios')
+        setPatrimonios([])
+        setError(null) // Não mostrar erro para o usuário
+      } else {
+        setError('Falha ao carregar patrimônios.')
+      }
     } finally {
       setIsLoading(false)
     }

@@ -125,7 +125,7 @@ export default function LabelTemplates() {
                     </div>
                     <div className="flex-1">
                       <CardTitle className="text-lg">{template.name}</CardTitle>
-                      <CardDescription className="space-y-1 mt-2">
+                      <div className="text-muted-foreground text-sm space-y-1 mt-2">
                         <div className="flex items-center gap-2">
                           <Layers className="h-3 w-3" />
                           <span className="text-xs">
@@ -142,7 +142,7 @@ export default function LabelTemplates() {
                             Padrão
                           </Badge>
                         )}
-                      </CardDescription>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>

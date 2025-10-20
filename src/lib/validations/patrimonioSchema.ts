@@ -47,6 +47,9 @@ export const patrimonioBaseSchema = z.object({
   situacao_bem: z.enum(['bom', 'regular', 'ruim', 'pessimo'], {
     required_error: 'Situação é obrigatória.',
   }).optional(),
+  status: z.enum(['ativo', 'inativo', 'manutencao'], {
+    required_error: 'Status é obrigatório.',
+  }).default('ativo'),
   fotos: z.array(z.any()).optional(),
   documentos: z.array(z.any()).optional(),
   metodo_depreciacao: z.enum(['Linear']).optional(),

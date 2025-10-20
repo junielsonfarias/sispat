@@ -28,7 +28,8 @@ export interface AuthContextType {
   ) => Promise<User>
   deleteUser: (userId: string) => Promise<void>
   forgotPassword: (email: string) => Promise<void>
-  resetPassword: (password: string) => Promise<void>
+  resetPassword: (token: string, password: string) => Promise<void>
+  validateResetToken: (token: string) => Promise<any>
   updateUserPassword: (userId: string, newPassword: string) => Promise<void>
   unlockUser: (userId: string) => Promise<void>
 }
@@ -134,16 +135,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const forgotPassword = async (email: string) => {
-    // Password reset requested successfully
-    // In a real app, this would trigger a backend process
-    return Promise.resolve()
+    try {
+      await api.post('/auth/forgot-password', { email })
+    } catch (error) {
+      // Sempre mostrar sucesso por segurança (não revelar se email existe)
+      console.warn('Erro ao enviar email de reset:', error)
+    }
   }
 
-  const resetPassword = async (password: string) => {
-    // Password reset successfully
-    // In a real app, this would require a token
-    return Promise.resolve()
+  const resetPassword = async (token: string, password: string) => {
+    try {
+      await api.post('/auth/reset-password', { token, password })
+    } catch (error) {
+      throw new Error('Erro ao redefinir senha')
+    }
   }
+
+  const validateResetToken = async (token: string) => {
+    try {
+      const response = await api.get(`/auth/validate-reset-token/${token}`)
+      return response
+    } catch (error) {
+      throw new Error('Token inválido ou expirado')
+    }
+  }
+
 
   const updateUserPassword = async (userId: string, newPassword: string) => {
     const updatedUser = await api.put<User>(`/users/${userId}`, {
@@ -203,6 +219,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         deleteUser,
         forgotPassword,
         resetPassword,
+        validateResetToken,
         updateUserPassword,
         unlockUser,
       }}

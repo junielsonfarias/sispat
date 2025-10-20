@@ -37,7 +37,15 @@ export const TiposBensProvider: React.FC<{ children: ReactNode }> = ({ children 
       setTiposBens(tiposData)
     } catch (err) {
       console.error('❌ TiposBensContext: Erro ao buscar tipos de bens:', err)
-      setError('Erro ao carregar tipos de bens')
+      
+      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de erro
+      if (err?.code === 'ERR_NETWORK' || err?.code === 'ERR_CONNECTION_REFUSED') {
+        console.log('⚠️  Backend não disponível - usando lista vazia de tipos de bens')
+        setTiposBens([])
+        setError(null)
+      } else {
+        setError('Erro ao carregar tipos de bens')
+      }
     } finally {
       setIsLoading(false)
     }

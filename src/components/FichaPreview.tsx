@@ -1,15 +1,17 @@
 import { Card } from '@/components/ui/card'
+import { Patrimonio, Imovel } from '@/types'
 
 interface PreviewProps {
   config: any
   type: 'bens' | 'imoveis'
+  sampleData?: Patrimonio | Imovel | null
 }
 
-export const FichaPreview = ({ config, type }: PreviewProps) => {
+export const FichaPreview = ({ config, type, sampleData }: PreviewProps) => {
   const { header, sections, signatures, styling } = config
 
-  // Dados de exemplo
-  const mockData = {
+  // ✅ CORREÇÃO: Usar dados de exemplo se não houver dados reais
+  const previewData = sampleData || {
     numero_patrimonio: '202501000001',
     descricao_bem: 'Notebook Dell Latitude 5420',
     tipo: 'Equipamento de Informática',
@@ -75,7 +77,7 @@ export const FichaPreview = ({ config, type }: PreviewProps) => {
 
       {/* Número do Patrimônio */}
       <div className="mb-4 p-2 bg-gray-100 border border-gray-300">
-        <p className="text-sm font-bold">Nº PATRIMÔNIO: {mockData.numero_patrimonio}</p>
+        <p className="text-sm font-bold">Nº PATRIMÔNIO: {previewData.numero_patrimonio}</p>
       </div>
 
       {/* Seção de Informações do Patrimônio */}
@@ -93,37 +95,37 @@ export const FichaPreview = ({ config, type }: PreviewProps) => {
             {sections.patrimonioInfo.fields.includes('descricao_bem') && (
               <div className={sections.patrimonioInfo.layout === 'grid' ? 'col-span-2' : ''}>
                 <span className="text-xs font-semibold">Descrição:</span>
-                <p className="text-xs">{mockData.descricao_bem}</p>
+                <p className="text-xs">{previewData.descricao_bem}</p>
               </div>
             )}
             {sections.patrimonioInfo.fields.includes('tipo') && (
               <div>
                 <span className="text-xs font-semibold">Tipo:</span>
-                <p className="text-xs">{mockData.tipo}</p>
+                <p className="text-xs">{previewData.tipo}</p>
               </div>
             )}
             {sections.patrimonioInfo.fields.includes('marca') && (
               <div>
                 <span className="text-xs font-semibold">Marca:</span>
-                <p className="text-xs">{mockData.marca}</p>
+                <p className="text-xs">{previewData.marca}</p>
               </div>
             )}
             {sections.patrimonioInfo.fields.includes('modelo') && (
               <div>
                 <span className="text-xs font-semibold">Modelo:</span>
-                <p className="text-xs">{mockData.modelo}</p>
+                <p className="text-xs">{previewData.modelo}</p>
               </div>
             )}
             {sections.patrimonioInfo.fields.includes('cor') && (
               <div>
                 <span className="text-xs font-semibold">Cor:</span>
-                <p className="text-xs">{mockData.cor}</p>
+                <p className="text-xs">{previewData.cor}</p>
               </div>
             )}
             {sections.patrimonioInfo.fields.includes('numero_serie') && (
               <div>
                 <span className="text-xs font-semibold">Nº Série:</span>
-                <p className="text-xs">{mockData.numero_serie}</p>
+                <p className="text-xs">{previewData.numero_serie}</p>
               </div>
             )}
           </div>
@@ -142,7 +144,7 @@ export const FichaPreview = ({ config, type }: PreviewProps) => {
                   {field === 'valor_aquisicao' && 'Valor de Aquisição:'}
                   {field === 'forma_aquisicao' && 'Forma de Aquisição:'}
                 </span>
-                <p className="text-xs">{mockData[field as keyof typeof mockData]}</p>
+                <p className="text-xs">{previewData[field as keyof typeof previewData]}</p>
               </div>
             ))}
           </div>
@@ -161,7 +163,7 @@ export const FichaPreview = ({ config, type }: PreviewProps) => {
                   {field === 'local_objeto' && 'Local:'}
                   {field === 'status' && 'Status:'}
                 </span>
-                <p className="text-xs">{mockData[field as keyof typeof mockData]}</p>
+                <p className="text-xs">{previewData[field as keyof typeof previewData]}</p>
               </div>
             ))}
           </div>
@@ -180,7 +182,7 @@ export const FichaPreview = ({ config, type }: PreviewProps) => {
                   {field === 'vida_util_anos' && 'Vida Útil:'}
                   {field === 'valor_residual' && 'Valor Residual:'}
                 </span>
-                <p className="text-xs">{mockData[field as keyof typeof mockData]}</p>
+                <p className="text-xs">{previewData[field as keyof typeof previewData]}</p>
               </div>
             ))}
           </div>

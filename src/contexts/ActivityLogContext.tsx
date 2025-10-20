@@ -44,17 +44,19 @@ export const ActivityLogProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth()
 
   useEffect(() => {
-    // Apenas carregar logs se o usuário estiver autenticado
+    // Apenas carregar logs se o usuário estiver autenticado e tiver permissão
     if (!user) return
-    
+    const userRole = (user as any)?.role || (user as any)?.perfil || ''
+    const isSupervisorOrAdmin = ['supervisor', 'admin'].includes(String(userRole))
+    if (!isSupervisorOrAdmin) return
+
     const loadLogs = async () => {
       try {
         const response = await api.get<{ logs: ActivityLogEntry[] }>('/audit-logs')
         const logsData = Array.isArray(response) ? response : (response.logs || [])
         setLogs(logsData)
       } catch (error) {
-        // Rota não implementada ainda - silenciar erro
-        // console.error('Failed to load audit logs:', error)
+        // erro silenciado
       }
     }
     loadLogs()

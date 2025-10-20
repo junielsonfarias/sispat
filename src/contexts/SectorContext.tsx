@@ -22,6 +22,7 @@ interface SectorContextType {
     data: Omit<Sector, 'id' | 'municipalityId'>,
   ) => Promise<void>
   deleteSector: (id: string) => Promise<void>
+  refreshSectors: () => Promise<void>
 }
 
 const SectorContext = createContext<SectorContextType | null>(null)
@@ -44,11 +45,18 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
       setSectors(sectorsData)
     } catch (error) {
       console.error('❌ SectorContext: Erro ao buscar setores:', error)
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Falha ao carregar setores.',
-      })
+      
+      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
+      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
+        console.log('⚠️  Backend não disponível - usando lista vazia de setores')
+        setSectors([])
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao carregar setores.',
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -57,6 +65,13 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (user) {
       fetchSectors()
+      
+      // ✅ Polling: Atualizar setores a cada 5 segundos
+      const intervalId = setInterval(() => {
+        fetchSectors()
+      }, 5000) // 5 segundos
+      
+      return () => clearInterval(intervalId)
     }
   }, [user, fetchSectors])
 
@@ -66,9 +81,9 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
   )
 
   const addSector = async (data: Omit<Sector, 'id'>) => {
-    await api.post<Sector>('/sectors', data)
-    // Não adicionar novamente pois o mock API já adiciona à lista
-    // setSectors((prev) => [...prev, newSector])
+    const newSector = await api.post<Sector>('/sectors', data)
+    // ✅ Adicionar ao estado local para refletir imediatamente
+    setSectors((prev) => [...prev, newSector])
     toast({ description: 'Setor criado com sucesso.' })
   }
 
@@ -81,19 +96,62 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
       dadosEnviados: data,
     });
     
-    const updatedSector = await api.put<Sector>(`/sectors/${id}`, data)
-    
-    console.log('[DEV] ✅ SectorContext: Resposta do backend:', updatedSector);
-    
-    setSectors((prev) => prev.map((s) => (s.id === id ? updatedSector : s)))
-    toast({ description: 'Setor atualizado com sucesso.' })
+    try {
+      const updatedSector = await api.put<Sector>(`/sectors/${id}`, data)
+      
+      console.log('[DEV] ✅ SectorContext: Resposta do backend:', updatedSector);
+      
+      setSectors((prev) => prev.map((s) => (s.id === id ? updatedSector : s)))
+      toast({ description: 'Setor atualizado com sucesso.' })
+    } catch (error: any) {
+      // Se o setor não existe mais (404), remover do estado local
+      if (error.response?.status === 404) {
+        setSectors((prev) => prev.filter((s) => s.id !== id))
+        toast({
+          variant: 'destructive',
+          title: 'Setor não encontrado',
+          description: 'Este setor foi excluído. A lista será atualizada.',
+        })
+        // Atualizar a lista completa
+        await fetchSectors()
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao atualizar setor.',
+        })
+        throw error
+      }
+    }
   }
 
   const deleteSector = async (id: string) => {
-    await api.delete(`/sectors/${id}`)
-    setSectors((prev) => prev.filter((s) => s.id !== id))
-    toast({ description: 'Setor excluído com sucesso.' })
+    try {
+      await api.delete(`/sectors/${id}`)
+      setSectors((prev) => prev.filter((s) => s.id !== id))
+      toast({ description: 'Setor excluído com sucesso.' })
+    } catch (error: any) {
+      // Se o setor já foi deletado (404), apenas remover do estado local
+      if (error.response?.status === 404) {
+        setSectors((prev) => prev.filter((s) => s.id !== id))
+        toast({ 
+          description: 'Setor já foi excluído anteriormente.',
+          variant: 'default'
+        })
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao excluir setor.',
+        })
+        throw error
+      }
+    }
   }
+
+  const refreshSectors = useCallback(async () => {
+    await fetchSectors()
+  }, [fetchSectors])
 
   return (
     <SectorContext.Provider
@@ -105,6 +163,7 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
         addSector,
         updateSector,
         deleteSector,
+        refreshSectors,
       }}
     >
       {children}

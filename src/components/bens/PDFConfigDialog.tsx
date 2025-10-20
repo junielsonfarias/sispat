@@ -188,6 +188,14 @@ export const PDFConfigDialog = ({
   }
 
   const handleGenerate = () => {
+    const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
+    console.log('🔍 [PDFConfigDialog] Gerando PDF com configurações:', {
+      selectedTemplateId,
+      selectedTemplateName: selectedTemplate?.name || 'Nenhum',
+      selectedSections,
+      sectionsCount: selectedSections.length
+    })
+    
     onGenerate(selectedSections, selectedTemplateId || undefined)
     onOpenChange(false)
   }

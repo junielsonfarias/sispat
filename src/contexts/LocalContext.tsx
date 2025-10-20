@@ -19,6 +19,7 @@ interface LocalContextType {
   addLocal: (name: string, sectorId: string) => Promise<void>
   updateLocal: (id: string, name: string, sectorId: string) => Promise<void>
   deleteLocal: (id: string) => Promise<void>
+  refreshLocais: () => Promise<void>
 }
 
 const LocalContext = createContext<LocalContextType | null>(null)
@@ -37,11 +38,17 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
       const locaisData = Array.isArray(response) ? response : (response.locais || [])
       setLocais(locaisData)
     } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Falha ao carregar locais.',
-      })
+      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
+      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
+        console.log('⚠️  Backend não disponível - usando lista vazia de locais')
+        setLocais([])
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao carregar locais.',
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -50,6 +57,13 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (user) {
       fetchLocais()
+      
+      // ✅ Polling: Atualizar locais a cada 5 segundos
+      const intervalId = setInterval(() => {
+        fetchLocais()
+      }, 5000) // 5 segundos
+      
+      return () => clearInterval(intervalId)
     }
   }, [user, fetchLocais])
 
@@ -68,8 +82,8 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
         sectorId,
         municipalityId: 'municipality-1', // Hardcoded para um único município
       })
-      // Não adicionar novamente pois o mock API já adiciona à lista
-      // setLocais((prev) => [...prev, newLocal])
+      // ✅ Adicionar ao estado local para refletir imediatamente
+      setLocais((prev) => [...prev, newLocal])
       toast({ description: 'Local criado com sucesso.' })
     },
     [user],
@@ -77,21 +91,64 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
 
   const updateLocal = useCallback(
     async (id: string, name: string, sectorId: string) => {
-      const updatedLocal = await api.put<Local>(`/locais/${id}`, {
-        name,
-        sectorId,
-      })
-      setLocais((prev) => prev.map((l) => (l.id === id ? updatedLocal : l)))
-      toast({ description: 'Local atualizado com sucesso.' })
+      try {
+        const updatedLocal = await api.put<Local>(`/locais/${id}`, {
+          name,
+          sectorId,
+        })
+        setLocais((prev) => prev.map((l) => (l.id === id ? updatedLocal : l)))
+        toast({ description: 'Local atualizado com sucesso.' })
+      } catch (error: any) {
+        // Se o local não existe mais (404), remover do estado local
+        if (error.response?.status === 404) {
+          setLocais((prev) => prev.filter((l) => l.id !== id))
+          toast({
+            variant: 'destructive',
+            title: 'Local não encontrado',
+            description: 'Este local foi excluído. A lista será atualizada.',
+          })
+          // Atualizar a lista completa
+          await fetchLocais()
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Erro',
+            description: 'Falha ao atualizar local.',
+          })
+          throw error
+        }
+      }
     },
-    [],
+    [fetchLocais],
   )
 
   const deleteLocal = useCallback(async (id: string) => {
-    await api.delete(`/locais/${id}`)
-    setLocais((prev) => prev.filter((l) => l.id !== id))
-    toast({ description: 'Local excluído com sucesso.' })
+    try {
+      await api.delete(`/locais/${id}`)
+      setLocais((prev) => prev.filter((l) => l.id !== id))
+      toast({ description: 'Local excluído com sucesso.' })
+    } catch (error: any) {
+      // Se o local já foi deletado (404), apenas remover do estado local
+      if (error.response?.status === 404) {
+        setLocais((prev) => prev.filter((l) => l.id !== id))
+        toast({ 
+          description: 'Local já foi excluído anteriormente.',
+          variant: 'default'
+        })
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao excluir local.',
+        })
+        throw error
+      }
+    }
   }, [])
+
+  const refreshLocais = useCallback(async () => {
+    await fetchLocais()
+  }, [fetchLocais])
 
   return (
     <LocalContext.Provider
@@ -103,6 +160,7 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
         addLocal,
         updateLocal,
         deleteLocal,
+        refreshLocais,
       }}
     >
       {children}

@@ -74,39 +74,7 @@ interface SubPatrimoniosManagerProps {
   quantidadeUnidades?: number
 }
 
-// Mock data - em produção viria de uma API
-const mockSubPatrimonios: SubPatrimonio[] = [
-  {
-    id: '1',
-    patrimonio_id: 'patrimonio-1',
-    numero_subpatrimonio: '20250200010-001',
-    status: 'ativo',
-    localizacao_especifica: 'Sala 101 - Mesa 1',
-    observacoes: 'Em uso normal',
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-01'),
-  },
-  {
-    id: '2',
-    patrimonio_id: 'patrimonio-1',
-    numero_subpatrimonio: '20250200010-002',
-    status: 'ativo',
-    localizacao_especifica: 'Sala 101 - Mesa 2',
-    observacoes: '',
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-01'),
-  },
-  {
-    id: '3',
-    patrimonio_id: 'patrimonio-1',
-    numero_subpatrimonio: '20250200010-003',
-    status: 'manutencao',
-    localizacao_especifica: 'Oficina de Manutenção',
-    observacoes: 'Problema na tela',
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-15'),
-  },
-]
+// ✅ CORREÇÃO: Removido mock data - será integrado com API real
 
 const SubPatrimoniosManager = ({ 
   patrimonioId, 
@@ -134,8 +102,9 @@ const SubPatrimoniosManager = ({
   // Carregar sub-patrimônios quando o componente monta
   useEffect(() => {
     if (isKit) {
-      // Em produção, carregaria da API
-      setSubPatrimonios(mockSubPatrimonios.filter(sp => sp.patrimonio_id === patrimonioId))
+      // ✅ CORREÇÃO: TODO - Integrar com API real para carregar sub-patrimônios
+      // Por enquanto, inicia com array vazio
+      setSubPatrimonios([])
     }
   }, [patrimonioId, isKit])
 

@@ -41,6 +41,14 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
       })))
     } catch (error) {
       console.error('Failed to load maintenance tasks:', error)
+      
+      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
+      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+        console.log('⚠️  Backend não disponível - usando lista vazia de tarefas de manutenção')
+        setAllTasks([])
+        return
+      }
+      
       // Tentar carregar do localStorage como fallback
       const stored = localStorage.getItem('sispat_manutencao_tasks')
       if (stored) {
@@ -82,6 +90,30 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         }])
         toast({ description: 'Tarefa de manutenção criada com sucesso.' })
       } catch (error) {
+        console.error('❌ Erro ao criar tarefa de manutenção:', error)
+        
+        // ✅ CORREÇÃO: Se for erro de conexão, salvar apenas localmente
+        if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+          console.log('⚠️  Backend não disponível. Salvando tarefa apenas localmente.')
+          
+          const localTask = {
+            id: `local-${Date.now()}`,
+            ...taskData,
+            dueDate: taskData.dueDate,
+            createdAt: new Date(),
+            municipalityId: user?.municipalityId || '',
+          }
+          
+          setAllTasks(prev => [...prev, localTask])
+          
+          toast({
+            title: 'Aviso',
+            description: 'Tarefa salva localmente (backend indisponível).',
+            variant: 'default',
+          })
+          return
+        }
+        
         toast({
           variant: 'destructive',
           title: 'Erro',
@@ -108,6 +140,28 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         ))
         toast({ description: 'Tarefa atualizada com sucesso.' })
       } catch (error) {
+        console.error('❌ Erro ao atualizar tarefa de manutenção:', error)
+        
+        // ✅ CORREÇÃO: Se for erro de conexão, atualizar apenas localmente
+        if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+          console.log('⚠️  Backend não disponível. Atualizando tarefa apenas localmente.')
+          
+          setAllTasks(prev => prev.map(t =>
+            t.id === taskId ? {
+              ...t,
+              ...updates,
+              dueDate: updates.dueDate || t.dueDate,
+            } : t
+          ))
+          
+          toast({
+            title: 'Aviso',
+            description: 'Tarefa atualizada localmente (backend indisponível).',
+            variant: 'default',
+          })
+          return
+        }
+        
         toast({
           variant: 'destructive',
           title: 'Erro',
@@ -125,6 +179,22 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         setAllTasks(prev => prev.filter(t => t.id !== taskId))
         toast({ description: 'Tarefa excluída com sucesso.' })
       } catch (error) {
+        console.error('❌ Erro ao deletar tarefa de manutenção:', error)
+        
+        // ✅ CORREÇÃO: Se for erro de conexão, deletar apenas localmente
+        if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+          console.log('⚠️  Backend não disponível. Deletando tarefa apenas localmente.')
+          
+          setAllTasks(prev => prev.filter(t => t.id !== taskId))
+          
+          toast({
+            title: 'Aviso',
+            description: 'Tarefa removida localmente (backend indisponível).',
+            variant: 'default',
+          })
+          return
+        }
+        
         toast({
           variant: 'destructive',
           title: 'Erro',

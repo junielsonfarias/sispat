@@ -94,6 +94,12 @@ export const LabelTemplateProvider = ({
       }
     } catch (error) {
       console.error('❌ Erro ao buscar templates:', error)
+      
+      // ✅ CORREÇÃO: Verificar se é erro 404 (backend não disponível)
+      if (error?.response?.status === 404) {
+        console.log('⚠️  Backend não disponível ou endpoint não encontrado. Usando templates padrão.')
+      }
+      
       // Em caso de erro, usar template padrão
       setAllTemplates(initialTemplates)
     }
@@ -184,6 +190,27 @@ export const LabelTemplateProvider = ({
         console.log('✅ Template salvo com sucesso')
       } catch (error) {
         console.error('❌ Erro ao salvar template:', error)
+        
+        // ✅ CORREÇÃO: Se for erro 404, salvar apenas localmente
+        if (error?.response?.status === 404) {
+          console.log('⚠️  Backend não disponível. Salvando template apenas localmente.')
+          
+          // Salvar apenas no estado local
+          const existingIndex = allTemplates.findIndex(t => t.id === template.id)
+          if (existingIndex > -1) {
+            setAllTemplates(prev => prev.map(t => t.id === template.id ? template : t))
+          } else {
+            setAllTemplates(prev => [...prev, template])
+          }
+          
+          toast({
+            title: 'Aviso',
+            description: 'Template salvo localmente (backend indisponível).',
+            variant: 'default',
+          })
+          return
+        }
+        
         toast({
           variant: 'destructive',
           title: 'Erro',
@@ -214,6 +241,22 @@ export const LabelTemplateProvider = ({
         console.log('✅ Template deletado com sucesso')
       } catch (error) {
         console.error('❌ Erro ao deletar template:', error)
+        
+        // ✅ CORREÇÃO: Se for erro 404, deletar apenas localmente
+        if (error?.response?.status === 404) {
+          console.log('⚠️  Backend não disponível. Deletando template apenas localmente.')
+          
+          // Remover apenas do estado local
+          setAllTemplates(prev => prev.filter(t => t.id !== templateId))
+          
+          toast({
+            title: 'Aviso',
+            description: 'Template removido localmente (backend indisponível).',
+            variant: 'default',
+          })
+          return
+        }
+        
         toast({
           variant: 'destructive',
           title: 'Erro',

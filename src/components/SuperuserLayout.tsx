@@ -15,6 +15,7 @@ import {
   Palette,
   GitBranch,
   Shield,
+  Mail,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { VersionChecker } from '@/components/VersionChecker'
@@ -31,6 +32,11 @@ const navItems = [
     to: '/superuser/permissions',
     label: 'Permissões',
     icon: Shield,
+  },
+  {
+    to: '/superuser/email-config',
+    label: 'Configuração de Email',
+    icon: Mail,
   },
   {
     to: '/superuser/customization',

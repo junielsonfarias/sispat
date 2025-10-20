@@ -470,6 +470,32 @@ const BensEdit = () => {
                           <SelectItem value="regular">Regular</SelectItem>
                           <SelectItem value="ruim">Ruim</SelectItem>
                           <SelectItem value="pessimo">Péssimo</SelectItem>
+                          <SelectItem value="baixado">Baixado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status do Bem</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ativo">Ativo</SelectItem>
+                          <SelectItem value="inativo">Inativo</SelectItem>
+                          <SelectItem value="manutencao">Em Manutenção</SelectItem>
+                          <SelectItem value="baixado">Baixado</SelectItem>
+                          <SelectItem value="extraviado">Extraviado</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

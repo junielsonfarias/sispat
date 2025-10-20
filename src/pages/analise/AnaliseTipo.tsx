@@ -29,15 +29,20 @@ import {
 } from '@/components/ui/breadcrumb'
 import { usePatrimonio } from '@/contexts/PatrimonioContext'
 import { useSectors } from '@/contexts/SectorContext'
+import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { format, subMonths } from 'date-fns'
 
 const AnaliseTipo = () => {
   const { patrimonios } = usePatrimonio()
   const { sectors } = useSectors()
+  const { filterPatrimonios, accessInfo } = useSectorFilter()
+
+  // ✅ CORREÇÃO: Filtrar patrimônios por setor do usuário
+  const filteredPatrimonios = useMemo(() => filterPatrimonios(patrimonios), [patrimonios, filterPatrimonios])
 
   const allTypes = useMemo(
-    () => [...new Set(patrimonios.map((p) => p.tipo))],
-    [patrimonios],
+    () => [...new Set(filteredPatrimonios.map((p) => p.tipo))],
+    [filteredPatrimonios],
   )
 
   const matrixData = useMemo(() => {
@@ -49,7 +54,7 @@ const AnaliseTipo = () => {
       })
     })
 
-    patrimonios.forEach((p) => {
+    filteredPatrimonios.forEach((p) => {
       const setor = p.setor_responsavel || p.setorResponsavel
       if (matrix[setor]) {
         matrix[setor][p.tipo] =
@@ -61,7 +66,7 @@ const AnaliseTipo = () => {
       sector,
       ...types,
     }))
-  }, [patrimonios, sectors, allTypes])
+  }, [filteredPatrimonios, sectors, allTypes])
 
   const evolutionData = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) =>
@@ -69,7 +74,7 @@ const AnaliseTipo = () => {
     )
     return months.map((month) => {
       const monthStr = format(month, 'MMM/yy')
-      const acquisitionsInMonth = patrimonios.filter(
+      const acquisitionsInMonth = filteredPatrimonios.filter(
         (p) =>
           format(new Date(p.data_aquisicao || p.dataAquisicao), 'yyyy-MM') ===
           format(month, 'yyyy-MM'),
@@ -83,7 +88,7 @@ const AnaliseTipo = () => {
       )
       return { month: monthStr, ...acquisitionsByType }
     })
-  }, [patrimonios])
+  }, [filteredPatrimonios])
 
   return (
     <div className="flex flex-col gap-6">
@@ -100,7 +105,14 @@ const AnaliseTipo = () => {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <h1 className="text-2xl font-bold">Análise por Tipo de Bem</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Análise por Tipo de Bem</h1>
+        {!accessInfo.canViewAllData && (
+          <div className="text-sm text-muted-foreground bg-blue-50 px-3 py-2 rounded-lg">
+            📊 Visualizando dados dos setores: {accessInfo.userSectors.join(', ') || 'Nenhum setor atribuído'}
+          </div>
+        )}
+      </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>

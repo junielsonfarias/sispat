@@ -144,6 +144,7 @@ const AssetsByUser = lazy(() => import('@/pages/superuser/AssetsByUser'))
 const PermissionManagement = lazy(
   () => import('@/pages/superuser/PermissionManagement'),
 )
+const EmailConfig = lazy(() => import('@/pages/configuracoes/EmailConfig'))
 
 
 function App() {
@@ -224,6 +225,10 @@ function App() {
               <Route
                 path="/superuser/permissions"
                 element={<PermissionManagement />}
+              />
+              <Route
+                path="/superuser/email-config"
+                element={<EmailConfig />}
               />
             </Route>
 

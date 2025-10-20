@@ -17,11 +17,16 @@ export const fetchAuditLogs = async ({
   pageSize,
   filters,
 }: FetchLogsParams) => {
-  const queryParams = new URLSearchParams({
-    page: String(page),
-    limit: String(pageSize), // Backend usa 'limit' em vez de 'pageSize'
-    ...filters,
-  }).toString()
+  const params = new URLSearchParams()
+  params.set('page', String(page))
+  params.set('limit', String(pageSize)) // Backend usa 'limit'
+
+  if (filters?.userId) params.set('userId', String(filters.userId))
+  if (filters?.action) params.set('action', String(filters.action))
+  if (filters?.startDate) params.set('startDate', String(filters.startDate))
+  if (filters?.endDate) params.set('endDate', String(filters.endDate))
+
+  const queryParams = params.toString()
 
   const response = await api.get<{
     logs: any[]

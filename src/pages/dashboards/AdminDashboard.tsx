@@ -36,6 +36,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { usePatrimonio } from '@/contexts/PatrimonioContext'
 import { useAuth } from '@/hooks/useAuth'
+import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { Patrimonio } from '@/types'
 import { formatCurrency } from '@/lib/utils'
 import { subMonths, format } from 'date-fns'
@@ -45,6 +46,7 @@ import { subMonths, format } from 'date-fns'
 const AdminDashboard = () => {
   const { patrimonios } = usePatrimonio()
   const { users } = useAuth()
+  const { filterPatrimonios, getFilteredStats, accessInfo } = useSectorFilter()
 
   const stats = useMemo(() => {
     // Validação de dados
@@ -59,56 +61,43 @@ const AdminDashboard = () => {
       }
     }
 
+    // ✅ CORREÇÃO: Usar estatísticas filtradas por setor do usuário
+    const filteredStats = getFilteredStats(patrimonios)
+    
     // Filtrar bens baixados do cálculo de valor total
-    const patrimoniosAtivos = patrimonios.filter(p => p.status !== 'baixado')
-    
-    const totalValue = patrimoniosAtivos.reduce(
-      (acc, p) => {
-        const valor = p.valor_aquisicao || p.valorAquisicao || 0
-        const numValor = typeof valor === 'number' ? valor : parseFloat(valor) || 0
-        return acc + numValor
-      },
-      0,
-    )
-    
-    const statusCounts = patrimonios.reduce(
-      (acc, p) => {
-        acc[p.status] = (acc[p.status] || 0) + 1
-        return acc
-      },
-      {} as Record<Patrimonio['status'], number>,
-    )
+    const filteredPatrimonios = filterPatrimonios(patrimonios)
+    const patrimoniosAtivos = filteredPatrimonios.filter(p => p.status !== 'baixado')
     
     const oneMonthAgo = subMonths(new Date(), 1)
-    const baixadosLastMonth = patrimonios.filter(
+    const baixadosLastMonth = filteredPatrimonios.filter(
       (p) =>
         p.status === 'baixado' &&
         p.data_baixa &&
         new Date(p.data_baixa) > oneMonthAgo,
     ).length
-    
-    const setores = new Set(patrimonios.map((p) => p.setor_responsavel || p.setorResponsavel))
 
     return {
-      totalCount: patrimonios.length,
-      totalValue,
+      totalCount: filteredStats.total,
+      totalValue: filteredStats.valorTotal,
       activePercentage:
-        patrimonios.length > 0
-          ? ((statusCounts.ativo || 0) / patrimonios.length) * 100
+        filteredStats.total > 0
+          ? (filteredStats.ativos / filteredStats.total) * 100
           : 0,
-      maintenanceCount: statusCounts.manutencao || 0,
+      maintenanceCount: filteredStats.manutencao,
       baixadosLastMonth,
-      setoresCount: setores.size,
+      setoresCount: filteredStats.setores,
     }
-  }, [patrimonios])
+  }, [patrimonios, getFilteredStats, filterPatrimonios])
 
   const evolutionData = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) =>
       subMonths(new Date(), 5 - i),
     )
+    const filteredPatrimonios = filterPatrimonios(patrimonios)
+    
     return months.map((month) => {
       const monthStr = format(month, 'MMM')
-      const aquisicoes = patrimonios.filter(
+      const aquisicoes = filteredPatrimonios.filter(
         (p) => {
           try {
             const data = new Date(p.dataAquisicao)
@@ -119,7 +108,7 @@ const AdminDashboard = () => {
           }
         }
       ).length
-      const baixas = patrimonios.filter(
+      const baixas = filteredPatrimonios.filter(
         (p) => {
           try {
             if (!p.dataBaixa) return false
@@ -133,10 +122,11 @@ const AdminDashboard = () => {
       ).length
       return { month: monthStr, aquisicoes, baixas }
     })
-  }, [patrimonios])
+  }, [patrimonios, filterPatrimonios])
 
   const distributionData = useMemo(() => {
-    const data = patrimonios.reduce(
+    const filteredPatrimonios = filterPatrimonios(patrimonios)
+    const data = filteredPatrimonios.reduce(
       (acc, p) => {
         acc[p.tipo] = (acc[p.tipo] || 0) + 1
         return acc
@@ -172,7 +162,7 @@ const AdminDashboard = () => {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5)
-  }, [patrimonios])
+  }, [patrimonios, filterPatrimonios])
 
   const statsCards = [
     {
@@ -215,7 +205,14 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Dashboard Administrativo</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard Administrativo</h1>
+        {!accessInfo.canViewAllData && (
+          <div className="text-sm text-muted-foreground bg-blue-50 px-3 py-2 rounded-lg">
+            📊 Visualizando dados dos setores: {accessInfo.userSectors.join(', ') || 'Nenhum setor atribuído'}
+          </div>
+        )}
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {statsCards.map((card) => (
           <Card
