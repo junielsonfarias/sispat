@@ -100,52 +100,93 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
     const userId = req.user?.userId;
     const { title, description, setor, local, dataInicio, scope } = req.body;
 
-    console.log('📝 [DEV] Criando inventário:', { title, description, setor, local, dataInicio, scope });
+    console.log('📝 [DEV] Criando inventário:', { 
+      userId,
+      title, 
+      description, 
+      setor, 
+      local, 
+      dataInicio, 
+      scope,
+      userRole: req.user?.role 
+    });
 
     // ✅ Validações melhoradas
     if (!title) {
+      console.log('❌ [DEV] Erro: título não fornecido');
       res.status(400).json({ error: 'O título do inventário é obrigatório' });
       return;
     }
 
     if (!setor) {
+      console.log('❌ [DEV] Erro: setor não fornecido');
       res.status(400).json({ error: 'O setor é obrigatório' });
       return;
     }
+
+    if (!userId) {
+      console.log('❌ [DEV] Erro: userId não encontrado');
+      res.status(401).json({ error: 'Usuário não autenticado' });
+      return;
+    }
+
+    console.log('🔍 [DEV] Dados antes de criar no banco:', {
+      title,
+      description: description || '',
+      responsavel: userId,
+      setor,
+      local: local || '',
+      dataInicio: dataInicio ? new Date(dataInicio) : new Date(),
+      status: 'em_andamento',
+      scope: scope || 'sector',
+    });
 
     const inventario = await prisma.inventory.create({
       data: {
         title,
         description: description || '',
-        responsavel: userId!,
+        responsavel: userId,
         setor,
         local: local || '',
         dataInicio: dataInicio ? new Date(dataInicio) : new Date(),
         status: 'em_andamento',
-        scope: scope || 'sector', // ✅ Usar scope enviado pelo frontend
+        scope: scope || 'sector',
       },
       include: {
         items: true,
       },
     });
 
-    console.log('✅ [DEV] Inventário criado:', inventario);
+    console.log('✅ [DEV] Inventário criado com sucesso:', {
+      id: inventario.id,
+      title: inventario.title,
+      status: inventario.status,
+    });
 
     // Registrar atividade
-    await prisma.activityLog.create({
-      data: {
-        userId: userId!,
-        action: 'CREATE_INVENTORY',
-        entityType: 'Inventory',
-        entityId: inventario.id,
-        details: `Inventário "${title}" criado`,
-      },
-    });
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: userId,
+          action: 'CREATE_INVENTORY',
+          entityType: 'Inventory',
+          entityId: inventario.id,
+          details: `Inventário "${title}" criado`,
+        },
+      });
+      console.log('✅ [DEV] Atividade registrada com sucesso');
+    } catch (logError) {
+      console.error('⚠️ [DEV] Erro ao registrar atividade (não crítico):', logError);
+    }
 
     res.status(201).json(inventario);
   } catch (error) {
     console.error('❌ [DEV] Erro ao criar inventário:', error);
-    res.status(500).json({ error: 'Erro ao criar inventário' });
+    console.error('❌ [DEV] Stack trace:', error instanceof Error ? error.stack : 'N/A');
+    res.status(500).json({ 
+      error: 'Erro ao criar inventário',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
   }
 };
 

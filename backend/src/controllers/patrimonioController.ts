@@ -790,7 +790,14 @@ export const deletePatrimonio = async (req: Request, res: Response): Promise<voi
  */
 export const addNote = async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log('🔍 [DEBUG] addNote - Iniciando processo:', {
+      userId: req.user?.userId,
+      patrimonioId: req.params.id,
+      text: req.body.text
+    });
+
     if (!req.user) {
+      console.log('❌ [DEBUG] addNote - Usuário não autenticado');
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
@@ -798,41 +805,94 @@ export const addNote = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const { text } = req.body;
 
-    if (!text) {
+    console.log('🔍 [DEBUG] addNote - Dados recebidos:', { id, text });
+
+    if (!text || text.trim().length === 0) {
+      console.log('❌ [DEBUG] addNote - Texto vazio ou inválido');
       res.status(400).json({ error: 'Texto da observação é obrigatório' });
       return;
     }
 
     // Verificar se patrimônio existe
+    console.log('🔍 [DEBUG] addNote - Verificando se patrimônio existe:', id);
     const patrimonio = await prisma.patrimonio.findUnique({
       where: { id },
+      select: { id: true, numero_patrimonio: true, descricao_bem: true }
     });
 
     if (!patrimonio) {
+      console.log('❌ [DEBUG] addNote - Patrimônio não encontrado:', id);
       res.status(404).json({ error: 'Patrimônio não encontrado' });
       return;
     }
 
+    console.log('✅ [DEBUG] addNote - Patrimônio encontrado:', {
+      id: patrimonio.id,
+      numero: patrimonio.numero_patrimonio,
+      descricao: patrimonio.descricao_bem
+    });
+
     // Buscar nome do usuário
+    console.log('🔍 [DEBUG] addNote - Buscando dados do usuário:', req.user.userId);
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
-      select: { name: true },
+      select: { id: true, name: true, email: true },
+    });
+
+    if (!user) {
+      console.log('❌ [DEBUG] addNote - Usuário não encontrado no banco:', req.user.userId);
+      res.status(404).json({ error: 'Usuário não encontrado' });
+      return;
+    }
+
+    console.log('✅ [DEBUG] addNote - Usuário encontrado:', {
+      id: user.id,
+      name: user.name,
+      email: user.email
     });
 
     // Criar observação
+    console.log('🔍 [DEBUG] addNote - Criando nota no banco:', {
+      text: text.trim(),
+      patrimonioId: id,
+      userId: req.user.userId,
+      userName: user.name
+    });
+
     const note = await prisma.note.create({
       data: {
-        text,
+        text: text.trim(),
         patrimonioId: id,
         userId: req.user.userId,
-        userName: user?.name || 'Usuário',
+        userName: user.name,
       },
     });
 
-    res.status(201).json({ message: 'Observação adicionada com sucesso', note });
+    console.log('✅ [DEBUG] addNote - Nota criada com sucesso:', {
+      id: note.id,
+      text: note.text,
+      date: note.date,
+      userId: note.userId,
+      userName: note.userName
+    });
+
+    res.status(201).json({ 
+      message: 'Observação adicionada com sucesso', 
+      note: {
+        id: note.id,
+        text: note.text,
+        date: note.date,
+        userId: note.userId,
+        userName: note.userName
+      }
+    });
   } catch (error) {
-    console.error('Erro ao adicionar observação:', error);
-    res.status(500).json({ error: 'Erro ao adicionar observação' });
+    console.error('❌ [ERROR] addNote - Erro ao adicionar observação:', error);
+    console.error('❌ [ERROR] addNote - Stack trace:', error instanceof Error ? error.stack : 'N/A');
+    res.status(500).json({ 
+      error: 'Erro ao adicionar observação',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
   }
 };
 

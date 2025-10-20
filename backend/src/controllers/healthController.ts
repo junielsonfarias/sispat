@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { prisma } from '../index'
+import { prisma } from '../config/database'
 import { logInfo, logError } from '../config/logger'
 
 /**

@@ -13,13 +13,18 @@ validateEnvironment();
 showEnvironmentInfo();
 
 // Inicializar Prisma Client
-// ✅ Importar do arquivo dedicado para garantir que está atualizado
-import './lib/prisma'; // Força o carregamento do módulo
-const { prisma: prismaFromLib } = require('./lib/prisma');
-export const prisma = prismaFromLib;
+// ✅ Importar do arquivo de configuração otimizado
+console.log('📦 Carregando configuração do banco de dados...');
+import { prisma, testDatabaseConnection } from './config/database';
+console.log('✅ Configuração do banco carregada');
+
+// Exportar prisma para outros módulos
+export { prisma };
 
 // Criar aplicação Express
+console.log('🚀 Criando aplicação Express...');
 const app: Express = express();
+console.log('✅ Aplicação Express criada');
 
 // ✅ Inicializar Sentry ANTES de qualquer outro middleware
 // TEMPORARIAMENTE DESABILITADO PARA BUILD
@@ -121,45 +126,65 @@ app.get('/', (req: Request, res: Response) => {
 // IMPORTAR E USAR ROTAS
 // ============================================
 
-import authRoutes from './routes/authRoutes';
+console.log('🛣️  Carregando rotas...');
+
+// Carregar rotas principais
 import publicRoutes from './routes/publicRoutes';
+console.log('✅ publicRoutes carregada');
+
+import authRoutes from './routes/authRoutes';
+console.log('✅ authRoutes carregada');
+
+import userRoutes from './routes/userRoutes';
+console.log('✅ userRoutes carregada');
+
+import sectorsRoutes from './routes/sectorsRoutes';
+console.log('✅ sectorsRoutes carregada');
+
 import patrimonioRoutes from './routes/patrimonioRoutes';
+console.log('✅ patrimonioRoutes carregada');
+
+// Comentar rotas secundárias temporariamente
+import emailConfigRoutes from './routes/emailConfigRoutes';
 import imovelRoutes from './routes/imovelRoutes';
 import inventarioRoutes from './routes/inventarioRoutes';
 import tiposBensRoutes from './routes/tiposBensRoutes';
 import formasAquisicaoRoutes from './routes/formasAquisicaoRoutes';
 import locaisRoutes from './routes/locaisRoutes';
-import sectorsRoutes from './routes/sectorsRoutes';
-import userRoutes from './routes/userRoutes';
 import customizationRoutes from './routes/customizationRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import auditLogRoutes from './routes/auditLogRoutes';
 import manutencaoRoutes from './routes/manutencaoRoutes';
 import imovelFieldRoutes from './routes/imovelFieldRoutes';
-import transferenciaRoutes from './routes/transferenciaRoutes';
+// import transferenciaRoutes from './routes/transferenciaRoutes';
 import documentRoutes from './routes/documentRoutes';
 import fichaTemplatesRoutes from './routes/fichaTemplates';
 import labelTemplateRoutes from './routes/labelTemplateRoutes';
 
+console.log('✅ Rotas carregadas');
+
 // ✅ Rotas públicas (sem autenticação)
 app.use('/api/public', publicRoutes);
 
-// Rotas autenticadas
+// Rotas autenticadas - Principais
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/sectors', sectorsRoutes);
 app.use('/api/patrimonios', patrimonioRoutes);
+
+// Rotas secundárias - HABILITADAS
+app.use('/api/email-config', emailConfigRoutes);
 app.use('/api/imoveis', imovelRoutes);
 app.use('/api/inventarios', inventarioRoutes);
 app.use('/api/tipos-bens', tiposBensRoutes);
 app.use('/api/formas-aquisicao', formasAquisicaoRoutes);
 app.use('/api/locais', locaisRoutes);
-app.use('/api/sectors', sectorsRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/customization', customizationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/manutencoes', manutencaoRoutes);
 app.use('/api/imovel-fields', imovelFieldRoutes);
-app.use('/api/transferencias', transferenciaRoutes);
+// app.use('/api/transferencias', transferenciaRoutes);
 app.use('/api/documentos', documentRoutes);
 app.use('/api/ficha-templates', fichaTemplatesRoutes);
 app.use('/api/label-templates', labelTemplateRoutes);
@@ -185,8 +210,14 @@ app.use(errorHandler);
 // Função para conectar ao banco
 async function connectDatabase() {
   try {
-    await prisma.$connect();
-    console.log('✅ Conectado ao banco de dados PostgreSQL');
+    console.log('🔌 Conectando ao banco de dados PostgreSQL...');
+    const isConnected = await testDatabaseConnection();
+    
+    if (isConnected) {
+      console.log('✅ Conectado ao banco de dados PostgreSQL');
+    } else {
+      throw new Error('Falha no teste de conexão');
+    }
   } catch (error) {
     console.error('❌ Erro ao conectar ao banco de dados:', error);
     process.exit(1);

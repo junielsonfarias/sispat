@@ -5,6 +5,9 @@ import {
   me,
   logout,
   changePassword,
+  forgotPassword,
+  validateResetToken,
+  resetPassword,
 } from '../controllers/authController';
 import { authenticateToken } from '../middlewares/auth';
 import rateLimit from 'express-rate-limit';
@@ -16,6 +19,15 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5, // Máximo 5 tentativas por IP
   message: 'Muitas tentativas de login. Tente novamente em 15 minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiting específico para reset de senha
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 3, // 3 tentativas por IP
+  message: 'Muitas tentativas de reset de senha. Tente novamente em 15 minutos.',
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -116,6 +128,27 @@ router.post('/logout', authenticateToken, logout);
  * @access Private
  */
 router.post('/change-password', authenticateToken, changePassword);
+
+/**
+ * @route POST /api/auth/forgot-password
+ * @desc Solicitar reset de senha
+ * @access Public
+ */
+router.post('/forgot-password', resetLimiter, forgotPassword);
+
+/**
+ * @route GET /api/auth/validate-reset-token/:token
+ * @desc Validar token de reset de senha
+ * @access Public
+ */
+router.get('/validate-reset-token/:token', validateResetToken);
+
+/**
+ * @route POST /api/auth/reset-password
+ * @desc Resetar senha com token
+ * @access Public
+ */
+router.post('/reset-password', resetLimiter, resetPassword);
 
 export default router;
 

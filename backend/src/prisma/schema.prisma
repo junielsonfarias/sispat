@@ -34,6 +34,7 @@ model User {
   activityLogs       ActivityLog[]
   documentsUploaded  Documento[]     @relation("DocumentosUploader")
   fichaTemplatesCreated FichaTemplate[] @relation("FichaTemplateCreator")
+  passwordResetTokens PasswordResetToken[]
 
   @@index([email])
   @@index([municipalityId])
@@ -605,4 +606,43 @@ model FichaTemplate {
   @@index([isDefault])
   @@index([createdAt])
   @@map("ficha_templates")
+}
+
+// ============================================
+// MODELOS DE EMAIL E AUTENTICAÇÃO
+// ============================================
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  email     String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([email])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model EmailConfig {
+  id          String   @id @default(uuid())
+  host        String
+  port        Int
+  secure      Boolean  @default(false)
+  user        String
+  password    String
+  fromAddress String
+  enabled     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("email_config")
 }
