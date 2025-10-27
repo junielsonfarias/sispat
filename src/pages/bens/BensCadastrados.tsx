@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -61,16 +61,20 @@ const BensCadastrados = () => {
   console.log('📊 [DEV] BensCadastrados - É array?:', Array.isArray(patrimonios))
   console.log('📊 [DEV] BensCadastrados - Primeiro item:', patrimonios[0])
 
-  const filteredData = Array.isArray(patrimonios) ? patrimonios.filter((patrimonio) => {
-    if (!searchTerm) return true
+  const filteredData = useMemo(() => {
+    if (!Array.isArray(patrimonios)) return []
     
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      (patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio)?.toLowerCase().includes(searchLower) ||
-      (patrimonio.descricao_bem || patrimonio.descricaoBem)?.toLowerCase().includes(searchLower) ||
-      (patrimonio.setor_responsavel || patrimonio.setorResponsavel)?.toLowerCase().includes(searchLower)
-    )
-  }) : []
+    return patrimonios.filter((patrimonio) => {
+      if (!searchTerm) return true
+      
+      const searchLower = searchTerm.toLowerCase()
+      return (
+        (patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio)?.toLowerCase().includes(searchLower) ||
+        (patrimonio.descricao_bem || patrimonio.descricaoBem)?.toLowerCase().includes(searchLower) ||
+        (patrimonio.setor_responsavel || patrimonio.setorResponsavel)?.toLowerCase().includes(searchLower)
+      )
+    })
+  }, [patrimonios, searchTerm])
 
   console.log('🔍 [DEV] BensCadastrados - filteredData:', filteredData.length)
 
@@ -211,9 +215,9 @@ const BensCadastrados = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredData.map((patrimonio) => (
+                      filteredData.map((patrimonio, index) => (
                         <TableRow 
-                          key={patrimonio.id} 
+                          key={`${patrimonio.id}-${index}`} 
                           className="hover:bg-gray-50 border-gray-200"
                         >
                         <TableCell className="font-medium font-mono text-sm text-gray-900">
@@ -330,8 +334,8 @@ const BensCadastrados = () => {
                   </div>
                 </div>
               ) : (
-                filteredData.map((patrimonio) => (
-                  <Card key={patrimonio.id} className="border border-gray-200 hover:shadow-md transition-shadow">
+                filteredData.map((patrimonio, index) => (
+                  <Card key={`${patrimonio.id}-${index}`} className="border border-gray-200 hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       {/* Header com número e situação */}
                       <div className="flex items-start justify-between mb-3">
