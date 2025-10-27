@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
-import { useSync } from '@/contexts/SyncContext'
-import { useAuth } from '@/contexts/AuthContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useSync } from '@/hooks/useSync'
+import { useAuth } from '@/hooks/useAuth'
 import { Patrimonio } from '@/types'
 
 const getStatusColor = (status: string) => {
