@@ -81,10 +81,13 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       
       console.log('✅ Sincronização: Recebidos', updatedPatrimonios.length, 'patrimônios do servidor')
       
-      // Atualizar o estado com os dados do servidor de forma segura
+      // Atualizar o estado com os dados do servidor de forma segura e com delay
       if (Array.isArray(updatedPatrimonios)) {
-        setPatrimonios(updatedPatrimonios)
-        setLastSync(new Date())
+        // Usar setTimeout para evitar conflitos de renderização
+        setTimeout(() => {
+          setPatrimonios(updatedPatrimonios)
+          setLastSync(new Date())
+        }, 100)
       }
       
       toast({
