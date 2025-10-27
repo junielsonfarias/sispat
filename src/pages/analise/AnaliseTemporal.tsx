@@ -11,7 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { formatDate } from '@/lib/utils'
 import { useSectorFilter } from '@/hooks/useSectorFilter'
 

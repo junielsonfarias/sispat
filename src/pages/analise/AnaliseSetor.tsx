@@ -22,7 +22,7 @@ import {
   PolarRadiusAxis,
   Legend,
 } from 'recharts'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useSectors } from '@/contexts/SectorContext'
 import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { MultiSelect } from '@/components/ui/multi-select'

@@ -9,7 +9,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { useSearch } from '@/contexts/SearchContext'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useAuth } from '@/hooks/useAuth'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { File, User, Building } from 'lucide-react'

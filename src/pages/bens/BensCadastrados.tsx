@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Patrimonio } from '@/types'
-import { useLabelTemplates } from '@/contexts/LabelTemplateContext'
+import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 
 const getStatusColor = (status: string) => {
   switch (status) {

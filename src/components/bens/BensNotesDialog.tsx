@@ -14,7 +14,7 @@ import { Note, Patrimonio } from '@/types'
 import { formatRelativeDate, generateId } from '@/lib/utils'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { api } from '@/services/api-adapter'
 
 interface BensNotesDialogProps {

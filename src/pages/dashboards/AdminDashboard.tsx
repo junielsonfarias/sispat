@@ -34,7 +34,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useAuth } from '@/hooks/useAuth'
 import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { Patrimonio } from '@/types'

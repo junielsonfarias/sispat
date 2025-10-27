@@ -27,7 +27,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useSectors } from '@/contexts/SectorContext'
 import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { format, subMonths } from 'date-fns'

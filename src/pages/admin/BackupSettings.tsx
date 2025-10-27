@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Download, Upload, History, Loader2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useAuth } from '@/hooks/useAuth'
 import { useSectors } from '@/contexts/SectorContext'
 import { useLocais } from '@/contexts/LocalContext'

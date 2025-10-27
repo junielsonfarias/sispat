@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Pie, PieChart, Cell, Tooltip, Legend } from 'recharts'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 
 export const TypeChartWidget = () => {
   const { patrimonios } = usePatrimonio()

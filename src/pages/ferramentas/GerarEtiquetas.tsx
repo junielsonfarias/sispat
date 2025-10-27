@@ -34,7 +34,7 @@ import { useDebounce } from '@/hooks/use-debounce'
 import { LabelPreview } from '@/components/LabelPreview'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from '@/hooks/use-toast'
-import { useLabelTemplates } from '@/contexts/LabelTemplateContext'
+import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import {
   SearchableSelect,
   SearchableSelectOption,

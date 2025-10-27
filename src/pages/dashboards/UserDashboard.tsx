@@ -14,7 +14,7 @@ import {
 } from 'recharts'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { useAuth } from '@/hooks/useAuth'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { subMonths, isAfter } from 'date-fns'
 
 const UserDashboard = () => {

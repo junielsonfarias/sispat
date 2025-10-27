@@ -24,7 +24,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { Patrimonio } from '@/types'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
 import { formatCurrency, formatDate } from '@/lib/utils'

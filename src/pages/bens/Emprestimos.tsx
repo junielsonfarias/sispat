@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { formatDate } from '@/lib/utils'
 import { differenceInDays, isBefore } from 'date-fns'
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react'

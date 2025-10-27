@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Bar, BarChart, Cell, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { Patrimonio } from '@/types'
 
 export const StatusChartWidget = () => {

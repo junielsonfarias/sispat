@@ -1,4 +1,4 @@
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useInventory } from '@/contexts/InventoryContext'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'

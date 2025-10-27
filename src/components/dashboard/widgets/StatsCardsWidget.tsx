@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Archive, DollarSign, Wrench, CheckCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { Patrimonio } from '@/types'
 import { formatCurrency } from '@/lib/utils'
 

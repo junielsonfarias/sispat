@@ -30,7 +30,7 @@ import {
   ChartTooltip,
 } from '@/components/ui/chart'
 import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend } from 'recharts'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
 import { formatCurrency } from '@/lib/utils'
 import { TrendingDown, TrendingUp, Hourglass, LayoutDashboard, ArrowLeft } from 'lucide-react'

@@ -31,10 +31,10 @@ import {
   Gift,
 } from 'lucide-react'
 import { Patrimonio, Note, TransferenciaType } from '@/types'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useAuth } from '@/hooks/useAuth'
 import { useCustomization } from '@/contexts/CustomizationContext'
-import { useLabelTemplates } from '@/contexts/LabelTemplateContext'
+import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { toast } from '@/hooks/use-toast'
 import { LabelPreview } from '@/components/LabelPreview'
 import { Textarea } from '@/components/ui/textarea'

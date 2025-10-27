@@ -23,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { PlusCircle, Edit, Trash2, QrCode, Search, Layers } from 'lucide-react'
-import { useLabelTemplates } from '@/contexts/LabelTemplateContext'
+import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import {
   Breadcrumb,
   BreadcrumbItem,
