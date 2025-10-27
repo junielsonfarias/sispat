@@ -1,4 +1,4 @@
-import { useState, useMemo, Suspense } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -44,19 +44,55 @@ const getStatusColor = (status: string) => {
   }
 }
 
-// Componente separado para a tabela de patrimônios
-const PatrimoniosTable = ({ 
-  filteredData, 
-  isLoading, 
-  searchTerm 
-}: { 
-  filteredData: Patrimonio[], 
-  isLoading: boolean, 
-  searchTerm: string 
-}) => {
-  const handleShowQrCode = (patrimonio: Patrimonio) => {
-    // Implementar lógica do QR Code se necessário
-    console.log('QR Code para:', patrimonio.id)
+// Função auxiliar para renderizar a tabela de forma segura
+const renderTable = (filteredData: Patrimonio[], isLoading: boolean, searchTerm: string) => {
+  if (!Array.isArray(filteredData)) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-gray-500">Dados inválidos para exibição</div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+          <span className="text-gray-500">Carregando bens...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (filteredData.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="flex flex-col items-center gap-3">
+          <div className="rounded-full bg-gray-100 p-3">
+            <Search className="h-6 w-6 text-gray-400" />
+          </div>
+          <div>
+            <p className="text-gray-900 font-medium">
+              {searchTerm ? 'Nenhum bem encontrado' : 'Nenhum bem cadastrado'}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              {searchTerm 
+                ? 'Tente ajustar os termos de busca' 
+                : 'Comece cadastrando um novo bem'}
+            </p>
+          </div>
+          {!searchTerm && (
+            <Button asChild className="mt-2">
+              <Link to="/bens-cadastrados/novo">
+                <Plus className="mr-2 h-4 w-4" />
+                Cadastrar Primeiro Bem
+              </Link>
+            </Button>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -75,122 +111,79 @@ const PatrimoniosTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                    <span className="text-gray-500">Carregando bens...</span>
+            {filteredData.map((patrimonio, index) => (
+              <TableRow 
+                key={`patrimonio-${patrimonio.id}-${index}`} 
+                className="hover:bg-gray-50 border-gray-200"
+              >
+                <TableCell className="font-medium font-mono text-sm text-gray-900">
+                  <Link 
+                    to={`/bens-cadastrados/ver/${patrimonio.id}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+                  </Link>
+                </TableCell>
+                <TableCell className="text-sm text-gray-700">{patrimonio.descricao_bem || patrimonio.descricaoBem}</TableCell>
+                <TableCell>
+                  <Badge 
+                    className={`${getStatusColor(patrimonio.situacao_bem || patrimonio.situacaoBem)} border text-xs`}
+                  >
+                    {patrimonio.situacao_bem || patrimonio.situacaoBem}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-gray-700">
+                  R$ {(patrimonio.valor_aquisicao || patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </TableCell>
+                <TableCell className="text-sm text-gray-700">{patrimonio.setor_responsavel || patrimonio.setorResponsavel}</TableCell>
+                <TableCell className="text-sm text-gray-700">{patrimonio.local_objeto || patrimonio.localObjeto}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      asChild
+                      title="Visualizar"
+                      className="touch-target min-h-[40px] min-w-[40px]"
+                    >
+                      <Link to={`/bens-cadastrados/ver/${patrimonio.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="QR Code"
+                      className="touch-target min-h-[40px] min-w-[40px]"
+                    >
+                      <QrCode className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      asChild
+                      title="Editar"
+                      className="touch-target min-h-[40px] min-w-[40px]"
+                    >
+                      <Link to={`/bens-cadastrados/editar/${patrimonio.id}`}>
+                        <Edit className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Excluir"
+                      className="touch-target min-h-[40px] min-w-[40px]"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
-            ) : filteredData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="rounded-full bg-gray-100 p-3">
-                      <Search className="h-6 w-6 text-gray-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-900 font-medium">
-                        {searchTerm ? 'Nenhum bem encontrado' : 'Nenhum bem cadastrado'}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {searchTerm 
-                          ? 'Tente ajustar os termos de busca' 
-                          : 'Comece cadastrando um novo bem'}
-                      </p>
-                    </div>
-                    {!searchTerm && (
-                      <Button asChild className="mt-2">
-                        <Link to="/bens-cadastrados/novo">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Cadastrar Primeiro Bem
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredData.map((patrimonio, index) => (
-                <TableRow 
-                  key={`patrimonio-${patrimonio.id}-${index}`} 
-                  className="hover:bg-gray-50 border-gray-200"
-                >
-                  <TableCell className="font-medium font-mono text-sm text-gray-900">
-                    <Link 
-                      to={`/bens-cadastrados/ver/${patrimonio.id}`}
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-700">{patrimonio.descricao_bem || patrimonio.descricaoBem}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      className={`${getStatusColor(patrimonio.situacao_bem || patrimonio.situacaoBem)} border text-xs`}
-                    >
-                      {patrimonio.situacao_bem || patrimonio.situacaoBem}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-700">
-                    R$ {(patrimonio.valor_aquisicao || patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-700">{patrimonio.setor_responsavel || patrimonio.setorResponsavel}</TableCell>
-                  <TableCell className="text-sm text-gray-700">{patrimonio.local_objeto || patrimonio.localObjeto}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        asChild
-                        title="Visualizar"
-                        className="touch-target min-h-[40px] min-w-[40px]"
-                      >
-                        <Link to={`/bens-cadastrados/ver/${patrimonio.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleShowQrCode(patrimonio)}
-                        title="QR Code"
-                        className="touch-target min-h-[40px] min-w-[40px]"
-                      >
-                        <QrCode className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        asChild
-                        title="Editar"
-                        className="touch-target min-h-[40px] min-w-[40px]"
-                      >
-                        <Link to={`/bens-cadastrados/editar/${patrimonio.id}`}>
-                          <Edit className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Excluir"
-                        onClick={() => {
-                          console.log('Excluir:', patrimonio.id)
-                        }}
-                        className="touch-target min-h-[40px] min-w-[40px]"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </div>
@@ -215,20 +208,17 @@ const BensCadastrados = () => {
   console.log('📊 [DEV] BensCadastrados - É array?:', Array.isArray(patrimonios))
   console.log('📊 [DEV] BensCadastrados - Primeiro item:', patrimonios[0])
 
-  const filteredData = useMemo(() => {
-    if (!Array.isArray(patrimonios)) return []
+  // Filtro simples sem useMemo para evitar problemas de renderização
+  const filteredData = Array.isArray(patrimonios) ? patrimonios.filter((patrimonio) => {
+    if (!searchTerm) return true
     
-    return patrimonios.filter((patrimonio) => {
-      if (!searchTerm) return true
-      
-      const searchLower = searchTerm.toLowerCase()
-      return (
-        (patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio)?.toLowerCase().includes(searchLower) ||
-        (patrimonio.descricao_bem || patrimonio.descricaoBem)?.toLowerCase().includes(searchLower) ||
-        (patrimonio.setor_responsavel || patrimonio.setorResponsavel)?.toLowerCase().includes(searchLower)
-      )
-    })
-  }, [patrimonios, searchTerm])
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      (patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio)?.toLowerCase().includes(searchLower) ||
+      (patrimonio.descricao_bem || patrimonio.descricaoBem)?.toLowerCase().includes(searchLower) ||
+      (patrimonio.setor_responsavel || patrimonio.setorResponsavel)?.toLowerCase().includes(searchLower)
+    )
+  }) : []
 
   console.log('🔍 [DEV] BensCadastrados - filteredData:', filteredData.length)
 
@@ -316,18 +306,7 @@ const BensCadastrados = () => {
           </CardHeader>
           <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
             {/* Desktop Table */}
-            <Suspense fallback={
-              <div className="text-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-400 mx-auto" />
-                <span className="text-gray-500 ml-2">Carregando tabela...</span>
-              </div>
-            }>
-              <PatrimoniosTable 
-                filteredData={filteredData}
-                isLoading={isLoading}
-                searchTerm={searchTerm}
-              />
-            </Suspense>
+            {renderTable(filteredData, isLoading, searchTerm)}
 
             {/* Mobile Cards */}
             <div className="lg:hidden space-y-4">

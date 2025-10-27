@@ -5,6 +5,7 @@ import { RouteFallback } from '@/components/RouteFallback'
 import { Layout } from '@/components/Layout'
 import { SuperuserLayout } from '@/components/SuperuserLayout'
 import { DynamicHead } from '@/components/DynamicHead'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 // Context Providers
 import { AppProviders } from '@/components/AppProviders'
@@ -31,7 +32,7 @@ const TestDashboard = lazy(
 const AdminDashboard = lazy(() => import('@/pages/dashboards/AdminDashboard'))
 const UserDashboard = lazy(() => import('@/pages/dashboards/UserDashboard'))
 const ViewerDashboard = lazy(() => import('@/pages/dashboards/ViewerDashboard'))
-const BensCadastrados = lazy(() => import('@/pages/bens/BensCadastrados'))
+const BensCadastrados = lazy(() => import('@/pages/bens/BensCadastradosSimplificado'))
 const BensCreate = lazy(() => import('@/pages/bens/BensCreate'))
 const BensBulkCreate = lazy(() => import('@/pages/bens/BensBulkCreate'))
 const BensEdit = lazy(() => import('@/pages/bens/BensEdit'))
@@ -149,16 +150,17 @@ const EmailConfig = lazy(() => import('@/pages/configuracoes/EmailConfig'))
 
 function App() {
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <AppProviders>
-        <DynamicHead />
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
+    <ErrorBoundary>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <AppProviders>
+          <DynamicHead />
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/esqueci-minha-senha" element={<ForgotPassword />} />
@@ -647,6 +649,7 @@ function App() {
         </Suspense>
       </AppProviders>
     </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 

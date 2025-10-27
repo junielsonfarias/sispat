@@ -81,13 +81,10 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       
       console.log('✅ Sincronização: Recebidos', updatedPatrimonios.length, 'patrimônios do servidor')
       
-      // Atualizar o estado com os dados do servidor de forma segura e com delay
+      // Atualizar o estado com os dados do servidor de forma simples
       if (Array.isArray(updatedPatrimonios)) {
-        // Usar setTimeout para evitar conflitos de renderização
-        setTimeout(() => {
-          setPatrimonios(updatedPatrimonios)
-          setLastSync(new Date())
-        }, 100)
+        setPatrimonios(updatedPatrimonios)
+        setLastSync(new Date())
       }
       
       toast({
@@ -102,8 +99,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
         })
       }
       
-      // Forçar re-render da página
-      window.dispatchEvent(new Event('patrimonios-updated'))
+      // Sincronização concluída com sucesso
     } catch (error) {
       console.error('❌ Erro na sincronização:', error)
       toast({
