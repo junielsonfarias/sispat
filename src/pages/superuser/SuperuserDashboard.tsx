@@ -2,7 +2,7 @@ import { Building, Users, Database } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { useAuth } from '@/hooks/useAuth'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { Badge } from '@/components/ui/badge'
 
 export default function SuperuserDashboard() {

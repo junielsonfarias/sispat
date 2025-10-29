@@ -21,6 +21,7 @@ model User {
   updatedAt             DateTime        @updatedAt
   activityLogs          ActivityLog[]
   documentsUploaded     Documento[]     @relation("DocumentosUploader")
+  documentosGerais      DocumentoGeral[] @relation("DocumentosGeraisUploader")
   fichaTemplates        FichaTemplate[] @relation("FichaTemplateCreator")
   imoveisCreated        Imovel[]        @relation("ImovelCreator")
   labelTemplatesCreated LabelTemplate[] @relation("LabelTemplateCreator")
@@ -545,4 +546,27 @@ model LabelTemplate {
   @@index([isDefault])
   @@index([isActive])
   @@map("label_templates")
+}
+
+model DocumentoGeral {
+  id           String   @id @default(uuid())
+  titulo       String
+  descricao    String?
+  tipo         String
+  categoria    String?
+  tags         String[]
+  fileName     String
+  filePath     String
+  fileSize     Int
+  mimeType     String
+  isPublic     Boolean  @default(false)
+  uploadedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  uploadedBy   User     @relation("DocumentosGeraisUploader", fields: [uploadedById], references: [id])
+
+  @@index([uploadedById])
+  @@index([tipo])
+  @@index([isPublic])
+  @@map("documentos_gerais")
 }

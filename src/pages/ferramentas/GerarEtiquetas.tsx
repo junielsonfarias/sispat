@@ -28,7 +28,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { Patrimonio, Imovel } from '@/types'
 import { useDebounce } from '@/hooks/use-debounce'
 import { LabelPreview } from '@/components/LabelPreview'
@@ -40,7 +40,7 @@ import {
   SearchableSelectOption,
 } from '@/components/ui/searchable-select'
 import { useAuth } from '@/hooks/useAuth'
-import { useImovel } from '@/contexts/ImovelContext'
+import { useImovel } from '@/hooks/useImovel'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 

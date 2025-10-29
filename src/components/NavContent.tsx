@@ -159,6 +159,11 @@ const supervisorAndAdminLinks: NavItem[] = [
         icon: History,
         label: 'Logs de Atividade',
       },
+      {
+        to: '/admin/metrics',
+        icon: BarChart,
+        label: 'Métricas do Sistema',
+      },
     ]
   },
 

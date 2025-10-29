@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { useImovel } from '@/contexts/ImovelContext'
+import { useImovel } from '@/hooks/useImovel'
 import { Button } from '@/components/ui/button'
 import { generateMapUrl } from '@/lib/image-utils'
 import {

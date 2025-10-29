@@ -1,4 +1,5 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -17,6 +18,25 @@ showEnvironmentInfo();
 console.log('📦 Carregando configuração do banco de dados...');
 import { prisma, testDatabaseConnection } from './config/database';
 console.log('✅ Configuração do banco carregada');
+
+// Inicializar Redis
+console.log('📦 Carregando configuração do Redis...');
+import { initializeRedis } from './config/redis';
+const redis = initializeRedis();
+console.log('✅ Configuração do Redis carregada');
+
+// Inicializar sistemas de monitoramento
+console.log('📦 Carregando sistema de métricas...');
+import { metricsCollector } from './config/metrics';
+console.log('✅ Sistema de métricas carregado');
+
+console.log('📦 Carregando sistema de alertas...');
+import { alertManager } from './config/alerts';
+console.log('✅ Sistema de alertas carregado');
+
+console.log('📦 Carregando sistema WebSocket...');
+import { webSocketManager } from './config/websocket';
+console.log('✅ Sistema WebSocket carregado');
 
 // Exportar prisma para outros módulos
 export { prisma };
@@ -96,6 +116,25 @@ app.use(requestLogger);
 // app.use(globalRateLimiter);
 
 // ============================================
+// MIDDLEWARES DE CACHE
+// ============================================
+
+import { 
+  cacheStatsMiddleware, 
+  cacheClearMiddleware,
+  patrimoniosCacheMiddleware,
+  imoveisCacheMiddleware,
+  transferenciasCacheMiddleware,
+  documentosCacheMiddleware,
+  dashboardCacheMiddleware,
+  cacheInvalidationMiddleware
+} from './middlewares/cache';
+
+// Middlewares de estatísticas e limpeza de cache
+app.use(cacheStatsMiddleware());
+app.use(cacheClearMiddleware());
+
+// ============================================
 // ROTAS DE SAÚDE (antes das rotas principais)
 // ============================================
 
@@ -156,7 +195,7 @@ import uploadRoutes from './routes/uploadRoutes';
 import auditLogRoutes from './routes/auditLogRoutes';
 import manutencaoRoutes from './routes/manutencaoRoutes';
 import imovelFieldRoutes from './routes/imovelFieldRoutes';
-// import transferenciaRoutes from './routes/transferenciaRoutes';
+import transferRoutes from './routes/transferRoutes';
 import documentRoutes from './routes/documentRoutes';
 import fichaTemplatesRoutes from './routes/fichaTemplates';
 import labelTemplateRoutes from './routes/labelTemplateRoutes';
@@ -170,11 +209,16 @@ app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/sectors', sectorsRoutes);
-app.use('/api/patrimonios', patrimonioRoutes);
+
+// Aplicar cache específico para patrimônios
+app.use('/api/patrimonios', patrimoniosCacheMiddleware(), patrimonioRoutes);
 
 // Rotas secundárias - HABILITADAS
 app.use('/api/email-config', emailConfigRoutes);
-app.use('/api/imoveis', imovelRoutes);
+
+// Aplicar cache específico para imóveis
+app.use('/api/imoveis', imoveisCacheMiddleware(), imovelRoutes);
+
 app.use('/api/inventarios', inventarioRoutes);
 app.use('/api/tipos-bens', tiposBensRoutes);
 app.use('/api/formas-aquisicao', formasAquisicaoRoutes);
@@ -184,10 +228,16 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/manutencoes', manutencaoRoutes);
 app.use('/api/imovel-fields', imovelFieldRoutes);
-// app.use('/api/transferencias', transferenciaRoutes);
-app.use('/api/documentos', documentRoutes);
+
+// Aplicar cache específico para transferências e documentos
+app.use('/api/transfers', transferenciasCacheMiddleware(), transferRoutes);
+app.use('/api/documents', documentosCacheMiddleware(), documentRoutes);
 app.use('/api/ficha-templates', fichaTemplatesRoutes);
 app.use('/api/label-templates', labelTemplateRoutes);
+
+// Rotas de métricas e monitoramento
+import metricsRoutes from './routes/metricsRoutes';
+app.use('/api/metrics', metricsRoutes);
 
 // ============================================
 // TRATAMENTO DE ERROS
@@ -228,11 +278,18 @@ async function connectDatabase() {
 async function startServer() {
   await connectDatabase();
   
-  app.listen(PORT, () => {
+  // Criar servidor HTTP
+  const httpServer = createServer(app);
+  
+  // Inicializar WebSocket
+  webSocketManager.initialize(httpServer);
+  
+  httpServer.listen(PORT, () => {
     console.log('\n🚀 ================================');
     console.log(`   SISPAT Backend API v2.1.0`);
     console.log('   ================================');
     console.log(`   🌐 Servidor rodando em: http://localhost:${PORT}`);
+    console.log(`   🔌 WebSocket ativo em: ws://localhost:${PORT}`);
     console.log(`   🏥 Health check: http://localhost:${PORT}/api/health`);
     console.log(`   📚 API Docs: http://localhost:${PORT}/api-docs`);
     console.log(`   🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);

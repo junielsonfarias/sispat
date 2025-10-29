@@ -12,105 +12,273 @@ import { generateId } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { useNotifications } from './NotificationContext'
+import { api } from '@/lib/api'
 
 interface DocumentContextType {
   documents: GeneralDocument[]
-  addDocument: (file: File, user: { id: string; name: string }) => Promise<void>
-  deleteDocument: (documentId: string) => void
+  isLoading: boolean
+  addDocument: (file: File, metadata: {
+    titulo: string
+    descricao?: string
+    tipo: string
+    categoria?: string
+    tags?: string[]
+    isPublic?: boolean
+  }) => Promise<void>
+  updateDocument: (id: string, metadata: {
+    titulo?: string
+    descricao?: string
+    tipo?: string
+    categoria?: string
+    tags?: string[]
+    isPublic?: boolean
+  }) => Promise<void>
+  deleteDocument: (documentId: string) => Promise<void>
+  fetchDocuments: () => Promise<void>
+  downloadDocument: (id: string) => Promise<void>
 }
 
 const DocumentContext = createContext<DocumentContextType | null>(null)
 
 export const DocumentProvider = ({ children }: { children: ReactNode }) => {
   const [allDocuments, setAllDocuments] = useState<GeneralDocument[]>([])
-  const { user, users } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const { user } = useAuth()
   const { addNotification } = useNotifications()
 
-  useEffect(() => {
-    const stored = localStorage.getItem('sispat_general_documents')
-    if (stored) {
+  // Buscar documentos da API
+  const fetchDocuments = useCallback(async () => {
+    if (!user) return
+    
+    setIsLoading(true)
+    try {
+      const response = await api.get('/documents')
+      const documents = response.documents || response
+      
       setAllDocuments(
-        JSON.parse(stored).map((d: any) => ({
+        documents.map((d: any) => ({
           ...d,
-          uploadedAt: new Date(d.uploadedAt),
-        })),
+          uploadedAt: new Date(d.createdAt),
+        }))
       )
+    } catch (error) {
+      console.error('Erro ao buscar documentos:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Falha ao carregar documentos.',
+      })
+    } finally {
+      setIsLoading(false)
     }
-  }, [])
+  }, [user])
+
+  useEffect(() => {
+    fetchDocuments()
+  }, [fetchDocuments])
 
   const documents = useMemo(() => {
-    // Agora todos os documentos são visíveis para todos os usuários
-    // pois temos apenas um município
+    // Sistema single-municipality, retornar todos os documentos
     return allDocuments
   }, [allDocuments])
 
-  const persist = (newDocuments: GeneralDocument[]) => {
-    localStorage.setItem(
-      'sispat_general_documents',
-      JSON.stringify(newDocuments),
-    )
-    setAllDocuments(newDocuments)
-  }
-
   const addDocument = useCallback(
-    async (file: File, uploadUser: { id: string; name: string }) => {
-      if (!user?.municipalityId) return
+    async (file: File, metadata: {
+      titulo: string
+      descricao?: string
+      tipo: string
+      categoria?: string
+      tags?: string[]
+      isPublic?: boolean
+    }) => {
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('titulo', metadata.titulo)
+        formData.append('descricao', metadata.descricao || '')
+        formData.append('tipo', metadata.tipo)
+        formData.append('categoria', metadata.categoria || '')
+        formData.append('tags', metadata.tags?.join(',') || '')
+        formData.append('isPublic', metadata.isPublic?.toString() || 'false')
 
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      const newDocument: GeneralDocument = {
-        id: generateId(),
-        fileName: file.name,
-        fileUrl: URL.createObjectURL(file),
-        fileSize: file.size,
-        fileType: file.type,
-        uploadedAt: new Date(),
-        uploadedBy: uploadUser,
-        municipalityId: user.municipalityId,
-      }
-      persist([...allDocuments, newDocument])
-
-      const usersToNotify = users.filter(
-        (u) =>
-          u.municipalityId === user.municipalityId && u.id !== uploadUser.id,
-      )
-
-      usersToNotify.forEach((u) => {
-        addNotification({
-          userId: u.id,
-          title: 'Novo Documento Disponível',
-          description: `${uploadUser.name} adicionou o documento "${file.name}".`,
-          type: 'document',
-          link: '/ferramentas/documentos',
+        const response = await api.post('/documents', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         })
-      })
 
-      toast({ description: 'Documento enviado com sucesso.' })
+        const newDocument: GeneralDocument = {
+          ...response,
+          uploadedAt: new Date(response.createdAt),
+        }
+
+        setAllDocuments(prev => [...prev, newDocument])
+
+        addNotification({
+          tipo: 'info',
+          titulo: 'Documento Adicionado',
+          mensagem: `Documento "${metadata.titulo}" foi adicionado com sucesso.`,
+          link: `/documentos/${newDocument.id}`,
+        })
+
+        toast({
+          title: 'Sucesso',
+          description: 'Documento adicionado com sucesso.',
+        })
+      } catch (error) {
+        console.error('Erro ao adicionar documento:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao adicionar documento.',
+        })
+        throw error
+      }
     },
-    [allDocuments, user, users, addNotification],
+    [addNotification]
+  )
+
+  const updateDocument = useCallback(
+    async (id: string, metadata: {
+      titulo?: string
+      descricao?: string
+      tipo?: string
+      categoria?: string
+      tags?: string[]
+      isPublic?: boolean
+    }) => {
+      try {
+        const response = await api.put(`/documents/${id}`, {
+          titulo: metadata.titulo,
+          descricao: metadata.descricao,
+          tipo: metadata.tipo,
+          categoria: metadata.categoria,
+          tags: metadata.tags?.join(','),
+          isPublic: metadata.isPublic,
+        })
+
+        setAllDocuments(prev =>
+          prev.map(d =>
+            d.id === id
+              ? {
+                  ...d,
+                  ...response,
+                  uploadedAt: new Date(response.updatedAt),
+                }
+              : d,
+          ),
+        )
+
+        toast({
+          title: 'Sucesso',
+          description: 'Documento atualizado com sucesso.',
+        })
+      } catch (error) {
+        console.error('Erro ao atualizar documento:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao atualizar documento.',
+        })
+        throw error
+      }
+    },
+    []
   )
 
   const deleteDocument = useCallback(
-    (documentId: string) => {
-      persist(allDocuments.filter((d) => d.id !== documentId))
-      toast({ description: 'Documento excluído com sucesso.' })
+    async (documentId: string) => {
+      try {
+        await api.delete(`/documents/${documentId}`)
+        
+        setAllDocuments(prev => prev.filter(d => d.id !== documentId))
+
+        addNotification({
+          tipo: 'warning',
+          titulo: 'Documento Removido',
+          mensagem: 'Documento foi removido com sucesso.',
+        })
+
+        toast({
+          title: 'Sucesso',
+          description: 'Documento removido com sucesso.',
+        })
+      } catch (error) {
+        console.error('Erro ao deletar documento:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao remover documento.',
+        })
+        throw error
+      }
     },
-    [allDocuments],
+    [addNotification]
   )
 
+  const downloadDocument = useCallback(
+    async (id: string) => {
+      try {
+        const response = await api.get(`/documents/${id}/download`, {
+          responseType: 'blob',
+        })
+
+        // Criar URL para download
+        const url = window.URL.createObjectURL(new Blob([response]))
+        const link = document.createElement('a')
+        link.href = url
+        
+        // Buscar nome do arquivo do documento
+        const document = allDocuments.find(d => d.id === id)
+        const fileName = document?.fileName || 'documento'
+        
+        link.setAttribute('download', fileName)
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        window.URL.revokeObjectURL(url)
+
+        toast({
+          title: 'Sucesso',
+          description: 'Download iniciado com sucesso.',
+        })
+      } catch (error) {
+        console.error('Erro ao fazer download do documento:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao fazer download do documento.',
+        })
+        throw error
+      }
+    },
+    [allDocuments]
+  )
+
+  const value: DocumentContextType = {
+    documents,
+    isLoading,
+    addDocument,
+    updateDocument,
+    deleteDocument,
+    fetchDocuments,
+    downloadDocument,
+  }
+
   return (
-    <DocumentContext.Provider
-      value={{ documents, addDocument, deleteDocument }}
-    >
+    <DocumentContext.Provider value={value}>
       {children}
     </DocumentContext.Provider>
   )
 }
 
-export const useDocuments = () => {
+export const useDocument = () => {
   const context = useContext(DocumentContext)
   if (!context) {
-    throw new Error('useDocuments must be used within a DocumentProvider')
+    throw new Error('useDocument deve ser usado dentro de um DocumentProvider')
   }
   return context
 }
+
+// Alias para compatibilidade
+export const useDocuments = useDocument

@@ -39,7 +39,7 @@ import {
   Home,
 } from 'lucide-react'
 import { Imovel, TransferenciaType } from '@/types'
-import { useImovel } from '@/contexts/ImovelContext'
+import { useImovel } from '@/hooks/useImovel'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import {

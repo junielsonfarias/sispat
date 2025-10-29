@@ -18,166 +18,230 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { usePatrimonio } from './PatrimonioContext'
 import { useNotifications } from './NotificationContext'
+import { api } from '@/lib/api'
 
 interface TransferContextType {
   transferencias: Transferencia[]
+  isLoading: boolean
   addTransferencia: (
     data: Omit<Transferencia, 'id' | 'dataSolicitacao' | 'status'>,
-  ) => void
+  ) => Promise<void>
   updateTransferenciaStatus: (
     id: string,
     status: TransferenciaStatus,
     user: { id: string; name: string },
     comentarios?: string,
-  ) => void
+  ) => Promise<void>
+  fetchTransferencias: () => Promise<void>
+  deleteTransferencia: (id: string) => Promise<void>
 }
 
 const TransferContext = createContext<TransferContextType | null>(null)
 
 export const TransferProvider = ({ children }: { children: ReactNode }) => {
-  const [allTransferencias, setAllTransferencias] = useState<Transferencia[]>(
-    [],
-  )
+  const [allTransferencias, setAllTransferencias] = useState<Transferencia[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const { user } = useAuth()
   const { updatePatrimonio, getPatrimonioById } = usePatrimonio()
   const { addNotification } = useNotifications()
 
-  useEffect(() => {
-    // In a real app, this would fetch from an API
-    const stored = localStorage.getItem('sispat_transferencias')
-    if (stored) {
+  // Buscar transferências da API
+  const fetchTransferencias = useCallback(async () => {
+    if (!user) return
+    
+    setIsLoading(true)
+    try {
+      const response = await api.get('/transfers')
+      const transferencias = response.transfers || response
+      
       setAllTransferencias(
-        JSON.parse(stored).map((t: any) => ({
+        transferencias.map((t: any) => ({
           ...t,
-          dataSolicitacao: new Date(t.dataSolicitacao),
-          dataAprovacao: t.dataAprovacao
-            ? new Date(t.dataAprovacao)
-            : undefined,
-        })),
+          dataSolicitacao: new Date(t.createdAt),
+          dataTransferencia: new Date(t.dataTransferencia),
+        }))
       )
+    } catch (error) {
+      console.error('Erro ao buscar transferências:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Falha ao carregar transferências.',
+      })
+    } finally {
+      setIsLoading(false)
     }
-  }, [])
+  }, [user])
+
+  useEffect(() => {
+    fetchTransferencias()
+  }, [fetchTransferencias])
 
   const transferencias = useMemo(() => {
-    // ✅ CORREÇÃO: Sistema single-municipality, retornar todas as transferências
+    // Sistema single-municipality, retornar todas as transferências
     return allTransferencias
   }, [allTransferencias, user])
 
-  const persist = (newTransferencias: Transferencia[]) => {
-    // In a real app, this would be an API call
-    localStorage.setItem(
-      'sispat_transferencias',
-      JSON.stringify(newTransferencias),
-    )
-    setAllTransferencias(newTransferencias)
-  }
-
   const addTransferencia = useCallback(
-    (data: Omit<Transferencia, 'id' | 'dataSolicitacao' | 'status'>) => {
-      const newTransferencia: Transferencia = {
-        ...data,
-        id: generateId(),
-        dataSolicitacao: new Date(),
-        status: 'pendente',
+    async (data: Omit<Transferencia, 'id' | 'dataSolicitacao' | 'status'>) => {
+      try {
+        const response = await api.post('/transfers', {
+          patrimonioId: data.patrimonioId,
+          setorOrigem: data.setorOrigem,
+          setorDestino: data.setorDestino,
+          localOrigem: data.localOrigem,
+          localDestino: data.localDestino,
+          motivo: data.motivo,
+          dataTransferencia: data.dataTransferencia.toISOString(),
+          responsavelOrigem: data.responsavelOrigem,
+          responsavelDestino: data.responsavelDestino,
+          observacoes: data.observacoes,
+        })
+
+        const newTransferencia: Transferencia = {
+          ...response,
+          dataSolicitacao: new Date(response.createdAt),
+          dataTransferencia: new Date(response.dataTransferencia),
+        }
+
+        setAllTransferencias(prev => [...prev, newTransferencia])
+
+        const patrimonio = getPatrimonioById(data.patrimonioId)
+        if (patrimonio) {
+          addNotification({
+            tipo: 'info',
+            titulo: 'Transferência Solicitada',
+            mensagem: `Transferência do patrimônio ${patrimonio.numero_patrimonio} solicitada.`,
+            link: `/transferencias/${newTransferencia.id}`,
+          })
+        }
+
+        toast({
+          title: 'Sucesso',
+          description: 'Transferência solicitada com sucesso.',
+        })
+      } catch (error) {
+        console.error('Erro ao criar transferência:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao solicitar transferência.',
+        })
+        throw error
       }
-      persist([...allTransferencias, newTransferencia])
-      const patrimonio = getPatrimonioById(data.patrimonioId)
-      if (patrimonio) {
-        updatePatrimonio({ ...patrimonio, transferencia_pendente: true })
-      }
-      toast({ description: 'Solicitação de transferência enviada.' })
     },
-    [allTransferencias, getPatrimonioById, updatePatrimonio],
+    [getPatrimonioById, addNotification]
   )
 
   const updateTransferenciaStatus = useCallback(
-    (
+    async (
       id: string,
       status: TransferenciaStatus,
-      approver: { id: string; name: string },
+      user: { id: string; name: string },
       comentarios?: string,
     ) => {
-      const transferencia = allTransferencias.find((t) => t.id === id)
-      if (!transferencia) return
+      try {
+        const endpoint = status === 'aprovada' ? 'approve' : 'reject'
+        const response = await api.patch(`/transfers/${id}/${endpoint}`, {
+          observacoes: comentarios,
+        })
 
-      const updatedTransferencia: Transferencia = {
-        ...transferencia,
-        status,
-        aprovadorId: approver.id,
-        aprovadorNome: approver.name,
-        dataAprovacao: new Date(),
-        comentariosAprovador: comentarios,
-      }
+        setAllTransferencias(prev =>
+          prev.map(t =>
+            t.id === id
+              ? {
+                  ...t,
+                  status,
+                  dataAprovacao: status === 'aprovada' ? new Date() : undefined,
+                  aprovadoPor: status === 'aprovada' ? user : undefined,
+                  comentarios: comentarios || t.comentarios,
+                }
+              : t,
+          ),
+        )
 
-      persist(
-        allTransferencias.map((t) => (t.id === id ? updatedTransferencia : t)),
-      )
-
-      const patrimonio = getPatrimonioById(transferencia.patrimonioId)
-      if (patrimonio) {
-        const updates: Partial<typeof patrimonio> = {
-          transferencia_pendente: false,
-        }
-        const historyEntry: HistoricoEntry = {
-          date: new Date(),
-          action:
-            transferencia.type === 'transferencia' ? 'Transferência' : 'Doação',
-          details: `${
-            transferencia.type === 'transferencia' ? 'Transferência' : 'Doação'
-          } ${status === 'aprovada' ? 'aprovada' : 'rejeitada'}. Motivo: ${
-            transferencia.motivo
-          }`,
-          user: approver.name,
-        }
-
+        // Atualizar patrimônio se aprovado
         if (status === 'aprovada') {
-          if (transferencia.type === 'transferencia') {
-            updates.setor_responsavel = transferencia.setorDestino!
-          } else {
-            updates.status = 'baixado'
-            updates.doado = true
+          const transferencia = allTransferencias.find(t => t.id === id)
+          if (transferencia) {
+            await updatePatrimonio(transferencia.patrimonioId, {
+              setor_responsavel: transferencia.setorDestino,
+              local_objeto: transferencia.localDestino,
+            })
           }
         }
 
-        updatePatrimonio({
-          ...patrimonio,
-          ...updates,
-          historico_movimentacao: [
-            historyEntry,
-            ...patrimonio.historico_movimentacao,
-          ],
+        addNotification({
+          tipo: status === 'aprovada' ? 'success' : 'warning',
+          titulo: `Transferência ${status === 'aprovada' ? 'Aprovada' : 'Rejeitada'}`,
+          mensagem: `Transferência ${status === 'aprovada' ? 'aprovada' : 'rejeitada'} por ${user.name}.`,
+          link: `/transferencias/${id}`,
         })
 
-        addNotification({
-          userId: transferencia.solicitanteId,
-          title: `Solicitação ${
-            status === 'aprovada' ? 'Aprovada' : 'Rejeitada'
-          }`,
-          description: `Sua solicitação para o bem ${patrimonio.numero_patrimonio} foi ${
-            status === 'aprovada' ? 'aprovada' : 'rejeitada'
-          }.`,
-          type: 'transfer',
-          link: `/bens-cadastrados/ver/${patrimonio.id}`,
+        toast({
+          title: 'Sucesso',
+          description: `Transferência ${status === 'aprovada' ? 'aprovada' : 'rejeitada'} com sucesso.`,
         })
+      } catch (error) {
+        console.error('Erro ao atualizar status da transferência:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao atualizar status da transferência.',
+        })
+        throw error
       }
-      toast({ description: `Solicitação ${status}.` })
     },
-    [allTransferencias, getPatrimonioById, updatePatrimonio, addNotification],
+    [allTransferencias, updatePatrimonio, addNotification]
   )
 
+  const deleteTransferencia = useCallback(
+    async (id: string) => {
+      try {
+        await api.delete(`/transfers/${id}`)
+        
+        setAllTransferencias(prev => prev.filter(t => t.id !== id))
+
+        toast({
+          title: 'Sucesso',
+          description: 'Transferência deletada com sucesso.',
+        })
+      } catch (error) {
+        console.error('Erro ao deletar transferência:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao deletar transferência.',
+        })
+        throw error
+      }
+    },
+    []
+  )
+
+  const value: TransferContextType = {
+    transferencias,
+    isLoading,
+    addTransferencia,
+    updateTransferenciaStatus,
+    fetchTransferencias,
+    deleteTransferencia,
+  }
+
   return (
-    <TransferContext.Provider
-      value={{ transferencias, addTransferencia, updateTransferenciaStatus }}
-    >
+    <TransferContext.Provider value={value}>
       {children}
     </TransferContext.Provider>
   )
 }
 
-export const useTransfers = () => {
+export const useTransfer = () => {
   const context = useContext(TransferContext)
   if (!context) {
-    throw new Error('useTransfers must be used within a TransferProvider')
+    throw new Error('useTransfer deve ser usado dentro de um TransferProvider')
   }
   return context
 }
+
+// Alias para compatibilidade
+export const useTransfers = useTransfer

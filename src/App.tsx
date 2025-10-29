@@ -113,6 +113,7 @@ const Personalization = lazy(() => import('@/pages/admin/Personalization'))
 const NumberingSettings = lazy(() => import('@/pages/admin/NumberingSettings'))
 const ActivityLog = lazy(() => import('@/pages/admin/ActivityLog'))
 const AcquisitionFormManagement = lazy(() => import('@/pages/admin/AcquisitionFormManagement'))
+const Metrics = lazy(() => import('@/pages/admin/Metrics'))
 const InventarioEdit = lazy(() => import('@/pages/inventarios/InventarioEdit'))
 const InventarioPrint = lazy(() => import('@/pages/inventarios/InventarioPrint'))
 const Profile = lazy(() => import('@/pages/Profile'))
@@ -637,6 +638,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
                     <ActivityLog />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/metrics"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+                    <Metrics />
                   </ProtectedRoute>
                 }
               />

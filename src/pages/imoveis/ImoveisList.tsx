@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Imovel } from '@/types'
 import { useDebounce } from '@/hooks/use-debounce'
-import { useImovel } from '@/contexts/ImovelContext'
+import { useImovel } from '@/hooks/useImovel'
 import { useAuth } from '@/hooks/useAuth'
 
 type SortConfig = {

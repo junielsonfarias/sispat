@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useSync } from '@/contexts/SyncContext'
 import { useAuth } from '@/hooks/useAuth'
 import { LabelPreview } from '@/components/LabelPreview'

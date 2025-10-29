@@ -1,6 +1,12 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { AppError } from '../middlewares/errorHandler';
+import { 
+  QueryOptimizer, 
+  executeOptimizedQuery, 
+  queryCache 
+} from '../config/database-optimization';
+import { redisCache, CacheUtils } from '../config/redis';
 
 /**
  * Listar patrimônios públicos (sem autenticação)
@@ -77,27 +83,30 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       tipo,
       page = '1',
       limit = '50',
+      orderBy = 'createdAt',
+      orderDirection = 'desc'
     } = req.query;
 
-    // ✅ CORREÇÃO: Validar e sanitizar query params
-    const pageNum = Math.max(1, parseInt(page as string) || 1);
-    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 50));
-    const skip = (pageNum - 1) * limitNum;
+    // ✅ OTIMIZAÇÃO: Usar QueryOptimizer para paginação
+    const pagination = QueryOptimizer.applyPagination(page as string, limit as string);
+
+    // ✅ OTIMIZAÇÃO: Usar QueryOptimizer para busca
+    const searchFilters = QueryOptimizer.applySearchFilters(
+      search as string,
+      ['numero_patrimonio', 'descricao_bem', 'marca', 'modelo']
+    );
+
+    // ✅ OTIMIZAÇÃO: Usar QueryOptimizer para ordenação
+    const ordering = QueryOptimizer.applyOrdering(
+      orderBy as string,
+      orderDirection as 'asc' | 'desc'
+    );
 
     // Construir filtros
     const where: any = {
       municipalityId: req.user?.municipalityId,
+      ...searchFilters,
     };
-
-    // Filtro de busca
-    if (search) {
-      where.OR = [
-        { numero_patrimonio: { contains: search as string, mode: 'insensitive' } },
-        { descricao_bem: { contains: search as string, mode: 'insensitive' } },
-        { marca: { contains: search as string, mode: 'insensitive' } },
-        { modelo: { contains: search as string, mode: 'insensitive' } },
-      ];
-    }
 
     // Filtro de status
     if (status) {
@@ -114,56 +123,27 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       where.tipo = tipo;
     }
 
-    // Verificar acesso por perfil
-    // ✅ Admin e Supervisor veem TODOS os setores
-    // Apenas usuário e visualizador tem filtro por setor
-    if (req.user?.role === 'usuario' || req.user?.role === 'visualizador') {
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.userId },
-        select: { responsibleSectors: true },
-      });
+    // ✅ OTIMIZAÇÃO: Usar QueryOptimizer para filtros de permissão
+    const permissionFilters = await QueryOptimizer.applyPermissionFilters(req.user, 'patrimonio');
+    Object.assign(where, permissionFilters);
 
-      console.log('[DEV] Verificando acesso do usuário:', {
-        userId: req.user.userId,
-        role: req.user.role,
-        responsibleSectors: user?.responsibleSectors,
-      });
-
-      if (user && user.responsibleSectors.length > 0) {
-        // Buscar IDs dos setores pelos nomes
-        const sectors = await prisma.sector.findMany({
-          where: { 
-            name: { in: user.responsibleSectors },
-            municipalityId: req.user.municipalityId
-          },
-          select: { id: true, name: true }
-        });
-        
-        console.log('[DEV] Setores encontrados para o usuário:', sectors);
-        
-        const sectorIds = sectors.map(s => s.id);
-        if (sectorIds.length > 0) {
-          where.sectorId = { in: sectorIds };
-          console.log('[DEV] Filtrando por setores:', sectorIds);
-        } else {
-          console.log('[DEV] ⚠️ Usuário tem setores atribuídos mas nenhum foi encontrado no banco');
-        }
-      } else {
-        console.log('[DEV] ℹ️ Usuário sem setores atribuídos - mostrando TODOS os patrimônios (modo configuração)');
-        // ✅ Se usuário não tem setores atribuídos ainda, mostrar TODOS
-        // Isso permite visualização durante a configuração inicial
-      }
-    }
-
-    // Buscar patrimônios
-    console.log('[DEV] Buscando patrimônios com filtro:', JSON.stringify(where, null, 2));
+    // ✅ OTIMIZAÇÃO: Usar Redis cache e query otimizada
+    const cacheKey = CacheUtils.getPatrimoniosKey({ where, pagination, ordering });
     
-    const [patrimonios, total] = await Promise.all([
-      prisma.patrimonio.findMany({
-        where,
-        skip,
-        take: limitNum,
-        orderBy: { createdAt: 'desc' },
+    // Tentar obter do cache Redis primeiro
+    let result = await redisCache.get(cacheKey);
+    
+    if (!result) {
+      // Se não estiver no cache, executar query
+      result = await executeOptimizedQuery(
+        cacheKey,
+        async () => {
+        const [patrimonios, total] = await Promise.all([
+          prisma.patrimonio.findMany({
+            where,
+            skip: pagination.skip,
+            take: pagination.take,
+            orderBy: ordering,
         include: {
           sector: {
             select: { id: true, name: true, codigo: true },
@@ -184,23 +164,24 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       }),
       prisma.patrimonio.count({ where }),
     ]);
-
-    console.log('[DEV] ✅ Patrimônios encontrados:', patrimonios.length);
-    console.log('[DEV] 📊 Total no banco:', total);
-    console.log('[DEV] 📝 Primeiros 2:', patrimonios.slice(0, 2).map(p => ({
-      id: p.id,
-      numero: p.numero_patrimonio,
-      descricao: p.descricao_bem,
-      setor: p.sector?.name,
-    })));
+    
+    return { patrimonios, total };
+        }
+      );
+      
+      // Armazenar no cache Redis por 5 minutos
+      await redisCache.set(cacheKey, result, 300);
+    }
+    
+    const { patrimonios, total } = result;
 
     res.json({
       patrimonios,
       pagination: {
-        page: pageNum,
-        limit: limitNum,
+        page: pagination.page,
+        limit: pagination.limit,
         total,
-        pages: Math.ceil(total / limitNum),
+        pages: Math.ceil(total / pagination.limit),
       },
     });
   } catch (error) {
@@ -339,48 +320,84 @@ export const getByNumero = async (req: Request, res: Response): Promise<void> =>
 };
 
 /**
- * Gerar próximo número patrimonial
+ * Gerar próximo número patrimonial (ATÔMICO)
  * GET /api/patrimonios/gerar-numero
  */
 export const gerarNumeroPatrimonial = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { prefix = 'PAT', year } = req.query
+    const { prefix = 'PAT', year, sectorCode } = req.query
     const currentYear = year || new Date().getFullYear()
+    const sectorCodeValue = sectorCode || '00'
 
-    // Buscar último número do ano
-    const ultimoPatrimonio = await prisma.patrimonio.findFirst({
-      where: {
-        numero_patrimonio: {
-          startsWith: `${prefix}-${currentYear}`,
+    // Usar transação para garantir atomicidade
+    const result = await prisma.$transaction(async (tx) => {
+      // Buscar último número do ano e setor
+      const ultimoPatrimonio = await tx.patrimonio.findFirst({
+        where: {
+          numero_patrimonio: {
+            startsWith: `${prefix}${currentYear}${sectorCodeValue}`,
+          },
         },
-      },
-      orderBy: {
-        numero_patrimonio: 'desc',
-      },
-      select: {
-        numero_patrimonio: true,
-      },
+        orderBy: {
+          numero_patrimonio: 'desc',
+        },
+        select: {
+          numero_patrimonio: true,
+        },
+      })
+
+      let proximoNumero = 1
+
+      if (ultimoPatrimonio) {
+        // Extrair número sequencial do formato: PAT2025000001
+        const numeroSemPrefix = ultimoPatrimonio.numero_patrimonio.replace(`${prefix}${currentYear}${sectorCodeValue}`, '')
+        const ultimoSequencial = parseInt(numeroSemPrefix)
+        proximoNumero = ultimoSequencial + 1
+      }
+
+      // Formatar: PAT2025000001 (Ano + Código do Setor + Sequencial)
+      const numeroGerado = `${prefix}${currentYear}${sectorCodeValue}${proximoNumero.toString().padStart(6, '0')}`
+
+      // Verificar se o número já existe (dupla verificação)
+      const existe = await tx.patrimonio.findUnique({
+        where: {
+          numero_patrimonio: numeroGerado,
+        },
+        select: {
+          id: true,
+        },
+      })
+
+      if (existe) {
+        throw new Error('Número patrimonial já existe, tentando novamente...')
+      }
+
+      return {
+        numero: numeroGerado,
+        year: currentYear,
+        sectorCode: sectorCodeValue,
+        sequencial: proximoNumero,
+      }
     })
 
-    let proximoNumero = 1
-
-    if (ultimoPatrimonio) {
-      // Extrair número sequencial
-      const partes = ultimoPatrimonio.numero_patrimonio.split('-')
-      const ultimoSequencial = parseInt(partes[partes.length - 1])
-      proximoNumero = ultimoSequencial + 1
-    }
-
-    // Formatar: PAT-2025-0001
-    const numeroGerado = `${prefix}-${currentYear}-${proximoNumero.toString().padStart(4, '0')}`
-
-    res.json({
-      numero: numeroGerado,
-      year: currentYear,
-      sequencial: proximoNumero,
-    })
+    res.json(result)
   } catch (error) {
     console.error('Erro ao gerar número patrimonial:', error)
+    
+    // Se for erro de duplicação, tentar novamente
+    if (error.message.includes('já existe')) {
+      // Retry uma vez
+      setTimeout(async () => {
+        try {
+          const retryResult = await gerarNumeroPatrimonial(req, res)
+          return retryResult
+        } catch (retryError) {
+          res.status(500).json({ error: 'Erro ao gerar número patrimonial após retry' })
+        }
+      }, 100)
+      return
+    }
+    
     res.status(500).json({ error: 'Erro ao gerar número patrimonial' })
   }
 }

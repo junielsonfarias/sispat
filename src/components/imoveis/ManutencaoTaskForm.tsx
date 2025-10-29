@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { ManutencaoTask } from '@/types'
 import { useManutencao } from '@/contexts/ManutencaoContext'
-import { useImovel } from '@/contexts/ImovelContext'
+import { useImovel } from '@/hooks/useImovel'
 import { useAuth } from '@/hooks/useAuth'
 import { DatePicker } from '@/components/ui/date-picker'
 

@@ -17,12 +17,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MobileNavigation, BottomNavigation } from '@/components/MobileNavigation'
+import { useMobile } from '@/hooks/useMobile'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { User, LogOut, Settings, Shield, Building2, Sun, Moon } from 'lucide-react'
 
 export const Header = () => {
   const { user, logout } = useAuth()
   const { theme, setTheme, actualTheme } = useTheme()
+  const { isMobile } = useMobile()
   
   // Fallback para quando o contexto não estiver disponível
   let settings

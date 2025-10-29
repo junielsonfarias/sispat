@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { performance } from 'perf_hooks';
+import { metricsCollector } from '../config/metrics';
 
 // Interface para métricas
 interface Metrics {
@@ -59,6 +60,16 @@ export const monitoringMiddleware = (req: Request, res: Response, next: NextFunc
     if (metricsHistory.length > 100) {
       metricsHistory.shift();
     }
+    
+    // Integrar com sistema de métricas
+    metricsCollector.incrementMetric('total_requests', 1, 300).catch(console.error);
+    
+    if (res.statusCode >= 400) {
+      metricsCollector.incrementMetric('error_requests', 1, 300).catch(console.error);
+    }
+    
+    // Atualizar tempo médio de resposta
+    metricsCollector.setMetric('avg_response_time', responseTime, 300).catch(console.error);
     
     // Log de performance
     if (responseTime > 1000) { // Log requests lentos (>1s)

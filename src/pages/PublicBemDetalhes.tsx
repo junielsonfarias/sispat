@@ -21,7 +21,7 @@ import {
   ChevronRight,
   CheckCircle2,
 } from 'lucide-react'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { getCloudImageUrl, formatDate, formatCurrency } from '@/lib/utils'

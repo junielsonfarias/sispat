@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useReportTemplates } from '@/contexts/ReportTemplateContext'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Patrimonio, ReportTemplate, ReportComponent } from '@/types'

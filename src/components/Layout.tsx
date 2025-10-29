@@ -1,6 +1,7 @@
 import { ReactNode } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useMobile } from '@/hooks/useMobile'
 import { cn } from '@/lib/utils'
 import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
@@ -8,6 +9,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Container } from '@/components/ui/responsive-container'
+import MobileNavigationOptimized from '@/components/MobileNavigationOptimized'
 
 interface LayoutProps {
   children?: ReactNode
@@ -15,6 +17,7 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const { user } = useAuth()
+  const { isMobile } = useMobile()
 
   if (!user) {
     return <ProtectedRoute>{children}</ProtectedRoute>
@@ -25,6 +28,8 @@ export const Layout = ({ children }: LayoutProps) => {
       {/* Header responsivo */}
       <div className="sticky top-0 z-40">
         <Header />
+        {/* Navegação mobile */}
+        {isMobile && <MobileNavigationOptimized />}
       </div>
       
       {/* Conteúdo principal */}
@@ -36,7 +41,10 @@ export const Layout = ({ children }: LayoutProps) => {
           </div>
           <div className="flex-1 w-full">
             {/* Main com padding-bottom para o bottom navigation em mobile */}
-            <main className="flex-1 overflow-auto p-4 md:p-4 lg:p-6 pb-20 md:pb-4">
+            <main className={cn(
+              "flex-1 overflow-auto p-4 md:p-4 lg:p-6",
+              isMobile ? "pb-20" : "pb-4"
+            )}>
               {children || <Outlet />}
             </main>
           </div>

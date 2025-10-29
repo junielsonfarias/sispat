@@ -22,7 +22,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel'
-import { useImovel } from '@/contexts/ImovelContext'
+import { useImovel } from '@/hooks/useImovel'
 import { getCloudImageUrl, formatDate, formatCurrency } from '@/lib/utils'
 import { useImovelField } from '@/contexts/ImovelFieldContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
