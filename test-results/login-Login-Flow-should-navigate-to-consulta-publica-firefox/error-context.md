@@ -1,0 +1,62 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e13]:
+            - img "Logo" [ref=e15]
+            - generic [ref=e17]:
+              - heading "Bem-vindo ao SISPAT" [level=1] [ref=e18]
+              - paragraph [ref=e19]: Sistema de Gestão de Patrimônio
+          - generic [ref=e20]:
+            - generic [ref=e21]:
+              - generic [ref=e22]:
+                - img [ref=e24]
+                - generic [ref=e26]: Seguro e Confiável
+              - generic [ref=e27]:
+                - img [ref=e29]
+                - generic [ref=e37]: Gestão Municipal
+            - generic [ref=e38]:
+              - link "Consulta Pública" [active] [ref=e39] [cursor=pointer]:
+                - /url: /consulta-publica
+                - img [ref=e40]
+                - generic [ref=e43]: Consulta Pública
+                - img [ref=e44]
+              - paragraph [ref=e48]: Acesse informações públicas sobre o patrimônio municipal
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - heading "Acesso ao Sistema" [level=3] [ref=e52]
+            - paragraph [ref=e53]: Digite suas credenciais para continuar
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - generic [ref=e56]:
+                - generic [ref=e57]:
+                  - img [ref=e58]
+                  - text: E-mail
+                - textbox "E-mail" [ref=e61]:
+                  - /placeholder: seu@email.com
+              - generic [ref=e62]:
+                - generic [ref=e63]:
+                  - img [ref=e64]
+                  - text: Senha
+                - generic [ref=e67]:
+                  - textbox "Digite sua senha" [ref=e68]
+                  - button "Mostrar senha" [ref=e69] [cursor=pointer]
+              - button "Entrar no Sistema" [ref=e70] [cursor=pointer]
+            - generic [ref=e71]:
+              - link "Esqueceu sua senha?" [ref=e72] [cursor=pointer]:
+                - /url: /forgot-password
+              - generic [ref=e73]:
+                - img [ref=e74]
+                - generic [ref=e76]: SISPAT v2.1.0
+      - paragraph [ref=e78]: © 2025 Curling. Todos os direitos reservados.
+    - region "Notifications (F8)":
+      - list
+  - generic [ref=e79]:
+    - img [ref=e81]
+    - button "Open Tanstack query devtools" [ref=e130] [cursor=pointer]:
+      - img [ref=e131]
+```

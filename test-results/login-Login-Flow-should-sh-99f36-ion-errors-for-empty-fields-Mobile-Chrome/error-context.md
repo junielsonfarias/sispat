@@ -1,0 +1,65 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e13]:
+          - img "Logo" [ref=e15]
+          - generic [ref=e17]:
+            - heading "Bem-vindo ao SISPAT" [level=1] [ref=e18]
+            - paragraph [ref=e19]: Sistema de Gestão de Patrimônio
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - heading "Acesso ao Sistema" [level=3] [ref=e23]
+              - paragraph [ref=e24]: Digite suas credenciais para continuar
+            - generic [ref=e25]:
+              - generic [ref=e26]:
+                - generic [ref=e27]:
+                  - generic [ref=e28]:
+                    - img [ref=e29]
+                    - text: E-mail
+                  - textbox "E-mail" [active] [ref=e32]:
+                    - /placeholder: seu@email.com
+                  - paragraph [ref=e33]: Por favor, insira um e-mail válido.
+                - generic [ref=e34]:
+                  - generic [ref=e35]:
+                    - img [ref=e36]
+                    - text: Senha
+                  - generic [ref=e39]:
+                    - textbox "Digite sua senha" [ref=e40]
+                    - button "Mostrar senha" [ref=e41] [cursor=pointer]:
+                      - img [ref=e42]
+                  - paragraph [ref=e45]: Senha é obrigatória.
+                - button "Entrar no Sistema" [ref=e46] [cursor=pointer]
+              - generic [ref=e47]:
+                - link "Esqueceu sua senha?" [ref=e48] [cursor=pointer]:
+                  - /url: /forgot-password
+                - generic [ref=e49]:
+                  - img [ref=e50]
+                  - generic [ref=e52]: SISPAT v2.1.0
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - generic [ref=e55]:
+                - img [ref=e57]
+                - generic [ref=e59]: Seguro e Confiável
+              - generic [ref=e60]:
+                - img [ref=e62]
+                - generic [ref=e66]: Gestão Municipal
+            - generic [ref=e67]:
+              - link "Consulta Pública" [ref=e68] [cursor=pointer]:
+                - /url: /consulta-publica
+                - img [ref=e69]
+                - generic [ref=e72]: Consulta Pública
+                - img [ref=e73]
+              - paragraph [ref=e77]: Acesse informações públicas sobre o patrimônio municipal
+      - paragraph [ref=e79]: © 2025 Curling. Todos os direitos reservados.
+    - region "Notifications (F8)":
+      - list
+  - generic [ref=e80]:
+    - img [ref=e82]
+    - button "Open Tanstack query devtools" [ref=e130] [cursor=pointer]:
+      - img [ref=e131]
+```
