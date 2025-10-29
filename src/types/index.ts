@@ -175,6 +175,10 @@ export interface Imovel {
   numero_patrimonio: string
   denominacao: string
   endereco: string
+  cep?: string
+  bairro?: string
+  cidade?: string
+  estado?: string
   setor: string
   data_aquisicao: Date
   valor_aquisicao: number

@@ -50,8 +50,8 @@ const bulkPatrimonioSchema = z.object({
       numero_serie: z.string().optional(),
       valor_aquisicao: z.coerce.number().min(0.01, 'Valor deve ser maior que zero'),
       quantidade: z.coerce.number().int().min(1, 'Quantidade deve ser no mínimo 1').default(1),
-      numero_nota_fiscal: z.string().min(1, 'Nota fiscal é obrigatória'),
-      situacao_bem: z.enum(['ÓTIMO', 'BOM', 'REGULAR', 'RUIM', 'EM_MANUTENCAO'], {
+      numero_nota_fiscal: z.string().optional(),
+      situacao_bem: z.enum(['OTIMO', 'BOM', 'REGULAR', 'RUIM', 'PESSIMO'], {
         required_error: 'Situação é obrigatória.',
       }),
     })

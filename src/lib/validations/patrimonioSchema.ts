@@ -36,18 +36,18 @@ export const patrimonioBaseSchema = z.object({
     .default(1),
   numero_nota_fiscal: z
     .string()
-    .min(1, 'Nota fiscal é obrigatória.')
-    .max(50, 'A nota fiscal deve ter no máximo 50 caracteres.'),
+    .max(50, 'A nota fiscal deve ter no máximo 50 caracteres.')
+    .optional(),
   forma_aquisicao: z
     .string()
     .min(1, 'Forma de aquisição é obrigatória.')
     .max(50, 'A forma de aquisição deve ter no máximo 50 caracteres.'),
   setor_responsavel: z.string().min(1, 'Setor é obrigatório.'),
   local_objeto: z.string().min(1, 'Localização é obrigatória.'),
-  situacao_bem: z.enum(['bom', 'regular', 'ruim', 'pessimo'], {
+  situacao_bem: z.enum(['OTIMO', 'BOM', 'REGULAR', 'RUIM', 'PESSIMO'], {
     required_error: 'Situação é obrigatória.',
   }).optional(),
-  status: z.enum(['ativo', 'inativo', 'manutencao'], {
+  status: z.enum(['ativo', 'inativo', 'manutencao', 'baixado', 'extraviado'], {
     required_error: 'Status é obrigatório.',
   }).default('ativo'),
   fotos: z.array(z.any()).optional(),
@@ -74,6 +74,12 @@ export const patrimonioBaseSchema = z.object({
     .or(z.literal('')),
   documentos_pdf: z.array(z.any()).optional(),
   observacoes: z.string().optional().nullable(),
+  // Campos de baixa
+  data_baixa: z.string().refine((val) => !val || !isNaN(Date.parse(val)), {
+    message: 'Data de baixa inválida.',
+  }).optional(),
+  motivo_baixa: z.string().max(500, 'Motivo de baixa deve ter no máximo 500 caracteres.').optional(),
+  documentos_baixa: z.array(z.string()).optional(),
 })
 
 export const patrimonioEditSchema = patrimonioBaseSchema
@@ -84,7 +90,7 @@ export const patrimonioEditSchema = patrimonioBaseSchema
       required_error: 'Status é obrigatório.',
     }),
     // situacao_bem pode incluir 'baixado' na edição (quando já está baixado)
-    situacao_bem: z.enum(['bom', 'regular', 'ruim', 'pessimo', 'baixado'], {
+    situacao_bem: z.enum(['OTIMO', 'BOM', 'REGULAR', 'RUIM', 'PESSIMO'], {
       required_error: 'Situação é obrigatória.',
     }).optional().nullable(),
     data_baixa: z.string().optional().nullable(),

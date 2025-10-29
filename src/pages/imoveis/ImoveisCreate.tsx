@@ -52,8 +52,12 @@ const baseSchema = z.object({
   url_documentos: z
     .string()
     .url('URL inválida.')
-    .optional()
-    .or(z.literal('')),
+    .optional(),
+  // Campos de endereço adicionais
+  cep: z.string().optional(),
+  bairro: z.string().optional(),
+  cidade: z.string().optional(),
+  estado: z.string().optional(),
   documentos_pdf: z.array(z.any()).optional(),
 })
 

@@ -218,6 +218,10 @@ model Imovel {
   numero_patrimonio String   @unique
   denominacao       String
   endereco          String
+  cep               String?
+  bairro            String?
+  cidade            String?
+  estado            String?
   setor             String
   data_aquisicao    DateTime
   valor_aquisicao   Float
