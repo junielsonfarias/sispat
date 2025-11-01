@@ -38,7 +38,7 @@ import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { toast } from '@/hooks/use-toast'
 import { LabelPreview } from '@/components/LabelPreview'
 import { Textarea } from '@/components/ui/textarea'
-import SubPatrimoniosManager from '@/components/bens/SubPatrimoniosManager'
+import { SubPatrimoniosManager } from '@/components/bens/SubPatrimoniosManager'
 import {
   Carousel,
   CarouselContent,
@@ -103,6 +103,7 @@ function BensView() {
   })
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false)
   const [selectedLabelTemplate, setSelectedLabelTemplate] = useState<any>(null)
+  const labelPrintRef = useRef<HTMLDivElement>(null)
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [isBaixaModalOpen, setIsBaixaModalOpen] = useState(false)
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false)
@@ -493,14 +494,28 @@ function BensView() {
                             fotos: fotos,
                             tipos: fotos.map((f: any) => typeof f),
                           })
-                          return fotos
+                          // ✅ CORREÇÃO: Converter objetos { id, file_url } para URLs/IDs
+                          return fotos.map((foto: any) => {
+                            if (typeof foto === 'object' && foto?.file_url) {
+                              return foto.file_url
+                            }
+                            if (typeof foto === 'object' && foto?.id) {
+                              return foto.id
+                            }
+                            return typeof foto === 'string' ? foto : String(foto)
+                          })
                         })().map((fotoId, index) => (
                           <CarouselItem key={index}>
                             <div className="relative flex items-center justify-center bg-gray-100 rounded-lg min-h-[400px]">
                               <img
-                                src={getCloudImageUrl(fotoId)}
+                                src={getCloudImageUrl(String(fotoId))}
                                 alt={`${patrimonio.descricao_bem || patrimonio.descricaoBem} - Foto ${index + 1}`}
                                 className="rounded-lg object-contain w-full h-full max-h-[600px]"
+                                onError={(e) => {
+                                  console.error('❌ Erro ao carregar foto:', fotoId)
+                                  const target = e.target as HTMLImageElement
+                                  target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f1f5f9" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%2394a3b8" font-size="14"%3EErro ao carregar imagem%3C/text%3E%3C/svg%3E'
+                                }}
                               />
                             </div>
                           </CarouselItem>
@@ -891,10 +906,115 @@ function BensView() {
                       />
                     </div>
                     <div className="flex justify-center gap-2 mt-4">
-                      <Button onClick={() => {
-                        // Implementar impressão
-                        console.log('Imprimir etiqueta:', selectedLabelTemplate, patrimonio)
+                      <Button onClick={async () => {
+                        if (!selectedLabelTemplate || !patrimonio) {
+                          toast({
+                            variant: 'destructive',
+                            title: 'Erro',
+                            description: 'Por favor, selecione um modelo de etiqueta.',
+                          })
+                          return
+                        }
+                        
+                        // Aguardar um pouco para garantir que o QR code seja carregado
+                        await new Promise(resolve => setTimeout(resolve, 500))
+                        
+                        // Abrir janela de impressão
+                        const printWindow = window.open('', '_blank')
+                        if (printWindow) {
+                          printWindow.document.write(
+                            '<html><head><title>Imprimir Etiqueta</title>',
+                          )
+                          
+                          // Copiar estilos
+                          document.head
+                            .querySelectorAll('link[rel="stylesheet"], style')
+                            .forEach((el) => {
+                              printWindow.document.head.appendChild(el.cloneNode(true))
+                            })
+                          
+                          // Adicionar estilos de impressão específicos para etiquetas
+                          printWindow.document.write(`
+                            <style>
+                              @media print {
+                                @page { 
+                                  size: ${selectedLabelTemplate.width}mm ${selectedLabelTemplate.height}mm;
+                                  margin: 0;
+                                }
+                                body { 
+                                  margin: 0;
+                                  padding: 0;
+                                  display: flex;
+                                  align-items: center;
+                                  justify-content: center;
+                                  -webkit-print-color-adjust: exact !important;
+                                  print-color-adjust: exact !important;
+                                }
+                                .label-print-container {
+                                  width: ${selectedLabelTemplate.width}mm;
+                                  height: ${selectedLabelTemplate.height}mm;
+                                  overflow: hidden;
+                                }
+                              }
+                            </style>
+                          `)
+                          
+                          printWindow.document.write('</head><body>')
+                          printWindow.document.write('<div class="label-print-container">')
+                          
+                          // ✅ CORREÇÃO: Verificar se o ref existe e tem conteúdo
+                          if (labelPrintRef.current) {
+                            printWindow.document.write(labelPrintRef.current.outerHTML)
+                          } else {
+                            // Fallback: criar HTML manualmente se ref não estiver disponível
+                            printWindow.document.write(`
+                              <div style="width: ${selectedLabelTemplate.width * 4}px; height: ${selectedLabelTemplate.height * 4}px; position: relative; background: white;">
+                                ${selectedLabelTemplate.elements.map((el: any) => {
+                                  let content = ''
+                                  if (el.type === 'LOGO') {
+                                    content = `<img src="${settings?.activeLogoUrl || ''}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`
+                                  } else if (el.type === 'PATRIMONIO_FIELD') {
+                                    content = String(patrimonio[el.content as keyof typeof patrimonio] || '')
+                                  } else if (el.type === 'TEXT') {
+                                    content = el.content || ''
+                                  }
+                                  return `
+                                    <div style="position: absolute; left: ${el.x}%; top: ${el.y}%; width: ${el.width}%; height: ${el.height}%; font-size: ${el.fontSize}px; font-weight: ${el.fontWeight}; text-align: ${el.textAlign};">
+                                      ${content}
+                                    </div>
+                                  `
+                                }).join('')}
+                              </div>
+                            `)
+                          }
+                          
+                          printWindow.document.write('</div>')
+                          printWindow.document.write('</body></html>')
+                          printWindow.document.close()
+                          
+                          setTimeout(() => {
+                            printWindow.focus()
+                            printWindow.print()
+                            // Fechar após impressão (opcional)
+                            setTimeout(() => {
+                              printWindow.close()
+                              setIsLabelDialogOpen(false)
+                            }, 1000)
+                          }, 500)
+                          
+                          toast({
+                            title: 'Sucesso',
+                            description: 'Preparando etiqueta para impressão...',
+                          })
+                        } else {
+                          toast({
+                            variant: 'destructive',
+                            title: 'Erro',
+                            description: 'Não foi possível abrir a janela de impressão. Verifique se os pop-ups estão bloqueados.',
+                          })
+                        }
                       }}>
+                        <Printer className="mr-2 h-4 w-4" />
                         Imprimir Etiqueta
                       </Button>
                       <Button variant="outline" onClick={() => setIsLabelDialogOpen(false)}>
@@ -999,6 +1119,17 @@ function BensView() {
             </DialogContent>
           </Dialog>
         )}
+        
+        {/* Área oculta para impressão de etiqueta */}
+        <div className="hidden" style={{ position: 'absolute', left: '-9999px' }}>
+          {selectedLabelTemplate && patrimonio && (
+            <LabelPreview 
+              ref={labelPrintRef}
+              asset={{ ...patrimonio, assetType: 'bem' }} 
+              template={selectedLabelTemplate}
+            />
+          )}
+        </div>
       </div>
     </div>
   )

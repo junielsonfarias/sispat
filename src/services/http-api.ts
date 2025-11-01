@@ -16,7 +16,7 @@ const axiosInstance: AxiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     // ✅ Rotas públicas não precisam de autenticação
-    const isPublicRoute = config.url?.includes('/public/');
+    const isPublicRoute = /\/public(\/|$)/.test(config.url || '');
     
     if (!isPublicRoute) {
       // Pegar token do localStorage (SecureStorage armazena como JSON)

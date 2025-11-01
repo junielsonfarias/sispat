@@ -210,18 +210,39 @@ export class MetricsCollector {
         prisma.transferencia.count({ where: { status: 'rejeitada' } })
       ])
 
-      // Métricas de documentos
-      const [totalDocuments, newDocumentsToday, documentsSize] = await Promise.all([
-        prisma.documentoGeral.count(),
-        prisma.documentoGeral.count({ 
-          where: { 
-            createdAt: { gte: today } 
-          } 
-        }),
-        prisma.documentoGeral.aggregate({
-          _sum: { fileSize: true }
-        })
-      ])
+      // Métricas de documentos (tolerante à ausência da tabela)
+      let totalDocuments = 0
+      let newDocumentsToday = 0
+      let documentsTotalSize = 0
+
+      try {
+        // Verificar se a tabela existe para evitar logs de erro do Prisma
+        const check: Array<{ regclass: string | null }> = await prisma.$queryRawUnsafe(
+          "SELECT to_regclass('public.documentos_gerais') as regclass"
+        )
+        const tableExists = Array.isArray(check) && check[0] && check[0].regclass
+
+        if (tableExists) {
+          const [docsTotal, docsNewToday, docsSizeAgg] = await Promise.all([
+            prisma.documentoGeral.count(),
+            prisma.documentoGeral.count({
+              where: {
+                createdAt: { gte: today }
+              }
+            }),
+            prisma.documentoGeral.aggregate({ _sum: { fileSize: true } })
+          ])
+
+          totalDocuments = docsTotal
+          newDocumentsToday = docsNewToday
+          documentsTotalSize = (docsSizeAgg as any)?._sum?.fileSize || 0
+        } else {
+          logInfo('Tabela documentos_gerais não encontrada; métricas de documentos desativadas temporariamente')
+        }
+      } catch (error) {
+        // Qualquer erro silencioso em dev
+        logInfo('Métricas de documentos indisponíveis (erro ao verificar/consultar)', { error: (error as any)?.message })
+      }
 
       const metrics: ApplicationMetrics = {
         users: {
@@ -247,12 +268,18 @@ export class MetricsCollector {
         documents: {
           total: totalDocuments,
           newToday: newDocumentsToday,
-          totalSize: documentsSize._sum.fileSize || 0
+          totalSize: documentsTotalSize
         }
       }
 
-      // Armazenar no Redis
-      await this.redis.setex('metrics:application', 60, JSON.stringify(metrics))
+      // Armazenar no Redis (se disponível)
+      if (this.redis && this.redis.status === 'ready') {
+        try {
+          await this.redis.setex('metrics:application', 60, JSON.stringify(metrics))
+        } catch (error) {
+          // Silenciosamente ignorar erros de Redis
+        }
+      }
 
       return metrics
     } catch (error) {
@@ -288,10 +315,21 @@ export class MetricsCollector {
    */
   private async getApiMetrics(): Promise<any> {
     try {
-      const requests = await this.redis.get('metrics:total_requests:5') || '0'
-      const errors = await this.redis.get('metrics:error_requests:5') || '0'
-      const responseTime = await this.redis.get('metrics:avg_response_time:5') || '0'
-      const rateLimitHits = await this.redis.get('metrics:rate_limit_hits:5') || '0'
+      let requests = '0'
+      let errors = '0'
+      let responseTime = '0'
+      let rateLimitHits = '0'
+      
+      if (this.redis && this.redis.status === 'ready') {
+        try {
+          requests = await this.redis.get('metrics:total_requests:5') || '0'
+          errors = await this.redis.get('metrics:error_requests:5') || '0'
+          responseTime = await this.redis.get('metrics:avg_response_time:5') || '0'
+          rateLimitHits = await this.redis.get('metrics:rate_limit_hits:5') || '0'
+        } catch (error) {
+          // Silenciosamente ignorar erros
+        }
+      }
 
       return {
         requests: parseInt(requests),
@@ -313,6 +351,14 @@ export class MetricsCollector {
    * Obter métricas do Redis
    */
   private async getRedisMetrics(): Promise<any> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return {
+        connected: false,
+        memory: null,
+        keys: 0
+      }
+    }
+    
     try {
       const info = await this.redis.info('memory')
       const keys = await this.redis.dbsize()

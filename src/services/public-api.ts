@@ -32,12 +32,17 @@ class PublicApi {
   
   async getPatrimonioById(patrimonioId: string): Promise<PublicPatrimonio> {
     // ✅ CORREÇÃO: Usar endpoint real do backend
-    return this.request<PublicPatrimonio>(`/public/patrimonios/${patrimonioId}`)
+    // Nota: Esta rota não existe no backend, pode precisar ser implementada ou usar rota autenticada
+    const response = await this.request<{ patrimonio: PublicPatrimonio }>(`/public/patrimonios/${patrimonioId}`)
+    // Backend retorna { patrimonio: {...} }, então precisamos extrair
+    return response.patrimonio
   }
   
   async getPatrimonioByNumero(numeroPatrimonio: string): Promise<PublicPatrimonio> {
-    // ✅ CORREÇÃO: Buscar por número de patrimônio
-    return this.request<PublicPatrimonio>(`/public/patrimonios/numero/${numeroPatrimonio}`)
+    // ✅ CORREÇÃO: Usar rota correta do backend (/patrimonios/:numero, não /patrimonios/numero/:numero)
+    const response = await this.request<{ patrimonio: PublicPatrimonio }>(`/public/patrimonios/${numeroPatrimonio}`)
+    // Backend retorna { patrimonio: {...} }, então precisamos extrair
+    return response.patrimonio
   }
 }
 

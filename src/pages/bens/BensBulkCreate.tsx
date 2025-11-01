@@ -197,7 +197,32 @@ const BensBulkCreate = () => {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form 
+            onSubmit={form.handleSubmit(
+              onSubmit,
+              (errors) => {
+                console.error('❌ Erros de validação:', errors)
+                const errorFields = Object.keys(errors)
+                if (errorFields.length > 0) {
+                  const firstError = errors[errorFields[0] as keyof typeof errors]
+                  const errorMessage = firstError?.message || 'Por favor, verifique os campos obrigatórios.'
+                  
+                  toast({
+                    variant: 'destructive',
+                    title: 'Erro de Validação',
+                    description: errorMessage,
+                  })
+                  
+                  const firstErrorField = document.querySelector(`[name="${errorFields[0]}"]`) as HTMLElement
+                  if (firstErrorField) {
+                    firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    firstErrorField.focus()
+                  }
+                }
+              }
+            )} 
+            className="space-y-6"
+          >
             {/* Informações Comuns */}
             <Card className="border-0 shadow-lg bg-white">
               <CardHeader className="pb-4 px-6 pt-6">

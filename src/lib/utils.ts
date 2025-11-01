@@ -78,8 +78,25 @@ export function formatRelativeDate(date: Date | string | number) {
  * @param fileId The file ID, potentially prefixed (e.g., 'gdrive:123') or a data URL.
  * @returns A direct image URL or a placeholder if the ID is invalid.
  */
-export function getCloudImageUrl(fileId: string): string {
-  if (typeof fileId !== 'string') {
+export function getCloudImageUrl(fileId: string | object | undefined): string {
+  // ✅ CORREÇÃO: Converter objetos para string primeiro
+  if (typeof fileId === 'object' && fileId !== null) {
+    // Se for objeto com file_url, usar file_url
+    if ('file_url' in fileId && fileId.file_url) {
+      fileId = String(fileId.file_url)
+    }
+    // Se for objeto com id, usar id
+    else if ('id' in fileId && fileId.id) {
+      fileId = String(fileId.id)
+    }
+    else {
+      return process.env.NODE_ENV === 'production' 
+        ? LOCAL_IMAGES.PLACEHOLDER_IMAGE
+        : 'https://img.usecurling.com/p/400/300?q=error%20loading%20image'
+    }
+  }
+  
+  if (typeof fileId !== 'string' || !fileId) {
     return process.env.NODE_ENV === 'production' 
       ? LOCAL_IMAGES.PLACEHOLDER_IMAGE
       : 'https://img.usecurling.com/p/400/300?q=error%20loading%20image'

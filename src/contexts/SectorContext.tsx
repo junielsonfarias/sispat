@@ -66,10 +66,10 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       fetchSectors()
       
-      // ✅ Polling: Atualizar setores a cada 5 segundos
+      // ✅ Polling: Atualizar setores a cada 30 segundos (reduzido para melhor performance)
       const intervalId = setInterval(() => {
         fetchSectors()
-      }, 5000) // 5 segundos
+      }, 30000) // 30 segundos
       
       return () => clearInterval(intervalId)
     }

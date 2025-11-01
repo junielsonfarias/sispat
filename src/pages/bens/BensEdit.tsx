@@ -266,7 +266,10 @@ const BensEdit = () => {
         setor_responsavel: data.setor_responsavel,
         local_objeto: data.local_objeto,
         status: data.status,
-        situacao_bem: data.situacao_bem,
+        // Converter situacao_bem para maiúsculas (backend espera: OTIMO, BOM, REGULAR, RUIM, PESSIMO)
+        situacao_bem: data.situacao_bem && typeof data.situacao_bem === 'string' && data.situacao_bem.trim() !== '' 
+          ? data.situacao_bem.toUpperCase() 
+          : (data.situacao_bem || null),
         observacoes: data.observacoes,
         // ✅ CORREÇÃO: Fotos já vêm como URLs do ImageUpload
         fotos: (() => {
@@ -411,6 +414,26 @@ const BensEdit = () => {
                 console.error('❌ Erros de validação detalhados:', errors)
                 console.error('❌ motivo_baixa error:', errors.motivo_baixa)
                 console.error('❌ Todos os erros expandidos:', JSON.stringify(errors, null, 2))
+                
+                // Mostrar toast com os erros encontrados
+                const errorFields = Object.keys(errors)
+                if (errorFields.length > 0) {
+                  const firstError = errors[errorFields[0] as keyof typeof errors]
+                  const errorMessage = firstError?.message || 'Por favor, verifique os campos obrigatórios.'
+                  
+                  toast({
+                    variant: 'destructive',
+                    title: 'Erro de Validação',
+                    description: errorMessage,
+                  })
+                  
+                  // Rolar até o primeiro campo com erro
+                  const firstErrorField = document.querySelector(`[name="${errorFields[0]}"]`) as HTMLElement
+                  if (firstErrorField) {
+                    firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    firstErrorField.focus()
+                  }
+                }
               }
             )(e)
           }} 

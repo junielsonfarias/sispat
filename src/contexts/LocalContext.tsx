@@ -58,10 +58,10 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       fetchLocais()
       
-      // ✅ Polling: Atualizar locais a cada 5 segundos
+      // ✅ Polling: Atualizar locais a cada 30 segundos (reduzido para melhor performance)
       const intervalId = setInterval(() => {
         fetchLocais()
-      }, 5000) // 5 segundos
+      }, 30000) // 30 segundos
       
       return () => clearInterval(intervalId)
     }

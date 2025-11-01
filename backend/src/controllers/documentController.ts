@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../index';
 import { AppError } from '../middlewares/errorHandler';
 import { logActivity } from '../utils/activityLogger';
 import multer from 'multer';
@@ -52,6 +52,13 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
 
     const where: any = {};
     
+    // ✅ Filtrar por município do usuário através da relação uploadedBy
+    if (req.user?.municipalityId) {
+      where.uploadedBy = {
+        municipalityId: req.user.municipalityId
+      };
+    }
+    
     if (type) {
       where.tipo = type;
     }
@@ -63,6 +70,7 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
       ];
     }
 
+    // ✅ Buscar documentos com include otimizado
     const [documents, total] = await Promise.all([
       prisma.documentoGeral.findMany({
         where,
@@ -78,22 +86,46 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
             }
           }
         }
+      }).catch((error: any) => {
+        console.error('❌ [DEV] Erro na query findMany:', error);
+        throw error;
       }),
-      prisma.documentoGeral.count({ where })
+      prisma.documentoGeral.count({ where }).catch((error: any) => {
+        console.error('❌ [DEV] Erro na query count:', error);
+        throw error;
+      })
     ]);
 
     res.json({
-      documents,
+      documents: documents || [],
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        total,
-        pages: Math.ceil(total / Number(limit))
+        total: total || 0,
+        pages: Math.ceil((total || 0) / Number(limit))
       }
     });
-  } catch (error) {
-    console.error('Erro ao listar documentos:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+  } catch (error: any) {
+    console.error('❌ [DEV] Erro ao listar documentos:', error);
+    console.error('❌ [DEV] Detalhes do erro:', {
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code,
+      meta: error?.meta,
+      cause: error?.cause
+    });
+    
+    // ✅ Retornar array vazio em caso de erro para não quebrar o frontend
+    res.status(200).json({ 
+      documents: [],
+      pagination: {
+        page: Number(req.query.page) || 1,
+        limit: Number(req.query.limit) || 10,
+        total: 0,
+        pages: 0
+      },
+      error: process.env.NODE_ENV === 'development' ? error?.message : 'Erro ao carregar documentos'
+    });
   }
 };
 

@@ -141,58 +141,80 @@ export const LabelTemplateProvider = ({
       if (!user) return
       
       try {
-        console.log('💾 Salvando template na API:', template.name)
+        console.log('💾 Salvando template na API:', template.name, 'ID:', template.id)
         
-        // Verificar se é atualização ou criação
+        // ✅ CORREÇÃO: Verificar se é template padrão (que pode não existir no backend)
+        const isDefaultTemplate = template.id?.startsWith('default-') || template.id === 'default-60x40'
+        
+        // Verificar se existe no estado local
         const existingIndex = allTemplates.findIndex(t => t.id === template.id)
         
-        if (existingIndex > -1) {
-          // Atualizar template existente
-          console.log('🔄 Atualizando template existente:', template.id)
-          const updated = await api.put<LabelTemplate>(
-            `/label-templates/${template.id}`,
-            {
-              name: template.name,
-              width: template.width,
-              height: template.height,
-              isDefault: template.isDefault,
-              elements: template.elements,
+        // Se existe localmente e não é template padrão, tentar atualizar
+        if (existingIndex > -1 && !isDefaultTemplate) {
+          try {
+            // Tentar atualizar template existente
+            console.log('🔄 Atualizando template existente:', template.id)
+            const updated = await api.put<LabelTemplate>(
+              `/label-templates/${template.id}`,
+              {
+                name: template.name,
+                width: template.width,
+                height: template.height,
+                isDefault: template.isDefault,
+                elements: template.elements,
+              }
+            )
+            
+            // Atualizar estado local
+            setAllTemplates(prev => prev.map(t => t.id === updated.id ? updated : t))
+            
+            toast({
+              title: 'Sucesso',
+              description: 'Template atualizado com sucesso.',
+            })
+            console.log('✅ Template atualizado com sucesso')
+            return
+          } catch (updateError: any) {
+            // Se der 404, o template não existe no backend, então criar
+            if (updateError?.response?.status === 404) {
+              console.log('⚠️  Template não existe no backend. Criando novo...')
+              // Continua para criar como novo
+            } else {
+              throw updateError
             }
-          )
-          
-          // Atualizar estado local
-          setAllTemplates(prev => prev.map(t => t.id === updated.id ? updated : t))
-          
-          toast({
-            title: 'Sucesso',
-            description: 'Template atualizado com sucesso.',
-          })
-        } else {
-          // Criar novo template
-          console.log('➕ Criando novo template')
-          const created = await api.post<LabelTemplate>('/label-templates', {
-            name: template.name,
-            width: template.width,
-            height: template.height,
-            isDefault: template.isDefault || false,
-            elements: template.elements,
-          })
-          
-          // Adicionar ao estado local
-          setAllTemplates(prev => [...prev, created])
-          
-          toast({
-            title: 'Sucesso',
-            description: 'Template criado com sucesso.',
-          })
+          }
         }
         
-        console.log('✅ Template salvo com sucesso')
-      } catch (error) {
+        // Criar novo template (ou recriar se era padrão)
+        console.log('➕ Criando novo template')
+        const created = await api.post<LabelTemplate>('/label-templates', {
+          name: template.name,
+          width: template.width,
+          height: template.height,
+          isDefault: template.isDefault || false,
+          elements: template.elements,
+        })
+        
+        // Atualizar estado local com o novo ID do backend
+        if (existingIndex > -1) {
+          // Se existia localmente, substituir pelo criado no backend
+          setAllTemplates(prev => prev.map(t => t.id === template.id ? created : t))
+        } else {
+          // Adicionar como novo
+          setAllTemplates(prev => [...prev, created])
+        }
+        
+        toast({
+          title: 'Sucesso',
+          description: 'Template criado com sucesso.',
+        })
+        console.log('✅ Template criado com sucesso:', created.id)
+        
+      } catch (error: any) {
         console.error('❌ Erro ao salvar template:', error)
         
-        // ✅ CORREÇÃO: Se for erro 404, salvar apenas localmente
-        if (error?.response?.status === 404) {
+        // ✅ CORREÇÃO: Se for erro 404 ou backend indisponível, salvar apenas localmente
+        if (error?.response?.status === 404 || error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error')) {
           console.log('⚠️  Backend não disponível. Salvando template apenas localmente.')
           
           // Salvar apenas no estado local
@@ -200,7 +222,11 @@ export const LabelTemplateProvider = ({
           if (existingIndex > -1) {
             setAllTemplates(prev => prev.map(t => t.id === template.id ? template : t))
           } else {
-            setAllTemplates(prev => [...prev, template])
+            // Gerar novo ID se necessário
+            const templateToSave = template.id?.startsWith('default-') 
+              ? { ...template, id: generateId() }
+              : template
+            setAllTemplates(prev => [...prev, templateToSave])
           }
           
           toast({
@@ -214,7 +240,7 @@ export const LabelTemplateProvider = ({
         toast({
           variant: 'destructive',
           title: 'Erro',
-          description: 'Falha ao salvar template. Tente novamente.',
+          description: error?.response?.data?.error || 'Falha ao salvar template. Tente novamente.',
         })
       }
     },

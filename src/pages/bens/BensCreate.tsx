@@ -185,12 +185,32 @@ const BensCreate = () => {
       const formaData = activeAcquisitionForms.find((f) => f.nome === data.forma_aquisicao)
       const acquisitionFormId = formaData?.id
 
+      // ✅ CORREÇÃO: Converter fotos de objetos { id, file_url, file_name } para array de URLs/IDs
+      const fotosProcessadas = (data.fotos || []).map((foto: any) => {
+        // Se for objeto com file_url, usar file_url
+        if (typeof foto === 'object' && foto?.file_url) {
+          return foto.file_url
+        }
+        // Se for objeto com id, usar id
+        if (typeof foto === 'object' && foto?.id) {
+          return foto.id
+        }
+        // Se já for string (URL ou ID), usar diretamente
+        if (typeof foto === 'string') {
+          return foto
+        }
+        // Fallback
+        return String(foto)
+      })
+
       const newPatrimonioData = {
         ...data,
         numero_patrimonio: generatedNumber,
         data_aquisicao: new Date(data.data_aquisicao || data.dataAquisicao),
         status: 'ativo',
-        fotos: data.fotos || [],
+        // Converter situacao_bem para maiúsculas (backend espera: OTIMO, BOM, REGULAR, RUIM, PESSIMO)
+        situacao_bem: data.situacao_bem && data.situacao_bem.trim() !== '' ? data.situacao_bem.toUpperCase() : undefined,
+        fotos: fotosProcessadas,
         documentos: data.documentos || [],
         municipalityId: user.municipalityId!,
         createdAt: new Date(),
@@ -274,7 +294,34 @@ const BensCreate = () => {
           </p>
         </div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form 
+          onSubmit={form.handleSubmit(
+            onSubmit,
+            (errors) => {
+              console.error('❌ Erros de validação:', errors)
+              // Mostrar toast com os erros encontrados
+              const errorFields = Object.keys(errors)
+              if (errorFields.length > 0) {
+                const firstError = errors[errorFields[0] as keyof typeof errors]
+                const errorMessage = firstError?.message || 'Por favor, verifique os campos obrigatórios.'
+                
+                toast({
+                  variant: 'destructive',
+                  title: 'Erro de Validação',
+                  description: errorMessage,
+                })
+                
+                // Rolar até o primeiro campo com erro
+                const firstErrorField = document.querySelector(`[name="${errorFields[0]}"]`) as HTMLElement
+                if (firstErrorField) {
+                  firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  firstErrorField.focus()
+                }
+              }
+            }
+          )} 
+          className="space-y-6"
+        >
           {/* Informações Básicas */}
           <Card className="border-0 shadow-lg bg-white">
             <CardHeader className="pb-4 px-6 pt-6">
@@ -330,6 +377,7 @@ const BensCreate = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="otimo">Ótimo</SelectItem>
                           <SelectItem value="bom">Bom</SelectItem>
                           <SelectItem value="regular">Regular</SelectItem>
                           <SelectItem value="ruim">Ruim</SelectItem>

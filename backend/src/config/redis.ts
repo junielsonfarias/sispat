@@ -19,6 +19,9 @@ export interface RedisConfig {
   commandTimeout: number
 }
 
+// ✅ Redis opcional - só conecta se ENABLE_REDIS=true
+const REDIS_ENABLED = process.env.ENABLE_REDIS === 'true' || process.env.REDIS_HOST !== undefined;
+
 export const redisConfig: RedisConfig = {
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),
@@ -36,47 +39,80 @@ export const redisConfig: RedisConfig = {
 let redis: Redis | null = null
 
 /**
- * Inicializar conexão com Redis
+ * Inicializar conexão com Redis (opcional)
  */
-export function initializeRedis(): Redis {
+export function initializeRedis(): Redis | null {
+  // ✅ Se Redis não está habilitado, retornar null
+  if (!REDIS_ENABLED) {
+    console.log('ℹ️  Redis desabilitado (ENABLE_REDIS=false ou REDIS_HOST não definido)')
+    return null
+  }
+
   if (redis) {
     return redis
   }
 
   try {
-    redis = new Redis(redisConfig)
+    redis = new Redis({
+      ...redisConfig,
+      // ✅ Desabilitar reconexão automática para evitar logs excessivos
+      retryStrategy: (times) => {
+        if (times > 3) {
+          console.log('⚠️  Redis não disponível após 3 tentativas. Continuando sem cache.')
+          return null // Parar tentativas
+        }
+        return Math.min(times * 50, 2000)
+      },
+      // ✅ Desabilitar reconexão automática
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: null, // Desabilitar retry automático
+    })
     
     redis.on('connect', () => {
       console.log('✅ Redis conectado com sucesso')
     })
     
-    redis.on('error', (error) => {
-      console.error('❌ Erro no Redis:', error)
+    redis.on('error', (error: any) => {
+      // ✅ Não logar erros de conexão repetidamente
+      if (error.code !== 'ECONNREFUSED' || !redis?._connecting) {
+        console.error('❌ Erro no Redis:', error.message)
+      }
     })
     
     redis.on('close', () => {
-      console.log('⚠️ Conexão Redis fechada')
+      // ✅ Não logar fechamento se não estava conectado
+      if (redis?.status === 'ready') {
+        console.log('⚠️ Conexão Redis fechada')
+      }
     })
     
-    redis.on('reconnecting', () => {
-      console.log('🔄 Reconectando ao Redis...')
-    })
+    // ✅ Remover listener de reconexão para evitar logs excessivos
+    // redis.on('reconnecting', () => {
+    //   console.log('🔄 Reconectando ao Redis...')
+    // })
     
     return redis
   } catch (error) {
     console.error('❌ Erro ao inicializar Redis:', error)
-    throw error
+    return null // Retornar null em vez de throw
   }
 }
 
 /**
- * Obter instância do Redis
+ * Obter instância do Redis (pode retornar null se não disponível)
  */
-export function getRedis(): Redis {
-  if (!redis) {
+export function getRedis(): Redis | null {
+  if (!redis && REDIS_ENABLED) {
     return initializeRedis()
   }
   return redis
+}
+
+/**
+ * Verificar se Redis está disponível
+ */
+export function isRedisAvailable(): boolean {
+  return redis?.status === 'ready'
 }
 
 /**
@@ -93,7 +129,7 @@ export async function closeRedis(): Promise<void> {
  * Classe para gerenciar cache Redis
  */
 export class RedisCache {
-  private redis: Redis
+  private redis: Redis | null
   private defaultTTL: number
 
   constructor(defaultTTL = 300) { // 5 minutos por padrão
@@ -102,23 +138,32 @@ export class RedisCache {
   }
 
   /**
-   * Definir valor no cache
+   * Definir valor no cache (silencioso se Redis não disponível)
    */
   async set(key: string, value: any, ttl?: number): Promise<void> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return // Silenciosamente ignorar se Redis não disponível
+    }
+    
     try {
       const serializedValue = JSON.stringify(value)
       const expiration = ttl || this.defaultTTL
       
       await this.redis.setex(key, expiration, serializedValue)
     } catch (error) {
-      console.error(`Erro ao definir cache para chave ${key}:`, error)
+      // ✅ Silenciosamente ignorar erros de Redis
+      // console.error(`Erro ao definir cache para chave ${key}:`, error)
     }
   }
 
   /**
-   * Obter valor do cache
+   * Obter valor do cache (retorna null se Redis não disponível)
    */
   async get<T>(key: string): Promise<T | null> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return null
+    }
+    
     try {
       const value = await this.redis.get(key)
       
@@ -128,7 +173,7 @@ export class RedisCache {
       
       return JSON.parse(value) as T
     } catch (error) {
-      console.error(`Erro ao obter cache para chave ${key}:`, error)
+      // ✅ Silenciosamente ignorar erros de Redis
       return null
     }
   }
@@ -137,11 +182,14 @@ export class RedisCache {
    * Verificar se chave existe no cache
    */
   async exists(key: string): Promise<boolean> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return false
+    }
+    
     try {
       const result = await this.redis.exists(key)
       return result === 1
     } catch (error) {
-      console.error(`Erro ao verificar existência da chave ${key}:`, error)
       return false
     }
   }

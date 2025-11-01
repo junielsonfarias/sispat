@@ -44,7 +44,7 @@ export const patrimonioBaseSchema = z.object({
     .max(50, 'A forma de aquisição deve ter no máximo 50 caracteres.'),
   setor_responsavel: z.string().min(1, 'Setor é obrigatório.'),
   local_objeto: z.string().min(1, 'Localização é obrigatória.'),
-  situacao_bem: z.enum(['OTIMO', 'BOM', 'REGULAR', 'RUIM', 'PESSIMO'], {
+  situacao_bem: z.enum(['otimo', 'bom', 'regular', 'ruim', 'pessimo'], {
     required_error: 'Situação é obrigatória.',
   }).optional(),
   status: z.enum(['ativo', 'inativo', 'manutencao', 'baixado', 'extraviado'], {
@@ -90,7 +90,7 @@ export const patrimonioEditSchema = patrimonioBaseSchema
       required_error: 'Status é obrigatório.',
     }),
     // situacao_bem pode incluir 'baixado' na edição (quando já está baixado)
-    situacao_bem: z.enum(['OTIMO', 'BOM', 'REGULAR', 'RUIM', 'PESSIMO'], {
+    situacao_bem: z.enum(['otimo', 'bom', 'regular', 'ruim', 'pessimo'], {
       required_error: 'Situação é obrigatória.',
     }).optional().nullable(),
     data_baixa: z.string().optional().nullable(),

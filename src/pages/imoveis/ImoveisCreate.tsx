@@ -51,8 +51,23 @@ const baseSchema = z.object({
   documentos: z.array(z.any()).optional(),
   url_documentos: z
     .string()
-    .url('URL inválida.')
-    .optional(),
+    .optional()
+    .refine(
+      (val) => {
+        // Se não houver valor ou for string vazia, é válido (campo opcional)
+        if (!val || val.trim() === '') {
+          return true
+        }
+        // Se houver valor, deve ser uma URL válida
+        try {
+          new URL(val)
+          return true
+        } catch {
+          return false
+        }
+      },
+      { message: 'URL inválida. Por favor, insira uma URL válida ou deixe o campo vazio.' }
+    ),
   // Campos de endereço adicionais
   cep: z.string().optional(),
   bairro: z.string().optional(),
@@ -192,6 +207,24 @@ export default function ImoveisCreate() {
 
     setIsLoading(true)
     try {
+      // ✅ CORREÇÃO: Converter fotos de objetos { id, file_url, file_name } para array de URLs/IDs
+      const fotosProcessadas = (data.fotos || []).map((foto: any) => {
+        // Se for objeto com file_url, usar file_url
+        if (typeof foto === 'object' && foto?.file_url) {
+          return foto.file_url
+        }
+        // Se for objeto com id, usar id
+        if (typeof foto === 'object' && foto?.id) {
+          return foto.id
+        }
+        // Se já for string (URL ou ID), usar diretamente
+        if (typeof foto === 'string') {
+          return foto
+        }
+        // Fallback
+        return String(foto)
+      })
+
       await addImovel(
         {
           ...data,
@@ -200,9 +233,9 @@ export default function ImoveisCreate() {
           area_construida: data.area_construida || 0,
           latitude: data.latitude ? parseFloat(data.latitude.toString()) : undefined,
           longitude: data.longitude ? parseFloat(data.longitude.toString()) : undefined,
-          fotos: data.fotos || [],
+          fotos: fotosProcessadas,
           documentos: data.documentos || [],
-          url_documentos: data.url_documentos || '',
+          url_documentos: data.url_documentos && data.url_documentos.trim() !== '' ? data.url_documentos.trim() : undefined,
           documentos_pdf: data.documentos_pdf || [],
           municipalityId: user.municipalityId || '1',
           customFields: data.customFields || {},
@@ -612,16 +645,16 @@ export default function ImoveisCreate() {
                     name="url_documentos"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>URL de Documentos</FormLabel>
+                        <FormLabel>URL de Documentos <span className="text-muted-foreground font-normal">(opcional)</span></FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            type="url"
-                            placeholder="https://drive.google.com/..."
+                            type="text"
+                            placeholder="https://drive.google.com/... (opcional)"
                           />
                         </FormControl>
                         <p className="text-sm text-muted-foreground">
-                          Link para documentos externos (Google Drive, etc.)
+                          Link para documentos externos (Google Drive, etc.) - Campo opcional
                         </p>
                         <FormMessage />
                       </FormItem>

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../index';
 import { AppError } from '../middlewares/errorHandler';
 import { logActivity } from '../utils/activityLogger';
 
@@ -30,13 +30,13 @@ export const listTransfers = async (req: Request, res: Response): Promise<void> 
         where,
         skip,
         take: Number(limit),
-        orderBy: { createdAt: 'desc' },
+        orderBy: { dataTransferencia: 'desc' },
         include: {
           patrimonio: {
             select: {
               id: true,
               numero_patrimonio: true,
-              descricao: true,
+              descricao_bem: true,
               sectorId: true,
               localId: true
             }

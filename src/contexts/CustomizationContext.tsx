@@ -109,7 +109,13 @@ export const CustomizationProvider = ({
           // Endpoint público não existe - ignorar silenciosamente
         }
         
-        // Tentar buscar do banco de dados (autenticado)
+        // Tentar buscar do banco de dados (autenticado) somente se houver token
+        const tokenData = localStorage.getItem('sispat_token')
+        if (!tokenData) {
+          // Sem token: não tentar rota autenticada; manter cache/default
+          setIsLoading(false)
+          return
+        }
         const response = await api.get<{ customization: CustomizationSettings }>('/customization')
         if (response.customization) {
           const loadedSettings = { ...defaultSettings, ...response.customization }

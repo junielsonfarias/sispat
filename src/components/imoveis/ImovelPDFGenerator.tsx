@@ -1,5 +1,5 @@
 import { Imovel } from '@/types'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatCurrency, getCloudImageUrl } from '@/lib/utils'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -9,11 +9,117 @@ interface ImovelPDFGeneratorProps {
   municipalityLogo?: string
 }
 
+/**
+ * ✅ OTIMIZAÇÃO: Redimensionar e comprimir imagem antes de adicionar ao PDF
+ * Para logos: preserva transparência (PNG). Para fotos: detecta e preserva transparência.
+ */
+const compressImage = async (imageUrl: string, maxWidth: number = 800, quality: number = 0.75, preserveTransparency: boolean = false): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d', { willReadFrequently: false, alpha: true })!
+      
+      // Calcular novo tamanho mantendo proporção
+      let width = img.width
+      let height = img.height
+      
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width
+        width = maxWidth
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      
+      // ✅ CORREÇÃO: Sempre limpar o canvas para preservar transparência
+      ctx.clearRect(0, 0, width, height)
+      
+      // ✅ CORREÇÃO: Verificar se a imagem tem transparência
+      const tempCanvas = document.createElement('canvas')
+      tempCanvas.width = Math.min(img.width, 100)
+      tempCanvas.height = Math.min(img.height, 100)
+      const tempCtx = tempCanvas.getContext('2d', { alpha: true })!
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height)
+      tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height)
+      
+      // Verificar se há pixels transparentes (alpha < 255)
+      const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height)
+      let hasTransparency = false
+      for (let i = 3; i < imageData.data.length; i += 4) {
+        if (imageData.data[i] < 255) {
+          hasTransparency = true
+          break
+        }
+      }
+      
+      // Desenhar imagem redimensionada no canvas principal
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      // ✅ CORREÇÃO: Usar PNG se precisar preservar transparência OU se a imagem original tiver transparência
+      const shouldUsePNG = preserveTransparency || hasTransparency
+      const compressed = shouldUsePNG
+        ? canvas.toDataURL('image/png')
+        : canvas.toDataURL('image/jpeg', quality)
+      
+      resolve(compressed)
+    }
+    
+    img.onerror = () => {
+      resolve(imageUrl)
+    }
+    
+    img.src = imageUrl
+  })
+}
+
 export const generateImovelPDF = async ({
   imovel,
   municipalityName = 'Prefeitura Municipal',
   municipalityLogo = '/logo-government.svg',
 }: ImovelPDFGeneratorProps) => {
+  // ✅ CORREÇÃO: Processar fotos ANTES de construir o HTML
+  const processedPhotos: string[] = []
+  
+  if (imovel.fotos && imovel.fotos.length > 0) {
+    try {
+      console.log('📸 [PDF Imóvel] Processando fotos:', { total: imovel.fotos.length, fotos: imovel.fotos })
+      for (const photo of imovel.fotos.slice(0, 6)) {
+        // Converter foto (pode ser ID, objeto ou URL) para URL válida
+        const photoUrl = getCloudImageUrl(photo)
+        console.log('📸 [PDF Imóvel] Processando foto:', { original: photo, url: photoUrl })
+        // Preservar transparência das fotos (caso tenham fundo transparente)
+        const compressed = await compressImage(photoUrl, 600, 0.75, true)
+        processedPhotos.push(compressed)
+      }
+    } catch (error) {
+      console.warn('❌ [PDF Imóvel] Erro ao processar fotos:', error)
+      // Fallback: usar URLs convertidas sem compressão
+      imovel.fotos.slice(0, 6).forEach(photo => {
+        processedPhotos.push(getCloudImageUrl(photo))
+      })
+    }
+  }
+  
+  // Processar logo - preservar transparência
+  let processedLogo = municipalityLogo
+  if (municipalityLogo) {
+    try {
+      // Se for SVG, não comprimir (mantém qualidade e transparência)
+      if (municipalityLogo.endsWith('.svg') || municipalityLogo.includes('data:image/svg')) {
+        processedLogo = municipalityLogo
+      } else {
+        // Para outros formatos, comprimir preservando transparência
+        processedLogo = await compressImage(municipalityLogo, 200, 0.9, true)
+      }
+    } catch (error) {
+      console.warn('Erro ao processar logo:', error)
+      processedLogo = municipalityLogo
+    }
+  }
+  
   // Criar elemento temporário para renderizar o conteúdo
   const container = document.createElement('div')
   container.style.position = 'absolute'
@@ -29,7 +135,7 @@ export const generateImovelPDF = async ({
       <!-- Cabeçalho -->
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #10b981;">
         <div style="display: flex; align-items: center; gap: 15px;">
-          <img src="${municipalityLogo}" alt="Logo" style="height: 60px; width: auto;" onerror="this.style.display='none'" />
+          <img src="${processedLogo}" alt="Logo" style="height: 60px; width: auto;" onerror="this.style.display='none'" />
           <div>
             <h1 style="margin: 0; font-size: 20px; color: #047857; font-weight: bold;">${municipalityName}</h1>
             <p style="margin: 5px 0 0 0; font-size: 12px; color: #64748b;">Ficha de Cadastro de Imóvel</p>
@@ -160,17 +266,17 @@ export const generateImovelPDF = async ({
       </div>
       ` : ''}
 
-      ${imovel.fotos && imovel.fotos.length > 0 ? `
+      ${processedPhotos.length > 0 ? `
       <!-- Seção 7: Fotos do Imóvel -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #047857; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
           📷 FOTOS DO IMÓVEL (${imovel.fotos.length})
         </h2>
-        <div style="display: grid; grid-template-columns: repeat(${imovel.fotos.length === 1 ? '1' : imovel.fotos.length === 2 ? '2' : '3'}, 1fr); gap: 10px; margin-top: 12px;">
-          ${imovel.fotos.slice(0, 6).map((foto, index) => `
+        <div style="display: grid; grid-template-columns: repeat(${processedPhotos.length === 1 ? '1' : processedPhotos.length === 2 ? '2' : '3'}, 1fr); gap: 10px; margin-top: 12px;">
+          ${processedPhotos.map((foto, index) => `
             <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #f9fafb;">
               <img 
-                src="${foto.startsWith('http') ? foto : foto}" 
+                src="${foto}" 
                 alt="Foto ${index + 1}" 
                 style="width: 100%; height: 120px; object-fit: cover; display: block;"
                 crossorigin="anonymous"
@@ -244,26 +350,33 @@ export const generateImovelPDF = async ({
     // Aguardar carregamento de imagens
     await new Promise(resolve => setTimeout(resolve, 500))
 
+    // ✅ OTIMIZAÇÃO: Reduzir scale de 2 para 1 (reduz 75% do tamanho)
     // Converter para canvas
     const canvas = await html2canvas(container, {
-      scale: 2,
+      scale: 1, // ✅ Reduzido de 2 para 1 - reduz drasticamente o tamanho
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
+      imageTimeout: 15000,
+      removeContainer: false,
     })
 
-    // Criar PDF
+    // Criar PDF com compressão ativada
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
+      compress: true, // ✅ Ativar compressão do PDF
     })
 
-    const imgData = canvas.toDataURL('image/png')
+    // ✅ OTIMIZAÇÃO: Usar JPEG com qualidade 0.85 em vez de PNG
+    // JPEG tem ~10x menos tamanho que PNG para fotos e conteúdo misto
+    const imgData = canvas.toDataURL('image/jpeg', 0.85) // 85% de qualidade
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+    // ✅ Usar formato JPEG e modo FAST para reduzir processamento
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST')
 
     // Salvar PDF
     pdf.save(`Ficha_Imovel_${imovel.numero_patrimonio}.pdf`)

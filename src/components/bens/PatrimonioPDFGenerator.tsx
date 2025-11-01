@@ -1,5 +1,5 @@
 import { Patrimonio } from '@/types'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatCurrency, getCloudImageUrl } from '@/lib/utils'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { api } from '@/services/http-api'
@@ -10,6 +10,76 @@ interface PatrimonioPDFGeneratorProps {
   municipalityLogo?: string
   selectedSections?: string[]
   templateId?: string
+}
+
+/**
+ * ✅ OTIMIZAÇÃO: Redimensionar e comprimir imagem antes de adicionar ao PDF
+ * Para logos: preserva transparência (PNG). Para fotos: detecta e preserva transparência.
+ */
+const compressImage = async (imageUrl: string, maxWidth: number = 800, quality: number = 0.75, preserveTransparency: boolean = false): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      // ✅ CORREÇÃO: Usar '2d' que suporta transparência (não '2d-premultiplied-alpha')
+      const ctx = canvas.getContext('2d', { willReadFrequently: false, alpha: true })!
+      
+      // Calcular novo tamanho mantendo proporção
+      let width = img.width
+      let height = img.height
+      
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width
+        width = maxWidth
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      
+      // ✅ CORREÇÃO: Sempre limpar o canvas para preservar transparência
+      ctx.clearRect(0, 0, width, height)
+      
+      // ✅ CORREÇÃO: Verificar se a imagem tem transparência
+      // Desenhar em um canvas temporário para verificar transparência
+      const tempCanvas = document.createElement('canvas')
+      tempCanvas.width = Math.min(img.width, 100) // Usar área menor para verificação rápida
+      tempCanvas.height = Math.min(img.height, 100)
+      const tempCtx = tempCanvas.getContext('2d', { alpha: true })!
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height)
+      tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height)
+      
+      // Verificar se há pixels transparentes (alpha < 255)
+      const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height)
+      let hasTransparency = false
+      for (let i = 3; i < imageData.data.length; i += 4) {
+        if (imageData.data[i] < 255) {
+          hasTransparency = true
+          break
+        }
+      }
+      
+      // Desenhar imagem redimensionada no canvas principal
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      // ✅ CORREÇÃO: Usar PNG se precisar preservar transparência OU se a imagem original tiver transparência
+      // Usar JPEG apenas se não houver transparência e não for necessário preservar
+      const shouldUsePNG = preserveTransparency || hasTransparency
+      const compressed = shouldUsePNG
+        ? canvas.toDataURL('image/png')
+        : canvas.toDataURL('image/jpeg', quality)
+      
+      resolve(compressed)
+    }
+    
+    img.onerror = () => {
+      // Se falhar, retornar original
+      resolve(imageUrl)
+    }
+    
+    img.src = imageUrl
+  })
 }
 
 export const generatePatrimonioPDF = async ({
@@ -70,6 +140,62 @@ export const generatePatrimonioPDF = async ({
 
   // Função auxiliar para verificar se uma seção deve ser incluída
   const shouldInclude = (sectionId: string) => selectedSections.includes(sectionId)
+  
+  // ✅ OTIMIZAÇÃO: Processar e comprimir imagens ANTES de construir o HTML
+  let compressedLogo = municipalityLogo
+  let compressedPhoto = ''
+  const compressedPhotos: string[] = [] // Para múltiplas fotos se necessário
+  
+  // Processar logo - preservar transparência para SVGs/PNGs
+  if (municipalityLogo && headerConfig.showLogo !== false) {
+    try {
+      // Se for SVG, não comprimir (mantém qualidade e transparência)
+      if (municipalityLogo.endsWith('.svg') || municipalityLogo.includes('data:image/svg')) {
+        compressedLogo = municipalityLogo
+      } else {
+        // Para outros formatos, comprimir preservando transparência
+        compressedLogo = await compressImage(municipalityLogo, 200, 0.9, true)
+      }
+    } catch (error) {
+      console.warn('Erro ao processar logo:', error)
+      compressedLogo = municipalityLogo // Usar original se falhar
+    }
+  }
+  
+  // Comprimir primeira foto para seção de identificação
+  // ✅ CORREÇÃO: Usar getCloudImageUrl para converter ID/objeto em URL válida
+  // ✅ CORREÇÃO: Preservar transparência das fotos (caso tenham fundo transparente)
+  if (shouldInclude('identificacao') && patrimonio.fotos && patrimonio.fotos.length > 0) {
+    try {
+      // Converter foto (pode ser ID, objeto ou URL) para URL válida
+      const fotoUrl = getCloudImageUrl(patrimonio.fotos[0])
+      console.log('📸 Processando foto para PDF:', { original: patrimonio.fotos[0], url: fotoUrl })
+      // Preservar transparência para fotos também (caso tenham fundo transparente)
+      compressedPhoto = await compressImage(fotoUrl, 400, 0.75, true)
+    } catch (error) {
+      console.warn('Erro ao comprimir foto:', error)
+      // Tentar usar getCloudImageUrl como fallback
+      compressedPhoto = getCloudImageUrl(patrimonio.fotos[0])
+    }
+  }
+  
+  // Comprimir todas as fotos se houver seção específica de fotos
+  if (shouldInclude('fotos') && patrimonio.fotos && patrimonio.fotos.length > 0) {
+    try {
+      // Comprimir até 3 fotos (limite razoável para PDF)
+      const photosToCompress = patrimonio.fotos.slice(0, 3)
+      for (const photo of photosToCompress) {
+        // ✅ CORREÇÃO: Converter para URL válida antes de comprimir
+        // ✅ CORREÇÃO: Preservar transparência das fotos
+        const photoUrl = getCloudImageUrl(photo)
+        const compressed = await compressImage(photoUrl, 600, 0.75, true)
+        compressedPhotos.push(compressed)
+      }
+    } catch (error) {
+      console.warn('Erro ao comprimir fotos:', error)
+    }
+  }
+  
   // Criar elemento temporário para renderizar o conteúdo
   const container = document.createElement('div')
   container.style.position = 'absolute'
@@ -92,7 +218,7 @@ export const generatePatrimonioPDF = async ({
         <!-- Logo e Nome do Município -->
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 20px;">
           <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
-            ${headerConfig.showLogo !== false ? `<img src="${municipalityLogo}" alt="Logo" style="height: ${headerConfig.logoSize === 'small' ? '45px' : headerConfig.logoSize === 'large' ? '70px' : '60px'}; width: auto; flex-shrink: 0;" onerror="this.style.display='none'" />` : ''}
+            ${headerConfig.showLogo !== false && compressedLogo ? `<img src="${compressedLogo}" alt="Logo" style="height: ${headerConfig.logoSize === 'small' ? '45px' : headerConfig.logoSize === 'large' ? '70px' : '60px'}; width: auto; flex-shrink: 0;" onerror="this.style.display='none'" />` : ''}
             <div style="flex: 1; min-width: 0;">
               <h1 style="margin: 0; font-size: 18px; color: #000; font-weight: bold; line-height: 1.1; word-wrap: break-word; hyphens: auto; text-align: left;">${municipalityName}</h1>
             </div>
@@ -180,12 +306,12 @@ export const generatePatrimonioPDF = async ({
             <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.cor || '-'}</p>
           </div>
           
-          <!-- Foto - Altura Aumentada -->
+          <!-- Foto - Otimizada -->
           <div style="text-align: center;">
             <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 8px;">FOTO</p>
             <div style="width: 100%; height: 160px; border: 2px solid #d1d5db; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
-              ${patrimonio.fotos && patrimonio.fotos.length > 0 ? `
-                <img src="${patrimonio.fotos[0]}" alt="Foto do bem" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+              ${compressedPhoto ? `
+                <img src="${compressedPhoto}" alt="Foto do bem" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
                 <span style="display: none; font-size: 12px; color: #6b7280;">Sem foto</span>
               ` : '<span style="font-size: 12px; color: #6b7280;">Sem foto</span>'}
             </div>
@@ -346,26 +472,34 @@ export const generatePatrimonioPDF = async ({
     // Aguardar carregamento de imagens
     await new Promise(resolve => setTimeout(resolve, 500))
 
+    // ✅ OTIMIZAÇÃO: Reduzir scale de 2 para 1 (reduz 75% do tamanho)
     // Converter para canvas
     const canvas = await html2canvas(container, {
-      scale: 2,
+      scale: 1, // ✅ Reduzido de 2 para 1 - reduz drasticamente o tamanho
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
+      // ✅ Otimizações adicionais
+      imageTimeout: 15000,
+      removeContainer: false,
     })
 
-    // Criar PDF
+    // Criar PDF com compressão ativada
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
+      compress: true, // ✅ Ativar compressão do PDF
     })
 
-    const imgData = canvas.toDataURL('image/png')
+    // ✅ OTIMIZAÇÃO: Usar JPEG com qualidade 0.85 em vez de PNG
+    // JPEG tem ~10x menos tamanho que PNG para fotos e conteúdo misto
+    const imgData = canvas.toDataURL('image/jpeg', 0.85) // 85% de qualidade
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+    // ✅ Usar formato JPEG e modo FAST para reduzir processamento
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST')
 
     // Salvar PDF
     const fileName = `Ficha_Patrimonio_${patrimonio.numero_patrimonio}.pdf`

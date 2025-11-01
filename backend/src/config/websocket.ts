@@ -5,22 +5,18 @@
  * para atualizações em tempo real
  */
 
-import { Server as SocketIOServer } from 'socket.io'
+import { Server as SocketIOServer, Socket } from 'socket.io'
 import { Server as HTTPServer } from 'http'
 import jwt from 'jsonwebtoken'
 import { prisma } from './database'
 import { metricsCollector } from './metrics'
 import { alertManager } from './alerts'
 
-export interface AuthenticatedSocket {
-  id: string
+export interface AuthenticatedSocket extends Socket {
   userId: string
   email: string
   role: string
   municipalityId: string
-  join: (room: string) => void
-  leave: (room: string) => void
-  emit: (event: string, data: any) => void
 }
 
 export interface WebSocketEvents {
@@ -135,7 +131,7 @@ class WebSocketManager {
   private setupEventHandlers() {
     if (!this.io) return
 
-    this.io.on('connection', async (socket) => {
+    this.io.on('connection', async (socket: Socket) => {
       console.log(`🔌 Cliente conectado: ${socket.id}`)
 
       // Autenticar cliente
@@ -146,13 +142,11 @@ class WebSocketManager {
       }
 
       const { user } = authResult
-      const authenticatedSocket = {
-        ...socket,
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        municipalityId: user.municipalityId
-      } as AuthenticatedSocket
+      const authenticatedSocket = socket as AuthenticatedSocket
+      authenticatedSocket.userId = user.id
+      authenticatedSocket.email = user.email
+      authenticatedSocket.role = user.role
+      authenticatedSocket.municipalityId = user.municipalityId
 
       this.connectedClients.set(socket.id, authenticatedSocket)
 
