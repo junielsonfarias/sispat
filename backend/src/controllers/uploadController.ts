@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import multer from 'multer';
 
 interface AuthRequest extends Request {
   user?: {
@@ -11,7 +12,7 @@ interface AuthRequest extends Request {
     municipalityId: string;
   };
   file?: Express.Multer.File;
-  files?: Express.Multer.File[];
+  files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
 }
 
 // Upload de arquivo único

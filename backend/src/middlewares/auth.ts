@@ -12,27 +12,14 @@ export interface JwtPayload {
   municipalityId: string;
 }
 
-// Extender Request para incluir user e tipos do Multer
+// Extender Request para incluir user
+// Os tipos do Multer.File já estão disponíveis via @types/multer
 declare global {
   namespace Express {
     interface Request {
       user?: JwtPayload;
-      file?: Express.Multer.File;
-      files?: Express.Multer.File[];
-    }
-    
-    namespace Multer {
-      interface File {
-        fieldname: string;
-        originalname: string;
-        encoding: string;
-        mimetype: string;
-        size: number;
-        destination: string;
-        filename: string;
-        path: string;
-        buffer?: Buffer;
-      }
+      // file e files são adicionados automaticamente pelo multer middleware
+      // Não precisamos redeclará-los aqui para evitar conflitos
     }
   }
 }
