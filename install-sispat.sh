@@ -209,6 +209,12 @@ if [ -d "sispat" ]; then
 fi
 git clone --quiet $GITHUB_REPO sispat
 cd sispat
+
+# ✅ CORREÇÃO: Configurar Git safe.directory para evitar erro de "dubious ownership"
+log "Configurando Git..."
+git config --global --add safe.directory /var/www/sispat
+success "Git configurado"
+
 success "Código baixado"
 
 # Configurar PostgreSQL
@@ -231,6 +237,7 @@ JWT_SECRET=$(openssl rand -hex 32)
 cat > .env <<EOF
 NODE_ENV=production
 PORT=3000
+HOST=0.0.0.0
 
 # Database
 DATABASE_URL="postgresql://sispat_user:$DB_PASSWORD@localhost:5432/sispat_prod"
@@ -241,6 +248,7 @@ JWT_SECRET="$JWT_SECRET"
 JWT_EXPIRES_IN="24h"
 
 # CORS
+# ✅ CORREÇÃO: Configurar FRONTEND_URL baseado em SSL
 FRONTEND_URL="https://$DOMAIN"
 CORS_ORIGIN="https://$DOMAIN"
 CORS_CREDENTIALS=true
@@ -248,7 +256,7 @@ CORS_CREDENTIALS=true
 # Security
 BCRYPT_ROUNDS=12
 RATE_LIMIT_WINDOW=15
-RATE_LIMIT_MAX=100
+RATE_LIMIT_MAX=2000
 
 # File Upload
 MAX_FILE_SIZE=10485760
@@ -313,9 +321,16 @@ fi
 log "Configurando frontend..."
 cd ..
 
+# ✅ CORREÇÃO: Configurar VITE_API_URL baseado em SSL
+if [[ "$SETUP_SSL" =~ ^[Ss]$ ]]; then
+    FRONTEND_API_URL="https://$DOMAIN/api"
+else
+    FRONTEND_API_URL="http://$DOMAIN/api"
+fi
+
 cat > .env <<EOF
 # Frontend Configuration
-VITE_API_URL=https://$DOMAIN/api
+VITE_API_URL=$FRONTEND_API_URL
 VITE_USE_BACKEND=true
 VITE_APP_NAME=SISPAT 2.0
 VITE_APP_VERSION=2.0.4
