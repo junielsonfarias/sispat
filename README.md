@@ -97,14 +97,18 @@ O SISPAT 2.0 é um sistema completo de gestão patrimonial desenvolvido para pre
 
 ### 📦 Instalação em VPS (Recomendado)
 
-Para instalação completa em servidor VPS Linux, use nosso **instalador automático**:
+Para instalação completa em servidor VPS Linux, use nosso **instalador automático simplificado**:
 
 ```bash
-# Baixar script de instalação
-wget https://raw.githubusercontent.com/junielsonfarias/sispat/main/install.sh
+# Baixar e executar script de instalação
+wget https://raw.githubusercontent.com/junielsonfarias/sispat/main/install-sispat.sh
+chmod +x install-sispat.sh
+sudo bash install-sispat.sh
+```
 
-# Executar instalador (como root)
-sudo bash install.sh
+**Ou instalação em um comando:**
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/junielsonfarias/sispat/main/install-sispat.sh)
 ```
 
 O instalador automaticamente:
@@ -114,10 +118,12 @@ O instalador automaticamente:
 - ✅ Cria usuários administrativos
 - ✅ Configura SSL/HTTPS (opcional)
 - ✅ Inicia o sistema com PM2
+- ✅ Verifica instalação completa
 
-**Tempo estimado:** 15-30 minutos
+**Tempo estimado:** 20 minutos
 
-📖 **Documentação completa:** [GUIA_INSTALACAO_VPS_COMPLETO.md](GUIA_INSTALACAO_VPS_COMPLETO.md)
+📖 **Guia completo passo a passo:** [GUIA_INSTALACAO_VPS_PASSO_A_PASSO.md](GUIA_INSTALACAO_VPS_PASSO_A_PASSO.md)  
+📘 **Documentação detalhada:** [Docs/GUIA_INSTALACAO_VPS_COMPLETO.md](Docs/GUIA_INSTALACAO_VPS_COMPLETO.md)
 
 ---
 
