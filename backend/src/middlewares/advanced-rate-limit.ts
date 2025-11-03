@@ -9,19 +9,13 @@ const redis = getRedis() // Pode retornar null se Redis não estiver disponível
 
 /**
  * Rate limiter global para toda a API
- * 500 requests por 15 minutos por IP (aumentado para suportar carregamento inicial do frontend)
- * Requisições autenticadas têm limite maior: 1000 requests por 15 minutos
+ * ✅ CORREÇÃO: Desabilitar rate limiting para requisições GET autenticadas
+ * (permitir carregamento inicial do frontend sem limites)
+ * Manter proteção apenas para requisições não autenticadas e operações de escrita
  */
 export const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: (req: any) => {
-    // Se requisição tem token válido, permitir mais requisições
-    const authHeader = req.headers.authorization
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      return 1000 // Usuários autenticados: 1000 requests por 15 minutos
-    }
-    return 500 // Não autenticados: 500 requests por 15 minutos
-  },
+  max: 2000, // Limite alto para não autenticados (será ignorado para autenticados via skip)
   standardHeaders: true,
   legacyHeaders: false,
   
@@ -39,16 +33,30 @@ export const globalRateLimiter = rateLimit({
     retryAfter: 'Disponível novamente em',
   },
   
-  // Não aplicar rate limit em health checks e rotas públicas
-  skip: (req) => {
-    return req.path.startsWith('/api/health') || 
-           req.path.startsWith('/health') ||
-           req.path.startsWith('/api/public')
+  // ✅ CORREÇÃO: Não aplicar rate limit em:
+  // - Health checks
+  // - Rotas públicas
+  // - Requisições GET autenticadas (permitir carregamento inicial)
+  skip: (req: any) => {
+    // Health checks e rotas públicas
+    if (req.path.startsWith('/api/health') || 
+        req.path.startsWith('/health') ||
+        req.path.startsWith('/api/public')) {
+      return true
+    }
+    
+    // Requisições GET autenticadas: SEM rate limiting
+    const authHeader = req.headers.authorization
+    if (authHeader && authHeader.startsWith('Bearer ') && req.method === 'GET') {
+      return true
+    }
+    
+    return false
   },
   
   // Handler customizado para quando exceder
   handler: (req: any, res) => {
-    console.warn(`⚠️ Rate limit exceeded: ${req.ip} → ${req.path}`)
+    console.warn(`⚠️ Rate limit exceeded: ${req.ip} → ${req.method} ${req.path}`)
     
     res.status(429).json({
       error: 'Too Many Requests',
