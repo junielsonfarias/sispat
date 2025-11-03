@@ -10,6 +10,8 @@ interface AuthRequest extends Request {
     role: string;
     municipalityId: string;
   };
+  file?: Express.Multer.File;
+  files?: Express.Multer.File[];
 }
 
 // Upload de arquivo único

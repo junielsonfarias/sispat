@@ -271,9 +271,9 @@ SUPERUSER_NAME="$SUPERUSER_NAME"
 EOF
 success "Backend configurado"
 
-# Instalar dependências do backend
+# Instalar dependências do backend (incluindo devDependencies para compilação)
 log "Instalando dependências do backend..."
-npm install --production --silent
+npm install --silent
 success "Dependências do backend instaladas"
 
 # Build do backend
