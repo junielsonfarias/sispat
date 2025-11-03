@@ -9,11 +9,19 @@ const redis = getRedis() // Pode retornar null se Redis não estiver disponível
 
 /**
  * Rate limiter global para toda a API
- * 100 requests por 15 minutos por IP
+ * 500 requests por 15 minutos por IP (aumentado para suportar carregamento inicial do frontend)
+ * Requisições autenticadas têm limite maior: 1000 requests por 15 minutos
  */
 export const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // 100 requests
+  max: (req: any) => {
+    // Se requisição tem token válido, permitir mais requisições
+    const authHeader = req.headers.authorization
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      return 1000 // Usuários autenticados: 1000 requests por 15 minutos
+    }
+    return 500 // Não autenticados: 500 requests por 15 minutos
+  },
   standardHeaders: true,
   legacyHeaders: false,
   
@@ -31,9 +39,11 @@ export const globalRateLimiter = rateLimit({
     retryAfter: 'Disponível novamente em',
   },
   
-  // Não aplicar rate limit em health checks
+  // Não aplicar rate limit em health checks e rotas públicas
   skip: (req) => {
-    return req.path.startsWith('/api/health') || req.path.startsWith('/health')
+    return req.path.startsWith('/api/health') || 
+           req.path.startsWith('/health') ||
+           req.path.startsWith('/api/public')
   },
   
   // Handler customizado para quando exceder
