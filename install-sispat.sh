@@ -522,9 +522,18 @@ if [ ! -f "dist/index.js" ]; then
     error "dist/index.js não encontrado. Build pode ter falhado. Verifique: /tmp/backend-build.log"
 fi
 
+# Verificar se diretório de logs existe
+mkdir -p logs/pm2
+
 pm2 delete sispat-backend 2>/dev/null || true
-pm2 start ecosystem.config.js --env production --silent
-pm2 save --silent
+
+# Iniciar PM2 e capturar saída
+if pm2 start ecosystem.config.js --env production 2>&1 | tee /tmp/pm2-start.log; then
+    pm2 save --silent
+    success "PM2 iniciado"
+else
+    error "Falha ao iniciar PM2. Verifique: /tmp/pm2-start.log e pm2 logs sispat-backend"
+fi
 
 # Configurar PM2 startup (adaptar para root ou usuário normal)
 if [ "$USER" != "root" ] && [ -d "/home/$USER" ]; then
@@ -533,7 +542,13 @@ else
     pm2 startup systemd >/dev/null 2>&1 || warning "PM2 startup não configurado. Execute manualmente: pm2 startup"
 fi
 
-success "Backend iniciado"
+# Verificar se processo está rodando
+sleep 3
+if pm2 list | grep -q "sispat-backend.*online"; then
+    success "Backend iniciado e rodando"
+else
+    warning "Backend pode não estar rodando. Verifique: pm2 status e pm2 logs sispat-backend"
+fi
 
 # Aguardar backend iniciar
 log "Aguardando backend iniciar..."
