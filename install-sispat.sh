@@ -258,6 +258,9 @@ BCRYPT_ROUNDS=12
 RATE_LIMIT_WINDOW=15
 RATE_LIMIT_MAX=2000
 
+# ✅ CORREÇÃO: Redis (desabilitado por padrão, pode ser habilitado depois)
+ENABLE_REDIS=false
+
 # File Upload
 MAX_FILE_SIZE=10485760
 UPLOAD_PATH="./uploads"
@@ -345,6 +348,10 @@ VITE_BUILD_ANALYZE=false
 VITE_ENABLE_DEVTOOLS=false
 VITE_ENABLE_LOGGING=false
 EOF
+
+# ✅ CORREÇÃO: Garantir que .env.production existe para build
+cp .env .env.production 2>/dev/null || true
+
 success "Frontend configurado"
 
 # Instalar dependências do frontend
