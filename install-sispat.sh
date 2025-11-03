@@ -278,19 +278,36 @@ success "Dependências do backend instaladas"
 
 # Build do backend
 log "Compilando backend..."
-npm run build 2>&1 | grep -v "DeprecationWarning" || true
-success "Backend compilado"
+if npm run build:prod 2>&1 | tee /tmp/backend-build.log | grep -v "DeprecationWarning"; then
+    if grep -qi "error" /tmp/backend-build.log; then
+        error "Erro na compilação do backend. Verifique: /tmp/backend-build.log"
+    fi
+    success "Backend compilado"
+else
+    error "Falha na compilação do backend. Verifique: /tmp/backend-build.log"
+fi
 
 # Executar migrations
 log "Aplicando migrations do banco..."
-npx prisma generate >/dev/null 2>&1
-npx prisma migrate deploy >/dev/null 2>&1
+# Prisma Client já foi gerado pelo build:prod
+npx prisma migrate deploy >/dev/null 2>&1 || error "Falha ao aplicar migrations. Verifique a conexão com o banco."
 success "Migrations aplicadas"
 
 # Popular banco
 log "Populando banco de dados..."
-npm run prisma:seed >/dev/null 2>&1 || true
-success "Banco populado"
+export MUNICIPALITY_NAME="$MUNICIPALITY_NAME"
+export STATE="$STATE"
+export SUPERUSER_EMAIL="$SUPERUSER_EMAIL"
+export SUPERUSER_PASSWORD="$SUPERUSER_PASSWORD"
+export SUPERUSER_NAME="$SUPERUSER_NAME"
+export BCRYPT_ROUNDS=12
+
+if npm run prisma:seed:prod >/tmp/seed.log 2>&1; then
+    success "Banco populado"
+else
+    warning "Seed falhou. Verifique logs: /tmp/seed.log"
+    warning "Você pode executar manualmente: cd backend && npm run prisma:seed:prod"
+fi
 
 # Configurar Frontend
 log "Configurando frontend..."
@@ -322,8 +339,17 @@ success "Dependências do frontend instaladas"
 
 # Build do frontend
 log "Compilando frontend..."
-pnpm run build:prod 2>&1 | grep -E "(built|error|warning)" || true
-success "Frontend compilado"
+if pnpm run build:prod 2>&1 | tee /tmp/frontend-build.log; then
+    if grep -qi "error" /tmp/frontend-build.log; then
+        error "Erro na compilação do frontend. Verifique: /tmp/frontend-build.log"
+    fi
+    if [ ! -d "dist" ]; then
+        error "Diretório dist não criado. Build pode ter falhado."
+    fi
+    success "Frontend compilado"
+else
+    error "Falha na compilação do frontend. Verifique: /tmp/frontend-build.log"
+fi
 
 # Configurar Nginx
 log "Configurando Nginx..."
@@ -435,9 +461,12 @@ ln -sf /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
 # Testar configuração
-nginx -t >/dev/null 2>&1
-systemctl reload nginx
-success "Nginx configurado"
+if nginx -t >/tmp/nginx-test.log 2>&1; then
+    systemctl reload nginx
+    success "Nginx configurado"
+else
+    error "Erro na configuração do Nginx. Verifique: /tmp/nginx-test.log"
+fi
 
 # Configurar SSL
 if [[ "$SETUP_SSL" =~ ^[Ss]$ ]]; then
@@ -449,16 +478,31 @@ fi
 # Configurar permissões
 log "Configurando permissões..."
 chown -R www-data:www-data /var/www/sispat
-chmod -R 755 /var/www/sispat
+find /var/www/sispat -type d -exec chmod 755 {} \;
+find /var/www/sispat -type f -exec chmod 644 {} \;
+chmod +x /var/www/sispat/backend/dist/index.js 2>/dev/null || true
 success "Permissões configuradas"
 
 # Iniciar backend com PM2
 log "Iniciando backend..."
 cd backend
+
+# Verificar se dist/index.js existe
+if [ ! -f "dist/index.js" ]; then
+    error "dist/index.js não encontrado. Build pode ter falhado. Verifique: /tmp/backend-build.log"
+fi
+
 pm2 delete sispat-backend 2>/dev/null || true
 pm2 start ecosystem.config.js --env production --silent
 pm2 save --silent
-pm2 startup systemd -u $USER --hp /home/$USER >/dev/null 2>&1 || true
+
+# Configurar PM2 startup (adaptar para root ou usuário normal)
+if [ "$USER" != "root" ] && [ -d "/home/$USER" ]; then
+    pm2 startup systemd -u $USER --hp /home/$USER >/dev/null 2>&1 || warning "PM2 startup não configurado automaticamente"
+else
+    pm2 startup systemd >/dev/null 2>&1 || warning "PM2 startup não configurado. Execute manualmente: pm2 startup"
+fi
+
 success "Backend iniciado"
 
 # Aguardar backend iniciar
