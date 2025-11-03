@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 
 /**
  * @desc    Obter todos os locais
@@ -12,7 +13,7 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
     const userRole = req.user?.role;
     const userEmail = req.user?.email;
 
-    console.log('🔍 [DEV] GET /api/locais - Usuário:', { role: userRole, email: userEmail });
+    logDebug('🔍 GET /api/locais', { role: userRole, email: userEmail, sectorId });
 
     let where: any = {};
 
@@ -32,7 +33,7 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
       });
 
       const responsibleSectors = user?.responsibleSectors || [];
-      console.log('🔍 [DEV] Setores responsáveis do usuário:', responsibleSectors);
+      logDebug('🔍 Setores responsáveis do usuário', { responsibleSectors });
 
       if (responsibleSectors.length > 0) {
         // Buscar IDs dos setores pelos nomes
@@ -44,18 +45,18 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
         });
 
         const sectorIds = sectors.map(s => s.id);
-        console.log('🔍 [DEV] IDs dos setores:', sectorIds);
+        logDebug('🔍 IDs dos setores', { sectorIds });
 
         // Aplicar filtro de setores
         where.sectorId = { in: sectorIds };
       } else {
         // Usuário sem setores atribuídos não vê nada
-        console.log('⚠️  [DEV] Usuário sem setores atribuídos - retornando vazio');
+        logDebug('⚠️ Usuário sem setores atribuídos - retornando vazio');
         res.json([]);
         return;
       }
     } else {
-      console.log('✅ [DEV] Admin/Supervisor - retornando TODOS os locais');
+      logDebug('✅ Admin/Supervisor - retornando TODOS os locais');
     }
 
     const locais = await prisma.local.findMany({
@@ -73,13 +74,13 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
-    console.log('✅ [DEV] Locais encontrados:', locais.length);
+    logDebug('✅ Locais encontrados', { count: locais.length });
 
     // ✅ PERFORMANCE: Cache HTTP para dados estáticos
     res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
     res.json(locais);
   } catch (error) {
-    console.error('❌ [DEV] Erro ao buscar locais:', error);
+    logError('❌ Erro ao buscar locais', error, { userId: req.user?.userId, sectorId: req.query.sectorId });
     res.status(500).json({ error: 'Erro ao buscar locais' });
   }
 };
@@ -112,7 +113,7 @@ export const getLocalById = async (req: Request, res: Response): Promise<void> =
 
     res.json(local);
   } catch (error) {
-    console.error('Erro ao buscar local:', error);
+    logError('Erro ao buscar local', error, { localId: req.params.id });
     res.status(500).json({ error: 'Erro ao buscar local' });
   }
 };
@@ -168,7 +169,7 @@ export const createLocal = async (req: Request, res: Response): Promise<void> =>
 
     res.status(201).json(local);
   } catch (error) {
-    console.error('Erro ao criar local:', error);
+    logError('Erro ao criar local', error, { userId: req.user?.userId, name: req.body.name });
     res.status(500).json({ error: 'Erro ao criar local' });
   }
 };
@@ -218,7 +219,7 @@ export const updateLocal = async (req: Request, res: Response): Promise<void> =>
 
     res.json(updated);
   } catch (error) {
-    console.error('Erro ao atualizar local:', error);
+    logError('Erro ao atualizar local', error, { localId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao atualizar local' });
   }
 };
@@ -274,7 +275,7 @@ export const deleteLocal = async (req: Request, res: Response): Promise<void> =>
 
     res.json({ message: 'Local excluído com sucesso' });
   } catch (error) {
-    console.error('Erro ao deletar local:', error);
+    logError('Erro ao deletar local', error, { localId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao deletar local' });
   }
 };

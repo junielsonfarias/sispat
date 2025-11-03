@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 
 /**
  * @desc    Obter todos os setores
@@ -11,7 +12,7 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
     const userRole = req.user?.role;
     const userEmail = req.user?.email;
 
-    console.log('🔍 [DEV] GET /api/sectors - Usuário:', { role: userRole, email: userEmail });
+    logDebug('🔍 GET /api/sectors', { role: userRole, email: userEmail });
 
     let where: any = {};
 
@@ -26,19 +27,19 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
       });
 
       const responsibleSectors = user?.responsibleSectors || [];
-      console.log('🔍 [DEV] Setores responsáveis do usuário:', responsibleSectors);
+      logDebug('🔍 Setores responsáveis do usuário', { responsibleSectors });
 
       if (responsibleSectors.length > 0) {
         // Filtrar por nomes dos setores
         where.name = { in: responsibleSectors };
       } else {
         // Usuário sem setores atribuídos não vê nada
-        console.log('⚠️  [DEV] Usuário sem setores atribuídos - retornando vazio');
+        logDebug('⚠️ Usuário sem setores atribuídos - retornando vazio');
         res.json([]);
         return;
       }
     } else {
-      console.log('✅ [DEV] Admin/Supervisor - retornando TODOS os setores');
+      logDebug('✅ Admin/Supervisor - retornando TODOS os setores');
     }
 
     const sectors = await prisma.sector.findMany({
@@ -56,13 +57,13 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
       },
     });
 
-    console.log('✅ [DEV] Setores encontrados:', sectors.length);
+    logDebug('✅ Setores encontrados', { count: sectors.length });
 
     // ✅ PERFORMANCE: Cache HTTP para dados estáticos
     res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
     res.json(sectors);
   } catch (error) {
-    console.error('❌ [DEV] Erro ao buscar setores:', error);
+    logError('❌ Erro ao buscar setores', error, { userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao buscar setores' });
   }
 };
@@ -95,7 +96,7 @@ export const getSectorById = async (req: Request, res: Response): Promise<void> 
 
     res.json(sector);
   } catch (error) {
-    console.error('Erro ao buscar setor:', error);
+    logError('Erro ao buscar setor', error, { sectorId: req.params.id });
     res.status(500).json({ error: 'Erro ao buscar setor' });
   }
 };
@@ -110,7 +111,7 @@ export const createSector = async (req: Request, res: Response): Promise<void> =
     const userId = req.user?.userId;
     const { name, sigla, codigo, description, endereco, cnpj, responsavel, parentId } = req.body;
 
-    console.log('[DEV] ➕ Criando setor:', {
+    logDebug('➕ Criando setor', {
       dadosRecebidos: { name, sigla, codigo, description, endereco, cnpj, responsavel, parentId },
       usuario: userId,
     });
@@ -147,7 +148,7 @@ export const createSector = async (req: Request, res: Response): Promise<void> =
       },
     });
 
-    console.log('[DEV] ✅ Setor criado:', sector);
+    logInfo('✅ Setor criado', { sectorId: sector.id, name: sector.name });
 
     // Registrar atividade
     await prisma.activityLog.create({
@@ -162,8 +163,7 @@ export const createSector = async (req: Request, res: Response): Promise<void> =
 
     res.status(201).json(sector);
   } catch (error: any) {
-    console.error('[DEV] ❌ Erro ao criar setor:', error);
-    console.error('   Mensagem:', error.message);
+    logError('❌ Erro ao criar setor', error, { userId: req.user?.userId, name: req.body.name });
     res.status(500).json({ error: 'Erro ao criar setor' });
   }
 };
@@ -179,7 +179,7 @@ export const updateSector = async (req: Request, res: Response): Promise<void> =
     const userId = req.user?.userId;
     const { name, sigla, codigo, description, endereco, cnpj, responsavel, parentId } = req.body;
 
-    console.log('[DEV] 🔄 Atualizando setor:', {
+    logDebug('🔄 Atualizando setor', {
       id,
       dadosRecebidos: { name, sigla, codigo, description, endereco, cnpj, responsavel, parentId },
       usuario: userId,
@@ -190,12 +190,12 @@ export const updateSector = async (req: Request, res: Response): Promise<void> =
     });
 
     if (!sector) {
-      console.log('[DEV] ❌ Setor não encontrado:', id);
+      logWarn('❌ Setor não encontrado', { id });
       res.status(404).json({ error: 'Setor não encontrado' });
       return;
     }
 
-    console.log('[DEV] 📊 Setor atual:', sector);
+    logDebug('📊 Setor atual', { sectorId: sector.id, name: sector.name });
 
     // Preparar dados para atualização (apenas campos fornecidos)
     const updateData: any = {};
@@ -208,14 +208,14 @@ export const updateSector = async (req: Request, res: Response): Promise<void> =
     if (responsavel !== undefined) updateData.responsavel = responsavel;
     if (parentId !== undefined) updateData.parentId = parentId;
 
-    console.log('[DEV] 📝 Dados a atualizar:', updateData);
+    logDebug('📝 Dados a atualizar', { updateData });
 
     const updated = await prisma.sector.update({
       where: { id },
       data: updateData,
     });
 
-    console.log('[DEV] ✅ Setor atualizado:', updated);
+    logInfo('✅ Setor atualizado', { sectorId: updated.id, name: updated.name });
 
     // Registrar atividade
     await prisma.activityLog.create({
@@ -230,10 +230,11 @@ export const updateSector = async (req: Request, res: Response): Promise<void> =
 
     res.json(updated);
   } catch (error: any) {
-    console.error('[DEV] ❌ Erro ao atualizar setor:');
-    console.error('   Mensagem:', error.message);
-    console.error('   Código:', error.code);
-    console.error('   Stack:', error.stack);
+    logError('❌ Erro ao atualizar setor', error, {
+      sectorId: req.params.id,
+      userId: req.user?.userId,
+      errorCode: error.code
+    });
     res.status(500).json({ 
       error: 'Erro ao atualizar setor',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -296,7 +297,7 @@ export const deleteSector = async (req: Request, res: Response): Promise<void> =
 
     res.json({ message: 'Setor excluído com sucesso' });
   } catch (error) {
-    console.error('Erro ao deletar setor:', error);
+    logError('Erro ao deletar setor', error, { sectorId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao deletar setor' });
   }
 };

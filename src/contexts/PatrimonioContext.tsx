@@ -44,25 +44,35 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true)
     setError(null)
     try {
-      console.log('🔍 [DEV] PatrimonioContext: Buscando patrimônios...')
+      if (import.meta.env.DEV) {
+        console.log('🔍 [DEV] PatrimonioContext: Buscando patrimônios...')
+      }
       const response = await api.get<{ patrimonios: Patrimonio[]; pagination: any }>('/patrimonios')
-      console.log('📊 [DEV] PatrimonioContext: Resposta da API:', response)
-      console.log('📊 [DEV] PatrimonioContext: Tipo da resposta:', typeof response)
-      console.log('📊 [DEV] PatrimonioContext: É array?', Array.isArray(response))
+      if (import.meta.env.DEV) {
+        console.log('📊 [DEV] PatrimonioContext: Resposta da API:', response)
+        console.log('📊 [DEV] PatrimonioContext: Tipo da resposta:', typeof response)
+        console.log('📊 [DEV] PatrimonioContext: É array?', Array.isArray(response))
+      }
       
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade patrimonios
       const patrimoniosData = Array.isArray(response) ? response : (response.patrimonios || [])
       
-      console.log('✅ [DEV] PatrimonioContext: Patrimônios extraídos:', patrimoniosData.length)
-      console.log('📝 [DEV] PatrimonioContext: Primeiros 3 patrimônios:', patrimoniosData.slice(0, 3))
+      if (import.meta.env.DEV) {
+        console.log('✅ [DEV] PatrimonioContext: Patrimônios extraídos:', patrimoniosData.length)
+        console.log('📝 [DEV] PatrimonioContext: Primeiros 3 patrimônios:', patrimoniosData.slice(0, 3))
+      }
       
       setPatrimonios(patrimoniosData)
     } catch (err) {
-      console.error('❌ [DEV] PatrimonioContext: Erro ao carregar:', err)
+      if (import.meta.env.DEV) {
+        console.error('❌ [DEV] PatrimonioContext: Erro ao carregar:', err)
+      }
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de erro
       if (err?.code === 'ERR_NETWORK' || err?.code === 'ERR_CONNECTION_REFUSED') {
-        console.log('⚠️  Backend não disponível - usando lista vazia de patrimônios')
+        if (import.meta.env.DEV) {
+          console.log('⚠️  Backend não disponível - usando lista vazia de patrimônios')
+        }
         setPatrimonios([])
         setError(null) // Não mostrar erro para o usuário
       } else {
@@ -101,11 +111,13 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const updatePatrimonio = async (updatedPatrimonio: Patrimonio) => {
-    console.log('🔄 PatrimonioContext - updatePatrimonio chamado com:', {
-      id: updatedPatrimonio.id,
-      fotos: updatedPatrimonio.fotos,
-      fotosLength: updatedPatrimonio.fotos?.length,
-    })
+    if (import.meta.env.DEV) {
+      console.log('🔄 PatrimonioContext - updatePatrimonio chamado com:', {
+        id: updatedPatrimonio.id,
+        fotos: updatedPatrimonio.fotos,
+        fotosLength: updatedPatrimonio.fotos?.length,
+      })
+    }
     
     // Remover campos de relacionamentos que não devem ser enviados
     const { 
@@ -129,7 +141,9 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     
     const response = await api.put(`/patrimonios/${updatedPatrimonio.id}`, patrimonioData)
     
-    console.log('✅ PatrimonioContext - Resposta do backend:', response)
+    if (import.meta.env.DEV) {
+      console.log('✅ PatrimonioContext - Resposta do backend:', response)
+    }
     
     setPatrimonios((prev) =>
       Array.isArray(prev) ? prev.map((p) => (p.id === updatedPatrimonio.id ? updatedPatrimonio : p)) : [updatedPatrimonio]
@@ -156,7 +170,9 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
         const response = await api.get<{ patrimonio: Patrimonio }>(`/patrimonios/${patrimonioId}`)
         return response
       } catch (error) {
-        console.error('Erro ao buscar patrimônio por ID:', error)
+        if (import.meta.env.DEV) {
+          console.error('Erro ao buscar patrimônio por ID:', error)
+        }
         throw error
       }
     },

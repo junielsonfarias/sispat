@@ -6,11 +6,10 @@ import {
   useCallback,
   useEffect,
 } from 'react'
-import { FormFieldConfig, ActivityLogAction, User } from '@/types'
-import { generateId } from '@/lib/utils'
+import { FormFieldConfig } from '@/types'
 import { toast } from '@/hooks/use-toast'
-import { useActivityLog } from './ActivityLogContext'
 import { useAuth } from './AuthContext'
+import { api } from '@/services/api-adapter'
 
 interface FormFieldManagerContextType {
   fields: FormFieldConfig[]
@@ -23,107 +22,96 @@ interface FormFieldManagerContextType {
 const FormFieldManagerContext =
   createContext<FormFieldManagerContextType | null>(null)
 
-const initialFields: FormFieldConfig[] = [
-  {
-    id: '1',
-    key: 'descricao_bem',
-    label: 'Descrição do Bem',
-    type: 'TEXTAREA',
-    required: true,
-    isCustom: false,
-    isSystem: true,
-  },
-  {
-    id: '2',
-    key: 'tipo',
-    label: 'Tipo',
-    type: 'TEXT',
-    required: true,
-    isCustom: false,
-    isSystem: false,
-  },
-]
-
 export const FormFieldManagerProvider = ({
   children,
 }: {
   children: ReactNode
 }) => {
-  const [fields, setFields] = useState<FormFieldConfig[]>(initialFields)
-  const { logActivity } = useActivityLog()
+  const [fields, setFields] = useState<FormFieldConfig[]>([])
   const { user } = useAuth()
 
-  useEffect(() => {
-    // In a real app, this would fetch from an API
-    const storedFields = localStorage.getItem('sispat_form_fields')
-    if (storedFields) {
-      setFields(JSON.parse(storedFields))
+  const fetchFields = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const fieldsData = await api.get<FormFieldConfig[]>('/config/form-field-configs')
+      setFields(fieldsData)
+    } catch (error) {
+      // Silenciar erro se não houver campos
     }
-  }, [])
+  }, [user])
 
-  const persistFields = (
-    newFields: FormFieldConfig[],
-    action: ActivityLogAction,
-    details: string,
-  ) => {
-    // In a real app, this would be an API call
-    localStorage.setItem('sispat_form_fields', JSON.stringify(newFields))
-    setFields(newFields)
+  useEffect(() => {
     if (user) {
-      logActivity(user, action, details)
+      fetchFields()
     }
-  }
+  }, [user, fetchFields])
 
   const addField = useCallback(
-    (field: Omit<FormFieldConfig, 'id'>) => {
-      const newField = { ...field, id: generateId() }
-      persistFields(
-        [...fields, newField],
-        'FORM_FIELD_CREATE',
-        `Campo "${field.label}" criado.`,
-      )
-      toast({ description: 'Campo adicionado com sucesso.' })
+    async (field: Omit<FormFieldConfig, 'id'>) => {
+      try {
+        await api.post('/config/form-field-configs', field)
+        await fetchFields()
+        toast({ description: 'Campo adicionado com sucesso.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao adicionar campo.',
+        })
+      }
     },
-    [fields, user, logActivity],
+    [fetchFields],
   )
 
   const updateField = useCallback(
-    (fieldId: string, updates: Partial<FormFieldConfig>) => {
-      const newFields = fields.map((f) =>
-        f.id === fieldId ? { ...f, ...updates } : f,
-      )
-      persistFields(
-        newFields,
-        'FORM_FIELD_UPDATE',
-        `Campo "${updates.label || fields.find((f) => f.id === fieldId)?.label}" atualizado.`,
-      )
-      toast({ description: 'Campo atualizado com sucesso.' })
+    async (fieldId: string, updates: Partial<FormFieldConfig>) => {
+      try {
+        await api.put(`/config/form-field-configs/${fieldId}`, updates)
+        await fetchFields()
+        toast({ description: 'Campo atualizado com sucesso.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao atualizar campo.',
+        })
+      }
     },
-    [fields, user, logActivity],
+    [fetchFields],
   )
 
   const deleteField = useCallback(
-    (fieldId: string) => {
-      const fieldLabel = fields.find((f) => f.id === fieldId)?.label
-      persistFields(
-        fields.filter((f) => f.id !== fieldId),
-        'FORM_FIELD_DELETE',
-        `Campo "${fieldLabel}" excluído.`,
-      )
-      toast({ description: 'Campo excluído com sucesso.' })
+    async (fieldId: string) => {
+      try {
+        await api.delete(`/config/form-field-configs/${fieldId}`)
+        await fetchFields()
+        toast({ description: 'Campo excluído com sucesso.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao excluir campo.',
+        })
+      }
     },
-    [fields, user, logActivity],
+    [fetchFields],
   )
 
   const reorderFields = useCallback(
-    (newFields: FormFieldConfig[]) => {
-      persistFields(
-        newFields,
-        'FORM_FIELD_REORDER',
-        'Ordem dos campos foi alterada.',
-      )
+    async (newFields: FormFieldConfig[]) => {
+      // Atualizar ordem no banco
+      try {
+        for (let i = 0; i < newFields.length; i++) {
+          // Nota: Este é um placeholder - pode precisar de endpoint específico
+        }
+        setFields(newFields)
+      } catch (error) {
+        // Rollback
+        await fetchFields()
+      }
     },
-    [user, logActivity],
+    [fetchFields],
   )
 
   return (

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode } from 'lucide-react'
+import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,9 +13,10 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useSync } from '@/contexts/SyncContext'
 import { useAuth } from '@/hooks/useAuth'
+import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { toast } from '@/hooks/use-toast'
 import { LabelPreview } from '@/components/LabelPreview'
 import {
   Dialog,
@@ -26,6 +27,25 @@ import {
 } from '@/components/ui/dialog'
 import { Patrimonio } from '@/types'
 import { useLabelTemplates } from '@/hooks/useLabelTemplates'
+import { LabelPrintDialog } from '@/components/bens/LabelPrintDialog'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useDebounce } from '@/hooks/use-debounce'
+import { api } from '@/services/api-adapter'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { TableSkeleton, MobileCardSkeleton } from '@/components/ui/skeleton-list'
+import { toast } from '@/hooks/use-toast'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -45,7 +65,14 @@ const getStatusColor = (status: string) => {
 }
 
 // Função auxiliar para renderizar a tabela de forma segura
-const renderTable = (filteredData: Patrimonio[], isLoading: boolean, searchTerm: string) => {
+const renderTable = (
+  filteredData: Patrimonio[], 
+  isLoading: boolean, 
+  searchTerm: string,
+  selectedAssets: string[],
+  onToggleAsset: (id: string) => void,
+  onToggleSelectAll: () => void
+) => {
   if (!Array.isArray(filteredData)) {
     return (
       <div className="text-center py-8">
@@ -55,14 +82,7 @@ const renderTable = (filteredData: Patrimonio[], isLoading: boolean, searchTerm:
   }
 
   if (isLoading) {
-    return (
-      <div className="text-center py-8">
-        <div className="flex items-center justify-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-          <span className="text-gray-500">Carregando bens...</span>
-        </div>
-      </div>
-    )
+    return <TableSkeleton count={10} />
   }
 
   if (filteredData.length === 0) {
@@ -100,7 +120,25 @@ const renderTable = (filteredData: Patrimonio[], isLoading: boolean, searchTerm:
       <div className="rounded-lg border border-gray-200 overflow-hidden">
         <Table>
           <TableHeader className="bg-gray-50">
-            <TableRow className="border-gray-200">
+              <TableRow className="border-gray-200">
+              <TableHead className="w-12">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Checkbox
+                          checked={filteredData.length > 0 && selectedAssets.length === filteredData.length}
+                          onCheckedChange={onToggleSelectAll}
+                          aria-label={selectedAssets.length === filteredData.length ? 'Desmarcar todos' : 'Selecionar todos'}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{selectedAssets.length === filteredData.length ? 'Desmarcar todos' : 'Selecionar todos'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </TableHead>
               <TableHead className="text-sm font-semibold text-gray-700">Número</TableHead>
               <TableHead className="text-sm font-semibold text-gray-700">Descrição</TableHead>
               <TableHead className="text-sm font-semibold text-gray-700">Situação</TableHead>
@@ -116,6 +154,13 @@ const renderTable = (filteredData: Patrimonio[], isLoading: boolean, searchTerm:
                 key={`patrimonio-${patrimonio.id}-${index}`} 
                 className="hover:bg-gray-50 border-gray-200"
               >
+                <TableCell>
+                  <Checkbox
+                    checked={selectedAssets.includes(patrimonio.id)}
+                    onCheckedChange={() => onToggleAsset(patrimonio.id)}
+                    aria-label={`Selecionar patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                  />
+                </TableCell>
                 <TableCell className="font-medium font-mono text-sm text-gray-900">
                   <Link 
                     to={`/bens-cadastrados/ver/${patrimonio.id}`}
@@ -142,44 +187,122 @@ const renderTable = (filteredData: Patrimonio[], isLoading: boolean, searchTerm:
                 <TableCell className="text-sm text-gray-700">{patrimonio.local_objeto || patrimonio.localObjeto}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      asChild
-                      title="Visualizar"
-                      className="touch-target min-h-[40px] min-w-[40px]"
-                    >
-                      <Link to={`/bens-cadastrados/ver/${patrimonio.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="QR Code"
-                      className="touch-target min-h-[40px] min-w-[40px]"
-                    >
-                      <QrCode className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      asChild
-                      title="Editar"
-                      className="touch-target min-h-[40px] min-w-[40px]"
-                    >
-                      <Link to={`/bens-cadastrados/editar/${patrimonio.id}`}>
-                        <Edit className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Excluir"
-                      className="touch-target min-h-[40px] min-w-[40px]"
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                            aria-label={`Visualizar patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            className="touch-target min-h-[40px] min-w-[40px] transition-all duration-200 hover:scale-110"
+                          >
+                            <Link to={`/bens-cadastrados/ver/${patrimonio.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Visualizar detalhes</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleShowQrCode(patrimonio)}
+                            aria-label={`Gerar QR Code para patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            className="touch-target min-h-[40px] min-w-[40px] transition-all duration-200 hover:scale-110"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Gerar QR Code</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                            aria-label={`Editar patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            className="touch-target min-h-[40px] min-w-[40px] transition-all duration-200 hover:scale-110"
+                          >
+                            <Link to={`/bens-cadastrados/editar/${patrimonio.id}`}>
+                              <Edit className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Editar patrimônio</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={async () => {
+                              if (!window.confirm(`Tem certeza que deseja excluir o patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}? Esta ação não pode ser desfeita.`)) {
+                                return
+                              }
+                              
+                              setDeletingId(patrimonio.id)
+                              try {
+                                await deletePatrimonio(patrimonio.id)
+                                // Remover da lista local
+                                setPatrimonios((prev) => prev.filter((p) => p.id !== patrimonio.id))
+                                setSelectedAssets((prev) => prev.filter((id) => id !== patrimonio.id))
+                                // Atualizar contagem total
+                                setTotalItems((prev) => Math.max(0, prev - 1))
+                                
+                                toast({
+                                  title: 'Patrimônio excluído',
+                                  description: 'O patrimônio foi excluído com sucesso.',
+                                })
+                                
+                                // Se a página ficou vazia e não é a primeira, voltar uma página
+                                if (filteredData.length === 1 && currentPage > 1) {
+                                  setCurrentPage(currentPage - 1)
+                                } else {
+                                  // Recarregar dados para atualizar paginação
+                                  fetchPatrimonios()
+                                }
+                              } catch (error) {
+                                toast({
+                                  variant: 'destructive',
+                                  title: 'Erro ao excluir',
+                                  description: 'Não foi possível excluir o patrimônio. Tente novamente.',
+                                })
+                              } finally {
+                                setDeletingId(null)
+                              }
+                            }}
+                            disabled={deletingId === patrimonio.id}
+                            aria-label={`Excluir patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            className="touch-target min-h-[40px] min-w-[40px] text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:scale-110"
+                          >
+                            {deletingId === patrimonio.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Excluir patrimônio</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </TableCell>
               </TableRow>
@@ -192,35 +315,130 @@ const renderTable = (filteredData: Patrimonio[], isLoading: boolean, searchTerm:
 }
 
 const BensCadastrados = () => {
-  const { patrimonios, isLoading } = usePatrimonio()
   const { isSyncing, startSync } = useSync()
   const { user } = useAuth()
   const { templates: labelTemplates } = useLabelTemplates()
+  const { deletePatrimonio } = usePatrimonio()
   const [searchTerm, setSearchTerm] = useState('')
   const [qrCodeAsset, setQrCodeAsset] = useState<Patrimonio | null>(null)
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([])
+  const [isBulkPrintDialogOpen, setIsBulkPrintDialogOpen] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const labelPrintRef = useRef<HTMLDivElement>(null)
+  
+  // ✅ OTIMIZAÇÃO: Paginação server-side
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
+  const [totalItems, setTotalItems] = useState(0)
+  const [patrimonios, setPatrimonios] = useState<Patrimonio[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [totalPages, setTotalPages] = useState(1)
 
-  // Logs de debug
-  console.log('🔍 [DEV] BensCadastrados - patrimonios:', patrimonios)
-  console.log('📊 [DEV] BensCadastrados - Total:', Array.isArray(patrimonios) ? patrimonios.length : 0)
-  console.log('📊 [DEV] BensCadastrados - isLoading:', isLoading)
-  console.log('📊 [DEV] BensCadastrados - É array?:', Array.isArray(patrimonios))
-  console.log('📊 [DEV] BensCadastrados - Primeiro item:', patrimonios[0])
+  // ✅ OTIMIZAÇÃO: Debounce na busca (300ms)
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
-  // Filtro simples sem useMemo para evitar problemas de renderização
-  const filteredData = Array.isArray(patrimonios) ? patrimonios.filter((patrimonio) => {
-    if (!searchTerm) return true
+  // ✅ OTIMIZAÇÃO: Buscar patrimônios com paginação server-side
+  const fetchPatrimonios = useCallback(async () => {
+    if (!user) return
     
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      (patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio)?.toLowerCase().includes(searchLower) ||
-      (patrimonio.descricao_bem || patrimonio.descricaoBem)?.toLowerCase().includes(searchLower) ||
-      (patrimonio.setor_responsavel || patrimonio.setorResponsavel)?.toLowerCase().includes(searchLower)
-    )
-  }) : []
+    setIsLoading(true)
+    try {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+      })
+      
+      if (debouncedSearchTerm) {
+        params.append('search', debouncedSearchTerm)
+      }
 
-  console.log('🔍 [DEV] BensCadastrados - filteredData:', filteredData.length)
+      const response = await api.get<{
+        patrimonios: Patrimonio[]
+        pagination: {
+          page: number
+          limit: number
+          total: number
+          pages: number
+        }
+      }>(`/patrimonios?${params.toString()}`)
+
+      const data = response.patrimonios || []
+      const pagination = response.pagination || {
+        page: currentPage,
+        limit: pageSize,
+        total: 0,
+        pages: 1,
+      }
+
+      setPatrimonios(data)
+      setTotalItems(pagination.total)
+      setTotalPages(pagination.pages)
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error('❌ [DEV] Erro ao buscar patrimônios:', error)
+      }
+      
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao carregar dados',
+        description: 'Não foi possível carregar os patrimônios. Por favor, tente novamente.',
+      })
+      
+      setPatrimonios([])
+      setTotalItems(0)
+      setTotalPages(1)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user, currentPage, pageSize, debouncedSearchTerm])
+
+  // ✅ OTIMIZAÇÃO: Resetar para página 1 quando busca mudar
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm])
+
+  // ✅ OTIMIZAÇÃO: Buscar patrimônios quando parâmetros mudarem
+  useEffect(() => {
+    if (user) {
+      fetchPatrimonios()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, currentPage, pageSize, debouncedSearchTerm])
+
+  // ✅ OTIMIZAÇÃO: useMemo no filtro (agora client-side apenas para dados já carregados)
+  const filteredData = useMemo(() => {
+    if (!Array.isArray(patrimonios)) return []
+    
+    // Se não há termo de busca, retornar todos os patrimônios da página atual
+    if (!debouncedSearchTerm) return patrimonios
+    
+    // Filtro client-side apenas para busca adicional (backend já filtra)
+    const searchLower = debouncedSearchTerm.toLowerCase()
+    return patrimonios.filter((patrimonio) => {
+      return (
+        (patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio)?.toLowerCase().includes(searchLower) ||
+        (patrimonio.descricao_bem || patrimonio.descricaoBem)?.toLowerCase().includes(searchLower) ||
+        (patrimonio.setor_responsavel || patrimonio.setorResponsavel)?.toLowerCase().includes(searchLower)
+      )
+    })
+  }, [patrimonios, debouncedSearchTerm])
+
+  // Handlers de paginação
+  const handlePageChange = useCallback((newPage: number) => {
+    setCurrentPage(newPage)
+    setSelectedAssets([]) // Limpar seleção ao mudar de página
+  }, [])
+
+  const handlePageSizeChange = useCallback((newSize: number) => {
+    setPageSize(newSize)
+    setCurrentPage(1) // Resetar para primeira página
+    setSelectedAssets([]) // Limpar seleção
+  }, [])
 
   const handleShowQrCode = (patrimonio: Patrimonio) => {
     setQrCodeAsset(patrimonio)
@@ -249,19 +467,49 @@ const BensCadastrados = () => {
             
             <div className="flex flex-col sm:flex-row gap-3">
               {user && (user.role === 'supervisor' || user.role === 'usuario') && (
-                <Button 
-                  onClick={startSync} 
-                  disabled={isSyncing}
-                  variant="outline"
-                  className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]"
-                >
-                  {isSyncing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                  )}
-                  {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        onClick={startSync} 
+                        disabled={isSyncing}
+                        variant="outline"
+                        className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px] transition-all duration-200"
+                        aria-label={isSyncing ? 'Sincronizando dados' : 'Sincronizar dados do sistema'}
+                      >
+                        {isSyncing ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                        )}
+                        {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{isSyncing ? 'Sincronizando dados com o servidor...' : 'Sincroniza todos os dados do sistema'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {selectedAssets.length > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        onClick={() => setIsBulkPrintDialogOpen(true)}
+                        variant="default"
+                        className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px] transition-all duration-200 hover:scale-105"
+                        aria-label={`Imprimir etiquetas para ${selectedAssets.length} patrimônio(s) selecionado(s)`}
+                      >
+                        <Printer className="mr-2 h-4 w-4" />
+                        Imprimir Etiquetas ({selectedAssets.length})
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Imprimir etiquetas para {selectedAssets.length} patrimônio(s) selecionado(s)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               <Button asChild variant="outline" className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]">
                 <Link to="/bens-cadastrados/novo-lote">
@@ -289,34 +537,51 @@ const BensCadastrados = () => {
                   placeholder="Buscar por número, descrição, setor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 min-h-[48px] sm:min-h-[44px] lg:min-h-[40px] text-sm sm:text-base"
+                  className="pl-10 min-h-[48px] sm:min-h-[44px] lg:min-h-[40px] text-sm sm:text-base transition-all duration-200"
+                  aria-label="Buscar patrimônios"
+                  aria-describedby="search-description"
                 />
               </div>
+              <p id="search-description" className="sr-only">
+                Digite para buscar patrimônios por número, descrição ou setor
+              </p>
             </div>
           </div>
         </div>
 
         {/* Table - Desktop */}
-        <Card className="border-0 shadow-lg bg-white">
+        <Card className="border-0 shadow-lg bg-white transition-all duration-300 hover:shadow-xl">
           <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
             <CardTitle className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900">Bens Cadastrados</CardTitle>
             <p className="text-xs sm:text-sm text-gray-600 mt-1">
-              {filteredData.length} de {Array.isArray(patrimonios) ? patrimonios.length : 0} bens
+              Mostrando {filteredData.length} de {totalItems} bens • Página {currentPage} de {totalPages}
             </p>
           </CardHeader>
           <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
             {/* Desktop Table */}
-            {renderTable(filteredData, isLoading, searchTerm)}
+            {renderTable(
+              filteredData, 
+              isLoading, 
+              searchTerm,
+              selectedAssets,
+              (id) => {
+                setSelectedAssets((prev) =>
+                  prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+                )
+              },
+              () => {
+                if (selectedAssets.length === filteredData.length) {
+                  setSelectedAssets([])
+                } else {
+                  setSelectedAssets(filteredData.map((p) => p.id))
+                }
+              }
+            )}
 
             {/* Mobile Cards */}
             <div className="lg:hidden space-y-4">
               {isLoading ? (
-                <div className="text-center py-8">
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                    <span className="text-gray-500">Carregando bens...</span>
-                  </div>
-                </div>
+                <MobileCardSkeleton count={5} />
               ) : filteredData.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="flex flex-col items-center gap-3">
@@ -334,21 +599,52 @@ const BensCadastrados = () => {
                       </p>
                     </div>
                     {!searchTerm && (
-                      <Button asChild className="mt-2">
+                      <Button 
+                        asChild 
+                        className="mt-2 transition-all duration-200 hover:scale-105"
+                        aria-label="Cadastrar primeiro bem patrimonial"
+                      >
                         <Link to="/bens-cadastrados/novo">
                           <Plus className="mr-2 h-4 w-4" />
                           Cadastrar Primeiro Bem
                         </Link>
                       </Button>
                     )}
+                    {searchTerm && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setSearchTerm('')}
+                        className="mt-2 transition-all duration-200"
+                        aria-label="Limpar busca"
+                      >
+                        Limpar Busca
+                      </Button>
+                    )}
                   </div>
                 </div>
               ) : (
                 filteredData.map((patrimonio, index) => (
-                  <Card key={`${patrimonio.id}-${index}`} className="border border-gray-200 hover:shadow-md transition-shadow">
+                  <Card 
+                    key={`${patrimonio.id}-${index}`} 
+                    className="border border-gray-200 hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+                    role="article"
+                    aria-label={`Patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                  >
                     <CardContent className="p-4">
-                      {/* Header com número e situação */}
+                      {/* Header com checkbox, número e situação */}
                       <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start gap-2 flex-1">
+                          <Checkbox
+                            checked={selectedAssets.includes(patrimonio.id)}
+                            onCheckedChange={() => {
+                              setSelectedAssets((prev) =>
+                                prev.includes(patrimonio.id)
+                                  ? prev.filter((i) => i !== patrimonio.id)
+                                  : [...prev, patrimonio.id]
+                              )
+                            }}
+                            className="mt-1"
+                          />
                         <div className="flex-1">
                           <Link 
                             to={`/bens-cadastrados/ver/${patrimonio.id}`}
@@ -359,6 +655,7 @@ const BensCadastrados = () => {
                           <p className="text-sm text-gray-600 mt-1">
                             {patrimonio.descricao_bem || patrimonio.descricaoBem}
                           </p>
+                        </div>
                         </div>
                         <Badge 
                           className={`${getStatusColor(patrimonio.situacao_bem || patrimonio.situacaoBem)} border text-xs ml-2`}
@@ -419,26 +716,82 @@ const BensCadastrados = () => {
                           </Button>
                         </div>
                         <div className="flex items-center gap-1">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleShowQrCode(patrimonio)}
-                            title="QR Code"
-                            className="h-8 w-8"
+                            aria-label={`Gerar QR Code para patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            className="h-8 w-8 transition-all duration-200 hover:scale-110"
                           >
                             <QrCode className="h-3 w-3" />
                           </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Gerar QR Code</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Excluir"
-                            onClick={() => {
-                              console.log('Excluir:', patrimonio.id)
+                            onClick={async () => {
+                              if (!window.confirm(`Tem certeza que deseja excluir o patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}? Esta ação não pode ser desfeita.`)) {
+                                return
+                              }
+                              
+                              setDeletingId(patrimonio.id)
+                              try {
+                                await deletePatrimonio(patrimonio.id)
+                                // Remover da lista local
+                                setPatrimonios((prev) => prev.filter((p) => p.id !== patrimonio.id))
+                                setSelectedAssets((prev) => prev.filter((id) => id !== patrimonio.id))
+                                // Atualizar contagem total
+                                setTotalItems((prev) => Math.max(0, prev - 1))
+                                
+                                toast({
+                                  title: 'Patrimônio excluído',
+                                  description: 'O patrimônio foi excluído com sucesso.',
+                                })
+                                
+                                // Se a página ficou vazia e não é a primeira, voltar uma página
+                                if (filteredData.length === 1 && currentPage > 1) {
+                                  setCurrentPage(currentPage - 1)
+                                } else {
+                                  // Recarregar dados para atualizar paginação
+                                  fetchPatrimonios()
+                                }
+                              } catch (error) {
+                                toast({
+                                  variant: 'destructive',
+                                  title: 'Erro ao excluir',
+                                  description: 'Não foi possível excluir o patrimônio. Tente novamente.',
+                                })
+                              } finally {
+                                setDeletingId(null)
+                              }
                             }}
-                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            disabled={deletingId === patrimonio.id}
+                            aria-label={`Excluir patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:scale-110"
                           >
-                            <Trash className="h-3 w-3" />
+                            {deletingId === patrimonio.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash className="h-3 w-3" />
+                            )}
                           </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Excluir patrimônio</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                         </div>
                       </div>
                     </CardContent>
@@ -447,6 +800,107 @@ const BensCadastrados = () => {
               )}
             </div>
           </CardContent>
+          
+          {/* ✅ OTIMIZAÇÃO: Controles de Paginação */}
+          {totalPages > 1 && (
+            <div className="border-t border-gray-200 px-4 sm:px-6 py-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>Itens por página:</span>
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={(value) => handlePageSizeChange(Number(value))}
+                  >
+                    <SelectTrigger className="w-20 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="200">200</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1 || isLoading}
+                          className="h-9 transition-all duration-200"
+                          aria-label="Página anterior"
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          Anterior
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Ir para página anterior</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number
+                      if (totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          disabled={isLoading}
+                          className="h-9 w-9 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages || isLoading}
+                          className="h-9 transition-all duration-200"
+                          aria-label="Próxima página"
+                        >
+                          Próxima
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Ir para próxima página</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                
+                <div className="text-sm text-gray-600">
+                  Página {currentPage} de {totalPages}
+                </div>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* QR Code Dialog */}
@@ -541,16 +995,119 @@ const BensCadastrados = () => {
                   <div>
                     <h3 className="text-lg font-medium mb-3">Visualização da Etiqueta</h3>
                     <div className="flex justify-center bg-gray-50 p-4 rounded-lg">
-                      <LabelPreview 
-                        asset={{ ...qrCodeAsset, assetType: 'bem' }} 
-                        template={selectedTemplate}
-                      />
+                      <div ref={labelPrintRef}>
+                        <LabelPreview 
+                          asset={{ ...qrCodeAsset, assetType: 'bem' }} 
+                          template={selectedTemplate}
+                        />
+                      </div>
                     </div>
                     <div className="flex justify-center gap-2 mt-4">
-                      <Button onClick={() => {
-                        // Implementar impressão
-                        console.log('Imprimir etiqueta:', selectedTemplate, qrCodeAsset)
+                      <Button onClick={async () => {
+                        if (!selectedTemplate || !qrCodeAsset) {
+                          toast({
+                            variant: 'destructive',
+                            title: 'Erro',
+                            description: 'Por favor, selecione um modelo de etiqueta.',
+                          })
+                          return
+                        }
+                        
+                        // Aguardar um pouco para garantir que o QR code seja carregado
+                        await new Promise(resolve => setTimeout(resolve, 500))
+                        
+                        // Abrir janela de impressão
+                        const printWindow = window.open('', '_blank')
+                        if (printWindow && labelPrintRef.current) {
+                          printWindow.document.write(
+                            '<html><head><title>Imprimir Etiqueta</title>',
+                          )
+                          
+                          // Copiar estilos
+                          document.head
+                            .querySelectorAll('link[rel="stylesheet"], style')
+                            .forEach((el) => {
+                              printWindow.document.head.appendChild(el.cloneNode(true))
+                            })
+                          
+                          // Estilos de impressão para A4 com etiqueta no topo
+                          const pageWidth = 210 // A4 portrait width
+                          const pageHeight = 297 // A4 portrait height
+                          
+                          printWindow.document.write(`
+                            <style>
+                              @media print {
+                                @page { 
+                                  size: A4;
+                                  margin: 0;
+                                }
+                                * {
+                                  margin: 0;
+                                  padding: 0;
+                                  box-sizing: border-box;
+                                }
+                                body { 
+                                  margin: 0;
+                                  padding: 0;
+                                  width: ${pageWidth}mm;
+                                  min-height: ${pageHeight}mm;
+                                  position: relative;
+                                  -webkit-print-color-adjust: exact !important;
+                                  print-color-adjust: exact !important;
+                                }
+                                .label-print-container {
+                                  width: ${selectedTemplate?.width || 100}mm;
+                                  height: ${selectedTemplate?.height || 60}mm;
+                                  position: absolute;
+                                  top: 0;
+                                  left: 0;
+                                  overflow: hidden;
+                                  page-break-inside: avoid;
+                                }
+                              }
+                              @media screen {
+                                body {
+                                  width: ${pageWidth}mm;
+                                  min-height: ${pageHeight}mm;
+                                  margin: 20px auto;
+                                  padding: 0;
+                                  background: #f0f0f0;
+                                }
+                                .label-print-container {
+                                  width: ${selectedTemplate?.width || 100}mm;
+                                  height: ${selectedTemplate?.height || 60}mm;
+                                  position: relative;
+                                  background: white;
+                                  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                                }
+                              }
+                            </style>
+                          `)
+                          
+                          printWindow.document.write('</head><body>')
+                          printWindow.document.write('<div class="label-print-container">')
+                          printWindow.document.write(labelPrintRef.current.innerHTML)
+                          printWindow.document.write('</div>')
+                          printWindow.document.write('</body></html>')
+                          
+                          printWindow.document.close()
+                          
+                          // Aguardar carregamento e imprimir
+                          printWindow.onload = () => {
+                            setTimeout(() => {
+                              printWindow.print()
+                              printWindow.close()
+                            }, 250)
+                          }
+                        } else {
+                          toast({
+                            variant: 'destructive',
+                            title: 'Erro',
+                            description: 'Não foi possível abrir a janela de impressão. Verifique se os pop-ups estão bloqueados.',
+                          })
+                        }
                       }}>
+                        <Printer className="mr-2 h-4 w-4" />
                         Imprimir Etiqueta
                       </Button>
                       <Button variant="outline" onClick={() => setIsQrDialogOpen(false)}>
@@ -563,6 +1120,17 @@ const BensCadastrados = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Dialog de Impressão em Lote */}
+        {selectedAssets.length > 0 && labelTemplates.length > 0 && (
+          <LabelPrintDialog
+            open={isBulkPrintDialogOpen}
+            onOpenChange={setIsBulkPrintDialogOpen}
+            assets={filteredData.filter((p) => selectedAssets.includes(p.id))}
+            templates={labelTemplates}
+            defaultTemplate={labelTemplates.find((t: any) => t.isDefault) || labelTemplates[0]}
+          />
+        )}
       </div>
     </div>
   )

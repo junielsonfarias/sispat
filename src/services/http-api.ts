@@ -22,38 +22,24 @@ axiosInstance.interceptors.request.use(
       // Pegar token do localStorage (SecureStorage armazena como JSON)
       const tokenData = localStorage.getItem('sispat_token');
       
-      // ✅ Logs apenas em desenvolvimento
-      if (import.meta.env.DEV) {
-        console.log('[HTTP] Token data from localStorage:', tokenData);
-      }
-      
       if (tokenData) {
         try {
           // SecureStorage armazena como JSON, então precisamos fazer parse
           const token = JSON.parse(tokenData);
           config.headers.Authorization = `Bearer ${token}`;
-          
-          if (import.meta.env.DEV) {
-            console.log(`[HTTP] Token encontrado (JSON): ${token.substring(0, 20)}...`);
-          }
         } catch (error) {
           // Se não conseguir fazer parse, usar o valor direto
           config.headers.Authorization = `Bearer ${tokenData}`;
-          
-          if (import.meta.env.DEV) {
-            console.log(`[HTTP] Token direto: ${tokenData.substring(0, 20)}...`);
-          }
         }
-      } else if (import.meta.env.DEV) {
-        console.log('[HTTP] Nenhum token encontrado no localStorage');
+      }
+      
+      // ✅ Logs apenas em desenvolvimento (sem expor tokens)
+      if (import.meta.env.DEV) {
+        const hasToken = !!tokenData;
+        console.log(`[HTTP] ${config.method?.toUpperCase()} ${config.url} - Token: ${hasToken ? 'presente' : 'ausente'}`);
       }
     } else if (import.meta.env.DEV) {
-      console.log('[HTTP] Rota pública - sem token');
-    }
-    
-    if (import.meta.env.DEV) {
-      console.log(`[HTTP] Headers finais:`, config.headers);
-      console.log(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(`[HTTP] ${config.method?.toUpperCase()} ${config.url} - Rota pública`);
     }
     
     return config;
@@ -95,8 +81,9 @@ axiosInstance.interceptors.response.use(
           return axiosInstance(originalRequest);
         } catch (refreshError) {
           // Refresh falhou, redirecionar para login
+          // ✅ Não logar detalhes de token em produção
           if (import.meta.env.DEV) {
-            console.error('[HTTP] Refresh token expirado');
+            console.error('[HTTP] Refresh token falhou - redirecionando para login');
           }
           localStorage.removeItem('sispat_token');
           localStorage.removeItem('sispat_refresh_token');
@@ -112,12 +99,44 @@ axiosInstance.interceptors.response.use(
       console.error(`[HTTP] ❌ ${error.response?.status || 'ERROR'} ${error.config?.url}`, error.response?.data);
     }
     
-    // ✅ Melhorar informações de erro para facilitar debugging
-    if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED') {
-      error.message = `Backend não disponível (${error.config?.url})`
+    // ✅ OTIMIZAÇÃO: Tratamento de erro mais robusto
+    const originalError = error as any
+    
+    // Melhorar informações de erro para facilitar debugging
+    if (originalError.code === 'ERR_NETWORK' || originalError.code === 'ERR_CONNECTION_REFUSED') {
+      originalError.message = `Backend não disponível (${originalError.config?.url})`
+    } else if (originalError.response) {
+      // Erro de resposta do servidor (4xx, 5xx)
+      const status = originalError.response.status
+      const data = originalError.response.data
+      
+      // Mensagens de erro mais amigáveis
+      if (status === 401) {
+        originalError.message = 'Sua sessão expirou. Por favor, faça login novamente.'
+      } else if (status === 403) {
+        originalError.message = 'Você não tem permissão para realizar esta ação.'
+      } else if (status === 404) {
+        originalError.message = 'Recurso não encontrado.'
+      } else if (status === 500) {
+        originalError.message = 'Erro interno do servidor. Por favor, tente novamente mais tarde.'
+      } else if (data?.message) {
+        originalError.message = data.message
+      } else if (data?.error) {
+        originalError.message = typeof data.error === 'string' ? data.error : 'Erro ao processar requisição.'
+      }
     }
     
-    return Promise.reject(error);
+    // Log apenas em desenvolvimento
+    if (import.meta.env.DEV) {
+      console.error('❌ [HTTP API Error]:', {
+        code: originalError.code,
+        status: originalError.response?.status,
+        message: originalError.message,
+        url: originalError.config?.url,
+      })
+    }
+    
+    return Promise.reject(originalError);
   }
 );
 

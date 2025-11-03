@@ -69,37 +69,21 @@ export const LabelTemplateProvider = ({
   const [allTemplates, setAllTemplates] =
     useState<LabelTemplate[]>(initialTemplates)
   const { user } = useAuth()
-  
-  // ✅ CORREÇÃO: Só logar quando há usuário logado
-  if (user) {
-    console.log('LabelTemplateContext user:', user)
-  }
 
   // ✅ Buscar templates da API
   const fetchTemplates = useCallback(async () => {
     if (!user) return
     
     try {
-      console.log('🔍 Buscando templates da API...')
       const response = await api.get<LabelTemplate[]>('/label-templates')
       const templatesData = Array.isArray(response) ? response : []
-      
-      console.log('✅ Templates carregados da API:', templatesData.length)
       
       if (templatesData.length > 0) {
         setAllTemplates(templatesData)
       } else {
-        console.log('⚠️  Nenhum template no banco, usando template padrão inicial')
         setAllTemplates(initialTemplates)
       }
     } catch (error) {
-      console.error('❌ Erro ao buscar templates:', error)
-      
-      // ✅ CORREÇÃO: Verificar se é erro 404 (backend não disponível)
-      if (error?.response?.status === 404) {
-        console.log('⚠️  Backend não disponível ou endpoint não encontrado. Usando templates padrão.')
-      }
-      
       // Em caso de erro, usar template padrão
       setAllTemplates(initialTemplates)
     }
@@ -112,22 +96,10 @@ export const LabelTemplateProvider = ({
   }, [user, fetchTemplates])
 
   const templates = useMemo(() => {
-    // ✅ CORREÇÃO: Só logar quando há usuário logado
-    if (user) {
-      console.log('LabelTemplateContext templates useMemo:', { 
-        user, 
-        allTemplates: allTemplates.length,
-        userRole: user?.role,
-        userMunicipalityId: user?.municipalityId,
-        allTemplatesData: allTemplates.map(t => ({ id: t.id, name: t.name, municipalityId: t.municipalityId }))
-      })
-      console.log('Single municipality system - returning all templates:', allTemplates.length)
-    }
-    
     // ✅ CORREÇÃO: Aplicação é para um único município, não precisa filtrar
     // Retornar todos os templates já que é um sistema single-municipality
     return allTemplates
-  }, [allTemplates, user])
+  }, [allTemplates])
 
   // ✅ Removido persist do localStorage - agora usa API
 
@@ -141,8 +113,6 @@ export const LabelTemplateProvider = ({
       if (!user) return
       
       try {
-        console.log('💾 Salvando template na API:', template.name, 'ID:', template.id)
-        
         // ✅ CORREÇÃO: Verificar se é template padrão (que pode não existir no backend)
         const isDefaultTemplate = template.id?.startsWith('default-') || template.id === 'default-60x40'
         
@@ -153,7 +123,6 @@ export const LabelTemplateProvider = ({
         if (existingIndex > -1 && !isDefaultTemplate) {
           try {
             // Tentar atualizar template existente
-            console.log('🔄 Atualizando template existente:', template.id)
             const updated = await api.put<LabelTemplate>(
               `/label-templates/${template.id}`,
               {
@@ -172,12 +141,10 @@ export const LabelTemplateProvider = ({
               title: 'Sucesso',
               description: 'Template atualizado com sucesso.',
             })
-            console.log('✅ Template atualizado com sucesso')
             return
           } catch (updateError: any) {
             // Se der 404, o template não existe no backend, então criar
             if (updateError?.response?.status === 404) {
-              console.log('⚠️  Template não existe no backend. Criando novo...')
               // Continua para criar como novo
             } else {
               throw updateError
@@ -186,7 +153,6 @@ export const LabelTemplateProvider = ({
         }
         
         // Criar novo template (ou recriar se era padrão)
-        console.log('➕ Criando novo template')
         const created = await api.post<LabelTemplate>('/label-templates', {
           name: template.name,
           width: template.width,
@@ -208,15 +174,10 @@ export const LabelTemplateProvider = ({
           title: 'Sucesso',
           description: 'Template criado com sucesso.',
         })
-        console.log('✅ Template criado com sucesso:', created.id)
         
       } catch (error: any) {
-        console.error('❌ Erro ao salvar template:', error)
-        
         // ✅ CORREÇÃO: Se for erro 404 ou backend indisponível, salvar apenas localmente
         if (error?.response?.status === 404 || error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error')) {
-          console.log('⚠️  Backend não disponível. Salvando template apenas localmente.')
-          
           // Salvar apenas no estado local
           const existingIndex = allTemplates.findIndex(t => t.id === template.id)
           if (existingIndex > -1) {
@@ -252,8 +213,6 @@ export const LabelTemplateProvider = ({
       if (!user) return
       
       try {
-        console.log('🗑️  Deletando template:', templateId)
-        
         await api.delete(`/label-templates/${templateId}`)
         
         // Remover do estado local
@@ -263,15 +222,9 @@ export const LabelTemplateProvider = ({
           title: 'Sucesso',
           description: 'Template excluído com sucesso.',
         })
-        
-        console.log('✅ Template deletado com sucesso')
       } catch (error) {
-        console.error('❌ Erro ao deletar template:', error)
-        
         // ✅ CORREÇÃO: Se for erro 404, deletar apenas localmente
         if (error?.response?.status === 404) {
-          console.log('⚠️  Backend não disponível. Deletando template apenas localmente.')
-          
           // Remover apenas do estado local
           setAllTemplates(prev => prev.filter(t => t.id !== templateId))
           

@@ -34,21 +34,31 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchSectors = useCallback(async () => {
     if (!user) return
-    console.log('🔍 SectorContext: Iniciando busca de setores...')
+    if (import.meta.env.DEV) {
+      console.log('🔍 SectorContext: Iniciando busca de setores...')
+    }
     setIsLoading(true)
     try {
       const response = await api.get<{ sectors: Sector[]; pagination: any }>('/sectors')
-      console.log('🔍 SectorContext: Resposta da API:', response)
+      if (import.meta.env.DEV) {
+        console.log('🔍 SectorContext: Resposta da API:', response)
+      }
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade sectors
       const sectorsData = Array.isArray(response) ? response : (response.sectors || [])
-      console.log('🔍 SectorContext: Setores carregados:', sectorsData.length)
+      if (import.meta.env.DEV) {
+        console.log('🔍 SectorContext: Setores carregados:', sectorsData.length)
+      }
       setSectors(sectorsData)
     } catch (error) {
-      console.error('❌ SectorContext: Erro ao buscar setores:', error)
+      if (import.meta.env.DEV) {
+        console.error('❌ SectorContext: Erro ao buscar setores:', error)
+      }
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
-        console.log('⚠️  Backend não disponível - usando lista vazia de setores')
+        if (import.meta.env.DEV) {
+          console.log('⚠️  Backend não disponível - usando lista vazia de setores')
+        }
         setSectors([])
       } else {
         toast({
@@ -66,10 +76,10 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       fetchSectors()
       
-      // ✅ Polling: Atualizar setores a cada 30 segundos (reduzido para melhor performance)
+      // ✅ OTIMIZAÇÃO: Polling reduzido para 60 segundos (dados raramente mudam)
       const intervalId = setInterval(() => {
         fetchSectors()
-      }, 30000) // 30 segundos
+      }, 60000) // 60 segundos
       
       return () => clearInterval(intervalId)
     }
@@ -91,15 +101,19 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
     id: string,
     data: Omit<Sector, 'id' | 'municipalityId'>,
   ) => {
-    console.log('[DEV] 🔄 SectorContext.updateSector chamado:', {
-      id,
-      dadosEnviados: data,
-    });
+    if (import.meta.env.DEV) {
+      console.log('[DEV] 🔄 SectorContext.updateSector chamado:', {
+        id,
+        dadosEnviados: data,
+      });
+    }
     
     try {
       const updatedSector = await api.put<Sector>(`/sectors/${id}`, data)
       
-      console.log('[DEV] ✅ SectorContext: Resposta do backend:', updatedSector);
+      if (import.meta.env.DEV) {
+        console.log('[DEV] ✅ SectorContext: Resposta do backend:', updatedSector);
+      }
       
       setSectors((prev) => prev.map((s) => (s.id === id ? updatedSector : s)))
       toast({ description: 'Setor atualizado com sucesso.' })

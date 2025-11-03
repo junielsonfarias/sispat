@@ -6,6 +6,8 @@ import {
   useEffect,
   useCallback,
 } from 'react'
+import { useAuth } from './AuthContext'
+import { api } from '@/services/api-adapter'
 import { generateId } from '@/lib/utils'
 
 export interface WidgetConfig {
@@ -81,29 +83,49 @@ const DEFAULT_WIDGETS: WidgetConfig[] = [
 
 export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGETS)
+  const { user } = useAuth()
+
+  const fetchDashboard = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const dashboard = await api.get<any>('/config/user-dashboard')
+      if (dashboard && dashboard.widgets) {
+        const validWidgets = dashboard.widgets
+          .map((saved: any) => {
+            const baseWidget = ALL_WIDGETS.find(
+              (w) => w.component === saved.component,
+            )
+            return baseWidget ? { ...baseWidget, id: saved.id } : null
+          })
+          .filter(Boolean) as WidgetConfig[]
+        setWidgets(validWidgets)
+      }
+    } catch (error) {
+      // Usar widgets padrão se falhar
+    }
+  }, [user])
 
   useEffect(() => {
-    // In a real app, this would fetch user preferences from an API
-    const savedWidgets = localStorage.getItem('dashboard-widgets')
-    if (savedWidgets) {
-      const parsedWidgets = JSON.parse(savedWidgets)
-      const validWidgets = parsedWidgets
-        .map((saved: any) => {
-          const baseWidget = ALL_WIDGETS.find(
-            (w) => w.component === saved.component,
-          )
-          return baseWidget ? { ...baseWidget, id: saved.id } : null
-        })
-        .filter(Boolean) as WidgetConfig[]
-      setWidgets(validWidgets)
+    if (user) {
+      fetchDashboard()
     }
-  }, [])
+  }, [user, fetchDashboard])
 
-  const saveWidgets = (newWidgets: WidgetConfig[]) => {
-    // In a real app, this would be an API call
-    setWidgets(newWidgets)
-    localStorage.setItem('dashboard-widgets', JSON.stringify(newWidgets))
-  }
+  const saveWidgets = useCallback(
+    async (newWidgets: WidgetConfig[]) => {
+      setWidgets(newWidgets)
+      
+      if (user) {
+        try {
+          await api.put('/config/user-dashboard', { widgets: newWidgets })
+        } catch (error) {
+          // Silenciar erro
+        }
+      }
+    },
+    [user],
+  )
 
   const addWidget = useCallback(
     (component: WidgetConfig['component']) => {
@@ -113,14 +135,14 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         saveWidgets([...widgets, newWidget])
       }
     },
-    [widgets],
+    [widgets, saveWidgets],
   )
 
   const removeWidget = useCallback(
     (widgetId: string) => {
       saveWidgets(widgets.filter((w) => w.id !== widgetId))
     },
-    [widgets],
+    [widgets, saveWidgets],
   )
 
   const moveWidget = useCallback(
@@ -130,7 +152,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       newWidgets.splice(hoverIndex, 0, draggedItem)
       saveWidgets(newWidgets)
     },
-    [widgets],
+    [widgets, saveWidgets],
   )
 
   const availableWidgets = ALL_WIDGETS.filter(

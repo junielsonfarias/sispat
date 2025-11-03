@@ -8,8 +8,9 @@ import {
   useMemo,
 } from 'react'
 import { ImovelReportTemplate } from '@/types'
-import { generateId } from '@/lib/utils'
 import { useAuth } from './AuthContext'
+import { api } from '@/services/api-adapter'
+import { toast } from '@/hooks/use-toast'
 
 interface ImovelReportTemplateContextType {
   templates: ImovelReportTemplate[]
@@ -23,46 +24,34 @@ interface ImovelReportTemplateContextType {
 const ImovelReportTemplateContext =
   createContext<ImovelReportTemplateContextType | null>(null)
 
-const defaultTemplates: ImovelReportTemplate[] = [
-  {
-    id: 'imovel-default-simple',
-    name: 'Relatório Simples de Imóveis',
-    municipalityId: '1',
-    fields: ['numero_patrimonio', 'denominacao', 'endereco', 'area_construida'],
-    filters: {},
-  },
-]
-
 export const ImovelReportTemplateProvider = ({
   children,
 }: {
   children: ReactNode
 }) => {
-  const [allTemplates, setAllTemplates] =
-    useState<ImovelReportTemplate[]>(defaultTemplates)
+  const [allTemplates, setAllTemplates] = useState<ImovelReportTemplate[]>([])
   const { user } = useAuth()
 
-  useEffect(() => {
-    // In a real app, this would fetch from an API
-    const stored = localStorage.getItem('sispat_imovel_report_templates')
-    if (stored) {
-      setAllTemplates(JSON.parse(stored))
+  const fetchTemplates = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const templates = await api.get<ImovelReportTemplate[]>('/config/imovel-report-templates')
+      setAllTemplates(templates)
+    } catch (error) {
+      // Silenciar erro se não houver templates
     }
-  }, [])
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      fetchTemplates()
+    }
+  }, [user, fetchTemplates])
 
   const templates = useMemo(() => {
-    // ✅ CORREÇÃO: Sistema single-municipality, retornar todos os templates
     return allTemplates
-  }, [allTemplates, user])
-
-  const persist = (newTemplates: ImovelReportTemplate[]) => {
-    // In a real app, this would be an API call
-    localStorage.setItem(
-      'sispat_imovel_report_templates',
-      JSON.stringify(newTemplates),
-    )
-    setAllTemplates(newTemplates)
-  }
+  }, [allTemplates])
 
   const getTemplateById = useCallback(
     (id: string) => templates.find((t) => t.id === id),
@@ -70,38 +59,44 @@ export const ImovelReportTemplateProvider = ({
   )
 
   const saveTemplate = useCallback(
-    (template: Omit<ImovelReportTemplate, 'id'> | ImovelReportTemplate) => {
-      // ✅ CORREÇÃO: Sistema single-municipality, não precisa verificar municipalityId
-      setAllTemplates((prev) => {
-        let newTemplates
+    async (template: Omit<ImovelReportTemplate, 'id'> | ImovelReportTemplate) => {
+      if (!user) return
+
+      try {
         if ('id' in template && template.id) {
-          const index = prev.findIndex((t) => t.id === template.id)
-          newTemplates = [...prev]
-          newTemplates[index] = template as ImovelReportTemplate
+          await api.put(`/config/imovel-report-templates/${template.id}`, template)
         } else {
-          newTemplates = [
-            ...prev,
-            {
-              ...template,
-              id: generateId(),
-              municipalityId: '1', // ✅ CORREÇÃO: Sempre usar '1' para o município único
-            },
-          ]
+          await api.post('/config/imovel-report-templates', template)
         }
-        persist(newTemplates)
-        return newTemplates
-      })
+        await fetchTemplates()
+        toast({ description: 'Template de relatório salvo com sucesso.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao salvar template de relatório.',
+        })
+      }
     },
-    [user],
+    [user, fetchTemplates],
   )
 
-  const deleteTemplate = useCallback((templateId: string) => {
-    setAllTemplates((prev) => {
-      const newTemplates = prev.filter((t) => t.id !== templateId)
-      persist(newTemplates)
-      return newTemplates
-    })
-  }, [])
+  const deleteTemplate = useCallback(
+    async (templateId: string) => {
+      try {
+        await api.delete(`/config/imovel-report-templates/${templateId}`)
+        await fetchTemplates()
+        toast({ description: 'Template excluído com sucesso.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao excluir template.',
+        })
+      }
+    },
+    [fetchTemplates],
+  )
 
   return (
     <ImovelReportTemplateContext.Provider

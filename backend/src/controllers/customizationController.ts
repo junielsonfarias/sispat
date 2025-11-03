@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 
 const prisma = new PrismaClient();
 
@@ -9,19 +10,19 @@ const prisma = new PrismaClient();
  */
 export const getPublicCustomization = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log('[DEV] 🌐 Buscando customização pública (sem autenticação)...');
+    logDebug('🌐 Buscando customização pública (sem autenticação)');
     
     // Buscar primeiro município (sistema single-municipality)
     const municipality = await prisma.municipality.findFirst();
     
     if (!municipality) {
-      console.log('[DEV] ❌ Nenhum município encontrado');
+      logWarn('❌ Nenhum município encontrado');
       res.status(404).json({ error: 'Município não encontrado' });
       return;
     }
 
     const municipalityId = municipality.id;
-    console.log('[DEV] 📍 Município:', municipalityId);
+    logDebug('📍 Município encontrado', { municipalityId });
 
     // Buscar customização usando SQL raw
     const customizations = await prisma.$queryRaw<any[]>`
@@ -32,7 +33,7 @@ export const getPublicCustomization = async (req: Request, res: Response): Promi
 
     // Se não existir, retornar valores padrão
     if (!customization) {
-      console.log('[DEV] ℹ️ Nenhuma customização encontrada, usando padrão');
+      logDebug('ℹ️ Nenhuma customização encontrada, usando padrão');
       customization = {
         id: 'default',
         municipalityId,
@@ -43,11 +44,11 @@ export const getPublicCustomization = async (req: Request, res: Response): Promi
       };
     }
 
-    console.log('[DEV] ✅ Customização pública carregada');
+    logDebug('✅ Customização pública carregada');
 
     res.json({ customization });
   } catch (error) {
-    console.error('[DEV] ❌ Erro ao buscar customização pública:', error);
+    logError('❌ Erro ao buscar customização pública', error);
     res.status(500).json({ error: 'Erro ao buscar customização' });
   }
 };
@@ -87,7 +88,7 @@ export const getCustomization = async (req: Request, res: Response): Promise<voi
 
     res.json({ customization });
   } catch (error) {
-    console.error('Erro ao buscar customização:', error);
+    logError('Erro ao buscar customização', error, { userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao buscar customização' });
   }
 };
@@ -103,15 +104,16 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    console.log('🔐 [DEV] Verificando permissões...');
-    console.log('   Usuário:', req.user.email);
-    console.log('   Role:', req.user.role);
-    console.log('   MunicipalityId:', req.user.municipalityId);
+    logDebug('🔐 Verificando permissões', {
+      email: req.user.email,
+      role: req.user.role,
+      municipalityId: req.user.municipalityId
+    });
 
     // Supervisor, admin e superuser podem alterar customização
     const allowedRoles = ['superuser', 'supervisor', 'admin'];
     if (!allowedRoles.includes(req.user.role)) {
-      console.log('❌ [DEV] Acesso negado - Role não permitido:', req.user.role);
+      logWarn('❌ Acesso negado - Role não permitido', { role: req.user.role, allowedRoles });
       res.status(403).json({ 
         error: 'Sem permissão para alterar customização',
         userRole: req.user.role,
@@ -120,13 +122,12 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    console.log('✅ [DEV] Permissão concedida para role:', req.user.role);
+    logDebug('✅ Permissão concedida para role', { role: req.user.role });
 
     const { municipalityId } = req.user;
     const updateData = req.body;
 
-    console.log('💾 [DEV] Salvando customização para município:', municipalityId);
-    console.log('📋 [DEV] Dados recebidos:', JSON.stringify(updateData, null, 2));
+    logDebug('💾 Salvando customização para município', { municipalityId, fieldsCount: Object.keys(updateData).length });
 
     // Campos permitidos para update
     const allowedFields = [
@@ -149,7 +150,7 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
     // Adicionar updatedAt
     filteredData.updatedAt = new Date();
 
-    console.log('📝 [DEV] Campos a salvar:', Object.keys(filteredData));
+    logDebug('📝 Campos a salvar', { fields: Object.keys(filteredData) });
 
     // Verificar se já existe customização
     const existing = await prisma.$queryRaw<any[]>`
@@ -160,7 +161,7 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
 
     if (existing.length > 0) {
       // UPDATE usando raw SQL seguro
-      console.log('🔄 [DEV] Atualizando customização existente...');
+      logDebug('🔄 Atualizando customização existente');
       
       const setStatements: string[] = [];
       const values: any[] = [];
@@ -182,18 +183,17 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
         RETURNING *
       `;
 
-      console.log('📝 [DEV] Query UPDATE:', updateQuery);
-      console.log('📝 [DEV] Valores:', values);
+      logDebug('📝 Query UPDATE', { queryLength: updateQuery.length, paramsCount: values.length });
 
       // ✅ CORREÇÃO: Usar $queryRaw com template literals é mais seguro que $queryRawUnsafe
       // Mas como a estrutura é dinâmica, vamos manter mas adicionar sanitização
       const result = await prisma.$queryRawUnsafe(updateQuery, ...values);
       customization = Array.isArray(result) ? result[0] : result;
 
-      console.log('✅ [DEV] UPDATE executado com sucesso');
+      logDebug('✅ UPDATE executado com sucesso');
     } else {
       // ✅ CORREÇÃO: INSERT também mantém $queryRawUnsafe mas com valores parametrizados
-      console.log('➕ [DEV] Criando nova customização...');
+      logDebug('➕ Criando nova customização');
       
       const id = `custom-${municipalityId}-${Date.now()}`;
       const fields = ['id', 'municipalityId', ...Object.keys(filteredData)];
@@ -206,29 +206,26 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
         RETURNING *
       `;
 
-      console.log('📝 [DEV] Query INSERT:', insertQuery);
-      console.log('📝 [DEV] Valores:', values);
+      logDebug('📝 Query INSERT', { queryLength: insertQuery.length, paramsCount: values.length });
 
       const result = await prisma.$queryRawUnsafe(insertQuery, ...values);
       customization = Array.isArray(result) ? result[0] : result;
 
-      console.log('✅ [DEV] INSERT executado com sucesso');
+      logDebug('✅ INSERT executado com sucesso');
     }
 
-    console.log('✅ [DEV] Customização salva!');
-    console.log('📊 [DEV] Resultado:', JSON.stringify(customization, null, 2));
+    logInfo('✅ Customização salva', { customizationId: customization?.id });
 
     res.json({ 
       message: 'Customização salva com sucesso', 
       customization
     });
   } catch (error: any) {
-    console.error('❌ [DEV] ===== ERRO DETALHADO =====');
-    console.error('   Tipo:', error.constructor.name);
-    console.error('   Mensagem:', error.message);
-    console.error('   Código:', error.code);
-    console.error('   Stack:', error.stack);
-    console.error('==============================');
+    logError('❌ Erro ao salvar customização', error, {
+      errorType: error.constructor.name,
+      errorCode: error.code,
+      userId: req.user?.userId
+    });
     
     res.status(500).json({ 
       error: 'Erro ao salvar customização',
@@ -282,7 +279,7 @@ export const resetCustomization = async (req: Request, res: Response): Promise<v
       customization: customizations[0]
     });
   } catch (error) {
-    console.error('Erro ao resetar customização:', error);
+    logError('Erro ao resetar customização', error, { userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao resetar customização' });
   }
 };

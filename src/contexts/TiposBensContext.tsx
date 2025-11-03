@@ -25,22 +25,16 @@ export const TiposBensProvider: React.FC<{ children: ReactNode }> = ({ children 
   const fetchTiposBens = async () => {
     if (!user) return
 
-    console.log('🔍 TiposBensContext: Iniciando busca de tipos de bens...')
     setIsLoading(true)
     setError(null)
     try {
       const response = await api.get<{ tiposBens: TipoBem[]; pagination: any }>('/tipos-bens')
-      console.log('🔍 TiposBensContext: Resposta da API:', response)
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade tiposBens
       const tiposData = Array.isArray(response) ? response : (response.tiposBens || [])
-      console.log('🔍 TiposBensContext: Tipos de bens carregados:', tiposData.length)
       setTiposBens(tiposData)
     } catch (err) {
-      console.error('❌ TiposBensContext: Erro ao buscar tipos de bens:', err)
-      
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de erro
       if (err?.code === 'ERR_NETWORK' || err?.code === 'ERR_CONNECTION_REFUSED') {
-        console.log('⚠️  Backend não disponível - usando lista vazia de tipos de bens')
         setTiposBens([])
         setError(null)
       } else {
@@ -54,9 +48,7 @@ export const TiposBensProvider: React.FC<{ children: ReactNode }> = ({ children 
   const createTipoBem = async (data: Omit<TipoBem, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user) throw new Error('Usuário não encontrado')
 
-    console.log('✨ TiposBensContext: Criando novo tipo de bem:', data)
     const newTipoBem = await api.post<TipoBem>('/tipos-bens', data)
-    console.log('✅ TiposBensContext: Tipo criado com sucesso:', newTipoBem)
     
     // Adicionar o novo tipo à lista local
     setTiposBens(prev => [...prev, newTipoBem])

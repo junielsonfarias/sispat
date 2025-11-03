@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import { redisCache, CacheUtils } from '../config/redis';
 
 /**
  * Listar todos os usuários
@@ -12,32 +14,46 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Buscar usuários do mesmo município
-    const users = await prisma.user.findMany({
-      where: {
-        municipalityId: req.user.municipalityId,
-        isActive: true,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        avatar: true,
-        responsibleSectors: true,
-        municipalityId: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    // ✅ CACHE: Gerar chave de cache baseada no município
+    const cacheKey = `users:${req.user.municipalityId}:active`;
+    
+    // Tentar obter do cache Redis primeiro
+    let users = await redisCache.get<any[]>(cacheKey);
+    
+    if (!users) {
+      // Buscar usuários do mesmo município
+      users = await prisma.user.findMany({
+        where: {
+          municipalityId: req.user.municipalityId,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          avatar: true,
+          responsibleSectors: true,
+          municipalityId: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      });
+
+      // ✅ CACHE: Armazenar no cache Redis por 10 minutos (dados relativamente estáticos)
+      await redisCache.set(cacheKey, users, 600);
+      logDebug('✅ Cache de usuários criado', { municipalityId: req.user.municipalityId });
+    } else {
+      logDebug('✅ Cache hit: usuários', { municipalityId: req.user.municipalityId });
+    }
 
     res.json(users);
   } catch (error) {
-    console.error('Erro ao buscar usuários:', error);
+    logError('Erro ao buscar usuários', error, { userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao buscar usuários' });
   }
 };
@@ -91,7 +107,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 
     res.json(user);
   } catch (error) {
-    console.error('Erro ao buscar usuário:', error);
+    logError('Erro ao buscar usuário', error, { userId: req.user?.userId, targetUserId: req.params.id });
     res.status(500).json({ error: 'Erro ao buscar usuário' });
   }
 };
@@ -192,9 +208,13 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       },
     });
 
+    // ✅ CACHE: Invalidar cache de usuários após criação
+    await CacheUtils.invalidateByPrefix('users:');
+    logDebug('✅ Cache de usuários invalidado após criação');
+
     res.status(201).json(newUser);
   } catch (error) {
-    console.error('Erro ao criar usuário:', error);
+    logError('Erro ao criar usuário', error, { userId: req.user?.userId, email: req.body.email });
     res.status(500).json({ error: 'Erro ao criar usuário' });
   }
 };
@@ -268,9 +288,13 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       },
     });
 
+    // ✅ CACHE: Invalidar cache de usuários após atualização
+    await CacheUtils.invalidateByPrefix('users:');
+    logDebug('✅ Cache de usuários invalidado após atualização');
+
     res.json(updatedUser);
   } catch (error) {
-    console.error('Erro ao atualizar usuário:', error);
+    logError('Erro ao atualizar usuário', error, { userId: req.user?.userId, targetUserId: req.params.id });
     res.status(500).json({ error: 'Erro ao atualizar usuário' });
   }
 };
@@ -322,11 +346,14 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    console.log(`[DEV] Tentando deletar usuário: ${existingUser.name}`);
-    console.log(`[DEV] Registros vinculados:`, {
-      patrimonios: existingUser._count.patrimoniosCreated,
-      imoveis: existingUser._count.imoveisCreated,
-      activityLogs: existingUser._count.activityLogs,
+    logDebug('Tentando deletar usuário', {
+      userId: id,
+      userName: existingUser.name,
+      registrosVinculados: {
+        patrimonios: existingUser._count.patrimoniosCreated,
+        imoveis: existingUser._count.imoveisCreated,
+        activityLogs: existingUser._count.activityLogs,
+      },
     });
 
     // Verificar se há registros vinculados
@@ -336,7 +363,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
 
     if (hasRelatedRecords) {
       // Soft Delete: Marcar como inativo ao invés de deletar
-      console.log('[DEV] Usuário tem registros vinculados. Fazendo soft delete...');
+      logDebug('Usuário tem registros vinculados. Fazendo soft delete');
 
       await prisma.user.update({
         where: { id },
@@ -359,7 +386,11 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
         },
       });
 
-      console.log('[DEV] ✅ Soft delete concluído');
+      logInfo('✅ Soft delete concluído', { userId: id, userName: existingUser.name });
+
+      // ✅ CACHE: Invalidar cache de usuários após soft delete
+      await CacheUtils.invalidateByPrefix('users:');
+      logDebug('✅ Cache de usuários invalidado após soft delete');
 
       res.json({
         message: 'Usuário desativado com sucesso',
@@ -368,14 +399,14 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       });
     } else {
       // Hard Delete: Deletar permanentemente (sem registros vinculados)
-      console.log('[DEV] Usuário sem registros vinculados. Fazendo hard delete...');
+      logDebug('Usuário sem registros vinculados. Fazendo hard delete');
 
       // Deletar logs de atividade primeiro (cascade manual)
       if (existingUser._count.activityLogs > 0) {
         await prisma.activityLog.deleteMany({
           where: { userId: id },
         });
-        console.log(`[DEV] ${existingUser._count.activityLogs} logs deletados`);
+        logDebug(`${existingUser._count.activityLogs} logs deletados`, { userId: id });
       }
 
       // Deletar usuário
@@ -396,7 +427,11 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
         },
       });
 
-      console.log('[DEV] ✅ Hard delete concluído');
+      logInfo('✅ Hard delete concluído', { userId: id, userName: existingUser.name });
+
+      // ✅ CACHE: Invalidar cache de usuários após hard delete
+      await CacheUtils.invalidateByPrefix('users:');
+      logDebug('✅ Cache de usuários invalidado após hard delete');
 
       res.json({
         message: 'Usuário deletado com sucesso',
@@ -404,10 +439,11 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       });
     }
   } catch (error: any) {
-    console.error('[DEV] ❌ Erro ao deletar usuário:');
-    console.error('   Mensagem:', error.message);
-    console.error('   Código:', error.code);
-    console.error('   Stack:', error.stack);
+    logError('❌ Erro ao deletar usuário', error, {
+      userId: req.user?.userId,
+      targetUserId: req.params.id,
+      errorCode: error.code
+    });
 
     res.status(500).json({
       error: 'Erro ao deletar usuário',

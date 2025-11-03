@@ -1,97 +1,90 @@
 /**
- * Sistema de logging condicional para SISPAT 2.0
- * Logs apenas em desenvolvimento, silencia em produção
+ * Logger estruturado para o frontend
+ * Similar ao Winston do backend, mas usando console com formatação estruturada
  */
 
-type LogLevel = 'error' | 'warn' | 'info' | 'debug'
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-interface Logger {
-  error: (message: string, ...args: any[]) => void
-  warn: (message: string, ...args: any[]) => void
-  info: (message: string, ...args: any[]) => void
-  debug: (message: string, ...args: any[]) => void
+interface LogEntry {
+  level: LogLevel;
+  message: string;
+  timestamp: string;
+  meta?: Record<string, any>;
 }
 
-class SispLogger implements Logger {
-  private isDevelopment = import.meta.env.DEV
-  private isProduction = import.meta.env.PROD
+class Logger {
+  private isDevelopment = import.meta.env.DEV;
 
-  private shouldLog(level: LogLevel): boolean {
-    // Em produção, apenas erros críticos
-    if (this.isProduction) {
-      return level === 'error'
-    }
-    
-    // Em desenvolvimento, todos os logs
+  private formatMessage(level: LogLevel, message: string, meta?: Record<string, any>): string {
+    const timestamp = new Date().toISOString();
+    const entry: LogEntry = {
+      level,
+      message,
+      timestamp,
+      ...(meta && { meta }),
+    };
+
     if (this.isDevelopment) {
-      return true
+      // Em desenvolvimento: exibir formatado no console
+      const prefix = {
+        debug: '🔍',
+        info: 'ℹ️',
+        warn: '⚠️',
+        error: '❌',
+      }[level];
+
+      if (meta) {
+        console[level === 'debug' ? 'log' : level](`${prefix} ${message}`, meta);
+      } else {
+        console[level === 'debug' ? 'log' : level](`${prefix} ${message}`);
+      }
     }
-    
-    // Fallback
-    return level === 'error' || level === 'warn'
+
+    // Em produção: poderia enviar para serviço de log (Sentry, LogRocket, etc.)
+    // Por enquanto, apenas não exibe no console
+    return JSON.stringify(entry);
   }
 
-  error(message: string, ...args: any[]): void {
-    if (this.shouldLog('error')) {
-      console.error(`[SISPAT ERROR] ${message}`, ...args)
+  debug(message: string, meta?: Record<string, any>): void {
+    if (this.isDevelopment) {
+      this.formatMessage('debug', message, meta);
     }
   }
 
-  warn(message: string, ...args: any[]): void {
-    if (this.shouldLog('warn')) {
-      console.warn(`[SISPAT WARN] ${message}`, ...args)
+  info(message: string, meta?: Record<string, any>): void {
+    if (this.isDevelopment) {
+      this.formatMessage('info', message, meta);
     }
   }
 
-  info(message: string, ...args: any[]): void {
-    if (this.shouldLog('info')) {
-      console.info(`[SISPAT INFO] ${message}`, ...args)
-    }
+  warn(message: string, meta?: Record<string, any>): void {
+    this.formatMessage('warn', message, meta);
   }
 
-  debug(message: string, ...args: any[]): void {
-    if (this.shouldLog('debug')) {
-      console.log(`[SISPAT DEBUG] ${message}`, ...args)
-    }
+  error(message: string, error?: Error | unknown, meta?: Record<string, any>): void {
+    const errorMeta = error instanceof Error
+      ? {
+          ...meta,
+          error: {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          },
+        }
+      : { ...meta, error };
+
+    this.formatMessage('error', message, errorMeta);
   }
 }
 
-// Instância singleton do logger
-export const logger = new SispLogger()
+// Exportar instância singleton
+export const logger = new Logger();
 
-// Função helper para substituir console.log
-export const log = {
-  error: logger.error.bind(logger),
-  warn: logger.warn.bind(logger),
-  info: logger.info.bind(logger),
-  debug: logger.debug.bind(logger),
-}
+// Exportar métodos diretos para compatibilidade
+export const logDebug = (message: string, meta?: Record<string, any>) => logger.debug(message, meta);
+export const logInfo = (message: string, meta?: Record<string, any>) => logger.info(message, meta);
+export const logWarn = (message: string, meta?: Record<string, any>) => logger.warn(message, meta);
+export const logError = (message: string, error?: Error | unknown, meta?: Record<string, any>) =>
+  logger.error(message, error, meta);
 
-// Função para logs de API
-export const apiLog = {
-  request: (url: string, method: string) => {
-    logger.debug(`[API] ${method.toUpperCase()} ${url}`)
-  },
-  response: (url: string, status: number) => {
-    if (status >= 400) {
-      logger.error(`[API] ${status} ${url}`)
-    } else {
-      logger.debug(`[API] ${status} ${url}`)
-    }
-  },
-  error: (url: string, error: any) => {
-    logger.error(`[API ERROR] ${url}`, error)
-  }
-}
-
-// Função para logs de contexto
-export const contextLog = {
-  load: (contextName: string, data: any) => {
-    logger.debug(`[CONTEXT] ${contextName} loaded:`, data)
-  },
-  error: (contextName: string, error: any) => {
-    logger.error(`[CONTEXT ERROR] ${contextName}:`, error)
-  }
-}
-
-export default logger
+export default logger;

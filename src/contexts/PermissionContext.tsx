@@ -4,8 +4,11 @@ import {
   ReactNode,
   useContext,
   useEffect,
+  useCallback,
 } from 'react'
 import { Role, Permission, UserRole } from '@/types'
+import { api } from '@/services/api-adapter'
+import { useAuth } from './AuthContext'
 
 const defaultRoles: Role[] = [
   {
@@ -62,26 +65,48 @@ const PermissionContext = createContext<PermissionContextType | null>(null)
 
 export const PermissionProvider = ({ children }: { children: ReactNode }) => {
   const [roles, setRoles] = useState<Role[]>(defaultRoles)
+  const { user } = useAuth()
+
+  const fetchRoles = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const rolePermissions = await api.get<any[]>('/config/role-permissions')
+      // Converter para o formato esperado
+      const rolesData = rolePermissions.map(rp => ({
+        id: rp.roleId,
+        name: rp.name,
+        permissions: rp.permissions,
+      }))
+      if (rolesData.length > 0) {
+        setRoles(rolesData as Role[])
+      }
+    } catch (error) {
+      // Usar roles padrão se falhar
+    }
+  }, [user])
 
   useEffect(() => {
-    // In a real app, this would fetch from an API
-    const stored = localStorage.getItem('sispat_roles_permissions')
-    if (stored) {
-      setRoles(JSON.parse(stored))
+    if (user) {
+      fetchRoles()
     }
-  }, [])
+  }, [user, fetchRoles])
 
-  const updateRolePermissions = (
-    roleId: UserRole,
-    permissions: Permission[],
-  ) => {
-    // In a real app, this would be an API call
-    const newRoles = roles.map((role) =>
-      role.id === roleId ? { ...role, permissions } : role,
-    )
-    setRoles(newRoles)
-    localStorage.setItem('sispat_roles_permissions', JSON.stringify(newRoles))
-  }
+  const updateRolePermissions = useCallback(
+    async (roleId: UserRole, permissions: Permission[]) => {
+      try {
+        await api.put(`/config/role-permissions/${roleId}`, {
+          name: roles.find(r => r.id === roleId)?.name || roleId,
+          permissions,
+        })
+        await fetchRoles()
+      } catch (error) {
+        // Reverter mudanças
+        await fetchRoles()
+      }
+    },
+    [roles, fetchRoles],
+  )
 
   return (
     <PermissionContext.Provider value={{ roles, updateRolePermissions }}>

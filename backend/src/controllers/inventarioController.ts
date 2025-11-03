@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import { redisCache, CacheUtils } from '../config/redis';
 
 /**
  * @desc    Obter todos os inventários
@@ -8,48 +10,107 @@ import { prisma } from '../index';
  */
 export const getInventarios = async (req: Request, res: Response): Promise<void> => {
   try {
+    // ✅ PAGINAÇÃO: Adicionar paginação padronizada
+    const { page = 1, limit = 50, status, search } = req.query;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
     const userId = req.user?.userId;
     const userRole = req.user?.role;
-    // Remover sectorId do JwtPayload pois não existe
 
-    let inventarios;
+    // Construir filtros
+    const where: any = {};
 
-    if (userRole === 'admin' || userRole === 'superuser') {
-      // Admin e Superuser veem todos
-      inventarios = await prisma.inventory.findMany({
-        include: {
-          items: {
-            include: {
-              patrimonio: true,
-            },
-          },
-        },
-        orderBy: {
-          dataInicio: 'desc',
-        },
-      });
-    } else {
-      // Outros usuários veem apenas inventários do seu setor
-      inventarios = await prisma.inventory.findMany({
-        where: {
-          setor: req.user?.municipalityId, // Filtrar por município
-        },
-        include: {
-          items: {
-            include: {
-              patrimonio: true,
-            },
-          },
-        },
-        orderBy: {
-          dataInicio: 'desc',
-        },
-      });
+    if (userRole !== 'admin' && userRole !== 'superuser') {
+      // Outros usuários veem apenas inventários do seu município
+      where.setor = req.user?.municipalityId;
     }
 
-    res.json(inventarios);
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search as string, mode: 'insensitive' } },
+        { description: { contains: search as string, mode: 'insensitive' } }
+      ];
+    }
+
+    // ✅ CACHE: Gerar chave de cache
+    const cacheKey = `inventarios:${req.user?.municipalityId}:${pageNum}:${limitNum}:${JSON.stringify(where)}`;
+    
+    // Tentar obter do cache Redis primeiro
+    let result = await redisCache.get<{ inventarios: any[], total: number }>(cacheKey);
+    
+    if (!result) {
+      // ✅ QUERY N+1: Include otimizado com select específico
+      const [inventarios, total] = await Promise.all([
+        prisma.inventory.findMany({
+          where,
+          skip,
+          take: limitNum,
+          include: {
+            items: {
+              include: {
+                patrimonio: {
+                  select: {
+                    id: true,
+                    numero_patrimonio: true,
+                    descricao_bem: true,
+                    sectorId: true,
+                    localId: true,
+                    status: true,
+                    sector: {
+                      select: {
+                        id: true,
+                        name: true,
+                        codigo: true
+                      }
+                    },
+                    local: {
+                      select: {
+                        id: true,
+                        name: true
+                      }
+                    }
+                  }
+                },
+              },
+              take: 10 // Limitar items por inventário para performance
+            }
+          },
+          orderBy: {
+            dataInicio: 'desc',
+          },
+        }),
+        prisma.inventory.count({ where })
+      ]);
+
+      result = {
+        inventarios,
+        total
+      };
+
+      // ✅ CACHE: Armazenar no cache Redis por 5 minutos
+      await redisCache.set(cacheKey, result, 300);
+      logDebug('✅ Cache de inventários criado', { page: pageNum, limit: limitNum });
+    } else {
+      logDebug('✅ Cache hit: inventários', { page: pageNum, limit: limitNum });
+    }
+
+    res.json({
+      inventarios: result.inventarios,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: result.total,
+        pages: Math.ceil(result.total / limitNum)
+      }
+    });
   } catch (error) {
-    console.error('Erro ao buscar inventários:', error);
+    logError('Erro ao buscar inventários', error, { userId: req.user?.userId, role: req.user?.role });
     res.status(500).json({ error: 'Erro ao buscar inventários' });
   }
 };
@@ -63,18 +124,44 @@ export const getInventarioById = async (req: Request, res: Response): Promise<vo
   try {
     const { id } = req.params;
 
+    // ✅ QUERY N+1: Include otimizado com select específico
     const inventario = await prisma.inventory.findUnique({
       where: { id },
       include: {
         items: {
           include: {
             patrimonio: {
-              include: {
-                tipoBem: true,
-              },
+              select: {
+                id: true,
+                numero_patrimonio: true,
+                descricao_bem: true,
+                sectorId: true,
+                localId: true,
+                status: true,
+                tipoBem: {
+                  select: {
+                    id: true,
+                    nome: true,
+                    descricao: true
+                  }
+                },
+                sector: {
+                  select: {
+                    id: true,
+                    name: true,
+                    codigo: true
+                  }
+                },
+                local: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
             },
           },
-        },
+        }
       },
     });
 
@@ -85,7 +172,7 @@ export const getInventarioById = async (req: Request, res: Response): Promise<vo
 
     res.json(inventario);
   } catch (error) {
-    console.error('Erro ao buscar inventário:', error);
+    logError('Erro ao buscar inventário', error, { inventarioId: req.params.id });
     res.status(500).json({ error: 'Erro ao buscar inventário' });
   }
 };
@@ -100,7 +187,7 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
     const userId = req.user?.userId;
     const { title, description, setor, local, dataInicio, scope } = req.body;
 
-    console.log('📝 [DEV] Criando inventário:', { 
+    logDebug('📝 Criando inventário', { 
       userId,
       title, 
       description, 
@@ -113,24 +200,24 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
 
     // ✅ Validações melhoradas
     if (!title) {
-      console.log('❌ [DEV] Erro: título não fornecido');
+      logWarn('❌ Título não fornecido');
       res.status(400).json({ error: 'O título do inventário é obrigatório' });
       return;
     }
 
     if (!setor) {
-      console.log('❌ [DEV] Erro: setor não fornecido');
+      logWarn('❌ Setor não fornecido');
       res.status(400).json({ error: 'O setor é obrigatório' });
       return;
     }
 
     if (!userId) {
-      console.log('❌ [DEV] Erro: userId não encontrado');
+      logWarn('❌ UserId não encontrado');
       res.status(401).json({ error: 'Usuário não autenticado' });
       return;
     }
 
-    console.log('🔍 [DEV] Dados antes de criar no banco:', {
+    logDebug('🔍 Dados antes de criar no banco', {
       title,
       description: description || '',
       responsavel: userId,
@@ -157,8 +244,8 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
       },
     });
 
-    console.log('✅ [DEV] Inventário criado com sucesso:', {
-      id: inventario.id,
+    logInfo('✅ Inventário criado com sucesso', {
+      inventarioId: inventario.id,
       title: inventario.title,
       status: inventario.status,
     });
@@ -174,15 +261,22 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
           details: `Inventário "${title}" criado`,
         },
       });
-      console.log('✅ [DEV] Atividade registrada com sucesso');
+      logDebug('✅ Atividade registrada com sucesso');
     } catch (logError) {
-      console.error('⚠️ [DEV] Erro ao registrar atividade (não crítico):', logError);
+      logWarn('⚠️ Erro ao registrar atividade (não crítico)', logError);
     }
+
+    // ✅ CACHE: Invalidar cache de inventários após criação
+    await redisCache.deletePattern('inventarios:*');
+    logDebug('✅ Cache de inventários invalidado após criação');
 
     res.status(201).json(inventario);
   } catch (error) {
-    console.error('❌ [DEV] Erro ao criar inventário:', error);
-    console.error('❌ [DEV] Stack trace:', error instanceof Error ? error.stack : 'N/A');
+    logError('❌ Erro ao criar inventário', error, {
+      userId: req.user?.userId,
+      title: req.body.title,
+      setor: req.body.setor
+    });
     res.status(500).json({ 
       error: 'Erro ao criar inventário',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -240,9 +334,13 @@ export const updateInventario = async (req: Request, res: Response): Promise<voi
       },
     });
 
+    // ✅ CACHE: Invalidar cache de inventários após atualização
+    await redisCache.deletePattern('inventarios:*');
+    logDebug('✅ Cache de inventários invalidado após atualização');
+
     res.json(updated);
   } catch (error) {
-    console.error('Erro ao atualizar inventário:', error);
+    logError('Erro ao atualizar inventário', error, { inventarioId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao atualizar inventário' });
   }
 };
@@ -281,9 +379,13 @@ export const deleteInventario = async (req: Request, res: Response): Promise<voi
       },
     });
 
+    // ✅ CACHE: Invalidar cache de inventários após deleção
+    await redisCache.deletePattern('inventarios:*');
+    logDebug('✅ Cache de inventários invalidado após deleção');
+
     res.json({ message: 'Inventário excluído com sucesso' });
   } catch (error) {
-    console.error('Erro ao deletar inventário:', error);
+    logError('Erro ao deletar inventário', error, { inventarioId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao deletar inventário' });
   }
 };

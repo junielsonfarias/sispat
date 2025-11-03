@@ -40,7 +40,9 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
-        console.log('⚠️  Backend não disponível - usando lista vazia de locais')
+        if (import.meta.env.DEV) {
+          console.log('⚠️  Backend não disponível - usando lista vazia de locais')
+        }
         setLocais([])
       } else {
         toast({
@@ -58,10 +60,10 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       fetchLocais()
       
-      // ✅ Polling: Atualizar locais a cada 30 segundos (reduzido para melhor performance)
+      // ✅ OTIMIZAÇÃO: Polling reduzido para 60 segundos (dados raramente mudam)
       const intervalId = setInterval(() => {
         fetchLocais()
-      }, 30000) // 30 segundos
+      }, 60000) // 60 segundos
       
       return () => clearInterval(intervalId)
     }

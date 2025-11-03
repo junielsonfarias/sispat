@@ -6,17 +6,19 @@ import { prisma } from '../lib/prisma';
 import { AppError } from '../middlewares/errorHandler';
 import { logActivity } from '../utils/activityLogger';
 import { emailService } from '../config/email';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 
 // ✅ Validar JWT_SECRET obrigatório em produção
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error('🔴 ERRO CRÍTICO: JWT_SECRET não configurado!');
-  console.error('Configure a variável de ambiente JWT_SECRET antes de iniciar.');
+  logError('🔴 ERRO CRÍTICO: JWT_SECRET não configurado!');
+  logError('Configure a variável de ambiente JWT_SECRET antes de iniciar.');
   process.exit(1);
 }
 if (process.env.NODE_ENV === 'production' && (JWT_SECRET.includes('dev') || JWT_SECRET.includes('test') || JWT_SECRET.length < 32)) {
-  console.error('🔴 ERRO CRÍTICO: JWT_SECRET inseguro em produção!');
-  console.error('Use uma chave de 256+ bits (32+ caracteres).');
+  logError('🔴 ERRO CRÍTICO: JWT_SECRET inseguro em produção!', undefined, {
+    requirement: 'Use uma chave de 256+ bits (32+ caracteres).'
+  });
   process.exit(1);
 }
 
@@ -116,7 +118,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error) {
-    console.error('Erro no login:', error);
+    logError('Erro no login', error, { email: req.body.email });
     res.status(500).json({ error: 'Erro ao realizar login' });
   }
 };
@@ -221,7 +223,7 @@ export const me = async (req: Request, res: Response): Promise<void> => {
 
     res.json({ user });
   } catch (error) {
-    console.error('Erro ao buscar usuário:', error);
+    logError('Erro ao buscar usuário', error, { userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao buscar dados do usuário' });
   }
 };
@@ -249,7 +251,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 
     res.json({ message: 'Logout realizado com sucesso' });
   } catch (error) {
-    console.error('Erro no logout:', error);
+    logError('Erro no logout', error, { userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao realizar logout' });
   }
 };
@@ -318,7 +320,7 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
 
     res.json({ message: 'Senha alterada com sucesso' });
   } catch (error) {
-    console.error('Erro ao alterar senha:', error);
+    logError('Erro ao alterar senha', error, { userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao alterar senha' });
   }
 };
@@ -336,7 +338,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    console.log('📧 [DEV] Solicitação de reset de senha para:', email);
+    logDebug('📧 Solicitação de reset de senha', { email });
 
     // Buscar usuário
     const user = await prisma.user.findUnique({
@@ -352,7 +354,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
     // Sempre retornar sucesso por segurança (não revelar se email existe)
     if (!user || !user.isActive) {
-      console.log('📧 [DEV] Email não encontrado ou usuário inativo:', email);
+      logDebug('📧 Email não encontrado ou usuário inativo', { email });
       res.json({ 
         message: 'Se o email estiver cadastrado, um link de redefinição foi enviado.' 
       });
@@ -361,7 +363,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
     // Verificar se email está configurado
     if (!(await emailService.isConfigured())) {
-      console.error('❌ [DEV] Serviço de email não configurado');
+      logError('❌ Serviço de email não configurado');
       res.status(503).json({ 
         error: 'Serviço de email não configurado. Entre em contato com o administrador.' 
       });
@@ -372,7 +374,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
-    console.log('🔑 [DEV] Gerando token de reset:', {
+    logDebug('🔑 Gerando token de reset', {
       userId: user.id,
       email: user.email,
       expiresAt
@@ -389,7 +391,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     //   },
     // });
 
-    console.log('💾 [DEV] Token salvo no banco');
+    logDebug('💾 Token salvo no banco');
 
     // Enviar email
     const emailSent = await emailService.sendPasswordResetEmail(
@@ -400,7 +402,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     );
 
     if (!emailSent) {
-      console.error('❌ [DEV] Falha ao enviar email de reset para:', user.email);
+      logError('❌ Falha ao enviar email de reset', undefined, { email: user.email });
       // Remover token se email falhou
       // TEMPORARIAMENTE DESABILITADO - Problema com Prisma Client
       // await prisma.passwordResetToken.deleteMany({
@@ -412,7 +414,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    console.log('✅ [DEV] Email de reset enviado com sucesso');
+    logInfo('✅ Email de reset enviado com sucesso', { email: user.email });
 
     // Log da atividade
     try {
@@ -424,14 +426,14 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         `Solicitação de reset de senha enviada para ${user.email}`
       );
     } catch (logError) {
-      console.warn('⚠️ [DEV] Erro ao registrar atividade:', logError);
+      logWarn('⚠️ Erro ao registrar atividade', { error: logError });
     }
 
     res.json({ 
       message: 'Se o email estiver cadastrado, um link de redefinição foi enviado.' 
     });
   } catch (error) {
-    console.error('❌ [DEV] Erro ao processar solicitação de reset:', error);
+    logError('❌ Erro ao processar solicitação de reset', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -444,7 +446,7 @@ export const validateResetToken = async (req: Request, res: Response): Promise<v
   try {
     const { token } = req.params;
 
-    console.log('🔍 [DEV] Validando token:', token);
+    logDebug('🔍 Validando token', { tokenLength: token.length });
 
     // TEMPORARIAMENTE DESABILITADO - Problema com Prisma Client
     // const resetToken = await prisma.passwordResetToken.findUnique({
@@ -463,12 +465,12 @@ export const validateResetToken = async (req: Request, res: Response): Promise<v
     const resetToken = null; // Placeholder temporário
 
     if (!resetToken) {
-      console.log('❌ [DEV] Token inválido ou expirado');
+      logDebug('❌ Token inválido ou expirado');
       res.status(400).json({ error: 'Token inválido ou expirado' });
       return;
     }
 
-    console.log('✅ [DEV] Token válido (funcionalidade temporariamente desabilitada)');
+    logDebug('✅ Token válido (funcionalidade temporariamente desabilitada)');
 
     res.json({ 
       valid: true,
@@ -476,7 +478,7 @@ export const validateResetToken = async (req: Request, res: Response): Promise<v
       name: 'Funcionalidade Temporariamente Desabilitada',
     });
   } catch (error) {
-    console.error('❌ [DEV] Erro ao validar token:', error);
+    logError('❌ Erro ao validar token', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -494,7 +496,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    console.log('🔐 [DEV] Processando reset de senha:', { token: token.substring(0, 8) + '...' });
+    logDebug('🔐 Processando reset de senha', { tokenPrefix: token.substring(0, 8) + '...' });
 
     // Validar força da senha
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
@@ -516,12 +518,12 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     const resetToken = null; // Placeholder temporário
 
     if (!resetToken) {
-      console.log('❌ [DEV] Token inválido ou expirado para reset');
+      logDebug('❌ Token inválido ou expirado para reset');
       res.status(400).json({ error: 'Token inválido ou expirado' });
       return;
     }
 
-    console.log('✅ [DEV] Funcionalidade de reset temporariamente desabilitada');
+    logDebug('✅ Funcionalidade de reset temporariamente desabilitada');
 
     // Hash da nova senha
     const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12');
@@ -547,16 +549,16 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     // ]);
     
     // Placeholder temporário - funcionalidade desabilitada
-    console.log('⚠️ [DEV] Atualização de senha temporariamente desabilitada');
+    logWarn('⚠️ Atualização de senha temporariamente desabilitada');
 
-    console.log('✅ [DEV] Senha resetada com sucesso');
+    logInfo('✅ Senha resetada com sucesso');
 
     // Log da atividade temporariamente desabilitado
-    console.log('⚠️ [DEV] Log de atividade temporariamente desabilitado');
+    logWarn('⚠️ Log de atividade temporariamente desabilitado');
 
     res.json({ message: 'Senha redefinida com sucesso' });
   } catch (error) {
-    console.error('❌ [DEV] Erro ao resetar senha:', error);
+    logError('❌ Erro ao resetar senha', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };

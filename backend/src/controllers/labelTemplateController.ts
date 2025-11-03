@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 
 /**
  * @desc    Obter todos os templates de etiqueta
@@ -10,7 +11,7 @@ export const getLabelTemplates = async (req: Request, res: Response): Promise<vo
   try {
     const municipalityId = req.user?.municipalityId;
 
-    console.log('🔍 [DEV] GET /api/label-templates - Municipality:', municipalityId);
+    logDebug('🔍 GET /api/label-templates', { municipalityId });
 
     const templates = await prisma.labelTemplate.findMany({
       where: {
@@ -32,11 +33,11 @@ export const getLabelTemplates = async (req: Request, res: Response): Promise<vo
       ],
     });
 
-    console.log('✅ [DEV] Templates encontrados:', templates.length);
+    logDebug('✅ Templates encontrados', { count: templates.length });
 
     res.json(templates);
   } catch (error) {
-    console.error('❌ [DEV] Erro ao buscar templates:', error);
+    logError('❌ Erro ao buscar templates', error, { municipalityId: req.user?.municipalityId });
     res.status(500).json({ error: 'Erro ao buscar templates de etiqueta' });
   }
 };
@@ -70,7 +71,7 @@ export const getLabelTemplateById = async (req: Request, res: Response): Promise
 
     res.json(template);
   } catch (error) {
-    console.error('Erro ao buscar template:', error);
+    logError('Erro ao buscar template', error, { templateId: req.params.id });
     res.status(500).json({ error: 'Erro ao buscar template' });
   }
 };
@@ -145,11 +146,11 @@ export const createLabelTemplate = async (req: Request, res: Response): Promise<
       },
     });
 
-    console.log('✅ [DEV] Template criado:', { id: template.id, name: template.name });
+    logInfo('✅ Template criado', { templateId: template.id, name: template.name });
 
     res.status(201).json(template);
   } catch (error) {
-    console.error('❌ [DEV] Erro ao criar template:', error);
+    logError('❌ Erro ao criar template', error, { userId: req.user?.userId, name: req.body.name });
     res.status(500).json({ error: 'Erro ao criar template' });
   }
 };
@@ -228,11 +229,11 @@ export const updateLabelTemplate = async (req: Request, res: Response): Promise<
       },
     });
 
-    console.log('✅ [DEV] Template atualizado:', { id: updated.id, name: updated.name });
+    logInfo('✅ Template atualizado', { templateId: updated.id, name: updated.name });
 
     res.json(updated);
   } catch (error) {
-    console.error('❌ [DEV] Erro ao atualizar template:', error);
+    logError('❌ Erro ao atualizar template', error, { templateId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao atualizar template' });
   }
 };
@@ -282,11 +283,11 @@ export const deleteLabelTemplate = async (req: Request, res: Response): Promise<
       },
     });
 
-    console.log('✅ [DEV] Template desativado:', { id, name: template.name });
+    logInfo('✅ Template desativado', { templateId: id, name: template.name });
 
     res.json({ message: 'Template excluído com sucesso' });
   } catch (error) {
-    console.error('❌ [DEV] Erro ao deletar template:', error);
+    logError('❌ Erro ao deletar template', error, { templateId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao deletar template' });
   }
 };

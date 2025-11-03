@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import { logError } from '../config/logger';
 
 /**
  * @desc    Obter todos os tipos de bens
@@ -25,7 +26,7 @@ export const getTiposBens = async (req: Request, res: Response): Promise<void> =
     res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
     res.json(tiposBens);
   } catch (error) {
-    console.error('Erro ao buscar tipos de bens:', error);
+    logError('Erro ao buscar tipos de bens', error);
     res.status(500).json({ error: 'Erro ao buscar tipos de bens' });
   }
 };
@@ -57,7 +58,7 @@ export const getTipoBemById = async (req: Request, res: Response): Promise<void>
 
     res.json(tipoBem);
   } catch (error) {
-    console.error('Erro ao buscar tipo de bem:', error);
+    logError('Erro ao buscar tipo de bem', error, { tipoBemId: req.params.id });
     res.status(500).json({ error: 'Erro ao buscar tipo de bem' });
   }
 };
@@ -116,7 +117,7 @@ export const createTipoBem = async (req: Request, res: Response): Promise<void> 
 
     res.status(201).json(tipoBem);
   } catch (error) {
-    console.error('Erro ao criar tipo de bem:', error);
+    logError('Erro ao criar tipo de bem', error, { userId: req.user?.userId, nome: req.body.nome });
     res.status(500).json({ error: 'Erro ao criar tipo de bem' });
   }
 };
@@ -169,7 +170,7 @@ export const updateTipoBem = async (req: Request, res: Response): Promise<void> 
 
     res.json(updated);
   } catch (error) {
-    console.error('Erro ao atualizar tipo de bem:', error);
+    logError('Erro ao atualizar tipo de bem', error, { tipoBemId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao atualizar tipo de bem' });
   }
 };
@@ -225,7 +226,7 @@ export const deleteTipoBem = async (req: Request, res: Response): Promise<void> 
 
     res.json({ message: 'Tipo de bem excluído com sucesso' });
   } catch (error) {
-    console.error('Erro ao deletar tipo de bem:', error);
+    logError('Erro ao deletar tipo de bem', error, { tipoBemId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao deletar tipo de bem' });
   }
 };

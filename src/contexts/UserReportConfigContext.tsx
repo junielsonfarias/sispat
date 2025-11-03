@@ -8,9 +8,9 @@ import {
   useMemo,
 } from 'react'
 import { UserReportConfig } from '@/types'
-import { generateId } from '@/lib/utils'
 import { useAuth } from './AuthContext'
 import { toast } from '@/hooks/use-toast'
+import { api } from '@/services/api-adapter'
 
 interface UserReportConfigContextType {
   configs: UserReportConfig[]
@@ -29,45 +29,62 @@ export const UserReportConfigProvider = ({
   const [allConfigs, setAllConfigs] = useState<UserReportConfig[]>([])
   const { user } = useAuth()
 
-  useEffect(() => {
-    // In a real app, this would fetch from an API
-    const stored = localStorage.getItem('sispat_report_configs')
-    if (stored) {
-      setAllConfigs(JSON.parse(stored))
+  const fetchConfigs = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const configs = await api.get<UserReportConfig[]>('/config/user-report-configs')
+      setAllConfigs(configs)
+    } catch (error) {
+      // Silenciar erro se não houver configurações
     }
-  }, [])
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      fetchConfigs()
+    }
+  }, [user, fetchConfigs])
 
   const configs = useMemo(() => {
     if (!user) return []
     return allConfigs.filter((c) => c.userId === user.id)
   }, [allConfigs, user])
 
-  const persist = (newConfigs: UserReportConfig[]) => {
-    // In a real app, this would be an API call
-    localStorage.setItem('sispat_report_configs', JSON.stringify(newConfigs))
-    setAllConfigs(newConfigs)
-  }
-
   const saveConfig = useCallback(
-    (config: Omit<UserReportConfig, 'id' | 'userId'>) => {
+    async (config: Omit<UserReportConfig, 'id' | 'userId'>) => {
       if (!user) return
-      const newConfig: UserReportConfig = {
-        ...config,
-        id: generateId(),
-        userId: user.id,
+      
+      try {
+        await api.post('/config/user-report-configs', config)
+        await fetchConfigs()
+        toast({ description: 'Configuração de relatório salva.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao salvar configuração de relatório.',
+        })
       }
-      persist([...allConfigs, newConfig])
-      toast({ description: 'Configuração de relatório salva.' })
     },
-    [allConfigs, user],
+    [user, fetchConfigs],
   )
 
   const deleteConfig = useCallback(
-    (configId: string) => {
-      persist(allConfigs.filter((c) => c.id !== configId))
-      toast({ description: 'Configuração de relatório excluída.' })
+    async (configId: string) => {
+      try {
+        await api.delete(`/config/user-report-configs/${configId}`)
+        await fetchConfigs()
+        toast({ description: 'Configuração de relatório excluída.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao excluir configuração de relatório.',
+        })
+      }
     },
-    [allConfigs],
+    [fetchConfigs],
   )
 
   return (

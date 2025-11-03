@@ -8,9 +8,9 @@ import {
   useMemo,
 } from 'react'
 import { ExcelCsvTemplate } from '@/types'
-import { generateId } from '@/lib/utils'
 import { useAuth } from './AuthContext'
 import { toast } from '@/hooks/use-toast'
+import { api } from '@/services/api-adapter'
 
 interface ExcelCsvTemplateContextType {
   templates: ExcelCsvTemplate[]
@@ -24,45 +24,34 @@ interface ExcelCsvTemplateContextType {
 const ExcelCsvTemplateContext =
   createContext<ExcelCsvTemplateContextType | null>(null)
 
-const defaultTemplates: ExcelCsvTemplate[] = [
-  {
-    id: 'default-simple',
-    name: 'Relatório Simples',
-    municipalityId: '1',
-    columns: [
-      { key: 'numero_patrimonio', header: 'Nº Patrimônio' },
-      { key: 'descricao_bem', header: 'Descrição' },
-    ],
-  },
-]
-
 export const ExcelCsvTemplateProvider = ({
   children,
 }: {
   children: ReactNode
 }) => {
-  const [allTemplates, setAllTemplates] =
-    useState<ExcelCsvTemplate[]>(defaultTemplates)
+  const [allTemplates, setAllTemplates] = useState<ExcelCsvTemplate[]>([])
   const { user } = useAuth()
 
-  useEffect(() => {
-    // In a real app, this would fetch from an API
-    const stored = localStorage.getItem('sispat_excel_templates')
-    if (stored) {
-      setAllTemplates(JSON.parse(stored))
+  const fetchTemplates = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const templates = await api.get<ExcelCsvTemplate[]>('/config/excel-csv-templates')
+      setAllTemplates(templates)
+    } catch (error) {
+      // Silenciar erro se não houver templates
     }
-  }, [])
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      fetchTemplates()
+    }
+  }, [user, fetchTemplates])
 
   const templates = useMemo(() => {
-    // ✅ CORREÇÃO: Sistema single-municipality, retornar todos os templates
     return allTemplates
-  }, [allTemplates, user])
-
-  const persist = (newTemplates: ExcelCsvTemplate[]) => {
-    // In a real app, this would be an API call
-    localStorage.setItem('sispat_excel_templates', JSON.stringify(newTemplates))
-    setAllTemplates(newTemplates)
-  }
+  }, [allTemplates])
 
   const getTemplateById = useCallback(
     (id: string) => templates.find((t) => t.id === id),
@@ -70,41 +59,44 @@ export const ExcelCsvTemplateProvider = ({
   )
 
   const saveTemplate = useCallback(
-    (template: Omit<ExcelCsvTemplate, 'id'> | ExcelCsvTemplate) => {
-      if (!user?.municipalityId && user?.role !== 'superuser') return
+    async (template: Omit<ExcelCsvTemplate, 'id'> | ExcelCsvTemplate) => {
+      if (!user) return
 
-      setAllTemplates((prev) => {
-        let newTemplates
+      try {
         if ('id' in template && template.id) {
-          const index = prev.findIndex((t) => t.id === template.id)
-          newTemplates = [...prev]
-          newTemplates[index] = template as ExcelCsvTemplate
+          await api.put(`/config/excel-csv-templates/${template.id}`, template)
         } else {
-          newTemplates = [
-            ...prev,
-            {
-              ...template,
-              id: generateId(),
-              municipalityId: '1', // ✅ CORREÇÃO: Sempre usar '1' para o município único
-            },
-          ]
+          await api.post('/config/excel-csv-templates', template)
         }
-        persist(newTemplates)
+        await fetchTemplates()
         toast({ description: 'Modelo de exportação salvo com sucesso.' })
-        return newTemplates
-      })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao salvar modelo de exportação.',
+        })
+      }
     },
-    [user],
+    [user, fetchTemplates],
   )
 
-  const deleteTemplate = useCallback((templateId: string) => {
-    setAllTemplates((prev) => {
-      const newTemplates = prev.filter((t) => t.id !== templateId)
-      persist(newTemplates)
-      toast({ description: 'Modelo de exportação excluído.' })
-      return newTemplates
-    })
-  }, [])
+  const deleteTemplate = useCallback(
+    async (templateId: string) => {
+      try {
+        await api.delete(`/config/excel-csv-templates/${templateId}`)
+        await fetchTemplates()
+        toast({ description: 'Modelo de exportação excluído.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao excluir modelo de exportação.',
+        })
+      }
+    },
+    [fetchTemplates],
+  )
 
   return (
     <ExcelCsvTemplateContext.Provider

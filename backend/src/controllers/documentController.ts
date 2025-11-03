@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { AppError } from '../middlewares/errorHandler';
 import { logActivity } from '../utils/activityLogger';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import { redisCache, CacheUtils } from '../config/redis';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -48,7 +50,9 @@ export { upload };
 export const listDocuments = async (req: Request, res: Response): Promise<void> => {
   try {
     const { page = 1, limit = 10, type, search } = req.query;
-    const skip = (Number(page) - 1) * Number(limit);
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 10));
+    const skip = (pageNum - 1) * limitNum;
 
     const where: any = {};
     
@@ -70,49 +74,64 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
       ];
     }
 
-    // ✅ Buscar documentos com include otimizado
-    const [documents, total] = await Promise.all([
-      prisma.documentoGeral.findMany({
-        where,
-        skip,
-        take: Number(limit),
-        orderBy: { createdAt: 'desc' },
-        include: {
-          uploadedBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true
+    // ✅ CACHE: Gerar chave de cache baseada nos filtros
+    const cacheKey = CacheUtils.getDocumentosKey({ where, page: pageNum, limit: limitNum });
+    
+    // Tentar obter do cache Redis primeiro
+    let result = await redisCache.get<{ documents: any[], total: number }>(cacheKey);
+    
+    if (!result) {
+      // ✅ Buscar documentos com include otimizado
+      const [documents, total] = await Promise.all([
+        prisma.documentoGeral.findMany({
+          where,
+          skip,
+          take: limitNum,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            uploadedBy: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
             }
           }
-        }
-      }).catch((error: any) => {
-        console.error('❌ [DEV] Erro na query findMany:', error);
-        throw error;
-      }),
-      prisma.documentoGeral.count({ where }).catch((error: any) => {
-        console.error('❌ [DEV] Erro na query count:', error);
-        throw error;
-      })
-    ]);
+        }).catch((error: any) => {
+          logError('❌ Erro na query findMany', error);
+          throw error;
+        }),
+        prisma.documentoGeral.count({ where }).catch((error: any) => {
+          logError('❌ Erro na query count', error);
+          throw error;
+        })
+      ]);
+
+      result = {
+        documents: documents || [],
+        total: total || 0
+      };
+
+      // ✅ CACHE: Armazenar no cache Redis por 5 minutos
+      await redisCache.set(cacheKey, result, 300);
+      logDebug('✅ Cache de documentos criado', { page: pageNum, limit: limitNum });
+    } else {
+      logDebug('✅ Cache hit: documentos', { page: pageNum, limit: limitNum });
+    }
 
     res.json({
-      documents: documents || [],
+      documents: result.documents,
       pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total: total || 0,
-        pages: Math.ceil((total || 0) / Number(limit))
+        page: pageNum,
+        limit: limitNum,
+        total: result.total,
+        pages: Math.ceil(result.total / limitNum)
       }
     });
   } catch (error: any) {
-    console.error('❌ [DEV] Erro ao listar documentos:', error);
-    console.error('❌ [DEV] Detalhes do erro:', {
-      message: error?.message,
-      stack: error?.stack,
-      code: error?.code,
-      meta: error?.meta,
-      cause: error?.cause
+    logError('❌ Erro ao listar documentos', error, {
+      userId: req.user?.userId,
+      query: req.query
     });
     
     // ✅ Retornar array vazio em caso de erro para não quebrar o frontend
@@ -167,9 +186,13 @@ export const createDocument = async (req: Request, res: Response): Promise<void>
     // Log da atividade
     await logActivity(req, 'CREATE', 'DOCUMENT', document.id, 'Documento criado');
 
+    // ✅ CACHE: Invalidar cache de documentos após criação
+    await CacheUtils.invalidateDocumentos();
+    logDebug('✅ Cache de documentos invalidado após criação');
+
     res.status(201).json(document);
   } catch (error) {
-    console.error('Erro ao criar documento:', error);
+    logError('Erro ao criar documento', error, { userId: req.user?.userId, fileName: req.file?.originalname });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -202,7 +225,7 @@ export const getDocument = async (req: Request, res: Response): Promise<void> =>
 
     res.json(document);
   } catch (error) {
-    console.error('Erro ao obter documento:', error);
+    logError('Erro ao obter documento', error, { documentId: req.params.id });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -231,7 +254,7 @@ export const downloadDocument = async (req: Request, res: Response): Promise<voi
 
     res.download(document.filePath, document.fileName);
   } catch (error) {
-    console.error('Erro ao fazer download do documento:', error);
+    logError('Erro ao fazer download do documento', error, { documentId: req.params.id });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -280,9 +303,13 @@ export const updateDocument = async (req: Request, res: Response): Promise<void>
     // Log da atividade
     await logActivity(req, 'UPDATE', 'DOCUMENT', id, 'Documento atualizado');
 
+    // ✅ CACHE: Invalidar cache de documentos após atualização
+    await CacheUtils.invalidateDocumentos();
+    logDebug('✅ Cache de documentos invalidado após atualização');
+
     res.json(updatedDocument);
   } catch (error) {
-    console.error('Erro ao atualizar documento:', error);
+    logError('Erro ao atualizar documento', error, { documentId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -328,9 +355,13 @@ export const deleteDocument = async (req: Request, res: Response): Promise<void>
     // Log da atividade
     await logActivity(req, 'DELETE', 'DOCUMENT', id, 'Documento deletado');
 
+    // ✅ CACHE: Invalidar cache de documentos após deleção
+    await CacheUtils.invalidateDocumentos();
+    logDebug('✅ Cache de documentos invalidado após deleção');
+
     res.status(204).send();
   } catch (error) {
-    console.error('Erro ao deletar documento:', error);
+    logError('Erro ao deletar documento', error, { documentId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -392,7 +423,7 @@ export const listPublicDocuments = async (req: Request, res: Response): Promise<
       }
     });
   } catch (error) {
-    console.error('Erro ao listar documentos públicos:', error);
+    logError('Erro ao listar documentos públicos', error, { query: req.query });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };

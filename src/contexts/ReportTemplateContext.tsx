@@ -8,8 +8,9 @@ import {
   useMemo,
 } from 'react'
 import { ReportTemplate, ReportComponent } from '@/types'
-import { generateId } from '@/lib/utils'
 import { useAuth } from './AuthContext'
+import { api } from '@/services/api-adapter'
+import { toast } from '@/hooks/use-toast'
 
 interface ReportTemplateContextType {
   templates: ReportTemplate[]
@@ -86,70 +87,32 @@ const summaryLayout: ReportComponent[] = [
   },
 ]
 
-const defaultTemplates: ReportTemplate[] = [
-  {
-    id: 'geral',
-    name: 'Relatório Tabular Padrão',
-    fields: [
-      'numero_patrimonio',
-      'descricao_bem',
-      'setor_responsavel',
-      'status',
-      'valor_aquisicao',
-    ],
-    filters: {},
-    layout: tabularLayout,
-    municipalityId: '1',
-  },
-  {
-    id: 'summary-chart',
-    name: 'Relatório Resumido com Gráfico',
-    fields: [
-      'numero_patrimonio',
-      'descricao_bem',
-      'tipo',
-      'status',
-      'valor_aquisicao',
-    ],
-    filters: {},
-    layout: summaryLayout,
-    municipalityId: '1',
-  },
-]
-
 export const ReportTemplateProvider = ({
   children,
 }: {
   children: ReactNode
 }) => {
-  const [allTemplates, setAllTemplates] =
-    useState<ReportTemplate[]>(defaultTemplates)
+  const [allTemplates, setAllTemplates] = useState<ReportTemplate[]>([])
   const { user } = useAuth()
 
-  useEffect(() => {
+  const fetchTemplates = useCallback(async () => {
+    if (!user) return
+    
     try {
-      const storedTemplates = localStorage.getItem('sispat_report_templates')
-      if (storedTemplates) {
-        const parsedTemplates = JSON.parse(storedTemplates)
-        const templatesWithLayout = parsedTemplates.map((t: ReportTemplate) =>
-          t.layout ? t : { ...t, layout: tabularLayout },
-        )
-        setAllTemplates(templatesWithLayout)
-      } else {
-        localStorage.setItem(
-          'sispat_report_templates',
-          JSON.stringify(defaultTemplates),
-        )
-      }
+      const templates = await api.get<ReportTemplate[]>('/config/report-templates')
+      setAllTemplates(templates)
     } catch (error) {
-      // Failed to load report templates from localStorage - using defaults
-      setAllTemplates(defaultTemplates)
+      // Silenciar erro se não houver templates
     }
-  }, [])
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      fetchTemplates()
+    }
+  }, [user, fetchTemplates])
 
   const templates = useMemo(() => {
-    // Agora todos os templates são visíveis para todos os usuários
-    // pois temos apenas um município
     return allTemplates
   }, [allTemplates])
 
@@ -161,52 +124,45 @@ export const ReportTemplateProvider = ({
   )
 
   const saveTemplate = useCallback(
-    (template: Omit<ReportTemplate, 'id'> | ReportTemplate) => {
-      // ✅ CORREÇÃO: Sistema single-municipality, não precisa verificar municipalityId
+    async (template: Omit<ReportTemplate, 'id'> | ReportTemplate) => {
+      if (!user) return
 
-      setAllTemplates((prevTemplates) => {
-        let newTemplates
+      try {
         if ('id' in template && template.id) {
-          const existingIndex = prevTemplates.findIndex(
-            (t) => t.id === template.id,
-          )
-          if (existingIndex > -1) {
-            newTemplates = [...prevTemplates]
-            newTemplates[existingIndex] = template as ReportTemplate
-          } else {
-            newTemplates = [...prevTemplates, template as ReportTemplate]
-          }
+          await api.put(`/config/report-templates/${template.id}`, template)
+          toast({ description: 'Modelo de relatório atualizado com sucesso.' })
         } else {
-          newTemplates = [
-            ...prevTemplates,
-            {
-              ...template,
-              id: generateId(),
-              layout: tabularLayout,
-              municipalityId: '1', // ✅ CORREÇÃO: Sempre usar '1' para o município único
-            },
-          ]
+          await api.post('/config/report-templates', template)
+          toast({ description: 'Modelo de relatório criado com sucesso.' })
         }
-        localStorage.setItem(
-          'sispat_report_templates',
-          JSON.stringify(newTemplates),
-        )
-        return newTemplates
-      })
+        await fetchTemplates()
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao salvar modelo de relatório.',
+        })
+      }
     },
-    [user],
+    [user, fetchTemplates],
   )
 
-  const deleteTemplate = useCallback((templateId: string) => {
-    setAllTemplates((prevTemplates) => {
-      const newTemplates = prevTemplates.filter((t) => t.id !== templateId)
-      localStorage.setItem(
-        'sispat_report_templates',
-        JSON.stringify(newTemplates),
-      )
-      return newTemplates
-    })
-  }, [])
+  const deleteTemplate = useCallback(
+    async (templateId: string) => {
+      try {
+        await api.delete(`/config/report-templates/${templateId}`)
+        await fetchTemplates()
+        toast({ description: 'Modelo de relatório excluído com sucesso.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao excluir modelo de relatório.',
+        })
+      }
+    },
+    [fetchTemplates],
+  )
 
   return (
     <ReportTemplateContext.Provider

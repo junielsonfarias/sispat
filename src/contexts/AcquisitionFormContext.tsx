@@ -60,11 +60,9 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
       })
       return
     }
-    console.log('🔍 AcquisitionFormContext: Iniciando busca de formas de aquisição...')
     setIsLoading(true)
     try {
       const response = await api.get<{ formasAquisicao: AcquisitionForm[]; pagination: any }>('/formas-aquisicao')
-      console.log('🔍 AcquisitionFormContext: Resposta da API:', response)
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade formasAquisicao
       const formsData = Array.isArray(response) ? response : (response.formasAquisicao || [])
       const forms = formsData.map((form: any) => ({
@@ -72,14 +70,10 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
         createdAt: new Date(form.createdAt),
         updatedAt: new Date(form.updatedAt),
       }))
-      console.log('🔍 AcquisitionFormContext: Formas de aquisição carregadas:', forms.length)
       setAcquisitionForms(forms)
     } catch (error) {
-      console.error('❌ AcquisitionFormContext: Erro ao buscar formas de aquisição:', error)
-      
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
-        console.log('⚠️  Backend não disponível - usando lista vazia de formas de aquisição')
         setAcquisitionForms([])
       } else {
         toast({

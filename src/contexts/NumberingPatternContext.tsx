@@ -9,7 +9,8 @@ import {
 } from 'react'
 import { NumberingPattern } from '@/types'
 import { useAuth } from './AuthContext'
-import { generateId } from '@/lib/utils'
+import { api } from '@/services/api-adapter'
+import { toast } from '@/hooks/use-toast'
 
 interface NumberingPatternContextType {
   pattern: NumberingPattern | null
@@ -19,67 +20,48 @@ interface NumberingPatternContextType {
 const NumberingPatternContext =
   createContext<NumberingPatternContextType | null>(null)
 
-const defaultPatternComponents = [
-  { id: generateId(), type: 'year' as const, format: 'YYYY' as const },
-  { id: generateId(), type: 'sector' as const, sectorCodeLength: 2 },
-  { id: generateId(), type: 'sequence' as const, length: 6 },
-]
-
 export const NumberingPatternProvider = ({
   children,
 }: {
   children: ReactNode
 }) => {
-  const [patterns, setPatterns] = useState<NumberingPattern[]>([])
+  const [pattern, setPattern] = useState<NumberingPattern | null>(null)
   const { user } = useAuth()
 
+  const fetchPattern = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const data = await api.get<NumberingPattern>('/config/numbering-pattern')
+      setPattern(data)
+    } catch (error) {
+      // Silenciar erro se não houver padrão
+    }
+  }, [user])
+
   useEffect(() => {
-    // In a real app, this would fetch from an API
-    const stored = localStorage.getItem('sispat_numbering_patterns')
-    if (stored) {
-      setPatterns(JSON.parse(stored))
+    if (user) {
+      fetchPattern()
     }
-  }, [])
-
-  const persist = (newPatterns: NumberingPattern[]) => {
-    // In a real app, this would be an API call
-    localStorage.setItem(
-      'sispat_numbering_patterns',
-      JSON.stringify(newPatterns),
-    )
-    setPatterns(newPatterns)
-  }
-
-  const pattern = useMemo(() => {
-    if (!user?.municipalityId) return null
-    const p = patterns.find((p) => p.municipalityId === user.municipalityId)
-    if (p) return p
-    return {
-      municipalityId: user.municipalityId,
-      components: defaultPatternComponents,
-    }
-  }, [patterns, user])
+  }, [user, fetchPattern])
 
   const savePattern = useCallback(
-    (patternToSave: NumberingPattern) => {
-      if (!user?.municipalityId) return
+    async (patternToSave: NumberingPattern) => {
+      if (!user) return
 
-      setPatterns((prev) => {
-        const existingIndex = prev.findIndex(
-          (p) => p.municipalityId === patternToSave.municipalityId,
-        )
-        let newPatterns
-        if (existingIndex > -1) {
-          newPatterns = [...prev]
-          newPatterns[existingIndex] = patternToSave
-        } else {
-          newPatterns = [...prev, patternToSave]
-        }
-        persist(newPatterns)
-        return newPatterns
-      })
+      try {
+        await api.put('/config/numbering-pattern', patternToSave)
+        await fetchPattern()
+        toast({ description: 'Padrão de numeração salvo com sucesso.' })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao salvar padrão de numeração.',
+        })
+      }
     },
-    [user],
+    [user, fetchPattern],
   )
 
   return (

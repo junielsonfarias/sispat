@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import { logError } from '../config/logger';
 
 /**
  * @desc    Obter todas as formas de aquisição
@@ -25,7 +26,7 @@ export const getFormasAquisicao = async (req: Request, res: Response): Promise<v
     res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
     res.json(formasAquisicao);
   } catch (error) {
-    console.error('Erro ao buscar formas de aquisição:', error);
+    logError('Erro ao buscar formas de aquisição', error);
     res.status(500).json({ error: 'Erro ao buscar formas de aquisição' });
   }
 };
@@ -57,7 +58,7 @@ export const getFormaAquisicaoById = async (req: Request, res: Response): Promis
 
     res.json(formaAquisicao);
   } catch (error) {
-    console.error('Erro ao buscar forma de aquisição:', error);
+    logError('Erro ao buscar forma de aquisição', error, { formaAquisicaoId: req.params.id });
     res.status(500).json({ error: 'Erro ao buscar forma de aquisição' });
   }
 };
@@ -109,7 +110,7 @@ export const createFormaAquisicao = async (req: Request, res: Response): Promise
 
     res.status(201).json(formaAquisicao);
   } catch (error) {
-    console.error('Erro ao criar forma de aquisição:', error);
+    logError('Erro ao criar forma de aquisição', error, { userId: req.user?.userId, nome: req.body.nome });
     res.status(500).json({ error: 'Erro ao criar forma de aquisição' });
   }
 };
@@ -155,7 +156,7 @@ export const updateFormaAquisicao = async (req: Request, res: Response): Promise
 
     res.json(updated);
   } catch (error) {
-    console.error('Erro ao atualizar forma de aquisição:', error);
+    logError('Erro ao atualizar forma de aquisição', error, { formaAquisicaoId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao atualizar forma de aquisição' });
   }
 };
@@ -211,7 +212,7 @@ export const deleteFormaAquisicao = async (req: Request, res: Response): Promise
 
     res.json({ message: 'Forma de aquisição excluída com sucesso' });
   } catch (error) {
-    console.error('Erro ao deletar forma de aquisição:', error);
+    logError('Erro ao deletar forma de aquisição', error, { formaAquisicaoId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao deletar forma de aquisição' });
   }
 };

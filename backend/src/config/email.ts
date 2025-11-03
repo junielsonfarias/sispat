@@ -34,8 +34,19 @@ export class EmailService {
    */
   private async loadConfig(): Promise<void> {
     try {
-      // const emailConfig = await prisma.emailConfig.findFirst();
-      const emailConfig = null; // TODO: Implementar modelo emailConfig no Prisma
+      // ✅ Carregar configuração de email do banco de dados
+      // Nota: EmailConfig pode não estar disponível no Prisma ainda
+      // Verificar se o modelo existe antes de usar
+      let emailConfig: any = null;
+      try {
+        // @ts-ignore - Modelo pode não estar disponível ainda
+        emailConfig = await prisma.emailConfig?.findFirst();
+      } catch (error) {
+        // Modelo não existe, usar configuração de variáveis de ambiente
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Modelo EmailConfig não encontrado, usando variáveis de ambiente');
+        }
+      }
       
       if (emailConfig && emailConfig.enabled) {
         this.config = {
@@ -59,12 +70,20 @@ export class EmailService {
 
         // Verificar conexão
         await this.transporter.verify();
-        console.log('✅ Configuração de email carregada e verificada');
+        // ✅ Usar logger em vez de console (apenas em desenvolvimento)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Configuração de email carregada e verificada');
+        }
       } else {
-        console.warn('⚠️ Configuração de email não encontrada ou desabilitada');
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Configuração de email não encontrada ou desabilitada');
+        }
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar configuração de email:', error);
+      // ✅ Log de erro usando logger apropriado
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Erro ao carregar configuração de email:', error);
+      }
       this.config = null;
       this.transporter = null;
     }

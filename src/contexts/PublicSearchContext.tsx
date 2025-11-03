@@ -6,6 +6,8 @@ import {
   useCallback,
   useEffect,
 } from 'react'
+import { api } from '@/services/api-adapter'
+import { useAuth } from './AuthContext'
 
 interface PublicSearchSettings {
   isPublicSearchEnabled: boolean
@@ -25,29 +27,38 @@ const initialSettings: PublicSearchSettings = {
 export const PublicSearchProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] =
     useState<PublicSearchSettings>(initialSettings)
+  const { user } = useAuth()
+
+  const fetchSettings = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const config = await api.get<any>('/public/system-configuration')
+      if (config && config.allowPublicSearch !== undefined) {
+        setSettings({ isPublicSearchEnabled: config.allowPublicSearch })
+      }
+    } catch (error) {
+      // Usar settings padrão se falhar
+    }
+  }, [user])
 
   useEffect(() => {
-    // In a real app, this would fetch from an API
-    const stored = localStorage.getItem('sispat_public_search_settings')
-    if (stored) {
-      setSettings(JSON.parse(stored))
+    if (user) {
+      fetchSettings()
     }
-  }, [])
-
-  const persist = (newSettings: PublicSearchSettings) => {
-    // In a real app, this would be an API call
-    localStorage.setItem(
-      'sispat_public_search_settings',
-      JSON.stringify(newSettings),
-    )
-    setSettings(newSettings)
-  }
+  }, [user, fetchSettings])
 
   const togglePublicSearch = useCallback(
-    (enabled: boolean) => {
-      persist({ ...settings, isPublicSearchEnabled: enabled })
+    async (enabled: boolean) => {
+      try {
+        await api.put('/public/system-configuration', { allowPublicSearch: enabled })
+        setSettings({ isPublicSearchEnabled: enabled })
+      } catch (error) {
+        // Reverter mudanças
+        fetchSettings()
+      }
     },
-    [settings],
+    [fetchSettings],
   )
 
   return (

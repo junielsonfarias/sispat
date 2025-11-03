@@ -2,6 +2,7 @@ import { Imovel } from '@/types'
 import { formatDate, formatCurrency, getCloudImageUrl } from '@/lib/utils'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { generateQRCode } from '@/lib/qr-code-utils'
 
 interface ImovelPDFGeneratorProps {
   imovel: Imovel
@@ -119,6 +120,16 @@ export const generateImovelPDF = async ({
       processedLogo = municipalityLogo
     }
   }
+
+  // Gerar QR Code para consulta pública de imóvel
+  let qrCodeUrl = ''
+  try {
+    const publicUrl = `${window.location.origin}/consulta-publica/imovel/${imovel.id}`
+    qrCodeUrl = await generateQRCode(publicUrl, { size: 150, errorCorrectionLevel: 'H' })
+    console.log('✅ QR Code gerado com sucesso para PDF de imóvel')
+  } catch (error) {
+    console.warn('⚠️ Erro ao gerar QR Code para PDF de imóvel:', error)
+  }
   
   // Criar elemento temporário para renderizar o conteúdo
   const container = document.createElement('div')
@@ -146,6 +157,17 @@ export const generateImovelPDF = async ({
           <p style="margin: 3px 0 0 0; font-size: 12px; font-weight: bold;">${formatDate(new Date())}</p>
         </div>
       </div>
+
+      <!-- QR Code para consulta pública -->
+      ${qrCodeUrl ? `
+      <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+        <div style="text-align: center; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
+          <p style="margin: 0 0 5px 0; font-size: 10px; color: #64748b; font-weight: 600;">CONSULTA PÚBLICA</p>
+          <img src="${qrCodeUrl}" alt="QR Code" style="width: 80px; height: 80px; margin: 0 auto; display: block;" />
+          <p style="margin: 5px 0 0 0; font-size: 9px; color: #94a3b8;">Escaneie para acessar</p>
+        </div>
+      </div>
+      ` : ''}
 
       <!-- Número do Patrimônio em Destaque -->
       <div style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">

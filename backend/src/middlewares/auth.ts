@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../index';
+import { logError } from '../config/logger';
 
 // Interface para o payload do JWT
 export interface JwtPayload {
@@ -39,8 +40,14 @@ export const authenticateToken = async (
       return;
     }
 
-    // Verificar token
-    const JWT_SECRET = process.env.JWT_SECRET || 'sispat-secret-key-dev';
+    // Verificar token - JWT_SECRET é obrigatório (validado no startup)
+    const JWT_SECRET = process.env.JWT_SECRET;
+    
+    if (!JWT_SECRET) {
+      logError('JWT_SECRET não configurado no middleware de autenticação');
+      res.status(500).json({ error: 'Erro de configuração do servidor' });
+      return;
+    }
     
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
 
@@ -193,7 +200,14 @@ export const optionalAuth = async (
     const token = authHeader && authHeader.split(' ')[1];
 
     if (token) {
-      const JWT_SECRET = process.env.JWT_SECRET || 'sispat-secret-key-dev';
+      const JWT_SECRET = process.env.JWT_SECRET;
+      
+      if (!JWT_SECRET) {
+        // Se JWT_SECRET não está configurado, pular autenticação opcional
+        next();
+        return;
+      }
+      
       const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
 
       const user = await prisma.user.findUnique({

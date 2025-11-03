@@ -94,22 +94,22 @@ export const patrimonioValidations = {
       .withMessage('Número do patrimônio deve ter 1 a 50 caracteres alfanuméricos'),
     
     body('descricao_bem')
-      .isLength({ min: 1, max: 500 })
-      .withMessage('Descrição deve ter entre 1 e 500 caracteres'),
+      .isLength({ min: 3, max: 200 })
+      .withMessage('Descrição deve ter entre 3 e 200 caracteres'),
     
     body('tipo')
-      .isLength({ min: 1, max: 100 })
-      .withMessage('Tipo deve ter entre 1 e 100 caracteres'),
+      .isLength({ min: 1, max: 50 })
+      .withMessage('Tipo deve ter entre 1 e 50 caracteres'),
     
     body('marca')
       .optional()
-      .isLength({ max: 100 })
-      .withMessage('Marca deve ter no máximo 100 caracteres'),
+      .isLength({ max: 50 })
+      .withMessage('Marca deve ter no máximo 50 caracteres'),
     
     body('modelo')
       .optional()
-      .isLength({ max: 100 })
-      .withMessage('Modelo deve ter no máximo 100 caracteres'),
+      .isLength({ max: 50 })
+      .withMessage('Modelo deve ter no máximo 50 caracteres'),
     
     body('data_aquisicao')
       .isISO8601()
@@ -132,8 +132,9 @@ export const patrimonioValidations = {
       .withMessage('Local do objeto deve ter entre 1 e 100 caracteres'),
     
     body('situacao_bem')
-      .isIn(['bom', 'regular', 'ruim', 'pessimo'])
-      .withMessage('Situação deve ser: bom, regular, ruim ou pessimo'),
+      .optional()
+      .isIn(['otimo', 'bom', 'regular', 'ruim', 'pessimo'])
+      .withMessage('Situação deve ser: otimo, bom, regular, ruim ou pessimo'),
     
     body('observacoes')
       .optional()
@@ -163,23 +164,23 @@ export const patrimonioValidations = {
     
     body('descricao_bem')
       .optional()
-      .isLength({ min: 1, max: 500 })
-      .withMessage('Descrição deve ter entre 1 e 500 caracteres'),
+      .isLength({ min: 3, max: 200 })
+      .withMessage('Descrição deve ter entre 3 e 200 caracteres'),
     
     body('tipo')
       .optional()
-      .isLength({ min: 1, max: 100 })
-      .withMessage('Tipo deve ter entre 1 e 100 caracteres'),
+      .isLength({ min: 1, max: 50 })
+      .withMessage('Tipo deve ter entre 1 e 50 caracteres'),
     
     body('marca')
       .optional()
-      .isLength({ max: 100 })
-      .withMessage('Marca deve ter no máximo 100 caracteres'),
+      .isLength({ max: 50 })
+      .withMessage('Marca deve ter no máximo 50 caracteres'),
     
     body('modelo')
       .optional()
-      .isLength({ max: 100 })
-      .withMessage('Modelo deve ter no máximo 100 caracteres'),
+      .isLength({ max: 50 })
+      .withMessage('Modelo deve ter no máximo 50 caracteres'),
     
     body('data_aquisicao')
       .optional()
@@ -208,8 +209,8 @@ export const patrimonioValidations = {
     
     body('situacao_bem')
       .optional()
-      .isIn(['bom', 'regular', 'ruim', 'pessimo', 'baixado'])
-      .withMessage('Situação deve ser: bom, regular, ruim, pessimo ou baixado'),
+      .isIn(['otimo', 'bom', 'regular', 'ruim', 'pessimo'])
+      .withMessage('Situação deve ser: otimo, bom, regular, ruim ou pessimo'),
     
     body('observacoes')
       .optional()

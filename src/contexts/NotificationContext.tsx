@@ -8,15 +8,13 @@ import {
   useMemo,
 } from 'react'
 import { Notification } from '@/types'
-import { generateId } from '@/lib/utils'
 import { useAuth } from './AuthContext'
+import { api } from '@/services/api-adapter'
 
 interface NotificationContextType {
   notifications: Notification[]
   unreadCount: number
-  addNotification: (
-    notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>,
-  ) => void
+  addNotification: (notification: any) => void
   markAsRead: (notificationId: string) => void
   markAllAsRead: () => void
 }
@@ -27,27 +25,31 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [allNotifications, setAllNotifications] = useState<Notification[]>([])
   const { user } = useAuth()
 
-  useEffect(() => {
-    // In a real app, this would fetch from an API
-    const stored = localStorage.getItem('sispat_notifications')
-    if (stored) {
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const notifications = await api.get<any[]>('/notifications')
       setAllNotifications(
-        JSON.parse(stored).map((n: any) => ({
+        notifications.map((n: any) => ({
           ...n,
-          timestamp: new Date(n.timestamp),
+          title: n.titulo,
+          description: n.mensagem,
+          type: n.tipo,
+          timestamp: new Date(n.createdAt),
+          isRead: n.lida,
         })),
       )
+    } catch (error) {
+      // Silenciar erro se não houver notificações
     }
-  }, [])
+  }, [user])
 
-  const persist = (newNotifications: Notification[]) => {
-    // In a real app, this would be an API call
-    localStorage.setItem(
-      'sispat_notifications',
-      JSON.stringify(newNotifications),
-    )
-    setAllNotifications(newNotifications)
-  }
+  useEffect(() => {
+    if (user) {
+      fetchNotifications()
+    }
+  }, [user, fetchNotifications])
 
   const userNotifications = useMemo(() => {
     if (!user) return []
@@ -62,35 +64,53 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   )
 
   const addNotification = useCallback(
-    (notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => {
-      const newNotification: Notification = {
-        ...notification,
-        id: generateId(),
-        timestamp: new Date(),
-        isRead: false,
+    async (notification: any) => {
+      if (!user) return
+      
+      try {
+        // Converter do formato do frontend para o formato do backend
+        const payload = {
+          userId: user.id,
+          tipo: notification.type || notification.tipo,
+          titulo: notification.title || notification.titulo,
+          mensagem: notification.description || notification.mensagem,
+          link: notification.link || '',
       }
-      persist([...allNotifications, newNotification])
+        
+        await api.post('/notifications', payload)
+        await fetchNotifications()
+      } catch (error) {
+        // Silenciar erro
+      }
     },
-    [allNotifications],
+    [user, fetchNotifications],
   )
 
   const markAsRead = useCallback(
-    (notificationId: string) => {
-      const newNotifications = allNotifications.map((n) =>
-        n.id === notificationId ? { ...n, isRead: true } : n,
-      )
-      persist(newNotifications)
+    async (notificationId: string) => {
+      try {
+        await api.put(`/notifications/${notificationId}/mark-read`)
+        await fetchNotifications()
+      } catch (error) {
+        // Silenciar erro
+      }
     },
-    [allNotifications],
+    [fetchNotifications],
   )
 
-  const markAllAsRead = useCallback(() => {
+  const markAllAsRead = useCallback(
+    async () => {
     if (!user) return
-    const newNotifications = allNotifications.map((n) =>
-      n.userId === user.id ? { ...n, isRead: true } : n,
-    )
-    persist(newNotifications)
-  }, [allNotifications, user])
+      
+      try {
+        await api.put('/notifications/mark-all-read')
+        await fetchNotifications()
+      } catch (error) {
+        // Silenciar erro
+      }
+    },
+    [user, fetchNotifications],
+  )
 
   return (
     <NotificationContext.Provider
