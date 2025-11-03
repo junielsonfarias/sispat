@@ -100,7 +100,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const refreshToken = generateRefreshToken(user.id);
 
     // ✅ v2.0.7: Log de atividade com IP automático
-    await logActivity(req, 'LOGIN', 'USER', user.id, 'Login realizado com sucesso');
+    // ✅ CORREÇÃO: Passar userId explicitamente pois req.user ainda não está definido no login
+    await logActivity(req, 'LOGIN', 'USER', user.id, 'Login realizado com sucesso', user.id);
 
     // Resposta
     res.json({
