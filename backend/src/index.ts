@@ -329,14 +329,17 @@ async function startServer() {
   // Inicializar WebSocket
   webSocketManager.initialize(httpServer);
   
-  httpServer.listen(PORT, () => {
+  // Escutar em 0.0.0.0 para permitir conexões do Nginx
+  const HOST = process.env.HOST || '0.0.0.0';
+  
+  httpServer.listen(PORT, HOST, () => {
     logInfo('\n🚀 ================================');
     logInfo(`   SISPAT Backend API v2.1.0`);
     logInfo('   ================================');
-    logInfo(`   🌐 Servidor rodando em: http://localhost:${PORT}`);
-    logInfo(`   🔌 WebSocket ativo em: ws://localhost:${PORT}`);
-    logInfo(`   🏥 Health check: http://localhost:${PORT}/api/health`);
-    logInfo(`   📚 API Docs: http://localhost:${PORT}/api-docs`);
+    logInfo(`   🌐 Servidor rodando em: http://${HOST}:${PORT}`);
+    logInfo(`   🔌 WebSocket ativo em: ws://${HOST}:${PORT}`);
+    logInfo(`   🏥 Health check: http://${HOST}:${PORT}/api/health`);
+    logInfo(`   📚 API Docs: http://${HOST}:${PORT}/api-docs`);
     logInfo(`   🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
     logInfo('   ================================\n');
     
