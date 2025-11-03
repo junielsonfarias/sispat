@@ -353,7 +353,10 @@ fi
 
 # Configurar Nginx
 log "Configurando Nginx..."
-cat > /etc/nginx/sites-available/sispat <<EOF
+
+if [[ "$SETUP_SSL" =~ ^[Ss]$ ]]; then
+    # Configuração com SSL (será configurado pelo Certbot)
+    cat > /etc/nginx/sites-available/sispat <<EOF
 # Redirect HTTP to HTTPS
 server {
     listen 80;
@@ -369,11 +372,15 @@ server {
     }
 }
 
-# HTTPS server
+# HTTPS server (SSL será configurado pelo Certbot)
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
     server_name $DOMAIN;
+
+    # SSL (será configurado pelo Certbot)
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
 
     # Frontend
     root /var/www/sispat/dist;
@@ -419,14 +426,13 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
     
-    # SSL (will be configured by Certbot)
-    # ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-    
     client_max_body_size 10M;
 }
-
-# Fallback HTTP server (before SSL)
+EOF
+else
+    # Configuração sem SSL (apenas HTTP)
+    cat > /etc/nginx/sites-available/sispat <<EOF
+# HTTP server (sem SSL)
 server {
     listen 80;
     listen [::]:80;
@@ -437,24 +443,48 @@ server {
 
     location / {
         try_files \$uri \$uri/ /index.html;
+        
+        # Cache static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
     }
 
+    # Backend API
     location /api {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 
+    # Uploads
     location /uploads {
         alias /var/www/sispat/backend/uploads;
+        expires 1y;
+        add_header Cache-Control "public";
     }
 
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    
     client_max_body_size 10M;
 }
 EOF
+fi
 
 # Ativar site
 ln -sf /etc/nginx/sites-available/sispat /etc/nginx/sites-enabled/
