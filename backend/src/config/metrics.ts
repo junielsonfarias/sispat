@@ -217,8 +217,9 @@ export class MetricsCollector {
 
       try {
         // Verificar se a tabela existe para evitar logs de erro do Prisma
+        // Corrigir: fazer cast de regclass para text para evitar erro de deserialização
         const check: Array<{ regclass: string | null }> = await prisma.$queryRawUnsafe(
-          "SELECT to_regclass('public.documentos_gerais') as regclass"
+          "SELECT to_regclass('public.documentos_gerais')::text as regclass"
         )
         const tableExists = Array.isArray(check) && check[0] && check[0].regclass
 
