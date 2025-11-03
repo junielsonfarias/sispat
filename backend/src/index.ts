@@ -55,7 +55,7 @@ logInfo('✅ Aplicação Express criada');
 // ✅ Trust proxy para rate limiting funcionar corretamente atrás do Nginx
 app.set('trust proxy', 1);
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // ============================================
 // MIDDLEWARES GLOBAIS
@@ -332,7 +332,7 @@ async function startServer() {
   // Escutar em 0.0.0.0 para permitir conexões do Nginx
   const HOST = process.env.HOST || '0.0.0.0';
   
-  httpServer.listen(PORT, HOST, () => {
+  httpServer.listen(Number(PORT), HOST, () => {
     logInfo('\n🚀 ================================');
     logInfo(`   SISPAT Backend API v2.1.0`);
     logInfo('   ================================');
