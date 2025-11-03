@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { prisma } from '../index'
 import { z } from 'zod'
+import { logError, logInfo, logWarn, logDebug } from '../config/logger'
 
 // Schemas de validação
 const createFichaTemplateSchema = z.object({
@@ -88,11 +89,10 @@ export class FichaTemplateController {
         ]
       })
 
-      console.log('[FichaTemplateController] Templates encontrados:', templates.length)
-      console.log('[FichaTemplateController] Retornando:', JSON.stringify(templates))
+      logDebug('[FichaTemplateController] Templates encontrados', { count: templates.length })
       res.json(templates)
     } catch (error) {
-      console.error('Erro ao listar templates:', error)
+      logError('Erro ao listar templates', error, { municipalityId: req.user?.municipalityId })
       res.status(500).json({ error: 'Erro interno do servidor' })
     }
   }
@@ -125,7 +125,7 @@ export class FichaTemplateController {
 
       res.json(template)
     } catch (error) {
-      console.error('Erro ao obter template:', error)
+      logError('Erro ao obter template', error, { templateId: req.params.id })
       res.status(500).json({ error: 'Erro interno do servidor' })
     }
   }
@@ -176,7 +176,7 @@ export class FichaTemplateController {
           details: error.errors
         })
       }
-      console.error('Erro ao criar template:', error)
+      logError('Erro ao criar template', error, { userId: req.user?.userId, name: req.body.name })
       res.status(500).json({ error: 'Erro interno do servidor' })
     }
   }
@@ -240,7 +240,7 @@ export class FichaTemplateController {
           details: error.errors
         })
       }
-      console.error('Erro ao atualizar template:', error)
+      logError('Erro ao atualizar template', error, { templateId: req.params.id, userId: req.user?.userId })
       res.status(500).json({ error: 'Erro interno do servidor' })
     }
   }
@@ -286,7 +286,7 @@ export class FichaTemplateController {
 
       res.json({ message: 'Template definido como padrão com sucesso' })
     } catch (error) {
-      console.error('Erro ao definir template padrão:', error)
+      logError('Erro ao definir template padrão', error, { templateId: req.params.id, userId: req.user?.userId })
       res.status(500).json({ error: 'Erro interno do servidor' })
     }
   }
@@ -320,7 +320,7 @@ export class FichaTemplateController {
 
       res.json({ message: 'Template deletado com sucesso' })
     } catch (error) {
-      console.error('Erro ao deletar template:', error)
+      logError('Erro ao deletar template', error, { templateId: req.params.id, userId: req.user?.userId })
       res.status(500).json({ error: 'Erro interno do servidor' })
     }
   }
@@ -347,7 +347,7 @@ export class FichaTemplateController {
           name: `${originalTemplate.name} (Cópia)`,
           description: originalTemplate.description,
           type: originalTemplate.type,
-          config: originalTemplate.config,
+          config: originalTemplate.config as any, // Converter JsonValue para InputJsonValue
           municipalityId,
           createdBy: userId,
           isDefault: false // Cópia nunca é padrão
@@ -365,7 +365,7 @@ export class FichaTemplateController {
 
       res.status(201).json(duplicatedTemplate)
     } catch (error) {
-      console.error('Erro ao duplicar template:', error)
+      logError('Erro ao duplicar template', error, { templateId: req.params.id, userId: req.user?.userId })
       res.status(500).json({ error: 'Erro interno do servidor' })
     }
   }

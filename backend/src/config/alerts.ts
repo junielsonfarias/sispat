@@ -240,9 +240,14 @@ export class AlertManager {
     
     try {
       // Tentar obter do Redis primeiro
-      const cached = await this.redis.get(cacheKey)
-      if (cached) {
-        return parseFloat(cached)
+      if (this.redis && this.redis.status === 'ready') {
+        const cached = await this.redis.get(cacheKey)
+        if (cached) {
+          return parseFloat(cached)
+        }
+      } else {
+        // Se Redis não disponível, retornar 0
+        return 0
       }
 
       // Calcular métrica baseada no tipo
@@ -273,7 +278,9 @@ export class AlertManager {
       }
 
       // Cachear resultado
-      await this.redis.setex(cacheKey, timeWindow * 60, value.toString())
+      if (this.redis && this.redis.status === 'ready') {
+        await this.redis.setex(cacheKey, timeWindow * 60, value.toString())
+      }
       
       return value
     } catch (error) {
@@ -286,6 +293,10 @@ export class AlertManager {
    * Calcular taxa de erro
    */
   private async calculateErrorRate(timeWindow: number): Promise<number> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return 0
+    }
+    
     const since = new Date(Date.now() - timeWindow * 60 * 1000)
     
     const totalRequests = await this.redis.get(`metrics:total_requests:${timeWindow}`) || '0'
@@ -301,6 +312,10 @@ export class AlertManager {
    * Calcular tempo médio de resposta
    */
   private async calculateAvgResponseTime(timeWindow: number): Promise<number> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return 0
+    }
+    
     const cacheKey = `metrics:avg_response_time:${timeWindow}`
     const cached = await this.redis.get(cacheKey)
     
@@ -327,6 +342,10 @@ export class AlertManager {
    * Obter erros de conexão com banco
    */
   private async getDatabaseConnectionErrors(timeWindow: number): Promise<number> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return 0
+    }
+    
     const cacheKey = `metrics:db_errors:${timeWindow}`
     return parseInt(await this.redis.get(cacheKey) || '0')
   }
@@ -335,6 +354,10 @@ export class AlertManager {
    * Obter tentativas de login falhadas
    */
   private async getFailedLogins(timeWindow: number): Promise<number> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return 0
+    }
+    
     const cacheKey = `metrics:failed_logins:${timeWindow}`
     return parseInt(await this.redis.get(cacheKey) || '0')
   }
@@ -343,6 +366,10 @@ export class AlertManager {
    * Obter hits de rate limit
    */
   private async getRateLimitHits(timeWindow: number): Promise<number> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return 0
+    }
+    
     const cacheKey = `metrics:rate_limit_hits:${timeWindow}`
     return parseInt(await this.redis.get(cacheKey) || '0')
   }
@@ -367,6 +394,10 @@ export class AlertManager {
    * Disparar alerta
    */
   private async triggerAlert(alert: AlertConfig): Promise<void> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return
+    }
+    
     const alertKey = `alert:${alert.id}`
     const isActive = await this.redis.exists(alertKey)
     
@@ -395,6 +426,10 @@ export class AlertManager {
    * Resolver alerta
    */
   private async resolveAlert(alertId: string): Promise<void> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return
+    }
+    
     const alertKey = `alert:${alertId}`
     const isActive = await this.redis.exists(alertKey)
     

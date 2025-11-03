@@ -72,9 +72,6 @@ const BensEdit = () => {
         const response = await fetchPatrimonioById(id)
         const data = response.patrimonio || response
         
-        // ✅ DEBUG: Log da resposta completa
-        console.log('Resposta completa da API:', JSON.stringify(response, null, 2))
-        
         if (!data) {
           toast({
             variant: 'destructive',
@@ -86,26 +83,6 @@ const BensEdit = () => {
         }
         
         setPatrimonio(data)
-        
-        // ✅ DEBUG: Log dos dados do patrimônio
-        console.log('Dados do patrimônio carregado:', JSON.stringify(data, null, 2))
-        console.log('Relacionamentos:', {
-          sector: data.sector,
-          local: data.local,
-          tipoBem: data.tipoBem,
-          acquisitionForm: data.acquisitionForm
-        })
-        
-        console.log('📸 DEBUG - Fotos do backend:', {
-          fotos: data.fotos,
-          fotosType: typeof data.fotos,
-          fotosLength: data.fotos?.length,
-          fotosDetalhes: data.fotos?.map((f: any, i: number) => ({
-            index: i,
-            tipo: typeof f,
-            valor: f,
-          })),
-        })
         
         // ✅ CORREÇÃO: Converter strings de URLs para objetos que ImageUpload espera
         const fotosParaForm = (data.fotos || data.photos || []).map((foto: any, index: number) => {
@@ -119,8 +96,6 @@ const BensEdit = () => {
           }
           return foto // Já é objeto
         })
-        
-        console.log('📸 DEBUG - Fotos convertidas para form:', fotosParaForm)
         
         form.reset({
           ...data,
@@ -137,6 +112,8 @@ const BensEdit = () => {
           local_objeto: data.local?.name || data.local_objeto || '',
           tipo: data.tipoBem?.nome || data.tipo || '',
           forma_aquisicao: data.acquisitionForm?.nome || data.forma_aquisicao || '',
+          numero_licitacao: data.numero_licitacao || '',
+          ano_licitacao: data.ano_licitacao,
         })
       } catch (error) {
         console.error('Erro ao carregar patrimônio:', error)
@@ -185,51 +162,13 @@ const BensEdit = () => {
   const status = form.watch('status')
 
   const onSubmit = async (data: PatrimonioFormValues) => {
-    console.log('🎯 onSubmit CHAMADO! Data:', data)
-    console.log('👤 User:', user)
-    console.log('📦 Patrimonio:', patrimonio)
-    
     if (!user || !patrimonio) {
-      console.error('❌ Bloqueado: user ou patrimonio ausente')
       return
     }
     
     setIsLoading(true)
-    console.log('⏳ Loading iniciado')
 
     try {
-      // ✅ DEBUG: Log completo dos dados do formulário
-      console.log('📝 DEBUG - Dados do formulário recebidos:', {
-        ...data,
-        fotos: data.fotos,
-        fotosLength: data.fotos?.length,
-        fotosType: typeof data.fotos,
-        fotosExpandido: data.fotos?.map((f: any, i: number) => ({
-          index: i,
-          tipo: typeof f,
-          isString: typeof f === 'string',
-          isObject: typeof f === 'object',
-          valor: f,
-          file_url: f?.file_url,
-        })),
-      })
-      console.log('📸 FOTOS ATUAIS DO PATRIMONIO:', patrimonio.fotos)
-      
-      // ✅ DEBUG: Log das informações do usuário e patrimônio
-      console.log('🔍 DEBUG - Informações do usuário:', {
-        id: user.id,
-        role: user.role,
-        email: user.email,
-        responsibleSectors: user.responsibleSectors,
-        municipalityId: user.municipalityId
-      })
-      console.log('🔍 DEBUG - Informações do patrimônio:', {
-        id: patrimonio.id,
-        sectorId: patrimonio.sectorId,
-        setor_responsavel: patrimonio.setor_responsavel,
-        municipalityId: patrimonio.municipalityId,
-        fotosAtuais: patrimonio.fotos,
-      })
       // Encontrar o setor pelo nome para pegar o ID
       const sectorData = sectors.find((s) => s.name === data.setor_responsavel)
       const sectorId = sectorData?.id || patrimonio.sectorId
@@ -263,6 +202,8 @@ const BensEdit = () => {
         quantidade: data.quantidade,
         numero_nota_fiscal: data.numero_nota_fiscal,
         forma_aquisicao: data.forma_aquisicao,
+        numero_licitacao: data.numero_licitacao,
+        ano_licitacao: data.ano_licitacao,
         setor_responsavel: data.setor_responsavel,
         local_objeto: data.local_objeto,
         status: data.status,
@@ -319,23 +260,10 @@ const BensEdit = () => {
         updatedBy: patrimonio.updatedBy,
       } as Patrimonio
 
-      // ✅ DEBUG: Log dos dados antes do envio
-      console.log('📤 DEBUG - Dados que serão enviados para atualização:', {
-        ...updatedPatrimonio,
-        fotos: updatedPatrimonio.fotos,
-        fotosLength: updatedPatrimonio.fotos?.length,
-        fotosType: updatedPatrimonio.fotos?.map((f: any) => typeof f),
-        fotosValor: updatedPatrimonio.fotos,
-      })
-      console.log('🔑 DEBUG - IDs encontrados:', { sectorId, localId, tipoId, acquisitionFormId })
-
-      console.log('🚀 DEBUG - Chamando updatePatrimonio...')
       await updatePatrimonio(updatedPatrimonio)
-      console.log('✅ DEBUG - updatePatrimonio concluído com sucesso!')
       
       // Forçar atualização dos dados no contexto
       if (id) {
-        console.log('🔄 Recarregando dados atualizados do backend...')
         await fetchPatrimonioById(id)
       }
       
@@ -390,31 +318,9 @@ const BensEdit = () => {
       <Form {...form}>
         <form 
           onSubmit={(e) => {
-            console.log('📤 Form submit event triggered')
-            console.log('🔍 Form errors:', form.formState.errors)
-            console.log('✅ Form isValid:', form.formState.isValid)
-            console.log('📋 Form values:', form.getValues())
-            console.log('🔴 Form dirtyFields:', form.formState.dirtyFields)
-            console.log('🔴 Form touchedFields:', form.formState.touchedFields)
-            
-            // Verificar campos específicos que podem estar causando problema
-            const values = form.getValues()
-            console.log('🔎 Verificação de campos críticos:', {
-              numero_patrimonio: values.numero_patrimonio,
-              descricao_bem: values.descricao_bem,
-              tipo: values.tipo,
-              setor_responsavel: values.setor_responsavel,
-              data_aquisicao: values.data_aquisicao,
-              valor_aquisicao: values.valor_aquisicao,
-            })
-            
             form.handleSubmit(
               onSubmit,
               (errors) => {
-                console.error('❌ Erros de validação detalhados:', errors)
-                console.error('❌ motivo_baixa error:', errors.motivo_baixa)
-                console.error('❌ Todos os erros expandidos:', JSON.stringify(errors, null, 2))
-                
                 // Mostrar toast com os erros encontrados
                 const errorFields = Object.keys(errors)
                 if (errorFields.length > 0) {
@@ -587,6 +493,45 @@ const BensEdit = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Campos opcionais de Aquisição */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="numero_licitacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Referência</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Ex: 001/2025" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="ano_licitacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ano de Referência</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                          placeholder="Ex: 2025"
+                          min="2000"
+                          max="2100"
+                          value={field.value || ''}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

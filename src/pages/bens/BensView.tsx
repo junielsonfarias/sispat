@@ -38,6 +38,14 @@ import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { toast } from '@/hooks/use-toast'
 import { LabelPreview } from '@/components/LabelPreview'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { SubPatrimoniosManager } from '@/components/bens/SubPatrimoniosManager'
 import {
   Carousel,
@@ -104,6 +112,12 @@ function BensView() {
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false)
   const [selectedLabelTemplate, setSelectedLabelTemplate] = useState<any>(null)
   const labelPrintRef = useRef<HTMLDivElement>(null)
+  const [labelPrintOptions, setLabelPrintOptions] = useState({
+    copies: 1,
+    showCutGuides: true,
+    showBorders: false,
+    orientation: 'portrait' as 'portrait' | 'landscape',
+  })
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [isBaixaModalOpen, setIsBaixaModalOpen] = useState(false)
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false)
@@ -116,33 +130,78 @@ function BensView() {
       // Buscar template padrão ou usar o primeiro
       const defaultTemplate = labelTemplates.find(t => t.isDefault) || labelTemplates[0]
       setSelectedLabelTemplate(defaultTemplate)
-      console.log('✅ Template padrão selecionado automaticamente:', defaultTemplate?.name)
+      if (import.meta.env.DEV) {
+        console.log('✅ Template padrão selecionado automaticamente:', defaultTemplate?.name)
+      }
     }
   }, [isLabelDialogOpen, labelTemplates, selectedLabelTemplate])
+
+  // ✅ Atalhos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+P ou Cmd+P: Abrir impressão de etiqueta
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p' && patrimonio && !isLabelDialogOpen) {
+        e.preventDefault()
+        setIsLabelDialogOpen(true)
+        return
+      }
+
+      // Esc: Fechar diálogos
+      if (e.key === 'Escape') {
+        if (isLabelDialogOpen) {
+          setIsLabelDialogOpen(false)
+        }
+        if (isPrintDialogOpen) {
+          setIsPrintDialogOpen(false)
+        }
+      }
+
+      // Enter: Imprimir quando no diálogo de etiqueta (se template selecionado)
+      if (e.key === 'Enter' && isLabelDialogOpen && selectedLabelTemplate && patrimonio && e.target instanceof HTMLElement && !['TEXTAREA', 'INPUT'].includes(e.target.tagName)) {
+        e.preventDefault()
+        // Trigger print button click
+        const printButton = document.querySelector('[data-print-label-btn]') as HTMLButtonElement
+        if (printButton) {
+          printButton.click()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [patrimonio, isLabelDialogOpen, isPrintDialogOpen, selectedLabelTemplate])
 
   const loadPatrimonio = useCallback(async () => {
     if (!id) return
     
     setIsLoading(true)
     try {
-      console.log('🔄 BensView - Carregando patrimônio do backend:', id)
+      if (import.meta.env.DEV) {
+        console.log('🔄 BensView - Carregando patrimônio do backend:', id)
+      }
       // Buscar sempre do backend para garantir dados atualizados
       const response = await fetchPatrimonioById(id)
       const data = response.patrimonio || response
-      console.log('✅ BensView - Patrimônio carregado:', {
-        id: data.id,
-        fotos: data.fotos,
-        fotosLength: data.fotos?.length,
-        fotosDetalhes: data.fotos?.map((f: any, i: number) => ({
-          index: i,
-          tipo: typeof f,
-          valor: f,
-        })),
-      })
+      if (import.meta.env.DEV) {
+        console.log('✅ BensView - Patrimônio carregado:', {
+          id: data.id,
+          fotos: data.fotos,
+          fotosLength: data.fotos?.length,
+          fotosDetalhes: data.fotos?.map((f: any, i: number) => ({
+            index: i,
+            tipo: typeof f,
+            valor: f,
+          })),
+        })
+      }
       setPatrimonio(data)
-      console.log('📦 BensView - Estado patrimonio atualizado')
+      if (import.meta.env.DEV) {
+        console.log('📦 BensView - Estado patrimonio atualizado')
+      }
     } catch (error) {
-      console.error('Erro ao carregar patrimônio:', error)
+      if (import.meta.env.DEV) {
+        console.error('Erro ao carregar patrimônio:', error)
+      }
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -160,8 +219,10 @@ function BensView() {
   const handleSaveNote = async () => {
     if (!patrimonio || !newNote.trim()) return
 
-    console.log('🔍 [DEBUG] Salvando nota para patrimônio:', patrimonio.id)
-    console.log('🔍 [DEBUG] Texto da nota:', newNote.trim())
+    if (import.meta.env.DEV) {
+      console.log('🔍 [DEBUG] Salvando nota para patrimônio:', patrimonio.id)
+      console.log('🔍 [DEBUG] Texto da nota:', newNote.trim())
+    }
 
     setIsSavingNote(true)
     try {
@@ -170,12 +231,16 @@ function BensView() {
         text: newNote.trim()
       })
 
-      console.log('✅ [DEBUG] Resposta da API:', response)
+      if (import.meta.env.DEV) {
+        console.log('✅ [DEBUG] Resposta da API:', response)
+      }
 
       // Extrair nota da resposta
       const noteData = response.note || response
 
-      console.log('🔍 [DEBUG] Dados da nota extraídos:', noteData)
+      if (import.meta.env.DEV) {
+        console.log('🔍 [DEBUG] Dados da nota extraídos:', noteData)
+      }
 
       // ✅ CORREÇÃO: Mapear campos corretamente do backend para o frontend
       const newNoteObj: Note = {
@@ -186,17 +251,21 @@ function BensView() {
         userName: noteData.userName, // Backend usa 'userName', não 'author'
       }
 
-      console.log('✅ [DEBUG] Objeto nota mapeado:', newNoteObj)
+      if (import.meta.env.DEV) {
+        console.log('✅ [DEBUG] Objeto nota mapeado:', newNoteObj)
+      }
 
       const updatedPatrimonio = {
         ...patrimonio,
         notes: [...(patrimonio.notes || []), newNoteObj],
       }
 
-      console.log('✅ [DEBUG] Patrimônio atualizado:', {
-        id: updatedPatrimonio.id,
-        notasCount: updatedPatrimonio.notes?.length || 0
-      })
+      if (import.meta.env.DEV) {
+        console.log('✅ [DEBUG] Patrimônio atualizado:', {
+          id: updatedPatrimonio.id,
+          notasCount: updatedPatrimonio.notes?.length || 0
+        })
+      }
 
       setPatrimonio(updatedPatrimonio)
       setNewNote('')
@@ -206,11 +275,13 @@ function BensView() {
         description: 'A nota foi salva com sucesso.',
       })
     } catch (error) {
-      console.error('❌ [ERROR] Erro ao salvar nota:', error)
-      console.error('❌ [ERROR] Detalhes do erro:', {
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        response: error.response?.data || 'N/A'
-      })
+      if (import.meta.env.DEV) {
+        console.error('❌ [ERROR] Erro ao salvar nota:', error)
+        console.error('❌ [ERROR] Detalhes do erro:', {
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
+          response: error.response?.data || 'N/A'
+        })
+      }
       
       toast({
         variant: 'destructive',
@@ -230,7 +301,9 @@ function BensView() {
       await deletePatrimonio(patrimonio.id)
       navigate('/bens-cadastrados')
     } catch (error) {
-      console.error('Erro ao excluir patrimônio:', error)
+      if (import.meta.env.DEV) {
+        console.error('Erro ao excluir patrimônio:', error)
+      }
     } finally {
       setIsDeleting(false)
     }
@@ -248,13 +321,15 @@ function BensView() {
   const handleGeneratePDF = async (selectedSections: string[], templateId?: string) => {
     if (!patrimonio) return
     
-    console.log('🔍 [BensView] handleGeneratePDF chamado:', {
-      patrimonioId: patrimonio.id,
-      numeroPatrimonio: patrimonio.numero_patrimonio,
-      templateId,
-      selectedSections,
-      sectionsCount: selectedSections.length
-    })
+    if (import.meta.env.DEV) {
+      console.log('🔍 [BensView] handleGeneratePDF chamado:', {
+        patrimonioId: patrimonio.id,
+        numeroPatrimonio: patrimonio.numero_patrimonio,
+        templateId,
+        selectedSections,
+        sectionsCount: selectedSections.length
+      })
+    }
     
     setIsGeneratingPDF(true)
     
@@ -277,7 +352,9 @@ function BensView() {
         throw new Error('Falha ao gerar PDF')
       }
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error)
+      if (import.meta.env.DEV) {
+        console.error('Erro ao gerar PDF:', error)
+      }
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -307,7 +384,9 @@ function BensView() {
         logoUrl
       })
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error)
+      if (import.meta.env.DEV) {
+        console.error('Erro ao gerar PDF:', error)
+      }
       // Fallback para impressão tradicional se PDF falhar
       setTimeout(() => {
         const printElement = document.getElementById('printable-content')
@@ -489,11 +568,13 @@ function BensView() {
                       <CarouselContent>
                         {(() => {
                           const fotos = patrimonio.fotos || patrimonio.photos
-                          console.log('🖼️ Renderizando carrossel com fotos:', {
-                            total: fotos.length,
-                            fotos: fotos,
-                            tipos: fotos.map((f: any) => typeof f),
-                          })
+                          if (import.meta.env.DEV) {
+                            console.log('🖼️ Renderizando carrossel com fotos:', {
+                              total: fotos.length,
+                              fotos: fotos,
+                              tipos: fotos.map((f: any) => typeof f),
+                            })
+                          }
                           // ✅ CORREÇÃO: Converter objetos { id, file_url } para URLs/IDs
                           return fotos.map((foto: any) => {
                             if (typeof foto === 'object' && foto?.file_url) {
@@ -512,7 +593,9 @@ function BensView() {
                                 alt={`${patrimonio.descricao_bem || patrimonio.descricaoBem} - Foto ${index + 1}`}
                                 className="rounded-lg object-contain w-full h-full max-h-[600px]"
                                 onError={(e) => {
-                                  console.error('❌ Erro ao carregar foto:', fotoId)
+                                  if (import.meta.env.DEV) {
+                                    console.error('❌ Erro ao carregar foto:', fotoId)
+                                  }
                                   const target = e.target as HTMLImageElement
                                   target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f1f5f9" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%2394a3b8" font-size="14"%3EErro ao carregar imagem%3C/text%3E%3C/svg%3E'
                                 }}
@@ -631,6 +714,27 @@ function BensView() {
                     label="Forma de Aquisição" 
                     value={patrimonio.forma_aquisicao || patrimonio.formaAquisicao} 
                   />
+                  {/* Exibir informações de referência se disponíveis */}
+                  {patrimonio.numero_licitacao && (
+                    <DetailItem 
+                      label="Número de Referência" 
+                      value={
+                        <span className="text-blue-700 font-medium">
+                          {patrimonio.numero_licitacao}
+                        </span>
+                      } 
+                    />
+                  )}
+                  {patrimonio.ano_licitacao && (
+                    <DetailItem 
+                      label="Ano de Referência" 
+                      value={
+                        <span className="text-blue-700 font-medium">
+                          {patrimonio.ano_licitacao}
+                        </span>
+                      } 
+                    />
+                  )}
                   {depreciationData && (
                     <>
                       <DetailItem 
@@ -905,8 +1009,80 @@ function BensView() {
                         template={selectedLabelTemplate}
                       />
                     </div>
+                    {/* Opções Avançadas de Impressão */}
+                    <div className="mt-4 space-y-3 border-t pt-4">
+                      <h4 className="text-sm font-medium">Opções de Impressão</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs text-gray-600">Número de Cópias</label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={labelPrintOptions.copies}
+                            onChange={(e) =>
+                              setLabelPrintOptions((prev) => ({
+                                ...prev,
+                                copies: Math.max(1, parseInt(e.target.value) || 1),
+                              }))
+                            }
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-600">Orientação</label>
+                          <Select
+                            value={labelPrintOptions.orientation}
+                            onValueChange={(value: 'portrait' | 'landscape') =>
+                              setLabelPrintOptions((prev) => ({ ...prev, orientation: value }))
+                            }
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="portrait">Retrato</SelectItem>
+                              <SelectItem value="landscape">Paisagem</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="cut-guides"
+                            checked={labelPrintOptions.showCutGuides}
+                            onChange={(e) =>
+                              setLabelPrintOptions((prev) => ({ ...prev, showCutGuides: e.target.checked }))
+                            }
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor="cut-guides" className="text-sm cursor-pointer">
+                            Mostrar Guias de Corte
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="borders"
+                            checked={labelPrintOptions.showBorders}
+                            onChange={(e) =>
+                              setLabelPrintOptions((prev) => ({ ...prev, showBorders: e.target.checked }))
+                            }
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor="borders" className="text-sm cursor-pointer">
+                            Mostrar Bordas
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="flex justify-center gap-2 mt-4">
-                      <Button onClick={async () => {
+                      <Button 
+                        data-print-label-btn
+                        onClick={async () => {
                         if (!selectedLabelTemplate || !patrimonio) {
                           toast({
                             variant: 'destructive',
@@ -933,59 +1109,113 @@ function BensView() {
                               printWindow.document.head.appendChild(el.cloneNode(true))
                             })
                           
-                          // Adicionar estilos de impressão específicos para etiquetas
+                          // ✅ AJUSTE: Estilos de impressão para A4 com etiqueta no topo (sem desperdício de papel)
+                          // Suporta múltiplas cópias e opções avançadas
+                          const orientationStyle = labelPrintOptions.orientation === 'landscape' 
+                            ? 'size: A4 landscape;' 
+                            : 'size: A4;'
+                          const pageWidth = labelPrintOptions.orientation === 'landscape' ? 297 : 210
+                          const pageHeight = labelPrintOptions.orientation === 'landscape' ? 210 : 297
+                          
                           printWindow.document.write(`
                             <style>
                               @media print {
                                 @page { 
-                                  size: ${selectedLabelTemplate.width}mm ${selectedLabelTemplate.height}mm;
+                                  ${orientationStyle}
                                   margin: 0;
+                                }
+                                * {
+                                  margin: 0;
+                                  padding: 0;
+                                  box-sizing: border-box;
                                 }
                                 body { 
                                   margin: 0;
                                   padding: 0;
-                                  display: flex;
-                                  align-items: center;
-                                  justify-content: center;
+                                  width: ${pageWidth}mm;
+                                  min-height: ${pageHeight}mm;
+                                  position: relative;
                                   -webkit-print-color-adjust: exact !important;
                                   print-color-adjust: exact !important;
+                                }
+                                .labels-container {
+                                  display: flex;
+                                  flex-direction: column;
+                                  gap: 5mm;
+                                  padding: 5mm;
                                 }
                                 .label-print-container {
                                   width: ${selectedLabelTemplate.width}mm;
                                   height: ${selectedLabelTemplate.height}mm;
+                                  position: relative;
                                   overflow: hidden;
+                                  page-break-inside: avoid;
+                                  ${labelPrintOptions.showBorders ? 'border: 1px solid #ccc;' : ''}
+                                  ${labelPrintOptions.showCutGuides ? 'border: 1px dashed #999;' : ''}
+                                }
+                              }
+                              @media screen {
+                                body {
+                                  width: ${pageWidth}mm;
+                                  min-height: ${pageHeight}mm;
+                                  margin: 20px auto;
+                                  padding: 0;
+                                  background: #f0f0f0;
+                                }
+                                .labels-container {
+                                  display: flex;
+                                  flex-direction: column;
+                                  gap: 5mm;
+                                  padding: 5mm;
+                                  background: white;
+                                }
+                                .label-print-container {
+                                  width: ${selectedLabelTemplate.width}mm;
+                                  height: ${selectedLabelTemplate.height}mm;
+                                  position: relative;
+                                  background: white;
+                                  ${labelPrintOptions.showBorders ? 'border: 1px solid #ccc;' : ''}
+                                  ${labelPrintOptions.showCutGuides ? 'border: 1px dashed #999;' : ''}
+                                  box-shadow: 0 0 10px rgba(0,0,0,0.1);
                                 }
                               }
                             </style>
                           `)
                           
                           printWindow.document.write('</head><body>')
-                          printWindow.document.write('<div class="label-print-container">')
+                          printWindow.document.write('<div class="labels-container">')
                           
-                          // ✅ CORREÇÃO: Verificar se o ref existe e tem conteúdo
-                          if (labelPrintRef.current) {
-                            printWindow.document.write(labelPrintRef.current.outerHTML)
-                          } else {
-                            // Fallback: criar HTML manualmente se ref não estiver disponível
-                            printWindow.document.write(`
-                              <div style="width: ${selectedLabelTemplate.width * 4}px; height: ${selectedLabelTemplate.height * 4}px; position: relative; background: white;">
-                                ${selectedLabelTemplate.elements.map((el: any) => {
-                                  let content = ''
-                                  if (el.type === 'LOGO') {
-                                    content = `<img src="${settings?.activeLogoUrl || ''}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`
-                                  } else if (el.type === 'PATRIMONIO_FIELD') {
-                                    content = String(patrimonio[el.content as keyof typeof patrimonio] || '')
-                                  } else if (el.type === 'TEXT') {
-                                    content = el.content || ''
-                                  }
-                                  return `
-                                    <div style="position: absolute; left: ${el.x}%; top: ${el.y}%; width: ${el.width}%; height: ${el.height}%; font-size: ${el.fontSize}px; font-weight: ${el.fontWeight}; text-align: ${el.textAlign};">
-                                      ${content}
-                                    </div>
-                                  `
-                                }).join('')}
-                              </div>
-                            `)
+                          // Imprimir múltiplas cópias
+                          for (let copy = 0; copy < labelPrintOptions.copies; copy++) {
+                            printWindow.document.write('<div class="label-print-container">')
+                            
+                            // ✅ CORREÇÃO: Verificar se o ref existe e tem conteúdo
+                            if (labelPrintRef.current) {
+                              printWindow.document.write(labelPrintRef.current.innerHTML)
+                            } else {
+                              // Fallback: criar HTML manualmente se ref não estiver disponível
+                              printWindow.document.write(`
+                                <div style="width: ${selectedLabelTemplate.width * 4}px; height: ${selectedLabelTemplate.height * 4}px; position: relative; background: white;">
+                                  ${selectedLabelTemplate.elements.map((el: any) => {
+                                    let content = ''
+                                    if (el.type === 'LOGO') {
+                                      content = `<img src="${settings?.activeLogoUrl || ''}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`
+                                    } else if (el.type === 'PATRIMONIO_FIELD') {
+                                      content = String(patrimonio[el.content as keyof typeof patrimonio] || '')
+                                    } else if (el.type === 'TEXT') {
+                                      content = el.content || ''
+                                    }
+                                    return `
+                                      <div style="position: absolute; left: ${el.x}%; top: ${el.y}%; width: ${el.width}%; height: ${el.height}%; font-size: ${el.fontSize}px; font-weight: ${el.fontWeight}; text-align: ${el.textAlign};">
+                                        ${content}
+                                      </div>
+                                    `
+                                  }).join('')}
+                                </div>
+                              `)
+                            }
+                            
+                            printWindow.document.write('</div>')
                           }
                           
                           printWindow.document.write('</div>')

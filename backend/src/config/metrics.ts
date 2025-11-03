@@ -389,6 +389,16 @@ export class MetricsCollector {
    * Armazenar métricas no Redis
    */
   private async storeMetricsInRedis(metrics: SystemMetrics): Promise<void> {
+    // Armazenar em memória sempre
+    this.metricsHistory.push(metrics)
+    if (this.metricsHistory.length > this.maxHistorySize) {
+      this.metricsHistory.shift()
+    }
+    
+    if (!this.redis || this.redis.status !== 'ready') {
+      return
+    }
+    
     try {
       await this.redis.setex('metrics:system:latest', 60, JSON.stringify(metrics))
       await this.redis.lpush('metrics:system:history', JSON.stringify(metrics))
@@ -402,12 +412,17 @@ export class MetricsCollector {
    * Obter métricas atuais do sistema
    */
   async getCurrentSystemMetrics(): Promise<SystemMetrics | null> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      // Retornar última métrica da memória se Redis não disponível
+      return this.metricsHistory.length > 0 ? this.metricsHistory[this.metricsHistory.length - 1] : null
+    }
+    
     try {
       const cached = await this.redis.get('metrics:system:latest')
-      return cached ? JSON.parse(cached) : null
+      return cached ? JSON.parse(cached) : (this.metricsHistory.length > 0 ? this.metricsHistory[this.metricsHistory.length - 1] : null)
     } catch (error) {
       logError('Erro ao obter métricas atuais', { error })
-      return null
+      return this.metricsHistory.length > 0 ? this.metricsHistory[this.metricsHistory.length - 1] : null
     }
   }
 
@@ -415,6 +430,10 @@ export class MetricsCollector {
    * Obter métricas atuais da aplicação
    */
   async getCurrentApplicationMetrics(): Promise<ApplicationMetrics | null> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return null
+    }
+    
     try {
       const cached = await this.redis.get('metrics:application')
       return cached ? JSON.parse(cached) : null
@@ -428,12 +447,16 @@ export class MetricsCollector {
    * Obter histórico de métricas
    */
   async getMetricsHistory(limit: number = 100): Promise<SystemMetrics[]> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return this.metricsHistory.slice(-limit)
+    }
+    
     try {
       const history = await this.redis.lrange('metrics:system:history', 0, limit - 1)
       return history.map(item => JSON.parse(item))
     } catch (error) {
       logError('Erro ao obter histórico de métricas', { error })
-      return []
+      return this.metricsHistory.slice(-limit)
     }
   }
 
@@ -516,6 +539,10 @@ export class MetricsCollector {
    * Incrementar contador de métrica
    */
   async incrementMetric(metric: string, value: number = 1, ttl: number = 300): Promise<void> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return
+    }
+    
     try {
       const key = `metrics:${metric}:5` // 5 minutos
       await this.redis.incrby(key, value)
@@ -529,6 +556,10 @@ export class MetricsCollector {
    * Definir valor de métrica
    */
   async setMetric(metric: string, value: number, ttl: number = 300): Promise<void> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return
+    }
+    
     try {
       const key = `metrics:${metric}:5`
       await this.redis.setex(key, ttl, value.toString())

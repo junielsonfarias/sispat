@@ -96,12 +96,12 @@ export class QueryOptimizer {
   /**
    * Aplica ordenação otimizada
    */
-  static applyOrdering(orderBy?: string, orderDirection: 'asc' | 'desc' = 'desc') {
-    if (!orderBy) return { createdAt: 'desc' }
+  static applyOrdering(orderBy?: string, orderDirection: 'asc' | 'desc' = 'desc'): Record<string, 'asc' | 'desc'> {
+    if (!orderBy) return { createdAt: 'desc' as const }
     
     return {
       [orderBy]: orderDirection
-    }
+    } as Record<string, 'asc' | 'desc'>
   }
 
   /**

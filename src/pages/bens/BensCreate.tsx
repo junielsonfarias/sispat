@@ -42,11 +42,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { generatePatrimonialNumber } from '@/lib/asset-utils'
-import { patrimonioBaseSchema } from '@/lib/validations/patrimonioSchema'
+import { patrimonioCreateSchema } from '@/lib/validations/patrimonioSchema'
 import { Label } from '@/components/ui/label'
 import { generateSubPatrimonios } from '@/lib/sub-patrimonio-utils'
 
-type PatrimonioFormValues = z.infer<typeof patrimonioBaseSchema>
+type PatrimonioFormValues = z.infer<typeof patrimonioCreateSchema>
 
 const BensCreate = () => {
   const navigate = useNavigate()
@@ -81,7 +81,7 @@ const BensCreate = () => {
   )
 
   const form = useForm<PatrimonioFormValues>({
-    resolver: zodResolver(patrimonioBaseSchema),
+    resolver: zodResolver(patrimonioCreateSchema),
     mode: 'onTouched',
     defaultValues: {
       descricao_bem: '',
@@ -95,6 +95,8 @@ const BensCreate = () => {
       quantidade: 1,
       numero_nota_fiscal: '',
       forma_aquisicao: '',
+      numero_licitacao: '',
+      ano_licitacao: undefined,
       setor_responsavel: isSectorDisabled ? allowedSectors[0].label : '',
       local_objeto: '',
       situacao_bem: undefined,
@@ -471,6 +473,44 @@ const BensCreate = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Campos opcionais de Aquisição */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="numero_licitacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Referência</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Ex: 001/2025" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="ano_licitacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ano de Referência</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                          placeholder="Ex: 2025"
+                          min="2000"
+                          max="2100"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

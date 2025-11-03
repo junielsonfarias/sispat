@@ -74,7 +74,7 @@ export function initializeRedis(): Redis | null {
     
     redis.on('error', (error: any) => {
       // ✅ Não logar erros de conexão repetidamente
-      if (error.code !== 'ECONNREFUSED' || !redis?._connecting) {
+      if (error.code !== 'ECONNREFUSED') {
         console.error('❌ Erro no Redis:', error.message)
       }
     })
@@ -198,6 +198,10 @@ export class RedisCache {
    * Deletar chave do cache
    */
   async delete(key: string): Promise<void> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return
+    }
+    
     try {
       await this.redis.del(key)
     } catch (error) {
@@ -209,6 +213,10 @@ export class RedisCache {
    * Deletar múltiplas chaves por padrão
    */
   async deletePattern(pattern: string): Promise<void> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return
+    }
+    
     try {
       const keys = await this.redis.keys(pattern)
       if (keys.length > 0) {
@@ -223,6 +231,10 @@ export class RedisCache {
    * Definir TTL para uma chave
    */
   async expire(key: string, ttl: number): Promise<void> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return
+    }
+    
     try {
       await this.redis.expire(key, ttl)
     } catch (error) {
@@ -234,6 +246,10 @@ export class RedisCache {
    * Obter TTL de uma chave
    */
   async getTTL(key: string): Promise<number> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return -1
+    }
+    
     try {
       return await this.redis.ttl(key)
     } catch (error) {
@@ -246,6 +262,10 @@ export class RedisCache {
    * Incrementar valor numérico
    */
   async increment(key: string, value = 1): Promise<number> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return 0
+    }
+    
     try {
       return await this.redis.incrby(key, value)
     } catch (error) {
@@ -258,6 +278,10 @@ export class RedisCache {
    * Decrementar valor numérico
    */
   async decrement(key: string, value = 1): Promise<number> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return 0
+    }
+    
     try {
       return await this.redis.decrby(key, value)
     } catch (error) {
@@ -270,6 +294,10 @@ export class RedisCache {
    * Obter estatísticas do cache
    */
   async getStats(): Promise<any> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return null
+    }
+    
     try {
       const info = await this.redis.info('memory')
       const keyspace = await this.redis.info('keyspace')
@@ -289,6 +317,10 @@ export class RedisCache {
    * Limpar todo o cache
    */
   async flushAll(): Promise<void> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return
+    }
+    
     try {
       await this.redis.flushall()
     } catch (error) {
@@ -300,6 +332,10 @@ export class RedisCache {
    * Obter todas as chaves por padrão
    */
   async getKeys(pattern: string): Promise<string[]> {
+    if (!this.redis || this.redis.status !== 'ready') {
+      return []
+    }
+    
     try {
       return await this.redis.keys(pattern)
     } catch (error) {

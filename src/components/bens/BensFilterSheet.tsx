@@ -31,6 +31,8 @@ export interface FilterValues {
   setor?: string
   dataAquisicaoInicio?: string
   dataAquisicaoFim?: string
+  numero_licitacao?: string
+  ano_licitacao?: string
 }
 
 interface BensFilterSheetProps {
@@ -63,6 +65,8 @@ export const BensFilterSheet = ({
       setor: '',
       dataAquisicaoInicio: '',
       dataAquisicaoFim: '',
+      numero_licitacao: '',
+      ano_licitacao: '',
     })
     onClearFilters()
     onClose()
@@ -171,6 +175,36 @@ export const BensFilterSheet = ({
                   <FormLabel>Aquisição (Fim)</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="numero_licitacao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Número da Licitação</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Ex: 001/2025" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ano_licitacao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ano da Licitação</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number"
+                      {...field}
+                      placeholder="Ex: 2025"
+                      min="2000"
+                      max="2100"
+                    />
                   </FormControl>
                 </FormItem>
               )}

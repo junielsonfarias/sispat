@@ -15,7 +15,7 @@ router.use(authenticateToken)
  * @desc Obter métricas atuais do sistema
  * @access Private (Admin/Superuser)
  */
-router.get('/system', authorize(['admin', 'superuser']), async (req, res) => {
+router.get('/system', authorize('admin', 'superuser'), async (req, res) => {
   try {
     const metrics = await metricsCollector.getCurrentSystemMetrics()
     
@@ -39,7 +39,7 @@ router.get('/system', authorize(['admin', 'superuser']), async (req, res) => {
  * @desc Obter métricas da aplicação
  * @access Private (Admin/Superuser)
  */
-router.get('/application', authorize(['admin', 'superuser']), async (req, res) => {
+router.get('/application', authorize('admin', 'superuser'), async (req, res) => {
   try {
     const metrics = await metricsCollector.getCurrentApplicationMetrics()
     
@@ -63,7 +63,7 @@ router.get('/application', authorize(['admin', 'superuser']), async (req, res) =
  * @desc Obter resumo completo das métricas
  * @access Private (Admin/Superuser)
  */
-router.get('/summary', authorize(['admin', 'superuser']), async (req, res) => {
+router.get('/summary', authorize('admin', 'superuser'), async (req, res) => {
   try {
     const summary = await metricsCollector.getMetricsSummary()
     
@@ -87,7 +87,7 @@ router.get('/summary', authorize(['admin', 'superuser']), async (req, res) => {
  * @desc Obter histórico de métricas
  * @access Private (Admin/Superuser)
  */
-router.get('/history', authorize(['admin', 'superuser']), async (req, res) => {
+router.get('/history', authorize('admin', 'superuser'), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 100
     const history = await metricsCollector.getMetricsHistory(limit)
@@ -154,7 +154,7 @@ router.get('/health', async (req, res) => {
  * @desc Obter alertas ativos
  * @access Private (Admin/Superuser)
  */
-router.get('/alerts', authorize(['admin', 'superuser']), async (req, res) => {
+router.get('/alerts', authorize('admin', 'superuser'), async (req, res) => {
   try {
     const alerts = await alertManager.getActiveAlerts()
     const stats = await alertManager.getAlertStats()
@@ -178,7 +178,7 @@ router.get('/alerts', authorize(['admin', 'superuser']), async (req, res) => {
  * @desc Resolver alerta específico
  * @access Private (Admin/Superuser)
  */
-router.post('/alerts/:alertId/resolve', authorize(['admin', 'superuser']), async (req, res) => {
+router.post('/alerts/:alertId/resolve', authorize('admin', 'superuser'), async (req, res) => {
   try {
     const { alertId } = req.params
     
@@ -202,7 +202,7 @@ router.post('/alerts/:alertId/resolve', authorize(['admin', 'superuser']), async
  * @desc Exportar métricas para análise
  * @access Private (Admin/Superuser)
  */
-router.get('/export', authorize(['admin', 'superuser']), async (req, res) => {
+router.get('/export', authorize('admin', 'superuser'), async (req, res) => {
   try {
     const format = req.query.format as string || 'json'
     const hours = parseInt(req.query.hours as string) || 24

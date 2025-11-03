@@ -7,6 +7,7 @@ import {
   queryCache 
 } from '../config/database-optimization';
 import { redisCache, CacheUtils } from '../config/redis';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 
 /**
  * Listar patrimônios públicos (sem autenticação)
@@ -32,7 +33,7 @@ export const listPublicPatrimonios = async (req: Request, res: Response): Promis
 
     res.json({ patrimonios });
   } catch (error) {
-    console.error('Erro ao listar patrimônios públicos:', error);
+    logError('Erro ao listar patrimônios públicos', error);
     res.status(500).json({ error: 'Erro ao listar patrimônios' });
   }
 };
@@ -65,7 +66,7 @@ export const getPublicPatrimonioByNumero = async (req: Request, res: Response): 
 
     res.json({ patrimonio });
   } catch (error) {
-    console.error('Erro ao buscar patrimônio público:', error);
+    logError('Erro ao buscar patrimônio público', error, { numero: req.params.numero });
     res.status(500).json({ error: 'Erro ao buscar patrimônio' });
   }
 };
@@ -81,6 +82,8 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       status,
       sectorId,
       tipo,
+      numero_licitacao,
+      ano_licitacao,
       page = '1',
       limit = '50',
       orderBy = 'createdAt',
@@ -93,7 +96,7 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
     // ✅ OTIMIZAÇÃO: Usar QueryOptimizer para busca
     const searchFilters = QueryOptimizer.applySearchFilters(
       search as string,
-      ['numero_patrimonio', 'descricao_bem', 'marca', 'modelo']
+      ['numero_patrimonio', 'descricao_bem', 'marca', 'modelo', 'numero_licitacao']
     );
 
     // ✅ OTIMIZAÇÃO: Usar QueryOptimizer para ordenação
@@ -121,6 +124,16 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
     // Filtro de tipo
     if (tipo) {
       where.tipo = tipo;
+    }
+
+    // Filtro de número de licitação
+    if (numero_licitacao) {
+      where.numero_licitacao = { contains: numero_licitacao as string, mode: 'insensitive' };
+    }
+
+    // Filtro de ano de licitação
+    if (ano_licitacao) {
+      where.ano_licitacao = parseInt(ano_licitacao as string);
     }
 
     // ✅ OTIMIZAÇÃO: Usar QueryOptimizer para filtros de permissão
@@ -173,7 +186,7 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       await redisCache.set(cacheKey, result, 300);
     }
     
-    const { patrimonios, total } = result;
+    const { patrimonios, total } = result as { patrimonios: any[]; total: number };
 
     res.json({
       patrimonios,
@@ -185,7 +198,10 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       },
     });
   } catch (error) {
-    console.error('[DEV] ❌ Erro ao listar patrimônios:', error);
+    logError('❌ Erro ao listar patrimônios', error, {
+      userId: req.user?.userId,
+      query: req.query
+    });
     res.status(500).json({ error: 'Erro ao listar patrimônios' });
   }
 };
@@ -198,15 +214,21 @@ export const getPatrimonio = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
 
-    const patrimonio = await prisma.patrimonio.findUnique({
-      where: { id },
-      include: {
-        municipality: {
-          select: { id: true, name: true, state: true },
-        },
-        sector: {
-          select: { id: true, name: true, codigo: true },
-        },
+    // ✅ CACHE: Tentar obter do cache primeiro
+    const cacheKey = `patrimonio:${id}`;
+    let patrimonio = await redisCache.get<any>(cacheKey);
+    
+    if (!patrimonio) {
+      // ✅ QUERY N+1: Include otimizado com select específico
+      patrimonio = await prisma.patrimonio.findUnique({
+        where: { id },
+        include: {
+          municipality: {
+            select: { id: true, name: true, state: true },
+          },
+          sector: {
+            select: { id: true, name: true, codigo: true },
+          },
         local: {
           select: { id: true, name: true, description: true },
         },
@@ -227,9 +249,25 @@ export const getPatrimonio = async (req: Request, res: Response): Promise<void> 
           orderBy: { date: 'desc' },
           take: 20,
         },
-        subPatrimonios: true,
+        subPatrimonios: {
+          select: {
+            id: true,
+            descricao: true,
+            quantidade: true,
+            valor: true,
+            status: true,
+            observacoes: true
+          }
+        },
       },
     });
+
+      // ✅ CACHE: Armazenar no cache Redis por 10 minutos
+      await redisCache.set(cacheKey, patrimonio, 600);
+      logDebug('✅ Cache de patrimônio criado', { patrimonioId: id });
+    } else {
+      logDebug('✅ Cache hit: patrimônio', { patrimonioId: id });
+    }
 
     if (!patrimonio) {
       res.status(404).json({ error: 'Patrimônio não encontrado' });
@@ -237,7 +275,7 @@ export const getPatrimonio = async (req: Request, res: Response): Promise<void> 
     }
 
     // ✅ DEBUG: Log de verificação de acesso
-    console.log('Verificando acesso para patrimônio:', {
+    logDebug('Verificando acesso para patrimônio', {
       patrimonioId: patrimonio.id,
       sectorId: patrimonio.sectorId,
       userRole: req.user?.role,
@@ -257,7 +295,7 @@ export const getPatrimonio = async (req: Request, res: Response): Promise<void> 
         select: { name: true },
       });
 
-      console.log('🔍 DEBUG - Verificação de acesso detalhada:', {
+      logDebug('🔍 Verificação de acesso detalhada', {
         userId: req.user.userId,
         userRole: req.user.role,
         responsibleSectors: user?.responsibleSectors,
@@ -270,18 +308,18 @@ export const getPatrimonio = async (req: Request, res: Response): Promise<void> 
       // ✅ CORREÇÃO: Verificar se usuário tem acesso ao setor
       // Se responsibleSectors está vazio, usuário tem acesso a todos os setores
       if (user && patrimonioSector && user.responsibleSectors.length > 0 && !user.responsibleSectors.includes(patrimonioSector.name)) {
-        console.log('Acesso negado - setor não permitido');
+        logDebug('Acesso negado - setor não permitido');
         res.status(403).json({ error: 'Acesso negado: sem permissão para este setor' });
         return;
       }
     }
 
     // ✅ DEBUG: Log de sucesso
-    console.log('Acesso permitido para patrimônio:', patrimonio.id);
+    logDebug('Acesso permitido para patrimônio', { patrimonioId: patrimonio.id });
 
     res.json({ patrimonio });
   } catch (error) {
-    console.error('Erro ao buscar patrimônio:', error);
+    logError('Erro ao buscar patrimônio', error, { patrimonioId: req.params.id });
     res.status(500).json({ error: 'Erro ao buscar patrimônio' });
   }
 };
@@ -314,7 +352,7 @@ export const getByNumero = async (req: Request, res: Response): Promise<void> =>
 
     res.json({ patrimonio });
   } catch (error) {
-    console.error('Erro ao buscar patrimônio por número:', error);
+    logError('Erro ao buscar patrimônio por número', error, { numero: req.params.numero });
     res.status(500).json({ error: 'Erro ao buscar patrimônio' });
   }
 };
@@ -382,7 +420,7 @@ export const gerarNumeroPatrimonial = async (req: Request, res: Response): Promi
 
     res.json(result)
   } catch (error) {
-    console.error('Erro ao gerar número patrimonial:', error)
+    logError('Erro ao gerar número patrimonial', error, { prefix: req.query.prefix, year: req.query.year })
     
     // Se for erro de duplicação, tentar novamente
     if (error.message.includes('já existe')) {
@@ -414,7 +452,7 @@ export const createPatrimonio = async (req: Request, res: Response): Promise<voi
     }
 
     // Log do body completo para debug
-    console.log('[CREATE PATRIMONIO] Request body:', JSON.stringify(req.body, null, 2));
+    logDebug('[CREATE PATRIMONIO] Request body', { body: req.body });
 
     const {
       numero_patrimonio,
@@ -429,6 +467,8 @@ export const createPatrimonio = async (req: Request, res: Response): Promise<voi
       quantidade,
       numero_nota_fiscal,
       forma_aquisicao,
+      numero_licitacao,
+      ano_licitacao,
       setor_responsavel,
       local_objeto,
       status,
@@ -447,7 +487,7 @@ export const createPatrimonio = async (req: Request, res: Response): Promise<voi
 
     // Validações
     if (!numero_patrimonio || !descricao_bem || !data_aquisicao || !valor_aquisicao || !sectorId) {
-      console.log('[CREATE PATRIMONIO] Validação falhou:', {
+      logWarn('[CREATE PATRIMONIO] Validação falhou', {
         numero_patrimonio: !!numero_patrimonio,
         descricao_bem: !!descricao_bem,
         data_aquisicao: !!data_aquisicao,
@@ -485,6 +525,8 @@ export const createPatrimonio = async (req: Request, res: Response): Promise<voi
           quantidade: parseInt(quantidade) || 1,
           numero_nota_fiscal,
           forma_aquisicao: forma_aquisicao || 'Não especificado',
+          numero_licitacao: numero_licitacao || null,
+          ano_licitacao: ano_licitacao ? parseInt(ano_licitacao) : null,
           setor_responsavel: setor_responsavel || 'Não especificado',
           local_objeto: local_objeto || 'Não especificado',
           status: status || 'ativo',
@@ -537,11 +579,17 @@ export const createPatrimonio = async (req: Request, res: Response): Promise<voi
       return novoPatrimonio;
     });
 
+    // ✅ CACHE: Invalidar cache de patrimônios após criação
+    await CacheUtils.invalidatePatrimonios();
+    await redisCache.delete(`patrimonio:${patrimonio.id}`);
+    logDebug('✅ Cache de patrimônios invalidado após criação');
+
     res.status(201).json({ message: 'Patrimônio criado com sucesso', patrimonio });
   } catch (error) {
-    console.error('[CREATE PATRIMONIO] Erro completo:', error);
-    console.error('[CREATE PATRIMONIO] Stack trace:', error instanceof Error ? error.stack : 'N/A');
-    console.error('[CREATE PATRIMONIO] Mensagem:', error instanceof Error ? error.message : String(error));
+    logError('[CREATE PATRIMONIO] Erro completo', error, {
+      numero_patrimonio: req.body.numero_patrimonio,
+      userId: req.user?.userId
+    });
     res.status(500).json({ 
       error: 'Erro ao criar patrimônio',
       details: error instanceof Error ? error.message : String(error)
@@ -555,7 +603,7 @@ export const createPatrimonio = async (req: Request, res: Response): Promise<voi
  */
 export const updatePatrimonio = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log('🚀 [UPDATE PATRIMONIO] INICIANDO - Versão com filtro de objetos Date');
+    logDebug('🚀 [UPDATE PATRIMONIO] INICIANDO - Versão com filtro de objetos Date');
     
     if (!req.user) {
       res.status(401).json({ error: 'Não autenticado' });
@@ -566,8 +614,7 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
     const updateData = req.body;
 
     // ✅ DEBUG: Log dos dados recebidos
-    console.log('Dados recebidos para atualização:', JSON.stringify(updateData, null, 2));
-    console.log('ID do patrimônio:', id);
+    logDebug('Dados recebidos para atualização', { updateData, patrimonioId: id });
 
     // Verificar se existe
     const existing = await prisma.patrimonio.findUnique({
@@ -580,7 +627,7 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
     }
 
     // ✅ DEBUG: Log das informações de acesso
-    console.log('🔍 DEBUG - Verificação de acesso:', {
+    logDebug('🔍 Verificação de acesso', {
       userRole: req.user.role,
       userId: req.user.userId,
       patrimonioSectorId: existing.sectorId,
@@ -601,13 +648,13 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
         select: { name: true },
       });
 
-      console.log('🔍 DEBUG - Setores responsáveis do usuário:', user?.responsibleSectors);
-      console.log('🔍 DEBUG - Nome do setor do patrimônio:', patrimonioSector?.name);
+      logDebug('🔍 Setores responsáveis do usuário', { responsibleSectors: user?.responsibleSectors });
+      logDebug('🔍 Nome do setor do patrimônio', { sectorName: patrimonioSector?.name });
 
       // ✅ CORREÇÃO: Comparar nomes dos setores, não IDs
       // Se responsibleSectors está vazio, usuário tem acesso a todos os setores
       if (user && patrimonioSector && user.responsibleSectors.length > 0 && !user.responsibleSectors.includes(patrimonioSector.name)) {
-        console.log('❌ DEBUG - Acesso negado: usuário não tem permissão para este setor');
+        logDebug('❌ Acesso negado: usuário não tem permissão para este setor');
         res.status(403).json({ 
           error: 'Acesso negado',
           details: `Usuário não tem permissão para editar patrimônios do setor ${patrimonioSector.name}`,
@@ -616,7 +663,7 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
         });
         return;
       } else if (user && user.responsibleSectors.length === 0) {
-        console.log('✅ DEBUG - Supervisor com acesso total (responsibleSectors vazio)');
+        logDebug('✅ Supervisor com acesso total (responsibleSectors vazio)');
       }
     }
 
@@ -639,22 +686,22 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
       
       // Verificar se é um campo readonly
       if (readonlyFields.includes(key)) {
-        console.log(`❌ Campo readonly excluído: ${key}`);
+        logDebug(`❌ Campo readonly excluído: ${key}`);
         return;
       }
       
       // Verificar se é um objeto (relacionamento) - mas permitir Date
       if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)) {
-        console.log(`❌ Objeto excluído: ${key} = ${JSON.stringify(value)}`);
+        logDebug(`❌ Objeto excluído: ${key}`, { value });
         return;
       }
       
       // Verificar se é válido
       if (value !== undefined && value !== null && value !== '') {
         dataToUpdate[key] = value;
-        console.log(`✅ Campo incluído: ${key} = ${typeof value === 'object' ? JSON.stringify(value) : value}`);
+        logDebug(`✅ Campo incluído: ${key}`, { value });
       } else {
-        console.log(`❌ Campo vazio excluído: ${key} = ${value}`);
+        logDebug(`❌ Campo vazio excluído: ${key}`, { value });
       }
     });
 
@@ -679,66 +726,82 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
     if (dataToUpdate.valor_residual !== undefined && dataToUpdate.valor_residual !== null) {
       dataToUpdate.valor_residual = parseFloat(dataToUpdate.valor_residual);
     }
+    if (dataToUpdate.ano_licitacao !== undefined && dataToUpdate.ano_licitacao !== null) {
+      dataToUpdate.ano_licitacao = parseInt(dataToUpdate.ano_licitacao);
+    }
 
-    // Atualizar
-    console.log('🔍 DEBUG - Dados que serão enviados para atualização:', JSON.stringify(dataToUpdate, null, 2));
+    // Atualizar usando transaction para garantir consistência
+    logDebug('🔍 Dados que serão enviados para atualização', { dataToUpdate });
     
-    const patrimonio = await prisma.patrimonio.update({
-      where: { id },
-      data: dataToUpdate,
-      include: {
-        sector: { select: { id: true, name: true } },
-        local: { select: { id: true, name: true } },
-        tipoBem: { select: { id: true, nome: true } },
-      },
+    const patrimonio = await prisma.$transaction(async (tx) => {
+      // Atualizar patrimônio
+      const updatedPatrimonio = await tx.patrimonio.update({
+        where: { id },
+        data: dataToUpdate,
+        include: {
+          sector: { select: { id: true, name: true } },
+          local: { select: { id: true, name: true } },
+          tipoBem: { select: { id: true, nome: true } },
+        },
+      });
+
+      // Criar entrada no histórico
+      try {
+        if (req.user) {
+          await tx.historicoEntry.create({
+            data: {
+              patrimonioId: updatedPatrimonio.id,
+              date: new Date(),
+              action: 'ATUALIZAÇÃO',
+              details: `Patrimônio atualizado por ${req.user.userId}`,
+              user: req.user.userId,
+            },
+          });
+        }
+        logDebug('✅ Histórico criado com sucesso');
+      } catch (histError) {
+        logError('❌ Erro ao criar histórico', histError);
+        // Não falhar a operação por causa do histórico
+      }
+
+      // Log de atividade
+      try {
+        if (req.user) {
+          await tx.activityLog.create({
+            data: {
+              userId: req.user.userId,
+              action: 'UPDATE_PATRIMONIO',
+              entityType: 'PATRIMONIO',
+              entityId: updatedPatrimonio.id,
+              details: `Atualizado patrimônio ${updatedPatrimonio.numero_patrimonio}`,
+              ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
+              userAgent: req.get('user-agent') || 'unknown',
+            },
+          });
+          logDebug('✅ Log de atividade criado com sucesso');
+        }
+      } catch (logError) {
+        logError('❌ Erro ao criar log de atividade', logError);
+        // Não falhar a operação por causa do log
+      }
+
+      return updatedPatrimonio;
     });
     
-    console.log('✅ Patrimônio atualizado com sucesso:', patrimonio.id);
+    logInfo('✅ Patrimônio atualizado com sucesso', { patrimonioId: patrimonio.id });
 
-    // Criar entrada no histórico
-    try {
-      await prisma.historicoEntry.create({
-        data: {
-          patrimonioId: patrimonio.id,
-          date: new Date(),
-          action: 'ATUALIZAÇÃO',
-          details: `Patrimônio atualizado por ${req.user.userId}`,
-          user: req.user.userId,
-        },
-      });
-      console.log('✅ Histórico criado com sucesso');
-    } catch (histError) {
-      console.error('❌ Erro ao criar histórico:', histError);
-      // Não falhar a operação por causa do histórico
-    }
-
-    // Log de atividade
-    try {
-      await prisma.activityLog.create({
-        data: {
-          userId: req.user.userId,
-          action: 'UPDATE_PATRIMONIO',
-          entityType: 'PATRIMONIO',
-          entityId: patrimonio.id,
-          details: `Atualizado patrimônio ${patrimonio.numero_patrimonio}`,
-          ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
-          userAgent: req.get('user-agent') || 'unknown',
-        },
-      });
-      console.log('✅ Log de atividade criado com sucesso');
-    } catch (logError) {
-      console.error('❌ Erro ao criar log de atividade:', logError);
-      // Não falhar a operação por causa do log
-    }
+    // ✅ CACHE: Invalidar cache de patrimônios após atualização
+    await CacheUtils.invalidatePatrimonios();
+    await redisCache.delete(`patrimonio:${patrimonio.id}`);
+    logDebug('✅ Cache de patrimônios invalidado após atualização');
 
     res.json({ message: 'Patrimônio atualizado com sucesso', patrimonio });
   } catch (error) {
-    console.error('❌ ERRO COMPLETO ao atualizar patrimônio:', error);
-    console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A');
-    console.error('❌ Mensagem:', error instanceof Error ? error.message : String(error));
-    console.error('❌ Dados recebidos:', JSON.stringify(req.body, null, 2));
-    console.error('❌ ID do patrimônio:', req.params.id);
-    console.error('❌ Usuário:', req.user);
+    logError('❌ ERRO COMPLETO ao atualizar patrimônio', error, {
+      patrimonioId: req.params.id,
+      userId: req.user?.userId,
+      body: req.body
+    });
     
     res.status(500).json({ 
       error: 'Erro ao atualizar patrimônio',
@@ -794,9 +857,14 @@ export const deletePatrimonio = async (req: Request, res: Response): Promise<voi
       },
     });
 
+    // ✅ CACHE: Invalidar cache de patrimônios após deleção
+    await CacheUtils.invalidatePatrimonios();
+    await redisCache.delete(`patrimonio:${id}`);
+    logDebug('✅ Cache de patrimônios invalidado após deleção');
+
     res.json({ message: 'Patrimônio deletado com sucesso' });
   } catch (error) {
-    console.error('Erro ao deletar patrimônio:', error);
+    logError('Erro ao deletar patrimônio', error, { patrimonioId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao deletar patrimônio' });
   }
 };
@@ -807,14 +875,14 @@ export const deletePatrimonio = async (req: Request, res: Response): Promise<voi
  */
 export const addNote = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log('🔍 [DEBUG] addNote - Iniciando processo:', {
+    logDebug('🔍 addNote - Iniciando processo', {
       userId: req.user?.userId,
       patrimonioId: req.params.id,
-      text: req.body.text
+      textLength: req.body.text?.length
     });
 
     if (!req.user) {
-      console.log('❌ [DEBUG] addNote - Usuário não autenticado');
+      logDebug('❌ addNote - Usuário não autenticado');
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
@@ -822,58 +890,55 @@ export const addNote = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const { text } = req.body;
 
-    console.log('🔍 [DEBUG] addNote - Dados recebidos:', { id, text });
+    logDebug('🔍 addNote - Dados recebidos', { id, textLength: text?.length });
 
     if (!text || text.trim().length === 0) {
-      console.log('❌ [DEBUG] addNote - Texto vazio ou inválido');
+      logWarn('❌ addNote - Texto vazio ou inválido');
       res.status(400).json({ error: 'Texto da observação é obrigatório' });
       return;
     }
 
     // Verificar se patrimônio existe
-    console.log('🔍 [DEBUG] addNote - Verificando se patrimônio existe:', id);
+    logDebug('🔍 addNote - Verificando se patrimônio existe', { id });
     const patrimonio = await prisma.patrimonio.findUnique({
       where: { id },
       select: { id: true, numero_patrimonio: true, descricao_bem: true }
     });
 
     if (!patrimonio) {
-      console.log('❌ [DEBUG] addNote - Patrimônio não encontrado:', id);
+      logWarn('❌ addNote - Patrimônio não encontrado', { id });
       res.status(404).json({ error: 'Patrimônio não encontrado' });
       return;
     }
 
-    console.log('✅ [DEBUG] addNote - Patrimônio encontrado:', {
+    logDebug('✅ addNote - Patrimônio encontrado', {
       id: patrimonio.id,
-      numero: patrimonio.numero_patrimonio,
-      descricao: patrimonio.descricao_bem
+      numero: patrimonio.numero_patrimonio
     });
 
     // Buscar nome do usuário
-    console.log('🔍 [DEBUG] addNote - Buscando dados do usuário:', req.user.userId);
+    logDebug('🔍 addNote - Buscando dados do usuário', { userId: req.user.userId });
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
       select: { id: true, name: true, email: true },
     });
 
     if (!user) {
-      console.log('❌ [DEBUG] addNote - Usuário não encontrado no banco:', req.user.userId);
+      logError('❌ addNote - Usuário não encontrado no banco', undefined, { userId: req.user.userId });
       res.status(404).json({ error: 'Usuário não encontrado' });
       return;
     }
 
-    console.log('✅ [DEBUG] addNote - Usuário encontrado:', {
+    logDebug('✅ addNote - Usuário encontrado', {
       id: user.id,
-      name: user.name,
-      email: user.email
+      name: user.name
     });
 
     // Criar observação
-    console.log('🔍 [DEBUG] addNote - Criando nota no banco:', {
-      text: text.trim(),
+    logDebug('🔍 addNote - Criando nota no banco', {
+      textLength: text.trim().length,
       patrimonioId: id,
-      userId: req.user.userId,
-      userName: user.name
+      userId: req.user.userId
     });
 
     const note = await prisma.note.create({
@@ -885,12 +950,9 @@ export const addNote = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
-    console.log('✅ [DEBUG] addNote - Nota criada com sucesso:', {
-      id: note.id,
-      text: note.text,
-      date: note.date,
-      userId: note.userId,
-      userName: note.userName
+    logInfo('✅ addNote - Nota criada com sucesso', {
+      noteId: note.id,
+      patrimonioId: id
     });
 
     res.status(201).json({ 
@@ -904,8 +966,10 @@ export const addNote = async (req: Request, res: Response): Promise<void> => {
       }
     });
   } catch (error) {
-    console.error('❌ [ERROR] addNote - Erro ao adicionar observação:', error);
-    console.error('❌ [ERROR] addNote - Stack trace:', error instanceof Error ? error.stack : 'N/A');
+    logError('❌ addNote - Erro ao adicionar observação', error, {
+      patrimonioId: req.params.id,
+      userId: req.user?.userId
+    });
     res.status(500).json({ 
       error: 'Erro ao adicionar observação',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -922,7 +986,7 @@ export const registrarBaixaPatrimonio = async (req: Request, res: Response): Pro
     const { id } = req.params;
     const { data_baixa, motivo_baixa, documentos_baixa, observacoes } = req.body;
 
-    console.log('📝 Registrando baixa de patrimônio:', { id, data_baixa, motivo_baixa });
+    logInfo('📝 Registrando baixa de patrimônio', { id, data_baixa, motivo_baixaLength: motivo_baixa?.length });
 
     // Validações
     if (!data_baixa || !motivo_baixa) {
@@ -972,64 +1036,75 @@ export const registrarBaixaPatrimonio = async (req: Request, res: Response): Pro
       }
     }
 
-    // Atualizar patrimônio com dados da baixa
-    const patrimonioAtualizado = await prisma.patrimonio.update({
-      where: { id },
-      data: {
-        status: 'baixado',
-        situacao_bem: 'baixado',
-        data_baixa: new Date(data_baixa),
-        motivo_baixa,
-        documentos_baixa: documentos_baixa || [],
-        updatedBy: userId,
-        updatedAt: new Date(),
-      },
-      include: {
-        sector: { select: { id: true, name: true, codigo: true } },
-        local: { select: { id: true, name: true, description: true } },
-        tipoBem: { select: { id: true, nome: true, descricao: true } },
-        acquisitionForm: { select: { id: true, nome: true } },
-      },
+    // Atualizar patrimônio com dados da baixa usando transaction
+    const patrimonioAtualizado = await prisma.$transaction(async (tx) => {
+      // Atualizar patrimônio
+      const updated = await tx.patrimonio.update({
+        where: { id },
+        data: {
+          status: 'baixado',
+          situacao_bem: 'baixado',
+          data_baixa: new Date(data_baixa),
+          motivo_baixa,
+          documentos_baixa: documentos_baixa || [],
+          updatedBy: userId,
+          updatedAt: new Date(),
+        },
+        include: {
+          sector: { select: { id: true, name: true, codigo: true } },
+          local: { select: { id: true, name: true, description: true } },
+          tipoBem: { select: { id: true, nome: true, descricao: true } },
+          acquisitionForm: { select: { id: true, nome: true } },
+        },
+      });
+
+      // Registrar no histórico
+      try {
+        await tx.historicoEntry.create({
+          data: {
+            patrimonioId: id,
+            action: 'BAIXA',
+            details: `Baixa registrada: ${motivo_baixa}${observacoes ? ` - ${observacoes}` : ''}`,
+            user: req.user?.name || 'Sistema',
+            date: new Date(),
+          },
+        });
+      } catch (histError) {
+        logError('⚠️ Erro ao criar histórico', histError);
+      }
+
+      // Registrar log de atividade
+      try {
+        await tx.activityLog.create({
+          data: {
+            userId: userId!,
+            action: 'BAIXA_PATRIMONIO',
+            entityType: 'Patrimonio',
+            entityId: id,
+            details: `Baixa do patrimônio ${patrimonio.numero_patrimonio}: ${motivo_baixa}`,
+          },
+        });
+      } catch (logError) {
+        logError('⚠️ Erro ao criar log de atividade', logError);
+      }
+
+      return updated;
     });
 
-    // Registrar no histórico
-    try {
-      await prisma.historicoEntry.create({
-        data: {
-          patrimonioId: id,
-          action: 'BAIXA',
-          details: `Baixa registrada: ${motivo_baixa}${observacoes ? ` - ${observacoes}` : ''}`,
-          user: req.user?.name || 'Sistema',
-          date: new Date(),
-        },
-      });
-    } catch (histError) {
-      console.error('⚠️ Erro ao criar histórico:', histError);
-    }
+    logInfo('✅ Baixa registrada com sucesso', { numeroPatrimonio: patrimonioAtualizado.numero_patrimonio });
 
-    // Registrar log de atividade
-    try {
-      await prisma.activityLog.create({
-        data: {
-          userId: userId!,
-          action: 'BAIXA_PATRIMONIO',
-          entityType: 'Patrimonio',
-          entityId: id,
-          details: `Baixa do patrimônio ${patrimonio.numero_patrimonio}: ${motivo_baixa}`,
-        },
-      });
-    } catch (logError) {
-      console.error('⚠️ Erro ao criar log de atividade:', logError);
-    }
-
-    console.log('✅ Baixa registrada com sucesso:', patrimonioAtualizado.numero_patrimonio);
+    // ✅ CACHE: Invalidar cache de patrimônios após baixa
+    await CacheUtils.invalidatePatrimonios();
+    await redisCache.delete(`patrimonio:${id}`);
+    logDebug('✅ Cache de patrimônios invalidado após baixa');
 
     res.status(200).json({
       message: 'Baixa registrada com sucesso',
       patrimonio: patrimonioAtualizado,
     });
   } catch (error) {
-    console.error('❌ Erro ao registrar baixa:', error);
+    const { id } = req.params;
+    logError('❌ Erro ao registrar baixa', error, { patrimonioId: id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao registrar baixa do patrimônio' });
   }
 };

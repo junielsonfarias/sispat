@@ -100,7 +100,7 @@ export function patrimoniosCacheMiddleware() {
     },
     skipCache: (req) => {
       // Pular cache se for busca muito específica
-      return req.query.search && (req.query.search as string).length < 3
+      return !!(req.query.search && (req.query.search as string).length < 3)
     }
   })
 }

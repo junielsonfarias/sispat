@@ -136,6 +136,8 @@ model Patrimonio {
   quantidade         Int              @default(1)
   numero_nota_fiscal String?
   forma_aquisicao    String
+  numero_licitacao   String?
+  ano_licitacao      Int?
   setor_responsavel  String
   local_objeto       String
   status             String           @default("ativo")
@@ -181,6 +183,8 @@ model Patrimonio {
   @@index([data_aquisicao])
   @@index([municipalityId, status])
   @@index([sectorId, status])
+  @@index([numero_licitacao])
+  @@index([ano_licitacao])
   @@map("patrimonios")
 }
 
@@ -569,4 +573,123 @@ model DocumentoGeral {
   @@index([tipo])
   @@index([isPublic])
   @@map("documentos_gerais")
+}
+
+model UserReportConfig {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  columns   Json     // Array of Patrimonio field keys
+  filters   Json     // Record<string, unknown>
+  format    String   // 'csv' | 'xlsx' | 'pdf'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("user_report_configs")
+}
+
+model ExcelCsvTemplate {
+  id                    String   @id @default(uuid())
+  name                  String
+  municipalityId        String
+  columns               Json     // Array of { key: string, header: string }
+  conditionalFormatting Json?    // Array of ConditionalFormattingRule
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([municipalityId])
+  @@map("excel_csv_templates")
+}
+
+model FormFieldConfig {
+  id            String   @id @default(uuid())
+  key           String
+  label         String
+  type          String
+  required      Boolean  @default(false)
+  defaultValue  String?
+  options       String[]
+  isCustom      Boolean  @default(false)
+  isSystem      Boolean  @default(false)
+  municipalityId String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([municipalityId])
+  @@index([key])
+  @@map("form_field_configs")
+}
+
+model RolePermission {
+  id          String  @id @default(uuid())
+  roleId      String  @unique // UserRole
+  name        String
+  permissions String[] // Array of Permission strings
+  updatedAt   DateTime @updatedAt
+
+  @@map("role_permissions")
+}
+
+model CloudStorage {
+  id            String   @id @default(uuid())
+  municipalityId String  @unique
+  provider      String?  // 'google_drive', 'dropbox', etc.
+  isConnected   Boolean  @default(false)
+  accessToken   String?  // Encrypted
+  refreshToken  String?  // Encrypted
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([municipalityId])
+  @@map("cloud_storage")
+}
+
+model ReportTemplate {
+  id             String   @id @default(uuid())
+  name           String
+  municipalityId String
+  layout         Json     // ReportComponent[]
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([municipalityId])
+  @@map("report_templates")
+}
+
+model ImovelReportTemplate {
+  id             String   @id @default(uuid())
+  name           String
+  municipalityId String
+  fields         String[] // Array of field keys
+  filters        Json?    // Record<string, unknown>
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([municipalityId])
+  @@map("imovel_report_templates")
+}
+
+model NumberingPattern {
+  id             String   @id @default(uuid())
+  municipalityId String   @unique
+  components     Json     // NumberingPatternComponent[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([municipalityId])
+  @@map("numbering_patterns")
+}
+
+model UserDashboard {
+  id       String   @id @default(uuid())
+  userId   String   @unique
+  widgets  Json     // WidgetConfig[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("user_dashboards")
 }

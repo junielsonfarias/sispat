@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import { validateEnvironment, showEnvironmentInfo } from './config/validate-env';
+import { logInfo, logError } from './config/logger';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -15,36 +16,36 @@ showEnvironmentInfo();
 
 // Inicializar Prisma Client
 // ✅ Importar do arquivo de configuração otimizado
-console.log('📦 Carregando configuração do banco de dados...');
+logInfo('📦 Carregando configuração do banco de dados...');
 import { prisma, testDatabaseConnection } from './config/database';
-console.log('✅ Configuração do banco carregada');
+logInfo('✅ Configuração do banco carregada');
 
 // Inicializar Redis
-console.log('📦 Carregando configuração do Redis...');
+logInfo('📦 Carregando configuração do Redis...');
 import { initializeRedis } from './config/redis';
 const redis = initializeRedis();
-console.log('✅ Configuração do Redis carregada');
+logInfo('✅ Configuração do Redis carregada');
 
 // Inicializar sistemas de monitoramento
-console.log('📦 Carregando sistema de métricas...');
+logInfo('📦 Carregando sistema de métricas...');
 import { metricsCollector } from './config/metrics';
-console.log('✅ Sistema de métricas carregado');
+logInfo('✅ Sistema de métricas carregado');
 
-console.log('📦 Carregando sistema de alertas...');
+logInfo('📦 Carregando sistema de alertas...');
 import { alertManager } from './config/alerts';
-console.log('✅ Sistema de alertas carregado');
+logInfo('✅ Sistema de alertas carregado');
 
-console.log('📦 Carregando sistema WebSocket...');
+logInfo('📦 Carregando sistema WebSocket...');
 import { webSocketManager } from './config/websocket';
-console.log('✅ Sistema WebSocket carregado');
+logInfo('✅ Sistema WebSocket carregado');
 
 // Exportar prisma para outros módulos
 export { prisma };
 
 // Criar aplicação Express
-console.log('🚀 Criando aplicação Express...');
+logInfo('🚀 Criando aplicação Express...');
 const app: Express = express();
-console.log('✅ Aplicação Express criada');
+logInfo('✅ Aplicação Express criada');
 
 // ✅ Inicializar Sentry ANTES de qualquer outro middleware
 // TEMPORARIAMENTE DESABILITADO PARA BUILD
@@ -61,9 +62,31 @@ const PORT = process.env.PORT || 3000;
 // ============================================
 
 // Helmet para segurança
+// ✅ CSP sempre habilitado (pode ser ajustado via variável de ambiente)
+const isProduction = process.env.NODE_ENV === 'production';
+const disableCSP = process.env.DISABLE_CSP === 'true'; // Opção para desabilitar se necessário
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: !disableCSP ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Necessário para estilos inline do React/Vite
+      scriptSrc: isProduction 
+        ? ["'self'"] // Em produção, sem unsafe-inline/unsafe-eval
+        : ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Em dev, necessário para Vite
+      imgSrc: ["'self'", "data:", "https:", "blob:"], // Para imagens e uploads
+      connectSrc: ["'self'", "ws:", "wss:", process.env.FRONTEND_URL || "http://localhost:8080"], // Para WebSocket e API calls
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: isProduction ? [] : null,
+      workerSrc: ["'self'", "blob:"], // Para Service Workers
+    },
+  } : false,
 }));
 
 // CORS
@@ -106,14 +129,30 @@ app.use(requestLogger);
 // ============================================
 
 // Health monitoring (tracking de requests e métricas)
-// TEMPORARIAMENTE DESABILITADO PARA DEBUG
-// import { healthMonitorMiddleware } from './utils/health-monitor';
-// app.use(healthMonitorMiddleware);
+// ✅ Habilitar em produção ou quando explicitamente habilitado
+import { healthMonitorMiddleware, healthMonitor } from './utils/health-monitor';
+
+if (isProduction || process.env.ENABLE_HEALTH_MONITOR === 'true') {
+  app.use(healthMonitorMiddleware);
+  logInfo('✅ Health monitoring middleware habilitado');
+} else {
+  logInfo('ℹ️  Health monitoring desabilitado em desenvolvimento');
+}
 
 // Rate limiting global (proteção contra abuso)
-// TEMPORARIAMENTE DESABILITADO PARA DEBUG
-// import { globalRateLimiter } from './middlewares/advanced-rate-limit';
-// app.use(globalRateLimiter);
+// ✅ Habilitar apenas em produção ou quando explicitamente habilitado
+import { globalRateLimiter, writeRateLimiter } from './middlewares/advanced-rate-limit';
+
+if (isProduction || process.env.ENABLE_RATE_LIMIT === 'true') {
+  app.use(globalRateLimiter);
+  // Aplicar rate limiting para operações de escrita em rotas específicas
+  app.use('/api/patrimonios', writeRateLimiter);
+  app.use('/api/imoveis', writeRateLimiter);
+  app.use('/api/transfers', writeRateLimiter);
+  logInfo('✅ Rate limiting habilitado');
+} else {
+  logInfo('ℹ️  Rate limiting desabilitado em desenvolvimento');
+}
 
 // ============================================
 // MIDDLEWARES DE CACHE
@@ -165,23 +204,23 @@ app.get('/', (req: Request, res: Response) => {
 // IMPORTAR E USAR ROTAS
 // ============================================
 
-console.log('🛣️  Carregando rotas...');
+logInfo('🛣️  Carregando rotas...');
 
 // Carregar rotas principais
 import publicRoutes from './routes/publicRoutes';
-console.log('✅ publicRoutes carregada');
+logInfo('✅ publicRoutes carregada');
 
 import authRoutes from './routes/authRoutes';
-console.log('✅ authRoutes carregada');
+logInfo('✅ authRoutes carregada');
 
 import userRoutes from './routes/userRoutes';
-console.log('✅ userRoutes carregada');
+logInfo('✅ userRoutes carregada');
 
 import sectorsRoutes from './routes/sectorsRoutes';
-console.log('✅ sectorsRoutes carregada');
+logInfo('✅ sectorsRoutes carregada');
 
 import patrimonioRoutes from './routes/patrimonioRoutes';
-console.log('✅ patrimonioRoutes carregada');
+logInfo('✅ patrimonioRoutes carregada');
 
 // Comentar rotas secundárias temporariamente
 import emailConfigRoutes from './routes/emailConfigRoutes';
@@ -199,8 +238,11 @@ import transferRoutes from './routes/transferRoutes';
 import documentRoutes from './routes/documentRoutes';
 import fichaTemplatesRoutes from './routes/fichaTemplates';
 import labelTemplateRoutes from './routes/labelTemplateRoutes';
+import configRoutes from './routes/configRoutes';
+import systemConfigRoutes from './routes/systemConfigRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
-console.log('✅ Rotas carregadas');
+logInfo('✅ Rotas carregadas');
 
 // ✅ Rotas públicas (sem autenticação)
 app.use('/api/public', publicRoutes);
@@ -234,6 +276,9 @@ app.use('/api/transfers', transferenciasCacheMiddleware(), transferRoutes);
 app.use('/api/documents', documentosCacheMiddleware(), documentRoutes);
 app.use('/api/ficha-templates', fichaTemplatesRoutes);
 app.use('/api/label-templates', labelTemplateRoutes);
+app.use('/api/config', configRoutes);
+app.use('/api/system-configuration', systemConfigRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Rotas de métricas e monitoramento
 import metricsRoutes from './routes/metricsRoutes';
@@ -260,16 +305,16 @@ app.use(errorHandler);
 // Função para conectar ao banco
 async function connectDatabase() {
   try {
-    console.log('🔌 Conectando ao banco de dados PostgreSQL...');
+    logInfo('🔌 Conectando ao banco de dados PostgreSQL...');
     const isConnected = await testDatabaseConnection();
     
     if (isConnected) {
-      console.log('✅ Conectado ao banco de dados PostgreSQL');
+      logInfo('✅ Conectado ao banco de dados PostgreSQL');
     } else {
       throw new Error('Falha no teste de conexão');
     }
   } catch (error) {
-    console.error('❌ Erro ao conectar ao banco de dados:', error);
+    logError('❌ Erro ao conectar ao banco de dados', error);
     process.exit(1);
   }
 }
@@ -285,43 +330,45 @@ async function startServer() {
   webSocketManager.initialize(httpServer);
   
   httpServer.listen(PORT, () => {
-    console.log('\n🚀 ================================');
-    console.log(`   SISPAT Backend API v2.1.0`);
-    console.log('   ================================');
-    console.log(`   🌐 Servidor rodando em: http://localhost:${PORT}`);
-    console.log(`   🔌 WebSocket ativo em: ws://localhost:${PORT}`);
-    console.log(`   🏥 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`   📚 API Docs: http://localhost:${PORT}/api-docs`);
-    console.log(`   🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-    console.log('   ================================\n');
+    logInfo('\n🚀 ================================');
+    logInfo(`   SISPAT Backend API v2.1.0`);
+    logInfo('   ================================');
+    logInfo(`   🌐 Servidor rodando em: http://localhost:${PORT}`);
+    logInfo(`   🔌 WebSocket ativo em: ws://localhost:${PORT}`);
+    logInfo(`   🏥 Health check: http://localhost:${PORT}/api/health`);
+    logInfo(`   📚 API Docs: http://localhost:${PORT}/api-docs`);
+    logInfo(`   🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    logInfo('   ================================\n');
     
     // ⭐ v2.1.0: Iniciar health monitoring
-    // TEMPORARIAMENTE DESABILITADO PARA DEBUG
-    // import('./utils/health-monitor').then(({ healthMonitor }) => {
-    //   if (process.env.ENABLE_HEALTH_MONITOR !== 'false') {
-    //     healthMonitor.start()
-    //     console.log('   📊 Health monitoring ativo')
-    //   }
-    // }).catch(err => console.error('❌ Erro ao iniciar health monitor:', err))
+    // ✅ Habilitar em produção ou quando explicitamente habilitado
+    if (isProduction || process.env.ENABLE_HEALTH_MONITOR === 'true') {
+      try {
+        healthMonitor.start();
+        logInfo('   📊 Health monitoring ativo');
+      } catch (err) {
+        logError('❌ Erro ao iniciar health monitor', err);
+      }
+    }
   });
 }
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\n👋 Encerrando servidor...');
+  logInfo('\n👋 Encerrando servidor...');
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\n👋 Encerrando servidor...');
+  logInfo('\n👋 Encerrando servidor...');
   await prisma.$disconnect();
   process.exit(0);
 });
 
 // Iniciar
 startServer().catch((error) => {
-  console.error('❌ Erro ao iniciar servidor:', error);
+  logError('❌ Erro ao iniciar servidor', error);
   process.exit(1);
 });
 

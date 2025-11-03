@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import { redisCache, CacheUtils } from '../config/redis';
 
 /**
  * Listar imóveis com filtros
@@ -64,36 +66,55 @@ export const listImoveis = async (req: Request, res: Response): Promise<void> =>
       }
     }
 
-    // Buscar imóveis
-    const [imoveis, total] = await Promise.all([
-      prisma.imovel.findMany({
-        where,
-        skip,
-        take: limitNum,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          sector: {
-            select: { id: true, name: true, codigo: true },
+    // ✅ CACHE: Gerar chave de cache baseada nos filtros
+    const cacheKey = CacheUtils.getImoveisKey({ where, page: pageNum, limit: limitNum });
+    
+    // Tentar obter do cache Redis primeiro
+    let result = await redisCache.get<{ imoveis: any[], total: number }>(cacheKey);
+    
+    if (!result) {
+      // ✅ QUERY N+1: Include otimizado com select específico
+      const [imoveis, total] = await Promise.all([
+        prisma.imovel.findMany({
+          where,
+          skip,
+          take: limitNum,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            sector: {
+              select: { id: true, name: true, codigo: true },
+            },
+            creator: {
+              select: { id: true, name: true, email: true },
+            },
           },
-          creator: {
-            select: { id: true, name: true, email: true },
-          },
-        },
-      }),
-      prisma.imovel.count({ where }),
-    ]);
+        }),
+        prisma.imovel.count({ where }),
+      ]);
+
+      result = {
+        imoveis,
+        total
+      };
+
+      // ✅ CACHE: Armazenar no cache Redis por 5 minutos
+      await redisCache.set(cacheKey, result, 300);
+      logDebug('✅ Cache de imóveis criado', { page: pageNum, limit: limitNum });
+    } else {
+      logDebug('✅ Cache hit: imóveis', { page: pageNum, limit: limitNum });
+    }
 
     res.json({
-      imoveis,
+      imoveis: result.imoveis,
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum),
+        total: result.total,
+        pages: Math.ceil(result.total / limitNum),
       },
     });
   } catch (error) {
-    console.error('Erro ao listar imóveis:', error);
+    logError('Erro ao listar imóveis', error, { userId: req.user?.userId, query: req.query });
     res.status(500).json({ error: 'Erro ao listar imóveis' });
   }
 };
@@ -155,7 +176,7 @@ export const getImovel = async (req: Request, res: Response): Promise<void> => {
 
     res.json({ imovel });
   } catch (error) {
-    console.error('Erro ao buscar imóvel:', error);
+    logError('Erro ao buscar imóvel', error, { imovelId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao buscar imóvel' });
   }
 };
@@ -186,7 +207,7 @@ export const getByNumero = async (req: Request, res: Response): Promise<void> =>
 
     res.json({ imovel });
   } catch (error) {
-    console.error('Erro ao buscar imóvel por número:', error);
+    logError('Erro ao buscar imóvel por número', error, { numero: req.params.numero });
     res.status(500).json({ error: 'Erro ao buscar imóvel' });
   }
 };
@@ -202,7 +223,7 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    console.log('[CREATE IMOVEL] Request body:', JSON.stringify(req.body, null, 2));
+    logDebug('[CREATE IMOVEL] Request body', { body: req.body });
 
     const {
       numero_patrimonio,
@@ -225,7 +246,7 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
       sectorId,
     } = req.body;
 
-    console.log('[CREATE IMOVEL] Campos extraídos:', {
+    logDebug('[CREATE IMOVEL] Campos extraídos', {
       numero_patrimonio,
       denominacao,
       endereco,
@@ -236,7 +257,7 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
 
     // Validações
     if (!numero_patrimonio || !denominacao || !endereco || !data_aquisicao || !valor_aquisicao) {
-      console.log('[CREATE IMOVEL] ❌ Validação falhou:', {
+      logWarn('[CREATE IMOVEL] ❌ Validação falhou', {
         numero_patrimonio: !!numero_patrimonio,
         denominacao: !!denominacao,
         endereco: !!endereco,
@@ -268,11 +289,11 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
         select: { id: true },
       });
       finalSectorId = sector?.id;
-      console.log('[CREATE IMOVEL] SectorId encontrado pelo nome:', { setor, finalSectorId });
+      logDebug('[CREATE IMOVEL] SectorId encontrado pelo nome', { setor, finalSectorId });
     }
 
     if (!finalSectorId) {
-      console.log('[CREATE IMOVEL] ❌ Setor não encontrado');
+      logWarn('[CREATE IMOVEL] ❌ Setor não encontrado', { setor });
       res.status(400).json({ error: 'Setor não encontrado ou não especificado' });
       return;
     }
@@ -282,65 +303,76 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
       ? fotos.map(f => typeof f === 'string' ? f : (f.file_url || f.url || ''))
       : [];
     
-    console.log('[CREATE IMOVEL] Fotos processadas:', processedFotos);
+    logDebug('[CREATE IMOVEL] Fotos processadas', { fotosCount: processedFotos.length });
 
-    // Criar imóvel
-    const imovel = await prisma.imovel.create({
-      data: {
-        numero_patrimonio,
-        denominacao,
-        endereco,
-        setor: setor || 'Não especificado',
-        data_aquisicao: new Date(data_aquisicao),
-        valor_aquisicao: parseFloat(valor_aquisicao),
-        area_terreno: area_terreno ? parseFloat(area_terreno) : 0,
-        area_construida: area_construida ? parseFloat(area_construida) : 0,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-        descricao,
-        observacoes,
-        tipo_imovel,
-        situacao,
-        fotos: processedFotos,
-        documentos: documentos || [],
-        url_documentos,
-        municipalityId: req.user.municipalityId,
-        sectorId: finalSectorId,
-        createdBy: req.user.userId,
-        updatedBy: req.user.userId,
-      },
-      include: {
-        sector: { select: { id: true, name: true } },
-      },
+    // Criar imóvel usando transaction para garantir consistência
+    const imovel = await prisma.$transaction(async (tx) => {
+      // Criar imóvel
+      const createdImovel = await tx.imovel.create({
+        data: {
+          numero_patrimonio,
+          denominacao,
+          endereco,
+          setor: setor || 'Não especificado',
+          data_aquisicao: new Date(data_aquisicao),
+          valor_aquisicao: parseFloat(valor_aquisicao),
+          area_terreno: area_terreno ? parseFloat(area_terreno) : 0,
+          area_construida: area_construida ? parseFloat(area_construida) : 0,
+          latitude: latitude ? parseFloat(latitude) : null,
+          longitude: longitude ? parseFloat(longitude) : null,
+          descricao,
+          observacoes,
+          tipo_imovel,
+          situacao,
+          fotos: processedFotos,
+          documentos: documentos || [],
+          url_documentos,
+          municipalityId: req.user?.municipalityId || '',
+          sectorId: finalSectorId,
+          createdBy: req.user?.userId || '',
+          updatedBy: req.user?.userId || '',
+        },
+        include: {
+          sector: { select: { id: true, name: true } },
+        },
+      });
+
+      // Criar entrada no histórico
+      if (req.user) {
+        await tx.historicoEntry.create({
+          data: {
+            imovelId: createdImovel.id,
+            date: new Date(),
+            action: 'CADASTRO',
+            details: `Imóvel cadastrado por ${req.user.userId}`,
+            user: req.user.userId,
+          },
+        });
+
+        // Log de atividade
+        await tx.activityLog.create({
+          data: {
+            userId: req.user.userId,
+            action: 'CREATE_IMOVEL',
+            entityType: 'IMOVEL',
+            entityId: createdImovel.id,
+            details: `Criado imóvel ${numero_patrimonio}`,
+            ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
+          userAgent: req.get('user-agent') || 'unknown',
+        },
+      });
+      }
+
+      return createdImovel;
     });
 
-    // Criar entrada no histórico
-    await prisma.historicoEntry.create({
-      data: {
-        imovelId: imovel.id,
-        date: new Date(),
-        action: 'CADASTRO',
-        details: `Imóvel cadastrado por ${req.user.userId}`,
-        user: req.user.userId,
-      },
-    });
-
-    // Log de atividade
-    await prisma.activityLog.create({
-      data: {
-        userId: req.user.userId,
-        action: 'CREATE_IMOVEL',
-        entityType: 'IMOVEL',
-        entityId: imovel.id,
-        details: `Criado imóvel ${numero_patrimonio}`,
-        ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
-        userAgent: req.get('user-agent') || 'unknown',
-      },
-    });
+    // ✅ CACHE: Invalidar cache de imóveis após criação
+    await CacheUtils.invalidateImoveis();
+    logDebug('✅ Cache de imóveis invalidado após criação');
 
     res.status(201).json({ message: 'Imóvel criado com sucesso', imovel });
   } catch (error) {
-    console.error('Erro ao criar imóvel:', error);
+    logError('Erro ao criar imóvel', error, { userId: req.user?.userId, numeroPatrimonio: req.body.numero_patrimonio });
     res.status(500).json({ error: 'Erro ao criar imóvel' });
   }
 };
@@ -417,42 +449,53 @@ export const updateImovel = async (req: Request, res: Response): Promise<void> =
       dataToUpdate.longitude = parseFloat(updateData.longitude);
     }
 
-    // Atualizar
-    const imovel = await prisma.imovel.update({
-      where: { id },
-      data: dataToUpdate,
-      include: {
-        sector: { select: { id: true, name: true } },
-      },
+    // Atualizar usando transaction para garantir consistência
+    const imovel = await prisma.$transaction(async (tx) => {
+      // Atualizar imóvel
+      const updatedImovel = await tx.imovel.update({
+        where: { id },
+        data: dataToUpdate,
+        include: {
+          sector: { select: { id: true, name: true } },
+        },
+      });
+
+      // Criar entrada no histórico
+      if (req.user) {
+        await tx.historicoEntry.create({
+          data: {
+            imovelId: updatedImovel.id,
+            date: new Date(),
+            action: 'ATUALIZAÇÃO',
+            details: `Imóvel atualizado por ${req.user.userId}`,
+            user: req.user.userId,
+          },
+        });
+
+        // Log de atividade
+        await tx.activityLog.create({
+          data: {
+            userId: req.user.userId,
+            action: 'UPDATE_IMOVEL',
+            entityType: 'IMOVEL',
+            entityId: updatedImovel.id,
+          details: `Atualizado imóvel ${updatedImovel.numero_patrimonio}`,
+          ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
+          userAgent: req.get('user-agent') || 'unknown',
+        },
+      });
+      }
+
+      return updatedImovel;
     });
 
-    // Criar entrada no histórico
-    await prisma.historicoEntry.create({
-      data: {
-        imovelId: imovel.id,
-        date: new Date(),
-        action: 'ATUALIZAÇÃO',
-        details: `Imóvel atualizado por ${req.user.userId}`,
-        user: req.user.userId,
-      },
-    });
-
-    // Log de atividade
-    await prisma.activityLog.create({
-      data: {
-        userId: req.user.userId,
-        action: 'UPDATE_IMOVEL',
-        entityType: 'IMOVEL',
-        entityId: imovel.id,
-        details: `Atualizado imóvel ${imovel.numero_patrimonio}`,
-        ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
-        userAgent: req.get('user-agent') || 'unknown',
-      },
-    });
+    // ✅ CACHE: Invalidar cache de imóveis após atualização
+    await CacheUtils.invalidateImoveis();
+    logDebug('✅ Cache de imóveis invalidado após atualização');
 
     res.json({ message: 'Imóvel atualizado com sucesso', imovel });
   } catch (error) {
-    console.error('Erro ao atualizar imóvel:', error);
+    logError('Erro ao atualizar imóvel', error, { imovelId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao atualizar imóvel' });
   }
 };
@@ -504,9 +547,13 @@ export const deleteImovel = async (req: Request, res: Response): Promise<void> =
       },
     });
 
+    // ✅ CACHE: Invalidar cache de imóveis após deleção
+    await CacheUtils.invalidateImoveis();
+    logDebug('✅ Cache de imóveis invalidado após deleção');
+
     res.json({ message: 'Imóvel deletado com sucesso' });
   } catch (error) {
-    console.error('Erro ao deletar imóvel:', error);
+    logError('Erro ao deletar imóvel', error, { imovelId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao deletar imóvel' });
   }
 };
@@ -566,7 +613,7 @@ export const gerarNumeroImovel = async (req: Request, res: Response): Promise<vo
     // Formatar: IML202501000 1
     const numeroGerado = `${prefix}${proximoSequencial.toString().padStart(4, '0')}`;
 
-    console.log('📋 Número de imóvel gerado:', {
+    logInfo('📋 Número de imóvel gerado', {
       prefix,
       sectorCodigo: sector.codigo,
       year: currentYear,
@@ -585,7 +632,7 @@ export const gerarNumeroImovel = async (req: Request, res: Response): Promise<vo
       },
     });
   } catch (error) {
-    console.error('Erro ao gerar número de imóvel:', error);
+    logError('Erro ao gerar número de imóvel', error, { sectorId: req.query.sectorId });
     res.status(500).json({ error: 'Erro ao gerar número de imóvel' });
   }
 };

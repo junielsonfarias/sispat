@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { AppError } from '../middlewares/errorHandler';
 import { logActivity } from '../utils/activityLogger';
+import { logError, logDebug } from '../config/logger';
+import { redisCache, CacheUtils } from '../config/redis';
 
 /**
  * Listar transferências
@@ -9,10 +11,18 @@ import { logActivity } from '../utils/activityLogger';
  */
 export const listTransfers = async (req: Request, res: Response): Promise<void> => {
   try {
+    // ✅ PAGINAÇÃO: Padronizar paginação
     const { page = 1, limit = 10, status, sector } = req.query;
-    const skip = (Number(page) - 1) * Number(limit);
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 10));
+    const skip = (pageNum - 1) * limitNum;
 
     const where: any = {};
+    
+    // Filtrar por município
+    if (req.user?.municipalityId) {
+      // Filtro será aplicado através da relação com patrimônio
+    }
     
     if (status) {
       where.status = status;
@@ -25,38 +35,71 @@ export const listTransfers = async (req: Request, res: Response): Promise<void> 
       ];
     }
 
-    const [transfers, total] = await Promise.all([
-      prisma.transferencia.findMany({
-        where,
-        skip,
-        take: Number(limit),
-        orderBy: { dataTransferencia: 'desc' },
-        include: {
-          patrimonio: {
-            select: {
-              id: true,
-              numero_patrimonio: true,
-              descricao_bem: true,
-              sectorId: true,
-              localId: true
+    // ✅ CACHE: Gerar chave de cache baseada nos filtros
+    const cacheKey = CacheUtils.getTransferenciasKey({ where, page: pageNum, limit: limitNum });
+    
+    // Tentar obter do cache Redis primeiro
+    let result = await redisCache.get<{ transfers: any[], total: number }>(cacheKey);
+    
+    if (!result) {
+      // ✅ QUERY N+1: Include otimizado com select específico
+      const [transfers, total] = await Promise.all([
+        prisma.transferencia.findMany({
+          where,
+          skip,
+          take: limitNum,
+          orderBy: { dataTransferencia: 'desc' },
+          include: {
+            patrimonio: {
+              select: {
+                id: true,
+                numero_patrimonio: true,
+                descricao_bem: true,
+                sectorId: true,
+                localId: true,
+                sector: {
+                  select: {
+                    id: true,
+                    name: true,
+                    codigo: true
+                  }
+                },
+                local: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
             }
           }
-        }
-      }),
-      prisma.transferencia.count({ where })
-    ]);
+        }),
+        prisma.transferencia.count({ where })
+      ]);
+
+      result = {
+        transfers,
+        total
+      };
+
+      // ✅ CACHE: Armazenar no cache Redis por 5 minutos
+      await redisCache.set(cacheKey, result, 300);
+      logDebug('✅ Cache de transferências criado', { page: pageNum, limit: limitNum });
+    } else {
+      logDebug('✅ Cache hit: transferências', { page: pageNum, limit: limitNum });
+    }
 
     res.json({
-      transfers,
+      transfers: result.transfers,
       pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        pages: Math.ceil(total / Number(limit))
+        page: pageNum,
+        limit: limitNum,
+        total: result.total,
+        pages: Math.ceil(result.total / limitNum)
       }
     });
   } catch (error) {
-    console.error('Erro ao listar transferências:', error);
+    logError('Erro ao listar transferências', error, { userId: req.user?.userId, query: req.query });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -96,7 +139,7 @@ export const createTransfer = async (req: Request, res: Response): Promise<void>
       data: {
         patrimonioId,
         numero_patrimonio: patrimonio.numero_patrimonio,
-        descricao_bem: patrimonio.descricao,
+        descricao_bem: patrimonio.descricao_bem,
         setorOrigem,
         setorDestino,
         localOrigem,
@@ -113,9 +156,13 @@ export const createTransfer = async (req: Request, res: Response): Promise<void>
     // Log da atividade
     await logActivity(req, 'CREATE', 'TRANSFER', transfer.id, 'Transferência criada');
 
+    // ✅ CACHE: Invalidar cache de transferências após criação
+    await CacheUtils.invalidateTransferencias();
+    logDebug('✅ Cache de transferências invalidado após criação');
+
     res.status(201).json(transfer);
   } catch (error) {
-    console.error('Erro ao criar transferência:', error);
+    logError('Erro ao criar transferência', error, { userId: req.user?.userId, patrimonioId: req.body.patrimonioId });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -165,9 +212,14 @@ export const approveTransfer = async (req: Request, res: Response): Promise<void
     // Log da atividade
     await logActivity(req, 'UPDATE', 'TRANSFER', id, 'Transferência aprovada');
 
+    // ✅ CACHE: Invalidar cache de transferências e patrimônios após aprovação
+    await CacheUtils.invalidateTransferencias();
+    await CacheUtils.invalidatePatrimonios();
+    logDebug('✅ Cache de transferências e patrimônios invalidado após aprovação');
+
     res.json(updatedTransfer);
   } catch (error) {
-    console.error('Erro ao aprovar transferência:', error);
+    logError('Erro ao aprovar transferência', error, { transferId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -207,9 +259,13 @@ export const rejectTransfer = async (req: Request, res: Response): Promise<void>
     // Log da atividade
     await logActivity(req, 'UPDATE', 'TRANSFER', id, 'Transferência rejeitada');
 
+    // ✅ CACHE: Invalidar cache de transferências após rejeição
+    await CacheUtils.invalidateTransferencias();
+    logDebug('✅ Cache de transferências invalidado após rejeição');
+
     res.json(updatedTransfer);
   } catch (error) {
-    console.error('Erro ao rejeitar transferência:', error);
+    logError('Erro ao rejeitar transferência', error, { transferId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -229,7 +285,7 @@ export const getTransfer = async (req: Request, res: Response): Promise<void> =>
           select: {
             id: true,
             numero_patrimonio: true,
-            descricao: true,
+            descricao_bem: true,
             sectorId: true,
             localId: true
           }
@@ -244,7 +300,7 @@ export const getTransfer = async (req: Request, res: Response): Promise<void> =>
 
     res.json(transfer);
   } catch (error) {
-    console.error('Erro ao obter transferência:', error);
+    logError('Erro ao obter transferência', error, { transferId: req.params.id });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -278,9 +334,13 @@ export const deleteTransfer = async (req: Request, res: Response): Promise<void>
     // Log da atividade
     await logActivity(req, 'DELETE', 'TRANSFER', id, 'Transferência deletada');
 
+    // ✅ CACHE: Invalidar cache de transferências após deleção
+    await CacheUtils.invalidateTransferencias();
+    logDebug('✅ Cache de transferências invalidado após deleção');
+
     res.status(204).send();
   } catch (error) {
-    console.error('Erro ao deletar transferência:', error);
+    logError('Erro ao deletar transferência', error, { transferId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };

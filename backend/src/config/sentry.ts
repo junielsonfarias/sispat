@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node'
-import { ProfilingIntegration } from '@sentry/profiling-node'
+import { nodeProfilingIntegration } from '@sentry/profiling-node'
 import { Express } from 'express'
 
 export const initSentry = (app: Express) => {
@@ -16,7 +16,7 @@ export const initSentry = (app: Express) => {
     
     // Performance Monitoring
     integrations: [
-      new ProfilingIntegration(),
+      nodeProfilingIntegration(),
     ],
     
     // Performance
@@ -55,10 +55,8 @@ export const initSentry = (app: Express) => {
   })
 
   // Request handler deve ser o primeiro middleware
-  app.use(Sentry.Handlers.requestHandler())
-  
-  // Tracing handler para performance monitoring
-  app.use(Sentry.Handlers.tracingHandler())
+  // Note: Na versão nova do Sentry, o express integration é automático
+  // Não é necessário usar Handlers manualmente
 
   console.info('✅ Sentry inicializado com sucesso!')
 }
@@ -73,7 +71,11 @@ export const getSentryErrorHandler = () => {
       next(err)
     }
   }
-  return Sentry.Handlers.errorHandler()
+  // Error handler simplificado - Sentry captura automaticamente erros não tratados
+  return (err: any, req: any, res: any, next: any) => {
+    Sentry.captureException(err)
+    next(err)
+  }
 }
 
 // Helper para capturar erros manualmente

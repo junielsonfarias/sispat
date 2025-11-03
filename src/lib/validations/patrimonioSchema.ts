@@ -42,6 +42,17 @@ export const patrimonioBaseSchema = z.object({
     .string()
     .min(1, 'Forma de aquisição é obrigatória.')
     .max(50, 'A forma de aquisição deve ter no máximo 50 caracteres.'),
+  numero_licitacao: z
+    .string()
+    .max(50, 'O número da licitação deve ter no máximo 50 caracteres.')
+    .optional(),
+  ano_licitacao: z.coerce
+    .number({ invalid_type_error: 'O ano deve ser um número.' })
+    .int('O ano deve ser um número inteiro.')
+    .min(2000, 'O ano deve ser maior ou igual a 2000.')
+    .max(2100, 'O ano deve ser menor ou igual a 2100.')
+    .optional()
+    .nullable(),
   setor_responsavel: z.string().min(1, 'Setor é obrigatório.'),
   local_objeto: z.string().min(1, 'Localização é obrigatória.'),
   situacao_bem: z.enum(['otimo', 'bom', 'regular', 'ruim', 'pessimo'], {
@@ -109,3 +120,6 @@ export const patrimonioEditSchema = patrimonioBaseSchema
       path: ['motivo_baixa'],
     }
   )
+
+// Schema para criação - mesmo que base schema (campos de licitação já são opcionais)
+export const patrimonioCreateSchema = patrimonioBaseSchema

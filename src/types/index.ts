@@ -133,6 +133,8 @@ export interface Patrimonio {
   quantidade: number
   numero_nota_fiscal: string
   forma_aquisicao: string
+  numero_licitacao?: string
+  ano_licitacao?: number
   setor_responsavel: string
   local_objeto: string
   status: PatrimonioStatus

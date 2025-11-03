@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 
 interface AuthRequest extends Request {
   user?: {
@@ -43,9 +44,8 @@ export const uploadFile = async (req: AuthRequest, res: Response): Promise<void>
       created_at: new Date().toISOString(),
     };
 
-    console.log('✅ Arquivo salvo:', {
+    logInfo('✅ Arquivo salvo', {
       filename: req.file.filename,
-      path: req.file.path,
       url: fileUrl,
       size: req.file.size,
       type: req.file.mimetype,
@@ -53,7 +53,7 @@ export const uploadFile = async (req: AuthRequest, res: Response): Promise<void>
 
     res.json(fileMetadata);
   } catch (error) {
-    console.error('Erro ao fazer upload:', error);
+    logError('Erro ao fazer upload', error, { userId: req.user?.userId, assetId: req.body.assetId });
     
     // Remover arquivo em caso de erro
     if (req.file && fs.existsSync(req.file.path)) {
@@ -106,16 +106,16 @@ export const uploadMultipleFiles = async (req: AuthRequest, res: Response): Prom
       };
     });
 
-    console.log(`✅ ${files.length} arquivo(s) salvo(s)`);
+    logInfo(`✅ ${files.length} arquivo(s) salvo(s)`, { count: files.length, userId: req.user?.userId });
 
     res.json({ files: filesMetadata });
   } catch (error) {
-    console.error('Erro ao fazer upload múltiplo:', error);
+    const errorFiles = req.files as Express.Multer.File[];
+    logError('Erro ao fazer upload múltiplo', error, { userId: req.user?.userId, filesCount: errorFiles?.length });
     
     // Remover arquivos em caso de erro
-    const files = req.files as Express.Multer.File[];
-    if (files) {
-      files.forEach(file => {
+    if (errorFiles) {
+      errorFiles.forEach(file => {
         if (fs.existsSync(file.path)) {
           fs.unlinkSync(file.path);
         }
@@ -160,11 +160,11 @@ export const deleteFile = async (req: AuthRequest, res: Response): Promise<void>
     // Deletar arquivo
     fs.unlinkSync(filePath);
 
-    console.log('🗑️ Arquivo deletado:', filename);
+    logInfo('🗑️ Arquivo deletado', { filename, userId: req.user?.userId });
 
     res.json({ message: 'Arquivo deletado com sucesso' });
   } catch (error) {
-    console.error('Erro ao deletar arquivo:', error);
+    logError('Erro ao deletar arquivo', error, { filename: req.params.filename, userId: req.user?.userId });
     res.status(500).json({ 
       error: 'Erro ao deletar arquivo',
       details: error instanceof Error ? error.message : 'Erro desconhecido'

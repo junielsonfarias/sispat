@@ -3,6 +3,7 @@ import { formatDate, formatCurrency, getCloudImageUrl } from '@/lib/utils'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { api } from '@/services/http-api'
+import { generatePatrimonioQRCode } from '@/lib/qr-code-utils'
 
 interface PatrimonioPDFGeneratorProps {
   patrimonio: Patrimonio
@@ -195,6 +196,15 @@ export const generatePatrimonioPDF = async ({
       console.warn('Erro ao comprimir fotos:', error)
     }
   }
+
+  // Gerar QR Code para consulta pública
+  let qrCodeUrl = ''
+  try {
+    qrCodeUrl = await generatePatrimonioQRCode(patrimonio.numero_patrimonio, 'bem')
+    console.log('✅ QR Code gerado com sucesso para PDF')
+  } catch (error) {
+    console.warn('⚠️ Erro ao gerar QR Code para PDF:', error)
+  }
   
   // Criar elemento temporário para renderizar o conteúdo
   const container = document.createElement('div')
@@ -248,10 +258,10 @@ export const generatePatrimonioPDF = async ({
       ` : ''}
 
       ${shouldInclude('numero') ? `
-      <!-- Número do Patrimônio e Dados de Cadastro/Atualização -->
+      <!-- Número do Patrimônio -->
       <div style="margin-bottom: 25px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-          <!-- Número do Patrimônio - Reduzido -->
+          <!-- Número do Patrimônio -->
           <div style="padding: 12px; background: #f3f4f6; border-left: 4px solid #3B82F6; border-radius: 6px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 18px; font-weight: bold; color: #3B82F6;">#</span>
@@ -315,6 +325,15 @@ export const generatePatrimonioPDF = async ({
                 <span style="display: none; font-size: 12px; color: #6b7280;">Sem foto</span>
               ` : '<span style="font-size: 12px; color: #6b7280;">Sem foto</span>'}
             </div>
+            
+            <!-- QR Code para consulta pública -->
+            ${qrCodeUrl ? `
+            <div style="margin-top: 12px; padding: 8px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <p style="margin: 0; font-size: 9px; color: #6b7280; font-weight: 600; margin-bottom: 3px;">CONSULTA PÚBLICA</p>
+              <img src="${qrCodeUrl}" alt="QR Code" style="width: 60px; height: 60px; margin: 0 auto; display: block;" />
+              <p style="margin: 3px 0 0 0; font-size: 8px; color: #9ca3af;">Escaneie para acessar</p>
+            </div>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -332,6 +351,13 @@ export const generatePatrimonioPDF = async ({
             <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.data_aquisicao ? formatDate(patrimonio.data_aquisicao) : '-'}</p>
             <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">VALOR DE AQUISIÇÃO</p>
             <p style="margin: 0; font-size: 14px; color: #000; font-weight: bold;">${patrimonio.valor_aquisicao ? formatCurrency(patrimonio.valor_aquisicao) : '-'}</p>
+            ${(patrimonio.numero_licitacao || patrimonio.ano_licitacao) ? `
+            <div style="margin-top: 12px; padding: 10px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
+              <p style="margin: 0; font-size: 10px; color: #1e40af; font-weight: 700; margin-bottom: 6px;">REFERÊNCIA DA AQUISIÇÃO</p>
+              ${patrimonio.numero_licitacao ? `<p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 2px;">Número: <span style="color: #000; font-weight: 700;">${patrimonio.numero_licitacao}</span></p>` : ''}
+              ${patrimonio.ano_licitacao ? `<p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600;">Ano: <span style="color: #000; font-weight: 700;">${patrimonio.ano_licitacao}</span></p>` : ''}
+            </div>
+            ` : ''}
           </div>
           <div>
             <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">NOTA FISCAL</p>
@@ -418,23 +444,6 @@ export const generatePatrimonioPDF = async ({
       ` : ''}
 
 
-      ${shouldInclude('sistema') ? `
-      <!-- Seção 9: Informações do Sistema -->
-      <div style="margin-top: 30px; padding-top: 15px; border-top: 2px solid #e5e7eb;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 10px; color: #64748b;">
-          <div>
-            <p style="margin: 0; font-weight: 600;">CADASTRADO EM</p>
-            <p style="margin: 3px 0 0 0;">${formatDate(patrimonio.createdAt)}</p>
-          </div>
-          ${patrimonio.updatedAt ? `
-          <div>
-            <p style="margin: 0; font-weight: 600;">ÚLTIMA ATUALIZAÇÃO</p>
-            <p style="margin: 3px 0 0 0;">${formatDate(patrimonio.updatedAt)}</p>
-          </div>
-          ` : ''}
-        </div>
-      </div>
-      ` : ''}
 
       ${signaturesConfig.enabled !== false ? `
       <!-- Linhas para Assinaturas -->

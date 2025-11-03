@@ -1,11 +1,11 @@
 import rateLimit from 'express-rate-limit'
 import RedisStore from 'rate-limit-redis'
-import Redis from 'ioredis'
 
 // Cliente Redis para rate limiting
-const redis = process.env.REDIS_URL
-  ? new Redis(process.env.REDIS_URL)
-  : null
+// ✅ Usar a mesma instância do Redis configurada no sistema
+import { getRedis } from '../config/redis'
+
+const redis = getRedis() // Pode retornar null se Redis não estiver disponível
 
 /**
  * Rate limiter global para toda a API
@@ -37,13 +37,13 @@ export const globalRateLimiter = rateLimit({
   },
   
   // Handler customizado para quando exceder
-  handler: (req, res) => {
+  handler: (req: any, res) => {
     console.warn(`⚠️ Rate limit exceeded: ${req.ip} → ${req.path}`)
     
     res.status(429).json({
       error: 'Too Many Requests',
       message: 'Você excedeu o limite de requisições. Tente novamente mais tarde.',
-      retryAfter: Math.ceil(req.rateLimit.resetTime! / 1000),
+      retryAfter: Math.ceil((req.rateLimit?.resetTime || Date.now() + 60000) / 1000),
     })
   },
 })
@@ -70,13 +70,13 @@ export const authRateLimiter = rateLimit({
     error: 'Muitas tentativas de login. Aguarde 15 minutos.',
   },
   
-  handler: (req, res) => {
+  handler: (req: any, res) => {
     console.error(`🚨 Possível brute force attack: ${req.ip} → ${req.body?.email || 'unknown'}`)
     
     res.status(429).json({
       error: 'Too Many Requests',
       message: 'Muitas tentativas de login. Por segurança, aguarde 15 minutos.',
-      retryAfter: Math.ceil(req.rateLimit.resetTime! / 1000),
+      retryAfter: Math.ceil((req.rateLimit?.resetTime || Date.now() + 900000) / 1000),
     })
   },
 })
@@ -152,13 +152,9 @@ export const isRedisAvailable = (): boolean => {
   return redis !== null && redis.status === 'ready'
 }
 
-// Log de status do Redis
-if (redis) {
-  redis.on('connect', () => console.log('✅ Redis conectado para rate limiting'))
-  redis.on('error', (err) => console.error('❌ Redis error:', err))
-  redis.on('ready', () => console.log('✅ Redis pronto para rate limiting'))
-} else {
-  console.warn('⚠️ Redis não configurado. Rate limiting usando memória (não distribuído)')
+// Log de status do Redis (eventos já são gerenciados em config/redis.ts)
+if (!redis) {
+  console.log('ℹ️  Rate limiting usando memória (Redis não disponível)')
 }
 
 export default {
