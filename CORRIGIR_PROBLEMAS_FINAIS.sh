@@ -37,13 +37,37 @@ log "Iniciando correção de problemas finais..."
 cd /var/www/sispat || exit 1
 
 # ============================================
-# 1. ATUALIZAR CÓDIGO
+# 0. GARANTIR PERMISSÕES DO GIT
 # ============================================
-section "1. ATUALIZANDO CÓDIGO"
+section "0. CONFIGURANDO GIT"
 
-log "Atualizando código do repositório..."
-sudo git pull origin main || warning "Falha ao atualizar (pode já estar atualizado)"
-success "Código atualizado"
+log "Configurando permissões do Git..."
+git config --global --add safe.directory /var/www/sispat 2>/dev/null || true
+success "Git configurado"
+
+# ============================================
+# 1. ATUALIZAR CÓDIGO DO REPOSITÓRIO
+# ============================================
+section "1. ATUALIZANDO CÓDIGO DO REPOSITÓRIO"
+
+log "Buscando atualizações do repositório (git fetch)..."
+git fetch origin main || warning "Falha ao buscar atualizações"
+
+log "Atualizando código do repositório (git pull)..."
+sudo git pull origin main || {
+    warning "Falha ao atualizar código"
+    log "Tentando com git reset..."
+    git reset --hard origin/main || warning "Falha ao resetar"
+}
+
+# Verificar se o próprio script foi atualizado
+if [ -f CORRIGIR_PROBLEMAS_FINAIS.sh ]; then
+    log "Script atualizado do repositório"
+    success "Código atualizado com sucesso"
+else
+    error "Arquivo do script não encontrado após atualização"
+    exit 1
+fi
 
 # ============================================
 # 2. LIMPAR RATE LIMITS

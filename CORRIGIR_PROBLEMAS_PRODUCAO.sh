@@ -34,21 +34,31 @@ section() {
 
 log "Iniciando correção de problemas em produção..."
 
-# ============================================
-# 1. ATUALIZAR CÓDIGO
-# ============================================
-section "1. ATUALIZANDO CÓDIGO DO REPOSITÓRIO"
-
 cd /var/www/sispat || exit 1
 
-log "Atualizando código (git pull origin main)..."
-sudo git pull origin main || error "Falha ao atualizar código"
-success "Código atualizado"
+# ============================================
+# 0. CONFIGURAR GIT E ATUALIZAR CÓDIGO
+# ============================================
+section "0. CONFIGURANDO GIT E ATUALIZANDO CÓDIGO"
+
+log "Configurando permissões do Git..."
+git config --global --add safe.directory /var/www/sispat 2>/dev/null || true
+success "Git configurado"
+
+log "Buscando atualizações do repositório (git fetch)..."
+git fetch origin main || warning "Falha ao buscar atualizações"
+
+log "Atualizando código do repositório (git pull)..."
+sudo git pull origin main || {
+    warning "Falha ao atualizar código, tentando reset..."
+    git reset --hard origin/main || error "Falha ao atualizar código do repositório"
+}
+success "Código atualizado do repositório"
 
 # ============================================
-# 2. LIMPAR RATE LIMITS (SE REDIS ESTIVER DISPONÍVEL)
+# 1. LIMPAR RATE LIMITS (SE REDIS ESTIVER DISPONÍVEL)
 # ============================================
-section "2. LIMPANDO RATE LIMITS"
+section "1. LIMPANDO RATE LIMITS"
 
 if command -v redis-cli &> /dev/null; then
     if redis-cli ping &> /dev/null 2>&1; then
@@ -64,9 +74,9 @@ else
 fi
 
 # ============================================
-# 3. REINSTALAR/ATUALIZAR DEPENDÊNCIAS DO BACKEND
+# 2. REINSTALAR/ATUALIZAR DEPENDÊNCIAS DO BACKEND
 # ============================================
-section "3. ATUALIZANDO DEPENDÊNCIAS DO BACKEND"
+section "2. ATUALIZANDO DEPENDÊNCIAS DO BACKEND"
 
 cd /var/www/sispat/backend || exit 1
 
@@ -75,18 +85,18 @@ npm install || warning "Alguns pacotes podem não ter sido instalados"
 success "Dependências atualizadas"
 
 # ============================================
-# 4. RECOMPILAR BACKEND
+# 3. RECOMPILAR BACKEND
 # ============================================
-section "4. RECOMPILANDO BACKEND"
+section "3. RECOMPILANDO BACKEND"
 
 log "Compilando backend..."
 npm run build || error "Falha ao compilar backend"
 success "Backend compilado com sucesso"
 
 # ============================================
-# 5. VERIFICAR VARIÁVEIS DE AMBIENTE
+# 4. VERIFICAR VARIÁVEIS DE AMBIENTE
 # ============================================
-section "5. VERIFICANDO VARIÁVEIS DE AMBIENTE"
+section "4. VERIFICANDO VARIÁVEIS DE AMBIENTE"
 
 if [ -f .env ]; then
     log "Verificando configurações críticas..."
@@ -125,9 +135,9 @@ else
 fi
 
 # ============================================
-# 6. REINICIAR BACKEND
+# 5. REINICIAR BACKEND
 # ============================================
-section "6. REINICIANDO BACKEND"
+section "5. REINICIANDO BACKEND"
 
 log "Parando backend atual..."
 pm2 stop sispat-backend 2>/dev/null || warning "Backend já estava parado"
@@ -147,9 +157,9 @@ else
 fi
 
 # ============================================
-# 7. VERIFICAR SE BACKEND ESTÁ RESPONDENDO
+# 6. VERIFICAR SE BACKEND ESTÁ RESPONDENDO
 # ============================================
-section "7. VERIFICANDO HEALTH CHECK"
+section "6. VERIFICANDO HEALTH CHECK"
 
 sleep 2
 log "Testando health check..."
@@ -172,9 +182,9 @@ else
 fi
 
 # ============================================
-# 8. VERIFICAR NGINX (CORRIGIR LOOPS DE REDIRECIONAMENTO)
+# 7. VERIFICAR NGINX (CORRIGIR LOOPS DE REDIRECIONAMENTO)
 # ============================================
-section "8. VERIFICANDO CONFIGURAÇÃO DO NGINX"
+section "7. VERIFICANDO CONFIGURAÇÃO DO NGINX"
 
 log "Testando configuração do Nginx..."
 if nginx -t 2>&1 | grep -q "successful"; then
@@ -196,9 +206,9 @@ else
 fi
 
 # ============================================
-# 9. VERIFICAR FRONTEND
+# 8. VERIFICAR FRONTEND
 # ============================================
-section "9. VERIFICANDO FRONTEND"
+section "8. VERIFICANDO FRONTEND"
 
 cd /var/www/sispat || exit 1
 
@@ -220,18 +230,18 @@ else
 fi
 
 # ============================================
-# 10. SALVAR CONFIGURAÇÃO DO PM2
+# 9. SALVAR CONFIGURAÇÃO DO PM2
 # ============================================
-section "10. SALVANDO CONFIGURAÇÃO DO PM2"
+section "9. SALVANDO CONFIGURAÇÃO DO PM2"
 
 log "Salvando configuração do PM2..."
 pm2 save || warning "Falha ao salvar configuração do PM2"
 success "Configuração salva"
 
 # ============================================
-# 11. RESUMO
+# 10. RESUMO
 # ============================================
-section "11. RESUMO"
+section "10. RESUMO"
 
 echo ""
 log "Correções aplicadas:"
