@@ -43,6 +43,7 @@ const LabelTemplateEditor = () => {
     null,
   )
   const [zoom, setZoom] = useState(1)
+  const [saving, setSaving] = useState(false)
   // Dados de exemplo para preview (substituído por dados reais)
   const mockPatrimonio = {
     id: 'example',
@@ -114,10 +115,15 @@ const LabelTemplateEditor = () => {
     }
   }, [templateId, getTemplateById, navigate, user])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     console.log('handleSave called with template:', template)
     if (!template) {
       console.log('No template to save')
+      toast({
+        title: 'Erro',
+        description: 'Nenhum template para salvar.',
+        variant: 'destructive'
+      })
       return
     }
     
@@ -131,13 +137,28 @@ const LabelTemplateEditor = () => {
       return
     }
     
-    console.log('Calling saveTemplate...')
-    saveTemplate(template)
-    toast({ 
-      title: 'Sucesso!',
-      description: 'Modelo de etiqueta salvo com sucesso!' 
-    })
-    navigate('/etiquetas/templates')
+    try {
+      setSaving(true)
+      console.log('Calling saveTemplate...')
+      await saveTemplate(template)
+      toast({ 
+        title: 'Sucesso!',
+        description: 'Modelo de etiqueta salvo com sucesso!' 
+      })
+      // ✅ CORREÇÃO: Aguardar um pouco antes de navegar para garantir que o toast seja exibido
+      setTimeout(() => {
+        navigate('/etiquetas/templates')
+      }, 500)
+    } catch (error) {
+      console.error('Erro ao salvar template:', error)
+      toast({
+        title: 'Erro',
+        description: 'Falha ao salvar modelo de etiqueta. Tente novamente.',
+        variant: 'destructive'
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const updateElement = (
@@ -213,8 +234,14 @@ const LabelTemplateEditor = () => {
             className="text-xl sm:text-2xl font-bold"
           />
         </div>
-        <Button onClick={handleSave} size="lg" className="w-full sm:w-auto">
-          <Save className="mr-2 h-4 w-4" /> Salvar Modelo
+        <Button 
+          onClick={handleSave} 
+          size="lg" 
+          className="w-full sm:w-auto"
+          disabled={saving}
+        >
+          <Save className="mr-2 h-4 w-4" /> 
+          {saving ? 'Salvando...' : 'Salvar Modelo'}
         </Button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
