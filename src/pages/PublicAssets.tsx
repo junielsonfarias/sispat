@@ -273,6 +273,15 @@ export default function PublicAssets() {
   // Exportar para PDF
   const handleExportPDF = () => {
     try {
+      if (filteredData.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Nenhum dado',
+          description: 'Não há dados para exportar.',
+        })
+        return
+      }
+
       const doc = new jsPDF()
       
       // Adicionar título
@@ -282,15 +291,6 @@ export default function PublicAssets() {
       doc.text(selectedMunicipality.name, 14, 28)
       doc.setFontSize(10)
       doc.text(`Gerado em: ${formatDate(new Date())}`, 14, 35)
-
-          if (filteredData.length === 0) {
-        toast({
-          variant: 'destructive',
-          title: 'Nenhum dado',
-          description: 'Não há dados para exportar.',
-        })
-        return
-      }
 
       // Preparar dados
       const tableData = filteredData.map((item) => [
