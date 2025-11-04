@@ -221,8 +221,28 @@ const ReportView = () => {
       return '' // Retorna vazio para campo duplicado
     }
     
+    // ✅ CORREÇÃO: Tratar campo 'tipo' - usar tipoBem.nome se disponível, senão usar tipo direto
+    if (key === 'tipo') {
+      // Verificar se existe relacionamento tipoBem
+      const tipoBem = (item as any).tipoBem
+      if (tipoBem && tipoBem.nome) {
+        return tipoBem.nome
+      }
+      // Fallback para campo tipo direto (compatibilidade)
+      return item.tipo || ''
+    }
+    
+    // ✅ CORREÇÃO: Garantir que descricao_bem seja exibida sem transformações
+    if (key === 'descricao_bem') {
+      return item.descricao_bem || ''
+    }
+    
     // Verificar se o campo existe no item
     if (!(key in item)) {
+      // ✅ CORREÇÃO: Verificar também em relacionamentos (para campos aninhados)
+      if ((item as any)[key] !== undefined) {
+        return String((item as any)[key])
+      }
       return 'Campo não encontrado'
     }
     
