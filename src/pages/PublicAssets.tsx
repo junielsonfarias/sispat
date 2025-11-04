@@ -47,9 +47,11 @@ import { useImovel } from '@/hooks/useImovel'
 import { usePublicSearch } from '@/contexts/PublicSearchContext'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
-import { formatRelativeDate } from '@/lib/utils'
+import { formatRelativeDate, formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { useSync } from '@/contexts/SyncContext'
+import { ArrowLeft } from 'lucide-react'
+import { toast } from '@/hooks/use-toast'
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
 
@@ -170,99 +172,169 @@ export default function PublicAssets() {
 
   // Exportar para Excel
   const handleExportExcel = () => {
-    const data = filteredData.map((item) => ({
-      'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
-      'Nº Patrimônio': item.numero_patrimonio,
-      'Descrição': item.assetType === 'bem' 
-        ? (item as Patrimonio).descricao_bem 
-        : (item as Imovel).denominacao,
-      'Setor': item.assetType === 'bem'
-        ? (item as Patrimonio).setor_responsavel
-        : (item as Imovel).setor || '-',
-      'Local': item.assetType === 'bem'
-        ? (item as Patrimonio).localizacao
-        : (item as Imovel).endereco || '-',
-      'Situação': item.assetType === 'bem'
-        ? formatSituacao((item as Patrimonio).status)
-        : 'Ativo',
-    }))
+    try {
+      if (filteredData.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Nenhum dado',
+          description: 'Não há dados para exportar.',
+        })
+        return
+      }
 
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Bens')
-    
-    const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.xlsx`
-    XLSX.writeFile(wb, fileName)
+      const data = filteredData.map((item) => ({
+        'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
+        'Nº Patrimônio': item.numero_patrimonio,
+        'Descrição': item.assetType === 'bem' 
+          ? (item as Patrimonio).descricao_bem 
+          : (item as Imovel).denominacao,
+        'Setor': item.assetType === 'bem'
+          ? (item as Patrimonio).setor_responsavel
+          : (item as Imovel).setor || '-',
+        'Local': item.assetType === 'bem'
+          ? (item as Patrimonio).localizacao
+          : (item as Imovel).endereco || '-',
+        'Situação': item.assetType === 'bem'
+          ? formatSituacao((item as Patrimonio).status)
+          : 'Ativo',
+      }))
+
+      const ws = XLSX.utils.json_to_sheet(data)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Bens')
+      
+      const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.xlsx`
+      XLSX.writeFile(wb, fileName)
+      
+      toast({
+        title: 'Exportação concluída',
+        description: 'Arquivo Excel gerado e baixado com sucesso.',
+      })
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro na exportação',
+        description: 'Falha ao gerar arquivo Excel. Tente novamente.',
+      })
+    }
   }
 
   // Exportar para CSV
   const handleExportCSV = () => {
-    const data = filteredData.map((item) => ({
-      'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
-      'Nº Patrimônio': item.numero_patrimonio,
-      'Descrição': item.assetType === 'bem' 
-        ? (item as Patrimonio).descricao_bem 
-        : (item as Imovel).denominacao,
-      'Setor': item.assetType === 'bem'
-        ? (item as Patrimonio).setor_responsavel
-        : (item as Imovel).setor || '-',
-      'Local': item.assetType === 'bem'
-        ? (item as Patrimonio).localizacao
-        : (item as Imovel).endereco || '-',
-      'Situação': item.assetType === 'bem'
-        ? formatSituacao((item as Patrimonio).status)
-        : 'Ativo',
-    }))
+    try {
+      if (filteredData.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Nenhum dado',
+          description: 'Não há dados para exportar.',
+        })
+        return
+      }
 
-    const ws = XLSX.utils.json_to_sheet(data)
-    const csv = XLSX.utils.sheet_to_csv(ws)
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
-    
-    const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.csv`
-    saveAs(blob, fileName)
+      const data = filteredData.map((item) => ({
+        'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
+        'Nº Patrimônio': item.numero_patrimonio,
+        'Descrição': item.assetType === 'bem' 
+          ? (item as Patrimonio).descricao_bem 
+          : (item as Imovel).denominacao,
+        'Setor': item.assetType === 'bem'
+          ? (item as Patrimonio).setor_responsavel
+          : (item as Imovel).setor || '-',
+        'Local': item.assetType === 'bem'
+          ? (item as Patrimonio).localizacao
+          : (item as Imovel).endereco || '-',
+        'Situação': item.assetType === 'bem'
+          ? formatSituacao((item as Patrimonio).status)
+          : 'Ativo',
+      }))
+
+      const ws = XLSX.utils.json_to_sheet(data)
+      const csv = XLSX.utils.sheet_to_csv(ws)
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
+      
+      const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.csv`
+      saveAs(blob, fileName)
+      
+      toast({
+        title: 'Exportação concluída',
+        description: 'Arquivo CSV gerado e baixado com sucesso.',
+      })
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro na exportação',
+        description: 'Falha ao gerar arquivo CSV. Tente novamente.',
+      })
+    }
   }
 
   // Exportar para PDF
   const handleExportPDF = () => {
-    const doc = new jsPDF()
-    
-    // Adicionar título
-    doc.setFontSize(18)
-    doc.text('Consulta Pública de Bens', 14, 20)
-    doc.setFontSize(12)
-    doc.text(selectedMunicipality.name, 14, 28)
-    doc.setFontSize(10)
-    doc.text(`Gerado em: ${formatDate(new Date().toISOString())}`, 14, 35)
+    try {
+      const doc = new jsPDF()
+      
+      // Adicionar título
+      doc.setFontSize(18)
+      doc.text('Consulta Pública de Bens', 14, 20)
+      doc.setFontSize(12)
+      doc.text(selectedMunicipality.name, 14, 28)
+      doc.setFontSize(10)
+      doc.text(`Gerado em: ${formatDate(new Date())}`, 14, 35)
 
-    // Preparar dados
-    const tableData = filteredData.map((item) => [
-      item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
-      item.numero_patrimonio,
-      item.assetType === 'bem' 
-        ? (item as Patrimonio).descricao_bem 
-        : (item as Imovel).denominacao,
-      item.assetType === 'bem'
-        ? (item as Patrimonio).setor_responsavel
-        : (item as Imovel).setor || '-',
-      item.assetType === 'bem'
-        ? (item as Patrimonio).localizacao
-        : (item as Imovel).endereco || '-',
-      item.assetType === 'bem'
-        ? formatSituacao((item as Patrimonio).status)
-        : 'Ativo',
-    ])
+          if (filteredData.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Nenhum dado',
+          description: 'Não há dados para exportar.',
+        })
+        return
+      }
 
-    // Gerar tabela
-    autoTable(doc, {
-      head: [['Tipo', 'Nº Patrimônio', 'Descrição', 'Setor', 'Local', 'Situação']],
-      body: tableData,
-      startY: 42,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [59, 130, 246] },
-    })
+      // Preparar dados
+      const tableData = filteredData.map((item) => [
+        item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
+        item.numero_patrimonio,
+        item.assetType === 'bem' 
+          ? (item as Patrimonio).descricao_bem 
+          : (item as Imovel).denominacao,
+        item.assetType === 'bem'
+          ? (item as Patrimonio).setor_responsavel
+          : (item as Imovel).setor || '-',
+        item.assetType === 'bem'
+          ? (item as Patrimonio).localizacao
+          : (item as Imovel).endereco || '-',
+        item.assetType === 'bem'
+          ? formatSituacao((item as Patrimonio).status)
+          : 'Ativo',
+      ])
 
-    const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.pdf`
-    doc.save(fileName)
+      // Gerar tabela
+      autoTable(doc, {
+        head: [['Tipo', 'Nº Patrimônio', 'Descrição', 'Setor', 'Local', 'Situação']],
+        body: tableData,
+        startY: 42,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] },
+      })
+
+      const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.pdf`
+      doc.save(fileName)
+      
+      // ✅ Feedback ao usuário
+      toast({
+        title: 'Exportação concluída',
+        description: 'PDF gerado e baixado com sucesso.',
+      })
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro na exportação',
+        description: 'Falha ao gerar PDF. Tente novamente.',
+      })
+    }
   }
 
   if (!publicSettings.isPublicSearchEnabled) {
@@ -286,6 +358,18 @@ export default function PublicAssets() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-8 px-4">
       <div className="container mx-auto max-w-7xl">
+        {/* Botão Voltar */}
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para o Sistema
+          </Button>
+        </div>
+
         {/* Header */}
         <Card className="mb-6 border-none shadow-lg">
           <CardHeader className="text-center space-y-4 pb-6">
