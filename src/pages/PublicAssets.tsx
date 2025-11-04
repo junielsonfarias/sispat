@@ -13,6 +13,10 @@ import {
   FileText,
   Download,
   ArrowLeft,
+  Filter,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
@@ -41,6 +45,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { Patrimonio, Imovel } from '@/types'
 import { useDebounce } from '@/hooks/use-debounce'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
@@ -90,6 +99,14 @@ export default function PublicAssets() {
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
   const [assetTypeFilter, setAssetTypeFilter] = useState<'all' | 'bem' | 'imovel'>('all')
+  
+  // ✅ NOVO: Filtros avançados
+  const [filtroSetor, setFiltroSetor] = useState<string>('all')
+  const [filtroSituacao, setFiltroSituacao] = useState<string>('all')
+  const [filtroTipo, setFiltroTipo] = useState<string>('all')
+  const [filtroLocal, setFiltroLocal] = useState<string>('all')
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
@@ -102,7 +119,63 @@ export default function PublicAssets() {
     [customizationSettings],
   )
 
-  // ✅ Sincronizar dados ao carregar a página (apenas uma vez)
+  // ✅ NOVO: Extrair valores únicos para os filtros
+  const filterOptions = useMemo(() => {
+    const setores = new Set<string>()
+    const situacoes = new Set<string>()
+    const tipos = new Set<string>()
+    const locais = new Set<string>()
+
+    patrimonios.forEach((p) => {
+      if (p.setor_responsavel) setores.add(p.setor_responsavel)
+      if (p.status) situacoes.add(p.status)
+      // ✅ CORREÇÃO: Considerar tipo direto ou tipoBem?.nome
+      const tipo = (p as any).tipoBem?.nome || p.tipo || ''
+      if (tipo) tipos.add(tipo)
+      // ✅ CORREÇÃO: Usar local_objeto ou local?.name
+      const local = (p as any).local?.name || p.local_objeto || ''
+      if (local) locais.add(local)
+    })
+
+    imoveis.forEach((i) => {
+      if (i.setor) setores.add(i.setor)
+      situacoes.add('ativo') // Imóveis sempre ativos
+      if ((i as any).tipo_imovel) tipos.add((i as any).tipo_imovel)
+      if (i.endereco) locais.add(i.endereco)
+    })
+
+    return {
+      setores: Array.from(setores).sort(),
+      situacoes: Array.from(situacoes).sort(),
+      tipos: Array.from(tipos).sort(),
+      locais: Array.from(locais).sort(),
+    }
+  }, [patrimonios, imoveis])
+
+  // ✅ NOVO: Limpar todos os filtros
+  const limparFiltros = () => {
+    setFiltroSetor('all')
+    setFiltroSituacao('all')
+    setFiltroTipo('all')
+    setFiltroLocal('all')
+    setAssetTypeFilter('all')
+    setSearchTerm('')
+    setCurrentPage(1)
+  }
+
+  // ✅ NOVO: Verificar se há filtros ativos
+  const temFiltrosAtivos = useMemo(() => {
+    return (
+      filtroSetor !== 'all' ||
+      filtroSituacao !== 'all' ||
+      filtroTipo !== 'all' ||
+      filtroLocal !== 'all' ||
+      assetTypeFilter !== 'all' ||
+      searchTerm !== ''
+    )
+  }, [filtroSetor, filtroSituacao, filtroTipo, filtroLocal, assetTypeFilter, searchTerm])
+
+  // No. Sincronizar dados ao carregar a página (apenas uma vez)
   useEffect(() => {
     startSync()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,6 +202,38 @@ export default function PublicAssets() {
         return false
       }
 
+      // ✅ NOVO: Filtro de setor
+      if (filtroSetor !== 'all') {
+        const setor = item.assetType === 'bem'
+          ? (item as Patrimonio).setor_responsavel
+          : (item as Imovel).setor || ''
+        if (setor !== filtroSetor) return false
+      }
+
+      // ✅ NOVO: Filtro de situação
+      if (filtroSituacao !== 'all') {
+        const situacao = item.assetType === 'bem'
+          ? (item as Patrimonio).status
+          : 'ativo'
+        if (situacao !== filtroSituacao) return false
+      }
+
+      // ✅ NOVO: Filtro de tipo (tipoBem)
+      if (filtroTipo !== 'all') {
+        const tipo = item.assetType === 'bem'
+          ? (item as Patrimonio).tipo || (item as any).tipoBem?.nome
+          : (item as Imovel).tipo_imovel || ''
+        if (tipo !== filtroTipo) return false
+      }
+
+      // ✅ NOVO: Filtro de local
+      if (filtroLocal !== 'all') {
+        const local = item.assetType === 'bem'
+          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
+          : (item as Imovel).endereco || ''
+        if (local !== filtroLocal) return false
+      }
+
       // Filtro de busca
       if (debouncedSearchTerm) {
         const description = item.assetType === 'bem' 
@@ -137,8 +242,9 @@ export default function PublicAssets() {
         const setor = item.assetType === 'bem'
           ? (item as Patrimonio).setor_responsavel
           : (item as Imovel).setor || ''
+        // ✅ CORREÇÃO: Usar local_objeto ou local?.name
         const local = item.assetType === 'bem'
-          ? (item as Patrimonio).localizacao
+          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
           : (item as Imovel).endereco || ''
 
         const searchLower = debouncedSearchTerm.toLowerCase()
@@ -152,7 +258,7 @@ export default function PublicAssets() {
 
       return true
     }).sort((a, b) => a.numero_patrimonio.localeCompare(b.numero_patrimonio))
-  }, [combinedData, assetTypeFilter, debouncedSearchTerm])
+  }, [combinedData, assetTypeFilter, debouncedSearchTerm, filtroSetor, filtroSituacao, filtroTipo, filtroLocal])
 
   // Paginação
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
@@ -182,22 +288,27 @@ export default function PublicAssets() {
         return
       }
 
-      const data = filteredData.map((item) => ({
-        'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
-        'Nº Patrimônio': item.numero_patrimonio,
-        'Descrição': item.assetType === 'bem' 
-          ? (item as Patrimonio).descricao_bem 
-          : (item as Imovel).denominacao,
-        'Setor': item.assetType === 'bem'
-          ? (item as Patrimonio).setor_responsavel
-          : (item as Imovel).setor || '-',
-        'Local': item.assetType === 'bem'
-          ? (item as Patrimonio).localizacao
-          : (item as Imovel).endereco || '-',
-        'Situação': item.assetType === 'bem'
-          ? formatSituacao((item as Patrimonio).status)
-          : 'Ativo',
-      }))
+      const data = filteredData.map((item) => {
+        // ✅ CORREÇÃO: Usar local_objeto ou local?.name
+        const local = item.assetType === 'bem'
+          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
+          : (item as Imovel).endereco || '-'
+        
+        return {
+          'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
+          'Nº Patrimônio': item.numero_patrimonio,
+          'Descrição': item.assetType === 'bem' 
+            ? (item as Patrimonio).descricao_bem 
+            : (item as Imovel).denominacao,
+          'Setor': item.assetType === 'bem'
+            ? (item as Patrimonio).setor_responsavel
+            : (item as Imovel).setor || '-',
+          'Local': local,
+          'Situação': item.assetType === 'bem'
+            ? formatSituacao((item as Patrimonio).status)
+            : 'Ativo',
+        }
+      })
 
       const ws = XLSX.utils.json_to_sheet(data)
       const wb = XLSX.utils.book_new()
@@ -232,22 +343,27 @@ export default function PublicAssets() {
         return
       }
 
-      const data = filteredData.map((item) => ({
-        'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
-        'Nº Patrimônio': item.numero_patrimonio,
-        'Descrição': item.assetType === 'bem' 
-          ? (item as Patrimonio).descricao_bem 
-          : (item as Imovel).denominacao,
-        'Setor': item.assetType === 'bem'
-          ? (item as Patrimonio).setor_responsavel
-          : (item as Imovel).setor || '-',
-        'Local': item.assetType === 'bem'
-          ? (item as Patrimonio).localizacao
-          : (item as Imovel).endereco || '-',
-        'Situação': item.assetType === 'bem'
-          ? formatSituacao((item as Patrimonio).status)
-          : 'Ativo',
-      }))
+      const data = filteredData.map((item) => {
+        // ✅ CORREÇÃO: Usar local_objeto ou local?.name
+        const local = item.assetType === 'bem'
+          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
+          : (item as Imovel).endereco || '-'
+        
+        return {
+          'Tipo': item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
+          'Nº Patrimônio': item.numero_patrimonio,
+          'Descrição': item.assetType === 'bem' 
+            ? (item as Patrimonio).descricao_bem 
+            : (item as Imovel).denominacao,
+          'Setor': item.assetType === 'bem'
+            ? (item as Patrimonio).setor_responsavel
+            : (item as Imovel).setor || '-',
+          'Local': local,
+          'Situação': item.assetType === 'bem'
+            ? formatSituacao((item as Patrimonio).status)
+            : 'Ativo',
+        }
+      })
 
       const ws = XLSX.utils.json_to_sheet(data)
       const csv = XLSX.utils.sheet_to_csv(ws)
@@ -293,22 +409,27 @@ export default function PublicAssets() {
       doc.text(`Gerado em: ${formatDate(new Date())}`, 14, 35)
 
       // Preparar dados
-      const tableData = filteredData.map((item) => [
-        item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
-        item.numero_patrimonio,
-        item.assetType === 'bem' 
-          ? (item as Patrimonio).descricao_bem 
-          : (item as Imovel).denominacao,
-        item.assetType === 'bem'
-          ? (item as Patrimonio).setor_responsavel
-          : (item as Imovel).setor || '-',
-        item.assetType === 'bem'
-          ? (item as Patrimonio).localizacao
-          : (item as Imovel).endereco || '-',
-        item.assetType === 'bem'
-          ? formatSituacao((item as Patrimonio).status)
-          : 'Ativo',
-      ])
+      const tableData = filteredData.map((item) => {
+        // ✅ CORREÇÃO: Usar local_objeto ou local?.name
+        const local = item.assetType === 'bem'
+          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
+          : (item as Imovel).endereco || '-'
+        
+        return [
+          item.assetType === 'bem' ? 'Bem Móvel' : 'Imóvel',
+          item.numero_patrimonio,
+          item.assetType === 'bem' 
+            ? (item as Patrimonio).descricao_bem 
+            : (item as Imovel).denominacao,
+          item.assetType === 'bem'
+            ? (item as Patrimonio).setor_responsavel
+            : (item as Imovel).setor || '-',
+          local,
+          item.assetType === 'bem'
+            ? formatSituacao((item as Patrimonio).status)
+            : 'Ativo',
+        ]
+      })
 
       // Gerar tabela
       autoTable(doc, {
@@ -442,6 +563,21 @@ export default function PublicAssets() {
                   </SelectContent>
                 </Select>
 
+                {/* ✅ NOVO: Botão Filtros Avançados */}
+                <Button
+                  variant={showAdvancedFilters ? 'default' : 'outline'}
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="w-full md:w-auto gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  Filtros Avançados
+                  {showAdvancedFilters ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+
                 {/* Botão atualizar */}
                 <Button
                   variant="outline"
@@ -457,6 +593,124 @@ export default function PublicAssets() {
                   Atualizar
                 </Button>
               </div>
+
+              {/* ✅ NOVO: Filtros Avançados */}
+              <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+                <CollapsibleContent className="space-y-4 pt-4 border-t">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Filtro Setor */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Setor</label>
+                      <Select
+                        value={filtroSetor}
+                        onValueChange={(v) => {
+                          setFiltroSetor(v)
+                          setCurrentPage(1)
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos os setores" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os setores</SelectItem>
+                          {filterOptions.setores.map((setor) => (
+                            <SelectItem key={setor} value={setor}>
+                              {setor}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Filtro Situação */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Situação</label>
+                      <Select
+                        value={filtroSituacao}
+                        onValueChange={(v) => {
+                          setFiltroSituacao(v)
+                          setCurrentPage(1)
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todas as situações" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas as situações</SelectItem>
+                          {filterOptions.situacoes.map((situacao) => (
+                            <SelectItem key={situacao} value={situacao}>
+                              {formatSituacao(situacao)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Filtro Tipo */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Tipo</label>
+                      <Select
+                        value={filtroTipo}
+                        onValueChange={(v) => {
+                          setFiltroTipo(v)
+                          setCurrentPage(1)
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos os tipos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os tipos</SelectItem>
+                          {filterOptions.tipos.map((tipo) => (
+                            <SelectItem key={tipo} value={tipo}>
+                              {tipo}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Filtro Local */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Local</label>
+                      <Select
+                        value={filtroLocal}
+                        onValueChange={(v) => {
+                          setFiltroLocal(v)
+                          setCurrentPage(1)
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos os locais" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os locais</SelectItem>
+                          {filterOptions.locais.map((local) => (
+                            <SelectItem key={local} value={local}>
+                              {local}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Botão Limpar Filtros */}
+                  {temFiltrosAtivos && (
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={limparFiltros}
+                        className="gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Limpar Filtros
+                      </Button>
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
 
               {/* Linha 2: Botões de Exportação */}
               <div className="flex flex-wrap gap-2">
@@ -494,7 +748,7 @@ export default function PublicAssets() {
             </div>
 
             {/* Info */}
-            <div className="flex justify-between items-center text-sm">
+            <div className="flex justify-between items-center text-sm mt-4">
               <p className="text-muted-foreground">
                 {filteredData.length} resultado(s) encontrado(s)
               </p>
@@ -546,8 +800,9 @@ export default function PublicAssets() {
                       const setor = item.assetType === 'bem'
                         ? (item as Patrimonio).setor_responsavel
                         : (item as Imovel).setor || '-'
+                      // ✅ CORREÇÃO: Usar local_objeto ou local?.name
                       const local = item.assetType === 'bem'
-                        ? (item as Patrimonio).localizacao
+                        ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || '-'
                         : (item as Imovel).endereco || '-'
                       const situacao = item.assetType === 'bem'
                         ? (item as Patrimonio).status
