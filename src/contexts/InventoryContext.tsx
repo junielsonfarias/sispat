@@ -37,6 +37,9 @@ interface InventoryContextType {
 const InventoryContext = createContext<InventoryContextType | null>(null)
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
+  // ✅ LOG INICIAL PARA VERIFICAR SE O CÓDIGO ESTÁ SENDO CARREGADO
+  console.log('🚀 [INVENTORY_CONTEXT] InventoryContext inicializado - Versão com logs de debug')
+  
   const [allInventories, setAllInventories] = useState<Inventory[]>([])
   const { patrimonios, updatePatrimonio } = usePatrimonio()
   const { user } = useAuth()
@@ -54,7 +57,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       console.log('📊 [DEBUG] fetchInventories: É array?', Array.isArray(response))
       
       // ✅ CORREÇÃO: A API retorna objeto com inventarios e pagination
+      // Backend retorna: { inventarios: [...], pagination: {...} }
       let inventariosData: Inventory[] = []
+      
+      // ✅ FORÇAR LOGS EM PRODUÇÃO TAMBÉM para debug
+      console.log('🔍 [DEBUG] fetchInventories: Resposta bruta:', JSON.stringify(response).substring(0, 200))
       
       if (Array.isArray(response)) {
         // Se for array direto, usar diretamente
@@ -64,12 +71,13 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         // Se for objeto, verificar se tem propriedade inventarios
         if ('inventarios' in response && Array.isArray(response.inventarios)) {
           inventariosData = response.inventarios
-          console.log('✅ [DEBUG] fetchInventories: Resposta tem propriedade inventarios')
+          console.log('✅ [DEBUG] fetchInventories: Resposta tem propriedade inventarios:', response.inventarios.length)
         } else if ('data' in response && Array.isArray((response as any).data?.inventarios)) {
           inventariosData = (response as any).data.inventarios
           console.log('✅ [DEBUG] fetchInventories: Resposta tem data.inventarios')
         } else {
-          console.warn('⚠️ [DEBUG] fetchInventories: Estrutura de resposta inesperada:', response)
+          console.warn('⚠️ [DEBUG] fetchInventories: Estrutura de resposta inesperada. Chaves do objeto:', Object.keys(response))
+          console.warn('⚠️ [DEBUG] fetchInventories: Resposta completa:', response)
           inventariosData = []
         }
       }

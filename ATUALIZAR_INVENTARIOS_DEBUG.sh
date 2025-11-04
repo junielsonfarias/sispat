@@ -95,14 +95,15 @@ else
 fi
 
 # ============================================
-# 6. RECARREGAR NGINX
+# 6. LIMPAR CACHE DO NGINX
 # ============================================
-log "6. Recarregando Nginx..."
+log "6. Limpando cache do Nginx..."
+sudo rm -rf /var/cache/nginx/* 2>/dev/null || true
 sudo systemctl reload nginx || {
     error "Falha ao recarregar Nginx"
     exit 1
 }
-success "Nginx recarregado"
+success "Nginx recarregado e cache limpo"
 
 # ============================================
 # 7. VERIFICAÇÃO FINAL
@@ -122,15 +123,25 @@ sudo systemctl is-active --quiet nginx && success "Nginx está ativo" || error "
 success "✅ Atualização concluída com sucesso!"
 log ""
 log "📋 PRÓXIMOS PASSOS PARA DIAGNOSTICAR:"
+log ""
+log "⚠️  IMPORTANTE: LIMPE O CACHE DO NAVEGADOR!"
+log "   - Chrome/Edge: Ctrl+Shift+Delete → Limpar cache e cookies"
+log "   - Ou: Ctrl+F5 (hard refresh)"
+log "   - Ou: F12 → Network → marque 'Disable cache' → recarregue"
+log ""
 log "1. Abra o navegador e vá para a página de inventários"
 log "2. Abra o Console do Desenvolvedor (F12 → Console)"
-log "3. Tente criar um novo inventário"
-log "4. Verifique os logs no console que começam com:"
+log "3. Procure pela mensagem: '🚀 [INVENTORY_CONTEXT] InventoryContext inicializado'"
+log "   Se NÃO aparecer, o código não foi atualizado no navegador!"
+log ""
+log "4. Tente criar um novo inventário"
+log "5. Verifique os logs no console que começam com:"
+log "   - 🚀 [INVENTORY_CONTEXT]"
 log "   - 🔍 [DEBUG]"
 log "   - ✅ [DEBUG]"
 log "   - ❌ [ERROR]"
 log ""
-log "5. Envie os logs do console para análise"
+log "6. Envie TODOS os logs do console para análise"
 log ""
 log "🔍 CORREÇÕES APLICADAS:"
 log "  - Logs de debug detalhados em fetchInventories"
