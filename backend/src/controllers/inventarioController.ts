@@ -228,26 +228,117 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
       scope: scope || 'sector',
     });
 
-    const inventario = await prisma.inventory.create({
-      data: {
-        title,
-        description: description || '',
-        responsavel: userId,
-        setor,
-        local: local || '',
-        dataInicio: dataInicio ? new Date(dataInicio) : new Date(),
-        status: 'em_andamento',
-        scope: scope || 'sector',
+    // ✅ NOVO: Buscar patrimônios que estarão no escopo do inventário
+    // O campo 'setor' no inventário é o nome do setor (string), então usamos setor_responsavel
+    let patrimoniosInScope = await prisma.patrimonio.findMany({
+      where: {
+        setor_responsavel: setor, // Buscar pelo nome do setor (campo texto)
+        ...(scope === 'location' && local
+          ? {
+              local_objeto: {
+                contains: local,
+                mode: 'insensitive',
+              },
+            }
+          : {}),
+        ...(scope === 'specific_location' && local
+          ? {
+              localId: local, // Para local específico, usar o ID do local
+            }
+          : {}),
       },
-      include: {
-        items: true,
+      select: {
+        id: true,
+        numero_patrimonio: true,
+        descricao_bem: true,
       },
     });
 
+    logDebug('✅ Patrimônios encontrados no escopo', {
+      count: patrimoniosInScope.length,
+      setor,
+      scope,
+      local,
+    });
+
+    // ✅ NOVO: Criar inventário e items em uma transação
+    const inventario = await prisma.$transaction(async (tx) => {
+      // Criar o inventário
+      const newInventory = await tx.inventory.create({
+        data: {
+          title,
+          description: description || '',
+          responsavel: userId,
+          setor,
+          local: local || '',
+          dataInicio: dataInicio ? new Date(dataInicio) : new Date(),
+          status: 'em_andamento',
+          scope: scope || 'sector',
+        },
+      });
+
+      // Criar os items do inventário
+      if (patrimoniosInScope.length > 0) {
+        await tx.inventoryItem.createMany({
+          data: patrimoniosInScope.map((patrimonio) => ({
+            inventoryId: newInventory.id,
+            patrimonioId: patrimonio.id,
+            encontrado: false,
+          })),
+        });
+      }
+
+      logDebug('✅ Items do inventário criados', {
+        inventoryId: newInventory.id,
+        itemsCount: patrimoniosInScope.length,
+      });
+
+      // Retornar o inventário com items
+      return await tx.inventory.findUnique({
+        where: { id: newInventory.id },
+        include: {
+          items: {
+            include: {
+              patrimonio: {
+                select: {
+                  id: true,
+                  numero_patrimonio: true,
+                  descricao_bem: true,
+                  sectorId: true,
+                  localId: true,
+                  status: true,
+                  tipoBem: {
+                    select: {
+                      id: true,
+                      nome: true,
+                    },
+                  },
+                  sector: {
+                    select: {
+                      id: true,
+                      name: true,
+                      codigo: true,
+                    },
+                  },
+                  local: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+
     logInfo('✅ Inventário criado com sucesso', {
-      inventarioId: inventario.id,
-      title: inventario.title,
-      status: inventario.status,
+      inventarioId: inventario!.id,
+      title: inventario!.title,
+      status: inventario!.status,
+      itemsCount: inventario!.items.length,
     });
 
     // Registrar atividade

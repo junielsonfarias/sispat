@@ -89,36 +89,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
         console.log('🔍 [DEBUG] Dados recebidos para criar inventário:', data)
 
-        const patrimoniosInScope = patrimonios.filter((p) => {
-          const inSector = p.setor_responsavel === sectorName
-          if (!inSector) return false
-          if (scope === 'location') {
-            return (
-              locationType &&
-              p.local_objeto.toLowerCase().includes(locationType.toLowerCase())
-            )
-          }
-          if (scope === 'specific_location') {
-            // Para local específico, vamos filtrar por nome do local
-            // Assumindo que o local_objeto contém o nome do local
-            return (
-              specificLocationId &&
-              p.local_objeto.toLowerCase().includes(specificLocationId.toLowerCase())
-            )
-          }
-          return true
-        })
-
-        console.log('🔍 [DEBUG] Patrimônios encontrados no escopo:', patrimoniosInScope.length)
-
-        const items: InventoryItem[] = patrimoniosInScope.map((p) => ({
-          patrimonioId: p.id,
-          numero_patrimonio: p.numero_patrimonio,
-          descricao_bem: p.descricao_bem,
-          status: 'not_found',
-        }))
-
-        // ✅ Mapear campos para o formato que o backend espera
+        // ✅ CORREÇÃO: O backend agora cria os items automaticamente
+        // Não precisamos mais filtrar patrimônios no frontend
         const inventoryPayload = {
           title: name, // Backend espera 'title' ao invés de 'name'
           description: `Inventário do setor ${sectorName}`,
@@ -130,19 +102,30 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         
         console.log('🔍 [DEBUG] Payload enviado para o backend:', inventoryPayload)
         
-        const newInventory = await api.post<Inventory>('/inventarios', inventoryPayload)
+        const newInventory = await api.post<any>('/inventarios', inventoryPayload)
         
         console.log('✅ [DEBUG] Resposta do backend:', newInventory)
+        
+        // ✅ CORREÇÃO: Mapear items do backend para o formato do frontend
+        // O backend retorna items com a estrutura InventoryItem do Prisma
+        const mappedItems: InventoryItem[] = (newInventory.items || []).map((item: any) => ({
+          patrimonioId: item.patrimonioId,
+          numero_patrimonio: item.patrimonio?.numero_patrimonio || '',
+          descricao_bem: item.patrimonio?.descricao_bem || '',
+          status: item.encontrado ? 'found' : 'not_found',
+        }))
         
         // ✅ Mapear resposta do backend para o formato do frontend
         const inventoryData: Inventory = {
           ...newInventory,
           name: newInventory.title || name,
           sectorName: newInventory.setor || sectorName,
-          status: 'in_progress' as const,
-          createdAt: newInventory.dataInicio || new Date(),
-          items,
-          scope,
+          status: (newInventory.status === 'em_andamento' ? 'in_progress' : 
+                  newInventory.status === 'concluido' ? 'completed' : 
+                  newInventory.status) as any,
+          createdAt: newInventory.dataInicio ? new Date(newInventory.dataInicio) : new Date(),
+          items: mappedItems, // ✅ Usar items mapeados do backend
+          scope: newInventory.scope || scope,
           locationType,
           specificLocationId,
         }
@@ -156,7 +139,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         throw error // Re-throw para que o componente possa capturar
       }
     },
-    [patrimonios, fetchInventories],
+    [fetchInventories],
   )
 
   const updateInventory = useCallback(
