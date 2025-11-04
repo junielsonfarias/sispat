@@ -12,6 +12,7 @@ import {
   FileSpreadsheet,
   FileText,
   Download,
+  ArrowLeft,
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
@@ -50,7 +51,6 @@ import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { formatRelativeDate, formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { useSync } from '@/contexts/SyncContext'
-import { ArrowLeft } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
