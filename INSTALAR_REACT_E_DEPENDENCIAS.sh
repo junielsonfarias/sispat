@@ -25,6 +25,8 @@ npm install --save \
   @hookform/resolvers@^3.3.4 \
   clsx@^2.1.1 \
   tailwind-merge@^2.6.0 \
+  tailwindcss-animate@^1.0.7 \
+  class-variance-authority@^0.7.1 \
   --legacy-peer-deps
 
 # 3. Instalar dependências de desenvolvimento críticas
