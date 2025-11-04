@@ -85,7 +85,30 @@ export default function InventarioDetail() {
       <Card>
         <CardHeader>
           <CardTitle>{inventory.name}</CardTitle>
-          <CardDescription>Setor: {inventory.sectorName}</CardDescription>
+          <CardDescription>
+            <div className="space-y-1">
+              <div>
+                <span className="font-semibold">Setor:</span>{' '}
+                {inventory.sectorName || 'Não informado'}
+              </div>
+              {inventory.locationType && (
+                <div>
+                  <span className="font-semibold">Local:</span>{' '}
+                  {inventory.locationType}
+                </div>
+              )}
+              {inventory.scope && (
+                <div>
+                  <span className="font-semibold">Escopo:</span>{' '}
+                  {inventory.scope === 'sector'
+                    ? 'Todo o Setor'
+                    : inventory.scope === 'location'
+                    ? 'Por Tipo de Local'
+                    : 'Local Específico'}
+                </div>
+              )}
+            </div>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">

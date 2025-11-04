@@ -85,7 +85,29 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       console.log('✅ [DEBUG] fetchInventories: Inventários extraídos:', inventariosData.length)
       console.log('📝 [DEBUG] fetchInventories: Primeiros 3 inventários:', inventariosData.slice(0, 3))
       
-      setAllInventories(inventariosData)
+      // ✅ CORREÇÃO: Mapear campos do backend para o frontend
+      const mappedInventories: Inventory[] = inventariosData.map((inv: any) => ({
+        id: inv.id,
+        name: inv.title || inv.name,
+        sectorName: inv.setor || inv.sectorName, // Backend retorna 'setor', frontend espera 'sectorName'
+        status: inv.status === 'em_andamento' ? 'in_progress' : 
+                inv.status === 'concluido' ? 'completed' : 
+                inv.status,
+        createdAt: inv.dataInicio ? new Date(inv.dataInicio) : inv.createdAt ? new Date(inv.createdAt) : new Date(),
+        finalizedAt: inv.dataFim ? new Date(inv.dataFim) : inv.finalizedAt ? new Date(inv.finalizedAt) : undefined,
+        items: (inv.items || []).map((item: any) => ({
+          patrimonioId: item.patrimonioId,
+          numero_patrimonio: item.patrimonio?.numero_patrimonio || item.numero_patrimonio || '',
+          descricao_bem: item.patrimonio?.descricao_bem || item.descricao_bem || '',
+          status: item.encontrado !== undefined ? (item.encontrado ? 'found' : 'not_found') : item.status,
+        })),
+        scope: inv.scope || 'sector',
+        locationType: inv.local || inv.locationType,
+        specificLocationId: inv.specificLocationId,
+        municipalityId: user?.municipalityId || '',
+      }))
+      
+      setAllInventories(mappedInventories)
     } catch (error) {
       console.error('❌ [ERROR] fetchInventories: Erro ao carregar inventários:', error)
       toast({
