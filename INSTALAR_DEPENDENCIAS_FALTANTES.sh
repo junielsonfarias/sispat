@@ -23,6 +23,20 @@ npm install --save \
   socket.io-client@^4.8.1 \
   --legacy-peer-deps
 
+# Instalar dependências de desenvolvimento críticas (incluindo vite)
+echo "📦 Instalando dependências de desenvolvimento..."
+npm install --save-dev \
+  vite@^5.4.21 \
+  @vitejs/plugin-react@^5.0.0 \
+  typescript@^5.5.3 \
+  tailwindcss@^3.4.17 \
+  postcss@^8.5.6 \
+  autoprefixer@^10.4.21 \
+  @types/react@^19.1.9 \
+  @types/react-dom@^19.1.7 \
+  @types/node@^24.2.1 \
+  --legacy-peer-deps
+
 # Instalar TODAS as dependências do package.json
 echo "📦 Instalando todas as dependências do package.json..."
 npm install --legacy-peer-deps
