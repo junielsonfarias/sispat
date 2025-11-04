@@ -123,7 +123,22 @@ const Relatorios = () => {
                   <div>
                     <CardTitle>{template.name}</CardTitle>
                     <CardDescription>
-                      {template.fields.length} campos
+                      {(() => {
+                        // Extrair campos do layout se fields não existir
+                        if (template.fields && template.fields.length > 0) {
+                          return `${template.fields.length} campos`
+                        }
+                        if (template.layout && Array.isArray(template.layout)) {
+                          // Contar campos do componente TABLE no layout
+                          const tableComponent = template.layout.find(c => c.type === 'TABLE')
+                          if (tableComponent?.props?.fields) {
+                            return `${tableComponent.props.fields.length} campos`
+                          }
+                          // Se não tiver campos no TABLE, contar componentes
+                          return `${template.layout.length} componentes`
+                        }
+                        return 'Modelo sem campos definidos'
+                      })()}
                     </CardDescription>
                   </div>
                 </CardHeader>

@@ -7,7 +7,7 @@ import {
   useContext,
   useMemo,
 } from 'react'
-import { ReportTemplate, ReportComponent } from '@/types'
+import { ReportTemplate, ReportComponent, Patrimonio } from '@/types'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
@@ -100,9 +100,30 @@ export const ReportTemplateProvider = ({
     
     try {
       const templates = await api.get<ReportTemplate[]>('/config/report-templates')
-      setAllTemplates(templates)
-    } catch (error) {
-      // Silenciar erro se não houver templates
+      // Adaptar templates do backend para o formato esperado pelo frontend
+      const adaptedTemplates = templates.map(template => {
+        // Se o template tem layout mas não tem fields, extrair fields do layout
+        if (!template.fields && template.layout && Array.isArray(template.layout)) {
+          const tableComponent = template.layout.find(c => c.type === 'TABLE')
+          const fields = tableComponent?.props?.fields || []
+          return {
+            ...template,
+            fields: fields as (keyof Patrimonio)[],
+          }
+        }
+        return template
+      })
+      setAllTemplates(adaptedTemplates)
+    } catch (error: any) {
+      // Log do erro para debug, mas não quebrar a aplicação
+      console.error('Erro ao buscar templates de relatório:', error)
+      // Se for erro 404 ou lista vazia, não é problema crítico
+      if (error?.response?.status === 404) {
+        setAllTemplates([])
+      } else {
+        // Para outros erros, manter templates vazios mas logar
+        setAllTemplates([])
+      }
     }
   }, [user])
 
