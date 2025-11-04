@@ -13,7 +13,21 @@ npm install --save \
   react-dom@^19.1.1 \
   --legacy-peer-deps
 
-# 2. Instalar dependências de desenvolvimento críticas
+# 2. Instalar dependências críticas de runtime
+echo "📦 Instalando dependências críticas de runtime..."
+npm install --save \
+  react-router-dom@^6.30.1 \
+  axios@^1.12.2 \
+  zod@^3.25.76 \
+  date-fns@^4.1.0 \
+  lucide-react@^0.539.0 \
+  react-hook-form@^7.62.0 \
+  @hookform/resolvers@^3.3.4 \
+  clsx@^2.1.1 \
+  tailwind-merge@^2.6.0 \
+  --legacy-peer-deps
+
+# 3. Instalar dependências de desenvolvimento críticas
 echo "📦 Instalando dependências de desenvolvimento..."
 npm install --save-dev \
   @vitejs/plugin-react@^5.0.0 \
@@ -27,8 +41,8 @@ npm install --save-dev \
   @types/node@^24.2.1 \
   --legacy-peer-deps
 
-# 3. Instalar todas as dependências do package.json
-echo "📦 Instalando todas as dependências..."
+# 4. Instalar todas as dependências do package.json
+echo "📦 Instalando todas as dependências do package.json..."
 npm install --legacy-peer-deps
 
 # 4. Verificar se React foi instalado
@@ -45,6 +59,13 @@ if [ -d "node_modules/react-dom" ]; then
   echo "✓ React-DOM instalado: $(node -p "require('./node_modules/react-dom/package.json').version")"
 else
   echo "✗ React-DOM NÃO instalado!"
+  exit 1
+fi
+
+if [ -d "node_modules/react-router-dom" ]; then
+  echo "✓ React-Router-DOM instalado"
+else
+  echo "✗ React-Router-DOM NÃO instalado!"
   exit 1
 fi
 
@@ -76,6 +97,7 @@ if [ -d "dist/assets" ]; then
 else
   echo ""
   echo "❌ Build falhou - dist/assets não existe"
+  echo "📋 Verifique os erros acima e tente novamente"
   exit 1
 fi
 
