@@ -112,24 +112,28 @@ export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
   return (
     <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
       {/* Gráfico por Tipo */}
-      <Card className="border-0 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:shadow-xl transition-all duration-500">
+      <Card className="border-0 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:shadow-xl transition-all duration-500 overflow-hidden">
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
             Patrimônios por Tipo
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <ChartContainer config={{}}>
-            <div className="w-full h-[280px]">
-              <ResponsiveContainer>
-                <BarChart data={chartData.tipoChart}>
+            <div className="w-full min-w-[300px] h-[280px] sm:h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData.tipoChart} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis 
                     dataKey="tipo" 
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 10 }}
+                    interval={0}
+                    angle={0}
+                    textAnchor="middle"
+                    height={60}
                     className="text-xs sm:text-sm"
                   />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} width={40} />
                   <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="quantidade" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                 </BarChart>
@@ -140,16 +144,16 @@ export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
       </Card>
 
       {/* Gráfico por Status */}
-      <Card className="border-0 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:shadow-xl transition-all duration-500">
+      <Card className="border-0 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:shadow-xl transition-all duration-500 overflow-hidden">
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg font-semibold bg-gradient-to-r from-orange-600 to-red-600 dark:from-orange-400 dark:to-red-400 bg-clip-text text-transparent">
             Status dos Bens
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <ChartContainer config={{}}>
-            <div className="w-full h-[280px]">
-              <ResponsiveContainer>
+            <div className="w-full min-w-[300px] h-[280px] sm:h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={chartData.statusChart}
@@ -157,7 +161,7 @@ export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
                     cy="50%"
                     labelLine={false}
                     label={({ status, quantidade }) => `${status}: ${quantidade}`}
-                    outerRadius={90}
+                    outerRadius={70}
                     fill="#8884d8"
                     dataKey="quantidade"
                   >
@@ -174,24 +178,24 @@ export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
       </Card>
 
       {/* Gráfico de Valores */}
-      <Card className="border-0 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:shadow-xl transition-all duration-500">
+      <Card className="border-0 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:shadow-xl transition-all duration-500 overflow-hidden">
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">
             Valor de Aquisição por Mês
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <ChartContainer config={{}}>
-            <div className="w-full h-[280px]">
-              <ResponsiveContainer>
-                <ComposedChart data={chartData.valorChartData}>
+            <div className="w-full min-w-[300px] h-[280px] sm:h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={chartData.valorChartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis 
                     dataKey="mes" 
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 10 }}
                     className="text-xs sm:text-sm"
                   />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} width={50} />
                   <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="valor" fill="#10b981" radius={[8, 8, 0, 0]} />
                   <Line type="monotone" dataKey="valor" stroke="#f59e0b" strokeWidth={2} />
@@ -202,30 +206,39 @@ export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
         </CardContent>
       </Card>
 
-      {/* Gráfico por Setor */}
-      <Card className="border-0 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:shadow-xl transition-all duration-500">
+      {/* Gráfico por Setor - Layout Vertical para melhor visualização */}
+      <Card className="border-0 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:shadow-xl transition-all duration-500 overflow-hidden">
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
             Distribuição por Setor
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <ChartContainer config={{}}>
-            <div className="w-full h-[280px]">
-              <ResponsiveContainer>
-                <BarChart data={chartData.setorChart}>
+            <div className="w-full min-w-[300px] h-[280px] sm:h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={chartData.setorChart} 
+                  layout="vertical"
+                  margin={{ top: 5, right: 10, left: 80, bottom: 5 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis 
-                    dataKey="setor" 
-                    angle={-45} 
-                    textAnchor="end" 
-                    height={100}
+                    type="number" 
                     tick={{ fontSize: 10 }}
-                    className="text-xs"
+                    width={50}
                   />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="setor" 
+                    tick={{ fontSize: 10 }}
+                    width={80}
+                    angle={0}
+                    textAnchor="end"
+                    className="text-xs sm:text-sm"
+                  />
                   <Tooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="quantidade" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="quantidade" fill="#8b5cf6" radius={[0, 8, 8, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

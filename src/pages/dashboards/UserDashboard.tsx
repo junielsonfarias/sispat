@@ -148,12 +148,12 @@ const UserDashboard = () => {
         ))}
       </div>
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Status dos Meus Bens</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
+          <CardContent className="overflow-x-auto">
+            <ChartContainer config={{}} className="h-[300px] w-full min-w-[250px]">
               <PieChart>
                 <Tooltip content={<ChartTooltipContent />} />
                 <Pie
@@ -162,8 +162,8 @@ const UserDashboard = () => {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
+                  innerRadius={50}
+                  outerRadius={70}
                   paddingAngle={5}
                 >
                   {statusData.map((entry, index) => (
@@ -175,24 +175,27 @@ const UserDashboard = () => {
             </ChartContainer>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Tipos de Bens no Setor</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
+          <CardContent className="overflow-x-auto">
+            <ChartContainer config={{}} className="h-[300px] w-full min-w-[300px]">
               <BarChart
                 data={typesData}
                 layout="vertical"
-                margin={{ left: 20 }}
+                margin={{ top: 5, right: 10, left: 100, bottom: 5 }}
               >
-                <XAxis type="number" hide />
+                <XAxis type="number" tick={{ fontSize: 10 }} width={50} />
                 <YAxis
                   type="category"
                   dataKey="name"
                   tickLine={false}
                   axisLine={false}
-                  width={100}
+                  width={90}
+                  tick={{ fontSize: 10 }}
+                  angle={0}
+                  textAnchor="end"
                 />
                 <Tooltip
                   cursor={{ fill: 'hsl(var(--muted))' }}

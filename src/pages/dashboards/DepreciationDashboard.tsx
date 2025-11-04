@@ -176,20 +176,27 @@ const DepreciationDashboard = () => {
         </Card>
       </div>
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Depreciação por Setor</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
-              <BarChart data={depreciationBySector} layout="vertical">
-                <XAxis type="number" hide />
+          <CardContent className="overflow-x-auto">
+            <ChartContainer config={{}} className="h-[300px] w-full min-w-[300px]">
+              <BarChart 
+                data={depreciationBySector} 
+                layout="vertical"
+                margin={{ top: 5, right: 10, left: 100, bottom: 5 }}
+              >
+                <XAxis type="number" tick={{ fontSize: 10 }} width={50} />
                 <YAxis
                   type="category"
                   dataKey="name"
-                  width={100}
+                  width={90}
                   tickLine={false}
                   axisLine={false}
+                  tick={{ fontSize: 10 }}
+                  angle={0}
+                  textAnchor="end"
                 />
                 <Tooltip content={<ChartTooltipContent />} />
                 <Legend />

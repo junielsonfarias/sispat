@@ -232,16 +232,16 @@ const AdminDashboard = () => {
         ))}
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 overflow-hidden">
           <CardHeader>
             <CardTitle>Evolução Patrimonial (Últimos 6 meses)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
-              <ComposedChart data={evolutionData}>
+          <CardContent className="overflow-x-auto">
+            <ChartContainer config={{}} className="h-[300px] w-full min-w-[400px]">
+              <ComposedChart data={evolutionData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                 <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} width={50} />
                 <Tooltip content={<ChartTooltipContent />} />
                 <Legend />
                 <Bar
@@ -260,12 +260,12 @@ const AdminDashboard = () => {
             </ChartContainer>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Distribuição por Tipo</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={{}} className="h-[300px] w-full">
+          <CardContent className="overflow-x-auto">
+            <ChartContainer config={{}} className="h-[300px] w-full min-w-[250px]">
               <PieChart>
                 <Tooltip content={<ChartTooltipContent />} />
                 <Pie
@@ -274,7 +274,7 @@ const AdminDashboard = () => {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  outerRadius={80}
                   label
                 >
                   {distributionData.map((entry, index) => (
@@ -339,24 +339,27 @@ const AdminDashboard = () => {
             </Table>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Top 5 Setores por Quantidade de Bens</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={{}} className="h-[250px] w-full">
+          <CardContent className="overflow-x-auto">
+            <ChartContainer config={{}} className="h-[250px] w-full min-w-[300px]">
               <BarChart
                 layout="vertical"
                 data={topSetores}
-                margin={{ left: 20 }}
+                margin={{ top: 5, right: 10, left: 100, bottom: 5 }}
               >
-                <XAxis type="number" hide />
+                <XAxis type="number" tick={{ fontSize: 10 }} width={50} />
                 <YAxis
                   type="category"
                   dataKey="name"
                   tickLine={false}
                   axisLine={false}
-                  width={100}
+                  width={90}
+                  tick={{ fontSize: 10 }}
+                  angle={0}
+                  textAnchor="end"
                 />
                 <Tooltip
                   cursor={{ fill: 'hsl(var(--muted))' }}
