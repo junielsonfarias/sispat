@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -63,6 +63,9 @@ export default function Login() {
   const [sessionExpired] = useState<boolean>(location.state?.sessionExpired)
   const { settings } = useCustomization()
   const { currentVersion } = useVersion()
+  
+  // ✅ CORREÇÃO: useRef para rastrear se componente está montado
+  const isMountedRef = useRef(true)
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -73,18 +76,40 @@ export default function Login() {
   })
 
   useEffect(() => {
-    if (isAuthenticated) {
+    isMountedRef.current = true
+    
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    // ✅ CORREÇÃO: Verificar se está autenticado e componente ainda montado
+    if (isAuthenticated && isMountedRef.current) {
       const destination = user?.role === 'superuser' ? '/superuser' : '/'
-      navigate(destination, { replace: true })
+      // Usar requestAnimationFrame para garantir que navegação aconteça após render completo
+      const frameId = requestAnimationFrame(() => {
+        if (isMountedRef.current) {
+          navigate(destination, { replace: true })
+        }
+      })
+      
+      return () => {
+        cancelAnimationFrame(frameId)
+      }
     }
   }, [isAuthenticated, user, navigate])
 
   const onSubmit = async (data: LoginFormValues) => {
+    if (!isMountedRef.current) return
+    
     setIsLoading(true)
     setError(null)
     try {
       await login(data.email, data.password)
     } catch (e) {
+      if (!isMountedRef.current) return
+      
       const errorMessage =
         e instanceof Error
           ? e.message
@@ -92,7 +117,9 @@ export default function Login() {
       setError(errorMessage)
       form.resetField('password')
     } finally {
-      setIsLoading(false)
+      if (isMountedRef.current) {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -365,7 +392,8 @@ export default function Login() {
         </div>
       </Container>
       
-      <Toaster />
+      {/* ✅ CORREÇÃO: Renderizar Toaster apenas se componente estiver montado */}
+      {isMountedRef.current && <Toaster />}
     </div>
   )
 }
