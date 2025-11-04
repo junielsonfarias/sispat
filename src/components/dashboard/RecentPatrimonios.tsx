@@ -17,7 +17,8 @@ import { formatCurrency } from '@/lib/utils'
 interface Patrimonio {
   id: string
   numero_patrimonio: string
-  descricao_bem: string
+  descricao_bem?: string
+  denominacao?: string
   tipo: string
   valor_aquisicao?: number
   valorAquisicao?: number
@@ -26,34 +27,91 @@ interface Patrimonio {
   setor_responsavel?: string
   setorId?: string
   createdAt: string
+  // ✅ Campo para diferenciar bem de imóvel
+  tipoItem?: 'bem' | 'imovel'
 }
 
 interface RecentPatrimoniosProps {
   patrimonios: Patrimonio[]
+  imoveis?: Patrimonio[] // ✅ Aceitar também imóveis
 }
 
-export const RecentPatrimonios = ({ patrimonios }: RecentPatrimoniosProps) => {
-  // Pegar os 5 patrimônios mais recentes
-  const recentPatrimonios = patrimonios
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5)
+export const RecentPatrimonios = ({ patrimonios = [], imoveis = [] }: RecentPatrimoniosProps) => {
+  // ✅ CORREÇÃO: Combinar bens e imóveis, marcar tipo e ordenar por data de criação
+  const allItems = React.useMemo(() => {
+    const bens = patrimonios.map(p => ({
+      ...p,
+      tipoItem: 'bem' as const,
+      descricao_bem: p.descricao_bem || 'Bem',
+      createdAt: p.createdAt || (p as any).created_at || new Date().toISOString()
+    }))
+    
+    const imoveisFormatados = (imoveis || []).map(i => ({
+      ...i,
+      tipoItem: 'imovel' as const,
+      descricao_bem: i.denominacao || i.descricao_bem || 'Imóvel', // Para imóveis, usar denominacao como descrição
+      status: i.status || (i as any).situacao || 'ativo', // Usar situacao como status para imóveis
+      createdAt: (i as any).createdAt || (i as any).created_at || new Date().toISOString()
+    }))
+    
+    return [...bens, ...imoveisFormatados]
+  }, [patrimonios, imoveis])
+
+  // ✅ CORREÇÃO: Pegar os 5 mais recentes (bens + imóveis)
+  const recentPatrimonios = React.useMemo(() => {
+    return allItems
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime()
+        const dateB = new Date(b.createdAt).getTime()
+        if (isNaN(dateA) || isNaN(dateB)) return 0
+        return dateB - dateA
+      })
+      .slice(0, 5)
+  }, [allItems])
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'ativo':
         return <Badge variant="default" className="bg-green-100 text-green-800">Ativo</Badge>
       case 'manutencao':
         return <Badge variant="destructive" className="bg-orange-100 text-orange-800">Manutenção</Badge>
       case 'baixado':
         return <Badge variant="secondary" className="bg-gray-100 text-gray-800">Baixado</Badge>
+      case 'alugado':
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Alugado</Badge>
+      case 'desativado':
+        return <Badge variant="secondary" className="bg-gray-100 text-gray-800">Desativado</Badge>
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status || 'N/A'}</Badge>
     }
   }
 
-  const formatValue = (patrimonio: Patrimonio) => {
-    const valor = patrimonio.valor_aquisicao || patrimonio.valorAquisicao || patrimonio.valor || 0
+  const formatValue = (item: Patrimonio) => {
+    const valor = item.valor_aquisicao || item.valorAquisicao || item.valor || 0
     return formatCurrency(valor)
+  }
+
+  // ✅ CORREÇÃO: Função para obter o link correto baseado no tipo (rota correta conforme App.tsx)
+  const getViewLink = (item: Patrimonio) => {
+    // ✅ Validação: garantir que o ID existe
+    if (!item.id) {
+      console.warn('Item sem ID:', item)
+      return '#'
+    }
+    
+    if (item.tipoItem === 'imovel') {
+      return `/imoveis/ver/${item.id}`
+    }
+    // ✅ CORREÇÃO: Rota correta para visualizar bens (conforme App.tsx)
+    return `/bens-cadastrados/ver/${item.id}`
+  }
+
+  // ✅ CORREÇÃO: Função para obter descrição (bem ou imóvel)
+  const getDescription = (item: Patrimonio) => {
+    if (item.tipoItem === 'imovel') {
+      return item.denominacao || item.descricao_bem || 'Imóvel'
+    }
+    return item.descricao_bem || 'Bem'
   }
 
   if (recentPatrimonios.length === 0) {
@@ -106,30 +164,38 @@ export const RecentPatrimonios = ({ patrimonios }: RecentPatrimoniosProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {recentPatrimonios.map((patrimonio) => (
-              <TableRow key={patrimonio.id}>
-                <TableCell className="font-medium text-xs sm:text-sm">
-                  {patrimonio.numero_patrimonio}
-                </TableCell>
-                <TableCell className="max-w-[200px] truncate text-xs sm:text-sm hidden md:table-cell">
-                  {patrimonio.descricao_bem}
-                </TableCell>
-                <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
-                  {patrimonio.tipo}
-                </TableCell>
-                <TableCell className="text-xs sm:text-sm">
-                  {formatValue(patrimonio)}
-                </TableCell>
-                <TableCell>{getStatusBadge(patrimonio.status)}</TableCell>
-                <TableCell>
-                  <Link to={`/patrimonios/${patrimonio.id}`}>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </Button>
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
+            {recentPatrimonios
+              .filter((item) => item.id) // ✅ Filtrar itens sem ID
+              .map((item) => (
+                <TableRow key={`${item.tipoItem}-${item.id}`}>
+                  <TableCell className="font-medium text-xs sm:text-sm">
+                    {item.numero_patrimonio || 'N/A'}
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate text-xs sm:text-sm hidden md:table-cell">
+                    {getDescription(item)}
+                  </TableCell>
+                  <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                    {item.tipoItem === 'imovel' ? 'Imóvel' : (item.tipo || 'Bem')}
+                  </TableCell>
+                  <TableCell className="text-xs sm:text-sm">
+                    {formatValue(item)}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(item.status)}</TableCell>
+                  <TableCell>
+                    {/* ✅ CORREÇÃO: Link correto com ícone Eye visível e estilizado */}
+                    <Link to={getViewLink(item)}>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 hover:bg-primary/10"
+                        title="Visualizar detalhes"
+                      >
+                        <Eye className="h-4 w-4 text-primary hover:text-primary/80" />
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </CardContent>

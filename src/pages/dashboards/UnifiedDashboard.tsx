@@ -56,7 +56,24 @@ const UnifiedDashboard = () => {
     situacao_bem: p.situacao_bem || (p.status === 'ativo' ? 'BOM' : p.status),
     tipo_bem: p.tipo,
     setor_responsavel: p.setor_responsavel || p.setorId || 'Sem Setor',
-    historico_movimentacao: p.historico_movimentacao || p.historicoMovimentacao || []
+    historico_movimentacao: p.historico_movimentacao || p.historicoMovimentacao || [],
+    createdAt: p.createdAt || p.createdAt || new Date().toISOString()
+  })) : []
+
+  // ✅ CORREÇÃO: Formatar imóveis para o componente RecentPatrimonios
+  const imoveisFormatted = Array.isArray(imoveis) ? imoveis.map(i => ({
+    ...i,
+    id: i.id, // ✅ Garantir que o ID está presente
+    numero_patrimonio: i.numero_patrimonio || i.numeroPatrimonio || '',
+    denominacao: i.denominacao || '',
+    descricao_bem: i.denominacao || '', // Para imóveis, usar denominacao como descricao
+    tipo: i.tipo_imovel || i.tipo || 'Imóvel',
+    valor_aquisicao: i.valor_aquisicao || i.valor || 0,
+    valor: i.valor_aquisicao || i.valor || 0,
+    status: i.situacao || i.status || 'ativo',
+    setor_responsavel: (i as any).setor?.name || i.setorId || 'Sem Setor',
+    setorId: i.setorId,
+    createdAt: i.createdAt || (i as any).created_at || new Date().toISOString()
   })) : []
 
   const stats = useMemo(() => {
@@ -202,9 +219,9 @@ const UnifiedDashboard = () => {
                   <AlertsSection patrimonios={dashboardData} stats={stats} />
                 </ErrorBoundary>
                 
-                <ErrorBoundary type="list">
-                  <RecentPatrimonios patrimonios={dashboardData} />
-                </ErrorBoundary>
+                                  <ErrorBoundary type="list">
+                    <RecentPatrimonios patrimonios={dashboardData} imoveis={imoveisFormatted} />
+                  </ErrorBoundary>
               </div>
             </div>
           </div>
