@@ -22,9 +22,9 @@ export const getInventarios = async (req: Request, res: Response): Promise<void>
     // Construir filtros
     const where: any = {};
 
+    // ✅ CORREÇÃO: Admin/Superuser veem todos, outros veem apenas os seus
     if (userRole !== 'admin' && userRole !== 'superuser') {
-      // Outros usuários veem apenas inventários do seu município
-      where.setor = req.user?.municipalityId;
+      where.responsavel = userId;
     }
 
     if (status) {
