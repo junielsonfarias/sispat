@@ -37,53 +37,31 @@ interface InventoryContextType {
 const InventoryContext = createContext<InventoryContextType | null>(null)
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
-  // ✅ LOG INICIAL PARA VERIFICAR SE O CÓDIGO ESTÁ SENDO CARREGADO
-  console.log('🚀 [INVENTORY_CONTEXT] InventoryContext inicializado - Versão com logs de debug')
-  
   const [allInventories, setAllInventories] = useState<Inventory[]>([])
   const { patrimonios, updatePatrimonio } = usePatrimonio()
   const { user } = useAuth()
 
   const fetchInventories = useCallback(async () => {
     if (!user) {
-      console.log('⚠️ [DEBUG] fetchInventories: user não está disponível')
       return
     }
     try {
-      console.log('🔍 [DEBUG] fetchInventories: Buscando inventários...')
       const response = await api.get<{ inventarios: Inventory[]; pagination: any }>('/inventarios')
-      console.log('📊 [DEBUG] fetchInventories: Resposta da API:', response)
-      console.log('📊 [DEBUG] fetchInventories: Tipo da resposta:', typeof response)
-      console.log('📊 [DEBUG] fetchInventories: É array?', Array.isArray(response))
       
-      // ✅ CORREÇÃO: A API retorna objeto com inventarios e pagination
-      // Backend retorna: { inventarios: [...], pagination: {...} }
+      // A API retorna objeto com inventarios e pagination
       let inventariosData: Inventory[] = []
       
-      // ✅ FORÇAR LOGS EM PRODUÇÃO TAMBÉM para debug
-      console.log('🔍 [DEBUG] fetchInventories: Resposta bruta:', JSON.stringify(response).substring(0, 200))
-      
       if (Array.isArray(response)) {
-        // Se for array direto, usar diretamente
         inventariosData = response
-        console.log('✅ [DEBUG] fetchInventories: Resposta é array, usando diretamente')
       } else if (response && typeof response === 'object') {
-        // Se for objeto, verificar se tem propriedade inventarios
         if ('inventarios' in response && Array.isArray(response.inventarios)) {
           inventariosData = response.inventarios
-          console.log('✅ [DEBUG] fetchInventories: Resposta tem propriedade inventarios:', response.inventarios.length)
         } else if ('data' in response && Array.isArray((response as any).data?.inventarios)) {
           inventariosData = (response as any).data.inventarios
-          console.log('✅ [DEBUG] fetchInventories: Resposta tem data.inventarios')
         } else {
-          console.warn('⚠️ [DEBUG] fetchInventories: Estrutura de resposta inesperada. Chaves do objeto:', Object.keys(response))
-          console.warn('⚠️ [DEBUG] fetchInventories: Resposta completa:', response)
           inventariosData = []
         }
       }
-      
-      console.log('✅ [DEBUG] fetchInventories: Inventários extraídos:', inventariosData.length)
-      console.log('📝 [DEBUG] fetchInventories: Primeiros 3 inventários:', inventariosData.slice(0, 3))
       
       // ✅ CORREÇÃO: Mapear campos do backend para o frontend
       const mappedInventories: Inventory[] = inventariosData.map((inv: any) => ({
@@ -148,24 +126,16 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       try {
         const { name, sectorName, scope, locationType, specificLocationId } = data
 
-        console.log('🔍 [DEBUG] Dados recebidos para criar inventário:', data)
-
-        // ✅ CORREÇÃO: O backend agora cria os items automaticamente
-        // Não precisamos mais filtrar patrimônios no frontend
         const inventoryPayload = {
-          title: name, // Backend espera 'title' ao invés de 'name'
+          title: name,
           description: `Inventário do setor ${sectorName}`,
-          setor: sectorName, // Backend espera 'setor' ao invés de 'sectorName'
-          local: specificLocationId || locationType || '', // Backend espera 'local'
-          dataInicio: new Date().toISOString(), // Backend espera 'dataInicio' ao invés de 'createdAt'
+          setor: sectorName,
+          local: specificLocationId || locationType || '',
+          dataInicio: new Date().toISOString(),
           scope,
         }
         
-        console.log('🔍 [DEBUG] Payload enviado para o backend:', inventoryPayload)
-        
         const newInventory = await api.post<any>('/inventarios', inventoryPayload)
-        
-        console.log('✅ [DEBUG] Resposta do backend:', newInventory)
         
         // ✅ CORREÇÃO: Mapear items do backend para o formato do frontend
         // O backend retorna items com a estrutura InventoryItem do Prisma
@@ -176,9 +146,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           status: item.encontrado ? 'found' : 'not_found',
         }))
         
-        // ✅ Mapear resposta do backend para o formato do frontend
         const inventoryData: Inventory = {
-          id: newInventory.id, // ✅ Garantir que o ID está presente
+          id: newInventory.id,
           name: newInventory.title || name,
           sectorName: newInventory.setor || sectorName,
           status: (newInventory.status === 'em_andamento' ? 'in_progress' : 
@@ -186,20 +155,14 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
                   newInventory.status) as any,
           createdAt: newInventory.dataInicio ? new Date(newInventory.dataInicio) : new Date(),
           finalizedAt: newInventory.dataFim ? new Date(newInventory.dataFim) : undefined,
-          items: mappedItems, // ✅ Usar items mapeados do backend
+          items: mappedItems,
           scope: newInventory.scope || scope,
           locationType,
           specificLocationId,
-          municipalityId: user?.municipalityId || '', // ✅ Adicionar municipalityId
+          municipalityId: user?.municipalityId || '',
         }
         
-        console.log('✅ [DEBUG] Inventário mapeado para o frontend:', inventoryData)
-        console.log('✅ [DEBUG] ID do inventário:', inventoryData.id)
-        
-        // ✅ Recarregar a lista após criar
-        console.log('🔄 [DEBUG] Recarregando lista de inventários...')
         await fetchInventories()
-        console.log('✅ [DEBUG] Lista de inventários recarregada')
         
         return inventoryData
       } catch (error) {
