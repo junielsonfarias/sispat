@@ -58,14 +58,27 @@ class ErrorBoundary extends Component<Props, State> {
                 Ocorreu um erro inesperado na aplicação. Isso pode ser temporário.
               </p>
               
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {/* ✅ CORREÇÃO: Mostrar detalhes do erro também em produção para debug */}
+              {this.state.error && (
                 <details className="mt-4">
                   <summary className="cursor-pointer text-sm font-medium text-gray-700">
-                    Detalhes do erro (desenvolvimento)
+                    Detalhes do erro (clique para expandir)
                   </summary>
-                  <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">
+                  <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-60">
+                    <div className="font-bold mb-2">Erro:</div>
                     {this.state.error.toString()}
-                    {this.state.errorInfo?.componentStack}
+                    {this.state.errorInfo?.componentStack && (
+                      <>
+                        <div className="font-bold mt-3 mb-2">Stack Trace:</div>
+                        {this.state.errorInfo.componentStack}
+                      </>
+                    )}
+                    {this.state.error.stack && (
+                      <>
+                        <div className="font-bold mt-3 mb-2">Stack:</div>
+                        {this.state.error.stack}
+                      </>
+                    )}
                   </pre>
                 </details>
               )}
