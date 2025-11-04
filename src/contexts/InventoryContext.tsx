@@ -42,13 +42,44 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth()
 
   const fetchInventories = useCallback(async () => {
-    if (!user) return
+    if (!user) {
+      console.log('⚠️ [DEBUG] fetchInventories: user não está disponível')
+      return
+    }
     try {
+      console.log('🔍 [DEBUG] fetchInventories: Buscando inventários...')
       const response = await api.get<{ inventarios: Inventory[]; pagination: any }>('/inventarios')
-      // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade inventarios
-      const inventariosData = Array.isArray(response) ? response : (response.inventarios || [])
+      console.log('📊 [DEBUG] fetchInventories: Resposta da API:', response)
+      console.log('📊 [DEBUG] fetchInventories: Tipo da resposta:', typeof response)
+      console.log('📊 [DEBUG] fetchInventories: É array?', Array.isArray(response))
+      
+      // ✅ CORREÇÃO: A API retorna objeto com inventarios e pagination
+      let inventariosData: Inventory[] = []
+      
+      if (Array.isArray(response)) {
+        // Se for array direto, usar diretamente
+        inventariosData = response
+        console.log('✅ [DEBUG] fetchInventories: Resposta é array, usando diretamente')
+      } else if (response && typeof response === 'object') {
+        // Se for objeto, verificar se tem propriedade inventarios
+        if ('inventarios' in response && Array.isArray(response.inventarios)) {
+          inventariosData = response.inventarios
+          console.log('✅ [DEBUG] fetchInventories: Resposta tem propriedade inventarios')
+        } else if ('data' in response && Array.isArray((response as any).data?.inventarios)) {
+          inventariosData = (response as any).data.inventarios
+          console.log('✅ [DEBUG] fetchInventories: Resposta tem data.inventarios')
+        } else {
+          console.warn('⚠️ [DEBUG] fetchInventories: Estrutura de resposta inesperada:', response)
+          inventariosData = []
+        }
+      }
+      
+      console.log('✅ [DEBUG] fetchInventories: Inventários extraídos:', inventariosData.length)
+      console.log('📝 [DEBUG] fetchInventories: Primeiros 3 inventários:', inventariosData.slice(0, 3))
+      
       setAllInventories(inventariosData)
     } catch (error) {
+      console.error('❌ [ERROR] fetchInventories: Erro ao carregar inventários:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -135,14 +166,19 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         console.log('✅ [DEBUG] Inventário mapeado para o frontend:', inventoryData)
         console.log('✅ [DEBUG] ID do inventário:', inventoryData.id)
         
-        await fetchInventories() // Recarregar a lista
+        // ✅ Recarregar a lista após criar
+        console.log('🔄 [DEBUG] Recarregando lista de inventários...')
+        await fetchInventories()
+        console.log('✅ [DEBUG] Lista de inventários recarregada')
+        
         return inventoryData
       } catch (error) {
         console.error('❌ [ERROR] Erro ao criar inventário:', error)
+        console.error('❌ [ERROR] Stack trace:', error instanceof Error ? error.stack : 'N/A')
         throw error // Re-throw para que o componente possa capturar
       }
     },
-    [fetchInventories],
+    [fetchInventories, user],
   )
 
   const updateInventory = useCallback(
