@@ -27,6 +27,14 @@ npm install --save \
   tailwind-merge@^2.6.0 \
   tailwindcss-animate@^1.0.7 \
   class-variance-authority@^0.7.1 \
+  xlsx@^0.18.5 \
+  file-saver@^2.0.5 \
+  jspdf@^3.0.3 \
+  jspdf-autotable@^5.0.2 \
+  qrcode@^1.5.4 \
+  recharts@^2.15.4 \
+  @tanstack/react-query@^5.90.2 \
+  socket.io-client@^4.8.1 \
   --legacy-peer-deps
 
 # 3. Instalar dependências de desenvolvimento críticas
