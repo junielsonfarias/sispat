@@ -66,6 +66,8 @@ export default function Login() {
   
   // ✅ CORREÇÃO: useRef para rastrear se componente está montado
   const isMountedRef = useRef(true)
+  // ✅ CORREÇÃO: Estado para controlar renderização do Toaster (evita conflitos de DOM)
+  const [shouldRenderToaster, setShouldRenderToaster] = useState(true)
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -77,8 +79,11 @@ export default function Login() {
 
   useEffect(() => {
     isMountedRef.current = true
+    setShouldRenderToaster(true)
     
     return () => {
+      // ✅ CORREÇÃO: Desativar Toaster antes de desmontar para evitar conflitos de DOM
+      setShouldRenderToaster(false)
       isMountedRef.current = false
     }
   }, [])
@@ -86,16 +91,23 @@ export default function Login() {
   useEffect(() => {
     // ✅ CORREÇÃO: Verificar se está autenticado e componente ainda montado
     if (isAuthenticated && isMountedRef.current) {
+      // ✅ CORREÇÃO: Desativar Toaster antes de navegar para evitar conflitos de DOM
+      setShouldRenderToaster(false)
       const destination = user?.role === 'superuser' ? '/superuser' : '/'
-      // Usar requestAnimationFrame para garantir que navegação aconteça após render completo
-      const frameId = requestAnimationFrame(() => {
+      // ✅ CORREÇÃO: Usar setTimeout com delay mínimo para evitar conflitos de DOM
+      const timeoutId = setTimeout(() => {
         if (isMountedRef.current) {
-          navigate(destination, { replace: true })
+          try {
+            navigate(destination, { replace: true })
+          } catch (err) {
+            // Ignorar erros de navegação se componente foi desmontado
+            console.warn('Navigation error (component unmounted):', err)
+          }
         }
-      })
+      }, 50)
       
       return () => {
-        cancelAnimationFrame(frameId)
+        clearTimeout(timeoutId)
       }
     }
   }, [isAuthenticated, user, navigate])
@@ -107,6 +119,8 @@ export default function Login() {
     setError(null)
     try {
       await login(data.email, data.password)
+      // ✅ CORREÇÃO: Verificar se ainda está montado após login
+      if (!isMountedRef.current) return
     } catch (e) {
       if (!isMountedRef.current) return
       
@@ -115,7 +129,15 @@ export default function Login() {
           ? e.message
           : 'Ocorreu um erro ao tentar fazer login. Tente novamente.'
       setError(errorMessage)
-      form.resetField('password')
+      // ✅ CORREÇÃO: Verificar antes de resetar campo
+      if (isMountedRef.current) {
+        try {
+          form.resetField('password')
+        } catch (err) {
+          // Ignorar erros se formulário foi desmontado
+          console.warn('Form reset error (component unmounted):', err)
+        }
+      }
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false)
@@ -390,9 +412,10 @@ export default function Login() {
         <div className="text-center mt-8 sm:mt-12 text-blue-50 text-xs sm:text-sm drop-shadow-sm px-4">
           <p>{settings.loginFooterText || 'Sistema de Gestão de Patrimônio Municipal'}</p>
         </div>
-      </Container>
-      
-      <Toaster />
-    </div>
-  )
-}
+              </Container>
+        
+      {/* ✅ CORREÇÃO: Renderizar Toaster apenas quando componente estiver montado */}
+      {shouldRenderToaster && <Toaster />}
+      </div>
+    )
+  }

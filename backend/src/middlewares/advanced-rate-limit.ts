@@ -36,12 +36,18 @@ export const globalRateLimiter = rateLimit({
   // ✅ CORREÇÃO: Não aplicar rate limit em:
   // - Health checks
   // - Rotas públicas
+  // - Rotas de autenticação (têm seu próprio rate limiter)
   // - Requisições GET autenticadas (permitir carregamento inicial)
   skip: (req: any) => {
     // Health checks e rotas públicas
     if (req.path.startsWith('/api/health') || 
         req.path.startsWith('/health') ||
         req.path.startsWith('/api/public')) {
+      return true
+    }
+    
+    // ✅ CORREÇÃO: Rotas de autenticação têm seu próprio rate limiter
+    if (req.path.startsWith('/api/auth')) {
       return true
     }
     

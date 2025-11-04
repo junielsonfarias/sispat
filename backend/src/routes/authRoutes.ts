@@ -15,12 +15,21 @@ import rateLimit from 'express-rate-limit';
 const router = Router();
 
 // ✅ Rate limiting para rotas de autenticação (proteção contra brute force)
+// ✅ CORREÇÃO: Aumentar limite para 20 tentativas por 15 minutos (mais adequado para produção)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // Máximo 5 tentativas por IP
+  max: 20, // ✅ CORREÇÃO: Máximo 20 tentativas por IP (era 5, muito restritivo)
   message: 'Muitas tentativas de login. Tente novamente em 15 minutos.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req: any, res) => {
+    console.warn(`⚠️ Rate limit de autenticação excedido: ${req.ip} → ${req.body?.email || 'unknown'}`)
+    res.status(429).json({
+      error: 'Too Many Requests',
+      message: 'Muitas tentativas de login. Por segurança, aguarde 15 minutos.',
+      retryAfter: Math.ceil((req.rateLimit?.resetTime || Date.now() + 900000) / 1000),
+    })
+  },
 });
 
 // Rate limiting específico para reset de senha
