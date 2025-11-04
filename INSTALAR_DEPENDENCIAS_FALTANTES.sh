@@ -10,6 +10,13 @@ cd /var/www/sispat
 git reset --hard origin/main 2>/dev/null || true
 git pull origin main
 
+# PRIMEIRO: Garantir que React e React-DOM estão instalados
+echo "📦 Instalando React e React-DOM (base)..."
+npm install --save \
+  react@^19.1.1 \
+  react-dom@^19.1.1 \
+  --legacy-peer-deps
+
 # Instalar todas as dependências faltantes de uma vez
 echo "📦 Instalando dependências críticas..."
 npm install --save \
