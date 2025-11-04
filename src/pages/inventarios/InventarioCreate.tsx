@@ -120,26 +120,46 @@ export default function InventarioCreate() {
       console.log('🔍 [DEBUG] Chamando createInventory...')
       const newInventory = await createInventory(data)
       console.log('✅ [DEBUG] Inventário criado com sucesso:', newInventory)
+      console.log('✅ [DEBUG] Tipo do objeto:', typeof newInventory)
+      console.log('✅ [DEBUG] ID presente?', newInventory?.id)
+      console.log('✅ [DEBUG] Estrutura completa:', JSON.stringify(newInventory, null, 2))
       
       // ✅ Verificar se o inventário foi criado corretamente
-      if (newInventory && newInventory.id) {
-        console.log('🔍 [DEBUG] Navegando para:', `/inventarios/${newInventory.id}`)
-        navigate(`/inventarios/${newInventory.id}`)
-      } else {
+      if (!newInventory) {
+        console.error('❌ [ERROR] Inventário é null ou undefined')
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Inventário não foi criado. Tente novamente.',
+        })
+        return
+      }
+      
+      if (!newInventory.id) {
         console.error('❌ [ERROR] Inventário criado mas sem ID válido:', newInventory)
         toast({
           variant: 'destructive',
           title: 'Erro',
-          description: 'Inventário criado mas com dados inválidos.',
+          description: 'Inventário criado mas com dados inválidos. Verifique o console para mais detalhes.',
         })
         navigate('/inventarios')
+        return
       }
+      
+      console.log('✅ [DEBUG] Navegando para:', `/inventarios/${newInventory.id}`)
+      toast({
+        title: 'Sucesso',
+        description: 'Inventário criado com sucesso!',
+      })
+      navigate(`/inventarios/${newInventory.id}`)
     } catch (error) {
       console.error('❌ [ERROR] Erro ao criar inventário:', error)
+      console.error('❌ [ERROR] Stack trace:', error instanceof Error ? error.stack : 'N/A')
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: `Falha ao criar inventário: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        description: `Falha ao criar inventário: ${errorMessage}`,
       })
       // Não navegar em caso de erro, deixar o usuário tentar novamente
     } finally {

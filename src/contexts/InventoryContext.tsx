@@ -117,20 +117,23 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         
         // ✅ Mapear resposta do backend para o formato do frontend
         const inventoryData: Inventory = {
-          ...newInventory,
+          id: newInventory.id, // ✅ Garantir que o ID está presente
           name: newInventory.title || name,
           sectorName: newInventory.setor || sectorName,
           status: (newInventory.status === 'em_andamento' ? 'in_progress' : 
                   newInventory.status === 'concluido' ? 'completed' : 
                   newInventory.status) as any,
           createdAt: newInventory.dataInicio ? new Date(newInventory.dataInicio) : new Date(),
+          finalizedAt: newInventory.dataFim ? new Date(newInventory.dataFim) : undefined,
           items: mappedItems, // ✅ Usar items mapeados do backend
           scope: newInventory.scope || scope,
           locationType,
           specificLocationId,
+          municipalityId: user?.municipalityId || '', // ✅ Adicionar municipalityId
         }
         
         console.log('✅ [DEBUG] Inventário mapeado para o frontend:', inventoryData)
+        console.log('✅ [DEBUG] ID do inventário:', inventoryData.id)
         
         await fetchInventories() // Recarregar a lista
         return inventoryData
