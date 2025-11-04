@@ -20,6 +20,17 @@ npm install --save \
 # Instalar todas as dependências faltantes de uma vez
 echo "📦 Instalando dependências críticas..."
 npm install --save \
+  react-router-dom@^6.30.1 \
+  axios@^1.12.2 \
+  zod@^3.25.76 \
+  date-fns@^4.1.0 \
+  lucide-react@^0.539.0 \
+  react-hook-form@^7.62.0 \
+  @hookform/resolvers@^3.3.4 \
+  clsx@^2.1.1 \
+  tailwind-merge@^2.6.0 \
+  tailwindcss-animate@^1.0.7 \
+  class-variance-authority@^0.7.1 \
   xlsx@^0.18.5 \
   file-saver@^2.0.5 \
   jspdf@^3.0.3 \
