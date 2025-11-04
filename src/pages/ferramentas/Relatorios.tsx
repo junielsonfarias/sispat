@@ -32,6 +32,15 @@ const Relatorios = () => {
   const [selectedTemplate, setSelectedTemplate] =
     useState<ReportTemplate | null>(null)
 
+  // ✅ CORREÇÃO: Valores padrão para evitar erros
+  const safeAccessInfo = accessInfo || {
+    canViewAllData: true,
+    userSectors: [],
+    userRole: undefined,
+    hasSectorAccess: false,
+    sectorCount: 0,
+  }
+
   const handleGenerateClick = (template: ReportTemplate) => {
     setSelectedTemplate(template)
     setFilterOpen(true)
@@ -61,9 +70,9 @@ const Relatorios = () => {
         params.append('dateTo', filters.dateRange.to.toISOString())
       }
 
-      // ✅ CORREÇÃO: Adicionar informações de filtro por setor
-      if (!accessInfo.canViewAllData) {
-        params.append('userSectors', accessInfo.userSectors.join(','))
+      // ✅ CORREÇÃO: Adicionar informações de filtro por setor com verificação de segurança
+      if (!safeAccessInfo.canViewAllData && safeAccessInfo.userSectors && Array.isArray(safeAccessInfo.userSectors)) {
+        params.append('userSectors', safeAccessInfo.userSectors.join(','))
       }
       
       const queryString = params.toString()
@@ -93,9 +102,9 @@ const Relatorios = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Relatórios</h1>
-          {!accessInfo.canViewAllData && (
+          {!safeAccessInfo.canViewAllData && safeAccessInfo.userSectors && Array.isArray(safeAccessInfo.userSectors) && (
             <div className="text-sm text-muted-foreground bg-blue-50 px-3 py-1 rounded-lg mt-2 inline-block">
-              📊 Relatórios filtrados pelos setores: {accessInfo.userSectors.join(', ') || 'Nenhum setor atribuído'}
+              📊 Relatórios filtrados pelos setores: {safeAccessInfo.userSectors.length > 0 ? safeAccessInfo.userSectors.join(', ') : 'Nenhum setor atribuído'}
             </div>
           )}
         </div>
@@ -114,7 +123,8 @@ const Relatorios = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {templates.map((template) => (
+            {Array.isArray(templates) && templates.length > 0 ? (
+              templates.map((template) => (
               <Card key={template.id}>
                 <CardHeader className="flex flex-row items-start gap-4">
                   <div className="bg-primary text-primary-foreground p-3 rounded-lg">
@@ -151,8 +161,16 @@ const Relatorios = () => {
                   </Button>
                 </CardContent>
               </Card>
-            ))}
-            <Card className="border-dashed flex flex-col items-center justify-center">
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum modelo de relatório encontrado.</p>
+                <p className="text-sm mt-2">Crie um novo modelo para começar.</p>
+              </div>
+            )}
+            {Array.isArray(templates) && templates.length > 0 && (
+              <Card className="border-dashed flex flex-col items-center justify-center">
               <CardContent className="pt-6">
                 <Button asChild variant="ghost">
                   <Link to="/relatorios/templates">
@@ -160,7 +178,8 @@ const Relatorios = () => {
                   </Link>
                 </Button>
               </CardContent>
-            </Card>
+              </Card>
+            )}
           </div>
         </CardContent>
       </Card>
