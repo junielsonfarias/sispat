@@ -348,7 +348,7 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
           userId: userId,
           action: 'CREATE_INVENTORY',
           entityType: 'Inventory',
-          entityId: inventario.id,
+          entityId: inventario!.id,
           details: `Inventário "${title}" criado`,
         },
       });
