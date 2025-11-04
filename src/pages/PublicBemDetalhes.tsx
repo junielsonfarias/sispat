@@ -289,7 +289,10 @@ export default function PublicBemDetalhes() {
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between py-2 border-b border-slate-100">
                       <span className="text-slate-600">Tipo</span>
-                      <span className="font-semibold text-slate-900">{patrimonio.tipo}</span>
+                      <span className="font-semibold text-slate-900">
+                        {/* ✅ CORREÇÃO: Usar tipoBem?.nome ou tipo */}
+                        {(patrimonio as any).tipoBem?.nome || patrimonio.tipo || 'Não informado'}
+                      </span>
                     </div>
                     {patrimonio.marca && (
                       <div className="flex justify-between py-2 border-b border-slate-100">
@@ -336,7 +339,10 @@ export default function PublicBemDetalhes() {
                       <MapPin className="h-4 w-4 text-slate-400 mt-1" />
                       <div className="flex-1 text-sm">
                         <p className="text-slate-600 mb-1">Local</p>
-                        <p className="font-semibold text-slate-900">{patrimonio.localizacao}</p>
+                        <p className="font-semibold text-slate-900">
+                          {/* ✅ CORREÇÃO: Usar local_objeto ou local?.name */}
+                          {(patrimonio as any).local?.name || patrimonio.local_objeto || 'Não informado'}
+                        </p>
                       </div>
                     </div>
                   </div>

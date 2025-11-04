@@ -387,7 +387,7 @@ export default function PublicAssets() {
   }
 
   // Exportar para PDF
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
       if (filteredData.length === 0) {
         toast({
@@ -400,13 +400,79 @@ export default function PublicAssets() {
 
       const doc = new jsPDF()
       
-      // Adicionar título
-      doc.setFontSize(18)
-      doc.text('Consulta Pública de Bens', 14, 20)
+      // ✅ NOVO: Converter logo para base64 (se existir)
+      let logoBase64: string | null = null
+      if (selectedMunicipality.logoUrl) {
+        try {
+          const logoResponse = await fetch(selectedMunicipality.logoUrl)
+          const logoBlob = await logoResponse.blob()
+          const logoReader = new FileReader()
+          logoBase64 = await new Promise<string>((resolve, reject) => {
+            logoReader.onloadend = () => resolve(logoReader.result as string)
+            logoReader.onerror = reject
+            logoReader.readAsDataURL(logoBlob)
+          })
+        } catch (error) {
+          console.warn('Erro ao carregar logo:', error)
+        }
+      }
+
+      // ✅ NOVO: Adicionar cabeçalho com logo e informações
+      let currentY = 15
+
+      // Logo (se disponível)
+      if (logoBase64) {
+        try {
+          doc.addImage(logoBase64, 'PNG', 14, currentY, 40, 15)
+          currentY = 20
+        } catch (error) {
+          console.warn('Erro ao adicionar logo no PDF:', error)
+        }
+      }
+
+      // Título
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Consulta Pública de Bens e Imóveis', logoBase64 ? 60 : 14, currentY)
+      
+      currentY += 8
       doc.setFontSize(12)
-      doc.text(selectedMunicipality.name, 14, 28)
-      doc.setFontSize(10)
-      doc.text(`Gerado em: ${formatDate(new Date())}`, 14, 35)
+      doc.setFont('helvetica', 'normal')
+      
+      // Nome do Município
+      doc.setFont('helvetica', 'bold')
+      doc.text(selectedMunicipality.name, logoBase64 ? 60 : 14, currentY)
+      
+      currentY += 6
+      doc.setFont('helvetica', 'normal')
+      
+      // Secretaria Responsável
+      if (customizationSettings.secretariaResponsavel) {
+        doc.setFontSize(10)
+        doc.text(`Secretaria: ${customizationSettings.secretariaResponsavel}`, logoBase64 ? 60 : 14, currentY)
+        currentY += 5
+      }
+      
+      // Departamento Responsável
+      if (customizationSettings.departamentoResponsavel) {
+        doc.setFontSize(10)
+        doc.text(`Departamento: ${customizationSettings.departamentoResponsavel}`, logoBase64 ? 60 : 14, currentY)
+        currentY += 5
+      }
+      
+      // Data de geração
+      currentY += 3
+      doc.setFontSize(9)
+      doc.setTextColor(100, 100, 100)
+      doc.text(`Gerado em: ${formatDate(new Date())}`, logoBase64 ? 60 : 14, currentY)
+      doc.setTextColor(0, 0, 0) // Resetar cor
+      
+      // Linha separadora
+      currentY += 5
+      doc.setDrawColor(200, 200, 200)
+      doc.line(14, currentY, 196, currentY)
+      
+      currentY += 8
 
       // Preparar dados
       const tableData = filteredData.map((item) => {
@@ -435,9 +501,21 @@ export default function PublicAssets() {
       autoTable(doc, {
         head: [['Tipo', 'Nº Patrimônio', 'Descrição', 'Setor', 'Local', 'Situação']],
         body: tableData,
-        startY: 42,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [59, 130, 246] },
+        startY: currentY,
+        styles: { 
+          fontSize: 8,
+          cellPadding: 2,
+        },
+        headStyles: { 
+          fillColor: [59, 130, 246],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [245, 247, 250],
+        },
+        margin: { left: 14, right: 14 },
+        tableWidth: 'auto',
       })
 
       const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.pdf`
