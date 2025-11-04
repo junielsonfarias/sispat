@@ -392,8 +392,7 @@ export default function Login() {
         </div>
       </Container>
       
-      {/* ✅ CORREÇÃO: Renderizar Toaster apenas se componente estiver montado */}
-      {isMountedRef.current && <Toaster />}
+      <Toaster />
     </div>
   )
 }
