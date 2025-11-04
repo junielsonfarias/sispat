@@ -13,8 +13,12 @@ export async function logActivity(
   userId?: string // ✅ CORREÇÃO: userId opcional para casos onde req.user não está disponível (ex: login)
 ): Promise<void> {
   try {
-    // ✅ CORREÇÃO: Usar userId fornecido ou tentar obter de req.user
-    const finalUserId = userId || (req.user as any)?.userId || (req.user as any)?.id
+    // ✅ CORREÇÃO: Usar userId fornecido ou tentar obter de req.user (com verificação segura)
+    let finalUserId = userId
+    
+    if (!finalUserId && req && req.user) {
+      finalUserId = (req.user as any)?.userId || (req.user as any)?.id
+    }
     
     if (!finalUserId) {
       // Se não houver userId, não registrar (caso comum em rotas públicas)
