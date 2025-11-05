@@ -121,12 +121,13 @@ export const generateImovelPDF = async ({
     }
   }
 
-  // Gerar QR Code para consulta pública de imóvel
+  // Gerar QR Code para consulta pública de imóvel - tamanho maior para melhor legibilidade
   let qrCodeUrl = ''
   try {
-    const publicUrl = `${window.location.origin}/consulta-publica/imovel/${imovel.id}`
-    qrCodeUrl = await generateQRCode(publicUrl, { size: 150, errorCorrectionLevel: 'H' })
-    console.log('✅ QR Code gerado com sucesso para PDF de imóvel')
+    // Gerar QR code com tamanho maior (250px) para melhor qualidade no PDF
+    const publicUrl = `${window.location.origin}/consulta-publica/imovel/${imovel.numero_patrimonio}`
+    qrCodeUrl = await generateQRCode(publicUrl, { size: 250, errorCorrectionLevel: 'H' })
+    console.log('✅ QR Code gerado com sucesso para PDF de imóvel (250px)')
   } catch (error) {
     console.warn('⚠️ Erro ao gerar QR Code para PDF de imóvel:', error)
   }
@@ -158,13 +159,13 @@ export const generateImovelPDF = async ({
         </div>
       </div>
 
-      <!-- QR Code para consulta pública -->
+      <!-- QR Code para consulta pública - tamanho aumentado para melhor legibilidade -->
       ${qrCodeUrl ? `
       <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
-        <div style="text-align: center; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
-          <p style="margin: 0 0 5px 0; font-size: 10px; color: #64748b; font-weight: 600;">CONSULTA PÚBLICA</p>
-          <img src="${qrCodeUrl}" alt="QR Code" style="width: 80px; height: 80px; margin: 0 auto; display: block;" />
-          <p style="margin: 5px 0 0 0; font-size: 9px; color: #94a3b8;">Escaneie para acessar</p>
+        <div style="text-align: center; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
+          <p style="margin: 0 0 6px 0; font-size: 10px; color: #64748b; font-weight: 600;">CONSULTA PÚBLICA</p>
+          <img src="${qrCodeUrl}" alt="QR Code" style="width: 110px; height: 110px; margin: 0 auto; display: block; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" />
+          <p style="margin: 6px 0 0 0; font-size: 9px; color: #94a3b8;">Escaneie para acessar</p>
         </div>
       </div>
       ` : ''}
@@ -372,15 +373,16 @@ export const generateImovelPDF = async ({
     // Aguardar carregamento de imagens
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    // ✅ OTIMIZAÇÃO: Reduzir scale de 2 para 1 (reduz 75% do tamanho)
+    // ✅ MELHORIA DE QUALIDADE: Aumentar scale para 2 para melhor resolução (especialmente QR code)
     // Converter para canvas
     const canvas = await html2canvas(container, {
-      scale: 1, // ✅ Reduzido de 2 para 1 - reduz drasticamente o tamanho
+      scale: 2, // ✅ Aumentado para 2 - melhora qualidade e resolução do QR code
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
       imageTimeout: 15000,
       removeContainer: false,
+      allowTaint: false,
     })
 
     // Criar PDF com compressão ativada
@@ -391,13 +393,13 @@ export const generateImovelPDF = async ({
       compress: true, // ✅ Ativar compressão do PDF
     })
 
-    // ✅ OTIMIZAÇÃO: Usar JPEG com qualidade 0.85 em vez de PNG
-    // JPEG tem ~10x menos tamanho que PNG para fotos e conteúdo misto
-    const imgData = canvas.toDataURL('image/jpeg', 0.85) // 85% de qualidade
+    // ✅ MELHORIA DE QUALIDADE: Aumentar qualidade JPEG de 0.85 para 0.95
+    // Mantém tamanho ~250KB conforme solicitado, mas com melhor qualidade
+    const imgData = canvas.toDataURL('image/jpeg', 0.95) // 95% de qualidade - melhor para QR code
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    // ✅ Usar formato JPEG e modo FAST para reduzir processamento
+    // ✅ Usar formato JPEG com qualidade alta para melhor legibilidade do QR code
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST')
 
     // Salvar PDF

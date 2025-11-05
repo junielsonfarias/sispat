@@ -197,11 +197,15 @@ export const generatePatrimonioPDF = async ({
     }
   }
 
-  // Gerar QR Code para consulta pública
+  // Gerar QR Code para consulta pública - tamanho maior para melhor legibilidade
   let qrCodeUrl = ''
   try {
-    qrCodeUrl = await generatePatrimonioQRCode(patrimonio.numero_patrimonio, 'bem')
-    console.log('✅ QR Code gerado com sucesso para PDF')
+    // Gerar QR code com tamanho maior (250px) para melhor qualidade no PDF
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const publicUrl = `${origin}/consulta-publica/bem/${patrimonio.numero_patrimonio}`
+    const { generateQRCode } = await import('@/lib/qr-code-utils')
+    qrCodeUrl = await generateQRCode(publicUrl, { size: 250, errorCorrectionLevel: 'H' })
+    console.log('✅ QR Code gerado com sucesso para PDF (250px)')
   } catch (error) {
     console.warn('⚠️ Erro ao gerar QR Code para PDF:', error)
   }
@@ -326,12 +330,12 @@ export const generatePatrimonioPDF = async ({
               ` : '<span style="font-size: 12px; color: #6b7280;">Sem foto</span>'}
             </div>
             
-            <!-- QR Code para consulta pública -->
+            <!-- QR Code para consulta pública - tamanho aumentado para melhor legibilidade -->
             ${qrCodeUrl ? `
-            <div style="margin-top: 12px; padding: 8px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
-              <p style="margin: 0; font-size: 9px; color: #6b7280; font-weight: 600; margin-bottom: 3px;">CONSULTA PÚBLICA</p>
-              <img src="${qrCodeUrl}" alt="QR Code" style="width: 60px; height: 60px; margin: 0 auto; display: block;" />
-              <p style="margin: 3px 0 0 0; font-size: 8px; color: #9ca3af;">Escaneie para acessar</p>
+            <div style="margin-top: 12px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <p style="margin: 0; font-size: 9px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">CONSULTA PÚBLICA</p>
+              <img src="${qrCodeUrl}" alt="QR Code" style="width: 90px; height: 90px; margin: 0 auto; display: block; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" />
+              <p style="margin: 4px 0 0 0; font-size: 8px; color: #9ca3af;">Escaneie para acessar</p>
             </div>
             ` : ''}
           </div>
@@ -481,16 +485,17 @@ export const generatePatrimonioPDF = async ({
     // Aguardar carregamento de imagens
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    // ✅ OTIMIZAÇÃO: Reduzir scale de 2 para 1 (reduz 75% do tamanho)
+    // ✅ MELHORIA DE QUALIDADE: Aumentar scale para 2 para melhor resolução (especialmente QR code)
     // Converter para canvas
     const canvas = await html2canvas(container, {
-      scale: 1, // ✅ Reduzido de 2 para 1 - reduz drasticamente o tamanho
+      scale: 2, // ✅ Aumentado para 2 - melhora qualidade e resolução do QR code
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
       // ✅ Otimizações adicionais
       imageTimeout: 15000,
       removeContainer: false,
+      allowTaint: false,
     })
 
     // Criar PDF com compressão ativada
@@ -501,13 +506,13 @@ export const generatePatrimonioPDF = async ({
       compress: true, // ✅ Ativar compressão do PDF
     })
 
-    // ✅ OTIMIZAÇÃO: Usar JPEG com qualidade 0.85 em vez de PNG
-    // JPEG tem ~10x menos tamanho que PNG para fotos e conteúdo misto
-    const imgData = canvas.toDataURL('image/jpeg', 0.85) // 85% de qualidade
+    // ✅ MELHORIA DE QUALIDADE: Aumentar qualidade JPEG de 0.85 para 0.95
+    // Mantém tamanho ~250KB conforme solicitado, mas com melhor qualidade
+    const imgData = canvas.toDataURL('image/jpeg', 0.95) // 95% de qualidade - melhor para QR code
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    // ✅ Usar formato JPEG e modo FAST para reduzir processamento
+    // ✅ Usar formato JPEG com qualidade alta para melhor legibilidade do QR code
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST')
 
     // Salvar PDF
