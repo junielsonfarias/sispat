@@ -56,6 +56,20 @@ export const getPublicPatrimonioByNumero = async (req: Request, res: Response): 
       include: {
         sector: true,
         municipality: true,
+        tipoBem: {
+          select: {
+            id: true,
+            nome: true,
+            descricao: true,
+          }
+        },
+        local: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          }
+        },
       },
     });
 

@@ -21,10 +21,10 @@ import {
   ChevronRight,
   CheckCircle2,
 } from 'lucide-react'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { getCloudImageUrl, formatDate, formatCurrency } from '@/lib/utils'
+import { publicApi } from '@/services/public-api'
 
 const formatSituacao = (situacao: string) => {
   const labels: Record<string, string> = {
@@ -51,16 +51,59 @@ const getSituacaoStyle = (situacao: string) => {
 export default function PublicBemDetalhes() {
   const { numero } = useParams<{ numero: string }>()
   const navigate = useNavigate()
-  const { patrimonios } = usePatrimonio()
   const { settings } = useCustomization()
   const [isLoading, setIsLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [patrimonio, setPatrimonio] = useState<any>(null)
 
-  const patrimonio = patrimonios.find((p) => p.numero_patrimonio === numero)
-
+  // ✅ CORREÇÃO: Buscar patrimônio usando API pública (sem autenticação)
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500)
-    return () => clearTimeout(timer)
+    const fetchPatrimonio = async () => {
+      if (!numero) return
+      
+      setIsLoading(true)
+      try {
+        // Backend retorna { patrimonio: {...} }
+        const response = await publicApi.getPatrimonioByNumero(numero)
+        
+        // ✅ O backend retorna o objeto completo do Prisma com relacionamentos
+        // A API pública já extrai o objeto patrimonio da resposta
+        const data = response as any
+        
+        // ✅ Mapear dados do backend para o formato esperado pelo frontend
+        const patrimonioMapeado = {
+          ...data,
+          // Campos principais
+          numero_patrimonio: data.numero_patrimonio || numero,
+          descricao_bem: data.descricao_bem,
+          fotos: data.fotos || [],
+          status: data.status,
+          valor_aquisicao: data.valor_aquisicao,
+          data_aquisicao: data.data_aquisicao,
+          tipo: data.tipo,
+          marca: data.marca,
+          modelo: data.modelo,
+          serie: data.serie,
+          observacoes: data.observacoes,
+          forma_aquisicao: data.forma_aquisicao,
+          // Relacionamentos
+          setor_responsavel: data.sector?.name || data.setor_responsavel || 'Não informado',
+          local_objeto: data.local?.name || data.local_objeto || 'Não informado',
+          tipoBem: data.tipoBem || (data.tipo ? { nome: data.tipo } : null),
+          local: data.local,
+          sector: data.sector,
+        }
+        
+        setPatrimonio(patrimonioMapeado)
+      } catch (error) {
+        console.error('Erro ao buscar patrimônio:', error)
+        setPatrimonio(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchPatrimonio()
   }, [numero])
 
   if (isLoading) {
