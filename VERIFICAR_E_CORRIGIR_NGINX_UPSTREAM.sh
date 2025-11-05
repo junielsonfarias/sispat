@@ -19,19 +19,61 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 
 # 1. Encontrar arquivo de configuração
+echo -e "${YELLOW}Procurando arquivo de configuração do Nginx...${NC}"
 NGINX_CONFIG=""
-for config in /etc/nginx/sites-available/sispat /etc/nginx/conf.d/sispat.conf /etc/nginx/nginx.conf; do
+
+# Lista de locais possíveis
+POSSIBLE_CONFIGS=(
+    "/etc/nginx/sites-available/sispat"
+    "/etc/nginx/sites-enabled/sispat"
+    "/etc/nginx/conf.d/sispat.conf"
+    "/etc/nginx/nginx.conf"
+    "/etc/nginx/sites-available/default"
+    "/etc/nginx/sites-enabled/default"
+)
+
+# Procurar arquivo que contém "location /api/"
+for config in "${POSSIBLE_CONFIGS[@]}"; do
     if [ -f "$config" ]; then
+        echo -e "   Verificando: $config"
         if grep -q "location /api/" "$config" 2>/dev/null; then
             NGINX_CONFIG="$config"
+            echo -e "${GREEN}   ✅ Encontrado: $config${NC}"
             break
         fi
     fi
 done
 
+# Se não encontrou, procurar em todos os arquivos .conf
+if [ -z "$NGINX_CONFIG" ]; then
+    echo -e "${YELLOW}   Procurando em todos os arquivos .conf...${NC}"
+    for config in /etc/nginx/**/*.conf /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* 2>/dev/null; do
+        if [ -f "$config" ] && grep -q "location /api/" "$config" 2>/dev/null; then
+            NGINX_CONFIG="$config"
+            echo -e "${GREEN}   ✅ Encontrado: $config${NC}"
+            break
+        fi
+    done
+fi
+
+# Se ainda não encontrou, mostrar arquivos disponíveis
 if [ -z "$NGINX_CONFIG" ]; then
     echo -e "${RED}❌ Arquivo de configuração do Nginx não encontrado${NC}"
-    exit 1
+    echo -e "${YELLOW}Arquivos Nginx encontrados:${NC}"
+    find /etc/nginx -name "*.conf" -type f 2>/dev/null | head -10 || echo "Nenhum arquivo .conf encontrado"
+    echo ""
+    echo -e "${YELLOW}Arquivos em sites-available:${NC}"
+    ls -la /etc/nginx/sites-available/ 2>/dev/null || echo "Diretório não encontrado"
+    echo ""
+    echo -e "${YELLOW}Arquivos em sites-enabled:${NC}"
+    ls -la /etc/nginx/sites-enabled/ 2>/dev/null || echo "Diretório não encontrado"
+    echo ""
+    echo -e "${YELLOW}Por favor, informe o caminho do arquivo de configuração:${NC}"
+    read -p "Caminho: " NGINX_CONFIG
+    if [ ! -f "$NGINX_CONFIG" ]; then
+        echo -e "${RED}❌ Arquivo não encontrado: $NGINX_CONFIG${NC}"
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}✅ Configuração encontrada: $NGINX_CONFIG${NC}"
