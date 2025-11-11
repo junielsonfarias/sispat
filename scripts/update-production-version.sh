@@ -53,6 +53,10 @@ if ! npm ci --omit=dev; then
   npm install --omit=dev
 fi
 
+log "🔧 Corrigindo permissões de binários do backend..."
+chmod +x node_modules/.bin/* 2>/dev/null || true
+chmod +x node_modules/@prisma/engines/* 2>/dev/null || true
+
 log "🗄️ Aplicando migrações do banco..."
 npx prisma migrate deploy
 
