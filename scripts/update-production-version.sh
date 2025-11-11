@@ -48,7 +48,10 @@ log "📦 Atualizando backend..."
 cd "$BACKEND_DIR"
 
 log "📥 Instalando dependências do backend..."
-npm ci --production
+if ! npm ci --omit=dev; then
+  log "⚠️ Falha ao executar 'npm ci --omit=dev'. Tentando 'npm install --omit=dev'..."
+  npm install --omit=dev
+fi
 
 log "🗄️ Aplicando migrações do banco..."
 npx prisma migrate deploy
@@ -71,10 +74,16 @@ if [ -d "$FRONTEND_DIR" ]; then
 
   log "📥 Instalando dependências do frontend com $PACKAGE_MANAGER..."
   if [ "$PACKAGE_MANAGER" = "pnpm" ]; then
-    pnpm install --frozen-lockfile
+    if ! pnpm install --frozen-lockfile; then
+      log "⚠️ Falha no 'pnpm install --frozen-lockfile'. Tentando 'pnpm install'..."
+      pnpm install
+    fi
     pnpm run build
   else
-    npm ci
+    if ! npm ci; then
+      log "⚠️ Falha no 'npm ci'. Tentando 'npm install'..."
+      npm install
+    fi
     npm run build
   fi
 else
