@@ -48,9 +48,9 @@ log "📦 Atualizando backend..."
 cd "$BACKEND_DIR"
 
 log "📥 Instalando dependências do backend..."
-if ! npm ci --omit=dev; then
-  log "⚠️ Falha ao executar 'npm ci --omit=dev'. Tentando 'npm install --omit=dev'..."
-  npm install --omit=dev
+if ! npm ci; then
+  log "⚠️ Falha ao executar 'npm ci'. Tentando 'npm install'..."
+  npm install
 fi
 
 log "🔧 Corrigindo permissões de binários do backend..."
