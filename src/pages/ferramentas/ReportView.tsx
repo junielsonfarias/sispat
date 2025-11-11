@@ -253,7 +253,17 @@ const ReportView = () => {
       return ''
     }
     
-    if (value instanceof Date) return formatDate(value)
+    if (value instanceof Date) {
+      return formatDate(value)
+    }
+
+    if (typeof value === 'string') {
+      const parsedDate = new Date(value)
+      if (!Number.isNaN(parsedDate.getTime())) {
+        return formatDate(parsedDate)
+      }
+    }
+    
     if (typeof value === 'number' && key === 'valor_aquisicao')
       return formatCurrency(value)
     if (Array.isArray(value)) return String(value.length)

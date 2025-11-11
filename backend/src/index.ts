@@ -241,6 +241,7 @@ import labelTemplateRoutes from './routes/labelTemplateRoutes';
 import configRoutes from './routes/configRoutes';
 import systemConfigRoutes from './routes/systemConfigRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import performanceRoutes from './routes/performanceRoutes';
 
 logInfo('✅ Rotas carregadas');
 
@@ -283,6 +284,7 @@ app.use('/api/notifications', notificationRoutes);
 // Rotas de métricas e monitoramento
 import metricsRoutes from './routes/metricsRoutes';
 app.use('/api/metrics', metricsRoutes);
+app.use('/api/performance', performanceRoutes);
 
 // ============================================
 // TRATAMENTO DE ERROS

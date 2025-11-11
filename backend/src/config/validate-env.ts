@@ -48,18 +48,27 @@ export function validateEnvironment(): void {
       process.exit(1);
     }
 
-    if (jwtSecret.includes('dev') || jwtSecret.includes('test') || jwtSecret.includes('example')) {
+    if (jwtSecret.includes('dev') || jwtSecret.includes('test') || jwtSecret.includes('example') || 
+        jwtSecret.includes('CHANGE_THIS') || jwtSecret.includes('default') || jwtSecret.includes('secret')) {
       logError('❌ JWT_SECRET contém palavras inseguras!', undefined, {
-        forbiddenWords: ['dev', 'test', 'example']
+        forbiddenWords: ['dev', 'test', 'example', 'CHANGE_THIS', 'default', 'secret']
       });
       process.exit(1);
     }
 
     // Validar DATABASE_URL
     const dbUrl = process.env.DATABASE_URL || '';
-    if (dbUrl.includes('CHANGE_THIS') || dbUrl.includes('password') || dbUrl.includes('123')) {
+    if (dbUrl.includes('CHANGE_THIS') || dbUrl.includes('password') || dbUrl.includes('123') || 
+        dbUrl.includes('postgres') && dbUrl.includes('postgres')) {
       logWarn('⚠️  ATENÇÃO: DATABASE_URL parece conter senha padrão!', {
         recommendation: 'Recomenda-se usar senha forte e única.'
+      });
+    }
+
+    // Validar se DATABASE_URL tem SSL em produção
+    if (dbUrl && !dbUrl.includes('sslmode=require') && !dbUrl.includes('sslmode=prefer')) {
+      logWarn('⚠️  DATABASE_URL não tem SSL habilitado!', {
+        recommendation: 'Adicione ?sslmode=require à URL do banco para produção.'
       });
     }
 
@@ -67,6 +76,10 @@ export function validateEnvironment(): void {
     if (!process.env.FRONTEND_URL) {
       logWarn('⚠️  FRONTEND_URL não configurado. Usando valor padrão.', {
         recommendation: 'Configure para produção: https://seudominio.com'
+      });
+    } else if (!process.env.FRONTEND_URL.startsWith('https://')) {
+      logWarn('⚠️  FRONTEND_URL não usa HTTPS!', {
+        recommendation: 'Use HTTPS em produção: https://seudominio.com'
       });
     }
 
@@ -76,6 +89,23 @@ export function validateEnvironment(): void {
       logWarn('⚠️  BCRYPT_ROUNDS baixo para produção!', {
         current: bcryptRounds,
         recommended: '12 ou superior'
+      });
+    }
+
+    // Validar PORT
+    const port = parseInt(process.env.PORT || '3000');
+    if (port < 1024 || port > 65535) {
+      logError('❌ PORT inválido!', undefined, {
+        current: port,
+        validRange: '1024-65535'
+      });
+      process.exit(1);
+    }
+
+    // Validar CORS_ORIGIN
+    if (!process.env.CORS_ORIGIN) {
+      logWarn('⚠️  CORS_ORIGIN não configurado!', {
+        recommendation: 'Configure CORS_ORIGIN para produção'
       });
     }
 

@@ -18,6 +18,8 @@
     "prisma:reset": "prisma migrate reset",
     "optimize:indexes": "node scripts/apply-optimization-indexes.js",
     "optimize:analyze": "node scripts/apply-optimization-indexes.js --analyze",
+    "optimize:queries": "node scripts/optimize-database-queries.js",
+    "optimize:db": "bash scripts/optimize-database.sh",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage --maxWorkers=2",

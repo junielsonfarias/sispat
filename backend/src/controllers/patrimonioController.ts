@@ -94,10 +94,13 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
     const {
       search,
       status,
+      situacao_bem,
       sectorId,
       tipo,
       numero_licitacao,
       ano_licitacao,
+      dataAquisicaoInicio,
+      dataAquisicaoFim,
       page = '1',
       limit = '50',
       orderBy = 'createdAt',
@@ -130,6 +133,11 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
       where.status = status;
     }
 
+    // Filtro de situação do bem
+    if (situacao_bem) {
+      where.situacao_bem = situacao_bem;
+    }
+
     // Filtro de setor
     if (sectorId) {
       where.sectorId = sectorId;
@@ -138,6 +146,20 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
     // Filtro de tipo
     if (tipo) {
       where.tipo = tipo;
+    }
+
+    // Filtro de data de aquisição (período)
+    if (dataAquisicaoInicio || dataAquisicaoFim) {
+      where.data_aquisicao = {};
+      if (dataAquisicaoInicio) {
+        where.data_aquisicao.gte = new Date(dataAquisicaoInicio as string);
+      }
+      if (dataAquisicaoFim) {
+        // Adicionar 1 dia para incluir todo o dia final
+        const endDate = new Date(dataAquisicaoFim as string);
+        endDate.setHours(23, 59, 59, 999);
+        where.data_aquisicao.lte = endDate;
+      }
     }
 
     // Filtro de número de licitação

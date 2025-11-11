@@ -84,18 +84,68 @@ export const getDatabaseStats = async () => {
   const start = Date.now()
   
   try {
+    // Testar conexão
     await prisma.$queryRaw`SELECT 1`
-    const responseTime = Date.now() - start
+    const connectionTime = Date.now() - start
+    
+    // Obter estatísticas adicionais
+    const queryStart = Date.now()
+    const [tableStats, indexStats] = await Promise.all([
+      prisma.$queryRaw<any[]>`
+        SELECT 
+          schemaname,
+          tablename,
+          pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size,
+          pg_total_relation_size(schemaname||'.'||tablename) as size_bytes
+        FROM pg_tables
+        WHERE schemaname = 'public'
+        AND tablename IN ('patrimonios', 'imoveis', 'users', 'sectors', 'activity_logs')
+        ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+        LIMIT 10
+      `,
+      prisma.$queryRaw<any[]>`
+        SELECT 
+          tablename,
+          indexname,
+          idx_scan as index_scans
+        FROM pg_stat_user_indexes
+        WHERE schemaname = 'public'
+        AND tablename IN ('patrimonios', 'imoveis', 'users', 'sectors')
+        ORDER BY idx_scan DESC
+        LIMIT 10
+      `
+    ]).catch(() => [[], []])
+    
+    const queryTime = Date.now() - queryStart
+    
+    // Obter número de conexões ativas
+    const [connections] = await prisma.$queryRaw<any[]>`
+      SELECT count(*) as count FROM pg_stat_activity WHERE datname = current_database()
+    `.catch(() => [{ count: 0 }])
     
     return {
       healthy: true,
-      responseTimeMs: responseTime,
+      connectionTime,
+      queryTime,
+      activeConnections: parseInt(connections?.[0]?.count || '0'),
+      totalQueries: 0, // Será incrementado pelo query handler
+      slowQueries: 0,  // Será incrementado pelo query handler
+      averageQueryTime: 0,
+      tableStats: tableStats || [],
+      indexStats: indexStats || [],
+      recommendations: [] as string[],
     }
   } catch (error) {
     return {
       healthy: false,
-      responseTimeMs: -1,
+      connectionTime: -1,
+      queryTime: -1,
+      activeConnections: 0,
+      totalQueries: 0,
+      slowQueries: 0,
+      averageQueryTime: 0,
       error: error instanceof Error ? error.message : 'Unknown error',
+      recommendations: ['Verificar conexão com o banco de dados'],
     }
   }
 }

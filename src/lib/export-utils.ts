@@ -10,21 +10,33 @@ type ExportableColumn = {
 
 const getColumnValue = (item: Patrimonio, key: keyof Patrimonio): string => {
   const value = item[key]
+
+  if (value === null || value === undefined) {
+    return ''
+  }
+
   if (value instanceof Date) {
     return format(value, 'dd/MM/yyyy')
   }
+
+  if (typeof value === 'string') {
+    const parsedDate = new Date(value)
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return format(parsedDate, 'dd/MM/yyyy')
+    }
+  }
+
   if (Array.isArray(value)) {
     return String(value.length)
   }
+
   if (typeof value === 'number') {
     return value.toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
   }
-  if (value === null || value === undefined) {
-    return ''
-  }
+
   return String(value)
 }
 

@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { format } from 'date-fns'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode, Printer, ChevronLeft, ChevronRight, Filter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +17,10 @@ import { Badge } from '@/components/ui/badge'
 import { useSync } from '@/contexts/SyncContext'
 import { useAuth } from '@/hooks/useAuth'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useSectors } from '@/contexts/SectorContext'
+import { useTiposBens } from '@/contexts/TiposBensContext'
+import { DatePickerWithRange } from '@/components/ui/date-picker'
+import { DateRange } from 'react-day-picker'
 import { toast } from '@/hooks/use-toast'
 import { LabelPreview } from '@/components/LabelPreview'
 import {
@@ -39,7 +44,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TableSkeleton, MobileCardSkeleton } from '@/components/ui/skeleton-list'
-import { toast } from '@/hooks/use-toast'
 import {
   Tooltip,
   TooltipContent,
@@ -71,7 +75,18 @@ const renderTable = (
   searchTerm: string,
   selectedAssets: string[],
   onToggleAsset: (id: string) => void,
-  onToggleSelectAll: () => void
+  onToggleSelectAll: () => void,
+  deletingId: string | null,
+  setDeletingId: (id: string | null) => void,
+  deletePatrimonio: (id: string) => Promise<void>,
+  fetchPatrimonios: () => Promise<void>,
+  currentPage: number,
+  setCurrentPage: (page: number) => void,
+  toast: any,
+  setPatrimonios: React.Dispatch<React.SetStateAction<Patrimonio[]>>,
+  setSelectedAssets: React.Dispatch<React.SetStateAction<string[]>>,
+  setTotalItems: React.Dispatch<React.SetStateAction<number>>,
+  handleShowQrCode: (patrimonio: Patrimonio) => void
 ) => {
   if (!Array.isArray(filteredData)) {
     return (
@@ -319,7 +334,23 @@ const BensCadastrados = () => {
   const { user } = useAuth()
   const { templates: labelTemplates } = useLabelTemplates()
   const { deletePatrimonio } = usePatrimonio()
+  const sectorsContext = useSectors()
+  const tiposBensContext = useTiposBens()
+  const sectors = sectorsContext?.sectors || []
+  const tiposBens = tiposBensContext?.tiposBens || []
+  
   const [searchTerm, setSearchTerm] = useState('')
+  
+  // ✅ Filtros
+  const [filters, setFilters] = useState({
+    status: '',
+    situacao_bem: '',
+    sectorId: '',
+    tipo: '',
+    dataAquisicaoInicio: '',
+    dataAquisicaoFim: '',
+  })
+  const [showFilters, setShowFilters] = useState(false)
   const [qrCodeAsset, setQrCodeAsset] = useState<Patrimonio | null>(null)
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
@@ -352,6 +383,26 @@ const BensCadastrados = () => {
       
       if (debouncedSearchTerm) {
         params.append('search', debouncedSearchTerm)
+      }
+      
+      // ✅ Adicionar filtros
+      if (filters.status) {
+        params.append('status', filters.status)
+      }
+      if (filters.situacao_bem) {
+        params.append('situacao_bem', filters.situacao_bem)
+      }
+      if (filters.sectorId) {
+        params.append('sectorId', filters.sectorId)
+      }
+      if (filters.tipo) {
+        params.append('tipo', filters.tipo)
+      }
+      if (filters.dataAquisicaoInicio) {
+        params.append('dataAquisicaoInicio', filters.dataAquisicaoInicio)
+      }
+      if (filters.dataAquisicaoFim) {
+        params.append('dataAquisicaoFim', filters.dataAquisicaoFim)
       }
 
       const response = await api.get<{
@@ -392,15 +443,15 @@ const BensCadastrados = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [user, currentPage, pageSize, debouncedSearchTerm])
+  }, [user, currentPage, pageSize, debouncedSearchTerm, filters])
 
-  // ✅ OTIMIZAÇÃO: Resetar para página 1 quando busca mudar
+  // ✅ OTIMIZAÇÃO: Resetar para página 1 quando busca ou filtros mudarem
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm])
+  }, [debouncedSearchTerm, filters])
 
   // ✅ OTIMIZAÇÃO: Buscar patrimônios quando parâmetros mudarem
   useEffect(() => {
@@ -408,7 +459,7 @@ const BensCadastrados = () => {
       fetchPatrimonios()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, currentPage, pageSize, debouncedSearchTerm])
+  }, [user, currentPage, pageSize, debouncedSearchTerm, filters])
 
   // ✅ OTIMIZAÇÃO: useMemo no filtro (agora client-side apenas para dados já carregados)
   const filteredData = useMemo(() => {
@@ -427,6 +478,62 @@ const BensCadastrados = () => {
       )
     })
   }, [patrimonios, debouncedSearchTerm])
+
+  // ✅ Contar filtros ativos (definido ANTES de ser usado no JSX)
+  const activeFiltersCount = useMemo(() => {
+    let count = 0
+    if (filters.status) count++
+    if (filters.situacao_bem) count++
+    if (filters.sectorId) count++
+    if (filters.tipo) count++
+    if (filters.dataAquisicaoInicio || filters.dataAquisicaoFim) count++
+    return count
+  }, [filters])
+
+  // ✅ Limpar todos os filtros
+  const clearFilters = useCallback(() => {
+    setFilters({
+      status: '',
+      situacao_bem: '',
+      sectorId: '',
+      tipo: '',
+      dataAquisicaoInicio: '',
+      dataAquisicaoFim: '',
+    })
+    setCurrentPage(1)
+  }, [])
+
+  // ✅ Filtrar setores baseado em role e responsibleSectors
+  const allowedSectors = useMemo(() => {
+    if (!user) return []
+    // Admin e Supervisor veem TODOS os setores
+    if (user.role === 'admin' || user.role === 'supervisor' || user.role === 'superuser') {
+      return sectors
+    }
+    // Usuário normal vê apenas seus setores responsáveis
+    const userSectors = user.responsibleSectors || []
+    return sectors.filter((s) => userSectors.includes(s.name))
+  }, [sectors, user])
+
+  // ✅ Handler para data de aquisição
+  const handleDateRangeChange = useCallback((range: DateRange | undefined) => {
+    setFilters((prev) => ({
+      ...prev,
+      dataAquisicaoInicio: range?.from ? format(range.from, 'yyyy-MM-dd') : '',
+      dataAquisicaoFim: range?.to ? format(range.to, 'yyyy-MM-dd') : '',
+    }))
+  }, [])
+
+  // ✅ Converter range de data para DateRange
+  const dateRange: DateRange | undefined = useMemo(() => {
+    if (filters.dataAquisicaoInicio || filters.dataAquisicaoFim) {
+      return {
+        from: filters.dataAquisicaoInicio ? new Date(filters.dataAquisicaoInicio) : undefined,
+        to: filters.dataAquisicaoFim ? new Date(filters.dataAquisicaoFim) : undefined,
+      }
+    }
+    return undefined
+  }, [filters.dataAquisicaoInicio, filters.dataAquisicaoFim])
 
   // Handlers de paginação
   const handlePageChange = useCallback((newPage: number) => {
@@ -449,6 +556,7 @@ const BensCadastrados = () => {
   const handleSelectTemplate = (template: any) => {
     setSelectedTemplate(template)
   }
+
 
   return (
     <div className="flex-1 p-3 sm:p-4 lg:p-6">
@@ -527,10 +635,10 @@ const BensCadastrados = () => {
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search e Filtros */}
         <div className="mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+            <div className="flex-1 w-full">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -546,8 +654,224 @@ const BensCadastrados = () => {
                 Digite para buscar patrimônios por número, descrição ou setor
               </p>
             </div>
+            {/* ✅ Botão de Filtros - SEMPRE VISÍVEL */}
+            <div className="flex-shrink-0">
+              <Button
+                type="button"
+                variant={activeFiltersCount > 0 ? 'default' : 'outline'}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setShowFilters(prev => !prev)
+                }}
+                className="w-full sm:w-auto min-h-[48px] sm:min-h-[44px] lg:min-h-[40px] flex items-center justify-center gap-2 whitespace-nowrap"
+                aria-label="Abrir filtros"
+              >
+                <Filter className="h-4 w-4 flex-shrink-0" />
+                <span className="font-medium">Filtros</span>
+                {activeFiltersCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 bg-blue-200">
+                    {activeFiltersCount}
+                  </Badge>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
+
+        {/* ✅ Painel de Filtros */}
+        {showFilters && (
+          <Card className="mb-4 sm:mb-6 border-2">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base sm:text-lg">Filtros</CardTitle>
+                <div className="flex gap-2">
+                  {activeFiltersCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="h-8"
+                    >
+                      <X className="mr-1 h-3 w-3" />
+                      Limpar
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowFilters(false)}
+                    className="h-8"
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                {/* Filtro de Status */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Status</label>
+                  <Select
+                    value={filters.status || 'all'}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value === 'all' ? '' : value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="baixado">Baixado</SelectItem>
+                      <SelectItem value="em_manutencao">Em Manutenção</SelectItem>
+                      <SelectItem value="cedido">Cedido</SelectItem>
+                      <SelectItem value="em_uso">Em Uso</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Filtro de Situação do Bem */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Situação</label>
+                  <Select
+                    value={filters.situacao_bem || 'all'}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, situacao_bem: value === 'all' ? '' : value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="ÓTIMO">Ótimo</SelectItem>
+                      <SelectItem value="BOM">Bom</SelectItem>
+                      <SelectItem value="REGULAR">Regular</SelectItem>
+                      <SelectItem value="RUIM">Ruim</SelectItem>
+                      <SelectItem value="EM_MANUTENCAO">Em Manutenção</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Filtro de Setor */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Setor</label>
+                  <Select
+                    value={filters.sectorId || 'all'}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, sectorId: value === 'all' ? '' : value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {allowedSectors.length > 0 ? (
+                        allowedSectors.map((sector) => (
+                          <SelectItem key={sector.id} value={sector.id}>
+                            {sector.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>
+                          Nenhum setor disponível
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Filtro de Tipo */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Tipo</label>
+                  <Select
+                    value={filters.tipo || 'all'}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, tipo: value === 'all' ? '' : value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {tiposBens.length > 0 ? (
+                        tiposBens.map((tipo) => (
+                          <SelectItem key={tipo.id} value={tipo.nome}>
+                            {tipo.nome}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>
+                          Nenhum tipo disponível
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Filtro de Data de Aquisição */}
+                <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                  <label className="text-sm font-medium text-gray-700">Data de Aquisição</label>
+                  <DatePickerWithRange
+                    date={dateRange}
+                    onDateChange={handleDateRangeChange}
+                  />
+                </div>
+              </div>
+
+              {/* Filtros Ativos */}
+              {activeFiltersCount > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-sm font-medium text-gray-700">Filtros ativos:</span>
+                    {filters.status && (
+                      <Badge variant="secondary" className="gap-1">
+                        Status: {filters.status}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => setFilters((prev) => ({ ...prev, status: '' }))}
+                        />
+                      </Badge>
+                    )}
+                    {filters.situacao_bem && (
+                      <Badge variant="secondary" className="gap-1">
+                        Situação: {filters.situacao_bem}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => setFilters((prev) => ({ ...prev, situacao_bem: '' }))}
+                        />
+                      </Badge>
+                    )}
+                    {filters.sectorId && (
+                      <Badge variant="secondary" className="gap-1">
+                        Setor: {allowedSectors.find((s) => s.id === filters.sectorId)?.name || filters.sectorId}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => setFilters((prev) => ({ ...prev, sectorId: '' }))}
+                        />
+                      </Badge>
+                    )}
+                    {filters.tipo && (
+                      <Badge variant="secondary" className="gap-1">
+                        Tipo: {filters.tipo}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => setFilters((prev) => ({ ...prev, tipo: '' }))}
+                        />
+                      </Badge>
+                    )}
+                    {(filters.dataAquisicaoInicio || filters.dataAquisicaoFim) && (
+                      <Badge variant="secondary" className="gap-1">
+                        Data: {filters.dataAquisicaoInicio || '...'} até {filters.dataAquisicaoFim || '...'}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => setFilters((prev) => ({ ...prev, dataAquisicaoInicio: '', dataAquisicaoFim: '' }))}
+                        />
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Table - Desktop */}
         <Card className="border-0 shadow-lg bg-white transition-all duration-300 hover:shadow-xl">
@@ -575,7 +899,18 @@ const BensCadastrados = () => {
                 } else {
                   setSelectedAssets(filteredData.map((p) => p.id))
                 }
-              }
+              },
+              deletingId,
+              setDeletingId,
+              deletePatrimonio,
+              fetchPatrimonios,
+              currentPage,
+              setCurrentPage,
+              toast,
+              setPatrimonios,
+              setSelectedAssets,
+              setTotalItems,
+              handleShowQrCode
             )}
 
             {/* Mobile Cards */}
