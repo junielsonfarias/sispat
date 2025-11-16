@@ -16,11 +16,33 @@ NC='\033[0m' # No Color
 # Variáveis
 PROJECT_DIR="/var/www/sispat"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
+FRONTEND_SRC_DIR="$PROJECT_DIR/src"
+FRONTEND_DIST_DIR="$PROJECT_DIR/dist"
 BACKEND_DIR="$PROJECT_DIR/backend"
 BACKUP_DIR="$PROJECT_DIR/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 GIT_BRANCH="main"
 GIT_REMOTE="origin"
+
+# Detectar estrutura do frontend
+detect_frontend_structure() {
+    if [ -d "$FRONTEND_DIR" ]; then
+        FRONTEND_WORK_DIR="$FRONTEND_DIR"
+        FRONTEND_BUILD_DIR="$FRONTEND_DIR/dist"
+        return 0
+    elif [ -d "$FRONTEND_SRC_DIR" ] && [ -f "$PROJECT_DIR/package.json" ]; then
+        FRONTEND_WORK_DIR="$PROJECT_DIR"
+        FRONTEND_BUILD_DIR="$PROJECT_DIR/dist"
+        return 0
+    elif [ -d "$FRONTEND_DIST_DIR" ]; then
+        FRONTEND_WORK_DIR="$PROJECT_DIR"
+        FRONTEND_BUILD_DIR="$FRONTEND_DIST_DIR"
+        print_warning "Frontend já está buildado em dist/. Pulando rebuild."
+        return 1
+    else
+        return 1
+    fi
+}
 
 # Função para imprimir mensagens
 print_info() {
@@ -82,19 +104,39 @@ backup_current_code() {
     
     create_backup_dir
     
-    # Backup do frontend
-    if [ -d "$FRONTEND_DIR" ]; then
-        BACKUP_NAME="frontend_$TIMESTAMP"
-        cp -r "$FRONTEND_DIR" "$BACKUP_DIR/$BACKUP_NAME"
-        print_success "Backup do frontend criado: $BACKUP_DIR/$BACKUP_NAME"
+    # Detectar e fazer backup do frontend
+    if detect_frontend_structure; then
+        if [ -d "$FRONTEND_BUILD_DIR" ]; then
+            BACKUP_NAME="frontend_dist_$TIMESTAMP"
+            cp -r "$FRONTEND_BUILD_DIR" "$BACKUP_DIR/$BACKUP_NAME" 2>/dev/null || true
+            print_success "Backup do frontend (dist) criado: $BACKUP_DIR/$BACKUP_NAME"
+        fi
+        
+        if [ -d "$FRONTEND_WORK_DIR" ] && [ "$FRONTEND_WORK_DIR" != "$PROJECT_DIR" ]; then
+            BACKUP_NAME="frontend_$TIMESTAMP"
+            cp -r "$FRONTEND_WORK_DIR" "$BACKUP_DIR/$BACKUP_NAME" 2>/dev/null || true
+            print_success "Backup do frontend criado: $BACKUP_DIR/$BACKUP_NAME"
+        fi
+    elif [ -d "$FRONTEND_DIST_DIR" ]; then
+        BACKUP_NAME="dist_$TIMESTAMP"
+        cp -r "$FRONTEND_DIST_DIR" "$BACKUP_DIR/$BACKUP_NAME" 2>/dev/null || true
+        print_success "Backup do dist criado: $BACKUP_DIR/$BACKUP_NAME"
     else
-        print_warning "Diretório frontend não encontrado, pulando backup"
+        print_warning "Estrutura do frontend não encontrada, pulando backup do frontend"
+        print_info "Verificando se frontend está em outro local..."
+        
+        # Verificar se há dist na raiz
+        if [ -d "$PROJECT_DIR/dist" ]; then
+            BACKUP_NAME="dist_$TIMESTAMP"
+            cp -r "$PROJECT_DIR/dist" "$BACKUP_DIR/$BACKUP_NAME" 2>/dev/null || true
+            print_success "Backup do dist encontrado e criado: $BACKUP_DIR/$BACKUP_NAME"
+        fi
     fi
     
     # Backup do backend (opcional)
     if [ -d "$BACKEND_DIR" ]; then
         BACKEND_BACKUP_NAME="backend_$TIMESTAMP"
-        cp -r "$BACKEND_DIR" "$BACKUP_DIR/$BACKEND_BACKUP_NAME"
+        cp -r "$BACKEND_DIR" "$BACKUP_DIR/$BACKEND_BACKUP_NAME" 2>/dev/null || true
         print_success "Backup do backend criado: $BACKUP_DIR/$BACKEND_BACKUP_NAME"
     fi
 }
@@ -168,12 +210,24 @@ update_from_git() {
 rebuild_frontend() {
     print_header "Rebuild do Frontend"
     
-    if [ ! -d "$FRONTEND_DIR" ]; then
-        print_error "Diretório frontend não encontrado: $FRONTEND_DIR"
-        return 1
+    # Detectar estrutura do frontend
+    if ! detect_frontend_structure; then
+        if [ -d "$FRONTEND_DIST_DIR" ]; then
+            print_warning "Frontend já está buildado em dist/. Não é necessário rebuild."
+            print_info "Se precisar rebuildar, execute manualmente: cd $PROJECT_DIR && npm run build"
+            return 0
+        else
+            print_error "Estrutura do frontend não encontrada!"
+            print_info "Locais verificados:"
+            print_info "  - $FRONTEND_DIR"
+            print_info "  - $FRONTEND_SRC_DIR (com package.json na raiz)"
+            print_info "  - $FRONTEND_DIST_DIR"
+            print_warning "Pulando rebuild do frontend. Continuando com outras atualizações..."
+            return 1
+        fi
     fi
     
-    cd "$FRONTEND_DIR" || exit 1
+    cd "$FRONTEND_WORK_DIR" || exit 1
     
     # Verificar se node_modules existe
     if [ ! -d "node_modules" ]; then
@@ -204,7 +258,11 @@ rebuild_frontend() {
     # Listar alguns arquivos gerados
     echo ""
     print_info "Arquivos gerados:"
-    ls -lh dist/assets/*.js 2>/dev/null | head -3 || print_warning "Nenhum arquivo JS encontrado"
+    if [ -d "dist/assets" ]; then
+        ls -lh dist/assets/*.js 2>/dev/null | head -3 || print_warning "Nenhum arquivo JS encontrado em dist/assets"
+    else
+        ls -lh dist/*.js 2>/dev/null | head -3 || print_warning "Nenhum arquivo JS encontrado em dist"
+    fi
 }
 
 # Rebuild do backend (opcional)
@@ -273,22 +331,36 @@ restart_services() {
 final_checks() {
     print_header "Verificações Finais"
     
-    # Verificar se o build foi bem-sucedido
-    if [ -d "$FRONTEND_DIR/dist" ]; then
-        print_success "Diretório dist existe"
-        
-        # Verificar tamanho
-        DIST_SIZE=$(du -sh "$FRONTEND_DIR/dist" | cut -f1)
+    # Verificar estrutura do frontend
+    if detect_frontend_structure; then
+        if [ -d "$FRONTEND_BUILD_DIR" ]; then
+            print_success "Diretório dist existe: $FRONTEND_BUILD_DIR"
+            
+            # Verificar tamanho
+            DIST_SIZE=$(du -sh "$FRONTEND_BUILD_DIR" | cut -f1)
+            print_info "Tamanho do build: $DIST_SIZE"
+            
+            # Verificar arquivos principais
+            if [ -f "$FRONTEND_BUILD_DIR/index.html" ]; then
+                print_success "index.html encontrado"
+            else
+                print_warning "index.html não encontrado em $FRONTEND_BUILD_DIR"
+            fi
+        else
+            print_warning "Diretório dist não encontrado em $FRONTEND_BUILD_DIR"
+        fi
+    elif [ -d "$FRONTEND_DIST_DIR" ]; then
+        print_success "Diretório dist encontrado: $FRONTEND_DIST_DIR"
+        DIST_SIZE=$(du -sh "$FRONTEND_DIST_DIR" | cut -f1)
         print_info "Tamanho do build: $DIST_SIZE"
         
-        # Verificar arquivos principais
-        if [ -f "$FRONTEND_DIR/dist/index.html" ]; then
+        if [ -f "$FRONTEND_DIST_DIR/index.html" ]; then
             print_success "index.html encontrado"
         else
             print_warning "index.html não encontrado"
         fi
     else
-        print_error "Diretório dist não encontrado"
+        print_warning "Estrutura do frontend não detectada. Verifique manualmente."
     fi
     
     # Verificar último commit
