@@ -1,0 +1,55 @@
+═══════════════════════════════════════════════════════════════
+  🚀 COMANDOS RÁPIDOS - ATUALIZAÇÃO DE PRODUÇÃO
+═══════════════════════════════════════════════════════════════
+
+📦 REPOSITÓRIO ATUALIZADO
+   Commit: 3b4442d
+   Branch: main
+   URL: https://github.com/junielsonfarias/sispat.git
+
+═══════════════════════════════════════════════════════════════
+  ⚡ MÉTODO RÁPIDO (RECOMENDADO)
+═══════════════════════════════════════════════════════════════
+
+ssh usuario@sispat.vps-kinghost.net
+cd /var/www/sispat
+chmod +x scripts/atualizar-producao.sh
+./scripts/atualizar-producao.sh
+
+═══════════════════════════════════════════════════════════════
+  📋 MÉTODO COM LOGS
+═══════════════════════════════════════════════════════════════
+
+ssh usuario@sispat.vps-kinghost.net
+cd /var/www/sispat
+chmod +x scripts/atualizar-producao.sh
+./scripts/atualizar-producao.sh 2>&1 | tee atualizacao_$(date +%Y%m%d_%H%M%S).log
+
+═══════════════════════════════════════════════════════════════
+  🔍 VERIFICAÇÕES PÓS-DEPLOY
+═══════════════════════════════════════════════════════════════
+
+# Verificar status dos serviços
+pm2 status
+
+# Ver logs
+pm2 logs sispat-frontend --lines 20
+pm2 logs sispat-backend --lines 20
+
+# Verificar último commit
+cd /var/www/sispat
+git log --oneline -1
+
+# Verificar build
+ls -lh frontend/dist/ | head -5
+
+═══════════════════════════════════════════════════════════════
+  📚 DOCUMENTAÇÃO COMPLETA
+═══════════════════════════════════════════════════════════════
+
+- Docs/GUIA_EXECUCAO_SCRIPT_ATUALIZACAO.md (Guia completo)
+- Docs/COMANDOS_ATUALIZACAO_PRODUCAO.md (Comandos detalhados)
+- Docs/CORRECAO_IMAGENS_PRODUCAO.md (Detalhes da correção)
+
+═══════════════════════════════════════════════════════════════
+
