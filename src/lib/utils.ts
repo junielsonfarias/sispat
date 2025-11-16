@@ -120,10 +120,29 @@ export function getCloudImageUrl(fileId: string | object | undefined): string {
     return fileId
   }
   
-  // ✅ URLs relativas do backend (/uploads/...)
+  // ✅ CORREÇÃO: Detectar URLs blob inválidas (sem extensão de arquivo)
+  // URLs como "/uploads/blob-1762350703887-169450413" não são válidas
   if (fileId.startsWith('/uploads/') || fileId.startsWith('uploads/')) {
-    const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
     const cleanPath = fileId.startsWith('/') ? fileId : `/${fileId}`
+    const filename = cleanPath.split('/').pop() || ''
+    
+    // Verificar se é uma URL blob inválida (sem extensão de arquivo)
+    // Blob URLs válidas devem ter extensão (.jpg, .png, etc)
+    const hasValidExtension = /\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(filename)
+    const isBlobUrl = filename.startsWith('blob-')
+    
+    // Se for blob URL sem extensão, retornar placeholder
+    if (isBlobUrl && !hasValidExtension) {
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ URL blob inválida detectada (sem extensão):', cleanPath)
+      }
+      return process.env.NODE_ENV === 'production'
+        ? LOCAL_IMAGES.PLACEHOLDER_IMAGE
+        : 'https://img.usecurling.com/p/400/300?q=invalid%20blob%20url'
+    }
+    
+    // Construir URL completa para arquivos válidos
+    const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
     return `${BACKEND_URL}${cleanPath}`
   }
   

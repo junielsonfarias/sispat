@@ -19,6 +19,34 @@ interface PatrimonioPDFGeneratorProps {
  */
 const compressImage = async (imageUrl: string, maxWidth: number = 800, quality: number = 0.75, preserveTransparency: boolean = false): Promise<string> => {
   return new Promise((resolve) => {
+    // ✅ CORREÇÃO: Verificar se a URL é válida antes de tentar carregar
+    // Detectar URLs blob inválidas (sem extensão de arquivo)
+    if (imageUrl && (imageUrl.startsWith('/uploads/') || imageUrl.startsWith('uploads/'))) {
+      const filename = imageUrl.split('/').pop() || ''
+      const hasValidExtension = /\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(filename)
+      const isBlobUrl = filename.startsWith('blob-')
+      
+      // Se for blob URL sem extensão, retornar placeholder
+      if (isBlobUrl && !hasValidExtension) {
+        if (import.meta.env.DEV) {
+          console.warn('⚠️ URL blob inválida detectada no PDF (sem extensão):', imageUrl)
+        }
+        // Retornar um data URL de placeholder transparente
+        resolve('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk0YTNhOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbSBpbmRpc3BvbsOtdmVsPC90ZXh0Pjwvc3ZnPg==')
+        return
+      }
+    }
+    
+    // Verificar se é uma URL válida (não vazia e não placeholder inválido)
+    if (!imageUrl || imageUrl.includes('invalid') || imageUrl.includes('error')) {
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ URL de imagem inválida no PDF:', imageUrl)
+      }
+      // Retornar placeholder transparente
+      resolve('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk0YTNhOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbSBpbmRpc3BvbsOtdmVsPC90ZXh0Pjwvc3ZnPg==')
+      return
+    }
+    
     const img = new Image()
     img.crossOrigin = 'anonymous'
     
@@ -75,8 +103,12 @@ const compressImage = async (imageUrl: string, maxWidth: number = 800, quality: 
     }
     
     img.onerror = () => {
-      // Se falhar, retornar original
-      resolve(imageUrl)
+      // ✅ CORREÇÃO: Se falhar ao carregar, retornar placeholder em vez da URL original
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ Erro ao carregar imagem no PDF:', imageUrl)
+      }
+      // Retornar placeholder transparente
+      resolve('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk0YTNhOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbSBpbmRpc3BvbsOtdmVsPC90ZXh0Pjwvc3ZnPg==')
     }
     
     img.src = imageUrl
