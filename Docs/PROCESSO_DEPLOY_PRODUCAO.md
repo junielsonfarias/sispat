@@ -3,6 +3,8 @@
 **Versão:** 2.0.0  
 **Última atualização:** 2025-11-05
 
+> 📥 **Para atualizações via Git, consulte:** [`COMANDOS_ATUALIZACAO_PRODUCAO.md`](./COMANDOS_ATUALIZACAO_PRODUCAO.md)
+
 ---
 
 ## 📋 Pré-requisitos

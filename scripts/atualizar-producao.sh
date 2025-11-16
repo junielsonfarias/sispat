@@ -1,46 +1,348 @@
 #!/bin/bash
 
-# Script para atualizar código em produção
-# Uso: bash scripts/atualizar-producao.sh
+# Script de Atualização de Produção - SISPAT
+# Este script atualiza o código do repositório Git e faz rebuild do frontend
+# Uso: ./scripts/atualizar-producao.sh
 
-set -e
+set -e  # Parar em caso de erro
 
-echo "🔄 Atualizando código em produção..."
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-cd /var/www/sispat
+# Variáveis
+PROJECT_DIR="/var/www/sispat"
+FRONTEND_DIR="$PROJECT_DIR/frontend"
+BACKEND_DIR="$PROJECT_DIR/backend"
+BACKUP_DIR="$PROJECT_DIR/backups"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+GIT_BRANCH="main"
+GIT_REMOTE="origin"
 
-# 1. Corrigir permissões do Git
-echo "📁 Configurando permissões do Git..."
-git config --global --add safe.directory /var/www/sispat
-
-# 2. Atualizar código
-echo "📥 Baixando atualizações..."
-git pull origin main || {
-    echo "⚠️  Git pull falhou. Tentando corrigir permissões..."
-    chown -R root:root .git
-    git pull origin main
+# Função para imprimir mensagens
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
-# 3. Corrigir permissões do node_modules/.bin
-echo "🔧 Corrigindo permissões de execução..."
-cd backend
-chmod +x node_modules/.bin/* 2>/dev/null || true
-chmod +x node_modules/typescript/bin/tsc 2>/dev/null || true
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
 
-# 4. Recompilar backend
-echo "🔨 Recompilando backend..."
-npm run build:prod
+print_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
 
-# 5. Reiniciar PM2
-echo "🔄 Reiniciando backend..."
-pm2 restart sispat-backend
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
 
-# 6. Aguardar e verificar
-sleep 5
-echo "✅ Verificando status..."
-pm2 status
+print_header() {
+    echo ""
+    echo -e "${BLUE}════════════════════════════════════════${NC}"
+    echo -e "${BLUE}  $1${NC}"
+    echo -e "${BLUE}════════════════════════════════════════${NC}"
+    echo ""
+}
 
-echo ""
-echo "✅ Atualização concluída!"
-echo "📋 Ver logs: pm2 logs sispat-backend --lines 50"
+# Verificar se está rodando como root ou com sudo
+check_permissions() {
+    if [ "$EUID" -eq 0 ]; then
+        print_warning "Script rodando como root. Alguns comandos podem precisar de ajustes."
+    fi
+}
 
+# Verificar se está no diretório correto
+check_directory() {
+    print_header "Verificando Diretório"
+    
+    if [ ! -d "$PROJECT_DIR" ]; then
+        print_error "Diretório do projeto não encontrado: $PROJECT_DIR"
+        print_info "Execute este script a partir do servidor de produção"
+        exit 1
+    fi
+    
+    cd "$PROJECT_DIR" || exit 1
+    print_success "Diretório do projeto encontrado: $PROJECT_DIR"
+}
+
+# Criar diretório de backups se não existir
+create_backup_dir() {
+    if [ ! -d "$BACKUP_DIR" ]; then
+        mkdir -p "$BACKUP_DIR"
+        print_success "Diretório de backups criado: $BACKUP_DIR"
+    fi
+}
+
+# Fazer backup do código atual
+backup_current_code() {
+    print_header "Fazendo Backup do Código Atual"
+    
+    create_backup_dir
+    
+    # Backup do frontend
+    if [ -d "$FRONTEND_DIR" ]; then
+        BACKUP_NAME="frontend_$TIMESTAMP"
+        cp -r "$FRONTEND_DIR" "$BACKUP_DIR/$BACKUP_NAME"
+        print_success "Backup do frontend criado: $BACKUP_DIR/$BACKUP_NAME"
+    else
+        print_warning "Diretório frontend não encontrado, pulando backup"
+    fi
+    
+    # Backup do backend (opcional)
+    if [ -d "$BACKEND_DIR" ]; then
+        BACKEND_BACKUP_NAME="backend_$TIMESTAMP"
+        cp -r "$BACKEND_DIR" "$BACKUP_DIR/$BACKEND_BACKUP_NAME"
+        print_success "Backup do backend criado: $BACKUP_DIR/$BACKEND_BACKUP_NAME"
+    fi
+}
+
+# Verificar status do Git
+check_git_status() {
+    print_header "Verificando Status do Git"
+    
+    cd "$PROJECT_DIR" || exit 1
+    
+    if [ ! -d ".git" ]; then
+        print_error "Diretório não é um repositório Git"
+        exit 1
+    fi
+    
+    # Verificar se há alterações não commitadas
+    if [ -n "$(git status --porcelain)" ]; then
+        print_warning "Há alterações não commitadas no repositório"
+        read -p "Deseja fazer stash das alterações? (s/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Ss]$ ]]; then
+            git stash save "Backup antes de atualizar - $TIMESTAMP"
+            print_success "Alterações salvas em stash"
+        else
+            print_error "Abortando atualização. Resolva as alterações pendentes primeiro."
+            exit 1
+        fi
+    fi
+    
+    print_success "Repositório Git verificado"
+}
+
+# Atualizar código do repositório
+update_from_git() {
+    print_header "Atualizando Código do Repositório"
+    
+    cd "$PROJECT_DIR" || exit 1
+    
+    # Buscar atualizações
+    print_info "Buscando atualizações do repositório remoto..."
+    git fetch "$GIT_REMOTE"
+    
+    # Verificar se há atualizações
+    LOCAL=$(git rev-parse HEAD)
+    REMOTE=$(git rev-parse "$GIT_REMOTE/$GIT_BRANCH")
+    
+    if [ "$LOCAL" = "$REMOTE" ]; then
+        print_warning "Já está na versão mais recente"
+        return 0
+    fi
+    
+    # Mostrar commits que serão aplicados
+    print_info "Commits que serão aplicados:"
+    git log HEAD.."$GIT_REMOTE/$GIT_BRANCH" --oneline
+    
+    # Fazer pull
+    print_info "Aplicando atualizações..."
+    git pull "$GIT_REMOTE" "$GIT_BRANCH"
+    
+    # Verificar commit atual
+    CURRENT_COMMIT=$(git rev-parse --short HEAD)
+    print_success "Código atualizado para commit: $CURRENT_COMMIT"
+    
+    # Mostrar último commit
+    echo ""
+    print_info "Último commit:"
+    git log -1 --oneline
+}
+
+# Rebuild do frontend
+rebuild_frontend() {
+    print_header "Rebuild do Frontend"
+    
+    if [ ! -d "$FRONTEND_DIR" ]; then
+        print_error "Diretório frontend não encontrado: $FRONTEND_DIR"
+        return 1
+    fi
+    
+    cd "$FRONTEND_DIR" || exit 1
+    
+    # Verificar se node_modules existe
+    if [ ! -d "node_modules" ]; then
+        print_info "Instalando dependências..."
+        npm install
+    else
+        # Verificar se package.json foi modificado
+        if [ "package.json" -nt "node_modules" ]; then
+            print_info "package.json foi modificado, reinstalando dependências..."
+            npm install
+        fi
+    fi
+    
+    # Build
+    print_info "Executando build de produção..."
+    npm run build
+    
+    # Verificar se o build foi bem-sucedido
+    if [ ! -d "dist" ]; then
+        print_error "Build falhou - diretório dist não encontrado"
+        return 1
+    fi
+    
+    # Verificar tamanho dos arquivos
+    DIST_SIZE=$(du -sh dist | cut -f1)
+    print_success "Build concluído com sucesso (tamanho: $DIST_SIZE)"
+    
+    # Listar alguns arquivos gerados
+    echo ""
+    print_info "Arquivos gerados:"
+    ls -lh dist/assets/*.js 2>/dev/null | head -3 || print_warning "Nenhum arquivo JS encontrado"
+}
+
+# Rebuild do backend (opcional)
+rebuild_backend() {
+    print_header "Rebuild do Backend"
+    
+    if [ ! -d "$BACKEND_DIR" ]; then
+        print_warning "Diretório backend não encontrado, pulando rebuild"
+        return 0
+    fi
+    
+    cd "$BACKEND_DIR" || return 1
+    
+    # Verificar se node_modules existe
+    if [ ! -d "node_modules" ]; then
+        print_info "Instalando dependências do backend..."
+        npm install
+    fi
+    
+    # Build do backend (se houver script de build)
+    if grep -q "\"build\"" package.json 2>/dev/null; then
+        print_info "Executando build do backend..."
+        npm run build
+        print_success "Build do backend concluído"
+    else
+        print_info "Backend não possui script de build, pulando..."
+    fi
+}
+
+# Reiniciar serviços
+restart_services() {
+    print_header "Reiniciando Serviços"
+    
+    # Verificar se PM2 está instalado e em uso
+    if command -v pm2 &> /dev/null; then
+        print_info "Reiniciando serviços com PM2..."
+        
+        # Reiniciar frontend (se existir)
+        if pm2 list | grep -q "sispat-frontend"; then
+            pm2 restart sispat-frontend
+            print_success "Serviço frontend reiniciado"
+        fi
+        
+        # Reiniciar backend (se existir)
+        if pm2 list | grep -q "sispat-backend"; then
+            pm2 restart sispat-backend
+            print_success "Serviço backend reiniciado"
+        fi
+        
+        # Mostrar status
+        echo ""
+        print_info "Status dos serviços:"
+        pm2 status
+    else
+        print_warning "PM2 não encontrado, pulando reinicialização automática"
+    fi
+    
+    # Reiniciar Nginx (se necessário)
+    if command -v nginx &> /dev/null; then
+        print_info "Recarregando configuração do Nginx..."
+        sudo systemctl reload nginx 2>/dev/null || print_warning "Não foi possível recarregar Nginx (pode precisar de sudo)"
+    fi
+}
+
+# Verificações finais
+final_checks() {
+    print_header "Verificações Finais"
+    
+    # Verificar se o build foi bem-sucedido
+    if [ -d "$FRONTEND_DIR/dist" ]; then
+        print_success "Diretório dist existe"
+        
+        # Verificar tamanho
+        DIST_SIZE=$(du -sh "$FRONTEND_DIR/dist" | cut -f1)
+        print_info "Tamanho do build: $DIST_SIZE"
+        
+        # Verificar arquivos principais
+        if [ -f "$FRONTEND_DIR/dist/index.html" ]; then
+            print_success "index.html encontrado"
+        else
+            print_warning "index.html não encontrado"
+        fi
+    else
+        print_error "Diretório dist não encontrado"
+    fi
+    
+    # Verificar último commit
+    cd "$PROJECT_DIR" || exit 1
+    CURRENT_COMMIT=$(git rev-parse --short HEAD)
+    print_info "Commit atual: $CURRENT_COMMIT"
+    git log -1 --oneline
+}
+
+# Mostrar resumo
+show_summary() {
+    print_header "Resumo da Atualização"
+    
+    echo -e "${GREEN}✅ Atualização concluída com sucesso!${NC}"
+    echo ""
+    echo "📋 Próximos passos:"
+    echo "  1. Limpar cache do navegador (Ctrl+Shift+R ou Cmd+Shift+R)"
+    echo "  2. Acessar o sistema e testar funcionalidades"
+    echo "  3. Verificar console do navegador para erros"
+    echo "  4. Testar geração de PDFs e visualização de imagens"
+    echo ""
+    echo "📦 Backups salvos em: $BACKUP_DIR"
+    echo ""
+    
+    if command -v pm2 &> /dev/null; then
+        echo "📊 Para ver logs:"
+        echo "  pm2 logs sispat-frontend"
+        echo "  pm2 logs sispat-backend"
+    fi
+}
+
+# Função principal
+main() {
+    print_header "🚀 Atualização de Produção - SISPAT"
+    
+    print_info "Iniciando atualização..."
+    print_info "Diretório do projeto: $PROJECT_DIR"
+    print_info "Timestamp: $TIMESTAMP"
+    echo ""
+    
+    # Executar etapas
+    check_permissions
+    check_directory
+    backup_current_code
+    check_git_status
+    update_from_git
+    rebuild_frontend
+    rebuild_backend
+    restart_services
+    final_checks
+    show_summary
+    
+    print_success "Processo concluído!"
+}
+
+# Executar script
+main "$@"
