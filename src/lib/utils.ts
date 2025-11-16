@@ -126,8 +126,7 @@ export function getCloudImageUrl(fileId: string | object | undefined): string {
     const cleanPath = fileId.startsWith('/') ? fileId : `/${fileId}`
     const filename = cleanPath.split('/').pop() || ''
     
-    // Verificar se é uma URL blob inválida (sem extensão de arquivo)
-    // Blob URLs válidas devem ter extensão (.jpg, .png, etc)
+    // Verificar se é uma URL blob (mesmo com extensão, pode ser inválida se arquivo não existir)
     const hasValidExtension = /\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(filename)
     const isBlobUrl = filename.startsWith('blob-')
     
@@ -139,6 +138,17 @@ export function getCloudImageUrl(fileId: string | object | undefined): string {
       return process.env.NODE_ENV === 'production'
         ? LOCAL_IMAGES.PLACEHOLDER_IMAGE
         : 'https://img.usecurling.com/p/400/300?q=invalid%20blob%20url'
+    }
+    
+    // ✅ CORREÇÃO: URLs blob com extensão também podem ser problemáticas
+    // Se o arquivo foi salvo antes da correção, pode não existir
+    // O backend agora salva como "image-{timestamp}-{random}.jpg" em vez de "blob-..."
+    // Então URLs blob devem ser tratadas com cuidado
+    if (isBlobUrl) {
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ URL blob detectada (pode não existir no servidor):', cleanPath)
+      }
+      // Tentar carregar, mas se falhar, o onError do img tag vai mostrar placeholder
     }
     
     // ✅ CORREÇÃO: Construir URL completa para arquivos válidos
