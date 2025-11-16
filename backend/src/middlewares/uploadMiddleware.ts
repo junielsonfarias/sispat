@@ -16,10 +16,42 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     // Gerar nome único: timestamp + nome original sanitizado
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    const nameWithoutExt = path.basename(file.originalname, ext)
-      .replace(/[^a-zA-Z0-9]/g, '-') // Sanitizar nome
-      .substring(0, 50); // Limitar tamanho
+    
+    // ✅ CORREÇÃO: Obter extensão do nome original OU do mimetype
+    let ext = path.extname(file.originalname);
+    
+    // Se não tiver extensão, determinar pelo mimetype
+    if (!ext || ext === '') {
+      const mimeToExt: { [key: string]: string } = {
+        'image/jpeg': '.jpg',
+        'image/jpg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp',
+        'application/pdf': '.pdf',
+      };
+      ext = mimeToExt[file.mimetype] || '.jpg'; // Default para .jpg se não identificar
+    }
+    
+    // ✅ CORREÇÃO: Se o nome original começar com "blob-", usar um nome genérico
+    let nameWithoutExt = path.basename(file.originalname, path.extname(file.originalname));
+    
+    // Se o nome começar com "blob-" ou não tiver caracteres válidos, usar nome genérico
+    if (nameWithoutExt.startsWith('blob-') || nameWithoutExt.length < 3) {
+      // Determinar prefixo baseado no tipo
+      if (file.mimetype.startsWith('image/')) {
+        nameWithoutExt = 'image';
+      } else if (file.mimetype === 'application/pdf') {
+        nameWithoutExt = 'document';
+      } else {
+        nameWithoutExt = 'file';
+      }
+    } else {
+      // Sanitizar nome original
+      nameWithoutExt = nameWithoutExt
+        .replace(/[^a-zA-Z0-9]/g, '-') // Sanitizar nome
+        .substring(0, 50); // Limitar tamanho
+    }
     
     cb(null, `${nameWithoutExt}-${uniqueSuffix}${ext}`);
   }
