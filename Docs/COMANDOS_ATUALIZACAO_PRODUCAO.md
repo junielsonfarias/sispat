@@ -1,8 +1,11 @@
 # 📥 Comandos para Atualizar Produção via Git
 
+> 🚀 **NOVO:** Script automatizado disponível! Veja: [`GUIA_EXECUCAO_SCRIPT_ATUALIZACAO.md`](./GUIA_EXECUCAO_SCRIPT_ATUALIZACAO.md)
+
 ## ✅ Correções Aplicadas no Repositório
 
-**Commit:** `02d3940` - fix: Corrigir visualização de imagens em produção - URLs blob inválidas
+**Último Commit:** `fc4ee76` - feat: Adicionar script automatizado de atualização de produção  
+**Commit Anterior:** `02d3940` - fix: Corrigir visualização de imagens em produção - URLs blob inválidas
 
 **Arquivos Modificados:**
 - `src/lib/utils.ts` - Validação de URLs blob inválidas
@@ -17,7 +20,32 @@
 
 ## 🚀 Comandos para Atualizar em Produção
 
-### Opção 1: Atualização Manual (Recomendado)
+### ⚡ Opção 1: Script Automatizado (MAIS RÁPIDO - RECOMENDADO)
+
+```bash
+# Conectar ao servidor
+ssh usuario@sispat.vps-kinghost.net
+
+# Navegar para o projeto
+cd /var/www/sispat
+
+# Dar permissão e executar
+chmod +x scripts/atualizar-producao.sh
+./scripts/atualizar-producao.sh
+```
+
+**O script faz tudo automaticamente:**
+- ✅ Backup do código atual
+- ✅ Atualização via Git
+- ✅ Rebuild do frontend e backend
+- ✅ Reinicialização de serviços
+- ✅ Verificações e validações
+
+📖 **Documentação completa:** [`GUIA_EXECUCAO_SCRIPT_ATUALIZACAO.md`](./GUIA_EXECUCAO_SCRIPT_ATUALIZACAO.md)
+
+---
+
+### Opção 2: Atualização Manual
 
 ```bash
 # 1. Conectar ao servidor
