@@ -15,6 +15,7 @@ import {
   formatRelativeDate,
   getCloudImageUrl,
 } from '@/lib/utils'
+import { LOCAL_IMAGES } from '@/lib/image-utils'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
 import {
   Edit,
@@ -593,11 +594,20 @@ function BensView() {
                                 alt={`${patrimonio.descricao_bem || patrimonio.descricaoBem} - Foto ${index + 1}`}
                                 className="rounded-lg object-contain w-full h-full max-h-[600px]"
                                 onError={(e) => {
-                                  if (import.meta.env.DEV) {
-                                    console.error('❌ Erro ao carregar foto:', fotoId)
-                                  }
                                   const target = e.target as HTMLImageElement
-                                  target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f1f5f9" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%2394a3b8" font-size="14"%3EErro ao carregar imagem%3C/text%3E%3C/svg%3E'
+                                  const originalSrc = target.src
+                                  console.error('❌ Erro ao carregar foto:', {
+                                    fotoId,
+                                    url: originalSrc,
+                                    patrimonioId: patrimonio.id
+                                  })
+                                  // Usar placeholder do LOCAL_IMAGES
+                                  target.src = LOCAL_IMAGES.PLACEHOLDER_IMAGE
+                                }}
+                                onLoad={() => {
+                                  if (import.meta.env.DEV) {
+                                    console.log('✅ Foto carregada com sucesso:', fotoId)
+                                  }
                                 }}
                               />
                             </div>

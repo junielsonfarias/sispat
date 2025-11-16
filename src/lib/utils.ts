@@ -141,9 +141,33 @@ export function getCloudImageUrl(fileId: string | object | undefined): string {
         : 'https://img.usecurling.com/p/400/300?q=invalid%20blob%20url'
     }
     
-    // Construir URL completa para arquivos válidos
-    const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
-    return `${BACKEND_URL}${cleanPath}`
+    // ✅ CORREÇÃO: Construir URL completa para arquivos válidos
+    // Em produção, usar o domínio atual (window.location.origin) se VITE_API_URL não estiver configurado
+    let BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
+    
+    // Se estiver em produção e VITE_API_URL não tiver protocolo, usar window.location.origin
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+      // Se VITE_API_URL é relativo ou não tem protocolo, usar origem atual
+      if (!BACKEND_URL.startsWith('http://') && !BACKEND_URL.startsWith('https://')) {
+        BACKEND_URL = window.location.origin
+      }
+    }
+    
+    const finalUrl = `${BACKEND_URL}${cleanPath}`
+    
+    // Log apenas em desenvolvimento para debug
+    if (import.meta.env.DEV) {
+      console.log('🖼️ Construindo URL de imagem:', {
+        original: fileId,
+        cleanPath,
+        filename,
+        hasValidExtension,
+        BACKEND_URL,
+        finalUrl
+      })
+    }
+    
+    return finalUrl
   }
   
   // ✅ Fallback para placeholder
