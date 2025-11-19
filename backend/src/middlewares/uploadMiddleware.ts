@@ -34,10 +34,10 @@ const storage = multer.diskStorage({
     }
     
     // ✅ CORREÇÃO: Se o nome original começar com "blob-", usar um nome genérico
-    let nameWithoutExt = path.basename(file.originalname, path.extname(file.originalname));
+    let nameWithoutExt = path.basename(file.originalname, ext);
     
     // Se o nome começar com "blob-" ou não tiver caracteres válidos, usar nome genérico
-    if (nameWithoutExt.startsWith('blob-') || nameWithoutExt.length < 3) {
+    if (nameWithoutExt.startsWith('blob-') || nameWithoutExt.length < 3 || !/^[a-zA-Z0-9]/.test(nameWithoutExt)) {
       // Determinar prefixo baseado no tipo
       if (file.mimetype.startsWith('image/')) {
         nameWithoutExt = 'image';
@@ -47,13 +47,18 @@ const storage = multer.diskStorage({
         nameWithoutExt = 'file';
       }
     } else {
-      // Sanitizar nome original
+      // Sanitizar nome original (remover caracteres especiais)
       nameWithoutExt = nameWithoutExt
-        .replace(/[^a-zA-Z0-9]/g, '-') // Sanitizar nome
+        .replace(/[^a-zA-Z0-9_-]/g, '-') // Sanitizar nome
+        .replace(/-+/g, '-') // Remover múltiplos hífens
+        .replace(/^-|-$/g, '') // Remover hífens do início/fim
         .substring(0, 50); // Limitar tamanho
     }
     
-    cb(null, `${nameWithoutExt}-${uniqueSuffix}${ext}`);
+    // Garantir que o nome final não comece com "blob-"
+    const finalName = `${nameWithoutExt}-${uniqueSuffix}${ext}`;
+    
+    cb(null, finalName);
   }
 });
 
