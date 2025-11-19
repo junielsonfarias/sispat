@@ -124,7 +124,7 @@ export const deleteFile = async (fileId: string, fileUrl: string) => {
   try {
     // ✅ Logs apenas em desenvolvimento
     if (import.meta.env.DEV) {
-      console.log('🗑️ [V3] Solicitação para deletar:', fileUrl)
+      console.log('🗑️ [V3] Solicitação para deletar:', { fileId, fileUrl })
     }
 
     // ✅ Ignorar URLs blob
@@ -135,16 +135,29 @@ export const deleteFile = async (fileId: string, fileUrl: string) => {
       return
     }
 
-    const filename = fileUrl.split('/').pop()
+    // ✅ CORREÇÃO: Extrair apenas o nome do arquivo (sem /uploads/)
+    let filename = fileUrl
+    // Remover protocolo e domínio se existir
+    if (filename.includes('://')) {
+      filename = filename.split('://')[1].split('/').slice(1).join('/')
+    }
+    // Remover /uploads/ ou /api/uploads/ do início
+    filename = filename.replace(/^\/?(api\/)?uploads\//, '')
+    // Pegar apenas o nome do arquivo (última parte)
+    filename = filename.split('/').pop() || filename
     
-    if (!filename) {
+    if (!filename || filename.trim() === '') {
       if (import.meta.env.DEV) {
-        console.warn('⚠️ [V3] Nome do arquivo inválido')
+        console.warn('⚠️ [V3] Nome do arquivo inválido:', fileUrl)
       }
       return
     }
 
     const token = getAuthToken()
+
+    if (import.meta.env.DEV) {
+      console.log('🗑️ [V3] Deletando arquivo:', { filename, url: `${BACKEND_URL}/api/upload/${filename}` })
+    }
 
     await axios.delete(
       `${BACKEND_URL}/api/upload/${filename}`,
@@ -156,19 +169,21 @@ export const deleteFile = async (fileId: string, fileUrl: string) => {
     )
 
     if (import.meta.env.DEV) {
-      console.log('✅ [V3] Arquivo deletado')
+      console.log('✅ [V3] Arquivo deletado com sucesso')
     }
   } catch (error: any) {
-    if (error?.response?.status === 404) {
+    // ✅ Ignorar 404 (arquivo já não existe) e 405 (método não permitido - pode ser que arquivo já foi deletado)
+    if (error?.response?.status === 404 || error?.response?.status === 405) {
       if (import.meta.env.DEV) {
-        console.log('⚠️ [V3] Arquivo não existe (404) - OK')
+        console.log(`⚠️ [V3] Arquivo não existe ou método não permitido (${error?.response?.status}) - OK`)
       }
       return
     }
     
     if (import.meta.env.DEV) {
-      console.error('❌ [V3] Erro ao deletar:', error)
+      console.error('❌ [V3] Erro ao deletar:', error?.response?.status, error?.message)
       console.warn('⚠️ [V3] Continuando...')
     }
+    // Não lançar erro para não quebrar o fluxo
   }
 }
