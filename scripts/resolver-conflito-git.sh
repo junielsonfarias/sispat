@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Script para resolver conflitos de Git no servidor
+# Uso: ./scripts/resolver-conflito-git.sh
+
+set -e
+
+# Cores
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}════════════════════════════════════════${NC}"
+echo -e "${BLUE}  🔧 Resolvendo Conflitos Git${NC}"
+echo -e "${BLUE}════════════════════════════════════════${NC}"
+echo ""
+
+# Verificar status
+echo -e "${BLUE}1. Verificando status do Git...${NC}"
+git status --short
+
+echo ""
+echo -e "${YELLOW}⚠️  Há mudanças locais que conflitam com o repositório${NC}"
+echo ""
+echo -e "${BLUE}Opções:${NC}"
+echo "  1. Descartar mudanças locais (recomendado se forem apenas testes)"
+echo "  2. Fazer backup e descartar"
+echo "  3. Fazer stash (guardar para depois)"
+echo ""
+
+# Opção 1: Descartar mudanças (mais simples)
+echo -e "${BLUE}2. Descartando mudanças locais...${NC}"
+git checkout -- scripts/corrigir-permissoes-arquivo-especifico.sh
+git checkout -- scripts/diagnostico-imagem-especifica.sh
+git checkout -- scripts/forcar-rebuild-backend.sh
+git checkout -- scripts/verificar-upload-novo.sh
+
+echo -e "${GREEN}✅ Mudanças locais descartadas${NC}"
+
+# Agora fazer pull
+echo ""
+echo -e "${BLUE}3. Fazendo pull do repositório...${NC}"
+git pull origin main
+
+echo ""
+echo -e "${GREEN}✅ Conflitos resolvidos!${NC}"
+
