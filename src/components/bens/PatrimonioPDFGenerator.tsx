@@ -197,26 +197,37 @@ export const generatePatrimonioPDF = async ({
   
   // Comprimir primeira foto para seção de identificação
   // ✅ CORREÇÃO: Usar getCloudImageUrl para converter ID/objeto em URL válida
+  // ✅ CORREÇÃO: Normalizar fotos antes de processar
+  const normalizedFotos = patrimonio.fotos && Array.isArray(patrimonio.fotos) 
+    ? patrimonio.fotos.map((foto: any) => {
+        if (typeof foto === 'string') return foto
+        if (typeof foto === 'object' && foto !== null) {
+          return foto.file_url || foto.url || foto.id || foto.fileName || String(foto)
+        }
+        return String(foto)
+      }).filter((foto: string) => foto && foto.trim() !== '')
+    : []
+
   // ✅ CORREÇÃO: Preservar transparência das fotos (caso tenham fundo transparente)
-  if (shouldInclude('identificacao') && patrimonio.fotos && patrimonio.fotos.length > 0) {
+  if (shouldInclude('identificacao') && normalizedFotos.length > 0) {
     try {
       // Converter foto (pode ser ID, objeto ou URL) para URL válida
-      const fotoUrl = getCloudImageUrl(patrimonio.fotos[0])
-      console.log('📸 Processando foto para PDF:', { original: patrimonio.fotos[0], url: fotoUrl })
+      const fotoUrl = getCloudImageUrl(normalizedFotos[0])
+      console.log('📸 Processando foto para PDF:', { original: normalizedFotos[0], url: fotoUrl })
       // Preservar transparência para fotos também (caso tenham fundo transparente)
       compressedPhoto = await compressImage(fotoUrl, 400, 0.75, true)
     } catch (error) {
       console.warn('Erro ao comprimir foto:', error)
       // Tentar usar getCloudImageUrl como fallback
-      compressedPhoto = getCloudImageUrl(patrimonio.fotos[0])
+      compressedPhoto = getCloudImageUrl(normalizedFotos[0])
     }
   }
   
   // Comprimir todas as fotos se houver seção específica de fotos
-  if (shouldInclude('fotos') && patrimonio.fotos && patrimonio.fotos.length > 0) {
+  if (shouldInclude('fotos') && normalizedFotos.length > 0) {
     try {
       // Comprimir até 3 fotos (limite razoável para PDF)
-      const photosToCompress = patrimonio.fotos.slice(0, 3)
+      const photosToCompress = normalizedFotos.slice(0, 3)
       for (const photo of photosToCompress) {
         // ✅ CORREÇÃO: Converter para URL válida antes de comprimir
         // ✅ CORREÇÃO: Preservar transparência das fotos

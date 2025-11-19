@@ -81,18 +81,29 @@ export function formatRelativeDate(date: Date | string | number) {
 export function getCloudImageUrl(fileId: string | object | undefined): string {
   // ✅ CORREÇÃO: Converter objetos para string primeiro
   if (typeof fileId === 'object' && fileId !== null) {
-    // Se for objeto com file_url, usar file_url
+    // Priorizar file_url, depois url, depois id, depois fileName
     if ('file_url' in fileId && fileId.file_url) {
       fileId = String(fileId.file_url)
     }
-    // Se for objeto com id, usar id
+    else if ('url' in fileId && fileId.url) {
+      fileId = String(fileId.url)
+    }
     else if ('id' in fileId && fileId.id) {
       fileId = String(fileId.id)
     }
+    else if ('fileName' in fileId && fileId.fileName) {
+      fileId = String(fileId.fileName)
+    }
     else {
-      return process.env.NODE_ENV === 'production' 
-        ? LOCAL_IMAGES.PLACEHOLDER_IMAGE
-        : 'https://img.usecurling.com/p/400/300?q=error%20loading%20image'
+      // Tentar converter qualquer propriedade string do objeto
+      const stringValue = Object.values(fileId).find(v => typeof v === 'string' && v.trim() !== '') as string | undefined
+      if (stringValue) {
+        fileId = stringValue
+      } else {
+        return process.env.NODE_ENV === 'production' 
+          ? LOCAL_IMAGES.PLACEHOLDER_IMAGE
+          : 'https://img.usecurling.com/p/400/300?q=error%20loading%20image'
+      }
     }
   }
   
@@ -156,20 +167,27 @@ export function getCloudImageUrl(fileId: string | object | undefined): string {
     let BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
     
     // Se estiver em produção e VITE_API_URL não tiver protocolo, usar window.location.origin
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    if (typeof window !== 'undefined') {
       // Se VITE_API_URL é relativo ou não tem protocolo, usar origem atual
+      if (!BACKEND_URL.startsWith('http://') && !BACKEND_URL.startsWith('https://')) {
+        BACKEND_URL = window.location.origin
+      }
+      // Se BACKEND_URL ainda não tem protocolo, usar origem atual
       if (!BACKEND_URL.startsWith('http://') && !BACKEND_URL.startsWith('https://')) {
         BACKEND_URL = window.location.origin
       }
     }
     
-    const finalUrl = `${BACKEND_URL}${cleanPath}`
+    // Garantir que cleanPath comece com /
+    const normalizedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`
+    const finalUrl = `${BACKEND_URL}${normalizedPath}`
     
     // Log apenas em desenvolvimento para debug
     if (import.meta.env.DEV) {
       console.log('🖼️ Construindo URL de imagem:', {
         original: fileId,
         cleanPath,
+        normalizedPath,
         filename,
         hasValidExtension,
         BACKEND_URL,

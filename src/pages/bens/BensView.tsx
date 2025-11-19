@@ -568,7 +568,7 @@ function BensView() {
                     <Carousel className="w-full">
                       <CarouselContent>
                         {(() => {
-                          const fotos = patrimonio.fotos || patrimonio.photos
+                          const fotos = patrimonio.fotos || patrimonio.photos || []
                           if (import.meta.env.DEV) {
                             console.log('🖼️ Renderizando carrossel com fotos:', {
                               total: fotos.length,
@@ -576,16 +576,14 @@ function BensView() {
                               tipos: fotos.map((f: any) => typeof f),
                             })
                           }
-                          // ✅ CORREÇÃO: Converter objetos { id, file_url } para URLs/IDs
+                          // ✅ CORREÇÃO: Backend já normaliza as fotos, mas manter compatibilidade
                           return fotos.map((foto: any) => {
-                            if (typeof foto === 'object' && foto?.file_url) {
-                              return foto.file_url
+                            if (typeof foto === 'string') return foto
+                            if (typeof foto === 'object' && foto !== null) {
+                              return foto.file_url || foto.url || foto.id || foto.fileName || String(foto)
                             }
-                            if (typeof foto === 'object' && foto?.id) {
-                              return foto.id
-                            }
-                            return typeof foto === 'string' ? foto : String(foto)
-                          })
+                            return String(foto)
+                          }).filter((f: string) => f && f.trim() !== '')
                         })().map((fotoId, index) => (
                           <CarouselItem key={index}>
                             <div className="relative flex items-center justify-center bg-gray-100 rounded-lg min-h-[400px]">

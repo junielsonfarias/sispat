@@ -71,3 +71,4 @@ echo "1. Faça upload de uma nova imagem"
 echo "2. Verifique se arquivo foi salvo como: image-{timestamp}-{random}.jpg"
 echo "3. Verifique logs: pm2 logs sispat-backend --lines 20"
 
+

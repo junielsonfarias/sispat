@@ -31,7 +31,21 @@ export const listPublicPatrimonios = async (req: Request, res: Response): Promis
       }
     });
 
-    res.json({ patrimonios });
+    // ✅ CORREÇÃO: Normalizar fotos em todos os patrimônios públicos
+    const patrimoniosNormalizados = patrimonios.map((patrimonio: any) => {
+      if (patrimonio.fotos && Array.isArray(patrimonio.fotos)) {
+        patrimonio.fotos = patrimonio.fotos.map((foto: any) => {
+          if (typeof foto === 'string') return foto;
+          if (typeof foto === 'object' && foto !== null) {
+            return foto.file_url || foto.url || foto.id || foto.fileName || String(foto);
+          }
+          return String(foto);
+        }).filter((foto: string) => foto && foto.trim() !== '');
+      }
+      return patrimonio;
+    });
+
+    res.json({ patrimonios: patrimoniosNormalizados });
   } catch (error) {
     logError('Erro ao listar patrimônios públicos', error);
     res.status(500).json({ error: 'Erro ao listar patrimônios' });
@@ -224,8 +238,22 @@ export const listPatrimonios = async (req: Request, res: Response): Promise<void
     
     const { patrimonios, total } = result as { patrimonios: any[]; total: number };
 
+    // ✅ CORREÇÃO: Normalizar fotos em todos os patrimônios da listagem
+    const patrimoniosNormalizados = patrimonios.map((patrimonio: any) => {
+      if (patrimonio.fotos && Array.isArray(patrimonio.fotos)) {
+        patrimonio.fotos = patrimonio.fotos.map((foto: any) => {
+          if (typeof foto === 'string') return foto;
+          if (typeof foto === 'object' && foto !== null) {
+            return foto.file_url || foto.url || foto.id || foto.fileName || String(foto);
+          }
+          return String(foto);
+        }).filter((foto: string) => foto && foto.trim() !== '');
+      }
+      return patrimonio;
+    });
+
     res.json({
-      patrimonios,
+      patrimonios: patrimoniosNormalizados,
       pagination: {
         page: pagination.page,
         limit: pagination.limit,
@@ -310,12 +338,40 @@ export const getPatrimonio = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // ✅ CORREÇÃO: Normalizar fotos para garantir que sejam sempre strings (URLs)
+    if (patrimonio.fotos && Array.isArray(patrimonio.fotos)) {
+      patrimonio.fotos = patrimonio.fotos.map((foto: any) => {
+        if (typeof foto === 'string') {
+          return foto;
+        }
+        if (typeof foto === 'object' && foto !== null) {
+          // Priorizar file_url, depois id, depois qualquer propriedade string
+          return foto.file_url || foto.url || foto.id || foto.fileName || String(foto);
+        }
+        return String(foto);
+      }).filter((foto: string) => foto && foto.trim() !== '');
+    }
+
+    // ✅ CORREÇÃO: Normalizar documentos também
+    if (patrimonio.documentos && Array.isArray(patrimonio.documentos)) {
+      patrimonio.documentos = patrimonio.documentos.map((doc: any) => {
+        if (typeof doc === 'string') {
+          return doc;
+        }
+        if (typeof doc === 'object' && doc !== null) {
+          return doc.file_url || doc.url || doc.id || doc.fileName || String(doc);
+        }
+        return String(doc);
+      }).filter((doc: string) => doc && doc.trim() !== '');
+    }
+
     // ✅ DEBUG: Log de verificação de acesso
     logDebug('Verificando acesso para patrimônio', {
       patrimonioId: patrimonio.id,
       sectorId: patrimonio.sectorId,
       userRole: req.user?.role,
-      userId: req.user?.userId
+      userId: req.user?.userId,
+      fotosNormalizadas: patrimonio.fotos?.length || 0
     });
 
     // ✅ CORREÇÃO: Verificar acesso (admin e superuser têm acesso total)
@@ -384,6 +440,32 @@ export const getByNumero = async (req: Request, res: Response): Promise<void> =>
     if (!patrimonio) {
       res.status(404).json({ error: 'Patrimônio não encontrado' });
       return;
+    }
+
+    // ✅ CORREÇÃO: Normalizar fotos para garantir que sejam sempre strings (URLs)
+    if (patrimonio.fotos && Array.isArray(patrimonio.fotos)) {
+      patrimonio.fotos = patrimonio.fotos.map((foto: any) => {
+        if (typeof foto === 'string') {
+          return foto;
+        }
+        if (typeof foto === 'object' && foto !== null) {
+          return foto.file_url || foto.url || foto.id || foto.fileName || String(foto);
+        }
+        return String(foto);
+      }).filter((foto: string) => foto && foto.trim() !== '');
+    }
+
+    // ✅ CORREÇÃO: Normalizar documentos também
+    if (patrimonio.documentos && Array.isArray(patrimonio.documentos)) {
+      patrimonio.documentos = patrimonio.documentos.map((doc: any) => {
+        if (typeof doc === 'string') {
+          return doc;
+        }
+        if (typeof doc === 'object' && doc !== null) {
+          return doc.file_url || doc.url || doc.id || doc.fileName || String(doc);
+        }
+        return String(doc);
+      }).filter((doc: string) => doc && doc.trim() !== '');
     }
 
     res.json({ patrimonio });
