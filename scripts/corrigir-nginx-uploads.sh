@@ -72,6 +72,16 @@ if grep -A 5 "location /uploads" "$NGINX_CONFIG" | grep "alias" | grep -qv "/$";
     echo -e "${YELLOW}⚠️  Alias não termina com /${NC}"
 fi
 
+# Verificar ordem das rotas (importante: /api deve vir antes de /uploads)
+UPLOADS_LINE=$(grep -n "location /uploads" "$NGINX_CONFIG" | head -1 | cut -d: -f1)
+API_LINE=$(grep -n "location /api" "$NGINX_CONFIG" | head -1 | cut -d: -f1)
+
+if [ -n "$UPLOADS_LINE" ] && [ -n "$API_LINE" ] && [ "$UPLOADS_LINE" -lt "$API_LINE" ]; then
+    NEEDS_FIX=true
+    echo -e "${YELLOW}⚠️  Ordem incorreta: /uploads vem antes de /api${NC}"
+    echo -e "${YELLOW}   Isso pode causar problemas com /api/upload${NC}"
+fi
+
 if [ "$NEEDS_FIX" = true ]; then
     echo ""
     echo -e "${BLUE}3. Corrigindo configuração...${NC}"
@@ -83,13 +93,14 @@ if [ "$NEEDS_FIX" = true ]; then
         sudo mv /tmp/nginx_config_temp "$NGINX_CONFIG"
     fi
     
-    # Adicionar configuração correta
-    # Encontrar onde inserir (antes do fechamento do server block ou após outra location)
+    # ✅ CORREÇÃO: Garantir que /api vem ANTES de /uploads
+    # Encontrar onde inserir (após location /api, mas antes do fechamento do server block)
     if grep -q "location /api" "$NGINX_CONFIG"; then
-        # Inserir após location /api
+        # Inserir após location /api (garantindo ordem correta)
         sudo sed -i "/location \/api/,/^[[:space:]]*}/ {
             /^[[:space:]]*}/a\\
-    # Arquivos estáticos (uploads)\\
+\\
+    # Arquivos estáticos (uploads) - DEVE vir DEPOIS de /api\\
     location /uploads {\\
         alias $UPLOADS_DIR/;\\
         expires 1y;\\
@@ -98,8 +109,9 @@ if [ "$NEEDS_FIX" = true ]; then
     }
         }" "$NGINX_CONFIG"
     else
-        # Adicionar antes do fechamento do server block
+        # Se não há /api, adicionar antes do fechamento do server block
         sudo sed -i "/^[[:space:]]*}/i\\
+\\
     # Arquivos estáticos (uploads)\\
     location /uploads {\\
         alias $UPLOADS_DIR/;\\
@@ -111,6 +123,7 @@ if [ "$NEEDS_FIX" = true ]; then
     fi
     
     echo -e "${GREEN}✅ Configuração atualizada${NC}"
+    echo -e "${BLUE}   Ordem garantida: /api antes de /uploads${NC}"
 else
     echo -e "${GREEN}✅ Configuração já está correta${NC}"
 fi
