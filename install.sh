@@ -1328,19 +1328,9 @@ server {
     listen [::]:80;
     server_name ${DOMAIN};
     
-    # Frontend - Servir arquivos estáticos
-    location / {
-        root ${INSTALL_DIR}/dist;
-        try_files \$uri \$uri/ /index.html;
-        
-        # Cache para arquivos estáticos
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-        }
-    }
+    root ${INSTALL_DIR}/dist;
     
-    # API Backend
+    # API Backend - DEVE vir ANTES de /uploads
     location /api/ {
         proxy_pass http://localhost:${APP_PORT}/api/;
         proxy_http_version 1.1;
@@ -1358,11 +1348,24 @@ server {
         proxy_read_timeout 60s;
     }
     
-    # Uploads
-    location /uploads/ {
+    # Arquivos estáticos (uploads) - ^~ garante precedência sobre regex
+    # DEVE vir ANTES do location ~* para não ser capturado pelo regex
+    location ^~ /uploads {
         alias ${INSTALL_DIR}/backend/uploads/;
         expires 1y;
         add_header Cache-Control "public";
+        access_log off;
+    }
+    
+    # Frontend - Servir arquivos estáticos
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+    
+    # Cache para arquivos estáticos - DEVE vir DEPOIS de /uploads
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
     
     # Health check
@@ -1370,6 +1373,9 @@ server {
         proxy_pass http://localhost:${APP_PORT}/api/health;
         access_log off;
     }
+    
+    # Limitar tamanho de upload
+    client_max_body_size 10M;
 }
 EOF
     
