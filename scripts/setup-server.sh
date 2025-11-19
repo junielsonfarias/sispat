@@ -105,19 +105,9 @@ server {
     listen 80;
     server_name sispat.seudominio.com;
     
-    # Frontend
-    location / {
-        root /var/www/sispat/dist;
-        try_files $uri $uri/ /index.html;
-        
-        # Cache estático
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-        }
-    }
+    root /var/www/sispat/dist;
     
-    # Backend API
+    # Backend API - DEVE vir ANTES de /uploads
     location /api {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
@@ -135,11 +125,24 @@ server {
         proxy_read_timeout 60s;
     }
     
-    # Uploads
-    location /uploads {
-        alias /var/www/sispat/backend/uploads;
+    # Arquivos estáticos (uploads) - ^~ garante precedência sobre regex
+    # DEVE vir ANTES do location ~* para não ser capturado pelo regex
+    location ^~ /uploads {
+        alias /var/www/sispat/backend/uploads/;
         expires 1y;
         add_header Cache-Control "public";
+        access_log off;
+    }
+    
+    # Frontend
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    
+    # Cache estático - DEVE vir DEPOIS de /uploads
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|webp)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
     
     # Health check
@@ -147,6 +150,9 @@ server {
         proxy_pass http://localhost:3000/health;
         access_log off;
     }
+    
+    # Limitar tamanho de upload
+    client_max_body_size 10M;
     
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -276,6 +282,8 @@ echo "*/5 * * * * /usr/local/bin/sispat-monitor.sh" | crontab -u root -
 # Criar diretórios necessários
 log "Criando diretórios..."
 mkdir -p /var/www/sispat
+mkdir -p /var/www/sispat/backend/uploads
+mkdir -p /var/www/sispat/backend/logs
 mkdir -p /var/backups/sispat
 mkdir -p /var/log/sispat
 
@@ -283,6 +291,15 @@ mkdir -p /var/log/sispat
 chown -R www-data:www-data /var/www/sispat
 chown -R www-data:www-data /var/backups/sispat
 chown -R www-data:www-data /var/log/sispat
+
+# Configurar permissões específicas para uploads e logs
+log "Configurando permissões de uploads e logs..."
+chmod 755 /var/www/sispat/backend/uploads
+chmod 755 /var/www/sispat/backend/logs
+find /var/www/sispat/backend/uploads -type f -exec chmod 644 {} \; 2>/dev/null || true
+find /var/www/sispat/backend/uploads -type d -exec chmod 755 {} \; 2>/dev/null || true
+find /var/www/sispat/backend/logs -type f -exec chmod 644 {} \; 2>/dev/null || true
+find /var/www/sispat/backend/logs -type d -exec chmod 755 {} \; 2>/dev/null || true
 
 # Configurar limites do sistema
 log "Configurando limites do sistema..."
