@@ -86,23 +86,34 @@ sudo chmod 644 "$NGINX_CONFIG"
 echo -e "${GREEN}✅ Todas as configurações /uploads removidas${NC}"
 echo ""
 
-# 3. Verificar se foi removido
+# 3. Verificar se foi removido (apenas configurações location, não comentários)
 echo -e "${BLUE}3. Verificando remoção...${NC}"
-UPLOADS_COUNT=$(grep -ci "uploads" "$NGINX_CONFIG" 2>/dev/null || echo "0")
-if [ "$UPLOADS_COUNT" != "0" ]; then
-    echo -e "${YELLOW}⚠️  Ainda há menções a 'uploads':${NC}"
-    grep -n -i "uploads" "$NGINX_CONFIG"
+LOCATION_COUNT=$(grep -cE "location\s+(\^~)?\s*/uploads" "$NGINX_CONFIG" 2>/dev/null || echo "0")
+UPLOADS_COMMENTS=$(grep -cE "^[[:space:]]*#.*uploads" "$NGINX_CONFIG" 2>/dev/null || echo "0")
+
+if [ "$LOCATION_COUNT" != "0" ]; then
+    echo -e "${YELLOW}⚠️  Ainda há configurações location /uploads:${NC}"
+    grep -n -E "location\s+(\^~)?\s*/uploads" "$NGINX_CONFIG"
     echo ""
     echo -e "${YELLOW}Removendo manualmente...${NC}"
-    # Remover todas as linhas que contêm "uploads"
-    sudo sed -i '/uploads/d' "$NGINX_CONFIG"
-    UPLOADS_COUNT=$(grep -ci "uploads" "$NGINX_CONFIG" 2>/dev/null || echo "0")
+    # Remover todas as configurações location /uploads
+    while grep -qE "location\s+(\^~)?\s*/uploads" "$NGINX_CONFIG"; do
+        LINE=$(grep -n -E "location\s+(\^~)?\s*/uploads" "$NGINX_CONFIG" | head -1 | cut -d: -f1)
+        # Remover bloco começando nesta linha até encontrar }
+        sudo sed -i "${LINE},/^[[:space:]]*}/d" "$NGINX_CONFIG"
+    done
+    LOCATION_COUNT=$(grep -cE "location\s+(\^~)?\s*/uploads" "$NGINX_CONFIG" 2>/dev/null || echo "0")
 fi
 
-if [ "$UPLOADS_COUNT" -eq 0 ]; then
-    echo -e "${GREEN}✅ Nenhuma menção a 'uploads' encontrada${NC}"
+if [ "$LOCATION_COUNT" -eq 0 ]; then
+    echo -e "${GREEN}✅ Nenhuma configuração location /uploads encontrada${NC}"
+    if [ "$UPLOADS_COMMENTS" -gt 0 ]; then
+        echo -e "${BLUE}   ℹ️  Encontrados $UPLOADS_COMMENTS comentários sobre uploads (serão removidos)${NC}"
+        # Remover comentários sobre uploads
+        sudo sed -i '/^[[:space:]]*#.*uploads/d' "$NGINX_CONFIG"
+    fi
 else
-    echo -e "${RED}❌ Ainda há menções a 'uploads'${NC}"
+    echo -e "${RED}❌ Ainda há configurações location /uploads${NC}"
     exit 1
 fi
 echo ""
