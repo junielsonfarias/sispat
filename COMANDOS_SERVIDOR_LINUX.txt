@@ -1,0 +1,104 @@
+═══════════════════════════════════════════════════════════════
+  📋 COMANDOS PARA EXECUTAR NO SERVIDOR LINUX (VIA SSH)
+═══════════════════════════════════════════════════════════════
+
+⚠️  IMPORTANTE: Estes comandos devem ser executados NO SERVIDOR,
+    não no Windows local!
+
+═══════════════════════════════════════════════════════════════
+
+1️⃣  CONECTAR AO SERVIDOR VIA SSH
+═══════════════════════════════════════════════════════════════
+
+ssh root@sispat.vps-kinghost.net
+
+
+2️⃣  ATUALIZAR CÓDIGO DO REPOSITÓRIO
+═══════════════════════════════════════════════════════════════
+
+cd /var/www/sispat
+git pull origin main
+
+
+3️⃣  CORRIGIR PERMISSÕES (USANDO SCRIPT)
+═══════════════════════════════════════════════════════════════
+
+# Dar permissão de execução ao script
+chmod +x scripts/corrigir-permissoes-logs.sh
+
+# Executar script
+./scripts/corrigir-permissoes-logs.sh
+
+
+4️⃣  CORRIGIR PERMISSÕES (MANUAL - PASSO A PASSO)
+═══════════════════════════════════════════════════════════════
+
+# 1. Corrigir permissões de logs
+sudo chown -R www-data:www-data /var/www/sispat/backend/logs/
+sudo chmod -R 755 /var/www/sispat/backend/logs/
+
+# 2. Corrigir permissões de uploads
+sudo chown -R www-data:www-data /var/www/sispat/backend/uploads/
+sudo find /var/www/sispat/backend/uploads -type f -exec chmod 644 {} \;
+sudo find /var/www/sispat/backend/uploads -type d -exec chmod 755 {} \;
+
+# 3. Parar backend
+pm2 stop sispat-backend
+pm2 delete sispat-backend
+
+# 4. Reiniciar backend
+cd /var/www/sispat/backend
+pm2 start ecosystem.config.js --env production
+pm2 save
+
+
+5️⃣  VERIFICAR STATUS
+═══════════════════════════════════════════════════════════════
+
+# Ver processos PM2
+pm2 status
+
+# Ver logs do backend
+pm2 logs sispat-backend --lines 50
+
+# Verificar permissões
+ls -la /var/www/sispat/backend/logs/
+ls -la /var/www/sispat/backend/uploads/ | head -10
+
+
+6️⃣  COMANDOS RÁPIDOS (COPIE E COLE TUDO)
+═══════════════════════════════════════════════════════════════
+
+cd /var/www/sispat && \
+git pull origin main && \
+sudo chown -R www-data:www-data /var/www/sispat/backend/logs/ /var/www/sispat/backend/uploads/ && \
+sudo chmod -R 755 /var/www/sispat/backend/logs/ && \
+sudo find /var/www/sispat/backend/uploads -type f -exec chmod 644 {} \; && \
+sudo find /var/www/sispat/backend/uploads -type d -exec chmod 755 {} \; && \
+pm2 stop sispat-backend 2>/dev/null; pm2 delete sispat-backend 2>/dev/null; \
+cd /var/www/sispat/backend && pm2 start ecosystem.config.js --env production && \
+pm2 save && \
+echo "✅ Concluído!" && \
+pm2 status
+
+
+═══════════════════════════════════════════════════════════════
+  💡 DICAS
+═══════════════════════════════════════════════════════════════
+
+• Se o backend não compilar, execute:
+  cd /var/www/sispat/backend
+  npm run build
+
+• Se o PM2 não encontrar o processo, ele já foi parado.
+  Apenas inicie novamente com:
+  cd /var/www/sispat/backend
+  pm2 start ecosystem.config.js --env production
+
+• Para ver logs em tempo real:
+  pm2 logs sispat-backend
+
+• Para parar logs (Ctrl+C)
+
+═══════════════════════════════════════════════════════════════
+
