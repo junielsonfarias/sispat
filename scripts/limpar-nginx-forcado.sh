@@ -93,9 +93,11 @@ echo ""
 
 # 3. Verificar novamente
 echo -e "${BLUE}3. Verificando remoção...${NC}"
-LOCATION_COUNT=$(grep -cE "location\s+.*\/uploads|location\s+\^~\s*\/uploads" "$NGINX_CONFIG" 2>/dev/null || echo "0")
+LOCATION_COUNT=$(grep -cE "location\s+.*\/uploads|location\s+\^~\s*\/uploads" "$NGINX_CONFIG" 2>/dev/null | head -1 || echo "0")
+LOCATION_COUNT=${LOCATION_COUNT//[^0-9]/}  # Remover caracteres não numéricos
+LOCATION_COUNT=${LOCATION_COUNT:-0}  # Default para 0 se vazio
 
-if [ "$LOCATION_COUNT" -gt 0 ]; then
+if [ "$LOCATION_COUNT" -gt 0 ] 2>/dev/null; then
     echo -e "${YELLOW}⚠️  Ainda há $LOCATION_COUNT configuração(ões):${NC}"
     grep -n -E "location\s+.*\/uploads|location\s+\^~\s*\/uploads" "$NGINX_CONFIG"
     echo ""
@@ -124,10 +126,12 @@ if [ "$LOCATION_COUNT" -gt 0 ]; then
         sudo sed -i "${LINE_NUM},${END_LINE}d" "$NGINX_CONFIG"
     done
     
-    LOCATION_COUNT=$(grep -cE "location\s+.*\/uploads|location\s+\^~\s*\/uploads" "$NGINX_CONFIG" 2>/dev/null || echo "0")
+    LOCATION_COUNT=$(grep -cE "location\s+.*\/uploads|location\s+\^~\s*\/uploads" "$NGINX_CONFIG" 2>/dev/null | head -1 || echo "0")
+    LOCATION_COUNT=${LOCATION_COUNT//[^0-9]/}
+    LOCATION_COUNT=${LOCATION_COUNT:-0}
 fi
 
-if [ "$LOCATION_COUNT" -eq 0 ]; then
+if [ "$LOCATION_COUNT" -eq 0 ] 2>/dev/null; then
     echo -e "${GREEN}✅ Nenhuma configuração location /uploads encontrada${NC}"
 else
     echo -e "${RED}❌ Ainda há $LOCATION_COUNT configuração(ões)${NC}"
@@ -173,8 +177,10 @@ echo ""
 
 # 6. Verificar duplicatas
 echo -e "${BLUE}6. Verificando configuração final...${NC}"
-LOCATION_COUNT=$(grep -cE "location\s+.*\/uploads|location\s+\^~\s*\/uploads" "$NGINX_CONFIG" 2>/dev/null || echo "0")
-if [ "$LOCATION_COUNT" -eq 1 ]; then
+LOCATION_COUNT=$(grep -cE "location\s+.*\/uploads|location\s+\^~\s*\/uploads" "$NGINX_CONFIG" 2>/dev/null | head -1 || echo "0")
+LOCATION_COUNT=${LOCATION_COUNT//[^0-9]/}
+LOCATION_COUNT=${LOCATION_COUNT:-0}
+if [ "$LOCATION_COUNT" -eq 1 ] 2>/dev/null; then
     echo -e "${GREEN}✅ Apenas uma configuração /uploads encontrada${NC}"
     echo ""
     echo -e "${BLUE}Configuração adicionada:${NC}"
