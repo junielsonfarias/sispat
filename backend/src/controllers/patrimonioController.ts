@@ -650,8 +650,44 @@ export const createPatrimonio = async (req: Request, res: Response): Promise<voi
           status: status || 'ativo',
           situacao_bem,
           observacoes,
-          fotos: Array.isArray(fotos) ? fotos.map(foto => typeof foto === 'string' ? foto : foto.file_url || foto.fileName || String(foto)) : [],
-          documentos: Array.isArray(documentos) ? documentos.map(doc => typeof doc === 'string' ? doc : doc.file_url || doc.fileName || String(doc)) : [],
+          fotos: Array.isArray(fotos) 
+            ? fotos
+                .map(foto => {
+                  if (typeof foto === 'string') {
+                    // ❌ Bloquear URLs blob- explicitamente
+                    if (foto.startsWith('blob:')) {
+                      logWarn('URL blob- bloqueada no create', { foto });
+                      return null;
+                    }
+                    return foto;
+                  }
+                  const url = foto.file_url || foto.fileName || String(foto);
+                  // ❌ Bloquear URLs blob- explicitamente
+                  if (url && url.startsWith('blob:')) {
+                    logWarn('URL blob- bloqueada no create (objeto)', { url });
+                    return null;
+                  }
+                  return url;
+                })
+                .filter(foto => foto && foto.trim() !== '' && !foto.startsWith('blob:'))
+            : [],
+          documentos: Array.isArray(documentos) 
+            ? documentos
+                .map(doc => {
+                  if (typeof doc === 'string') {
+                    if (doc.startsWith('blob:')) {
+                      return null;
+                    }
+                    return doc;
+                  }
+                  const url = doc.file_url || doc.fileName || String(doc);
+                  if (url && url.startsWith('blob:')) {
+                    return null;
+                  }
+                  return url;
+                })
+                .filter(doc => doc && doc.trim() !== '' && !doc.startsWith('blob:'))
+            : [],
           metodo_depreciacao: metodo_depreciacao || 'Linear',
           vida_util_anos: vida_util_anos ? parseInt(vida_util_anos) : null,
           valor_residual: valor_residual ? parseFloat(valor_residual) : null,
@@ -846,6 +882,61 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
     }
     if (dataToUpdate.ano_licitacao !== undefined && dataToUpdate.ano_licitacao !== null) {
       dataToUpdate.ano_licitacao = parseInt(dataToUpdate.ano_licitacao);
+    }
+
+    // ✅ CORREÇÃO: Processar fotos e documentos antes de salvar (igual ao create)
+    if (dataToUpdate.fotos !== undefined) {
+      dataToUpdate.fotos = Array.isArray(dataToUpdate.fotos)
+        ? dataToUpdate.fotos
+            .map(foto => {
+              // Se já é string, validar se não é blob-
+              if (typeof foto === 'string') {
+                // ❌ Bloquear URLs blob- explicitamente
+                if (foto.startsWith('blob:')) {
+                  logWarn('URL blob- bloqueada no update', { foto, patrimonioId: id });
+                  return null; // Será filtrado
+                }
+                return foto;
+              }
+              // Se é objeto, extrair file_url
+              if (typeof foto === 'object' && foto !== null) {
+                const url = foto.file_url || foto.url || foto.fileName || String(foto);
+                // ❌ Bloquear URLs blob- explicitamente
+                if (url && url.startsWith('blob:')) {
+                  logWarn('URL blob- bloqueada no update (objeto)', { url, patrimonioId: id });
+                  return null; // Será filtrado
+                }
+                return url;
+              }
+              return String(foto);
+            })
+            .filter(foto => foto && foto.trim() !== '' && !foto.startsWith('blob:'))
+        : [];
+      logDebug('✅ Fotos processadas no update', { fotosCount: dataToUpdate.fotos.length });
+    }
+
+    // ✅ CORREÇÃO: Processar documentos também
+    if (dataToUpdate.documentos !== undefined) {
+      dataToUpdate.documentos = Array.isArray(dataToUpdate.documentos)
+        ? dataToUpdate.documentos
+            .map(doc => {
+              if (typeof doc === 'string') {
+                if (doc.startsWith('blob:')) {
+                  return null;
+                }
+                return doc;
+              }
+              if (typeof doc === 'object' && doc !== null) {
+                const url = doc.file_url || doc.url || doc.fileName || String(doc);
+                if (url && url.startsWith('blob:')) {
+                  return null;
+                }
+                return url;
+              }
+              return String(doc);
+            })
+            .filter(doc => doc && doc.trim() !== '' && !doc.startsWith('blob:'))
+        : [];
     }
 
     // Atualizar usando transaction para garantir consistência
