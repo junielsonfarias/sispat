@@ -1521,16 +1521,30 @@ configure_permissions() {
     mkdir -p /var/backups/sispat
     mkdir -p /var/log/sispat
     
-    # Configurar permissões
+    # Configurar permissões básicas
     chown -R www-data:www-data "$INSTALL_DIR"
     chown -R www-data:www-data /var/backups/sispat
     chown -R www-data:www-data /var/log/sispat
     
+    # ✅ CORREÇÃO: Configurar permissões específicas para uploads e logs
+    # Diretórios: 755 (rwxr-xr-x)
     chmod 755 "$INSTALL_DIR/backend/uploads"
     chmod 755 "$INSTALL_DIR/backend/logs"
     chmod 755 "$INSTALL_DIR/backend/backups"
     
-    success "Permissões configuradas"
+    # Arquivos em uploads: 644 (rw-r--r--)
+    find "$INSTALL_DIR/backend/uploads" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    find "$INSTALL_DIR/backend/uploads" -type d -exec chmod 755 {} \; 2>/dev/null || true
+    
+    # Arquivos em logs: 644 (rw-r--r--)
+    find "$INSTALL_DIR/backend/logs" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    find "$INSTALL_DIR/backend/logs" -type d -exec chmod 755 {} \; 2>/dev/null || true
+    
+    # Garantir que diretórios têm permissão de escrita para www-data
+    chmod g+w "$INSTALL_DIR/backend/uploads" 2>/dev/null || true
+    chmod g+w "$INSTALL_DIR/backend/logs" 2>/dev/null || true
+    
+    success "Permissões configuradas (uploads: 755/644, logs: 755/644)"
 }
 
 restore_uploads() {
@@ -1542,14 +1556,16 @@ restore_uploads() {
         mkdir -p "$INSTALL_DIR/backend/uploads"
         cp -r /tmp/sispat-backup/uploads/* "$INSTALL_DIR/backend/uploads/" 2>/dev/null || true
         
-        # Ajustar permissões
+        # ✅ CORREÇÃO: Ajustar permissões corretas (igual ao configure_permissions)
         chown -R www-data:www-data "$INSTALL_DIR/backend/uploads"
-        chmod -R 755 "$INSTALL_DIR/backend/uploads"
+        chmod 755 "$INSTALL_DIR/backend/uploads"
+        find "$INSTALL_DIR/backend/uploads" -type f -exec chmod 644 {} \; 2>/dev/null || true
+        find "$INSTALL_DIR/backend/uploads" -type d -exec chmod 755 {} \; 2>/dev/null || true
         
         # Remover backup temporário
         rm -rf /tmp/sispat-backup
         
-        success "Uploads restaurados com sucesso!"
+        success "Uploads restaurados com permissões corretas!"
     fi
 }
 
@@ -1575,9 +1591,15 @@ start_application() {
     pm2 delete sispat-backend 2>/dev/null || true
     pm2 kill 2>/dev/null || true
     
-    # Iniciar com PM2 como root primeiro (mais fácil para debug)
-    echo -e "${BLUE}  → Iniciando aplicação com PM2...${NC}"
-    pm2 start dist/index.js --name sispat-backend 2>&1 | tee -a "$LOG_FILE"
+    # ✅ CORREÇÃO: Verificar se existe ecosystem.config.js
+    if [ -f "ecosystem.config.js" ]; then
+        echo -e "${BLUE}  → Usando ecosystem.config.js...${NC}"
+        pm2 start ecosystem.config.js --env production --name sispat-backend --user www-data 2>&1 | tee -a "$LOG_FILE"
+    else
+        # Fallback: iniciar diretamente com PM2 como www-data
+        echo -e "${BLUE}  → Iniciando aplicação com PM2 (usuário www-data)...${NC}"
+        pm2 start dist/index.js --name sispat-backend --user www-data 2>&1 | tee -a "$LOG_FILE"
+    fi
     
     if [ $? -ne 0 ]; then
         echo ""
@@ -1596,9 +1618,20 @@ start_application() {
     echo -e "${BLUE}  → Salvando configuração PM2...${NC}"
     pm2 save 2>&1 | tee -a "$LOG_FILE"
     
-    # Configurar PM2 para iniciar com o sistema
+    # ✅ CORREÇÃO: Configurar PM2 para iniciar com o sistema (como root, mas processo roda como www-data)
     echo -e "${BLUE}  → Configurando PM2 para iniciar automaticamente...${NC}"
+    # PM2 startup precisa ser executado como root, mas o processo roda como www-data (definido no --user)
     env PATH=$PATH:/usr/bin pm2 startup systemd -u root --hp /root 2>&1 | grep -v "sudo" | tee -a "$LOG_FILE" || true
+    
+    # Verificar se PM2 está rodando corretamente
+    echo -e "${BLUE}  → Verificando status do PM2...${NC}"
+    sleep 2
+    if pm2 list | grep -q "sispat-backend"; then
+        success "PM2 está rodando"
+        pm2 status | grep sispat-backend || true
+    else
+        warning "PM2 pode não estar rodando corretamente"
+    fi
     
     # Aguardar inicialização
     echo -e "${BLUE}  → Aguardando aplicação iniciar (10 segundos)...${NC}"
@@ -1922,10 +1955,25 @@ verify_installation() {
     fi
     
     # 9. Verificar Nginx
-    echo -e "${YELLOW}[9/12]${NC} Verificando Nginx..."
+    echo -e "${YELLOW}[9/14]${NC} Verificando Nginx..."
     if systemctl is-active --quiet nginx; then
         if [ -f "/etc/nginx/sites-enabled/sispat" ]; then
-            success "Nginx ativo e configurado"
+            # ✅ CORREÇÃO: Verificar configuração do Nginx (ordem de locations)
+            if grep -q "location ^~ /uploads" /etc/nginx/sites-enabled/sispat && \
+               grep -q "location /api" /etc/nginx/sites-enabled/sispat; then
+                # Verificar se /api vem antes de /uploads
+                local api_line=$(grep -n "location /api" /etc/nginx/sites-enabled/sispat | head -1 | cut -d: -f1)
+                local uploads_line=$(grep -n "location ^~ /uploads" /etc/nginx/sites-enabled/sispat | head -1 | cut -d: -f1)
+                if [ "$api_line" -lt "$uploads_line" ]; then
+                    success "Nginx ativo e configurado corretamente (ordem de locations OK)"
+                else
+                    warning "Nginx configurado mas ordem de locations pode estar incorreta"
+                    ((warnings++))
+                fi
+            else
+                warning "Nginx configurado mas sem configuração /uploads correta"
+                ((warnings++))
+            fi
         else
             warning "Nginx ativo mas configuração não encontrada"
             ((warnings++))
@@ -1935,8 +1983,55 @@ verify_installation() {
         ((errors++))
     fi
     
+    # 9.5. Verificar permissões de uploads e logs
+    echo -e "${YELLOW}[10/14]${NC} Verificando permissões de uploads e logs..."
+    local uploads_ok=true
+    local logs_ok=true
+    
+    if [ -d "$INSTALL_DIR/backend/uploads" ]; then
+        local uploads_owner=$(stat -c '%U:%G' "$INSTALL_DIR/backend/uploads" 2>/dev/null || echo "unknown")
+        local uploads_perm=$(stat -c '%a' "$INSTALL_DIR/backend/uploads" 2>/dev/null || echo "000")
+        if [ "$uploads_owner" = "www-data:www-data" ] && [ "$uploads_perm" = "755" ]; then
+            success "Permissões de uploads corretas (www-data:www-data, 755)"
+        else
+            warning "Permissões de uploads incorretas ($uploads_owner, $uploads_perm)"
+            ((warnings++))
+            uploads_ok=false
+        fi
+    else
+        warning "Diretório uploads não existe"
+        ((warnings++))
+        uploads_ok=false
+    fi
+    
+    if [ -d "$INSTALL_DIR/backend/logs" ]; then
+        local logs_owner=$(stat -c '%U:%G' "$INSTALL_DIR/backend/logs" 2>/dev/null || echo "unknown")
+        local logs_perm=$(stat -c '%a' "$INSTALL_DIR/backend/logs" 2>/dev/null || echo "000")
+        if [ "$logs_owner" = "www-data:www-data" ] && [ "$logs_perm" = "755" ]; then
+            success "Permissões de logs corretas (www-data:www-data, 755)"
+        else
+            warning "Permissões de logs incorretas ($logs_owner, $logs_perm)"
+            ((warnings++))
+            logs_ok=false
+        fi
+    else
+        warning "Diretório logs não existe"
+        ((warnings++))
+        logs_ok=false
+    fi
+    
+    # 9.6. Verificar se PM2 está rodando como www-data
+    echo -e "${YELLOW}[11/14]${NC} Verificando usuário do processo PM2..."
+    local pm2_user=$(pm2 jlist 2>/dev/null | grep -o '"username":"[^"]*"' | head -1 | cut -d'"' -f4 || echo "unknown")
+    if [ "$pm2_user" = "www-data" ] || [ "$pm2_user" = "root" ]; then
+        success "PM2 rodando como $pm2_user"
+    else
+        warning "PM2 rodando como $pm2_user (esperado: www-data ou root)"
+        ((warnings++))
+    fi
+    
     # 10. Verificar API (health check)
-    echo -e "${YELLOW}[10/12]${NC} Verificando API (health check)..."
+    echo -e "${YELLOW}[12/14]${NC} Verificando API (health check)..."
     sleep 2  # Aguardar API iniciar
     local api_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$APP_PORT/api/health 2>/dev/null)
     if [ "$api_response" = "200" ]; then
@@ -1947,7 +2042,7 @@ verify_installation() {
     fi
     
     # 11. Verificar acesso ao frontend via Nginx
-    echo -e "${YELLOW}[11/12]${NC} Verificando acesso ao frontend..."
+    echo -e "${YELLOW}[13/14]${NC} Verificando acesso ao frontend..."
     local frontend_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost 2>/dev/null)
     if [ "$frontend_response" = "200" ]; then
         success "Frontend acessível via Nginx (HTTP 200)"
@@ -1956,8 +2051,28 @@ verify_installation() {
         ((warnings++))
     fi
     
-    # 12. Verificar SSL (se configurado)
-    echo -e "${YELLOW}[12/12]${NC} Verificando SSL..."
+    # 12. Verificar acesso a uploads via Nginx
+    echo -e "${YELLOW}[14/14]${NC} Verificando acesso a uploads via Nginx..."
+    # Criar arquivo de teste se uploads estiver vazio
+    if [ ! -f "$INSTALL_DIR/backend/uploads/.test" ]; then
+        touch "$INSTALL_DIR/backend/uploads/.test"
+        chown www-data:www-data "$INSTALL_DIR/backend/uploads/.test"
+        chmod 644 "$INSTALL_DIR/backend/uploads/.test"
+    fi
+    
+    local uploads_response=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost/uploads/.test" 2>/dev/null || echo "000")
+    if [ "$uploads_response" = "200" ] || [ "$uploads_response" = "404" ]; then
+        # 404 é OK se arquivo não existir, significa que Nginx está servindo /uploads
+        success "Nginx servindo /uploads corretamente (HTTP $uploads_response)"
+        rm -f "$INSTALL_DIR/backend/uploads/.test" 2>/dev/null || true
+    else
+        warning "Nginx pode não estar servindo /uploads corretamente (HTTP $uploads_response)"
+        ((warnings++))
+    fi
+    
+    # 13. Verificar SSL (se configurado)
+    echo ""
+    echo -e "${YELLOW}[15/15]${NC} Verificando SSL..."
     if [ "$CONFIGURE_SSL" = "yes" ]; then
         if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
             local cert_expiry=$(openssl x509 -enddate -noout -in "/etc/letsencrypt/live/$DOMAIN/cert.pem" 2>/dev/null | cut -d= -f2)
