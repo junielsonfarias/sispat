@@ -313,12 +313,32 @@ const ReportView = () => {
         format: paperSize === 'a4' ? 'a4' : paperSize === 'letter' ? 'letter' : 'legal'
       })
 
-      const imgWidth = pdf.internal.pageSize.getWidth()
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      // Mantém proporção: largura cheia da página, altura escalada
+      const imgWidth = pdfWidth
       const imgHeight = (canvas.height * imgWidth) / canvas.width
-      
-      logger.debug('Dimensões PDF', { width: imgWidth, height: imgHeight })
 
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
+      logger.debug('Dimensões PDF', { pageHeight: pdfHeight, imgHeight, pages: Math.ceil(imgHeight / pdfHeight) })
+
+      // Multi-página: se a imagem não cabe em uma página, paginar deslocando
+      // a posição Y negativamente — jsPDF clipa o que sai dos limites.
+      let remaining = imgHeight
+      let position = 0
+      let pageIndex = 0
+      while (remaining > 0) {
+        if (pageIndex > 0) pdf.addPage()
+        // posição Y negativa para "empurrar" a imagem para cima na nova página
+        pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight)
+        remaining -= pdfHeight
+        position += pdfHeight
+        pageIndex++
+        // segurança contra loop infinito
+        if (pageIndex > 50) {
+          logger.warn('PDF abortado: mais de 50 páginas')
+          break
+        }
+      }
 
       const title = template?.name || 'Relatório'
       const filename = `${title.replace(/\s+/g, '_')}_${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`
