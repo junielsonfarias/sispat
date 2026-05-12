@@ -29,10 +29,22 @@ Sistema usado por prefeituras para controlar bens móveis e imóveis, com invent
 
 - **Número de patrimônio** é gerado automaticamente baseado em prefixo do setor + sequencial.
 - Campos obrigatórios: descrição, setor, local, valor de aquisição, data de aquisição.
-- **Status:** `ativo`, `baixado`, `transferido`, `em_manutencao`, `emprestado`.
 - **Baixa:** requer justificativa + workflow de aprovação (supervisor/admin).
 - **Fotos:** múltiplas, com compressão no frontend. URLs `blob-*` são bloqueadas no update (foram fonte de bug — ver `HISTORICO_CORRECOES.md`).
 - **Depreciação:** calculada por `lib/depreciation-utils.ts` (frontend) — fórmula linear baseada em vida útil + valor residual.
+
+### 3.1 `status` vs `situacao_bem` — semânticas distintas
+
+Os dois campos existem por motivos diferentes — **não duplicam**, embora pareçam parecidos:
+
+| Campo | Tipo | Valores | Quem controla | Para quê |
+|-------|------|---------|---------------|----------|
+| **`status`** | enum | `ativo`, `inativo`, `em_manutencao`, `baixado`, `emprestado`, `transferido` | **Sistema** (atualizado por fluxos: baixa, empréstimo, transferência) | **Estado operacional** — define o que se pode fazer com o bem (guards de mutação) |
+| **`situacao_bem`** | enum | `OTIMO`, `BOM`, `REGULAR`, `RUIM`, `PESSIMO` | **Usuário** (preenche manualmente na inspeção/inventário) | **Condição física** — usado em relatórios de conservação |
+
+**Regra:** UI de cadastro/edição mostra `situacao_bem` ao usuário (campo manual). `status` é alterado apenas pelos fluxos do sistema (baixa marca `baixado`, empréstimo marca `emprestado`, etc.) — **não deve ter dropdown manual de status** em formulários de bem.
+
+**Exceção atual:** `BensCreate`/`BensEdit` permitem editar `status` direto. Isso é débito — ver M-pending no `PLANO_MELHORIAS_FLUXOS.md`.
 
 ## 4. Imóvel (Bem Imóvel)
 
