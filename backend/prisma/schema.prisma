@@ -26,11 +26,30 @@ model User {
   imoveisCreated        Imovel[]        @relation("ImovelCreator")
   labelTemplatesCreated LabelTemplate[] @relation("LabelTemplateCreator")
   patrimoniosCreated    Patrimonio[]    @relation("PatrimonioCreator")
+  refreshTokens         RefreshToken[]
   municipality          Municipality    @relation(fields: [municipalityId], references: [id])
 
   @@index([email])
   @@index([municipalityId])
   @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique // sha256 hex do refresh token (token cru nunca é armazenado)
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime? // null = ativo
+  createdAt DateTime  @default(now())
+  ipAddress String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("refresh_tokens")
 }
 
 model Municipality {

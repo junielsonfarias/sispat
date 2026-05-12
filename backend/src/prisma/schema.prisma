@@ -35,6 +35,7 @@ model User {
   documentsUploaded  Documento[]     @relation("DocumentosUploader")
   fichaTemplatesCreated FichaTemplate[] @relation("FichaTemplateCreator")
   passwordResetTokens PasswordResetToken[]
+  refreshTokens       RefreshToken[]
 
   @@index([email])
   @@index([municipalityId])
@@ -634,6 +635,24 @@ model PasswordResetToken {
   @@index([email])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique // sha256 hex do refresh token (token cru nunca é armazenado)
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime? // null = ativo
+  createdAt DateTime  @default(now())
+  ipAddress String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("refresh_tokens")
 }
 
 model EmailConfig {
