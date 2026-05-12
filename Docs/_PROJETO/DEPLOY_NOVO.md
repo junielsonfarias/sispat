@@ -81,11 +81,35 @@ REDIS_URL=redis://localhost:6379
 `pm2 restart sispat-backend`
 
 #### Backup off-site (opcional mas recomendado)
-O cron diário (`0 2 * * *`) já roda `scripts/backup.sh` que gera dumps em `/var/backups/sispat`.
-Para sincronizar com S3/Backblaze, adicionar ao final do `backup.sh`:
+Cron diário (`0 2 * * *`) gera dumps em `/var/backups/sispat`. Para enviar a um bucket remoto (S3, Backblaze B2, MinIO, R2 — qualquer um suportado por rclone):
+
 ```bash
-aws s3 sync /var/backups/sispat s3://meu-bucket/sispat/$(date +%Y/%m/)
+apt install -y rclone
+rclone config            # interativo — criar remote "sispat-offsite"
 ```
+
+Em `/var/www/sispat/backend/.env`:
+```env
+OFFSITE_REMOTE=sispat-offsite
+OFFSITE_BUCKET=meu-bucket-sispat
+OFFSITE_RETENTION_DAYS=180
+```
+
+Agendar cron 1h após o backup local:
+```bash
+crontab -e
+# 0 3 * * * /var/www/sispat/scripts/backup-offsite.sh >> /var/log/sispat-backup-offsite.log 2>&1
+```
+
+Sem rclone instalado ou env vars setadas, o script é no-op (não falha).
+
+#### Frontend Sentry (opcional)
+1. Criar projeto React em https://sentry.io e copiar o DSN
+2. `cd /var/www/sispat && pnpm add @sentry/react`
+3. Em `/var/www/sispat/.env.production`: `VITE_SENTRY_DSN=https://...`
+4. `pnpm run build && pm2 restart sispat-backend`
+
+Sem o pacote instalado ou DSN ausente, `initSentry()` é no-op silencioso.
 
 ## Verificação pós-deploy
 
