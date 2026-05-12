@@ -462,22 +462,12 @@ const BensCadastrados = () => {
   }, [user, currentPage, pageSize, debouncedSearchTerm, filters])
 
   // ✅ OTIMIZAÇÃO: useMemo no filtro (agora client-side apenas para dados já carregados)
+  // Backend faz toda a filtragem (busca + filtros + ordenação + paginação).
+  // Frontend só exibe o que vem. Evita inconsistências entre dados locais e
+  // dados do servidor enquanto a próxima página está carregando.
   const filteredData = useMemo(() => {
-    if (!Array.isArray(patrimonios)) return []
-    
-    // Se não há termo de busca, retornar todos os patrimônios da página atual
-    if (!debouncedSearchTerm) return patrimonios
-    
-    // Filtro client-side apenas para busca adicional (backend já filtra)
-    const searchLower = debouncedSearchTerm.toLowerCase()
-    return patrimonios.filter((patrimonio) => {
-      return (
-        (patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio)?.toLowerCase().includes(searchLower) ||
-        (patrimonio.descricao_bem || patrimonio.descricaoBem)?.toLowerCase().includes(searchLower) ||
-        (patrimonio.setor_responsavel || patrimonio.setorResponsavel)?.toLowerCase().includes(searchLower)
-      )
-    })
-  }, [patrimonios, debouncedSearchTerm])
+    return Array.isArray(patrimonios) ? patrimonios : []
+  }, [patrimonios])
 
   // ✅ Contar filtros ativos (definido ANTES de ser usado no JSX)
   const activeFiltersCount = useMemo(() => {
