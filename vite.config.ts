@@ -19,6 +19,11 @@ export default defineConfig(({ mode }) => ({
     // ✅ Copiar arquivos públicos para dist
     copyPublicDir: true,
     rollupOptions: {
+      // @sentry/react é dep opcional: só é usada se o usuário decidiu ativar
+      // observabilidade frontend (pnpm add @sentry/react + VITE_SENTRY_DSN).
+      // Sem o pacote instalado, o dynamic import em src/lib/sentry.ts falha
+      // silenciosamente no try/catch e o app continua funcionando.
+      external: (id) => id === '@sentry/react',
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
@@ -41,6 +46,14 @@ export default defineConfig(({ mode }) => ({
       },
       onwarn(warning, warn) {
         if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
+          return
+        }
+        // Suprime warning de @sentry/react não resolvido (dep opcional)
+        if (
+          warning.code === 'UNRESOLVED_IMPORT' &&
+          typeof warning.exporter === 'string' &&
+          warning.exporter.includes('@sentry/react')
+        ) {
           return
         }
         warn(warning)
