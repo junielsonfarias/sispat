@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { toast } from '@/hooks/use-toast'
 import { Edit, Palette, LogOut, Shield } from 'lucide-react'
+import { useConfirm } from '@/hooks/useConfirm'
 import { ImageEditor } from '@/components/profile/ImageEditor'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { Badge } from '@/components/ui/badge'
@@ -21,17 +22,18 @@ import { Badge } from '@/components/ui/badge'
 const Profile = () => {
   const { user, updateUser, logout } = useAuth()
   const [isLoggingOutAll, setIsLoggingOutAll] = useState(false)
+  const confirm = useConfirm()
 
   const handleLogoutAllDevices = async () => {
-    if (
-      !window.confirm(
-        'Deseja sair de TODOS os seus dispositivos? Você será desconectado de qualquer outro navegador/celular onde estiver logado.',
-      )
-    ) {
-      return
-    }
+    const ok = await confirm({
+      title: 'Sair de todos os dispositivos?',
+      description:
+        'Você será desconectado de qualquer outro navegador ou celular onde estiver logado.',
+      confirmText: 'Sair de todos',
+      variant: 'destructive',
+    })
+    if (!ok) return
     setIsLoggingOutAll(true)
-    // logout faz a chamada ao backend e redireciona — não precisamos esperar.
     logout({ allDevices: true })
   }
   const [isEditorOpen, setEditorOpen] = useState(false)

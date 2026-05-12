@@ -30,6 +30,7 @@ import { UserReportConfigProvider } from '@/contexts/UserReportConfigContext'
 import { TiposBensProvider } from '@/contexts/TiposBensContext'
 import { AcquisitionFormProvider } from '@/contexts/AcquisitionFormContext'
 import { ReactQueryProviders } from '@/components/ReactQueryProviders'
+import { ConfirmProvider } from '@/hooks/useConfirm'
 
 // ✅ MELHORIA: Agrupamento de providers otimizado com React Query
 const CoreProviders = ({ children }: { children: ReactNode }) => (
@@ -116,7 +117,7 @@ export const AppProviders = ({ children }: { children: ReactNode }) => (
     <DataProviders>
       <TemplateProviders>
         <FeatureProviders>
-          {children}
+          <ConfirmProvider>{children}</ConfirmProvider>
         </FeatureProviders>
       </TemplateProviders>
     </DataProviders>

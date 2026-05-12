@@ -35,6 +35,7 @@ import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { LabelPrintDialog } from '@/components/bens/LabelPrintDialog'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useDebounce } from '@/hooks/use-debounce'
+import { useConfirm } from '@/hooks/useConfirm'
 import { api } from '@/services/api-adapter'
 import {
   Select,
@@ -267,9 +268,13 @@ const renderTable = (
                             variant="ghost"
                             size="icon"
                             onClick={async () => {
-                              if (!window.confirm(`Tem certeza que deseja excluir o patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}? Esta ação não pode ser desfeita.`)) {
-                                return
-                              }
+                              const ok = await confirm({
+                                title: 'Excluir patrimônio?',
+                                description: `Patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio} será removido. Esta ação não pode ser desfeita.`,
+                                confirmText: 'Excluir',
+                                variant: 'destructive',
+                              })
+                              if (!ok) return
                               
                               setDeletingId(patrimonio.id)
                               try {
@@ -369,6 +374,7 @@ const BensCadastrados = () => {
 
   // ✅ OTIMIZAÇÃO: Debounce na busca (300ms)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
+  const confirm = useConfirm()
 
   // ✅ OTIMIZAÇÃO: Buscar patrimônios com paginação server-side
   const fetchPatrimonios = useCallback(async () => {
@@ -1066,9 +1072,13 @@ const BensCadastrados = () => {
                             variant="ghost"
                             size="icon"
                             onClick={async () => {
-                              if (!window.confirm(`Tem certeza que deseja excluir o patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}? Esta ação não pode ser desfeita.`)) {
-                                return
-                              }
+                              const ok = await confirm({
+                                title: 'Excluir patrimônio?',
+                                description: `Patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio} será removido. Esta ação não pode ser desfeita.`,
+                                confirmText: 'Excluir',
+                                variant: 'destructive',
+                              })
+                              if (!ok) return
                               
                               setDeletingId(patrimonio.id)
                               try {
