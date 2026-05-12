@@ -91,8 +91,9 @@ const extractUrlFromAny = (value: unknown): string | null => {
       (typeof v.id === 'string' && v.id) ||
       (typeof v.fileName === 'string' && v.fileName) ||
       null;
-    if (candidate) return candidate;
+    return candidate || null;
   }
+  if (value === null || value === undefined) return null;
   return String(value);
 };
 
