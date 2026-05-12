@@ -20,6 +20,8 @@
     "optimize:analyze": "node scripts/apply-optimization-indexes.js --analyze",
     "optimize:queries": "node scripts/optimize-database-queries.js",
     "optimize:db": "bash scripts/optimize-database.sh",
+    "cleanup:uploads": "ts-node --transpile-only scripts/cleanup-orphan-uploads.ts",
+    "cleanup:uploads:apply": "ts-node --transpile-only scripts/cleanup-orphan-uploads.ts --delete --older=30",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
