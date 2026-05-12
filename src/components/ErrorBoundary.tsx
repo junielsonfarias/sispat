@@ -24,8 +24,17 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error }
   }
 
+  /** ID curto para o usuário citar ao suporte (não vaza nada além do timestamp). */
+  errorId = ''
+
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    this.errorId = `err_${Date.now().toString(36)}`
+    // Em dev: log completo. Em prod: apenas mensagem (terser também strip console.log).
+    if (import.meta.env.MODE !== 'production') {
+      console.error('ErrorBoundary caught:', error, errorInfo)
+    } else {
+      console.error(`ErrorBoundary [${this.errorId}]:`, error.message)
+    }
     this.setState({
       error,
       errorInfo,
@@ -58,29 +67,39 @@ class ErrorBoundary extends Component<Props, State> {
                 Ocorreu um erro inesperado na aplicação. Isso pode ser temporário.
               </p>
               
-              {/* ✅ CORREÇÃO: Mostrar detalhes do erro também em produção para debug */}
-              {this.state.error && (
-                <details className="mt-4">
-                  <summary className="cursor-pointer text-sm font-medium text-gray-700">
-                    Detalhes do erro (clique para expandir)
-                  </summary>
-                  <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-60">
-                    <div className="font-bold mb-2">Erro:</div>
-                    {this.state.error.toString()}
-                    {this.state.errorInfo?.componentStack && (
-                      <>
-                        <div className="font-bold mt-3 mb-2">Stack Trace:</div>
-                        {this.state.errorInfo.componentStack}
-                      </>
-                    )}
-                    {this.state.error.stack && (
-                      <>
-                        <div className="font-bold mt-3 mb-2">Stack:</div>
-                        {this.state.error.stack}
-                      </>
-                    )}
-                  </pre>
-                </details>
+              {/* Em produção: mostra apenas um ID curto para o usuário citar ao suporte.
+                  Stack trace e componentStack ficam só em dev — evita vazar caminhos,
+                  nomes de componentes e estrutura interna. */}
+              {import.meta.env.MODE === 'production' ? (
+                <p className="text-xs text-center text-gray-500">
+                  ID do erro: <code className="font-mono">{this.errorId || 'gerando...'}</code>
+                  <br />
+                  Informe esse código ao suporte se o problema persistir.
+                </p>
+              ) : (
+                this.state.error && (
+                  <details className="mt-4">
+                    <summary className="cursor-pointer text-sm font-medium text-gray-700">
+                      Detalhes do erro (apenas em dev)
+                    </summary>
+                    <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-60">
+                      <div className="font-bold mb-2">Erro:</div>
+                      {this.state.error.toString()}
+                      {this.state.errorInfo?.componentStack && (
+                        <>
+                          <div className="font-bold mt-3 mb-2">Component Stack:</div>
+                          {this.state.errorInfo.componentStack}
+                        </>
+                      )}
+                      {this.state.error.stack && (
+                        <>
+                          <div className="font-bold mt-3 mb-2">Stack:</div>
+                          {this.state.error.stack}
+                        </>
+                      )}
+                    </pre>
+                  </details>
+                )
               )}
 
               <div className="flex flex-col gap-2">
