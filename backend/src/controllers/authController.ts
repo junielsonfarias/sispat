@@ -380,8 +380,13 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    if (newPassword.length < 6) {
-      res.status(400).json({ error: 'Nova senha deve ter pelo menos 6 caracteres' });
+    // Política de senha forte (mesma regra de resetPassword)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      res.status(400).json({
+        error:
+          'Senha deve ter ao menos 12 caracteres incluindo: letras maiúsculas, minúsculas, números e símbolos (@$!%*?&)',
+      });
       return;
     }
 
@@ -486,8 +491,21 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       expiresAt,
     });
 
-    // TEMPORARIAMENTE DESABILITADO - Problema com Prisma Client
-    // await prisma.passwordResetToken.create({ ... })
+    // Invalida tokens anteriores não-usados do mesmo usuário (1 token vivo por vez)
+    await prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, used: false, expiresAt: { gt: new Date() } },
+      data: { used: true },
+    });
+
+    // Persiste o novo token
+    await prisma.passwordResetToken.create({
+      data: {
+        token: resetToken,
+        userId: user.id,
+        email: user.email,
+        expiresAt,
+      },
+    });
 
     const emailSent = await emailService.sendPasswordResetEmail(
       user.email,
@@ -498,6 +516,11 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
     if (!emailSent) {
       logError('❌ Falha ao enviar email de reset', undefined, { email: user.email });
+      // Email falhou — invalida o token recém-criado para não vazar
+      await prisma.passwordResetToken.updateMany({
+        where: { token: resetToken },
+        data: { used: true },
+      });
       res.status(500).json({
         error: 'Erro ao enviar email. Tente novamente mais tarde.',
       });
@@ -534,20 +557,34 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 export const validateResetToken = async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
-    logDebug('🔍 Validando token', { tokenLength: token.length });
+    if (!token) {
+      res.status(400).json({ error: 'Token não fornecido' });
+      return;
+    }
 
-    // TEMPORARIAMENTE DESABILITADO - Problema com Prisma Client
-    const resetToken = null;
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: {
+        user: {
+          select: { id: true, email: true, name: true, isActive: true },
+        },
+      },
+    });
 
-    if (!resetToken) {
+    if (!resetToken || resetToken.used || resetToken.expiresAt.getTime() < Date.now()) {
       res.status(400).json({ error: 'Token inválido ou expirado' });
+      return;
+    }
+
+    if (!resetToken.user.isActive) {
+      res.status(400).json({ error: 'Conta desativada — entre em contato com o administrador' });
       return;
     }
 
     res.json({
       valid: true,
-      email: 'funcionalidade-desabilitada@sispat.local',
-      name: 'Funcionalidade Temporariamente Desabilitada',
+      email: resetToken.user.email,
+      name: resetToken.user.name,
     });
   } catch (error) {
     logError('❌ Erro ao validar token', error);
@@ -571,19 +608,62 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
     if (!passwordRegex.test(password)) {
       res.status(400).json({
-        error: 'Senha deve incluir: letras maiúsculas, minúsculas, números e símbolos especiais (@$!%*?&)',
+        error:
+          'Senha deve ter ao menos 12 caracteres incluindo: letras maiúsculas, minúsculas, números e símbolos (@$!%*?&)',
       });
       return;
     }
 
-    // TEMPORARIAMENTE DESABILITADO - Problema com Prisma Client
-    const resetToken = null;
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
 
-    if (!resetToken) {
+    if (!resetToken || resetToken.used || resetToken.expiresAt.getTime() < Date.now()) {
       res.status(400).json({ error: 'Token inválido ou expirado' });
       return;
     }
+    if (!resetToken.user.isActive) {
+      res.status(400).json({ error: 'Conta desativada' });
+      return;
+    }
 
+    const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    // Troca senha + marca token como usado + revoga todos refresh tokens (force re-login)
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword },
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+      prisma.refreshToken.updateMany({
+        where: { userId: resetToken.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          userId: resetToken.userId,
+          action: 'RESET_PASSWORD',
+          entityType: 'USER',
+          entityId: resetToken.userId,
+          details: 'Senha redefinida via token de recuperação',
+          ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
+          userAgent: req.get('user-agent') || 'unknown',
+        },
+      });
+    } catch (logErr) {
+      logWarn('Falha ao registrar atividade de reset', { error: String(logErr) });
+    }
+
+    logInfo('✅ Senha resetada com sucesso', { userId: resetToken.userId });
     res.json({ message: 'Senha redefinida com sucesso' });
   } catch (error) {
     logError('❌ Erro ao resetar senha', error);

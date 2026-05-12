@@ -27,6 +27,7 @@ model User {
   labelTemplatesCreated LabelTemplate[] @relation("LabelTemplateCreator")
   patrimoniosCreated    Patrimonio[]    @relation("PatrimonioCreator")
   refreshTokens         RefreshToken[]
+  passwordResetTokens   PasswordResetToken[]
   municipality          Municipality    @relation(fields: [municipalityId], references: [id])
 
   @@index([email])
@@ -50,6 +51,25 @@ model RefreshToken {
   @@index([expiresAt])
   @@index([revokedAt])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  email     String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([email])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model Municipality {
@@ -226,6 +246,7 @@ model Imovel {
   fotos             String[]         @default([])
   documentos        String[]         @default([])
   url_documentos    String?
+  customFields      Json?            // Valores dos campos custom (ImovelCustomField.name → valor)
   createdAt         DateTime         @default(now())
   createdBy         String
   updatedAt         DateTime         @updatedAt
