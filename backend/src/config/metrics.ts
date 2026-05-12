@@ -290,24 +290,54 @@ export class MetricsCollector {
   }
 
   /**
-   * Obter métricas do banco de dados
+   * Obter métricas reais do banco de dados via pg_stat_*.
+   * Para Postgres local. Retorna zeros se o usuário do app não tiver
+   * acesso aos catalogs (raro — esses são públicos por default).
    */
-  private async getDatabaseMetrics(): Promise<any> {
+  private async getDatabaseMetrics(): Promise<{
+    connections: number;
+    queries: number;
+    slowQueries: number;
+    errors: number;
+  }> {
     try {
-      // Simular métricas do banco (em produção, usar ferramentas específicas)
-      return {
-        connections: Math.floor(Math.random() * 10) + 5,
-        queries: Math.floor(Math.random() * 100) + 50,
-        slowQueries: Math.floor(Math.random() * 5),
-        errors: Math.floor(Math.random() * 3)
+      // pg_stat_activity: conexões ativas para o database atual
+      const connRows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT count(*)::bigint AS count
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+      `;
+      const connections = Number(connRows?.[0]?.count ?? 0);
+
+      // pg_stat_database: query/error counters acumulados do database atual
+      const dbRows = await prisma.$queryRaw<
+        Array<{ xact_commit: bigint; xact_rollback: bigint }>
+      >`
+        SELECT xact_commit, xact_rollback
+        FROM pg_stat_database
+        WHERE datname = current_database()
+      `;
+      const queries = Number(dbRows?.[0]?.xact_commit ?? 0);
+      const errors = Number(dbRows?.[0]?.xact_rollback ?? 0);
+
+      // Slow queries: pg_stat_statements existe se a extension foi habilitada.
+      // Sem ela, reportamos 0 sem falhar.
+      let slowQueries = 0;
+      try {
+        const slowRows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+          SELECT count(*)::bigint AS count
+          FROM pg_stat_statements
+          WHERE mean_exec_time > 1000
+        `;
+        slowQueries = Number(slowRows?.[0]?.count ?? 0);
+      } catch {
+        // pg_stat_statements indisponível — ok
       }
+
+      return { connections, queries, slowQueries, errors };
     } catch (error) {
-      return {
-        connections: 0,
-        queries: 0,
-        slowQueries: 0,
-        errors: 1
-      }
+      logError('Erro ao coletar métricas do banco', { error });
+      return { connections: 0, queries: 0, slowQueries: 0, errors: 1 };
     }
   }
 
