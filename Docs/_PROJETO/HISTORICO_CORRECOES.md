@@ -120,6 +120,34 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 14: hardening do frontend (F1-F11)
+
+Implementação do bloco crítico + importante do `PLANO_FRONTEND.md`.
+
+**F1 — ErrorBoundary só mostra stack em dev**
+Antes vazava `error.stack`, `componentStack`, `error.toString()` ao usuário em prod. Agora exibe apenas "ID do erro" curto (base36 do timestamp); detalhes só em dev. `componentDidCatch` loga `error.message` em prod (não objeto completo).
+
+**F2 — CustomizationContext usa logger**
+Bloco `console.error('[DEV]...', error.response?.data)` rodava em prod e vazava IDs/schema. Substituído por `logger.warn` (curto) + `logger.debug` (detalhes só em dev).
+
+**F4 — Lazy load de jspdf/xlsx/html2canvas**
+Libs pesadas (~150KB gzip) saíram do bundle inicial. `PublicAssets` (primeira tela vista pelo público) e `ReportView` agora fazem `await import()` dentro dos handlers de exportação. Fallback de `ReportView` re-importa (libs já em cache do browser).
+
+**F3 — useConfirm hook substitui window.confirm**
+`window.confirm()` (nativo) era inconsistente visualmente, a11y irregular, alguns iOS bloqueiam por anti-popup. Novo `useConfirm()` + `ConfirmProvider` (Shadcn AlertDialog). Plugado em AppProviders. Substituído em Profile (logout-all) e BensCadastrados (delete, 2 lugares).
+
+**F9 — extractApiError() helper**
+Novo `src/lib/api-error.ts` com `extractApiError(err) → { message, status, kind, original }`. Kinds: validation/auth/forbidden/notFound/conflict/rateLimit/server/network/unknown. Defaults amigáveis em pt-BR. Lê `backendMsg` de `err.response.data.error/message`. Adoção incremental nos próximos sprints.
+
+**F10 — Toast antes do redirect de sessão expirada**
+http-api refresh interceptor agora exibe toast destructive "Sessão expirada — faça login novamente" antes do `window.location.href = '/login'`. Delay 600ms para o toast aparecer. Import dinâmico de `use-toast` evita acoplar axios.
+
+**F6 — Logout limpa React Query cache**
+`AuthContext.logout` chama `queryClient.clear()` antes do redirect. Evita vazamento de cache em PC compartilhado (mais robusto que reescrever todas as queryKeys com `municipalityId`).
+
+**F11 — useMemo em context values**
+`PatrimonioContext` e `SectorContext` (consumidos em ~20+ componentes cada) agora montam `value` via useMemo. Reduz re-renders em cascata. ImovelContext já estava memoizado.
+
 ### 2026-05-12 — Sprint 13: HttpOnly cookies + CSRF (defesa contra XSS)
 
 **Backend**
