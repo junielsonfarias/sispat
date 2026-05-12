@@ -294,6 +294,26 @@ export class MetricsCollector {
    * Para Postgres local. Retorna zeros se o usuário do app não tiver
    * acesso aos catalogs (raro — esses são públicos por default).
    */
+  // Cache: pg_stat_statements pode não estar habilitado. Detectamos uma vez
+  // por processo via pg_extension e cacheamos. Evita ruído de erro Prisma
+  // a cada coleta (15s).
+  private pgStatStatementsAvailable: boolean | null = null;
+
+  private async checkPgStatStatementsAvailable(): Promise<boolean> {
+    if (this.pgStatStatementsAvailable !== null) return this.pgStatStatementsAvailable;
+    try {
+      const rows = await prisma.$queryRaw<Array<{ exists: boolean }>>`
+        SELECT EXISTS (
+          SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'
+        ) AS exists
+      `;
+      this.pgStatStatementsAvailable = Boolean(rows?.[0]?.exists);
+    } catch {
+      this.pgStatStatementsAvailable = false;
+    }
+    return this.pgStatStatementsAvailable;
+  }
+
   private async getDatabaseMetrics(): Promise<{
     connections: number;
     queries: number;
@@ -320,18 +340,19 @@ export class MetricsCollector {
       const queries = Number(dbRows?.[0]?.xact_commit ?? 0);
       const errors = Number(dbRows?.[0]?.xact_rollback ?? 0);
 
-      // Slow queries: pg_stat_statements existe se a extension foi habilitada.
-      // Sem ela, reportamos 0 sem falhar.
+      // Slow queries só se a extension estiver instalada (pg_stat_statements)
       let slowQueries = 0;
-      try {
-        const slowRows = await prisma.$queryRaw<Array<{ count: bigint }>>`
-          SELECT count(*)::bigint AS count
-          FROM pg_stat_statements
-          WHERE mean_exec_time > 1000
-        `;
-        slowQueries = Number(slowRows?.[0]?.count ?? 0);
-      } catch {
-        // pg_stat_statements indisponível — ok
+      if (await this.checkPgStatStatementsAvailable()) {
+        try {
+          const slowRows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+            SELECT count(*)::bigint AS count
+            FROM pg_stat_statements
+            WHERE mean_exec_time > 1000
+          `;
+          slowQueries = Number(slowRows?.[0]?.count ?? 0);
+        } catch {
+          // já cacheamos antes; se chegou aqui é erro transitório
+        }
       }
 
       return { connections, queries, slowQueries, errors };
