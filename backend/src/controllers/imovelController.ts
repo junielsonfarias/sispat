@@ -244,6 +244,7 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
       documentos,
       url_documentos,
       sectorId,
+      customFields,
     } = req.body;
 
     logDebug('[CREATE IMOVEL] Campos extraídos', {
@@ -327,6 +328,7 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
           fotos: processedFotos,
           documentos: documentos || [],
           url_documentos,
+          customFields: customFields && typeof customFields === 'object' ? customFields : undefined,
           municipalityId: req.user?.municipalityId || '',
           sectorId: finalSectorId,
           createdBy: req.user?.userId || '',
@@ -421,32 +423,39 @@ export const updateImovel = async (req: Request, res: Response): Promise<void> =
       }
     }
 
-    // Preparar dados para atualização
-    const dataToUpdate: any = {
-      ...updateData,
+    // Whitelist de campos atualizáveis (evita mass-assignment de id/createdBy/etc)
+    const UPDATABLE_FIELDS = [
+      'denominacao', 'endereco', 'setor', 'descricao', 'observacoes',
+      'tipo_imovel', 'situacao', 'fotos', 'documentos', 'url_documentos',
+      'sectorId', 'customFields',
+    ] as const;
+    const dataToUpdate: Record<string, unknown> = {
       updatedBy: req.user.userId,
     };
+    for (const field of UPDATABLE_FIELDS) {
+      if (updateData[field] !== undefined) {
+        dataToUpdate[field] = updateData[field];
+      }
+    }
 
-    // Converter datas se necessário
+    // Conversões de tipo
     if (updateData.data_aquisicao) {
       dataToUpdate.data_aquisicao = new Date(updateData.data_aquisicao);
     }
-
-    // Converter valores numéricos
-    if (updateData.valor_aquisicao) {
+    if (updateData.valor_aquisicao !== undefined) {
       dataToUpdate.valor_aquisicao = parseFloat(updateData.valor_aquisicao);
     }
-    if (updateData.area_terreno) {
+    if (updateData.area_terreno !== undefined) {
       dataToUpdate.area_terreno = parseFloat(updateData.area_terreno);
     }
-    if (updateData.area_construida) {
+    if (updateData.area_construida !== undefined) {
       dataToUpdate.area_construida = parseFloat(updateData.area_construida);
     }
-    if (updateData.latitude) {
-      dataToUpdate.latitude = parseFloat(updateData.latitude);
+    if (updateData.latitude !== undefined) {
+      dataToUpdate.latitude = updateData.latitude === null ? null : parseFloat(updateData.latitude);
     }
-    if (updateData.longitude) {
-      dataToUpdate.longitude = parseFloat(updateData.longitude);
+    if (updateData.longitude !== undefined) {
+      dataToUpdate.longitude = updateData.longitude === null ? null : parseFloat(updateData.longitude);
     }
 
     // Atualizar usando transaction para garantir consistência
