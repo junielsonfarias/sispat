@@ -7,49 +7,48 @@ import {
   deleteUser,
 } from '../controllers/userController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, userValidations, queryValidations } from '../middlewares/validation';
-import { param } from 'express-validator';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createUserSchema,
+  updateUserSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
-// Todas as rotas precisam de autenticação
 router.use(authenticateToken);
 
-// GET /api/users - Listar usuários
-router.get('/', queryValidations.pagination, handleValidationErrors, getUsers);
+router.get(
+  '/',
+  zodValidate({ query: paginationQuerySchema }),
+  getUsers,
+);
 
-// GET /api/users/:id - Buscar usuário por ID
 router.get(
   '/:id',
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   getUserById,
 );
 
-// POST /api/users - Criar usuário (superuser e supervisor)
 router.post(
   '/',
   authorize('superuser', 'supervisor'),
-  userValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createUserSchema }),
   createUser,
 );
 
-// PUT /api/users/:id - Atualizar usuário (superuser e supervisor)
 router.put(
   '/:id',
   authorize('superuser', 'supervisor'),
-  userValidations.update,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: updateUserSchema }),
   updateUser,
 );
 
-// DELETE /api/users/:id - Deletar usuário (superuser e supervisor)
 router.delete(
   '/:id',
   authorize('superuser', 'supervisor'),
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteUser,
 );
 

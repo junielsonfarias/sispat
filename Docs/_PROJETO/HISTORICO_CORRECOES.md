@@ -90,6 +90,68 @@
 
 ## 2026
 
+### 2026-05-12 — Sprint 20: shared schemas para user + sector + local + tipoBem
+
+Expansão do padrão `@sispat/shared` (Sprint 19) para 4 domínios de configuração: usuários, setores, locais e tipos de bens. Quatro rotas backend migradas do `express-validator + handleValidationErrors` para `zodValidate + schema do @sispat/shared`.
+
+**Mesma divergência da Sprint 19, agora em users**
+
+`userValidations.create` exigia min 8 chars + símbolo. `userController.createUser:141-149` exigia min 12 chars + símbolo. Mesmo problema do auth: o middleware aceitava o que o controller depois rejeitava. Consolidado no shared via `createUserSchema` que reusa `STRONG_PASSWORD_REGEX` do `@sispat/shared`. Removidas as 16 linhas de validação hardcoded em `userController.createUser` — agora redundante.
+
+**Novos schemas em `shared/src/schemas/`**
+
+- `common.ts`:
+  - `uuidParamSchema` — valida `{ id }` UUID. Reutilizável em qualquer rota com path param `:id`.
+  - `paginationQuerySchema` — `page`/`limit`/`search`/`sortBy`/`sortOrder` opcionais, com `z.coerce.number()` (query string vira inteiro).
+- `user.ts`:
+  - `userRoleSchema` — `z.enum(['superuser', 'admin', 'supervisor', 'usuario', 'visualizador'])`. Fonte única do enum de papéis (antes vivia hardcoded em 4+ lugares).
+  - `createUserSchema` — name + email + senha forte + role + responsibleSectors opcional.
+  - `updateUserSchema` — strict (rejeita campos extras), todos opcionais, **não aceita password** (fluxo dedicado existe em /auth/change-password).
+- `sector.ts`: create/update com nome+codigo (regex uppercase) + campos descritivos opcionais (sigla, endereco, cnpj, responsavel, parentId UUID).
+- `local.ts`: create/update com nome + descricao + sectorId UUID obrigatório no create, opcional no update.
+- `tipoBem.ts`: create/update com nome + descricao + vidaUtilPadrao (1-100) + taxaDepreciacao (0-100) com `z.coerce` para aceitar strings da query.
+
+**Rotas migradas**
+
+`userRoutes`, `sectorsRoutes`, `locaisRoutes`, `tiposBensRoutes` — 5 endpoints cada (list/getById/create/update/delete). Total: 20 endpoints. Padrão consistente:
+```ts
+router.get('/', zodValidate({ query: paginationQuerySchema }), ctrl);
+router.get('/:id', zodValidate({ params: uuidParamSchema }), ctrl);
+router.post('/', authorize(...), zodValidate({ body: createXSchema }), ctrl);
+router.put('/:id', authorize(...), zodValidate({ params: uuidParamSchema, body: updateXSchema }), ctrl);
+router.delete('/:id', authorize(...), zodValidate({ params: uuidParamSchema }), ctrl);
+```
+
+**Limpeza de `validation.ts`**
+
+Removidos blocos `userValidations`, `sectorValidations`, `localValidations`, `tipoBemValidations` (~245 linhas). `validation.ts` reduziu de **1066 → 814** linhas (-252). Restam: patrimonio, imovel, inventario, transfer, manutencao, notification, customization, document, labelTemplate, formaAquisicao, emprestimo, queryValidations.
+
+**Testes**
+
+28 testes novos em `backend/src/__tests__/shared/sharedSchemas.test.ts`:
+- common: UUID válido/inválido, paginação com coerce + clamps.
+- user: 5 papéis válidos, senha 8 chars rejeitada, senha forte aceita, update strict rejeitando campos extras.
+- sector: codigo uppercase obrigatório, parentId UUID, strict update.
+- local: sectorId UUID obrigatório no create.
+- tipoBem: vidaUtilPadrao inteiro 1-100, taxaDepreciacao 0-100, coerce de strings.
+
+Resultado: **117/117 testes backend passam** (89 do Sprint 19 + 28 novos).
+
+**Frontend (deferido)**
+
+`src/pages/Admin/TipoBemManagement.tsx` tem schema Zod próprio com limites mais restritivos (nome max 50 vs 100 do backend, descricao max 200 vs 500) e campo `ativo` que não vai para o backend. Reconciliação dessas divergências fica para Sprint 21 (junto com migração de patrimonio/imovel que têm schemas mais complexos).
+
+**Métrica**
+
+| | Antes | Depois |
+|---|------:|------:|
+| Lugares com enum de role | 4+ | 1 (`userRoleSchema`) |
+| `validation.ts` (linhas) | 1066 | 814 |
+| Schemas Zod compartilhados | 8 (auth) | 21 (auth + common + user + sector + local + tipoBem) |
+| Testes shared | 10 | 38 |
+
+- **Lição:** quando um middleware aceita o que o controller depois rejeita, a culpa é da divergência de regra — não do controller. Centralizar primeiro, depois pode-se até remover validações hardcoded duplicadas.
+
 ### 2026-05-12 — Sprint 19: schemas Zod compartilhados frontend↔backend (PoC auth)
 
 Endereçando o item **P2 #13** do PLANO_CORRECOES (e pendência reconhecida desde o Sprint 16). Frontend usava Zod nas páginas, backend usava `express-validator` em `middlewares/validation.ts` — duas árvores de regras em paralelo, com divergências reais.

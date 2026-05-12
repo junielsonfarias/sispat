@@ -7,43 +7,48 @@ import {
   deleteSector,
 } from '../controllers/sectorsController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, sectorValidations, queryValidations } from '../middlewares/validation';
-import { param } from 'express-validator';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createSectorSchema,
+  updateSectorSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/', queryValidations.pagination, handleValidationErrors, getSectors);
+router.get(
+  '/',
+  zodValidate({ query: paginationQuerySchema }),
+  getSectors,
+);
 
 router.get(
   '/:id',
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   getSectorById,
 );
 
 router.post(
   '/',
   authorize('superuser', 'supervisor'),
-  sectorValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createSectorSchema }),
   createSector,
 );
 
 router.put(
   '/:id',
   authorize('superuser', 'supervisor'),
-  sectorValidations.update,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: updateSectorSchema }),
   updateSector,
 );
 
 router.delete(
   '/:id',
   authorize('superuser', 'supervisor'),
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteSector,
 );
 

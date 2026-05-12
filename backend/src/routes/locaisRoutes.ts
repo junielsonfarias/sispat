@@ -7,43 +7,48 @@ import {
   deleteLocal,
 } from '../controllers/locaisController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, localValidations, queryValidations } from '../middlewares/validation';
-import { param } from 'express-validator';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createLocalSchema,
+  updateLocalSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/', queryValidations.pagination, handleValidationErrors, getLocais);
+router.get(
+  '/',
+  zodValidate({ query: paginationQuerySchema }),
+  getLocais,
+);
 
 router.get(
   '/:id',
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   getLocalById,
 );
 
 router.post(
   '/',
   authorize('superuser', 'supervisor'),
-  localValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createLocalSchema }),
   createLocal,
 );
 
 router.put(
   '/:id',
   authorize('superuser', 'supervisor'),
-  localValidations.update,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: updateLocalSchema }),
   updateLocal,
 );
 
 router.delete(
   '/:id',
   authorize('superuser', 'supervisor'),
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteLocal,
 );
 

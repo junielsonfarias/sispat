@@ -15,3 +15,8 @@
 
 export * from './rules/password';
 export * from './schemas/auth';
+export * from './schemas/common';
+export * from './schemas/user';
+export * from './schemas/sector';
+export * from './schemas/local';
+export * from './schemas/tipoBem';

@@ -7,43 +7,48 @@ import {
   deleteTipoBem,
 } from '../controllers/tiposBensController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, tipoBemValidations, queryValidations } from '../middlewares/validation';
-import { param } from 'express-validator';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createTipoBemSchema,
+  updateTipoBemSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/', queryValidations.pagination, handleValidationErrors, getTiposBens);
+router.get(
+  '/',
+  zodValidate({ query: paginationQuerySchema }),
+  getTiposBens,
+);
 
 router.get(
   '/:id',
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   getTipoBemById,
 );
 
 router.post(
   '/',
   authorize('superuser', 'supervisor'),
-  tipoBemValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createTipoBemSchema }),
   createTipoBem,
 );
 
 router.put(
   '/:id',
   authorize('superuser', 'supervisor'),
-  tipoBemValidations.update,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: updateTipoBemSchema }),
   updateTipoBem,
 );
 
 router.delete(
   '/:id',
   authorize('superuser', 'supervisor'),
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteTipoBem,
 );
 
