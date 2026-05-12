@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { generateLogoUrl, generateBackgroundUrl } from '@/lib/image-utils'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 export interface CustomizationSettings {
   activeLogoUrl: string
@@ -135,22 +136,20 @@ export const CustomizationProvider = ({
 
   const saveSettings = useCallback(
     async (newSettings: CustomizationSettings) => {
-      console.log('[DEV] 💾 CustomizationContext: Salvando configurações...');
-      console.log('[DEV] 📋 Dados a salvar:', newSettings);
-      
+      logger.debug('CustomizationContext: Salvando configurações...', { newSettings });
+
       try {
         // Salvar no banco de dados
-        console.log('[DEV] 🌐 Enviando PUT /customization...');
+        logger.debug('Enviando PUT /customization...');
         const response = await api.put('/customization', newSettings);
-        console.log('[DEV] ✅ Resposta do backend:', response);
-        console.log('✅ Customização salva no banco de dados');
-        
+        logger.debug('Customização salva no banco de dados', { response });
+
         // Atualizar estado local
         setSettings(newSettings)
-        
+
         // Manter backup no localStorage
         localStorage.setItem('sispat_customization_settings', JSON.stringify(newSettings))
-        console.log('[DEV] 💾 Backup salvo no localStorage');
+        logger.debug('Backup salvo no localStorage');
       } catch (error: any) {
         console.error('[DEV] ❌ ERRO DETALHADO ao salvar customização:');
         console.error('   Tipo:', error.constructor.name);
@@ -172,7 +171,7 @@ export const CustomizationProvider = ({
     try {
       // Resetar no banco de dados
       await api.post('/customization/reset', {})
-      console.log('✅ Customização resetada no banco de dados')
+      logger.debug('Customização resetada no banco de dados')
       
       // Atualizar estado local
       setSettings(defaultSettings)

@@ -13,6 +13,7 @@ import {
 import { Note, Patrimonio } from '@/types'
 import { formatRelativeDate, generateId } from '@/lib/utils'
 import { Loader2, Send } from 'lucide-react'
+import { logger } from '@/lib/logger'
 import { toast } from '@/hooks/use-toast'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { api } from '@/services/api-adapter'
@@ -34,7 +35,7 @@ export const BensNotesDialog = ({
   const handleAddNote = async () => {
     if (!newNote.trim() || !user) return
     
-    console.log('🔍 [DEBUG] BensNotesDialog - Salvando nota:', {
+    logger.debug('BensNotesDialog - Salvando nota', {
       patrimonioId: patrimonio.id,
       texto: newNote.trim(),
       userId: user.id
@@ -48,7 +49,7 @@ export const BensNotesDialog = ({
         text: newNote.trim()
       })
 
-      console.log('✅ [DEBUG] BensNotesDialog - Resposta da API:', response)
+      logger.debug('BensNotesDialog - Resposta da API', { response })
 
       const noteData = response.note || response
 
@@ -61,7 +62,7 @@ export const BensNotesDialog = ({
         userName: noteData.userName,
       }
 
-      console.log('✅ [DEBUG] BensNotesDialog - Nota mapeada:', newNoteEntry)
+      logger.debug('BensNotesDialog - Nota mapeada', { newNoteEntry })
 
       const updatedPatrimonio = {
         ...patrimonio,

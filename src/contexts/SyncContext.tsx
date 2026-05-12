@@ -12,6 +12,7 @@ import { useActivityLog } from './ActivityLogContext'
 import { usePatrimonio } from './PatrimonioContext'
 import { api } from '@/services/api-adapter'
 import { Patrimonio } from '@/types'
+import { logger } from '@/lib/logger'
 
 interface SyncContextType {
   isSyncing: boolean
@@ -79,7 +80,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       // Extrair os patrimônios da resposta (pode vir como array direto ou objeto)
       const updatedPatrimonios = Array.isArray(response) ? response : (response.patrimonios || [])
       
-      console.log('✅ Sincronização: Recebidos', updatedPatrimonios.length, 'patrimônios do servidor')
+      logger.debug('Sincronização: Recebidos patrimônios do servidor', { count: updatedPatrimonios.length })
       
       // Atualizar o estado com os dados do servidor de forma simples
       if (Array.isArray(updatedPatrimonios)) {

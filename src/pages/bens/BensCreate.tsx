@@ -45,6 +45,7 @@ import { generatePatrimonialNumber } from '@/lib/asset-utils'
 import { patrimonioCreateSchema } from '@/lib/validations/patrimonioSchema'
 import { Label } from '@/components/ui/label'
 import { generateSubPatrimonios } from '@/lib/sub-patrimonio-utils'
+import { logger } from '@/lib/logger'
 
 type PatrimonioFormValues = z.infer<typeof patrimonioCreateSchema>
 
@@ -127,8 +128,7 @@ const BensCreate = () => {
         setGeneratedNumber(nextNumber)
       } catch (error) {
         console.error('Erro ao gerar número de patrimônio:', error)
-        console.log('Setor selecionado:', selectedSector)
-        console.log('Código do setor:', selectedSector.codigo)
+        logger.debug('Setor selecionado', { selectedSector, codigo: selectedSector.codigo })
         setGeneratedNumber(null)
         toast({
           variant: 'destructive',
@@ -241,7 +241,7 @@ const BensCreate = () => {
           )
           
           // Em produção, aqui seria feita a chamada para a API para salvar os sub-patrimônios
-          console.log('Sub-patrimônios gerados:', subPatrimonios)
+          logger.debug('Sub-patrimônios gerados', { subPatrimonios })
           
           logActivity('SUB_PATRIMONIOS_CREATE', {
             record_id: newPatrimonio.id,

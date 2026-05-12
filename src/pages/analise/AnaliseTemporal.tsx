@@ -14,6 +14,7 @@ import {
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { formatDate } from '@/lib/utils'
 import { useSectorFilter } from '@/hooks/useSectorFilter'
+import { logger } from '@/lib/logger'
 
 const AnaliseTemporal = () => {
   const { patrimonios } = usePatrimonio()
@@ -29,7 +30,7 @@ const AnaliseTemporal = () => {
 
     // ✅ CORREÇÃO: Filtrar patrimônios por setor do usuário
     const filteredPatrimonios = filterPatrimonios(patrimonios)
-    console.log('🔍 [AnaliseTemporal] Patrimônios filtrados:', {
+    logger.debug('[AnaliseTemporal] Patrimônios filtrados', {
       total: patrimonios.length,
       filtrados: filteredPatrimonios.length,
       accessInfo
@@ -48,7 +49,7 @@ const AnaliseTemporal = () => {
       }))
     })
 
-    console.log('🔍 [AnaliseTemporal] Eventos encontrados:', events.length)
+    logger.debug('[AnaliseTemporal] Eventos encontrados', { count: events.length })
 
     return events
       .filter((event) => event && event.date) // ✅ Filtrar eventos válidos

@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { useAuth } from './useAuth'
 import { toast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 export interface WebSocketEvents {
   // Métricas em tempo real
@@ -143,7 +144,7 @@ export const useWebSocket = (): WebSocketHook => {
 
       // Event listeners
       socket.on('connect', () => {
-        console.log('🔌 WebSocket conectado')
+        logger.debug('WebSocket conectado')
         setState(prev => ({
           ...prev,
           isConnected: true,
@@ -154,7 +155,7 @@ export const useWebSocket = (): WebSocketHook => {
       })
 
       socket.on('disconnect', (reason) => {
-        console.log('🔌 WebSocket desconectado:', reason)
+        logger.debug('WebSocket desconectado', { reason })
         setState(prev => ({
           ...prev,
           isConnected: false,

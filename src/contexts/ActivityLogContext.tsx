@@ -9,6 +9,7 @@ import {
 import { ActivityLogAction } from '@/types'
 import { api } from '@/services/api-adapter'
 import { useAuth } from './AuthContext'
+import { logger } from '@/lib/logger'
 
 interface ActivityLogEntry {
   id: string
@@ -85,9 +86,7 @@ export const ActivityLogProvider = ({ children }: { children: ReactNode }) => {
         })
       } catch (error) {
         // Failed to log activity - log locally as fallback
-        if (import.meta.env.DEV) {
-          console.log('Activity logged (fallback):', { action, ...details })
-        }
+        logger.debug('Activity logged (fallback)', { action, ...details })
       }
     },
     [],

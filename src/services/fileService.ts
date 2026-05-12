@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { generateId } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 // ✅ Usar URL do backend configurada ou fallback para localhost
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
@@ -19,10 +20,7 @@ export const uploadFile = async (
   userId: string,
 ) => {
   try {
-    // ✅ Logs apenas em desenvolvimento
-    if (import.meta.env.DEV) {
-      console.log('📤 [V3] Iniciando upload para:', `${BACKEND_URL}/api/upload/single`)
-    }
+    logger.debug('[V3] Iniciando upload', { url: `${BACKEND_URL}/api/upload/single` })
 
     const formData = new FormData()
     formData.append('file', file)
@@ -44,9 +42,7 @@ export const uploadFile = async (
       }
     )
 
-    if (import.meta.env.DEV) {
-      console.log('📦 [V3] Resposta:', response.data)
-    }
+    logger.debug('[V3] Resposta', { data: response.data })
 
     if (!response.data || !response.data.file_url) {
       if (import.meta.env.DEV) {
@@ -55,9 +51,7 @@ export const uploadFile = async (
       throw new Error('Backend não retornou file_url')
     }
 
-    if (import.meta.env.DEV) {
-      console.log('✅ [V3] Upload concluído!')
-    }
+    logger.debug('[V3] Upload concluído!')
     
     // Retornar os metadados do arquivo
     return response.data
@@ -75,10 +69,7 @@ export const uploadMultipleFiles = async (
   userId: string,
 ) => {
   try {
-    // ✅ Logs apenas em desenvolvimento
-    if (import.meta.env.DEV) {
-      console.log(`📤 [V3] Iniciando upload de ${files.length} arquivos`)
-    }
+    logger.debug('[V3] Iniciando upload múltiplo', { count: files.length })
 
     const formData = new FormData()
     files.forEach((file) => {
@@ -103,9 +94,7 @@ export const uploadMultipleFiles = async (
 
     const filesMetadata = response.data.files || response.data
 
-    if (import.meta.env.DEV) {
-      console.log(`✅ [V3] ${filesMetadata.length} arquivo(s) enviado(s)`)
-    }
+    logger.debug('[V3] Arquivos enviados', { count: filesMetadata.length })
 
     return filesMetadata
   } catch (error) {
@@ -122,16 +111,11 @@ export const getFilesForAsset = async (assetId: string) => {
 
 export const deleteFile = async (fileId: string, fileUrl: string) => {
   try {
-    // ✅ Logs apenas em desenvolvimento
-    if (import.meta.env.DEV) {
-      console.log('🗑️ [V3] Solicitação para deletar:', { fileId, fileUrl })
-    }
+    logger.debug('[V3] Solicitação para deletar', { fileId, fileUrl })
 
     // ✅ Ignorar URLs blob
     if (fileUrl.startsWith('blob:')) {
-      if (import.meta.env.DEV) {
-        console.log('⚠️ [V3] URL blob - ignorando')
-      }
+      logger.debug('[V3] URL blob - ignorando')
       return
     }
 
@@ -155,9 +139,7 @@ export const deleteFile = async (fileId: string, fileUrl: string) => {
 
     const token = getAuthToken()
 
-    if (import.meta.env.DEV) {
-      console.log('🗑️ [V3] Deletando arquivo:', { filename, url: `${BACKEND_URL}/api/upload/${filename}` })
-    }
+    logger.debug('[V3] Deletando arquivo', { filename, url: `${BACKEND_URL}/api/upload/${filename}` })
 
     await axios.delete(
       `${BACKEND_URL}/api/upload/${filename}`,
@@ -168,15 +150,11 @@ export const deleteFile = async (fileId: string, fileUrl: string) => {
       }
     )
 
-    if (import.meta.env.DEV) {
-      console.log('✅ [V3] Arquivo deletado com sucesso')
-    }
+    logger.debug('[V3] Arquivo deletado com sucesso')
   } catch (error: any) {
     // ✅ Ignorar 404 (arquivo já não existe) e 405 (método não permitido - pode ser que arquivo já foi deletado)
     if (error?.response?.status === 404 || error?.response?.status === 405) {
-      if (import.meta.env.DEV) {
-        console.log(`⚠️ [V3] Arquivo não existe ou método não permitido (${error?.response?.status}) - OK`)
-      }
+      logger.debug('[V3] Arquivo não existe ou método não permitido - OK', { status: error?.response?.status })
       return
     }
     

@@ -10,6 +10,7 @@ import { Sector } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 interface SectorContextType {
   sectors: Sector[]
@@ -34,20 +35,14 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchSectors = useCallback(async () => {
     if (!user) return
-    if (import.meta.env.DEV) {
-      console.log('🔍 SectorContext: Iniciando busca de setores...')
-    }
+    logger.debug('SectorContext: Iniciando busca de setores...')
     setIsLoading(true)
     try {
       const response = await api.get<{ sectors: Sector[]; pagination: any }>('/sectors')
-      if (import.meta.env.DEV) {
-        console.log('🔍 SectorContext: Resposta da API:', response)
-      }
+      logger.debug('SectorContext: Resposta da API', { response })
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade sectors
       const sectorsData = Array.isArray(response) ? response : (response.sectors || [])
-      if (import.meta.env.DEV) {
-        console.log('🔍 SectorContext: Setores carregados:', sectorsData.length)
-      }
+      logger.debug('SectorContext: Setores carregados', { count: sectorsData.length })
       setSectors(sectorsData)
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -56,9 +51,7 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
-        if (import.meta.env.DEV) {
-          console.log('⚠️  Backend não disponível - usando lista vazia de setores')
-        }
+        logger.debug('Backend não disponível - usando lista vazia de setores')
         setSectors([])
       } else {
         toast({
@@ -101,19 +94,12 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
     id: string,
     data: Omit<Sector, 'id' | 'municipalityId'>,
   ) => {
-    if (import.meta.env.DEV) {
-      console.log('[DEV] 🔄 SectorContext.updateSector chamado:', {
-        id,
-        dadosEnviados: data,
-      });
-    }
-    
+    logger.debug('SectorContext.updateSector chamado', { id, dadosEnviados: data });
+
     try {
       const updatedSector = await api.put<Sector>(`/sectors/${id}`, data)
-      
-      if (import.meta.env.DEV) {
-        console.log('[DEV] ✅ SectorContext: Resposta do backend:', updatedSector);
-      }
+
+      logger.debug('SectorContext: Resposta do backend', { updatedSector });
       
       setSectors((prev) => prev.map((s) => (s.id === id ? updatedSector : s)))
       toast({ description: 'Setor atualizado com sucesso.' })

@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { logger } from '@/lib/logger';
 
 // URL base da API
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -34,12 +35,9 @@ axiosInstance.interceptors.request.use(
       }
       
       // ✅ Logs apenas em desenvolvimento (sem expor tokens)
-      if (import.meta.env.DEV) {
-        const hasToken = !!tokenData;
-        console.log(`[HTTP] ${config.method?.toUpperCase()} ${config.url} - Token: ${hasToken ? 'presente' : 'ausente'}`);
-      }
-    } else if (import.meta.env.DEV) {
-      console.log(`[HTTP] ${config.method?.toUpperCase()} ${config.url} - Rota pública`);
+      logger.debug(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`, { token: !!tokenData ? 'presente' : 'ausente' });
+    } else {
+      logger.debug(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`, { rota: 'pública' });
     }
     
     return config;
@@ -52,10 +50,7 @@ axiosInstance.interceptors.request.use(
 // Interceptor de resposta para lidar com erros
 axiosInstance.interceptors.response.use(
   (response) => {
-    // ✅ Logs apenas em desenvolvimento
-    if (import.meta.env.DEV) {
-      console.log(`[HTTP] ✅ ${response.status} ${response.config.url}`);
-    }
+    logger.debug(`[HTTP] ${response.status} ${response.config.url}`);
     return response;
   },
   async (error) => {

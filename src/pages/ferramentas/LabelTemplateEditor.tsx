@@ -30,6 +30,7 @@ import { LabelPreview } from '@/components/LabelPreview'
 import { useAuth } from '@/hooks/useAuth'
 import { LabelElementProperties } from '@/components/admin/LabelElementProperties'
 import { Label } from '@/components/ui/label'
+import { logger } from '@/lib/logger'
 
 const LabelTemplateEditor = () => {
   const { templateId } = useParams()
@@ -37,7 +38,7 @@ const LabelTemplateEditor = () => {
   const { user } = useAuth()
   const { getTemplateById, saveTemplate, templates } = useLabelTemplates()
   
-  console.log('LabelTemplateEditor render:', { templateId, user, templates: templates.length })
+  logger.debug('LabelTemplateEditor render', { templateId, user, templates: templates.length })
   const [template, setTemplate] = useState<LabelTemplate | null>(null)
   const [selectedElement, setSelectedElement] = useState<LabelElement | null>(
     null,
@@ -75,12 +76,12 @@ const LabelTemplateEditor = () => {
   }
 
   useEffect(() => {
-    console.log('LabelTemplateEditor useEffect:', { templateId, user, municipalityId: user?.municipalityId })
+    logger.debug('LabelTemplateEditor useEffect', { templateId, user, municipalityId: user?.municipalityId })
     
     if (templateId) {
       if (templateId === 'novo') {
         if (!user?.municipalityId) {
-          console.log('User municipalityId not found, using default...')
+          logger.debug('User municipalityId not found, using default...')
           // Usar um ID padrão se não houver municipalityId
           setTemplate({
             id: generateId(),
@@ -92,7 +93,7 @@ const LabelTemplateEditor = () => {
           })
           return
         }
-        console.log('Creating new template with municipalityId:', user.municipalityId)
+        logger.debug('Creating new template with municipalityId', { municipalityId: user.municipalityId })
         setTemplate({
           id: generateId(),
           name: 'Novo Modelo de Etiqueta',
@@ -102,13 +103,13 @@ const LabelTemplateEditor = () => {
           municipalityId: user.municipalityId,
         })
       } else {
-        console.log('Loading existing template:', templateId)
+        logger.debug('Loading existing template', { templateId })
         const existingTemplate = getTemplateById(templateId)
         if (existingTemplate) {
-          console.log('Template found, setting template')
+          logger.debug('Template found, setting template')
           setTemplate(JSON.parse(JSON.stringify(existingTemplate)))
         } else {
-          console.log('Template not found, navigating back')
+          logger.debug('Template not found, navigating back')
           navigate('/etiquetas/templates')
         }
       }
@@ -116,9 +117,9 @@ const LabelTemplateEditor = () => {
   }, [templateId, getTemplateById, navigate, user])
 
   const handleSave = async () => {
-    console.log('handleSave called with template:', template)
+    logger.debug('handleSave called', { template })
     if (!template) {
-      console.log('No template to save')
+      logger.debug('No template to save')
       toast({
         title: 'Erro',
         description: 'Nenhum template para salvar.',
@@ -139,7 +140,7 @@ const LabelTemplateEditor = () => {
     
     try {
       setSaving(true)
-      console.log('Calling saveTemplate...')
+      logger.debug('Calling saveTemplate...')
       await saveTemplate(template)
       toast({ 
         title: 'Sucesso!',
@@ -204,7 +205,7 @@ const LabelTemplateEditor = () => {
   }
 
   if (!template) {
-    console.log('Template not loaded yet:', { templateId, user, templates: templates.length })
+    logger.debug('Template not loaded yet', { templateId, user, templates: templates.length })
     return <div>Carregando editor...</div>
   }
 

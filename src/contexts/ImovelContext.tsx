@@ -11,6 +11,7 @@ import { Imovel, User } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 interface ImovelContextType {
   imoveis: Imovel[]
@@ -63,12 +64,12 @@ export const ImovelProvider = ({ children }: { children: ReactNode }) => {
 
   const addImovel = useCallback(
     async (data: Omit<Imovel, 'id' | 'historico'>, user: User) => {
-      console.log('📝 ImovelContext: Criando imóvel:', data)
-      
+      logger.debug('ImovelContext: Criando imóvel', { data })
+
       // Enviar dados diretamente, não dentro de objeto { data, user }
       const newImovel = await api.post<Imovel>('/imoveis', data)
-      
-      console.log('✅ ImovelContext: Imóvel criado:', newImovel)
+
+      logger.debug('ImovelContext: Imóvel criado', { newImovel })
       
       // ✅ PERFORMANCE: Adicionar à lista local (sem refetch completo)
       setAllImoveis((prev) => [...prev, newImovel])
@@ -81,12 +82,12 @@ export const ImovelProvider = ({ children }: { children: ReactNode }) => {
 
   const updateImovel = useCallback(
     async (id: string, data: Partial<Imovel>, user: User) => {
-      console.log('📝 ImovelContext: Atualizando imóvel:', { id, data })
-      
+      logger.debug('ImovelContext: Atualizando imóvel', { id, data })
+
       // Enviar dados diretamente
       const updatedImovel = await api.put<Imovel>(`/imoveis/${id}`, data)
-      
-      console.log('✅ ImovelContext: Imóvel atualizado:', updatedImovel)
+
+      logger.debug('ImovelContext: Imóvel atualizado', { updatedImovel })
       
       setAllImoveis((prev) =>
         prev.map((i) => (i.id === id ? updatedImovel : i)),

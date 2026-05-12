@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { CameraCapture } from '@/components/bens/CameraCapture'
 import { uploadFile, deleteFile } from '@/services/fileService'
 import { useAuth } from '@/contexts/AuthContext'
+import { logger } from '@/lib/logger'
 
 interface ImageUploadProps {
   name: string
@@ -34,7 +35,7 @@ export const ImageUpload = ({
     async (filesToUpload: File[]) => {
       if (filesToUpload.length === 0 || !user) return
 
-      console.log('📸 ImageUpload - processFiles chamado:', {
+      logger.debug('ImageUpload - processFiles chamado', {
         filesToUpload: filesToUpload.length,
         filesAtuais: files?.length || 0,
         maxFiles,
@@ -51,7 +52,7 @@ export const ImageUpload = ({
 
       for (const file of filesToUpload) {
         try {
-          console.log('⬆️ ImageUpload - Processando:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+          logger.debug('ImageUpload - Processando', { name: file.name, sizeMB: (file.size / 1024 / 1024).toFixed(2) })
           
           // ✅ Comprimir imagem antes do upload
           let fileToUpload = file
@@ -60,10 +61,10 @@ export const ImageUpload = ({
             fileToUpload = await compressImage(file)
           }
           
-          console.log('⬆️ ImageUpload - Fazendo upload:', fileToUpload.name)
+          logger.debug('ImageUpload - Fazendo upload', { name: fileToUpload.name })
           const newFile = await uploadFile(fileToUpload, assetId, user.id)
-          console.log('✅ ImageUpload - Upload concluído:', newFile)
-          console.log('📦 ImageUpload - Files antes de adicionar:', files)
+          logger.debug('ImageUpload - Upload concluído', { newFile })
+          logger.debug('ImageUpload - Files antes de adicionar', { files })
           
           // ✅ CORREÇÃO: Adicionar o objeto completo (com id, file_url, file_name)
           const fileMetadata = {
@@ -73,7 +74,7 @@ export const ImageUpload = ({
           }
           
           const updatedFiles = [...(files || []), fileMetadata]
-          console.log('📦 ImageUpload - Files após adicionar (objetos completos):', updatedFiles)
+          logger.debug('ImageUpload - Files após adicionar (objetos completos)', { updatedFiles })
           onChange(updatedFiles)
         } catch (error) {
           console.error('❌ ImageUpload - Erro no upload:', error)

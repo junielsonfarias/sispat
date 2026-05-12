@@ -32,6 +32,7 @@ import {
   SearchableSelectOption,
 } from '@/components/ui/searchable-select'
 import { Loader2 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 
 const createSchema = z
   .object({
@@ -113,16 +114,17 @@ export default function InventarioCreate() {
   }))
 
   const onSubmit = async (data: CreateFormValues) => {
-    console.log('🔍 [DEBUG] Formulário submetido com dados:', data)
+    logger.debug('Formulário submetido', { data })
     setIsLoading(true)
-    
+
     try {
-      console.log('🔍 [DEBUG] Chamando createInventory...')
+      logger.debug('Chamando createInventory...')
       const newInventory = await createInventory(data)
-      console.log('✅ [DEBUG] Inventário criado com sucesso:', newInventory)
-      console.log('✅ [DEBUG] Tipo do objeto:', typeof newInventory)
-      console.log('✅ [DEBUG] ID presente?', newInventory?.id)
-      console.log('✅ [DEBUG] Estrutura completa:', JSON.stringify(newInventory, null, 2))
+      logger.debug('Inventário criado com sucesso', {
+        newInventory,
+        tipo: typeof newInventory,
+        idPresente: newInventory?.id,
+      })
       
       // ✅ Verificar se o inventário foi criado corretamente
       if (!newInventory) {
@@ -146,7 +148,7 @@ export default function InventarioCreate() {
         return
       }
       
-      console.log('✅ [DEBUG] Navegando para:', `/inventarios/${newInventory.id}`)
+      logger.debug('Navegando para', { url: `/inventarios/${newInventory.id}` })
       toast({
         title: 'Sucesso',
         description: 'Inventário criado com sucesso!',

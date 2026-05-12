@@ -4,6 +4,7 @@ import { formatCurrency, formatDate, getCloudImageUrl } from '@/lib/utils'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { LazyImage } from '@/components/ui/lazy-image'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
+import { logger } from '@/lib/logger'
 
 interface BensPrintFormProps {
   patrimonio: Patrimonio
@@ -15,7 +16,7 @@ export const BensPrintForm = forwardRef<HTMLDivElement, BensPrintFormProps>(
     const { settings } = useCustomization()
     // Usar configurações globais do sistema
 
-    console.log('BensPrintForm renderizado:', { patrimonio: patrimonio?.numero_patrimonio, fieldsToPrint })
+    logger.debug('BensPrintForm renderizado', { patrimonio: patrimonio?.numero_patrimonio, fieldsToPrint })
 
     const shouldPrint = (fieldId: keyof Patrimonio) =>
       fieldsToPrint.includes(fieldId)

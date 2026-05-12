@@ -10,6 +10,7 @@ import { Local } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 interface LocalContextType {
   locais: Local[]
@@ -40,9 +41,7 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
-        if (import.meta.env.DEV) {
-          console.log('⚠️  Backend não disponível - usando lista vazia de locais')
-        }
+        logger.debug('Backend não disponível - usando lista vazia de locais')
         setLocais([])
       } else {
         toast({

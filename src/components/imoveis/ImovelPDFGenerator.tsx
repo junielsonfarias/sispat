@@ -3,6 +3,7 @@ import { formatDate, formatCurrency, getCloudImageUrl } from '@/lib/utils'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { generateQRCode } from '@/lib/qr-code-utils'
+import { logger } from '@/lib/logger'
 
 interface ImovelPDFGeneratorProps {
   imovel: Imovel
@@ -86,11 +87,11 @@ export const generateImovelPDF = async ({
   
   if (imovel.fotos && imovel.fotos.length > 0) {
     try {
-      console.log('📸 [PDF Imóvel] Processando fotos:', { total: imovel.fotos.length, fotos: imovel.fotos })
+      logger.debug('[PDF Imóvel] Processando fotos', { total: imovel.fotos.length, fotos: imovel.fotos })
       for (const photo of imovel.fotos.slice(0, 6)) {
         // Converter foto (pode ser ID, objeto ou URL) para URL válida
         const photoUrl = getCloudImageUrl(photo)
-        console.log('📸 [PDF Imóvel] Processando foto:', { original: photo, url: photoUrl })
+        logger.debug('[PDF Imóvel] Processando foto', { original: photo, url: photoUrl })
         // Preservar transparência das fotos (caso tenham fundo transparente)
         const compressed = await compressImage(photoUrl, 600, 0.75, true)
         processedPhotos.push(compressed)
@@ -127,7 +128,7 @@ export const generateImovelPDF = async ({
     // Gerar QR code com tamanho maior (250px) para melhor qualidade no PDF
     const publicUrl = `${window.location.origin}/consulta-publica/imovel/${imovel.numero_patrimonio}`
     qrCodeUrl = await generateQRCode(publicUrl, { size: 250, errorCorrectionLevel: 'H' })
-    console.log('✅ QR Code gerado com sucesso para PDF de imóvel (250px)')
+    logger.debug('QR Code gerado com sucesso para PDF de imóvel (250px)')
   } catch (error) {
     console.warn('⚠️ Erro ao gerar QR Code para PDF de imóvel:', error)
   }

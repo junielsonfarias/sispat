@@ -1,4 +1,5 @@
 import { httpApi } from './http-api'
+import { logger } from '@/lib/logger'
 
 interface PublicPatrimonio {
   id: string
@@ -17,12 +18,12 @@ interface PublicPatrimonio {
 class PublicApi {
   private async request<T>(endpoint: string): Promise<T> {
     try {
-      console.log('🔍 [PublicApi] Fazendo requisição:', endpoint)
-      
+      logger.debug('[PublicApi] Fazendo requisição', { endpoint })
+
       // ✅ CORREÇÃO: Usar API real em vez de mock
       const response = await httpApi.get<T>(endpoint)
-      
-      console.log('✅ [PublicApi] Resposta recebida:', response)
+
+      logger.debug('[PublicApi] Resposta recebida', { response })
       return response
     } catch (error) {
       console.error('❌ [PublicApi] Erro na requisição:', error)

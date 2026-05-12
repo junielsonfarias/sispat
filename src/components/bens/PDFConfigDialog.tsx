@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { FileText, CheckSquare, Square, Sparkles } from 'lucide-react'
 import { api } from '@/services/http-api'
+import { logger } from '@/lib/logger'
 
 interface PDFConfigDialogProps {
   open: boolean
@@ -189,7 +190,7 @@ export const PDFConfigDialog = ({
 
   const handleGenerate = () => {
     const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
-    console.log('🔍 [PDFConfigDialog] Gerando PDF com configurações:', {
+    logger.debug('[PDFConfigDialog] Gerando PDF com configurações', {
       selectedTemplateId,
       selectedTemplateName: selectedTemplate?.name || 'Nenhum',
       selectedSections,

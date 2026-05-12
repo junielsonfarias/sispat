@@ -27,6 +27,7 @@ import { api } from '@/services/api-adapter'
 import { Patrimonio } from '@/types'
 import { AlertCircle, FileText, Upload } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { logger } from '@/lib/logger'
 
 const baixaBemSchema = z.object({
   data_baixa: z.string().min(1, 'Data da baixa é obrigatória'),
@@ -73,7 +74,7 @@ export const BaixaBemModal = ({
     setIsSubmitting(true)
 
     try {
-      console.log('📝 Registrando baixa:', data)
+      logger.debug('Registrando baixa', { data })
 
       // Preparar dados para envio
       const baixaData = {
@@ -86,7 +87,7 @@ export const BaixaBemModal = ({
       // Enviar requisição
       const response = await api.post(`/patrimonios/${patrimonio.id}/baixa`, baixaData)
 
-      console.log('✅ Baixa registrada:', response)
+      logger.debug('Baixa registrada', { response })
 
       toast({
         title: 'Sucesso!',

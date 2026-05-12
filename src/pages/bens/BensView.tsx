@@ -82,6 +82,7 @@ import { AssetTransferForm } from '@/components/bens/AssetTransferForm'
 import { generatePatrimonioPDF } from '@/components/bens/PatrimonioPDFGenerator'
 import { PDFConfigDialog } from '@/components/bens/PDFConfigDialog'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 const DetailItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="space-y-1">
@@ -131,9 +132,7 @@ function BensView() {
       // Buscar template padrão ou usar o primeiro
       const defaultTemplate = labelTemplates.find(t => t.isDefault) || labelTemplates[0]
       setSelectedLabelTemplate(defaultTemplate)
-      if (import.meta.env.DEV) {
-        console.log('✅ Template padrão selecionado automaticamente:', defaultTemplate?.name)
-      }
+      logger.debug('Template padrão selecionado automaticamente', { name: defaultTemplate?.name })
     }
   }, [isLabelDialogOpen, labelTemplates, selectedLabelTemplate])
 
@@ -177,28 +176,22 @@ function BensView() {
     
     setIsLoading(true)
     try {
-      if (import.meta.env.DEV) {
-        console.log('🔄 BensView - Carregando patrimônio do backend:', id)
-      }
+      logger.debug('BensView - Carregando patrimônio do backend', { id })
       // Buscar sempre do backend para garantir dados atualizados
       const response = await fetchPatrimonioById(id)
       const data = response.patrimonio || response
-      if (import.meta.env.DEV) {
-        console.log('✅ BensView - Patrimônio carregado:', {
-          id: data.id,
-          fotos: data.fotos,
-          fotosLength: data.fotos?.length,
-          fotosDetalhes: data.fotos?.map((f: any, i: number) => ({
-            index: i,
-            tipo: typeof f,
-            valor: f,
-          })),
-        })
-      }
+      logger.debug('BensView - Patrimônio carregado', {
+        id: data.id,
+        fotos: data.fotos,
+        fotosLength: data.fotos?.length,
+        fotosDetalhes: data.fotos?.map((f: any, i: number) => ({
+          index: i,
+          tipo: typeof f,
+          valor: f,
+        })),
+      })
       setPatrimonio(data)
-      if (import.meta.env.DEV) {
-        console.log('📦 BensView - Estado patrimonio atualizado')
-      }
+      logger.debug('BensView - Estado patrimonio atualizado')
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Erro ao carregar patrimônio:', error)
@@ -220,10 +213,7 @@ function BensView() {
   const handleSaveNote = async () => {
     if (!patrimonio || !newNote.trim()) return
 
-    if (import.meta.env.DEV) {
-      console.log('🔍 [DEBUG] Salvando nota para patrimônio:', patrimonio.id)
-      console.log('🔍 [DEBUG] Texto da nota:', newNote.trim())
-    }
+    logger.debug('Salvando nota para patrimônio', { id: patrimonio.id, text: newNote.trim() })
 
     setIsSavingNote(true)
     try {
@@ -232,16 +222,12 @@ function BensView() {
         text: newNote.trim()
       })
 
-      if (import.meta.env.DEV) {
-        console.log('✅ [DEBUG] Resposta da API:', response)
-      }
+      logger.debug('Resposta da API', { response })
 
       // Extrair nota da resposta
       const noteData = response.note || response
 
-      if (import.meta.env.DEV) {
-        console.log('🔍 [DEBUG] Dados da nota extraídos:', noteData)
-      }
+      logger.debug('Dados da nota extraídos', { noteData })
 
       // ✅ CORREÇÃO: Mapear campos corretamente do backend para o frontend
       const newNoteObj: Note = {
@@ -252,21 +238,17 @@ function BensView() {
         userName: noteData.userName, // Backend usa 'userName', não 'author'
       }
 
-      if (import.meta.env.DEV) {
-        console.log('✅ [DEBUG] Objeto nota mapeado:', newNoteObj)
-      }
+      logger.debug('Objeto nota mapeado', { newNoteObj })
 
       const updatedPatrimonio = {
         ...patrimonio,
         notes: [...(patrimonio.notes || []), newNoteObj],
       }
 
-      if (import.meta.env.DEV) {
-        console.log('✅ [DEBUG] Patrimônio atualizado:', {
-          id: updatedPatrimonio.id,
-          notasCount: updatedPatrimonio.notes?.length || 0
-        })
-      }
+      logger.debug('Patrimônio atualizado', {
+        id: updatedPatrimonio.id,
+        notasCount: updatedPatrimonio.notes?.length || 0
+      })
 
       setPatrimonio(updatedPatrimonio)
       setNewNote('')
@@ -322,15 +304,13 @@ function BensView() {
   const handleGeneratePDF = async (selectedSections: string[], templateId?: string) => {
     if (!patrimonio) return
     
-    if (import.meta.env.DEV) {
-      console.log('🔍 [BensView] handleGeneratePDF chamado:', {
-        patrimonioId: patrimonio.id,
-        numeroPatrimonio: patrimonio.numero_patrimonio,
-        templateId,
-        selectedSections,
-        sectionsCount: selectedSections.length
-      })
-    }
+    logger.debug('[BensView] handleGeneratePDF chamado', {
+      patrimonioId: patrimonio.id,
+      numeroPatrimonio: patrimonio.numero_patrimonio,
+      templateId,
+      selectedSections,
+      sectionsCount: selectedSections.length
+    })
     
     setIsGeneratingPDF(true)
     
@@ -569,13 +549,11 @@ function BensView() {
                       <CarouselContent>
                         {(() => {
                           const fotos = patrimonio.fotos || patrimonio.photos || []
-                          if (import.meta.env.DEV) {
-                            console.log('🖼️ Renderizando carrossel com fotos:', {
-                              total: fotos.length,
-                              fotos: fotos,
-                              tipos: fotos.map((f: any) => typeof f),
-                            })
-                          }
+                          logger.debug('Renderizando carrossel com fotos', {
+                            total: fotos.length,
+                            fotos: fotos,
+                            tipos: fotos.map((f: any) => typeof f),
+                          })
                           // ✅ CORREÇÃO: Backend já normaliza as fotos, mas manter compatibilidade
                           return fotos.map((foto: any) => {
                             if (typeof foto === 'string') return foto
@@ -603,9 +581,7 @@ function BensView() {
                                   target.src = LOCAL_IMAGES.PLACEHOLDER_IMAGE
                                 }}
                                 onLoad={() => {
-                                  if (import.meta.env.DEV) {
-                                    console.log('✅ Foto carregada com sucesso:', fotoId)
-                                  }
+                                  logger.debug('Foto carregada com sucesso', { fotoId })
                                 }}
                               />
                             </div>

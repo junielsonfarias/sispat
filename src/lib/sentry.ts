@@ -109,9 +109,11 @@ export const clearSentryUser = () => {
 }
 */
 
+import { logger } from '@/lib/logger'
+
 // Fallbacks para quando Sentry não está instalado
 export const initSentry = () => {
-  console.log('🔍 Sentry: Não configurado (instale @sentry/react para habilitar)')
+  logger.debug('Sentry: Não configurado (instale @sentry/react para habilitar)')
 }
 
 export const captureError = (error: Error, context?: Record<string, any>) => {
@@ -119,14 +121,14 @@ export const captureError = (error: Error, context?: Record<string, any>) => {
 }
 
 export const captureMessage = (message: string, level: 'info' | 'warning' | 'error' = 'info') => {
-  console.log(`📝 [${level}]`, message)
+  logger.debug(`[${level}] ${message}`)
 }
 
 export const setSentryUser = (user: any) => {
-  console.log('👤 User set:', user.email)
+  logger.debug('User set', { email: user.email })
 }
 
 export const clearSentryUser = () => {
-  console.log('👤 User cleared')
+  logger.debug('User cleared')
 }
 

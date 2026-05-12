@@ -1,6 +1,7 @@
 import { Patrimonio } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
+import { logger } from '@/lib/logger'
 
 interface SimplePrintFormProps {
   patrimonio: Patrimonio
@@ -8,7 +9,7 @@ interface SimplePrintFormProps {
 }
 
 export const SimplePrintForm = ({ patrimonio, fieldsToPrint }: SimplePrintFormProps) => {
-  console.log('SimplePrintForm renderizado:', { patrimonio: patrimonio?.numero_patrimonio, fieldsToPrint })
+  logger.debug('SimplePrintForm renderizado', { patrimonio: patrimonio?.numero_patrimonio, fieldsToPrint })
 
   const shouldPrint = (fieldId: keyof Patrimonio) =>
     fieldsToPrint.includes(fieldId)

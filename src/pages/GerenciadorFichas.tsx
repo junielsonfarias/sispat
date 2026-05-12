@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/http-api'
+import { logger } from '@/lib/logger'
 
 interface FichaTemplate {
   id: string
@@ -44,15 +45,15 @@ export default function GerenciadorFichas() {
     try {
       setLoading(true)
       const response = await api.get('/ficha-templates')
-      console.log('[GerenciadorFichas] Templates recebidos:', response)
+      logger.debug('[GerenciadorFichas] Templates recebidos', { response })
       setTemplates(Array.isArray(response) ? response : [])
-      console.log('[GerenciadorFichas] Templates definidos:', Array.isArray(response) ? response.length : 0)
+      logger.debug('[GerenciadorFichas] Templates definidos', { count: Array.isArray(response) ? response.length : 0 })
     } catch (error) {
       console.error('Erro ao carregar templates:', error)
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
-        console.log('⚠️  Backend não disponível - usando lista vazia de templates de ficha')
+        logger.debug('Backend não disponível - usando lista vazia de templates de ficha')
         setTemplates([])
       } else {
         setTemplates([]) // Garantir que sempre seja um array
@@ -68,9 +69,9 @@ export default function GerenciadorFichas() {
 
   // Recarregar quando receber state de reload
   useEffect(() => {
-    console.log('[GerenciadorFichas] location.state:', location.state)
+    logger.debug('[GerenciadorFichas] location.state', { state: location.state })
     if (location.state?.reload) {
-      console.log('[GerenciadorFichas] Reload detectado! Recarregando templates...')
+      logger.debug('[GerenciadorFichas] Reload detectado! Recarregando templates...')
       loadTemplates()
       // Limpar o state para não recarregar novamente
       window.history.replaceState({}, document.title)
@@ -88,7 +89,7 @@ export default function GerenciadorFichas() {
       
       // ✅ CORREÇÃO: Se for erro de conexão, remover apenas localmente
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
-        console.log('⚠️  Backend não disponível. Removendo template apenas localmente.')
+        logger.debug('Backend não disponível. Removendo template apenas localmente.')
         setTemplates((templates || []).filter(t => t.id !== id))
       }
     }
@@ -103,7 +104,7 @@ export default function GerenciadorFichas() {
       
       // ✅ CORREÇÃO: Se for erro de conexão, atualizar apenas localmente
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
-        console.log('⚠️  Backend não disponível. Definindo template padrão apenas localmente.')
+        logger.debug('Backend não disponível. Definindo template padrão apenas localmente.')
         setTemplates(prev => prev?.map(t => ({
           ...t,
           isDefault: t.id === id
@@ -127,7 +128,7 @@ export default function GerenciadorFichas() {
       
       // ✅ CORREÇÃO: Se for erro de conexão, adicionar apenas localmente
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
-        console.log('⚠️  Backend não disponível. Adicionando template duplicado apenas localmente.')
+        logger.debug('Backend não disponível. Adicionando template duplicado apenas localmente.')
         const localDuplicate = {
           id: `local-${Date.now()}`,
           ...duplicateData,
@@ -147,8 +148,7 @@ export default function GerenciadorFichas() {
     return matchesSearch && matchesFilter
   })
   
-  console.log('[GerenciadorFichas] Total templates:', templates?.length || 0)
-  console.log('[GerenciadorFichas] Filtered templates:', filteredTemplates.length)
+  logger.debug('[GerenciadorFichas] Templates count', { total: templates?.length || 0, filtered: filteredTemplates.length })
 
   const getTypeIcon = (type: string) => {
     return type === 'bens' ? Archive : Building

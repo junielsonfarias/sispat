@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { api } from '@/services/api-adapter'
 import { useBackendStatus } from './useBackendStatus'
+import { logger } from '@/lib/logger'
 
 interface ResilientApiOptions {
   endpoint: string
@@ -20,7 +21,7 @@ export const useResilientApi = <T = any>(options: ResilientApiOptions) => {
   const fetchData = useCallback(async (forceOnline = false) => {
     // Se backend está offline e não forçar online, usar dados locais
     if (!isOnline && !forceOnline) {
-      console.log(`⚠️  Backend offline - usando dados locais para ${endpoint}`)
+      logger.debug('Backend offline - usando dados locais', { endpoint })
       setData(fallbackData as T)
       setError(null)
       return fallbackData as T
@@ -30,12 +31,12 @@ export const useResilientApi = <T = any>(options: ResilientApiOptions) => {
     setError(null)
 
     try {
-      console.log(`🔍 Buscando dados de ${endpoint}...`)
+      logger.debug('Buscando dados', { endpoint })
       const response = await api.get<T>(endpoint)
-      
+
       setData(response)
       setLastFetched(new Date())
-      console.log(`✅ Dados carregados de ${endpoint}:`, Array.isArray(response) ? response.length : 'objeto')
+      logger.debug('Dados carregados', { endpoint, count: Array.isArray(response) ? response.length : 'objeto' })
       
       return response
     } catch (error) {
@@ -44,7 +45,7 @@ export const useResilientApi = <T = any>(options: ResilientApiOptions) => {
       
       // Se falhou e temos dados locais, usar eles
       if (fallbackData) {
-        console.log(`⚠️  Usando dados locais para ${endpoint} devido ao erro`)
+        logger.debug('Usando dados locais devido ao erro', { endpoint })
         setData(fallbackData as T)
       }
       

@@ -42,6 +42,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { useCustomization } from '@/contexts/CustomizationContext'
+import { logger } from '@/lib/logger'
 
 const ReportView = () => {
   const { templateId } = useParams<{ templateId: string }>()
@@ -282,7 +283,7 @@ const ReportView = () => {
         return
       }
 
-      console.log('Elemento encontrado:', printableElement)
+      logger.debug('Elemento encontrado', { printableElement })
       
       // Aguardar um pouco para garantir que as imagens carreguem
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -301,10 +302,10 @@ const ReportView = () => {
         height: printableElement.scrollHeight
       })
 
-      console.log('Canvas gerado:', canvas.width, 'x', canvas.height)
-      
+      logger.debug('Canvas gerado', { width: canvas.width, height: canvas.height })
+
       const imgData = canvas.toDataURL('image/png')
-      console.log('Imagem convertida para base64, tamanho:', imgData.length)
+      logger.debug('Imagem convertida para base64', { size: imgData.length })
       
       const pdf = new jsPDF({
         orientation: orientation === 'landscape' ? 'landscape' : 'portrait',
@@ -315,16 +316,16 @@ const ReportView = () => {
       const imgWidth = pdf.internal.pageSize.getWidth()
       const imgHeight = (canvas.height * imgWidth) / canvas.width
       
-      console.log('Dimensões PDF:', imgWidth, 'x', imgHeight)
-      
+      logger.debug('Dimensões PDF', { width: imgWidth, height: imgHeight })
+
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
-      
+
       const title = template?.name || 'Relatório'
       const filename = `${title.replace(/\s+/g, '_')}_${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`
-      
+
       pdf.save(filename)
-      
-      console.log('PDF gerado com sucesso:', filename)
+
+      logger.debug('PDF gerado com sucesso', { filename })
       
     } catch (error) {
       console.error('Erro ao gerar PDF:', error)
@@ -335,8 +336,8 @@ const ReportView = () => {
           throw new Error('Elemento não encontrado no fallback')
         }
         
-        console.log('Tentando fallback...')
-        console.log('Elemento dimensions:', printableElement.offsetWidth, 'x', printableElement.offsetHeight)
+        logger.debug('Tentando fallback')
+        logger.debug('Elemento dimensions', { width: printableElement.offsetWidth, height: printableElement.offsetHeight })
         
         const canvas = await html2canvas(printableElement, {
           scale: 1,
@@ -346,10 +347,10 @@ const ReportView = () => {
           height: printableElement.offsetHeight
         })
         
-        console.log('Canvas fallback gerado:', canvas.width, 'x', canvas.height)
-        
+        logger.debug('Canvas fallback gerado', { width: canvas.width, height: canvas.height })
+
         const imgData = canvas.toDataURL('image/png')
-        console.log('Imagem fallback convertida, tamanho:', imgData.length)
+        logger.debug('Imagem fallback convertida', { size: imgData.length })
         
         const pdf = new jsPDF({
           orientation: orientation === 'landscape' ? 'landscape' : 'portrait',
@@ -360,7 +361,7 @@ const ReportView = () => {
         const imgWidth = pdf.internal.pageSize.getWidth()
         const imgHeight = (canvas.height * imgWidth) / canvas.width
         
-        console.log('Dimensões PDF fallback:', imgWidth, 'x', imgHeight)
+        logger.debug('Dimensões PDF fallback', { width: imgWidth, height: imgHeight })
         
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
         
@@ -368,7 +369,7 @@ const ReportView = () => {
         const filename = `${title.replace(/\s+/g, '_')}_${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`
         
         pdf.save(filename)
-        console.log('PDF gerado com fallback:', filename)
+        logger.debug('PDF gerado com fallback', { filename })
         
       } catch (fallbackError) {
         console.error('Erro no fallback:', fallbackError)
@@ -392,7 +393,7 @@ const ReportView = () => {
                   alt="Logo"
                   className="h-16 w-auto"
                   onError={(e) => {
-                    console.log('Erro ao carregar logo:', municipalityData?.logoUrl)
+                    logger.debug('Erro ao carregar logo', { logoUrl: municipalityData?.logoUrl })
                     e.currentTarget.src = '/logo-government.svg'
                   }}
                 />

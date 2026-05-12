@@ -9,6 +9,7 @@ import {
 import { Patrimonio } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 interface PatrimonioContextType {
   patrimonios: Patrimonio[]
@@ -44,23 +45,21 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true)
     setError(null)
     try {
-      if (import.meta.env.DEV) {
-        console.log('🔍 [DEV] PatrimonioContext: Buscando patrimônios...')
-      }
+      logger.debug('PatrimonioContext: Buscando patrimônios...')
       const response = await api.get<{ patrimonios: Patrimonio[]; pagination: any }>('/patrimonios')
-      if (import.meta.env.DEV) {
-        console.log('📊 [DEV] PatrimonioContext: Resposta da API:', response)
-        console.log('📊 [DEV] PatrimonioContext: Tipo da resposta:', typeof response)
-        console.log('📊 [DEV] PatrimonioContext: É array?', Array.isArray(response))
-      }
-      
+      logger.debug('PatrimonioContext: Resposta da API', {
+        response,
+        tipo: typeof response,
+        isArray: Array.isArray(response),
+      })
+
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade patrimonios
       const patrimoniosData = Array.isArray(response) ? response : (response.patrimonios || [])
-      
-      if (import.meta.env.DEV) {
-        console.log('✅ [DEV] PatrimonioContext: Patrimônios extraídos:', patrimoniosData.length)
-        console.log('📝 [DEV] PatrimonioContext: Primeiros 3 patrimônios:', patrimoniosData.slice(0, 3))
-      }
+
+      logger.debug('PatrimonioContext: Patrimônios extraídos', {
+        count: patrimoniosData.length,
+        firstThree: patrimoniosData.slice(0, 3),
+      })
       
       setPatrimonios(patrimoniosData)
     } catch (err) {
@@ -70,9 +69,7 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de erro
       if (err?.code === 'ERR_NETWORK' || err?.code === 'ERR_CONNECTION_REFUSED') {
-        if (import.meta.env.DEV) {
-          console.log('⚠️  Backend não disponível - usando lista vazia de patrimônios')
-        }
+        logger.debug('Backend não disponível - usando lista vazia de patrimônios')
         setPatrimonios([])
         setError(null) // Não mostrar erro para o usuário
       } else {
@@ -111,13 +108,11 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const updatePatrimonio = async (updatedPatrimonio: Patrimonio) => {
-    if (import.meta.env.DEV) {
-      console.log('🔄 PatrimonioContext - updatePatrimonio chamado com:', {
-        id: updatedPatrimonio.id,
-        fotos: updatedPatrimonio.fotos,
-        fotosLength: updatedPatrimonio.fotos?.length,
-      })
-    }
+    logger.debug('PatrimonioContext - updatePatrimonio chamado', {
+      id: updatedPatrimonio.id,
+      fotos: updatedPatrimonio.fotos,
+      fotosLength: updatedPatrimonio.fotos?.length,
+    })
     
     // Remover campos de relacionamentos que não devem ser enviados
     const { 
@@ -141,9 +136,7 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     
     const response = await api.put(`/patrimonios/${updatedPatrimonio.id}`, patrimonioData)
     
-    if (import.meta.env.DEV) {
-      console.log('✅ PatrimonioContext - Resposta do backend:', response)
-    }
+    logger.debug('PatrimonioContext - Resposta do backend', { response })
     
     setPatrimonios((prev) =>
       Array.isArray(prev) ? prev.map((p) => (p.id === updatedPatrimonio.id ? updatedPatrimonio : p)) : [updatedPatrimonio]

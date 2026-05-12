@@ -4,6 +4,7 @@ import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { api } from '@/services/http-api'
 import { generatePatrimonioQRCode } from '@/lib/qr-code-utils'
+import { logger } from '@/lib/logger'
 
 interface PatrimonioPDFGeneratorProps {
   patrimonio: Patrimonio
@@ -122,7 +123,7 @@ export const generatePatrimonioPDF = async ({
   selectedSections = ['header', 'numero', 'identificacao', 'aquisicao', 'localizacao', 'status', 'baixa', 'depreciacao', 'observacoes', 'fotos', 'sistema', 'rodape'],
   templateId,
 }: PatrimonioPDFGeneratorProps) => {
-  console.log('🔍 [PDF Generator] Iniciando geração de PDF:', {
+  logger.debug('[PDF Generator] Iniciando geração de PDF', {
     patrimonioId: patrimonio.id,
     numeroPatrimonio: patrimonio.numero_patrimonio,
     templateId,
@@ -134,9 +135,9 @@ export const generatePatrimonioPDF = async ({
   let template: any = null
   if (templateId) {
     try {
-      console.log('🔍 [PDF Generator] Buscando template com ID:', templateId)
+      logger.debug('[PDF Generator] Buscando template', { templateId })
       template = await api.get(`/ficha-templates/${templateId}`)
-      console.log('✅ [PDF Generator] Template carregado com sucesso:', {
+      logger.debug('[PDF Generator] Template carregado com sucesso', {
         id: template.id,
         name: template.name,
         type: template.type,
@@ -152,7 +153,7 @@ export const generatePatrimonioPDF = async ({
       })
     }
   } else {
-    console.log('⚠️ [PDF Generator] Nenhum templateId fornecido, usando configurações padrão')
+    logger.debug('[PDF Generator] Nenhum templateId fornecido, usando configurações padrão')
   }
 
   // Aplicar configurações do template se disponível
@@ -162,7 +163,7 @@ export const generatePatrimonioPDF = async ({
   const headerConfig = config.header || {}
   const signaturesConfig = config.signatures || { enabled: true, count: 2, layout: 'horizontal', labels: ['Responsável pelo Setor', 'Responsável pelo Patrimônio'], showDates: true }
 
-  console.log('🔧 [PDF Generator] Configurações aplicadas:', {
+  logger.debug('[PDF Generator] Configurações aplicadas', {
     templateName: template?.name || 'Padrão',
     margins,
     fonts,
@@ -213,7 +214,7 @@ export const generatePatrimonioPDF = async ({
     try {
       // Converter foto (pode ser ID, objeto ou URL) para URL válida
       const fotoUrl = getCloudImageUrl(normalizedFotos[0])
-      console.log('📸 Processando foto para PDF:', { original: normalizedFotos[0], url: fotoUrl })
+      logger.debug('Processando foto para PDF', { original: normalizedFotos[0], url: fotoUrl })
       // Preservar transparência para fotos também (caso tenham fundo transparente)
       compressedPhoto = await compressImage(fotoUrl, 400, 0.75, true)
     } catch (error) {
@@ -248,7 +249,7 @@ export const generatePatrimonioPDF = async ({
     const publicUrl = `${origin}/consulta-publica/bem/${patrimonio.numero_patrimonio}`
     const { generateQRCode } = await import('@/lib/qr-code-utils')
     qrCodeUrl = await generateQRCode(publicUrl, { size: 250, errorCorrectionLevel: 'H' })
-    console.log('✅ QR Code gerado com sucesso para PDF (250px)')
+    logger.debug('QR Code gerado com sucesso para PDF (250px)')
   } catch (error) {
     console.warn('⚠️ Erro ao gerar QR Code para PDF:', error)
   }
@@ -562,7 +563,7 @@ export const generatePatrimonioPDF = async ({
     const fileName = `Ficha_Patrimonio_${patrimonio.numero_patrimonio}.pdf`
     pdf.save(fileName)
 
-    console.log('✅ [PDF Generator] PDF gerado com sucesso:', {
+    logger.debug('[PDF Generator] PDF gerado com sucesso', {
       fileName,
       templateUsed: template?.name || 'Padrão',
       sectionsIncluded: selectedSections,

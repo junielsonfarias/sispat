@@ -3,6 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import { format as formatDateFns, formatDistanceToNowStrict } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { LOCAL_IMAGES } from './image-utils'
+import { logger } from './logger'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -182,18 +183,15 @@ export function getCloudImageUrl(fileId: string | object | undefined): string {
     const normalizedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`
     const finalUrl = `${BACKEND_URL}${normalizedPath}`
     
-    // Log apenas em desenvolvimento para debug
-    if (import.meta.env.DEV) {
-      console.log('🖼️ Construindo URL de imagem:', {
-        original: fileId,
-        cleanPath,
-        normalizedPath,
-        filename,
-        hasValidExtension,
-        BACKEND_URL,
-        finalUrl
-      })
-    }
+    logger.debug('Construindo URL de imagem', {
+      original: fileId,
+      cleanPath,
+      normalizedPath,
+      filename,
+      hasValidExtension,
+      BACKEND_URL,
+      finalUrl
+    })
     
     return finalUrl
   }

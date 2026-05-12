@@ -12,6 +12,7 @@ import { generateId } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 interface ManutencaoContextType {
   tasks: ManutencaoTask[]
@@ -44,7 +45,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
-        console.log('⚠️  Backend não disponível - usando lista vazia de tarefas de manutenção')
+        logger.debug('Backend não disponível - usando lista vazia de tarefas de manutenção')
         setAllTasks([])
         return
       }
@@ -94,7 +95,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         
         // ✅ CORREÇÃO: Se for erro de conexão, salvar apenas localmente
         if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
-          console.log('⚠️  Backend não disponível. Salvando tarefa apenas localmente.')
+          logger.debug('Backend não disponível. Salvando tarefa apenas localmente.')
           
           const localTask = {
             id: `local-${Date.now()}`,
@@ -144,7 +145,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         
         // ✅ CORREÇÃO: Se for erro de conexão, atualizar apenas localmente
         if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
-          console.log('⚠️  Backend não disponível. Atualizando tarefa apenas localmente.')
+          logger.debug('Backend não disponível. Atualizando tarefa apenas localmente.')
           
           setAllTasks(prev => prev.map(t =>
             t.id === taskId ? {
@@ -183,7 +184,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         
         // ✅ CORREÇÃO: Se for erro de conexão, deletar apenas localmente
         if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
-          console.log('⚠️  Backend não disponível. Deletando tarefa apenas localmente.')
+          logger.debug('Backend não disponível. Deletando tarefa apenas localmente.')
           
           setAllTasks(prev => prev.filter(t => t.id !== taskId))
           

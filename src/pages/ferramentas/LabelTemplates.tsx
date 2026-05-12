@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { PlusCircle, Edit, Trash2, QrCode, Search, Layers } from 'lucide-react'
 import { useLabelTemplates } from '@/hooks/useLabelTemplates'
+import { logger } from '@/lib/logger'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -38,7 +39,7 @@ export default function LabelTemplates() {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   
-  console.log('LabelTemplates render:', { templates: templates.length, templatesData: templates.map(t => ({ id: t.id, name: t.name, municipalityId: t.municipalityId })) })
+  logger.debug('LabelTemplates render', { templates: templates.length, templatesData: templates.map(t => ({ id: t.id, name: t.name, municipalityId: t.municipalityId })) })
 
   // Filtrar templates por nome
   const filteredTemplates = templates.filter(template =>

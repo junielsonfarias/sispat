@@ -8,6 +8,7 @@ import { ReportTemplate, ReportComponent } from '@/types'
 import { generateId } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { Save, PlusCircle, Trash2, GalleryHorizontal, GripVertical } from 'lucide-react'
+import { logger } from '@/lib/logger'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -166,7 +167,7 @@ const ReportLayoutEditor = () => {
     
     // Garantir que o template tenha um layout inicializado
     const currentLayout = template.layout || []
-    console.log('Adicionando componente:', type, 'Layout atual:', currentLayout)
+    logger.debug('Adicionando componente', { type, currentLayout })
     
     const newComponent: ReportComponent = {
       id: generateId(),
@@ -180,7 +181,7 @@ const ReportLayoutEditor = () => {
     }
     
     const newLayout = [...currentLayout, newComponent]
-    console.log('Novo layout:', newLayout)
+    logger.debug('Novo layout', { newLayout })
     
     setTemplate({ ...template, layout: newLayout })
   }
@@ -215,7 +216,7 @@ const ReportLayoutEditor = () => {
 
   const handleSave = () => {
     if (template) {
-      console.log('Salvando template:', template)
+      logger.debug('Salvando template', { template })
       saveTemplate(template)
       toast({ description: 'Layout do relatório salvo com sucesso!' })
       navigate(`/relatorios/ver/${template.id}`)

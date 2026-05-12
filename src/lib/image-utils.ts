@@ -3,6 +3,7 @@
  */
 
 import imageCompression from 'browser-image-compression'
+import { logger } from './logger'
 
 export interface ImageConfig {
   src: string
@@ -42,9 +43,7 @@ export const compressImage = async (
     const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2)
     const reductionPercent = ((1 - compressedFile.size / file.size) * 100).toFixed(1)
     
-    if (import.meta.env.DEV) {
-      console.log(`📸 Imagem comprimida: ${originalSizeMB}MB → ${compressedSizeMB}MB (↓${reductionPercent}%)`)
-    }
+    logger.debug('Imagem comprimida', { originalSizeMB, compressedSizeMB, reductionPercent: `${reductionPercent}%` })
 
     return compressedFile
   } catch (error) {

@@ -42,6 +42,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { patrimonioEditSchema } from '@/lib/validations/patrimonioSchema'
+import { logger } from '@/lib/logger'
 
 type PatrimonioFormValues = z.infer<typeof patrimonioEditSchema>
 
@@ -232,7 +233,7 @@ const BensEdit = () => {
             return f.file_url || f
           })
           
-          console.log('🔄 DEBUG - Processamento de fotos:', {
+          logger.debug('Processamento de fotos', {
             original: data.fotos,
             processadas: fotosProcessadas,
             originalLength: data.fotos?.length,
@@ -744,7 +745,7 @@ const BensEdit = () => {
             <Button 
               type="submit" 
               disabled={isLoading}
-              onClick={() => console.log('🖱️ Botão "Salvar Alterações" clicado!')}
+              onClick={() => logger.debug('Botão "Salvar Alterações" clicado!')}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Alterações
