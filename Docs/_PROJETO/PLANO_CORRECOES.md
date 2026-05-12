@@ -111,10 +111,12 @@
 - Adicionar CSRF protection (token em header `X-CSRF-Token`).
 - Esforço: 3 dias.
 
-### 13. Centralizar validação Zod (compartilhar cliente↔servidor)
-- Criar `packages/shared/schemas/` (monorepo light) com schemas Zod usados pelos dois.
-- Backend valida com mesmo schema do frontend.
-- Esforço: 2 dias.
+### 13. ✅ Centralizar validação Zod (compartilhar cliente↔servidor)
+- **PoC concluído no Sprint 19 (2026-05-12).** Ver `HISTORICO_CORRECOES.md`.
+- Criado pacote `@sispat/shared` (`shared/` na raiz, `file:` dep). Schemas de auth (`login`, `refresh`, `changePassword`, `forgotPassword`, `resetPassword`, `resetPasswordForm`, `validateResetToken`) + regra `STRONG_PASSWORD_REGEX` unificada.
+- Backend: novo middleware `zodValidate` substitui `express-validator` na rota `/api/auth/*`. `authValidations` removido.
+- Frontend: 3 páginas de auth migradas (`Login`, `ForgotPassword`, `ResetPassword`).
+- **Pendente (Sprint 20+):** migrar `imovel`, `user`, `patrimonio`, etc. para o mesmo padrão. Frontend tem `patrimonioSchema.ts`/`imovelSchema.ts` que ainda vivem em `src/lib/validations/`.
 
 ### 14. Camada de Repository
 - Após services, introduzir repositories para isolar Prisma.

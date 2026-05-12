@@ -90,6 +90,100 @@
 
 ## 2026
 
+### 2026-05-12 — Sprint 19: schemas Zod compartilhados frontend↔backend (PoC auth)
+
+Endereçando o item **P2 #13** do PLANO_CORRECOES (e pendência reconhecida desde o Sprint 16). Frontend usava Zod nas páginas, backend usava `express-validator` em `middlewares/validation.ts` — duas árvores de regras em paralelo, com divergências reais.
+
+**Divergência crítica encontrada na auditoria**
+
+Regra de senha forte vivia em 4 lugares com 3 versões diferentes:
+- `backend/src/middlewares/validation.ts:566` exigia min 8 chars + lower/upper/digit (sem símbolo).
+- `backend/src/services/authService.ts:44` exigia min 12 + lower/upper/digit/símbolo.
+- `backend/src/controllers/userController.ts:141-149` idem (12 + símbolo).
+- `src/pages/auth/ResetPassword.tsx:34` idem (12 + símbolo).
+
+Resultado: usuário podia digitar `Abcd1234` e passar pela validação do middleware, mas depois receber 400 do service. UX confusa, e mais grave: prova de que a regra de segurança não tinha fonte única — qualquer um dos 4 lugares podia drift sem ninguém notar.
+
+**Arquitetura nova: pacote `@sispat/shared`**
+
+Criado `shared/` na raiz do repo como pacote `file:` (não-publicado), com TypeScript próprio compilado para `shared/dist/`. Backend e frontend consomem via:
+```jsonc
+// backend/package.json + package.json (frontend)
+"dependencies": {
+  "@sispat/shared": "file:../shared"   // backend
+  "@sispat/shared": "file:./shared"    // frontend
+}
+```
+
+Estrutura:
+```
+shared/
+  package.json        # name: @sispat/shared, build: tsc → dist/
+  tsconfig.json       # types: [], typeRoots: [] para isolamento
+  src/
+    index.ts          # re-export central
+    rules/
+      password.ts     # STRONG_PASSWORD_REGEX + constants + isStrongPassword()
+    schemas/
+      auth.ts         # login, refresh, changePassword, forgotPassword,
+                      # resetPassword, resetPasswordForm (com confirmação),
+                      # validateResetTokenParams
+```
+
+**Backend: middleware `zodValidate`**
+
+Novo `backend/src/middlewares/zodValidate.ts` aceita `{ body, params, query }` schemas e responde no mesmo formato legado:
+```json
+{ "error": "Dados inválidos", "details": [{ "field": "email", "message": "..." }] }
+```
+
+Em sucesso, **substitui `req.body`/`params`/`query` pela versão parseada** — defaults e coerções do Zod são aplicados antes do controller ver o payload. Mantém `express-validator` válido em rotas ainda não migradas (migração incremental).
+
+**Migração de auth — backend**
+
+`backend/src/routes/authRoutes.ts`: 6 rotas migradas de `authValidations.X + handleValidationErrors` para `zodValidate({ body|params: X })`. `authValidations` removido de `validation.ts` (única referência).
+
+**Migração de auth — frontend**
+
+3 páginas migradas para importar de `@sispat/shared`:
+- `src/pages/auth/Login.tsx` — usa `loginSchema` + tipo `LoginInput`.
+- `src/pages/auth/ForgotPassword.tsx` — usa `forgotPasswordSchema` + tipo `ForgotPasswordInput`.
+- `src/pages/auth/ResetPassword.tsx` — usa `resetPasswordFormSchema` (versão com `confirmPassword` + refine de igualdade) + tipo `ResetPasswordFormValues`.
+
+Schema local foi deletado em cada uma. Type-check feito via leitura porque o `node_modules/` do frontend estava incompleto neste ambiente (pre-existente, não causado pelo Sprint 19).
+
+**Testes**
+
+10 testes novos em `backend/src/__tests__/middlewares/zodValidate.test.ts`:
+- Validação de body/params/query.
+- Formato de erro legado preservado.
+- `req.body` substituído pelo parseado (defaults aplicados).
+- Erros de body+params+query agregados num único response.
+- Schemas reais do `@sispat/shared` espelham regra forte (rejeitam Abcd1234, aceitam Abcd1234!XyZ).
+- `STRONG_PASSWORD_REGEX` testado direto (rejeita <12 chars, rejeita sem símbolo).
+
+Resultado: **89/89 testes passam** (61 existentes + 10 zodValidate + 18 de health/services etc).
+
+**Setup do dev env (linking manual)**
+
+Como o user está num ambiente sem acesso à `registry.npmjs.org` (SSL cert issues), o `npm install` no backend e `pnpm install` no frontend não rodaram localmente. As deps de `@sispat/shared` foram linkadas manualmente via junction do Windows:
+```powershell
+New-Item -ItemType Junction -Path backend/node_modules/@sispat/shared -Target shared
+New-Item -ItemType Junction -Path node_modules/@sispat/shared -Target shared
+New-Item -ItemType Junction -Path backend/node_modules/zod -Target shared/node_modules/zod
+```
+
+Em ambientes com acesso à registry, basta rodar `pnpm install` (root) e `npm install` (backend) — `file:../shared` resolve automaticamente. **Pre-build do shared é necessário**: `cd shared && npm install && npm run build` antes do install dos consumers.
+
+**Próximos passos (Sprint 20+)**
+
+PoC completo. Para expandir o padrão:
+- Migrar `imovelValidations`, `userValidations`, `patrimonioValidations` para Zod compartilhado (cada um tem ~80-150 linhas em `validation.ts`).
+- Mover o `patrimonioSchema.ts` do frontend para `shared/schemas/patrimonio.ts` (já é Zod, só precisa relocar + alinhar com o backend).
+- Eventualmente esvaziar `middlewares/validation.ts` e deletar `express-validator` da dependência.
+
+- **Lição:** quando 2 lados (cliente/servidor) precisam concordar sobre forma de dado, **escreva a regra uma vez** num pacote shared. A divergência da regra de senha (8 vs 12 chars) era um bug latente — middleware aceitava, service rejeitava, usuário ficava confuso. Single source of truth elimina essa classe inteira de bugs.
+
 ### 2026-05-12 — Sprint 18: service layer (inventario + transfer) + 3 migrations + sync de schema
 
 Fechamento das pendências listadas no Sprint 17: extrair `inventarioController` (552) e `transferController` (513) para o padrão service, e aplicar as 3 migrações de schema (Inventory.municipalityId, Transferencia.previousStatus, enum Patrimonio.status).

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
+import {
+  resetPasswordFormSchema,
+  type ResetPasswordFormValues,
+} from '@sispat/shared'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,23 +28,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 
-const resetPasswordSchema = z
-  .object({
-    password: z
-      .string()
-      .min(12, { message: 'A senha deve ter no mínimo 12 caracteres.' })
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/,
-        { message: 'A senha deve incluir: letras maiúsculas, minúsculas, números e símbolos especiais (@$!%*?&)' }
-      ),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'As senhas não coincidem.',
-    path: ['confirmPassword'],
-  })
-
-type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
 
 export default function ResetPassword() {
   const { resetPassword, validateResetToken } = useAuth()
@@ -56,7 +42,7 @@ export default function ResetPassword() {
   const token = searchParams.get('token')
 
   const form = useForm<ResetPasswordFormValues>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(resetPasswordFormSchema),
     defaultValues: { password: '', confirmPassword: '' },
   })
 

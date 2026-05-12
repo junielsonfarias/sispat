@@ -11,7 +11,15 @@ import {
   getCsrfToken,
 } from '../controllers/authController';
 import { authenticateToken } from '../middlewares/auth';
-import { handleValidationErrors, authValidations } from '../middlewares/validation';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  loginSchema,
+  refreshSchema,
+  changePasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  validateResetTokenParamsSchema,
+} from '@sispat/shared';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
@@ -93,7 +101,7 @@ const resetLimiter = rateLimit({
  * @desc Login de usuário
  * @access Public
  */
-router.post('/login', authLimiter, authValidations.login, handleValidationErrors, login);
+router.post('/login', authLimiter, zodValidate({ body: loginSchema }), login);
 
 /**
  * @route GET /api/auth/csrf
@@ -108,7 +116,7 @@ router.get('/csrf', getCsrfToken);
  * @desc Renovar token de acesso
  * @access Public
  */
-router.post('/refresh', authValidations.refresh, handleValidationErrors, refreshToken);
+router.post('/refresh', zodValidate({ body: refreshSchema }), refreshToken);
 
 /**
  * @swagger
@@ -146,28 +154,28 @@ router.post('/logout', authenticateToken, logout);
  * @desc Alterar senha do usuário
  * @access Private
  */
-router.post('/change-password', authenticateToken, authValidations.changePassword, handleValidationErrors, changePassword);
+router.post('/change-password', authenticateToken, zodValidate({ body: changePasswordSchema }), changePassword);
 
 /**
  * @route POST /api/auth/forgot-password
  * @desc Solicitar reset de senha
  * @access Public
  */
-router.post('/forgot-password', resetLimiter, authValidations.forgotPassword, handleValidationErrors, forgotPassword);
+router.post('/forgot-password', resetLimiter, zodValidate({ body: forgotPasswordSchema }), forgotPassword);
 
 /**
  * @route GET /api/auth/validate-reset-token/:token
  * @desc Validar token de reset de senha
  * @access Public
  */
-router.get('/validate-reset-token/:token', authValidations.validateResetToken, handleValidationErrors, validateResetToken);
+router.get('/validate-reset-token/:token', zodValidate({ params: validateResetTokenParamsSchema }), validateResetToken);
 
 /**
  * @route POST /api/auth/reset-password
  * @desc Resetar senha com token
  * @access Public
  */
-router.post('/reset-password', resetLimiter, authValidations.resetPassword, handleValidationErrors, resetPassword);
+router.post('/reset-password', resetLimiter, zodValidate({ body: resetPasswordSchema }), resetPassword);
 
 export default router;
 

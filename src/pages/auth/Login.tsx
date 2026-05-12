@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
+import { loginSchema, type LoginInput } from '@sispat/shared'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,12 +43,7 @@ import {
 } from '@/components/ui/card'
 import { Container } from '@/components/ui/responsive-container'
 
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
-  password: z.string().min(1, { message: 'Senha é obrigatória.' }),
-})
-
-type LoginFormValues = z.infer<typeof loginSchema>
+type LoginFormValues = LoginInput
 
 export default function Login() {
   const { login, isAuthenticated, user } = useAuth()

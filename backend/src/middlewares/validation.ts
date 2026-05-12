@@ -532,68 +532,10 @@ export const imovelValidations = {
   ]
 };
 
-// Validações para autenticação
-export const authValidations = {
-  login: [
-    body('email')
-      .isEmail()
-      .normalizeEmail()
-      .withMessage('Email inválido'),
-
-    body('password')
-      .isString()
-      .isLength({ min: 1, max: 200 })
-      .withMessage('Senha é obrigatória'),
-  ],
-
-  refresh: [
-    body('refreshToken')
-      .optional()
-      .isString()
-      .isLength({ min: 1, max: 1000 })
-      .withMessage('refreshToken inválido'),
-  ],
-
-  changePassword: [
-    body('oldPassword')
-      .isString()
-      .isLength({ min: 1, max: 200 })
-      .withMessage('Senha atual é obrigatória'),
-
-    body('newPassword')
-      .isString()
-      .isLength({ min: 8, max: 200 })
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-      .withMessage('Nova senha deve ter pelo menos 8 caracteres, com maiúscula, minúscula e número'),
-  ],
-
-  forgotPassword: [
-    body('email')
-      .isEmail()
-      .normalizeEmail()
-      .withMessage('Email inválido'),
-  ],
-
-  resetPassword: [
-    body('token')
-      .isString()
-      .isLength({ min: 1, max: 1000 })
-      .withMessage('Token é obrigatório'),
-
-    body('newPassword')
-      .isString()
-      .isLength({ min: 8, max: 200 })
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-      .withMessage('Nova senha deve ter pelo menos 8 caracteres, com maiúscula, minúscula e número'),
-  ],
-
-  validateResetToken: [
-    param('token')
-      .isString()
-      .isLength({ min: 1, max: 1000 })
-      .withMessage('Token é obrigatório'),
-  ],
-};
+// Validações de autenticação foram migradas para schemas Zod compartilhados
+// (Sprint 19). Ver `@sispat/shared` → `schemas/auth.ts` e o middleware
+// `zodValidate.ts`. Regra única de senha forte: `STRONG_PASSWORD_REGEX` em
+// `shared/src/rules/password.ts`.
 
 // Validações para inventários
 export const inventarioValidations = {
