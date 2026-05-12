@@ -28,9 +28,6 @@ const withSuspense = (Component: React.LazyExoticComponent<any>) => {
 
 // Dashboards
 export const LazyUnifiedDashboard = lazy(() => import('@/pages/dashboards/UnifiedDashboard'))
-export const LazyAdminDashboard = lazy(() => import('@/pages/dashboards/AdminDashboard'))
-export const LazyUserDashboard = lazy(() => import('@/pages/dashboards/UserDashboard'))
-export const LazyViewerDashboard = lazy(() => import('@/pages/dashboards/ViewerDashboard'))
 export const LazyDepreciationDashboard = lazy(() => import('@/pages/dashboards/DepreciationDashboard'))
 
 // Bens (Patrimônios)

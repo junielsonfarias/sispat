@@ -26,9 +26,6 @@ const NotificationsPage = lazy(() => import('@/pages/Notifications'))
 const UnifiedDashboard = lazy(
   () => import('@/pages/dashboards/UnifiedDashboard'),
 )
-const AdminDashboard = lazy(() => import('@/pages/dashboards/AdminDashboard'))
-const UserDashboard = lazy(() => import('@/pages/dashboards/UserDashboard'))
-const ViewerDashboard = lazy(() => import('@/pages/dashboards/ViewerDashboard'))
 const BensCadastrados = lazy(() => import('@/pages/bens/BensCadastrados'))
 const BensCreate = lazy(() => import('@/pages/bens/BensCreate'))
 const BensBulkCreate = lazy(() => import('@/pages/bens/BensBulkCreate'))
