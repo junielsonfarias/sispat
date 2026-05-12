@@ -161,6 +161,9 @@ model AcquisitionForm {
   @@map("formas_aquisicao")
 }
 
+/// Constraints SQL aplicadas via migration:
+/// - CHECK (valor_aquisicao >= 0)
+/// - CHECK (quantidade > 0)
 model Patrimonio {
   id                 String           @id @default(uuid())
   numero_patrimonio  String           @unique

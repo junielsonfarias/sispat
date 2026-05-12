@@ -14,34 +14,14 @@ router.get('/detailed', detailedHealthCheck)
 router.get('/ready', readinessCheck)
 router.get('/live', livenessCheck)
 
-// ⭐ v2.1.0: Endpoint de métricas avançadas
-// TEMPORARIAMENTE DESABILITADO PARA DEBUG
-router.get('/metrics', async (req, res) => {
-  res.json({
-    message: 'Endpoint de métricas temporariamente desabilitado (em desenvolvimento)',
-    status: 'ok'
+// O endpoint completo de métricas (com healthMonitor + circuit breakers + histórico)
+// vive em '/api/metrics/*' (metricsRoutes.ts). Aqui só mantemos um stub leve
+// para compatibilidade com consumidores que apontavam para /api/health/metrics.
+router.get('/metrics', (_req, res) => {
+  res.status(308).json({
+    message: 'Movido para /api/metrics — use o endpoint dedicado',
+    redirect: '/api/metrics/summary',
   })
-  // try {
-  //   const { healthMonitor } = await import('../utils/health-monitor')
-  //   const { databaseCircuit, externalAPICircuit, fileSystemCircuit } = await import('../utils/circuit-breaker')
-  //   
-  //   const current = healthMonitor.getCurrentMetrics()
-  //   const stats = healthMonitor.getStats(60) // Última hora
-  //   
-  //   res.json({
-  //     current,
-  //     stats,
-  //     circuits: {
-  //       database: databaseCircuit.getState(),
-  //       externalAPI: externalAPICircuit.getState(),
-  //       filesystem: fileSystemCircuit.getState(),
-  //     },
-  //     history: healthMonitor.getMetricsHistory(15), // Últimos 15 minutos
-  //   })
-  // } catch (error) {
-  //   console.error('Erro ao obter métricas:', error)
-  //   res.status(500).json({ error: 'Erro ao obter métricas' })
-  // }
 })
 
 export default router
