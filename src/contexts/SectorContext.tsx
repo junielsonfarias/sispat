@@ -5,6 +5,7 @@ import {
   useContext,
   useCallback,
   useEffect,
+  useMemo,
 } from 'react'
 import { Sector } from '@/types'
 import { toast } from '@/hooks/use-toast'
@@ -153,22 +154,22 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
     await fetchSectors()
   }, [fetchSectors])
 
-  return (
-    <SectorContext.Provider
-      value={{
-        sectors,
-        isLoading,
-        setSectors,
-        getSectorById,
-        addSector,
-        updateSector,
-        deleteSector,
-        refreshSectors,
-      }}
-    >
-      {children}
-    </SectorContext.Provider>
+  // F11: memoiza para evitar re-render em cascata
+  const value = useMemo(
+    () => ({
+      sectors,
+      isLoading,
+      setSectors,
+      getSectorById,
+      addSector,
+      updateSector,
+      deleteSector,
+      refreshSectors,
+    }),
+    [sectors, isLoading, getSectorById, addSector, updateSector, deleteSector, refreshSectors],
   )
+
+  return <SectorContext.Provider value={value}>{children}</SectorContext.Provider>
 }
 
 export const useSectors = () => {

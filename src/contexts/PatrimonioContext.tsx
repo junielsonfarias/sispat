@@ -5,6 +5,7 @@ import {
   useContext,
   useCallback,
   useEffect,
+  useMemo,
 } from 'react'
 import { Patrimonio } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
@@ -172,20 +173,34 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     [],
   )
 
+  // F11: memoiza o value para evitar re-render em cascata de consumidores
+  // toda vez que o provider re-renderiza por motivo não relacionado.
+  const value = useMemo(
+    () => ({
+      patrimonios,
+      isLoading,
+      error,
+      setPatrimonios,
+      addPatrimonio,
+      updatePatrimonio,
+      deletePatrimonio,
+      getPatrimonioById,
+      fetchPatrimonioById,
+    }),
+    [
+      patrimonios,
+      isLoading,
+      error,
+      addPatrimonio,
+      updatePatrimonio,
+      deletePatrimonio,
+      getPatrimonioById,
+      fetchPatrimonioById,
+    ],
+  )
+
   return (
-    <PatrimonioContext.Provider
-      value={{
-        patrimonios,
-        isLoading,
-        error,
-        setPatrimonios,
-        addPatrimonio,
-        updatePatrimonio,
-        deletePatrimonio,
-        getPatrimonioById,
-        fetchPatrimonioById,
-      }}
-    >
+    <PatrimonioContext.Provider value={value}>
       {children}
     </PatrimonioContext.Provider>
   )
