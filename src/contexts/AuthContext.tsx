@@ -44,7 +44,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate()
 
   const logout = useCallback(
-    (options?: { sessionExpired?: boolean }) => {
+    (options?: { sessionExpired?: boolean; allDevices?: boolean }) => {
+      // Tenta revogar refresh token no servidor antes de limpar.
+      // É fire-and-forget: se falhar, o frontend ainda sai (o token pode estar inválido).
+      const refreshToken = SecureStorage.getItem<string>('sispat_refresh_token')
+      if (refreshToken) {
+        api
+          .post('/auth/logout', {
+            refreshToken,
+            allDevices: options?.allDevices ?? false,
+          })
+          .catch(() => {
+            // ignorar — limpar localmente é o que importa para o usuário
+          })
+      }
+
       setUser(null)
       setUsers([])
       SecureStorage.removeItem('sispat_user')
@@ -111,16 +125,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         token: string
         refreshToken: string
       }>('/auth/login', { email, password })
-      
+
       const { user, token, refreshToken } = response
-      
+
       setUser(user)
-      setUsers([user]) // Inicializar com o usuário logado
+      setUsers([user])
       SecureStorage.setItem('sispat_user', user)
       SecureStorage.setItem('sispat_token', token)
       SecureStorage.setItem('sispat_refresh_token', refreshToken)
-      
-      // Buscar todos os usuários se for admin/superuser
+
       if (user.role === 'admin' || user.role === 'superuser') {
         try {
           const allUsers = await api.get<User[]>('/users')
@@ -129,8 +142,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.warn('Erro ao buscar usuários:', error)
         }
       }
-    } catch (error) {
-      throw new Error('Credenciais inválidas.')
+    } catch (error: unknown) {
+      // Diferencia mensagens por status (backend distingue 401 credenciais x 403 conta desativada)
+      const err = error as {
+        response?: { status?: number; data?: { error?: string; message?: string } }
+        message?: string
+      }
+      const status = err.response?.status
+      const backendMsg = err.response?.data?.error || err.response?.data?.message
+
+      if (status === 403) {
+        throw new Error(backendMsg || 'Conta desativada. Entre em contato com o administrador.')
+      }
+      if (status === 401) {
+        throw new Error(backendMsg || 'Email ou senha incorretos.')
+      }
+      if (status === 429) {
+        throw new Error(backendMsg || 'Muitas tentativas de login. Aguarde 15 minutos.')
+      }
+      throw new Error(backendMsg || err.message || 'Não foi possível fazer login.')
     }
   }
 

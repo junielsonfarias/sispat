@@ -61,22 +61,29 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
 
       // Tentar refresh token
-      const refreshToken = localStorage.getItem('sispat_refresh_token');
-      if (refreshToken) {
+      const refreshRaw = localStorage.getItem('sispat_refresh_token');
+      if (refreshRaw) {
         try {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refreshToken: JSON.parse(refreshToken),
-          });
+          // SecureStorage grava como JSON; tenta parse, mas tolera string crua
+          let refreshToken: string;
+          try {
+            refreshToken = JSON.parse(refreshRaw);
+          } catch {
+            refreshToken = refreshRaw;
+          }
 
-          const { token: newToken } = response.data;
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+
+          const { token: newToken, refreshToken: newRefreshToken } = response.data;
           localStorage.setItem('sispat_token', JSON.stringify(newToken));
+          // Importante: backend gira o refresh token a cada renovação — salvar o novo
+          if (newRefreshToken) {
+            localStorage.setItem('sispat_refresh_token', JSON.stringify(newRefreshToken));
+          }
 
-          // Retentar requisição original
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return axiosInstance(originalRequest);
         } catch (refreshError) {
-          // Refresh falhou, redirecionar para login
-          // ✅ Não logar detalhes de token em produção
           if (import.meta.env.DEV) {
             console.error('[HTTP] Refresh token falhou - redirecionando para login');
           }
