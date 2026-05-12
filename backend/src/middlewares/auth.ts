@@ -118,7 +118,18 @@ export const authorize = (...allowedRoles: string[]) => {
 };
 
 /**
- * Middleware para verificar se o usuário é do mesmo município
+ * Middleware para garantir que o request opera no município do usuário.
+ *
+ * Comportamento:
+ * - Se `req.params.municipalityId` ou `req.body.municipalityId` foi informado e
+ *   diverge de `req.user.municipalityId` → 403 (superuser bypassa).
+ * - Sempre **injeta** `req.user.municipalityId` em `req.body.municipalityId` quando
+ *   ausente, para que controllers e queries downstream usem a fonte de verdade
+ *   (o JWT do usuário autenticado) em vez de confiar em body cru.
+ *
+ * Isso fecha um vetor antigo (I3 do PLANO_MELHORIAS_FLUXOS) onde um controller
+ * que esquecesse de filtrar por `req.user.municipalityId` ficaria vulnerável a
+ * IDOR cross-tenant via parâmetro de body.
  */
 export const checkMunicipality = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
@@ -126,13 +137,19 @@ export const checkMunicipality = (req: Request, res: Response, next: NextFunctio
     return;
   }
 
-  const municipalityId = req.params.municipalityId || req.body.municipalityId;
+  const provided = req.params.municipalityId || req.body?.municipalityId;
+  const isSuperuser = req.user.role === 'superuser';
 
-  if (municipalityId && municipalityId !== req.user.municipalityId) {
-    // Superuser pode acessar qualquer município
-    if (req.user.role !== 'superuser') {
-      res.status(403).json({ error: 'Acesso negado: município diferente' });
-      return;
+  if (provided && provided !== req.user.municipalityId && !isSuperuser) {
+    res.status(403).json({ error: 'Acesso negado: município diferente' });
+    return;
+  }
+
+  // Injeta o municipalityId autoritativo no body (a partir do JWT) se ausente.
+  // Superuser que mandou um valor explícito mantém o que veio (pode operar cross-tenant).
+  if (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) {
+    if (!req.body.municipalityId) {
+      req.body.municipalityId = req.user.municipalityId;
     }
   }
 
