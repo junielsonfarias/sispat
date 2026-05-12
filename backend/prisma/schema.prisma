@@ -7,6 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PatrimonioStatus {
+  ativo
+  inativo
+  manutencao
+  baixado
+  extraviado
+  em_transferencia
+  emprestado
+}
+
 model User {
   id                    String          @id @default(uuid())
   email                 String          @unique
@@ -82,6 +92,7 @@ model Municipality {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   imoveis        Imovel[]
+  inventarios    Inventory[]
   labelTemplates LabelTemplate[] @relation("LabelTemplates")
   locais         Local[]
   patrimonios    Patrimonio[]
@@ -182,7 +193,7 @@ model Patrimonio {
   ano_licitacao      Int?
   setor_responsavel  String
   local_objeto       String
-  status             String           @default("ativo")
+  status             PatrimonioStatus @default(ativo)
   situacao_bem       String?
   observacoes        String?
   fotos              String[]         @default([])
@@ -318,6 +329,7 @@ model Transferencia {
   responsavelDestino String
   status             String     @default("pendente")
   observacoes        String?
+  previousStatus     String     @default("ativo")
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   patrimonio         Patrimonio @relation("TransferenciaPatrimonio", fields: [patrimonioId], references: [id])
@@ -379,10 +391,13 @@ model Inventory {
   dataFim            DateTime?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
+  municipalityId     String
   items              InventoryItem[]
+  municipality       Municipality    @relation(fields: [municipalityId], references: [id])
 
   @@index([status])
   @@index([setor])
+  @@index([municipalityId])
   @@map("inventarios")
 }
 

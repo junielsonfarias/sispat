@@ -90,6 +90,85 @@
 
 ## 2026
 
+### 2026-05-12 — Sprint 18: service layer (inventario + transfer) + 3 migrations + sync de schema
+
+Fechamento das pendências listadas no Sprint 17: extrair `inventarioController` (552) e `transferController` (513) para o padrão service, e aplicar as 3 migrações de schema (Inventory.municipalityId, Transferencia.previousStatus, enum Patrimonio.status).
+
+**M1 — `Inventory.municipalityId` (migration `20260512130000`)**
+
+Sprint 15 forçou tenant isolation no `inventarioController` via subquery `responsavel ∈ users do município`. Funcional, mas ineficiente (extra join) e indireto. Adicionada coluna `municipalityId` direto em `inventarios`:
+1. `ADD COLUMN ... TEXT` nullable.
+2. Backfill: `i.municipalityId = users.municipalityId WHERE i.responsavel = u.id`.
+3. Inventários órfãos (responsável não-existente) pegam o município mais antigo; resto deleta.
+4. `NOT NULL` + FK `RESTRICT/CASCADE` + index.
+
+**M2 — `Transferencia.previousStatus` (migration `20260512140000`)**
+
+Sprint 15 gravava o status anterior do patrimônio como marker textual `[__prev_status__:X]` em `observacoes` para poder restaurar em rejeições/cancelamentos. Hacky. Trocado por coluna dedicada:
+1. `ADD COLUMN previousStatus TEXT NOT NULL DEFAULT 'ativo'`.
+2. Backfill via regex extraindo `[__prev_status__:X]` das observações existentes (`COALESCE(regexp_match, 'ativo')`).
+3. Limpa o marker de `observacoes` (remove o trecho + eventual `\n` antes; `NULLIF(TRIM, '')` se ficar vazio).
+
+**M3 — `Patrimonio.status` enum tipado (migration `20260512150000`)**
+
+`status TEXT @default('ativo')` aceitava qualquer string em runtime. Agora é enum nativo do Postgres:
+1. `CREATE TYPE PatrimonioStatus AS ENUM (...7 valores...)`.
+2. Normaliza linhas órfãs com valor fora do conjunto para `'ativo'` (defesa contra legado).
+3. `DROP DEFAULT` antes do cast (PG exige).
+4. `ALTER COLUMN ... TYPE PatrimonioStatus USING status::PatrimonioStatus`.
+5. `SET DEFAULT 'ativo'` com o tipo novo.
+
+**S1 — `inventarioService` (552 → 120 linhas no controller)**
+
+Mesmo padrão de `patrimonioService`/`imovelService`: `Actor` tipado, erros `InventarioNotFoundError`/`InventarioForbiddenError`/`InventarioValidationError`. Permissões explícitas:
+- `superuser` vê todos os inventários.
+- `admin` vê todos do município.
+- `supervisor`/`usuario` veem apenas inventários em que são responsáveis.
+
+`createInventario` agora é transacional (`prisma.$transaction`) — cria o inventário + cria os `inventoryItems` baseados nos patrimônios no escopo + grava `ActivityLog`. Antes, falha na criação dos items deixava inventário órfão sem items. Cache invalidação via `redisCache.deletePattern('inventarios:*')`.
+
+Tenant isolation em `getInventarioById`/`updateInventario`/`deleteInventario`: cross-tenant retorna `NotFoundError` (404), não vaza existência via 403.
+
+**S2 — `transferService` (513 → 140 linhas no controller)**
+
+Erros tipados: `TransferNotFoundError`/`TransferForbiddenError`/`TransferConflictError`/`TransferValidationError`. Estados que bloqueiam transferência:
+- `baixado` → 400 (não pode transferir baixado).
+- `em_transferencia` → 409 (conflito, já em outro processo).
+- `emprestado` → 409.
+
+Snapshot do status anterior do patrimônio agora é gravado em `transferencia.previousStatus` (não mais no marker textual). Em `approveTransfer`/`rejectTransfer`/`deleteTransfer` (quando pendente), o status do patrimônio é restaurado a partir desse campo. Quando `deleteTransfer` é chamado sobre uma transferência já `rejeitada`, **não toca** no patrimônio (já foi restaurado no reject).
+
+**B1 — Bug do commit: schema Prisma desincronizado das migrations**
+
+Sprint 18 foi commitado (`8c4173c`) com as 3 migrations e os 2 services, mas **o `schema.prisma` não foi atualizado** para refletir as mudanças. Consequência: `prisma generate` não gerava `PatrimonioStatus` (compile error em `services/patrimonioService.ts:10`), e os tipos do client não conheciam `Inventory.municipalityId`, `Transferencia.previousStatus`, `Patrimonio.numero_licitacao/ano_licitacao` etc.
+
+Corrigido na sessão de continuidade:
+- `enum PatrimonioStatus { ativo, inativo, manutencao, baixado, extraviado, em_transferencia, emprestado }` adicionado.
+- `Patrimonio.status` mudou de `String @default("ativo")` para `PatrimonioStatus @default(ativo)`.
+- `Inventory.municipalityId String` + relação inversa em `Municipality.inventarios` + `@@index([municipalityId])`.
+- `Transferencia.previousStatus String @default("ativo")`.
+- `prisma generate` para refrescar client.
+
+**T1 — Testes**
+
+44 testes novos cobrindo os 2 services:
+- `inventarioService.test.ts` (22): list/get/create/update/delete, cobertura de permissões por papel, cache hit, escopo de items (sector/location/specific_location), mascaramento cross-tenant como 404.
+- `transferService.test.ts` (22): list com filtro tenant via `patrimonio.is`, estados que bloqueiam (baixado/em_transferencia/emprestado), snapshot/restauração do previousStatus em approve/reject/delete.
+
+**Validação:** 61/61 testes de service passam (44 novos + 17 do patrimonioService existentes). Há 1 test suite pré-existente (`src/tests/patrimonio.test.ts`) com erro TS de variável usada antes da atribuição — anterior ao Sprint 18, fora do escopo.
+
+**Redução agregada:**
+```
+inventarioController: 552 → 120  (-432, -78%)
+transferController:   513 → 140  (-373, -73%)
+─────────────────────────────────────
+Controllers:         1065 → 260  (-805)
+inventarioService:         ~340 (novo)
+transferService:           ~430 (novo)
+```
+
+- **Lição:** ao criar migration que altera colunas, **sempre atualizar o `schema.prisma`** correspondente no mesmo commit, ou o client Prisma gerado fica fora de sincronia e o código que depende dos novos campos quebra em type-check (e em runtime se o build for skipado).
+
 ### 2026-05-12 — Auditoria geral do projeto (Claude)
 - **Sintoma:** projeto cresceu sem governança — 553 docs (124 duplicados), 60+ scripts shell na raiz, controllers de 1300+ linhas, 222 `any`'s, 236 `console.log`s, backend sem linter, cobertura de teste ~10%.
 - **Ação:** criada estrutura `Docs/_PROJETO/` com ARQUITETURA, REGRAS_NEGOCIO, CONVENCOES, INFRAESTRUTURA, SEGURANCA, HISTORICO, PLANO_CORRECOES. Criado `CLAUDE.md` na raiz para orientar IA.
