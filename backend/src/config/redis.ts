@@ -139,6 +139,16 @@ export class RedisCache {
   }
 
   /**
+   * Status do Redis: 'ready' | 'disabled' | 'unavailable'
+   * 'disabled' = Redis não configurado (ENABLE_REDIS=false)
+   * 'unavailable' = configurado mas não conectado
+   */
+  getStatus(): 'ready' | 'disabled' | 'unavailable' {
+    if (!this.redis) return 'disabled'
+    return this.redis.status === 'ready' ? 'ready' : 'unavailable'
+  }
+
+  /**
    * Definir valor no cache (silencioso se Redis não disponível)
    */
   async set(key: string, value: any, ttl?: number): Promise<void> {

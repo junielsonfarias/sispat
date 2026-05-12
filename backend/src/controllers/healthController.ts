@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { prisma } from '../config/database'
+import { redisCache } from '../config/redis'
 import { logInfo, logError } from '../config/logger'
 
 /**
@@ -47,6 +48,9 @@ export const detailedHealthCheck = async (req: Request, res: Response): Promise<
       logError('Database Health Check Failed', error)
     }
 
+    // Status do Redis (não-bloqueante para o healthcheck — Redis é opcional)
+    const redisStatus = redisCache.getStatus()
+
     // Informações do sistema
     const memoryUsage = process.memoryUsage()
     const cpuUsage = process.cpuUsage()
@@ -64,6 +68,9 @@ export const detailedHealthCheck = async (req: Request, res: Response): Promise<
         database: {
           status: databaseStatus,
           responseTime: `${databaseResponseTime}ms`,
+        },
+        redis: {
+          status: redisStatus,
         },
       },
       system: {
