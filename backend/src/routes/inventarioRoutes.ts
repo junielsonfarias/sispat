@@ -7,6 +7,8 @@ import {
   deleteInventario,
 } from '../controllers/inventarioController';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { handleValidationErrors, inventarioValidations, queryValidations } from '../middlewares/validation';
+import { param } from 'express-validator';
 
 const router = Router();
 
@@ -18,36 +20,45 @@ router.use(authenticateToken);
  * @desc Obter todos os inventários
  * @access Private
  */
-router.get('/', getInventarios);
+router.get('/', queryValidations.pagination, handleValidationErrors, getInventarios);
 
 /**
  * @route GET /api/inventarios/:id
  * @desc Obter inventário por ID
  * @access Private
  */
-router.get('/:id', getInventarioById);
+router.get(
+  '/:id',
+  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+  handleValidationErrors,
+  getInventarioById,
+);
 
 /**
  * @route POST /api/inventarios
  * @desc Criar novo inventário
  * @access Private
  */
-router.post('/', createInventario);
+router.post('/', inventarioValidations.create, handleValidationErrors, createInventario);
 
 /**
  * @route PUT /api/inventarios/:id
  * @desc Atualizar inventário
  * @access Private
  */
-router.put('/:id', updateInventario);
+router.put('/:id', inventarioValidations.update, handleValidationErrors, updateInventario);
 
 /**
  * @route DELETE /api/inventarios/:id
  * @desc Deletar inventário
  * @access Superuser/Supervisor
  */
-router.delete('/:id', authorize('superuser', 'supervisor'), deleteInventario);
+router.delete(
+  '/:id',
+  authorize('superuser', 'supervisor'),
+  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+  handleValidationErrors,
+  deleteInventario,
+);
 
 export default router;
-
-

@@ -7,6 +7,7 @@ import {
   createNotification,
   deleteNotification,
 } from '../controllers/notificationController';
+import { handleValidationErrors, notificationValidations } from '../middlewares/validation';
 
 const router = Router();
 
@@ -25,7 +26,12 @@ router.get('/', getNotifications);
  * @desc Marcar notificação como lida
  * @access Private
  */
-router.put('/:id/mark-read', markNotificationAsRead);
+router.put(
+  '/:id/mark-read',
+  notificationValidations.byId,
+  handleValidationErrors,
+  markNotificationAsRead,
+);
 
 /**
  * @route PUT /api/notifications/mark-all-read
@@ -39,15 +45,18 @@ router.put('/mark-all-read', markAllNotificationsAsRead);
  * @desc Criar notificação
  * @access Private
  */
-router.post('/', createNotification);
+router.post('/', notificationValidations.create, handleValidationErrors, createNotification);
 
 /**
  * @route DELETE /api/notifications/:id
  * @desc Deletar notificação
  * @access Private
  */
-router.delete('/:id', deleteNotification);
+router.delete(
+  '/:id',
+  notificationValidations.byId,
+  handleValidationErrors,
+  deleteNotification,
+);
 
 export default router;
-
-

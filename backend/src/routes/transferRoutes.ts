@@ -8,6 +8,7 @@ import {
   deleteTransfer
 } from '../controllers/transferController';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { handleValidationErrors, transferValidations, queryValidations } from '../middlewares/validation';
 
 const router = Router();
 
@@ -21,41 +22,65 @@ router.use(authenticateToken);
  * @desc Listar transferências
  * @access Private (All authenticated users)
  */
-router.get('/', listTransfers);
+router.get('/', queryValidations.pagination, handleValidationErrors, listTransfers);
 
 /**
  * @route GET /api/transfers/:id
  * @desc Obter transferência por ID
  * @access Private (All authenticated users)
  */
-router.get('/:id', getTransfer);
+router.get('/:id', transferValidations.byId, handleValidationErrors, getTransfer);
 
 /**
  * @route POST /api/transfers
  * @desc Criar transferência
  * @access Private (admin, supervisor, usuario)
  */
-router.post('/', authorize('admin', 'supervisor', 'usuario'), createTransfer);
+router.post(
+  '/',
+  authorize('admin', 'supervisor', 'usuario'),
+  transferValidations.create,
+  handleValidationErrors,
+  createTransfer,
+);
 
 /**
  * @route PATCH /api/transfers/:id/approve
  * @desc Aprovar transferência
  * @access Private (admin, supervisor)
  */
-router.patch('/:id/approve', authorize('admin', 'supervisor'), approveTransfer);
+router.patch(
+  '/:id/approve',
+  authorize('admin', 'supervisor'),
+  transferValidations.approve,
+  handleValidationErrors,
+  approveTransfer,
+);
 
 /**
  * @route PATCH /api/transfers/:id/reject
  * @desc Rejeitar transferência
  * @access Private (admin, supervisor)
  */
-router.patch('/:id/reject', authorize('admin', 'supervisor'), rejectTransfer);
+router.patch(
+  '/:id/reject',
+  authorize('admin', 'supervisor'),
+  transferValidations.reject,
+  handleValidationErrors,
+  rejectTransfer,
+);
 
 /**
  * @route DELETE /api/transfers/:id
  * @desc Deletar transferência
  * @access Private (admin, supervisor)
  */
-router.delete('/:id', authorize('admin', 'supervisor'), deleteTransfer);
+router.delete(
+  '/:id',
+  authorize('admin', 'supervisor'),
+  transferValidations.byId,
+  handleValidationErrors,
+  deleteTransfer,
+);
 
 export default router;

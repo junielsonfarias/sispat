@@ -7,6 +7,7 @@ import {
   deleteManutencaoTask,
   getManutencaoTask,
 } from '../controllers/manutencaoController'
+import { handleValidationErrors, manutencaoValidations } from '../middlewares/validation'
 
 const router = Router()
 
@@ -15,10 +16,9 @@ router.use(authenticateToken)
 
 // CRUD completo
 router.get('/', listManutencaoTasks)
-router.post('/', createManutencaoTask)
-router.get('/:id', getManutencaoTask)
-router.put('/:id', updateManutencaoTask)
-router.delete('/:id', deleteManutencaoTask)
+router.post('/', manutencaoValidations.create, handleValidationErrors, createManutencaoTask)
+router.get('/:id', manutencaoValidations.byId, handleValidationErrors, getManutencaoTask)
+router.put('/:id', manutencaoValidations.update, handleValidationErrors, updateManutencaoTask)
+router.delete('/:id', manutencaoValidations.byId, handleValidationErrors, deleteManutencaoTask)
 
 export default router
-

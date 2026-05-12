@@ -9,6 +9,8 @@ import {
   deleteImovel,
 } from '../controllers/imovelController';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { handleValidationErrors, imovelValidations, queryValidations } from '../middlewares/validation';
+import { param } from 'express-validator';
 
 const router = Router();
 
@@ -22,7 +24,7 @@ router.use(authenticateToken);
  * @desc Listar imóveis com filtros
  * @access Private (All authenticated users)
  */
-router.get('/', listImoveis);
+router.get('/', queryValidations.pagination, handleValidationErrors, listImoveis);
 
 /**
  * @route GET /api/imoveis/gerar-numero
@@ -43,28 +45,50 @@ router.get('/numero/:numero', getByNumero);
  * @desc Obter imóvel por ID
  * @access Private
  */
-router.get('/:id', getImovel);
+router.get(
+  '/:id',
+  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+  handleValidationErrors,
+  getImovel,
+);
 
 /**
  * @route POST /api/imoveis
  * @desc Criar imóvel
  * @access Private (Admin, Supervisor, Usuario)
  */
-router.post('/', authorize('superuser', 'supervisor', 'usuario'), createImovel);
+router.post(
+  '/',
+  authorize('superuser', 'supervisor', 'usuario'),
+  imovelValidations.create,
+  handleValidationErrors,
+  createImovel,
+);
 
 /**
  * @route PUT /api/imoveis/:id
  * @desc Atualizar imóvel
  * @access Private (Admin, Supervisor, Usuario)
  */
-router.put('/:id', authorize('superuser', 'supervisor', 'usuario'), updateImovel);
+router.put(
+  '/:id',
+  authorize('superuser', 'supervisor', 'usuario'),
+  imovelValidations.update,
+  handleValidationErrors,
+  updateImovel,
+);
 
 /**
  * @route DELETE /api/imoveis/:id
  * @desc Deletar imóvel
  * @access Private (Admin, Superuser only)
  */
-router.delete('/:id', authorize('superuser', 'supervisor'), deleteImovel);
+router.delete(
+  '/:id',
+  authorize('superuser', 'supervisor'),
+  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+  handleValidationErrors,
+  deleteImovel,
+);
 
 export default router;
-

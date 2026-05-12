@@ -28,6 +28,11 @@ import { Label } from '@/components/ui/label'
 import { useSectors } from '@/contexts/SectorContext'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { api } from '@/services/http-api'
+import {
+  ImoveisBasicoFields,
+  ImoveisDataAquisicaoField,
+  ImoveisValorField,
+} from '@/components/imoveis/ImoveisSharedFields'
 
 const baseSchema = z.object({
   numero_patrimonio: z.string().min(1, 'O número de patrimônio é obrigatório.'),
@@ -329,33 +334,7 @@ export default function ImoveisCreate() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="denominacao"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Denominação</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Ex: Escola Municipal" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="endereco"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>Endereço</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} placeholder="Endereço completo do imóvel" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <ImoveisBasicoFields control={form.control} />
 
                   <FormField
                     control={form.control}
@@ -390,19 +369,7 @@ export default function ImoveisCreate() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="data_aquisicao"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data de Aquisição</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <ImoveisDataAquisicaoField control={form.control} />
 
                   <FormField
                     control={form.control}
@@ -471,23 +438,7 @@ export default function ImoveisCreate() {
               </CardHeader>
               <CardContent className="px-6 pb-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="valor_aquisicao"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Valor de Aquisição</FormLabel>
-                        <FormControl>
-                          <CurrencyInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="R$ 0,00"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <ImoveisValorField control={form.control} />
 
                   <FormField
                     control={form.control}

@@ -43,6 +43,12 @@ import {
 } from '@/components/ui/tooltip'
 import { patrimonioEditSchema } from '@/lib/validations/patrimonioSchema'
 import { logger } from '@/lib/logger'
+import {
+  BensIdentificacaoFields,
+  BensAquisicaoFields,
+  BensLicitacaoFields,
+  BensNotaFiscalField,
+} from '@/components/bens/BensSharedFields'
 
 type PatrimonioFormValues = z.infer<typeof patrimonioEditSchema>
 
@@ -454,211 +460,13 @@ const BensEdit = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="data_aquisicao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de Aquisição</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          type="date"
-                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                          onChange={(e) => field.onChange(e.target.value)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <BensAquisicaoFields control={form.control} activeAcquisitionForms={activeAcquisitionForms} />
 
-                <FormField
-                  control={form.control}
-                  name="forma_aquisicao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Forma de Aquisição</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a forma" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {activeAcquisitionForms.map((form) => (
-                            <SelectItem key={form.id} value={form.nome}>
-                              {form.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <BensLicitacaoFields control={form.control} />
 
-              {/* Campos opcionais de Aquisição */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="numero_licitacao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número de Referência</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Ex: 001/2025" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="ano_licitacao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ano de Referência</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          {...field}
-                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                          placeholder="Ex: 2025"
-                          min="2000"
-                          max="2100"
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <BensIdentificacaoFields control={form.control} tiposBens={tiposBens} />
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="tipo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {tiposBens.filter(tipo => tipo.ativo).map((tipo) => (
-                            <SelectItem key={tipo.id} value={tipo.nome}>
-                              {tipo.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="marca"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marca</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Ex: Dell, HP, Samsung" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="modelo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Modelo</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Ex: OptiPlex 3080" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="cor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cor</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Ex: Preto, Branco" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="numero_serie"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número de Série</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Ex: ABC123456789" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="quantidade"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quantidade</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          type="number" 
-                          min="1"
-                          placeholder="1"
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="numero_nota_fiscal"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número da Nota Fiscal</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Ex: 123456" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <BensNotaFiscalField control={form.control} />
             </CardContent>
           </Card>
 

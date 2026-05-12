@@ -120,6 +120,48 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 16: validação Zod/express-validator + extração de campos compartilhados
+
+Sprint focado em saúde do código: aplicar a infraestrutura de validação que já existia em `middlewares/validation.ts` mas **não estava sendo usada por nenhuma rota** (grep zero matches), e reduzir a duplicação entre páginas Create/Edit de bens e imóveis.
+
+**V1 — Validação `express-validator` em 5 rotas críticas**
+
+Auditoria revelou que `validation.ts` (517 linhas) tem schemas para user/patrimonio/sector/local/tipoBem/imovel/pagination mas **nenhuma rota o importava**. Toda infraestrutura sentada lá sem efeito.
+
+Adicionados schemas novos: `inventarioValidations.create/update`, `transferValidations.create/approve/reject/byId`, `manutencaoValidations.create/update/byId`, `notificationValidations.create/byId`. Schemas existentes (`imovelValidations`) ajustados: `tipo_imovel` e `situacao` agora opcionais (controller já tratava como tal), e adicionados `latitude`/`longitude` com range.
+
+Aplicados em `inventarioRoutes.ts`, `transferRoutes.ts`, `manutencaoRoutes.ts`, `notificationRoutes.ts`, `imovelRoutes.ts`. Padrão: `router.METHOD(path, [auth, ...validations], handleValidationErrors, controller)`. Inclui também validação de `:id` UUID em todas as rotas com path param.
+
+Bug pré-existente corrigido no schema: `body('fotos.*').isURL()` rejeitava caminhos relativos como `/uploads/x.jpg` (que é exatamente o que o backend gera) e também rejeitava o formato `{id, file_url, file_name}` vindo do ImageUpload do frontend. Substituído por `custom((v) => string || objeto-com-file_url)`. O serviço já normaliza (`sanitizeIncomingUrls`), então a validação só rejeita formatos completamente inválidos.
+
+**V2 — Extração de campos compartilhados (R3 + R4 com escopo reduzido)**
+
+Plano original era unificar `BensCreate` (996 linhas) e `BensEdit` (761) num único `BensForm.tsx`. Mapeamento detalhado revelou divergências legítimas que não devem ser unificadas: Create gera número automaticamente, Edit mostra disabled; Create tem CurrencyInput em `valor_aquisicao`, Edit tem Input number; opções de `situacao_bem`/`status` diferem (Create tem `otimo`; Edit tem `baixado`/`extraviado`); Create tem card de depreciação preview e sub-patrimônios, Edit não; locais filtrados por setor só no Create.
+
+Optei por extração cirúrgica via subcomponentes em `BensSharedFields.tsx` (281 linhas): `BensIdentificacaoFields` (tipo+marca+modelo+cor+numero_serie+quantidade), `BensAquisicaoFields` (data+forma), `BensLicitacaoFields` (numero+ano), `BensNotaFiscalField`. Apenas campos 100% idênticos foram extraídos — mantém divergências como divergências.
+
+Mesma estratégia em `ImoveisSharedFields.tsx` (139 linhas): `ImoveisBasicoFields` (denominacao+endereco), `ImoveisDataAquisicaoField`, `ImoveisValorField`, `ImoveisAreaFields`. Em `ImoveisCreate` mantive os Inputs de área inline porque têm texto descritivo abaixo (`<p>Área total do terreno...</p>`) que `ImoveisEdit` não tem — extrair quebraria a UI.
+
+**Redução de linhas:**
+
+```
+BensCreate:    996 → 805   (-191, -19%)
+BensEdit:      761 → 569   (-192, -25%)
+ImoveisCreate: 758 → 709   ( -49,  -6%)
+ImoveisEdit:   452 → 368   ( -84, -19%)
+─────────────────────────────────────
+Pages:        2967 → 2451  (-516, -17%)
+Shared:                420 (novos, fonte única)
+```
+
+516 linhas de duplicação eliminadas. Quando alguém precisar adicionar/mudar um campo compartilhado (ex: trocar Select de "marca" por SearchableSelect), edita em um único lugar.
+
+**Validação:** 17/17 testes do `patrimonioService` continuam passando. Typecheck do backend: só os 2 erros pré-existentes (`zod`, `cookie-parser`) — resolvem no `npm install` da VPS. Padrão visual e validação dos campos extraídos mantidos byte-a-byte (exceto melhoria: `area_terreno`/`area_construida` no shared agora usam `value={field.value ?? ''}` que evita warning de uncontrolled input).
+
+**Pendências para sprints futuros:**
+- 18 rotas POST/PUT/PATCH ainda sem validação (entre elas: auth, customization, sectors, locais, tiposBens, patrimônio, documentos, labels, emails). Aplicar em Sprint 17.
+- Schemas Zod compartilhados frontend↔backend (não foi feito hoje porque exigiria mais coordenação).
+
 ### 2026-05-12 — Sprint 15: tenant isolation + guards de estado (críticos)
 
 Fechamento de 5 vetores reais de vazamento entre tenants e 3 brechas operacionais. Riscos eram concretos: usuário do município X enxergava/criava transferências sobre patrimônios do município Y; admin do município X listava inventários do município Y; qualquer usuário criava notificação spoofando o `userId` alvo; admin podia gravar `javascript:alert(1)` em URLs de logo/favicon (XSS estocado); bem em transferência ou empréstimo continuava editável durante o ciclo.
