@@ -332,13 +332,66 @@ export default function ImoveisView() {
                   icon={Building}
                 />
                 {imovel.latitude && imovel.longitude && (
-                  <DetailItem 
-                    label="Coordenadas" 
-                    value={`${imovel.latitude}, ${imovel.longitude}`}
+                  <DetailItem
+                    label="Coordenadas"
+                    value={
+                      <>
+                        <span className="font-mono text-sm">
+                          {imovel.latitude}, {imovel.longitude}
+                        </span>
+                        <a
+                          href={`https://www.openstreetmap.org/?mlat=${imovel.latitude}&mlon=${imovel.longitude}#map=18/${imovel.latitude}/${imovel.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-primary text-sm hover:underline"
+                          title="Ver no OpenStreetMap (nova aba)"
+                        >
+                          🗺️ Ver no mapa
+                        </a>
+                        <a
+                          href={`https://www.google.com/maps?q=${imovel.latitude},${imovel.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-primary text-sm hover:underline"
+                          title="Abrir no Google Maps (nova aba)"
+                        >
+                          Google Maps
+                        </a>
+                      </>
+                    }
                   />
                 )}
               </CardContent>
             </Card>
+
+            {/* Preview do mapa (embed OpenStreetMap) */}
+            {imovel.latitude && imovel.longitude && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    🗺️ Localização no mapa
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const lat = imovel.latitude
+                    const lng = imovel.longitude
+                    const delta = 0.003
+                    const bbox = `${lng - delta},${lat - delta},${lng + delta},${lat + delta}`
+                    return (
+                      <iframe
+                        title="Mapa do imóvel"
+                        width="100%"
+                        height="320"
+                        loading="lazy"
+                        className="rounded border"
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`}
+                      />
+                    )
+                  })()}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Informações Financeiras e Medidas */}
             <Card>
