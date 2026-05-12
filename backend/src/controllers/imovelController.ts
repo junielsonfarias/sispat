@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 import { redisCache, CacheUtils } from '../config/redis';
+import { sanitizeIncomingUrls, normalizeOnRead } from '../utils/photo-urls';
 
 /**
  * Listar imóveis com filtros
@@ -105,7 +106,7 @@ export const listImoveis = async (req: Request, res: Response): Promise<void> =>
     }
 
     res.json({
-      imoveis: result.imoveis,
+      imoveis: result.imoveis.map((i) => normalizeOnRead(i as any)),
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -174,7 +175,7 @@ export const getImovel = async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    res.json({ imovel });
+    res.json({ imovel: normalizeOnRead(imovel as any) });
   } catch (error) {
     logError('Erro ao buscar imóvel', error, { imovelId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao buscar imóvel' });
@@ -205,7 +206,7 @@ export const getByNumero = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    res.json({ imovel });
+    res.json({ imovel: normalizeOnRead(imovel as any) });
   } catch (error) {
     logError('Erro ao buscar imóvel por número', error, { numero: req.params.numero });
     res.status(500).json({ error: 'Erro ao buscar imóvel' });
@@ -299,12 +300,15 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Processar fotos (extrair apenas URLs se for array de objetos)
-    const processedFotos = Array.isArray(fotos) 
-      ? fotos.map(f => typeof f === 'string' ? f : (f.file_url || f.url || ''))
-      : [];
-    
-    logDebug('[CREATE IMOVEL] Fotos processadas', { fotosCount: processedFotos.length });
+    // Aceita strings ou objetos { id, file_url, file_name } vindos do ImageUpload;
+    // rejeita blob: e descarta itens vazios/inválidos.
+    const processedFotos = sanitizeIncomingUrls(fotos);
+    const processedDocumentos = sanitizeIncomingUrls(documentos);
+
+    logDebug('[CREATE IMOVEL] Fotos/documentos processados', {
+      fotosCount: processedFotos.length,
+      documentosCount: processedDocumentos.length,
+    });
 
     // Criar imóvel usando transaction para garantir consistência
     const imovel = await prisma.$transaction(async (tx) => {
@@ -326,7 +330,7 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
           tipo_imovel,
           situacao,
           fotos: processedFotos,
-          documentos: documentos || [],
+          documentos: processedDocumentos,
           url_documentos,
           customFields: customFields && typeof customFields === 'object' ? customFields : undefined,
           municipalityId: req.user?.municipalityId || '',
@@ -372,7 +376,7 @@ export const createImovel = async (req: Request, res: Response): Promise<void> =
     await CacheUtils.invalidateImoveis();
     logDebug('✅ Cache de imóveis invalidado após criação');
 
-    res.status(201).json({ message: 'Imóvel criado com sucesso', imovel });
+    res.status(201).json({ message: 'Imóvel criado com sucesso', imovel: normalizeOnRead(imovel as any) });
   } catch (error) {
     logError('Erro ao criar imóvel', error, { userId: req.user?.userId, numeroPatrimonio: req.body.numero_patrimonio });
     res.status(500).json({ error: 'Erro ao criar imóvel' });
@@ -436,6 +440,16 @@ export const updateImovel = async (req: Request, res: Response): Promise<void> =
       if (updateData[field] !== undefined) {
         dataToUpdate[field] = updateData[field];
       }
+    }
+
+    // Sanitiza fotos/documentos: aceita strings ou objetos { file_url, ... },
+    // rejeita blob: e lixo legado ([object Object]). Sem isso o Prisma falha
+    // quando o ImageUpload manda objetos para um campo String[].
+    if (dataToUpdate.fotos !== undefined) {
+      dataToUpdate.fotos = sanitizeIncomingUrls(dataToUpdate.fotos);
+    }
+    if (dataToUpdate.documentos !== undefined) {
+      dataToUpdate.documentos = sanitizeIncomingUrls(dataToUpdate.documentos);
     }
 
     // Conversões de tipo
@@ -502,7 +516,7 @@ export const updateImovel = async (req: Request, res: Response): Promise<void> =
     await CacheUtils.invalidateImoveis();
     logDebug('✅ Cache de imóveis invalidado após atualização');
 
-    res.json({ message: 'Imóvel atualizado com sucesso', imovel });
+    res.json({ message: 'Imóvel atualizado com sucesso', imovel: normalizeOnRead(imovel as any) });
   } catch (error) {
     logError('Erro ao atualizar imóvel', error, { imovelId: req.params.id, userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao atualizar imóvel' });

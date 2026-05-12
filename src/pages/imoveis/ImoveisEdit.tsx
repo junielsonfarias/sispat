@@ -145,8 +145,24 @@ export default function ImoveisEdit() {
   const onSubmit = async (data: ImovelFormValues) => {
     setIsLoading(true)
     try {
+      // Converte itens vindos do ImageUpload ({id, file_url, file_name}) para
+      // strings; o backend também sanitiza, mas evitamos o round-trip inválido.
+      const toUrl = (item: any): string => {
+        if (typeof item === 'string') return item
+        if (item && typeof item === 'object') return item.file_url || item.url || ''
+        return ''
+      }
+      const fotosProcessadas = (data.fotos || [])
+        .map(toUrl)
+        .filter((u: string) => u && !u.startsWith('blob:'))
+      const documentosProcessados = (data.documentos || [])
+        .map(toUrl)
+        .filter((u: string) => u && !u.startsWith('blob:'))
+
       await updateImovel(id!, {
         ...data,
+        fotos: fotosProcessadas,
+        documentos: documentosProcessados,
         updatedAt: new Date().toISOString(),
         updatedBy: user?.id || '',
       })

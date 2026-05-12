@@ -15,6 +15,15 @@ import {
 } from '../config/database-optimization';
 import { redisCache, CacheUtils } from '../config/redis';
 import { logDebug, logError, logInfo, logWarn } from '../config/logger';
+import {
+  normalizeUrlArray as sharedNormalizeUrlArray,
+  sanitizeIncomingUrls as sharedSanitizeIncomingUrls,
+  normalizeOnRead as sharedNormalizeOnRead,
+} from '../utils/photo-urls';
+
+// Re-exports para back-compat com os testes em __tests__/services/patrimonioService.normalize.test.ts
+export const normalizeUrlArray = sharedNormalizeUrlArray;
+export const sanitizeIncomingUrls = sharedSanitizeIncomingUrls;
 
 export interface Actor {
   userId: string;
@@ -75,68 +84,8 @@ const DETAIL_INCLUDE = {
   },
 } satisfies Prisma.PatrimonioInclude;
 
-// ===========================================================================
-// Normalizadores: tornam o shape de fotos/documentos consistente.
-// O banco guarda String[], mas o front-end histórico pode ter enviado objetos
-// `{ file_url, id, ... }` — normalizamos na borda da resposta para strings.
-// ===========================================================================
-
-const extractUrlFromAny = (value: unknown): string | null => {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'object' && value !== null) {
-    const v = value as Record<string, unknown>;
-    const candidate =
-      (typeof v.file_url === 'string' && v.file_url) ||
-      (typeof v.url === 'string' && v.url) ||
-      (typeof v.id === 'string' && v.id) ||
-      (typeof v.fileName === 'string' && v.fileName) ||
-      null;
-    return candidate || null;
-  }
-  if (value === null || value === undefined) return null;
-  return String(value);
-};
-
-export const normalizeUrlArray = (arr: unknown): string[] => {
-  if (!Array.isArray(arr)) return [];
-  return arr
-    .map(extractUrlFromAny)
-    .filter((v): v is string => Boolean(v && v.trim() !== ''));
-};
-
-/**
- * Mesma normalização do create/update: aceita strings ou objetos, mas rejeita
- * URLs `blob:` (referências locais de navegador que costumavam vazar para
- * o banco — vide HISTORICO_CORRECOES.md).
- */
-export const sanitizeIncomingUrls = (arr: unknown): string[] => {
-  if (!Array.isArray(arr)) return [];
-  return arr
-    .map((item) => {
-      const url = extractUrlFromAny(item);
-      if (!url) return null;
-      if (url.startsWith('blob:')) {
-        logWarn('URL blob- bloqueada', { url });
-        return null;
-      }
-      return url;
-    })
-    .filter((v): v is string => Boolean(v && v.trim() !== ''));
-};
-
-const normalizeOnRead = <T extends { fotos?: unknown; documentos?: unknown }>(
-  entity: T,
-): T => {
-  if (entity.fotos !== undefined) {
-    (entity as { fotos: string[] }).fotos = normalizeUrlArray(entity.fotos);
-  }
-  if (entity.documentos !== undefined) {
-    (entity as { documentos: string[] }).documentos = normalizeUrlArray(
-      entity.documentos,
-    );
-  }
-  return entity;
-};
+// Normalizadores de fotos/documentos vivem em utils/photo-urls.ts (compartilhado com imovelController).
+const normalizeOnRead = sharedNormalizeOnRead;
 
 // ===========================================================================
 // Permissões: superuser/admin têm acesso total; supervisor/usuario só veem
