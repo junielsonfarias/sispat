@@ -11,6 +11,20 @@ datasource db {
 }
 
 // ============================================
+// ENUMS
+// ============================================
+
+enum PatrimonioStatus {
+  ativo
+  inativo
+  manutencao
+  baixado
+  extraviado
+  em_transferencia
+  emprestado
+}
+
+// ============================================
 // MODELOS PRINCIPAIS
 // ============================================
 
@@ -58,6 +72,7 @@ model Municipality {
   locais         Local[]
   patrimonios    Patrimonio[]
   imoveis        Imovel[]
+  inventarios    Inventory[]
   fichaTemplates FichaTemplate[]
 
   @@map("municipalities")
@@ -157,7 +172,7 @@ model Patrimonio {
   forma_aquisicao    String
   setor_responsavel  String
   local_objeto       String
-  status             String   @default("ativo") // 'ativo', 'inativo', 'baixado', 'manutencao'
+  status             PatrimonioStatus @default(ativo)
   situacao_bem       String? // 'OTIMO', 'BOM', 'REGULAR', 'RUIM', 'PESSIMO'
   observacoes        String?
   fotos              String[] @default([])
@@ -317,6 +332,7 @@ model Transferencia {
   responsavelOrigem  String
   responsavelDestino String
   status             String   @default("pendente") // 'pendente', 'aprovada', 'rejeitada'
+  previousStatus     String   @default("ativo") // status original do Patrimonio antes do `em_transferencia` — restaurado em aprovar/rejeitar/deletar
   observacoes        String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -387,10 +403,14 @@ model Inventory {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
+  municipalityId String
+  municipality   Municipality @relation(fields: [municipalityId], references: [id])
+
   items InventoryItem[]
 
   @@index([status])
   @@index([setor])
+  @@index([municipalityId])
   @@map("inventarios")
 }
 

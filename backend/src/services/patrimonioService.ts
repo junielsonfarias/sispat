@@ -7,7 +7,7 @@
  * `AuditContext` com IP/userAgent.
  */
 
-import { Prisma } from '@prisma/client';
+import { Prisma, PatrimonioStatus } from '@prisma/client';
 import { prisma } from '../config/database';
 import {
   QueryOptimizer,
@@ -53,7 +53,10 @@ export interface ListQuery {
   orderDirection?: 'asc' | 'desc';
 }
 
-const PUBLIC_STATUS = ['ativo', 'em_manutencao', 'cedido', 'em_uso'];
+// Status que aparecem na vista pública (sem autenticação). Os valores anteriores
+// (em_manutencao/cedido/em_uso) eram legados e não existiam em DB — após a
+// migração do enum em Sprint 18 só valores do enum PatrimonioStatus servem.
+const PUBLIC_STATUS: PatrimonioStatus[] = ['ativo', 'manutencao'];
 
 const STATIC_INCLUDE = {
   sector: { select: { id: true, name: true, codigo: true } },
@@ -433,7 +436,7 @@ export const createPatrimonio = async (
         ano_licitacao: input.ano_licitacao ? parseInt(String(input.ano_licitacao), 10) : null,
         setor_responsavel: input.setor_responsavel || 'Não especificado',
         local_objeto: input.local_objeto || 'Não especificado',
-        status: input.status || 'ativo',
+        status: (input.status as PatrimonioStatus) || PatrimonioStatus.ativo,
         situacao_bem: input.situacao_bem,
         observacoes: input.observacoes,
         fotos: sanitizeIncomingUrls(input.fotos),
