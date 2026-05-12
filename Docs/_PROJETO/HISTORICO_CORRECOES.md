@@ -120,6 +120,24 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 3 P1: refactor e testes
+
+**3.1) Extrair patrimonioService (refactor 1320 → 347 linhas no controller)**
+- **Sintoma:** `patrimonioController.ts` tinha 1320 linhas com lógica de domínio, queries Prisma, normalização e RBAC misturados. Difícil de testar e manter.
+- **Correção:** criada camada `backend/src/services/patrimonioService.ts` (786 linhas) com regras puras (sem Request/Response). Controller reduzido a 347 linhas, só lida com HTTP → service → mapping de exceções para status codes. Erros tipados (`PatrimonioNotFoundError`, `PatrimonioConflictError`, `PatrimonioForbiddenError`). DRY consolidou 8 repetições de normalização de fotos em `normalizeUrlArray`/`sanitizeIncomingUrls`. RBAC consolidado em `ensureSectorAccess`. **Bug fix incluso:** `gerarNumeroPatrimonial` substituiu `setTimeout` recursivo (risco de double-response + race condition) por retry síncrono em loop.
+- **Arquivos:** `backend/src/services/patrimonioService.ts`, `backend/src/controllers/patrimonioController.ts`
+- **Lição:** controllers gordos disfarçam bugs sutis. Extração para service revela duplicação e permite teste sem mocks de HTTP.
+
+**3.2) Testes unit do patrimonioService e file-validation (31 testes novos)**
+- **Sintoma:** Cobertura de testes do backend era ~5% — código novo do Sprint 2 e refactor do 3.1 estavam sem teste.
+- **Correção:** 31 testes em 3 arquivos:
+  - `__tests__/utils/file-validation.test.ts` (10) — magic bytes para JPEG/PNG/GIF/WebP/PDF, rejeição de SVG/ELF/MZ, alias `image/jpg`
+  - `__tests__/services/patrimonioService.normalize.test.ts` (16) — `normalizeUrlArray` e `sanitizeIncomingUrls`
+  - `__tests__/services/patrimonioService.gerarNumero.test.ts` (5) — geração atômica + retry
+  - Infra: `tsconfig.test.json` (adiciona `jest` aos types só nos testes, sem afetar build), `jest.config.js` aponta para essa config no ts-jest transform.
+  - **Bug encontrado e corrigido pelos próprios testes:** `extractUrlFromAny()` retornava `"[object Object]"` quando objeto não tinha nenhum campo string conhecido — agora retorna `null` corretamente, permitindo que o `filter()` de vazios funcione.
+- **Lição:** escrever testes pequenos revela bugs sutis em funções "óbvias". Vale a pena.
+
 ### 2026-05-12 — Sprint 2 P1: 3 correções aplicadas
 
 **2.1) Refresh token rotation/revogação**

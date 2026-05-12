@@ -58,7 +58,7 @@
 - **Bloquear SVG** explicitamente.
 - **Esforço:** 4h
 
-### 7. Refactor `patrimonioController.ts` (1320 linhas)
+### 7. ✅ Refactor `patrimonioController.ts` (1320 linhas)
 - **Onde:** `backend/src/controllers/patrimonioController.ts`
 - **Como:** extrair para `services/patrimonioService.ts`. Controller só lida com HTTP. Não engordar mais; ao adicionar feature, criar service primeiro.
 - **Esforço:** 2-3 dias
@@ -77,7 +77,7 @@
   - Adicionar regra ESLint `no-console: ["error", { allow: ["warn", "error"] }]`.
 - **Esforço:** 1 dia
 
-### 9. Aumentar cobertura de testes
+### 9. ✅ Aumentar cobertura de testes (parcial — 31 testes novos)
 - **Meta:** 60% nas rotas críticas de backend (auth, patrimonio, upload, transferencia).
 - **Como:** 
   - Setup `supertest` + Postgres test container (jest)
