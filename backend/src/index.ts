@@ -141,11 +141,13 @@ if (isProduction || process.env.ENABLE_HEALTH_MONITOR === 'true') {
 
 // Rate limiting global (proteção contra abuso)
 // ✅ Habilitar apenas em produção ou quando explicitamente habilitado
-import { globalRateLimiter, writeRateLimiter } from './middlewares/advanced-rate-limit';
+import { globalRateLimiter, writeRateLimiter, publicRateLimiter } from './middlewares/advanced-rate-limit';
 
 if (isProduction || process.env.ENABLE_RATE_LIMIT === 'true') {
   app.use(globalRateLimiter);
-  // Aplicar rate limiting para operações de escrita em rotas específicas
+  // Rotas públicas (consulta sem autenticação) — limitar por IP para evitar scraping/DDoS
+  app.use('/api/public', publicRateLimiter);
+  // Operações de escrita em rotas específicas
   app.use('/api/patrimonios', writeRateLimiter);
   app.use('/api/imoveis', writeRateLimiter);
   app.use('/api/transfers', writeRateLimiter);

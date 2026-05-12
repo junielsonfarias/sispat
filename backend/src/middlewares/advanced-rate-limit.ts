@@ -152,6 +152,41 @@ export const uploadRateLimiter = rateLimit({
 })
 
 /**
+ * Rate limiter para rotas públicas (`/api/public/*`).
+ * Como esses endpoints são acessíveis sem autenticação, são alvo natural
+ * de scraping/DDoS. Limita por IP a 120 req/min (suficiente para uso
+ * humano normal, restritivo para bots agressivos).
+ */
+export const publicRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+
+  store: redis
+    ? new RedisStore({
+        // @ts-expect-error - tipos do RedisStore
+        sendCommand: (...args: string[]) => redis.call(...args),
+        prefix: 'rl:public:',
+      })
+    : undefined,
+
+  message: {
+    error: 'Too Many Requests',
+    message: 'Limite de acessos à consulta pública atingido. Aguarde alguns segundos.',
+  },
+
+  handler: (req: any, res) => {
+    console.warn(`⚠️ Rate limit (público) excedido: ${req.ip} → ${req.method} ${req.path}`);
+    res.status(429).json({
+      error: 'Too Many Requests',
+      message: 'Limite de acessos à consulta pública atingido.',
+      retryAfter: Math.ceil((req.rateLimit?.resetTime || Date.now() + 60000) / 1000),
+    });
+  },
+});
+
+/**
  * Rate limiter para geração de relatórios/PDFs
  * 20 por hora (operações custosas)
  */
@@ -186,6 +221,7 @@ export default {
   globalRateLimiter,
   authRateLimiter,
   writeRateLimiter,
+  publicRateLimiter,
   uploadRateLimiter,
   reportRateLimiter,
   isRedisAvailable,
