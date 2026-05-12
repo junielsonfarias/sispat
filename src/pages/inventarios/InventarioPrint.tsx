@@ -23,6 +23,7 @@ import { ArrowLeft, Printer, Download, CheckCircle, XCircle } from 'lucide-react
 import { formatDate } from '@/lib/utils'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { generateInventoryPDF, generatePDFFromElement, type InventoryPDFData } from '@/lib/pdf-utils'
+import { generatePatrimonioQRCode } from '@/lib/qr-code-utils'
 import { toast } from '@/hooks/use-toast'
 
 export default function InventarioPrint() {
@@ -31,6 +32,7 @@ export default function InventarioPrint() {
   const { getInventoryById } = useInventory()
   const { municipalityData } = useCustomization()
   const [inventory, setInventory] = useState<Inventory | null>(null)
+  const [qrByNumero, setQrByNumero] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (id) {
@@ -42,6 +44,39 @@ export default function InventarioPrint() {
       }
     }
   }, [id, getInventoryById, navigate])
+
+  // Pré-gera QR codes (data URLs) para todos os itens — assíncrono.
+  // Ficam disponíveis para a renderização do print/PDF.
+  useEffect(() => {
+    if (!inventory?.items?.length) return
+    let cancelled = false
+
+    const ids = inventory.items
+      .map((i) => i.numero_patrimonio || i.numeroPatrimonio)
+      .filter((n): n is string => Boolean(n))
+
+    Promise.all(
+      ids.map(async (numero) => {
+        try {
+          const url = await generatePatrimonioQRCode(numero, 'patrimonio')
+          return [numero, url] as const
+        } catch {
+          return [numero, ''] as const
+        }
+      }),
+    ).then((pairs) => {
+      if (cancelled) return
+      const map: Record<string, string> = {}
+      pairs.forEach(([n, url]) => {
+        if (url) map[n] = url
+      })
+      setQrByNumero(map)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [inventory])
 
   const handlePrint = () => {
     window.print()
@@ -269,6 +304,7 @@ export default function InventarioPrint() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="print:text-xs">QR</TableHead>
                     <TableHead className="print:text-xs">Nº Patrimônio</TableHead>
                     <TableHead className="print:text-xs">Descrição</TableHead>
                     <TableHead className="text-center print:text-xs">Status</TableHead>
@@ -276,38 +312,53 @@ export default function InventarioPrint() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {inventory.items.map((item, index) => (
-                    <TableRow key={`${item.patrimonioId}-${index}`}>
-                      <TableCell className="font-medium print:text-xs">
-                        {item.numero_patrimonio || item.numeroPatrimonio}
-                      </TableCell>
-                      <TableCell className="print:text-xs">
-                        {item.descricao_bem || item.descricaoBem}
-                      </TableCell>
-                      <TableCell className="text-center print:text-xs">
-                        <div className="flex items-center justify-center gap-1">
-                          {item.status === 'found' ? (
-                            <>
-                              <CheckCircle className="h-4 w-4 text-green-500 print:h-3 print:w-3" />
-                              <span className="text-green-600 print:text-xs">
-                                Encontrado
-                              </span>
-                            </>
+                  {inventory.items.map((item, index) => {
+                    const numero = (item.numero_patrimonio || item.numeroPatrimonio) ?? ''
+                    const qrUrl = qrByNumero[numero]
+                    return (
+                      <TableRow key={`${item.patrimonioId}-${index}`}>
+                        <TableCell className="print:p-1">
+                          {qrUrl ? (
+                            <img
+                              src={qrUrl}
+                              alt={`QR ${numero}`}
+                              className="h-12 w-12 print:h-10 print:w-10"
+                            />
                           ) : (
-                            <>
-                              <XCircle className="h-4 w-4 text-red-500 print:h-3 print:w-3" />
-                              <span className="text-red-600 print:text-xs">
-                                Não Encontrado
-                              </span>
-                            </>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center print:text-xs">
-                        {item.status === 'not_found' ? 'Extraviado' : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell className="font-medium print:text-xs">
+                          {numero}
+                        </TableCell>
+                        <TableCell className="print:text-xs">
+                          {item.descricao_bem || item.descricaoBem}
+                        </TableCell>
+                        <TableCell className="text-center print:text-xs">
+                          <div className="flex items-center justify-center gap-1">
+                            {item.status === 'found' ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-500 print:h-3 print:w-3" />
+                                <span className="text-green-600 print:text-xs">
+                                  Encontrado
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 text-red-500 print:h-3 print:w-3" />
+                                <span className="text-red-600 print:text-xs">
+                                  Não Encontrado
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center print:text-xs">
+                          {item.status === 'not_found' ? 'Extraviado' : '-'}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
