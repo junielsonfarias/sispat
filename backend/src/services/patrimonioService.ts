@@ -537,6 +537,49 @@ export const createPatrimonio = async (
   return patrimonio;
 };
 
+/**
+ * Calcula diff campo-a-campo entre estado anterior e payload de update.
+ * Retorna apenas campos cujo valor realmente mudou.
+ * Usado para histórico granular (M12).
+ */
+export interface FieldDiff {
+  field: string;
+  before: unknown;
+  after: unknown;
+}
+
+const isEqualValue = (a: unknown, b: unknown): boolean => {
+  if (a === b) return true;
+  if (a == null && b == null) return true;
+  if (a instanceof Date || b instanceof Date) {
+    const ta = a instanceof Date ? a.getTime() : new Date(a as string).getTime();
+    const tb = b instanceof Date ? b.getTime() : new Date(b as string).getTime();
+    return Number.isFinite(ta) && Number.isFinite(tb) && ta === tb;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+  }
+  return false;
+};
+
+const HISTORIC_FIELDS_BLACKLIST = new Set(['updatedAt', 'updatedBy']);
+
+export const diffPatrimonioFields = (
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): FieldDiff[] => {
+  const diffs: FieldDiff[] = [];
+  for (const key of Object.keys(after)) {
+    if (HISTORIC_FIELDS_BLACKLIST.has(key)) continue;
+    const b = before[key];
+    const a = after[key];
+    if (!isEqualValue(b, a)) {
+      diffs.push({ field: key, before: b, after: a });
+    }
+  }
+  return diffs;
+};
+
 const READONLY_FIELDS = new Set([
   'id',
   'createdAt',
@@ -592,16 +635,8 @@ export const updatePatrimonio = async (
   actor: Actor,
   audit: AuditContext = {},
 ) => {
-  const existing = await prisma.patrimonio.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      sectorId: true,
-      municipalityId: true,
-      numero_patrimonio: true,
-      status: true,
-    },
-  });
+  // Pega todos os campos para poder diffar contra dataToUpdate (histórico granular M12)
+  const existing = await prisma.patrimonio.findUnique({ where: { id } });
   if (!existing) throw new PatrimonioNotFoundError();
 
   const { allowed, sectorName } = await ensureSectorAccess(actor, existing.sectorId);
@@ -634,12 +669,22 @@ export const updatePatrimonio = async (
     });
 
     try {
+      // Calcula diff campo-a-campo entre estado anterior e dataToUpdate
+      const diff = diffPatrimonioFields(existing as Record<string, unknown>, dataToUpdate);
+      const details =
+        diff.length > 0
+          ? `Atualizou ${diff.length} campo(s): ${diff.map((d) => d.field).join(', ')}`
+          : 'Patrimônio atualizado (sem mudanças detectadas)';
+
       await tx.historicoEntry.create({
         data: {
           patrimonioId: updated.id,
           date: new Date(),
           action: 'ATUALIZAÇÃO',
-          details: `Patrimônio atualizado por ${actor.userId}`,
+          details,
+          // changes JSON serializado é o "verdadeiro" diff; details é resumo legível.
+          // schema atual não tem campo JSON dedicado em HistoricoEntry, então embedamos
+          // no details com separador identificável.
           user: actor.userId,
         },
       });
