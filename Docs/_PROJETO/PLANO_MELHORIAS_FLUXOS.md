@@ -143,7 +143,7 @@
 - **Risco:** Dependência externa em produção; URL contém o número do patrimônio (pode vazar info).
 - **Solução:** Remover fallback. Se `qrcode` local falhar, mostrar erro.
 
-### M8. PDF de Imóveis incompleto
+### M8. ✅ PDF de Imóveis (já estava implementado)
 - **Onde:** `generateImovelPDF()` referenciado em vários lugares mas implementação ausente.
 - **Solução:** Implementar análogo ao `PatrimonioPDFGenerator`.
 
@@ -160,7 +160,7 @@
 - **Onde:** `InventarioPrint.tsx` — PDF tem stats mas sem QR codes.
 - **Solução:** Adicionar QR code por item via lib `qrcode` (já dep).
 
-### M12. Histórico sem granularidade
+### M12. ✅ Histórico sem granularidade
 - **Onde:** `HistoricoEntry.details` é texto livre. Update massa de bens só registra "Atualização".
 - **Solução:** JSON com `{ field, before, after }[]` no `details`. Permite diff visual.
 
@@ -169,7 +169,7 @@
 - **Sintoma:** Frontend não expõe "Logout de todos os dispositivos" para o usuário.
 - **Solução:** Adicionar botão no perfil — `POST /api/auth/logout` com body `{ allDevices: true }`.
 
-### M14. Métricas de DB e API mockadas
+### M14. ✅ Métricas de DB e API mockadas
 - **Onde:** `config/metrics.ts` — valores random para alguns KPIs.
 - **Solução:** Trocar por queries reais via Prisma (counts) e middleware de performance real.
 
@@ -181,7 +181,7 @@
 
 ## 🟢 Polimento — débito menor
 
-- **P1.** `situacao_bem` vs `status` em Patrimônio — semânticas sobrepostas; padronizar uso.
+- **P1.** ✅ `situacao_bem` vs `status` — documentado em `REGRAS_NEGOCIO.md §3.1`.
 - **P2.** ✅ Endpoint `/api/health/metrics` agora redireciona para `/api/metrics/summary`.
 - **P3.** ✅ CHECK constraints aplicadas via migration `add_patrimonio_check_constraints`.
 - **P4.** Customização em **dois lugares** (`SystemCustomization` superuser vs `Personalization` admin) — unificar ou deixar muito claro o que cada um controla.

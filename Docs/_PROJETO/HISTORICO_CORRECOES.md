@@ -120,6 +120,23 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 9: completar fluxos e polimento
+
+**Frontend Empréstimos conectado ao backend**
+Sprint 6 (B3) criou o backend completo de empréstimos mas o frontend continuava usando `patrimonio.emprestimo_ativo` (estado derivado sem sync). `Emprestimos.tsx` reescrito: GET `/api/emprestimos`, botão "Devolver" por linha, diálogo com dataDevolucao + observacoes, POST `/:id/devolver`. Devolução agora funciona end-to-end.
+
+**M12 — Histórico granular por campo**
+`updatePatrimonio` busca registro completo antes do update e gera diff via novo `diffPatrimonioFields(before, after)`. `HistoricoEntry.details` agora diz "Atualizou N campo(s): campo1, campo2..." em vez de "Patrimônio atualizado" genérico. Auditoria ganha rastreabilidade real.
+
+**M14 — Métricas reais**
+`config/metrics.ts > getDatabaseMetrics` substituiu `Math.random()` por queries reais a `pg_stat_activity` (connections), `pg_stat_database` (xact_commit/rollback), `pg_stat_statements` (slow queries — opcional, sem extension retorna 0).
+
+**M8 — Já estava implementado**
+Análise inicial errada. `generateImovelPDF` em `components/imoveis/ImovelPDFGenerator.tsx` tem 417 linhas, está funcional (compressão de fotos, QR code, layout completo). Sem alteração.
+
+**P1 — Documentação de status vs situacao_bem**
+Adicionada seção 3.1 em `REGRAS_NEGOCIO.md` esclarecendo que os dois campos não duplicam: `status` é operacional (alterado pelo sistema via fluxos, define guards), `situacao_bem` é condição física (manual, usado em relatórios). Convenção: UI mostra `situacao_bem` em forms; `status` muda só por fluxos.
+
 ### 2026-05-12 — Sprint 8: qualidade e polimento
 
 **M1 — Cleanup de código morto**
