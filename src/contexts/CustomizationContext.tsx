@@ -150,15 +150,16 @@ export const CustomizationProvider = ({
         // Manter backup no localStorage
         localStorage.setItem('sispat_customization_settings', JSON.stringify(newSettings))
         logger.debug('Backup salvo no localStorage');
-      } catch (error: any) {
-        console.error('[DEV] ❌ ERRO DETALHADO ao salvar customização:');
-        console.error('   Tipo:', error.constructor.name);
-        console.error('   Mensagem:', error.message);
-        console.error('   Response:', error.response?.data);
-        console.error('   Status:', error.response?.status);
-        console.error('   Erro completo:', error);
-        console.error('⚠️ Erro ao salvar no banco, salvando apenas no localStorage:', error)
-        
+      } catch (error: unknown) {
+        // Em produção: mensagem curta sem response.data (evita vazar IDs/schema)
+        // Em dev: bloco completo via logger.debug (terser strip console.log em prod)
+        const err = error as { message?: string; response?: { status?: number; data?: unknown } }
+        logger.warn('Falha ao salvar customização no banco; usando fallback localStorage', {
+          message: err.message,
+          status: err.response?.status,
+        })
+        logger.debug('Detalhes completos da falha', { error: err, response: err.response?.data })
+
         // Fallback: salvar apenas no localStorage
         localStorage.setItem('sispat_customization_settings', JSON.stringify(newSettings))
         setSettings(newSettings)
