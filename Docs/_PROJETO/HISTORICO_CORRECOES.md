@@ -120,6 +120,36 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 6: 6 bloqueadores resolvidos
+
+**B1) Recuperação de senha reativada**
+- `PasswordResetToken` model adicionado ao schema canônico (estava só no antigo) + migration `add_password_reset_tokens`.
+- `forgotPassword/validateResetToken/resetPassword` reescritos com persistência real.
+- Reset agora: invalida tokens antigos do usuário, persiste novo, valida used+expiresAt+isActive, força re-login global ao trocar senha.
+- **Bônus I2:** `changePassword` agora exige senha forte (12+ chars com símbolos), igualando `resetPassword`.
+
+**B6) Rotas duplicadas de transferência consolidadas**
+- Deletado `transferenciaController.ts` + `transferenciaRoutes.ts` (dead code).
+- `transferController.approveTransfer` agora atualiza `sectorId` FK (antes só atualizava string `setor_responsavel`, deixando FK desatualizada → estado corrompido), cria `HistoricoEntry`, valida tenant isolation, resolve setor destino pelo nome dentro do município, resolve local destino opcional.
+- `rejectTransfer` cria `HistoricoEntry` simétrico para auditoria.
+
+**B4) CustomFields de imóveis persistem**
+- Nova coluna `Imovel.customFields Json?` + migration `add_imovel_custom_fields_column`.
+- `createImovel` e `updateImovel` aceitam o campo.
+- `updateImovel` trocou spread permissivo (`...updateData`) por whitelist explícita `UPDATABLE_FIELDS` — fecha vetor de mass-assignment (id/createdBy/etc).
+
+**B5) Upload real de docs de baixa**
+- `BaixaBemModal` agora chama `uploadMultipleFiles` antes do submit, passa pelo magic-bytes validator, coleta `file_url` reais e envia em `documentos_baixa[]`.
+
+**B3) Backend de empréstimos**
+- Criados `emprestimoController.ts`, `emprestimoRoutes.ts`, registrado `/api/emprestimos`.
+- Endpoints: `GET /` (paginado, filtrável, tenant-isolated), `POST /` (valida bem ativo, bloqueia duplicado, marca status=emprestado), `POST /:id/devolver` (marca dataDevolucao, restaura status, cria HistoricoEntry), `GET /:id`.
+- Frontend pendente: `Emprestimos.tsx` ainda usa estado derivado — conectar ao novo endpoint em sprint futuro.
+
+**B2) Sub-patrimônios escondidos via feature flag**
+- Criado `src/lib/features.ts` com `FEATURES.subPatrimonios = false`.
+- UI de `eh_kit`/`quantidade_unidades` em BensCreate e `SubPatrimoniosManager` em BensView envolvidos pela flag. Quando backend implementar persistência, basta virar para `true`.
+
 ### 2026-05-12 — Sprint 5 P2: preparação para deploy novo
 
 **5.1) Auditar install.sh + env vars**
