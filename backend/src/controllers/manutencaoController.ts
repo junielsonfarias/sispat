@@ -70,6 +70,53 @@ export const createManutencaoTask = async (req: Request, res: Response): Promise
       observacoes,
     } = req.body
 
+    // Validação obrigatória — exatamente um entre patrimonioId e imovelId
+    if (!patrimonioId && !imovelId) {
+      res.status(400).json({ error: 'Informe patrimonioId ou imovelId' })
+      return
+    }
+    if (patrimonioId && imovelId) {
+      res.status(400).json({ error: 'Informe apenas patrimonioId OU imovelId, não ambos' })
+      return
+    }
+
+    // Valida que o bem referenciado existe e pertence ao município do usuário
+    if (patrimonioId) {
+      const p = await prisma.patrimonio.findUnique({
+        where: { id: patrimonioId },
+        select: { id: true, municipalityId: true },
+      })
+      if (!p) {
+        res.status(404).json({ error: 'Patrimônio não encontrado' })
+        return
+      }
+      if (req.user?.role !== 'superuser' && p.municipalityId !== req.user?.municipalityId) {
+        res.status(403).json({ error: 'Sem permissão para este patrimônio' })
+        return
+      }
+    }
+    if (imovelId) {
+      const i = await prisma.imovel.findUnique({
+        where: { id: imovelId },
+        select: { id: true, municipalityId: true },
+      })
+      if (!i) {
+        res.status(404).json({ error: 'Imóvel não encontrado' })
+        return
+      }
+      if (req.user?.role !== 'superuser' && i.municipalityId !== req.user?.municipalityId) {
+        res.status(403).json({ error: 'Sem permissão para este imóvel' })
+        return
+      }
+    }
+
+    if (!tipo || !titulo || !descricao || !prioridade || !dataPrevista) {
+      res.status(400).json({
+        error: 'Campos obrigatórios: tipo, titulo, descricao, prioridade, dataPrevista',
+      })
+      return
+    }
+
     const task = await prisma.manutencaoTask.create({
       data: {
         patrimonioId: patrimonioId || null,

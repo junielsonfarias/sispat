@@ -446,6 +446,25 @@ export const createPatrimonio = async (
   });
   if (existing) throw new PatrimonioConflictError('Número de patrimônio já existe');
 
+  // I6: valida unicidade da combinação (numero_licitacao, ano_licitacao, municipalityId).
+  // Mesmo número de licitação pode aparecer várias vezes no histórico, mas em
+  // anos diferentes — então a unicidade é por (numero + ano + município).
+  if (input.numero_licitacao && input.ano_licitacao) {
+    const dup = await prisma.patrimonio.findFirst({
+      where: {
+        municipalityId: actor.municipalityId,
+        numero_licitacao: input.numero_licitacao,
+        ano_licitacao: parseInt(String(input.ano_licitacao), 10),
+      },
+      select: { id: true, numero_patrimonio: true },
+    });
+    if (dup) {
+      throw new PatrimonioConflictError(
+        `Já existe patrimônio (${dup.numero_patrimonio}) com a licitação ${input.numero_licitacao}/${input.ano_licitacao} neste município.`,
+      );
+    }
+  }
+
   const patrimonio = await prisma.$transaction(async (tx) => {
     const novo = await tx.patrimonio.create({
       data: {
@@ -575,7 +594,13 @@ export const updatePatrimonio = async (
 ) => {
   const existing = await prisma.patrimonio.findUnique({
     where: { id },
-    select: { id: true, sectorId: true, municipalityId: true, numero_patrimonio: true },
+    select: {
+      id: true,
+      sectorId: true,
+      municipalityId: true,
+      numero_patrimonio: true,
+      status: true,
+    },
   });
   if (!existing) throw new PatrimonioNotFoundError();
 
@@ -585,6 +610,13 @@ export const updatePatrimonio = async (
       sectorName
         ? `Usuário não tem permissão para editar patrimônios do setor ${sectorName}`
         : 'Acesso negado',
+    );
+  }
+
+  // Guard de estado: bem baixado é imutável (apenas superuser pode editar — recuperação)
+  if (existing.status === 'baixado' && actor.role !== 'superuser') {
+    throw new PatrimonioConflictError(
+      'Patrimônio está baixado e não pode ser editado. Reative-o primeiro.',
     );
   }
 
@@ -646,6 +678,28 @@ export const deletePatrimonio = async (
 ): Promise<void> => {
   if (actor.role !== 'superuser' && actor.role !== 'supervisor') {
     throw new PatrimonioForbiddenError('Apenas superuser ou supervisor podem deletar patrimônios');
+  }
+
+  // Guard: não permite deletar bem com empréstimo ativo
+  const emprestimoAtivo = await prisma.emprestimo.findFirst({
+    where: { patrimonioId: id, status: 'ativo' },
+    select: { id: true },
+  });
+  if (emprestimoAtivo) {
+    throw new PatrimonioConflictError(
+      'Patrimônio possui empréstimo ativo. Registre a devolução antes de deletar.',
+    );
+  }
+
+  // Guard: não permite deletar bem com transferência pendente
+  const transferPendente = await prisma.transferencia.findFirst({
+    where: { patrimonioId: id, status: 'pendente' },
+    select: { id: true },
+  });
+  if (transferPendente) {
+    throw new PatrimonioConflictError(
+      'Patrimônio possui transferência pendente. Aprove ou rejeite antes de deletar.',
+    );
   }
 
   const existing = await prisma.patrimonio.findUnique({
