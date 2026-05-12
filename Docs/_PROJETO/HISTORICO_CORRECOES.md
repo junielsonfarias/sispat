@@ -120,6 +120,35 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 5 P2: preparação para deploy novo
+
+**5.1) Auditar install.sh + env vars**
+- **Sintoma:** install.sh gerava `backend/.env` com `RATE_LIMIT_MAX=5` (volta o bug que corrigimos em 2025-11), sem variáveis para Redis/SMTP/Sentry/healthcheck, sem `image/webp` na whitelist (mas magic bytes aceita). Healthchecks devolviam shapes incompatíveis com testes pré-existentes.
+- **Correção:**
+  - `install.sh` gera `.env` completo e bem comentado (categorias: Database, JWT, CORS, Segurança, Rate limit, Upload, Logs, Redis opcional, SMTP, Observabilidade, Backup).
+  - `RATE_LIMIT_MAX=100`, `BACKUP_PATH=/var/backups/sispat`.
+  - `env.production` (frontend e backend) reescritos como templates limpos.
+  - `env.example` (dev) enxuto.
+  - `healthController.ts` adiciona campos `ready: true/false`, `alive: true`, `version` e status `'healthy'` (em vez de `'ok'`).
+- **Lição:** templates de env precisam evoluir com o código. Healthchecks devem ter shape estável (versionados).
+
+**5.2) CI enriquecido (lint + type-check + audit + bundle)**
+- **Sintoma:** `.github/workflows/ci.yml` tinha `npm test || echo "Testes não configurados"` — qualquer falha era mascarada. Sem audit de deps, sem type-check, sem bundle check.
+- **Correção:** CI reescrito com:
+  - Backend: `npm ci` → prisma → `npm run lint` → `npm run type-check` → `npm test` → `npm audit --omit=dev --audit-level=high` (high/critical bloqueiam)
+  - Frontend: `pnpm install --frozen-lockfile` → lint → type-check → vitest → build → bundle size check (>5MB alerta) → artifact upload (7 dias) → `pnpm audit --prod --audit-level high`
+  - `build-validation` depende de ambos
+- **Lição:** CI sem audit + lint + type-check é apenas "build verde", não "qualidade verde".
+
+**5.3) Sentry backend ativado (no-op sem DSN)**
+- **Sintoma:** `@sentry/node` e `@sentry/profiling-node` instalados, mas `config/sentry.ts` excluído do tsconfig e `initSentry()` comentado em `index.ts`.
+- **Correção:**
+  - `config/sentry.ts` reescrito com tipos estritos (sem `any`), `isEnabled()` check em todos os exports — silencioso sem DSN.
+  - `beforeSend` sanitiza cookies, Authorization, password, token, refreshToken.
+  - `index.ts` chama `initSentry()` antes dos middlewares e registra `sentryErrorHandler` antes do errorHandler global.
+  - Para ativar em produção: criar projeto sentry.io → setar `SENTRY_DSN` no `.env` → `pm2 restart`.
+- **Lição:** observabilidade tem que ser plug-and-play — se a flag está vazia, ZERO custo (não custo de log/init/sampling).
+
 ### 2026-05-12 — Sprint 4 P1/P2: limpeza e tighten TS
 
 **4.1) Limpeza de raiz e Docs/**

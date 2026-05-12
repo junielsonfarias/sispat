@@ -121,14 +121,14 @@
 - Facilita troca de ORM ou mocking em testes.
 - Esforço: paralelo ao refactor.
 
-### 15. Observabilidade
+### 15. ✅ Observabilidade (Sentry backend ativado, frontend pendente)
 - Sentry em backend + frontend (já tem `@sentry/*` em dependências, ativar).
 - Métricas Prometheus em `/metrics` (lib `prom-client`).
 - Dashboard Grafana com: requests/s, p95 latency, erros 5xx, query lenta.
 - Alerta no Telegram/email para erro 5xx > X/min.
 - Esforço: 2-3 dias.
 
-### 16. CI/CD enriquecido
+### 16. ✅ CI/CD enriquecido
 - Adicionar job de `npm audit` (high/critical falha o build).
 - Job de bundle size check (alerta se >X MB).
 - Job de e2e em ambiente staging antes do deploy.
