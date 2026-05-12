@@ -120,6 +120,33 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 2 P1: 3 correções aplicadas
+
+**2.1) Refresh token rotation/revogação**
+- **Sintoma:** Refresh tokens viviam apenas como JWTs assinados — em comprometimento, não havia como revogar.
+- **Correção:** novo modelo Prisma `RefreshToken` (sha256 hash, expiresAt, revokedAt, ipAddress, userAgent) + relação no User. Migration `20260512000000_add_refresh_tokens`. authController reescrito:
+  - `login` persiste hash do refresh (token cru nunca no banco)
+  - `refreshToken` rejeita revogado/expirado; se receber JWT válido mas sem registro (reuso após revogação) → revoga todos do usuário
+  - `logout` revoga refresh do dispositivo ou de todos (body.allDevices)
+  - `changePassword` revoga todos os refresh tokens (force re-login)
+- **Arquivos:** `backend/prisma/schema.prisma`, `backend/src/prisma/schema.prisma`, `backend/prisma/migrations/20260512000000_add_refresh_tokens/migration.sql`, `backend/src/controllers/authController.ts`
+- **Lição:** stateless JWT é conveniente, mas refresh tokens precisam estado por causa de revogação — guarda apenas o hash.
+
+**2.2) Validação de magic bytes no upload + bloqueio de SVG**
+- **Sintoma:** multer confiava no `mimetype` declarado pelo cliente — qualquer arquivo podia se passar por `image/png` alterando o header.
+- **Correção:** `utils/file-validation.ts` com `detectAllowedFile()` (inspeciona 16 bytes, JPEG/PNG/GIF/WebP/PDF). Novo middleware `verifyMagicBytes` roda APÓS o multer e valida arquivo no disco — bate mimetype vs conteúdo, deleta arquivos inválidos. SVG explicitamente bloqueado no `fileFilter` (pode conter `<script>`). Plugado em `uploadRoutes` antes do controller.
+- **Arquivos:** `backend/src/utils/file-validation.ts`, `backend/src/middlewares/uploadMiddleware.ts`, `backend/src/routes/uploadRoutes.ts`
+- **Lição:** validação de input no perímetro nunca confia no cliente — inspecione o conteúdo real.
+
+**2.3) Substituir console.log por logger (backend e frontend)**
+- **Sintoma:** 240 `console.log/.debug` em código de produção vazavam dados em stdout/PM2 logs e DevTools.
+- **Correção:** 
+  - Backend: 45 substituições em 15 arquivos → `logInfo`/`logDebug` do Winston. `seed.ts` e `src/scripts/**` isentos no ESLint (output CLI legítimo).
+  - Frontend: 149 substituições em 34 arquivos → `logger.debug` (já existia em `src/lib/logger.ts` com guard `import.meta.env.DEV`). Removidos `if (DEV)` redundantes.
+  - `console.warn/error` mantidos em ambos os lados.
+- **Arquivos:** 50+ arquivos (ver commits `16b84f2`, `2df05be`).
+- **Lição:** quando há logger estruturado disponível, sempre o use — uniformiza formato, permite níveis e plug futuro de Sentry/observabilidade.
+
 **1.4) Script de rollback (`scripts/rollback.sh`)**
 - **Sintoma:** Sem fluxo padronizado para reverter deploys ruins. Recovery dependia de operador escrever comandos manualmente.
 - **Correção:** criado `scripts/rollback.sh` com:

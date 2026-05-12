@@ -45,12 +45,14 @@
 
 ## 🟠 P1 — Importantes (≤ 1 mês)
 
-### 5. Refresh token rotation/revogação
+> **Sprint 2 concluído em 2026-05-12.** Itens 5, 6, 8 ✅. Ver `HISTORICO_CORRECOES.md`.
+
+### 5. ✅ Refresh token rotation/revogação
 - **Onde:** `backend/src/controllers/authController.ts`
 - **Como:** tabela `RefreshToken` ou lista Redis com TTL. No refresh, invalidar antigo. No logout, invalidar todos do usuário.
 - **Esforço:** 1 dia
 
-### 6. Validação de magic bytes no upload
+### 6. ✅ Validação de magic bytes no upload
 - **Onde:** `backend/src/middlewares/uploadMiddleware.ts`
 - **Como:** `npm i file-type`, ler primeiros bytes do buffer e validar contra whitelist.
 - **Bloquear SVG** explicitamente.
@@ -67,7 +69,7 @@
   4. Lógica de transferência → `transferenciaService`
   5. Testes integration para cada service
 
-### 8. Reduzir `console.log` em produção
+### 8. ✅ Reduzir `console.log` em produção
 - **Onde:** todo o código
 - **Como:** 
   - Backend: substituir todos os `console.log` por `logger.info/warn/error/debug`.
