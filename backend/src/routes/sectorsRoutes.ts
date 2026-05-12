@@ -7,47 +7,44 @@ import {
   deleteSector,
 } from '../controllers/sectorsController';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { handleValidationErrors, sectorValidations, queryValidations } from '../middlewares/validation';
+import { param } from 'express-validator';
 
 const router = Router();
 
-// Todas as rotas requerem autenticação
 router.use(authenticateToken);
 
-/**
- * @route GET /api/sectors
- * @desc Obter todos os setores
- * @access Private
- */
-router.get('/', getSectors);
+router.get('/', queryValidations.pagination, handleValidationErrors, getSectors);
 
-/**
- * @route GET /api/sectors/:id
- * @desc Obter setor por ID
- * @access Private
- */
-router.get('/:id', getSectorById);
+router.get(
+  '/:id',
+  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+  handleValidationErrors,
+  getSectorById,
+);
 
-/**
- * @route POST /api/sectors
- * @desc Criar novo setor
- * @access Superuser/Supervisor
- */
-router.post('/', authorize('superuser', 'supervisor'), createSector);
+router.post(
+  '/',
+  authorize('superuser', 'supervisor'),
+  sectorValidations.create,
+  handleValidationErrors,
+  createSector,
+);
 
-/**
- * @route PUT /api/sectors/:id
- * @desc Atualizar setor
- * @access Superuser/Supervisor
- */
-router.put('/:id', authorize('superuser', 'supervisor'), updateSector);
+router.put(
+  '/:id',
+  authorize('superuser', 'supervisor'),
+  sectorValidations.update,
+  handleValidationErrors,
+  updateSector,
+);
 
-/**
- * @route DELETE /api/sectors/:id
- * @desc Deletar setor
- * @access Superuser/Supervisor
- */
-router.delete('/:id', authorize('superuser', 'supervisor'), deleteSector);
+router.delete(
+  '/:id',
+  authorize('superuser', 'supervisor'),
+  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+  handleValidationErrors,
+  deleteSector,
+);
 
 export default router;
-
-

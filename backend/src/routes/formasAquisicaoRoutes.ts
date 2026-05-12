@@ -7,47 +7,43 @@ import {
   deleteFormaAquisicao,
 } from '../controllers/formasAquisicaoController';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { handleValidationErrors, formaAquisicaoValidations, queryValidations } from '../middlewares/validation';
 
 const router = Router();
 
-// Todas as rotas requerem autenticação
 router.use(authenticateToken);
 
-/**
- * @route GET /api/formas-aquisicao
- * @desc Obter todas as formas de aquisição
- * @access Private
- */
-router.get('/', getFormasAquisicao);
+router.get('/', queryValidations.pagination, handleValidationErrors, getFormasAquisicao);
 
-/**
- * @route GET /api/formas-aquisicao/:id
- * @desc Obter forma de aquisição por ID
- * @access Private
- */
-router.get('/:id', getFormaAquisicaoById);
+router.get(
+  '/:id',
+  formaAquisicaoValidations.byId,
+  handleValidationErrors,
+  getFormaAquisicaoById,
+);
 
-/**
- * @route POST /api/formas-aquisicao
- * @desc Criar nova forma de aquisição
- * @access Superuser/Supervisor
- */
-router.post('/', authorize('superuser', 'supervisor'), createFormaAquisicao);
+router.post(
+  '/',
+  authorize('superuser', 'supervisor'),
+  formaAquisicaoValidations.create,
+  handleValidationErrors,
+  createFormaAquisicao,
+);
 
-/**
- * @route PUT /api/formas-aquisicao/:id
- * @desc Atualizar forma de aquisição
- * @access Superuser/Supervisor
- */
-router.put('/:id', authorize('superuser', 'supervisor'), updateFormaAquisicao);
+router.put(
+  '/:id',
+  authorize('superuser', 'supervisor'),
+  formaAquisicaoValidations.update,
+  handleValidationErrors,
+  updateFormaAquisicao,
+);
 
-/**
- * @route DELETE /api/formas-aquisicao/:id
- * @desc Deletar forma de aquisição
- * @access Superuser/Supervisor
- */
-router.delete('/:id', authorize('superuser', 'supervisor'), deleteFormaAquisicao);
+router.delete(
+  '/:id',
+  authorize('superuser', 'supervisor'),
+  formaAquisicaoValidations.byId,
+  handleValidationErrors,
+  deleteFormaAquisicao,
+);
 
 export default router;
-
-

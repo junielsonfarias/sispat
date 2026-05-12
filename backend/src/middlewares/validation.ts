@@ -532,6 +532,69 @@ export const imovelValidations = {
   ]
 };
 
+// Validações para autenticação
+export const authValidations = {
+  login: [
+    body('email')
+      .isEmail()
+      .normalizeEmail()
+      .withMessage('Email inválido'),
+
+    body('password')
+      .isString()
+      .isLength({ min: 1, max: 200 })
+      .withMessage('Senha é obrigatória'),
+  ],
+
+  refresh: [
+    body('refreshToken')
+      .optional()
+      .isString()
+      .isLength({ min: 1, max: 1000 })
+      .withMessage('refreshToken inválido'),
+  ],
+
+  changePassword: [
+    body('oldPassword')
+      .isString()
+      .isLength({ min: 1, max: 200 })
+      .withMessage('Senha atual é obrigatória'),
+
+    body('newPassword')
+      .isString()
+      .isLength({ min: 8, max: 200 })
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage('Nova senha deve ter pelo menos 8 caracteres, com maiúscula, minúscula e número'),
+  ],
+
+  forgotPassword: [
+    body('email')
+      .isEmail()
+      .normalizeEmail()
+      .withMessage('Email inválido'),
+  ],
+
+  resetPassword: [
+    body('token')
+      .isString()
+      .isLength({ min: 1, max: 1000 })
+      .withMessage('Token é obrigatório'),
+
+    body('newPassword')
+      .isString()
+      .isLength({ min: 8, max: 200 })
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage('Nova senha deve ter pelo menos 8 caracteres, com maiúscula, minúscula e número'),
+  ],
+
+  validateResetToken: [
+    param('token')
+      .isString()
+      .isLength({ min: 1, max: 1000 })
+      .withMessage('Token é obrigatório'),
+  ],
+};
+
 // Validações para inventários
 export const inventarioValidations = {
   create: [
@@ -829,6 +892,144 @@ export const notificationValidations = {
       .isString()
       .isLength({ max: 500 })
       .withMessage('Link deve ter no máximo 500 caracteres'),
+  ],
+
+  byId: [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+};
+
+// Validações para customização visual.
+// O controller já tem ALLOWED_FIELDS + isSafeUrl (Sprint 15) que faz a validação
+// crítica de URLs. Aqui é só rejeitar payloads grossos cedo (tipos errados, strings gigantes).
+export const customizationValidations = {
+  save: [
+    body('activeLogoUrl').optional().isString().isLength({ max: 1000 }),
+    body('secondaryLogoUrl').optional().isString().isLength({ max: 1000 }),
+    body('backgroundImageUrl').optional().isString().isLength({ max: 1000 }),
+    body('backgroundVideoUrl').optional().isString().isLength({ max: 1000 }),
+    body('faviconUrl').optional().isString().isLength({ max: 1000 }),
+    body('backgroundType').optional().isIn(['color', 'image', 'video']),
+    body('backgroundColor').optional().isString().isLength({ max: 50 }),
+    body('primaryColor').optional().isString().isLength({ max: 50 }),
+    body('buttonTextColor').optional().isString().isLength({ max: 50 }),
+    body('fontFamily').optional().isString().isLength({ max: 100 }),
+    body('layout').optional().isString().isLength({ max: 50 }),
+    body('welcomeTitle').optional().isString().isLength({ max: 200 }),
+    body('welcomeSubtitle').optional().isString().isLength({ max: 500 }),
+    body('browserTitle').optional().isString().isLength({ max: 200 }),
+    body('loginFooterText').optional().isString().isLength({ max: 500 }),
+    body('systemFooterText').optional().isString().isLength({ max: 500 }),
+    body('superUserFooterText').optional().isString().isLength({ max: 500 }),
+    body('prefeituraName').optional().isString().isLength({ max: 200 }),
+    body('secretariaResponsavel').optional().isString().isLength({ max: 200 }),
+    body('departamentoResponsavel').optional().isString().isLength({ max: 200 }),
+    body('videoLoop').optional().isBoolean(),
+    body('videoMuted').optional().isBoolean(),
+  ],
+};
+
+// Validações para documentos
+export const documentValidations = {
+  // O upload usa multer; valida só os campos textuais
+  create: [
+    body('titulo')
+      .optional()
+      .isString()
+      .isLength({ min: 1, max: 200 })
+      .withMessage('Título deve ter entre 1 e 200 caracteres'),
+    body('descricao')
+      .optional()
+      .isString()
+      .isLength({ max: 1000 })
+      .withMessage('Descrição deve ter no máximo 1000 caracteres'),
+    body('patrimonioId').optional().isUUID().withMessage('patrimonioId deve ser UUID'),
+    body('imovelId').optional().isUUID().withMessage('imovelId deve ser UUID'),
+    body('tipo').optional().isString().isLength({ max: 50 }),
+    body('publico').optional().isBoolean(),
+  ],
+
+  update: [
+    param('id').isUUID().withMessage('ID deve ser um UUID válido'),
+    body('titulo').optional().isString().isLength({ min: 1, max: 200 }),
+    body('descricao').optional().isString().isLength({ max: 1000 }),
+    body('tipo').optional().isString().isLength({ max: 50 }),
+    body('publico').optional().isBoolean(),
+  ],
+
+  byId: [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+};
+
+// Validações para templates de etiqueta
+export const labelTemplateValidations = {
+  create: [
+    body('nome')
+      .isString()
+      .isLength({ min: 1, max: 200 })
+      .withMessage('Nome é obrigatório (1 a 200 caracteres)'),
+    body('descricao').optional().isString().isLength({ max: 1000 }),
+    body('largura').optional().isFloat({ min: 0.1 }).withMessage('Largura deve ser positiva'),
+    body('altura').optional().isFloat({ min: 0.1 }).withMessage('Altura deve ser positiva'),
+    body('unidade').optional().isIn(['mm', 'cm', 'in']).withMessage('Unidade deve ser mm, cm ou in'),
+    body('elementos').optional().isArray().withMessage('Elementos deve ser um array'),
+    body('ativo').optional().isBoolean(),
+  ],
+
+  update: [
+    param('id').isUUID().withMessage('ID deve ser um UUID válido'),
+    body('nome').optional().isString().isLength({ min: 1, max: 200 }),
+    body('descricao').optional().isString().isLength({ max: 1000 }),
+    body('largura').optional().isFloat({ min: 0.1 }),
+    body('altura').optional().isFloat({ min: 0.1 }),
+    body('unidade').optional().isIn(['mm', 'cm', 'in']),
+    body('elementos').optional().isArray(),
+    body('ativo').optional().isBoolean(),
+  ],
+
+  byId: [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+};
+
+// Validações para formas de aquisição
+export const formaAquisicaoValidations = {
+  create: [
+    body('nome')
+      .isString()
+      .isLength({ min: 1, max: 100 })
+      .withMessage('Nome é obrigatório (1 a 100 caracteres)'),
+    body('descricao').optional().isString().isLength({ max: 500 }),
+    body('ativo').optional().isBoolean(),
+  ],
+
+  update: [
+    param('id').isUUID().withMessage('ID deve ser um UUID válido'),
+    body('nome').optional().isString().isLength({ min: 1, max: 100 }),
+    body('descricao').optional().isString().isLength({ max: 500 }),
+    body('ativo').optional().isBoolean(),
+  ],
+
+  byId: [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+};
+
+// Validações para empréstimos
+export const emprestimoValidations = {
+  create: [
+    body('patrimonioId').isUUID().withMessage('patrimonioId deve ser um UUID válido'),
+    body('responsavel')
+      .isString()
+      .isLength({ min: 1, max: 200 })
+      .withMessage('Responsável é obrigatório (1 a 200 caracteres)'),
+    body('dataEmprestimo')
+      .isISO8601()
+      .withMessage('Data de empréstimo deve ser uma data válida'),
+    body('dataPrevDevolucao')
+      .optional()
+      .isISO8601()
+      .withMessage('Data prevista de devolução deve ser uma data válida'),
+    body('observacoes').optional().isString().isLength({ max: 1000 }),
+  ],
+
+  devolver: [
+    param('id').isUUID().withMessage('ID deve ser um UUID válido'),
+    body('dataDevolucao').optional().isISO8601(),
+    body('observacoes').optional().isString().isLength({ max: 1000 }),
   ],
 
   byId: [param('id').isUUID().withMessage('ID deve ser um UUID válido')],

@@ -6,15 +6,30 @@ import {
   listEmprestimos,
 } from '../controllers/emprestimoController';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { handleValidationErrors, emprestimoValidations, queryValidations } from '../middlewares/validation';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/', listEmprestimos);
-router.get('/:id', getEmprestimo);
+router.get('/', queryValidations.pagination, handleValidationErrors, listEmprestimos);
 
-router.post('/', authorize('admin', 'supervisor', 'usuario'), createEmprestimo);
-router.post('/:id/devolver', authorize('admin', 'supervisor', 'usuario'), devolverEmprestimo);
+router.get('/:id', emprestimoValidations.byId, handleValidationErrors, getEmprestimo);
+
+router.post(
+  '/',
+  authorize('admin', 'supervisor', 'usuario'),
+  emprestimoValidations.create,
+  handleValidationErrors,
+  createEmprestimo,
+);
+
+router.post(
+  '/:id/devolver',
+  authorize('admin', 'supervisor', 'usuario'),
+  emprestimoValidations.devolver,
+  handleValidationErrors,
+  devolverEmprestimo,
+);
 
 export default router;

@@ -11,6 +11,7 @@ import {
   getCsrfToken,
 } from '../controllers/authController';
 import { authenticateToken } from '../middlewares/auth';
+import { handleValidationErrors, authValidations } from '../middlewares/validation';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
@@ -92,7 +93,7 @@ const resetLimiter = rateLimit({
  * @desc Login de usuário
  * @access Public
  */
-router.post('/login', authLimiter, login);
+router.post('/login', authLimiter, authValidations.login, handleValidationErrors, login);
 
 /**
  * @route GET /api/auth/csrf
@@ -107,7 +108,7 @@ router.get('/csrf', getCsrfToken);
  * @desc Renovar token de acesso
  * @access Public
  */
-router.post('/refresh', refreshToken);
+router.post('/refresh', authValidations.refresh, handleValidationErrors, refreshToken);
 
 /**
  * @swagger
@@ -145,28 +146,28 @@ router.post('/logout', authenticateToken, logout);
  * @desc Alterar senha do usuário
  * @access Private
  */
-router.post('/change-password', authenticateToken, changePassword);
+router.post('/change-password', authenticateToken, authValidations.changePassword, handleValidationErrors, changePassword);
 
 /**
  * @route POST /api/auth/forgot-password
  * @desc Solicitar reset de senha
  * @access Public
  */
-router.post('/forgot-password', resetLimiter, forgotPassword);
+router.post('/forgot-password', resetLimiter, authValidations.forgotPassword, handleValidationErrors, forgotPassword);
 
 /**
  * @route GET /api/auth/validate-reset-token/:token
  * @desc Validar token de reset de senha
  * @access Public
  */
-router.get('/validate-reset-token/:token', validateResetToken);
+router.get('/validate-reset-token/:token', authValidations.validateResetToken, handleValidationErrors, validateResetToken);
 
 /**
  * @route POST /api/auth/reset-password
  * @desc Resetar senha com token
  * @access Public
  */
-router.post('/reset-password', resetLimiter, resetPassword);
+router.post('/reset-password', resetLimiter, authValidations.resetPassword, handleValidationErrors, resetPassword);
 
 export default router;
 

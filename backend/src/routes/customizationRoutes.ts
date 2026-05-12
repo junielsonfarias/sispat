@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middlewares/auth';
+import { handleValidationErrors, customizationValidations } from '../middlewares/validation';
 import {
   getCustomization,
   getPublicCustomization,
@@ -15,11 +16,18 @@ router.get('/public', getPublicCustomization);
 // Buscar customização (autenticado)
 router.get('/', authenticateToken, getCustomization);
 
-// Salvar customização (autenticado)
-router.put('/', authenticateToken, saveCustomization);
+// Salvar customização (autenticado).
+// O controller faz a validação crítica (whitelist + isSafeUrl). Esta camada
+// rejeita payloads grossos cedo.
+router.put(
+  '/',
+  authenticateToken,
+  customizationValidations.save,
+  handleValidationErrors,
+  saveCustomization,
+);
 
 // Resetar customização (autenticado)
 router.post('/reset', authenticateToken, resetCustomization);
 
 export default router;
-

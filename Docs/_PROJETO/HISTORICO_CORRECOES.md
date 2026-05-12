@@ -120,6 +120,64 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 17: validação completa + service layer (auth + imovel)
+
+Sprint focado em fechar dois débitos do Sprint 16:
+1. Aplicar `express-validator` em todas as rotas restantes (eram ~18 sem validação).
+2. Migrar `authController` e `imovelController` para o padrão service (como `patrimonioService`).
+
+**V1 — Validação em 13 rotas adicionais**
+
+Após Sprint 16, 5 rotas tinham validação (inventário/transferência/manutenção/notificação/imóvel). Agora também têm:
+
+- **`patrimonioRoutes`** — usa `patrimonioValidations.create/update` que já existia. Adicionado UUID em `:id`, validação inline para `addNote` (text 1-2000 chars) e `registrarBaixa` (data, motivo, documentos).
+- **`userRoutes`** — `userValidations.create/update` (já existia).
+- **`sectorsRoutes`** — `sectorValidations.create/update`.
+- **`locaisRoutes`** — `localValidations.create/update`.
+- **`tiposBensRoutes`** — `tipoBemValidations.create/update`.
+- **`authRoutes`** — schemas novos (`authValidations.login/refresh/changePassword/forgotPassword/resetPassword/validateResetToken`). Email validado com `isEmail() + normalizeEmail()`; nova senha exige 8+ chars com upper/lower/digit (controller ainda aplica regra mais forte de 12 chars + símbolo).
+- **`customizationRoutes`** — schema novo (`customizationValidations.save`) que rejeita payloads grossos cedo. Validação crítica de URL continua no controller (`isSafeUrl`, Sprint 15).
+- **`documentRoutes`** — schema novo. Inclui validação de `patrimonioId`/`imovelId` UUID.
+- **`labelTemplateRoutes`** — schema novo.
+- **`formasAquisicaoRoutes`** — schema novo.
+- **`emprestimoRoutes`** — schema novo.
+
+**Total: 18 rotas validadas (5 do Sprint 16 + 13 agora).** Cobertura quase completa de POST/PUT/PATCH/DELETE com payload.
+
+**V2 — Migração `imovelController` → `imovelService` (662 → 188, -72%)**
+
+Mesmo padrão de `patrimonioService` (Sprint 3): regras de negócio no service, controller fino. Service exporta `Actor`/`AuditContext`/`ListImoveisQuery`, erros tipados (`ImovelNotFoundError`, `ImovelConflictError`, `ImovelForbiddenError`, `ImovelValidationError`), e funções `listImoveis`, `getImovelById`, `getImovelByNumero`, `createImovel`, `updateImovel`, `deleteImovel`, `gerarNumeroImovel`. Controller faz só `requireActor()`, chama service, mapeia erros (`handleServiceError`).
+
+Tenant isolation reforçado: `getImovelById` agora retorna `ImovelNotFoundError` (404) quando o imóvel pertence a outro município — antes vazava existência via 403. Mesmo padrão em `updateImovel`/`deleteImovel`.
+
+**V3 — Migração `authController` → `authService` (708 → 354, -50%)**
+
+Service exporta: `loginUser`, `rotateRefreshToken`, `revokeRefreshToken`, `changeUserPassword`, `requestPasswordReset`, `validatePasswordResetToken`, `resetUserPassword`. Helpers internos (`hashToken`, `generateAccessJwt`, `generateRefreshJwt`, `issueRefreshToken`) ficam isolados.
+
+Erros tipados (`AuthInvalidCredentialsError`, `AuthAccountDisabledError`, `AuthTokenInvalidError`, `AuthTokenExpiredError`, `AuthWeakPasswordError`, `AuthEmailServiceUnavailableError`) — controller mapeia para 401/403/400/503.
+
+**Cookies HttpOnly continuam no controller** (camada HTTP, não regra de negócio). `setAuthCookies`/`clearAuthCookies` são chamados após o service retornar.
+
+Reuse-detection do refresh token preservada: JWT válido mas hash não persistido → revoga TODOS os refresh do usuário. Idem se hash já está revogado.
+
+**Validação:** 17/17 testes existentes do `patrimonioService` continuam passando. Typecheck: só os 2 erros pré-existentes (`zod`, `cookie-parser`).
+
+**Redução agregada:**
+```
+authController:   708 → 354  (-354, -50%)
+imovelController: 662 → 188  (-474, -72%)
+─────────────────────────────────────
+Controllers:     1370 → 542  (-828)
+authService:           463 (novo)
+imovelService:         553 (novo)
+```
+
+**Pendências para sprint 18:**
+- `configController` (818 linhas) — pode ser splitado em `reportConfigController` + `excelConfigController` + `cssConfigController`.
+- `inventarioController` (552) e `transferController` (513) também merecem `services/`.
+- Schemas Zod compartilhados frontend↔backend.
+- Schema migrations: `municipalityId` em `Inventory`, `previousStatus` em `Transferencia`, enum tipado em `Patrimonio.status`.
+
 ### 2026-05-12 — Sprint 16: validação Zod/express-validator + extração de campos compartilhados
 
 Sprint focado em saúde do código: aplicar a infraestrutura de validação que já existia em `middlewares/validation.ts` mas **não estava sendo usada por nenhuma rota** (grep zero matches), e reduzir a duplicação entre páginas Create/Edit de bens e imóveis.

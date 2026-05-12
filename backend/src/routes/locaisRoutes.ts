@@ -7,47 +7,44 @@ import {
   deleteLocal,
 } from '../controllers/locaisController';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { handleValidationErrors, localValidations, queryValidations } from '../middlewares/validation';
+import { param } from 'express-validator';
 
 const router = Router();
 
-// Todas as rotas requerem autenticação
 router.use(authenticateToken);
 
-/**
- * @route GET /api/locais
- * @desc Obter todos os locais (pode filtrar por setorId via query)
- * @access Private
- */
-router.get('/', getLocais);
+router.get('/', queryValidations.pagination, handleValidationErrors, getLocais);
 
-/**
- * @route GET /api/locais/:id
- * @desc Obter local por ID
- * @access Private
- */
-router.get('/:id', getLocalById);
+router.get(
+  '/:id',
+  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+  handleValidationErrors,
+  getLocalById,
+);
 
-/**
- * @route POST /api/locais
- * @desc Criar novo local
- * @access Superuser/Supervisor
- */
-router.post('/', authorize('superuser', 'supervisor'), createLocal);
+router.post(
+  '/',
+  authorize('superuser', 'supervisor'),
+  localValidations.create,
+  handleValidationErrors,
+  createLocal,
+);
 
-/**
- * @route PUT /api/locais/:id
- * @desc Atualizar local
- * @access Superuser/Supervisor
- */
-router.put('/:id', authorize('superuser', 'supervisor'), updateLocal);
+router.put(
+  '/:id',
+  authorize('superuser', 'supervisor'),
+  localValidations.update,
+  handleValidationErrors,
+  updateLocal,
+);
 
-/**
- * @route DELETE /api/locais/:id
- * @desc Deletar local
- * @access Superuser/Supervisor
- */
-router.delete('/:id', authorize('superuser', 'supervisor'), deleteLocal);
+router.delete(
+  '/:id',
+  authorize('superuser', 'supervisor'),
+  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
+  handleValidationErrors,
+  deleteLocal,
+);
 
 export default router;
-
-
