@@ -1,17 +1,19 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
-  # Testes do Backend
-  backend-tests:
-    name: Backend Tests
+  # =====================================================================
+  # Backend: lint + type-check + test (com Postgres real)
+  # =====================================================================
+  backend:
+    name: Backend
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -51,25 +53,41 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/sispat_test
 
-      - name: Run linter
+      - name: Lint
         working-directory: ./backend
-        run: npm run lint || echo "Linter não configurado"
+        run: npm run lint
 
-      - name: Run tests
+      - name: Type check
         working-directory: ./backend
-        run: npm test || echo "Testes não configurados"
+        run: npm run type-check
+
+      - name: Tests
+        working-directory: ./backend
+        run: npm test
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/sispat_test
           JWT_SECRET: test-secret-key-for-ci-cd-minimum-32-characters-long
           NODE_ENV: test
 
-  # Testes do Frontend
-  frontend-tests:
-    name: Frontend Tests
+      - name: npm audit (high & critical block CI)
+        working-directory: ./backend
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: false
+
+  # =====================================================================
+  # Frontend: lint + type-check + test + build (com bundle size check)
+  # =====================================================================
+  frontend:
+    name: Frontend
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -77,70 +95,49 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run linter
-        run: pnpm run lint || echo "Linter não configurado"
+      - name: Lint
+        run: pnpm run lint
 
       - name: Type check
-        run: pnpm run type-check || echo "Type check não configurado"
+        run: pnpm run type-check
 
-      - name: Run tests
-        run: pnpm test || echo "Testes não configurados"
+      - name: Tests
+        run: pnpm test
 
       - name: Build
         run: pnpm run build
         env:
           VITE_API_URL: https://api.example.com
 
-  # Build e validação
+      - name: Check bundle size (alerta acima de 5MB)
+        run: |
+          size=$(du -sk dist | cut -f1)
+          echo "Bundle size: ${size}KB"
+          if [ "$size" -gt 5120 ]; then
+            echo "::warning::Bundle size ${size}KB excede 5MB — revisar dependências"
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+          retention-days: 7
+
+      - name: pnpm audit (high & critical block CI)
+        run: pnpm audit --prod --audit-level high
+        continue-on-error: false
+
+  # =====================================================================
+  # Build validation (consolida que ambos buildam)
+  # =====================================================================
   build-validation:
     name: Build Validation
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests]
-
+    needs: [backend, frontend]
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Build Backend
-        working-directory: ./backend
-        run: |
-          npm ci
-          npm run build
-
-      - name: Build Frontend
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm run build
-        env:
-          VITE_API_URL: https://api.example.com
-
-  # Deploy (apenas em main)
-  deploy:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build-validation]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Deploy notification
-        run: |
-          echo "🚀 Deploy para produção"
-          echo "Configure seu processo de deploy aqui"
-          echo "Exemplos:"
-          echo "- SSH deploy"
-          echo "- Docker build & push"
-          echo "- Cloud provider deployment"
+      - name: All checks passed
+        run: echo "✅ Backend + Frontend OK"
