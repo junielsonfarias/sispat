@@ -517,7 +517,7 @@ export class AlertManager {
     }
 
     // Implementar envio via axios ou fetch
-    console.log('Webhook alert:', config.url, payload)
+    logInfo('Webhook alert', { url: config.url, payload })
   }
 
   /**
@@ -534,9 +534,9 @@ export class AlertManager {
     const reset = '\x1b[0m'
     const color = severityColor[alert.severity]
     
-    console.log(`${color}[ALERTA ${alert.severity.toUpperCase()}]${reset} ${alert.name}`)
-    console.log(`  Mensagem: ${instance.message}`)
-    console.log(`  Disparado em: ${instance.triggeredAt.toISOString()}`)
+    logInfo(`${color}[ALERTA ${alert.severity.toUpperCase()}]${reset} ${alert.name}`)
+    logInfo(`  Mensagem: ${instance.message}`)
+    logInfo(`  Disparado em: ${instance.triggeredAt.toISOString()}`)
   }
 
   /**

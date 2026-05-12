@@ -6,6 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express'
 import { redisCache, CacheUtils } from '../config/redis'
+import { logInfo, logDebug } from '../config/logger'
 
 export interface CacheOptions {
   ttl?: number // Time to live em segundos
@@ -43,7 +44,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
       const cached = await redisCache.get(cacheKey)
       
       if (cached) {
-        console.log(`✅ Cache hit: ${cacheKey}`)
+        logDebug(`✅ Cache hit: ${cacheKey}`)
         return res.json(cached)
       }
       
@@ -53,7 +54,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
         // Cachear apenas se não houver erro
         if (res.statusCode === 200) {
           redisCache.set(cacheKey, data, ttl)
-          console.log(`💾 Cache set: ${cacheKey} (TTL: ${ttl}s)`)
+          logDebug(`💾 Cache set: ${cacheKey} (TTL: ${ttl}s)`)
         }
         
         return originalJson.call(this, data)
@@ -211,27 +212,27 @@ async function invalidateRelevantCache(req: Request) {
     
     if (path.includes('/patrimonios')) {
       await CacheUtils.invalidatePatrimonios()
-      console.log('🗑️ Cache de patrimônios invalidado')
+      logDebug('🗑️ Cache de patrimônios invalidado')
     }
-    
+
     if (path.includes('/imoveis')) {
       await CacheUtils.invalidateImoveis()
-      console.log('🗑️ Cache de imóveis invalidado')
+      logDebug('🗑️ Cache de imóveis invalidado')
     }
-    
+
     if (path.includes('/transferencias')) {
       await CacheUtils.invalidateTransferencias()
-      console.log('🗑️ Cache de transferências invalidado')
+      logDebug('🗑️ Cache de transferências invalidado')
     }
-    
+
     if (path.includes('/documentos')) {
       await CacheUtils.invalidateDocumentos()
-      console.log('🗑️ Cache de documentos invalidado')
+      logDebug('🗑️ Cache de documentos invalidado')
     }
-    
+
     if (path.includes('/dashboard') || path === '/') {
       await CacheUtils.invalidateDashboard(req.user?.municipalityId || 'unknown')
-      console.log('🗑️ Cache de dashboard invalidado')
+      logDebug('🗑️ Cache de dashboard invalidado')
     }
     
   } catch (error) {

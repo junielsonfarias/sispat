@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { body, validationResult } from 'express-validator';
+import { logInfo } from '../config/logger';
 
 // Rate limiting
 export const createRateLimit = (windowMs: number, max: number, message?: string) => {
@@ -186,7 +187,7 @@ export const auditLog = (action: string) => {
     
     res.send = function(data) {
       // Log da ação
-      console.log(`[AUDIT] ${new Date().toISOString()} - ${req.user?.userId || 'anonymous'} - ${action} - ${req.method} ${req.originalUrl} - Status: ${res.statusCode}`);
+      logInfo(`[AUDIT] ${new Date().toISOString()} - ${req.user?.userId || 'anonymous'} - ${action} - ${req.method} ${req.originalUrl} - Status: ${res.statusCode}`);
       
       return originalSend.call(this, data);
     };

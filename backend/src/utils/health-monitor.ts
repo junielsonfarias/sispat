@@ -1,6 +1,6 @@
 import { prisma } from '../config/database'
 import { captureMessage } from '../config/sentry'
-import { logError } from '../config/logger'
+import { logError, logInfo, logDebug } from '../config/logger'
 
 /**
  * Métricas de saúde da aplicação
@@ -108,7 +108,7 @@ export class HealthMonitor {
       // Log periódico (a cada 5 minutos)
       const shouldLog = Math.floor(Date.now() / 300000) !== Math.floor((Date.now() - this.monitoringIntervalMs) / 300000)
       if (shouldLog) {
-        console.log('📊 Health Metrics:', {
+        logDebug('📊 Health Metrics', {
           memory: `${metrics.memoryUsageMB.toFixed(2)}MB`,
           dbResponseTime: `${metrics.dbResponseTimeMs}ms`,
           uptime: formatUptime(metrics.uptime),
@@ -170,7 +170,7 @@ export class HealthMonitor {
    * Iniciar monitoramento periódico
    */
   start(): void {
-    console.log(`📊 Health Monitoring iniciado (intervalo: ${this.monitoringIntervalMs}ms)`)
+    logInfo(`📊 Health Monitoring iniciado (intervalo: ${this.monitoringIntervalMs}ms)`)
     
     // Check imediato
     this.checkHealth()

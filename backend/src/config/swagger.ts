@@ -1,6 +1,7 @@
 import swaggerJsdoc from 'swagger-jsdoc'
 import { Express } from 'express'
 import swaggerUi from 'swagger-ui-express'
+import { logInfo } from './logger'
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -285,7 +286,7 @@ export const setupSwagger = (app: Express) => {
     res.send(specs)
   })
 
-  console.log('📚 Swagger Documentation disponível em: /api-docs')
+  logInfo('📚 Swagger Documentation disponível em: /api-docs')
 }
 
 export default specs

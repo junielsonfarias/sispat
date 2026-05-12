@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { performance } from 'perf_hooks';
 import { metricsCollector } from '../config/metrics';
+import { logInfo, logDebug } from '../config/logger';
 
 // Interface para métricas
 interface Metrics {
@@ -169,7 +170,7 @@ export const structuredLogging = (req: Request, res: Response, next: NextFunctio
     userRole: req.user?.role || 'anonymous'
   };
   
-  console.log(`[REQUEST] ${JSON.stringify(logData)}`);
+  logDebug(`[REQUEST] ${JSON.stringify(logData)}`);
   
   // Interceptar resposta para log
   const originalSend = res.send;
@@ -183,7 +184,7 @@ export const structuredLogging = (req: Request, res: Response, next: NextFunctio
       contentLength: res.get('Content-Length') || '0'
     };
     
-    console.log(`[RESPONSE] ${JSON.stringify(responseLog)}`);
+    logDebug(`[RESPONSE] ${JSON.stringify(responseLog)}`);
     
     return originalSend.call(this, data);
   };
@@ -221,7 +222,7 @@ export const resetMetrics = () => {
     cpuUsage: process.cpuUsage()
   };
   metricsHistory.length = 0;
-  console.log('[MONITORING] Metrics reset');
+  logInfo('[MONITORING] Metrics reset');
 };
 
 // Função para obter estatísticas de performance

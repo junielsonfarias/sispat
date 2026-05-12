@@ -5,6 +5,7 @@
  */
 
 import Redis from 'ioredis'
+import { logInfo, logDebug } from './logger'
 
 export interface RedisConfig {
   host: string
@@ -44,7 +45,7 @@ let redis: Redis | null = null
 export function initializeRedis(): Redis | null {
   // ✅ Se Redis não está habilitado, retornar null
   if (!REDIS_ENABLED) {
-    console.log('ℹ️  Redis desabilitado (ENABLE_REDIS=false ou REDIS_HOST não definido)')
+    logInfo('ℹ️  Redis desabilitado (ENABLE_REDIS=false ou REDIS_HOST não definido)')
     return null
   }
 
@@ -58,7 +59,7 @@ export function initializeRedis(): Redis | null {
       // ✅ Desabilitar reconexão automática para evitar logs excessivos
       retryStrategy: (times) => {
         if (times > 3) {
-          console.log('⚠️  Redis não disponível após 3 tentativas. Continuando sem cache.')
+          logInfo('⚠️  Redis não disponível após 3 tentativas. Continuando sem cache.')
           return null // Parar tentativas
         }
         return Math.min(times * 50, 2000)
@@ -69,7 +70,7 @@ export function initializeRedis(): Redis | null {
     })
     
     redis.on('connect', () => {
-      console.log('✅ Redis conectado com sucesso')
+      logInfo('✅ Redis conectado com sucesso')
     })
     
     redis.on('error', (error: any) => {
@@ -82,7 +83,7 @@ export function initializeRedis(): Redis | null {
     redis.on('close', () => {
       // ✅ Não logar fechamento se não estava conectado
       if (redis?.status === 'ready') {
-        console.log('⚠️ Conexão Redis fechada')
+        logInfo('⚠️ Conexão Redis fechada')
       }
     })
     
@@ -476,7 +477,7 @@ export function cacheMiddleware(ttl = 300) {
       const cached = await redisCache.get(cacheKey)
       
       if (cached) {
-        console.log(`✅ Cache hit: ${cacheKey}`)
+        logDebug(`✅ Cache hit: ${cacheKey}`)
         return res.json(cached)
       }
       
@@ -486,7 +487,7 @@ export function cacheMiddleware(ttl = 300) {
         // Cachear apenas se não houver erro
         if (res.statusCode === 200) {
           redisCache.set(cacheKey, data, ttl)
-          console.log(`💾 Cache set: ${cacheKey}`)
+          logDebug(`💾 Cache set: ${cacheKey}`)
         }
         
         return originalJson.call(this, data)

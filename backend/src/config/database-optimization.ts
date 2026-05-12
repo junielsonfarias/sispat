@@ -6,6 +6,7 @@
  */
 
 import { prisma } from './database'
+import { logInfo } from './logger'
 
 export interface QueryOptimizationConfig {
   // Configurações de paginação
@@ -280,25 +281,25 @@ export const optimizationIndexes = [
  * Aplicar índices de otimização
  */
 export async function applyOptimizationIndexes() {
-  console.log('🚀 Aplicando índices de otimização...')
-  
+  logInfo('🚀 Aplicando índices de otimização...')
+
   for (const indexQuery of optimizationIndexes) {
     try {
       await prisma.$executeRawUnsafe(indexQuery)
-      console.log(`✅ Índice aplicado: ${indexQuery.split(' ')[5]}`)
+      logInfo(`✅ Índice aplicado: ${indexQuery.split(' ')[5]}`)
     } catch (error) {
       console.error(`❌ Erro ao aplicar índice: ${error}`)
     }
   }
-  
-  console.log('✅ Índices de otimização aplicados com sucesso!')
+
+  logInfo('✅ Índices de otimização aplicados com sucesso!')
 }
 
 /**
  * Analisar performance de queries
  */
 export async function analyzeQueryPerformance() {
-  console.log('📊 Analisando performance das queries...')
+  logInfo('📊 Analisando performance das queries...')
   
   // Query para verificar queries mais lentas
   const slowQueries = await prisma.$queryRaw`
@@ -314,7 +315,7 @@ export async function analyzeQueryPerformance() {
     LIMIT 10
   `
   
-  console.log('🐌 Queries mais lentas:', slowQueries)
+  logInfo('🐌 Queries mais lentas', { slowQueries })
   
   // Query para verificar índices não utilizados
   const unusedIndexes = await prisma.$queryRaw`
@@ -329,7 +330,7 @@ export async function analyzeQueryPerformance() {
     ORDER BY tablename, indexname
   `
   
-  console.log('📊 Índices não utilizados:', unusedIndexes)
+  logInfo('📊 Índices não utilizados', { unusedIndexes })
   
   return { slowQueries, unusedIndexes }
 }

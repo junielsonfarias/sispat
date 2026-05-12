@@ -205,7 +205,7 @@ export async function getLogStatistics(): Promise<{
 if (require.main === module) {
   archiveOldLogs()
     .then((result) => {
-      console.log('✅ Arquivamento concluído:', result)
+      logInfo('✅ Arquivamento concluído', { result })
       process.exit(0)
     })
     .catch((error) => {

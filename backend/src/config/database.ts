@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { logInfo } from './logger'
 
 /**
  * Instância singleton do Prisma Client com connection pooling otimizado
@@ -48,7 +49,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Graceful shutdown
 process.on('beforeExit', async () => {
-  console.log('🔌 Desconectando do banco de dados...')
+  logInfo('🔌 Desconectando do banco de dados...')
   await prisma.$disconnect()
 })
 

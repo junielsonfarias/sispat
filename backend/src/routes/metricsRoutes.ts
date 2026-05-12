@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { authenticateToken, authorize } from '../middlewares/auth'
 import { metricsCollector } from '../config/metrics'
 import { alertManager } from '../config/alerts'
+import { logInfo } from '../config/logger'
 
 const router = Router()
 
@@ -184,7 +185,7 @@ router.post('/alerts/:alertId/resolve', authorize('admin', 'supervisor', 'superu
     
     // Implementar lógica para resolver alerta específico
     // Por enquanto, apenas log
-    console.log(`Resolvendo alerta: ${alertId}`)
+    logInfo(`Resolvendo alerta: ${alertId}`)
 
     res.json({
       success: true,

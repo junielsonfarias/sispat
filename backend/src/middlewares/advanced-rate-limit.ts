@@ -4,6 +4,7 @@ import RedisStore from 'rate-limit-redis'
 // Cliente Redis para rate limiting
 // ✅ Usar a mesma instância do Redis configurada no sistema
 import { getRedis } from '../config/redis'
+import { logInfo } from '../config/logger'
 
 const redis = getRedis() // Pode retornar null se Redis não estiver disponível
 
@@ -178,7 +179,7 @@ export const isRedisAvailable = (): boolean => {
 
 // Log de status do Redis (eventos já são gerenciados em config/redis.ts)
 if (!redis) {
-  console.log('ℹ️  Rate limiting usando memória (Redis não disponível)')
+  logInfo('ℹ️  Rate limiting usando memória (Redis não disponível)')
 }
 
 export default {

@@ -1,4 +1,5 @@
 import { captureMessage } from '../config/sentry'
+import { logInfo } from '../config/logger'
 
 /**
  * Retry operation with exponential backoff
@@ -23,7 +24,7 @@ export const retryOperation = async <T>(
       
       // Se teve falhas anteriores mas agora funcionou
       if (attempt > 1) {
-        console.log(`✅ Operação bem-sucedida na tentativa ${attempt}`)
+        logInfo(`✅ Operação bem-sucedida na tentativa ${attempt}`)
         captureMessage(
           `Operação recuperada após ${attempt} tentativas`,
           'info'
@@ -40,7 +41,7 @@ export const retryOperation = async <T>(
       // Se não é a última tentativa, aguardar e tentar novamente
       if (attempt < maxRetries) {
         const delay = delayMs * Math.pow(backoff, attempt - 1)
-        console.log(`⏳ Aguardando ${delay}ms antes da próxima tentativa...`)
+        logInfo(`⏳ Aguardando ${delay}ms antes da próxima tentativa...`)
         await new Promise(resolve => setTimeout(resolve, delay))
       }
     }

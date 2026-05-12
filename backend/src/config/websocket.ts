@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from './database'
 import { metricsCollector } from './metrics'
 import { alertManager } from './alerts'
+import { logInfo, logDebug } from './logger'
 
 export interface AuthenticatedSocket extends Socket {
   userId: string
@@ -121,7 +122,7 @@ class WebSocketManager {
     this.startMetricsBroadcast()
     this.startHeartbeat()
     
-    console.log('✅ WebSocket Server inicializado')
+    logInfo('✅ WebSocket Server inicializado')
     return this.io
   }
 
@@ -132,7 +133,7 @@ class WebSocketManager {
     if (!this.io) return
 
     this.io.on('connection', async (socket: Socket) => {
-      console.log(`🔌 Cliente conectado: ${socket.id}`)
+      logDebug(`🔌 Cliente conectado: ${socket.id}`)
 
       // Autenticar cliente
       const authResult = await this.authenticateClient(socket)
@@ -165,7 +166,7 @@ class WebSocketManager {
     })
 
     this.io.on('disconnect', (socket) => {
-      console.log(`🔌 Cliente desconectado: ${socket.id}`)
+      logDebug(`🔌 Cliente desconectado: ${socket.id}`)
       this.connectedClients.delete(socket.id)
     })
   }
@@ -284,7 +285,7 @@ class WebSocketManager {
     socket.on('alert:resolve', async (data: { alertId: string }) => {
       if (['admin', 'supervisor', 'superuser'].includes(socket.role)) {
         // Implementar resolução de alerta
-        console.log(`Alerta ${data.alertId} resolvido por ${socket.email}`)
+        logInfo(`Alerta ${data.alertId} resolvido por ${socket.email}`)
         this.broadcastToAdmins('alert:resolved', {
           alertId: data.alertId,
           resolvedBy: socket.email,

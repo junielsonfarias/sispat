@@ -51,4 +51,11 @@ export default tseslint.config(
       'no-console': 'off',
     },
   },
+  {
+    // Scripts CLI (seed) — output operacional é intencional
+    files: ['src/prisma/seed.ts', 'src/scripts/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 );

@@ -1,4 +1,5 @@
 import { captureMessage } from '../config/sentry'
+import { logInfo } from '../config/logger'
 
 /**
  * Estados do Circuit Breaker
@@ -45,7 +46,7 @@ export class CircuitBreaker {
       resetTimeout: 30000,
     }
   ) {
-    console.log(`⚡ Circuit Breaker '${name}' inicializado:`, options)
+    logInfo(`⚡ Circuit Breaker '${name}' inicializado`, { options })
   }
   
   /**
@@ -65,7 +66,7 @@ export class CircuitBreaker {
       // Tempo de reset passou, mudar para HALF_OPEN
       this.state = CircuitState.HALF_OPEN
       this.successes = 0
-      console.log(`🔄 Circuit breaker '${this.name}' mudou para HALF_OPEN`)
+      logInfo(`🔄 Circuit breaker '${this.name}' mudou para HALF_OPEN`)
     }
     
     try {
@@ -104,7 +105,7 @@ export class CircuitBreaker {
       if (this.successes >= this.options.successThreshold) {
         this.state = CircuitState.CLOSED
         this.lastStateChange = Date.now()
-        console.log(`✅ Circuit breaker '${this.name}' FECHADO (recuperado)`)
+        logInfo(`✅ Circuit breaker '${this.name}' FECHADO (recuperado)`)
         
         captureMessage(
           `Circuit breaker '${this.name}' recuperado e fechado`,
@@ -161,7 +162,7 @@ export class CircuitBreaker {
     this.failures = 0
     this.successes = 0
     this.state = CircuitState.CLOSED
-    console.log(`🔄 Circuit breaker '${this.name}' resetado manualmente`)
+    logInfo(`🔄 Circuit breaker '${this.name}' resetado manualmente`)
   }
 }
 

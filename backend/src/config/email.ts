@@ -1,6 +1,7 @@
 import nodemailer, { createTransport } from 'nodemailer';
 import Handlebars from 'handlebars';
 import { prisma } from '../lib/prisma';
+import { logInfo } from './logger';
 
 export interface EmailConfig {
   host: string;
@@ -72,7 +73,7 @@ export class EmailService {
         await this.transporter.verify();
         // ✅ Usar logger em vez de console (apenas em desenvolvimento)
         if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Configuração de email carregada e verificada');
+          logInfo('✅ Configuração de email carregada e verificada');
         }
       } else {
         if (process.env.NODE_ENV === 'development') {
@@ -124,7 +125,7 @@ export class EmailService {
         text: text || html.replace(/<[^>]*>/g, ''),
       });
 
-      console.log('✅ Email enviado:', info.messageId);
+      logInfo('✅ Email enviado', { messageId: info.messageId });
       return true;
     } catch (error) {
       console.error('❌ Erro ao enviar email:', error);
