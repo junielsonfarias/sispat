@@ -8,11 +8,17 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Info } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 import LogoManagement from '@/pages/admin/LogoManagement'
 import LoginCustomizationForm from '@/components/admin/LoginCustomizationForm'
 import MunicipalityInfoForm from '@/components/admin/MunicipalityInfoForm'
 
 export default function Personalization() {
+  const { user } = useAuth()
+  const isSuperuser = user?.role === 'superuser'
+
   return (
     <div className="flex flex-col gap-6">
       <Breadcrumb>
@@ -28,7 +34,26 @@ export default function Personalization() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <h1 className="text-2xl font-bold">Personalização</h1>
+      <div>
+        <h1 className="text-2xl font-bold">Personalização do Município</h1>
+        <p className="text-muted-foreground mt-1">
+          Ajustes da identidade do município: informações, logos e tela de login.
+        </p>
+      </div>
+
+      {isSuperuser && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Você é <strong>superuser</strong>. Configurações de plataforma (título do navegador,
+            favicon, rodapés do sistema) ficam em{' '}
+            <Link to="/superuser/customization" className="text-primary hover:underline font-medium">
+              Customização do Sistema
+            </Link>.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Tabs defaultValue="municipality" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="municipality">Informações do Município</TabsTrigger>

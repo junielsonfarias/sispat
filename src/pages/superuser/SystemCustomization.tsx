@@ -1,4 +1,5 @@
 import { useState, useEffect, ChangeEvent } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Card,
   CardContent,
@@ -7,6 +8,7 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,7 +19,7 @@ import {
 } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { toast } from '@/hooks/use-toast'
-import { Save, Undo, UploadCloud } from 'lucide-react'
+import { Save, Undo, UploadCloud, Info } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 export default function SystemCustomization() {
@@ -91,10 +93,23 @@ export default function SystemCustomization() {
         <div>
           <h1 className="text-2xl font-bold">Customização do Sistema</h1>
           <p className="text-muted-foreground">
-            Personalize a aparência e configurações do sistema para {MUNICIPALITY_NAME}.
+            Configurações de plataforma para {MUNICIPALITY_NAME}: título do navegador,
+            favicon e textos de rodapé do sistema.
           </p>
         </div>
       </div>
+
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          Esta tela trata <strong>configurações de plataforma</strong> (visíveis para todos
+          os usuários do sistema). Para ajustar identidade do município (logos, informações,
+          tela de login), use{' '}
+          <Link to="/configuracoes/personalizacao" className="text-primary hover:underline font-medium">
+            Configurações → Personalização
+          </Link>.
+        </AlertDescription>
+      </Alert>
       <Card>
         <CardHeader>
           <CardTitle>Customização do Sistema</CardTitle>
