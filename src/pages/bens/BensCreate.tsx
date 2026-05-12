@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useNavigate } from 'react-router-dom'
+import { FEATURES } from '@/lib/features'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -622,53 +623,55 @@ const BensCreate = () => {
                 />
               </div>
 
-              {/* Campos para Sub-Patrimônios */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="eh_kit"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="h-4 w-4 rounded border-gray-300"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Este patrimônio é um kit/conjunto?</FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          Marque se este patrimônio contém múltiplas unidades
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                {form.watch('eh_kit') && (
+              {/* Campos para Sub-Patrimônios — escondidos via feature flag até backend estar pronto */}
+              {FEATURES.subPatrimonios && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="quantidade_unidades"
+                    name="eh_kit"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Quantidade de Unidades *</FormLabel>
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            type="number" 
-                            min="2"
-                            placeholder="2"
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 2)}
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="h-4 w-4 rounded border-gray-300"
                           />
                         </FormControl>
-                        <FormMessage />
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Este patrimônio é um kit/conjunto?</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Marque se este patrimônio contém múltiplas unidades
+                          </p>
+                        </div>
                       </FormItem>
                     )}
                   />
-                )}
-              </div>
+
+                  {form.watch('eh_kit') && (
+                    <FormField
+                      control={form.control}
+                      name="quantidade_unidades"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantidade de Unidades *</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="2"
+                              placeholder="2"
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 2)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField

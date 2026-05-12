@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { FEATURES } from '@/lib/features'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -912,13 +913,15 @@ function BensView() {
               </CardContent>
             </Card>
 
-            {/* Sub-Patrimônios */}
-            <SubPatrimoniosManager
-              patrimonioId={patrimonio.id}
-              patrimonioNumero={patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
-              isKit={patrimonio.eh_kit || patrimonio.ehKit || false}
-              quantidadeUnidades={patrimonio.quantidade_unidades || patrimonio.quantidadeUnidades}
-            />
+            {/* Sub-Patrimônios — escondido via feature flag até backend estar pronto */}
+            {FEATURES.subPatrimonios && (
+              <SubPatrimoniosManager
+                patrimonioId={patrimonio.id}
+                patrimonioNumero={patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+                isKit={patrimonio.eh_kit || patrimonio.ehKit || false}
+                quantidadeUnidades={patrimonio.quantidade_unidades || patrimonio.quantidadeUnidades}
+              />
+            )}
           </div>
         </div>
 
