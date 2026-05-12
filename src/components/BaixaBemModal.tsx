@@ -24,6 +24,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { api } from '@/services/api-adapter'
+import { uploadMultipleFiles } from '@/services/fileService'
+import { useAuth } from '@/hooks/useAuth'
 import { Patrimonio } from '@/types'
 import { AlertCircle, FileText, Upload } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -53,6 +55,7 @@ export const BaixaBemModal = ({
 }: BaixaBemModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const { user } = useAuth()
 
   const form = useForm<BaixaBemValues>({
     resolver: zodResolver(baixaBemSchema),
@@ -74,17 +77,38 @@ export const BaixaBemModal = ({
     setIsSubmitting(true)
 
     try {
-      logger.debug('Registrando baixa', { data })
+      logger.debug('Registrando baixa', { data, filesCount: selectedFiles.length })
 
-      // Preparar dados para envio
+      // 1) Faz upload dos arquivos comprobatórios (se houver), recebe URLs reais
+      let documentos_baixa: string[] = []
+      if (selectedFiles.length > 0) {
+        const uploadResult = await uploadMultipleFiles(
+          selectedFiles,
+          patrimonio.id,
+          user?.id ?? '',
+        )
+        // Backend retorna { files: [{ file_url, ... }] }
+        const files = (uploadResult?.files ?? []) as Array<{ file_url?: string }>
+        documentos_baixa = files
+          .map((f) => f.file_url)
+          .filter((u): u is string => Boolean(u))
+
+        if (documentos_baixa.length !== selectedFiles.length) {
+          logger.warn('Alguns arquivos falharam no upload', {
+            esperado: selectedFiles.length,
+            recebido: documentos_baixa.length,
+          })
+        }
+      }
+
+      // 2) Registra a baixa com as URLs dos documentos já persistidos
       const baixaData = {
         data_baixa: data.data_baixa,
         motivo_baixa: data.motivo_baixa,
         observacoes: data.observacoes,
-        documentos_baixa: selectedFiles.map(f => f.name), // Por enquanto apenas nomes
+        documentos_baixa,
       }
 
-      // Enviar requisição
       const response = await api.post(`/patrimonios/${patrimonio.id}/baixa`, baixaData)
 
       logger.debug('Baixa registrada', { response })
