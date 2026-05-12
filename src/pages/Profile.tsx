@@ -13,13 +13,27 @@ import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { toast } from '@/hooks/use-toast'
-import { Edit, Palette } from 'lucide-react'
+import { Edit, Palette, LogOut, Shield } from 'lucide-react'
 import { ImageEditor } from '@/components/profile/ImageEditor'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { Badge } from '@/components/ui/badge'
 
 const Profile = () => {
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, logout } = useAuth()
+  const [isLoggingOutAll, setIsLoggingOutAll] = useState(false)
+
+  const handleLogoutAllDevices = async () => {
+    if (
+      !window.confirm(
+        'Deseja sair de TODOS os seus dispositivos? Você será desconectado de qualquer outro navegador/celular onde estiver logado.',
+      )
+    ) {
+      return
+    }
+    setIsLoggingOutAll(true)
+    // logout faz a chamada ao backend e redireciona — não precisamos esperar.
+    logout({ allDevices: true })
+  }
   const [isEditorOpen, setEditorOpen] = useState(false)
   const [imageToEdit, setImageToEdit] = useState<string | null>(null)
 
@@ -160,6 +174,38 @@ const Profile = () => {
               </p>
             </div>
             <ThemeToggle />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Segurança / Sessões */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Segurança e sessões
+          </CardTitle>
+          <CardDescription>
+            Encerre sua sessão em todos os dispositivos onde você esteja logado.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-[240px]">
+              <Label className="text-base">Sair de todos os dispositivos</Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Útil se você suspeitar de acesso não autorizado ou esqueceu de fazer logout
+                em algum dispositivo. Todos os refresh tokens da sua conta serão revogados.
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={handleLogoutAllDevices}
+              disabled={isLoggingOutAll}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {isLoggingOutAll ? 'Encerrando...' : 'Sair de todos'}
+            </Button>
           </div>
         </CardContent>
       </Card>
