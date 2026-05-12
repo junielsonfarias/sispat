@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { toast } from '@/hooks/use-toast'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -56,6 +57,8 @@ const ReportView = () => {
   const reportRef = useRef<HTMLDivElement>(null)
   const [paperSize, setPaperSize] = useState('a4')
   const [orientation, setOrientation] = useState('landscape')
+  const [isExportingPDF, setIsExportingPDF] = useState(false)
+  const [pdfStage, setPdfStage] = useState<string>('')
   const [zoom, setZoom] = useState(1)
 
   // Extrair filtros da URL
@@ -275,18 +278,43 @@ const ReportView = () => {
     window.print()
   }
 
+  /**
+   * Yield para o event loop entre etapas pesadas. Permite que React repinte
+   * o spinner/progresso. Usa requestIdleCallback quando disponível.
+   */
+  const yieldToBrowser = () =>
+    new Promise<void>((resolve) => {
+      if (typeof (window as { requestIdleCallback?: unknown }).requestIdleCallback === 'function') {
+        (window as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(() => resolve())
+      } else {
+        setTimeout(resolve, 0)
+      }
+    })
+
   const handleDownloadPDF = async () => {
+    if (isExportingPDF) return
+    setIsExportingPDF(true)
+    setPdfStage('Preparando...')
     try {
       const printableElement = document.getElementById('printable-area')
       if (!printableElement) {
         console.error('Elemento para impressão não encontrado')
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Elemento de impressão não encontrado.',
+        })
         return
       }
 
       logger.debug('Elemento encontrado', { printableElement })
-      
-      // Aguardar um pouco para garantir que as imagens carreguem
+
+      setPdfStage('Aguardando imagens carregarem...')
+      await yieldToBrowser()
       await new Promise(resolve => setTimeout(resolve, 500))
+
+      setPdfStage('Renderizando relatório (pode levar alguns segundos)...')
+      await yieldToBrowser()
       
       // Usar html2canvas para capturar o elemento
       const canvas = await html2canvas(printableElement, {
@@ -315,25 +343,24 @@ const ReportView = () => {
 
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
-      // Mantém proporção: largura cheia da página, altura escalada
       const imgWidth = pdfWidth
       const imgHeight = (canvas.height * imgWidth) / canvas.width
+      const totalPages = Math.ceil(imgHeight / pdfHeight)
 
-      logger.debug('Dimensões PDF', { pageHeight: pdfHeight, imgHeight, pages: Math.ceil(imgHeight / pdfHeight) })
+      logger.debug('Dimensões PDF', { pageHeight: pdfHeight, imgHeight, pages: totalPages })
 
-      // Multi-página: se a imagem não cabe em uma página, paginar deslocando
-      // a posição Y negativamente — jsPDF clipa o que sai dos limites.
+      // Multi-página com yield entre páginas para não congelar a UI em relatórios grandes
       let remaining = imgHeight
       let position = 0
       let pageIndex = 0
       while (remaining > 0) {
         if (pageIndex > 0) pdf.addPage()
-        // posição Y negativa para "empurrar" a imagem para cima na nova página
+        setPdfStage(`Gerando página ${pageIndex + 1} de ${totalPages}...`)
+        await yieldToBrowser()
         pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight)
         remaining -= pdfHeight
         position += pdfHeight
         pageIndex++
-        // segurança contra loop infinito
         if (pageIndex > 50) {
           logger.warn('PDF abortado: mais de 50 páginas')
           break
@@ -343,10 +370,12 @@ const ReportView = () => {
       const title = template?.name || 'Relatório'
       const filename = `${title.replace(/\s+/g, '_')}_${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`
 
+      setPdfStage('Salvando arquivo...')
+      await yieldToBrowser()
       pdf.save(filename)
 
       logger.debug('PDF gerado com sucesso', { filename })
-      
+
     } catch (error) {
       console.error('Erro ao gerar PDF:', error)
       // Fallback: tentar novamente sem as configurações problemáticas
@@ -393,8 +422,15 @@ const ReportView = () => {
         
       } catch (fallbackError) {
         console.error('Erro no fallback:', fallbackError)
-        alert('Erro ao gerar PDF. Tente novamente.')
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Não foi possível gerar o PDF. Tente novamente.',
+        })
       }
+    } finally {
+      setIsExportingPDF(false)
+      setPdfStage('')
     }
   }
 
@@ -859,8 +895,9 @@ const ReportView = () => {
           <Button onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Imprimir
           </Button>
-          <Button onClick={handleDownloadPDF} variant="outline">
-            <Download className="mr-2 h-4 w-4" /> Baixar PDF
+          <Button onClick={handleDownloadPDF} variant="outline" disabled={isExportingPDF}>
+            <Download className="mr-2 h-4 w-4" />
+            {isExportingPDF ? (pdfStage || 'Gerando PDF...') : 'Baixar PDF'}
           </Button>
         </div>
       </div>
