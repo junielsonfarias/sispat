@@ -45,10 +45,14 @@
 **Problema:** `image/svg+xml` não está explicitamente bloqueado. SVG pode conter JS executado quando renderizado inline.
 **Correção:** whitelist conservadora: só JPEG, PNG, WebP, PDF. Excluir SVG ou sanitizar com DOMPurify se necessário.
 
-#### 5. Tokens em localStorage (XSS exposure)
-**Arquivo:** frontend `services/http-api.ts`
-**Problema:** Access + refresh em `localStorage` — recuperáveis por XSS.
-**Mitigação atual:** CSP forte, helmet. **Correção definitiva:** usar HttpOnly + Secure + SameSite=Strict cookies. Requer mudança de fluxo (CSRF tokens, etc.).
+#### 5. ~~Tokens em localStorage (XSS exposure)~~ → ✅ Resolvido no Sprint 13
+**Estado anterior:** Access + refresh em `localStorage` — recuperáveis por XSS.
+**Mudança:** A partir do Sprint 13 (2026-05-12), JWT viaja em **cookies HttpOnly + Secure (em prod) + SameSite=Lax**:
+- `sispat_access` (24h) e `sispat_refresh` (7d): HttpOnly, JS não acessa
+- `csrf_token`: não HttpOnly, frontend lê e ecoa no header `X-CSRF-Token`
+- CSRF protegido via **double-submit cookie**: backend valida `cookies.csrf_token === headers['x-csrf-token']` em métodos mutáveis com sessão por cookie
+
+Compatibilidade: backend ainda aceita `Authorization: Bearer ...` (back-compat para clientes máquina e período de transição). `withCredentials: true` no axios envia cookies automaticamente.
 
 #### 6. PII em logs estruturados
 **Arquivo:** `backend/src/config/logger.ts:74-80`

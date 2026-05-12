@@ -120,6 +120,35 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 13: HttpOnly cookies + CSRF (defesa contra XSS)
+
+**Backend**
+- Nova dep: `cookie-parser` + `@types/cookie-parser`
+- `utils/auth-cookies.ts`: helpers `setAuthCookies` / `clearAuthCookies` / `issueCsrfToken`. Cookies emitidos com `Secure` em prod, `SameSite=Lax`, `HttpOnly` para access/refresh; CSRF token em cookie não-HttpOnly para o frontend ler.
+- `middlewares/csrf.ts`: double-submit cookie. Métodos seguros (GET/HEAD/OPTIONS) e endpoints de auth iniciais (login, refresh, forgot/reset password, csrf) isentos. Requests com header `Authorization: Bearer` (sem cookie de sessão) também pulam — back-compat para clientes máquina.
+- `middlewares/auth.ts`: aceita JWT do cookie `sispat_access` (prioridade) OU header `Authorization: Bearer` (fallback).
+- `controllers/authController.ts`:
+  - `login`: emite cookies + retorna `csrfToken` no body
+  - `refreshToken`: aceita cookie `sispat_refresh` ou body; reemite cookies com rotação
+  - `logout`: aceita cookie OU body; chama `clearAuthCookies` antes de responder
+  - Novo endpoint `GET /api/auth/csrf` para frontend renovar cookie CSRF quando necessário
+- `index.ts`: `app.use(cookieParser())` + `app.use('/api', csrfProtection)`
+
+**Frontend**
+- `services/http-api.ts`: `withCredentials: true` no axios — envia/recebe cookies automaticamente
+- Helper `readCsrfCookie()` lê `csrf_token` de `document.cookie`
+- Interceptor de request injeta `X-CSRF-Token` em POST/PUT/PATCH/DELETE quando o cookie está presente
+- `Authorization: Bearer` continua sendo enviado se houver token em localStorage (back-compat); backend prefere o cookie
+- Interceptor de refresh prioriza cookie via `withCredentials`
+
+**Segurança ganhada**
+- XSS não consegue mais roubar o JWT — cookies HttpOnly não são acessíveis por JS
+- CSRF mitigado via double-submit pattern (atacante de outro domínio não lê o csrf_token cookie)
+- Period de transição: login antigo (Bearer + localStorage) continua funcionando
+
+**Pendências/futuro**
+- Migrar AuthContext.tsx para parar de salvar token/refresh em localStorage (manter só user obj). Após verificar que cookies funcionam em produção.
+
 ### 2026-05-12 — Sprint 12: cleanup + observabilidade + ops
 
 **Cleanup — dashboards mortos**
