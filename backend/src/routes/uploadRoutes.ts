@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { uploadFile, uploadMultipleFiles, deleteFile } from '../controllers/uploadController';
-import { uploadSingle, uploadMultiple } from '../middlewares/uploadMiddleware';
+import { uploadSingle, uploadMultiple, verifyMagicBytes } from '../middlewares/uploadMiddleware';
 import { authenticateToken } from '../middlewares/auth';
 
 const router = Router();
@@ -8,11 +8,11 @@ const router = Router();
 // Todas as rotas requerem autenticação
 router.use(authenticateToken);
 
-// Upload de arquivo único
-router.post('/single', uploadSingle, uploadFile);
+// Upload de arquivo único — multer salva → valida magic bytes → controller
+router.post('/single', uploadSingle, verifyMagicBytes, uploadFile);
 
 // Upload de múltiplos arquivos
-router.post('/multiple', uploadMultiple, uploadMultipleFiles);
+router.post('/multiple', uploadMultiple, verifyMagicBytes, uploadMultipleFiles);
 
 // Deletar arquivo
 router.delete('/:filename', deleteFile);

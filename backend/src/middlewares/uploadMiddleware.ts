@@ -1,6 +1,9 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { NextFunction, Request, Response } from 'express';
+import { logError, logWarn } from '../config/logger';
+import { validateFileOnDisk, mimeMatchesDetected } from '../utils/file-validation';
 
 // Garantir que a pasta uploads existe
 const uploadsDir = path.join(__dirname, '../../uploads');
@@ -10,17 +13,16 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Configuração de armazenamento
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req, _file, cb) => {
     cb(null, uploadsDir);
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     // Gerar nome único: timestamp + nome original sanitizado
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    
-    // ✅ CORREÇÃO: Obter extensão do nome original OU do mimetype
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+
     let ext = path.extname(file.originalname);
-    
-    // Se não tiver extensão, determinar pelo mimetype
+
+    // Se não tiver extensão, determinar pelo mimetype declarado (validado depois)
     if (!ext || ext === '') {
       const mimeToExt: { [key: string]: string } = {
         'image/jpeg': '.jpg',
@@ -30,15 +32,16 @@ const storage = multer.diskStorage({
         'image/webp': '.webp',
         'application/pdf': '.pdf',
       };
-      ext = mimeToExt[file.mimetype] || '.jpg'; // Default para .jpg se não identificar
+      ext = mimeToExt[file.mimetype] || '.bin';
     }
-    
-    // ✅ CORREÇÃO: Se o nome original começar com "blob-", usar um nome genérico
+
     let nameWithoutExt = path.basename(file.originalname, ext);
-    
-    // Se o nome começar com "blob-" ou não tiver caracteres válidos, usar nome genérico
-    if (nameWithoutExt.startsWith('blob-') || nameWithoutExt.length < 3 || !/^[a-zA-Z0-9]/.test(nameWithoutExt)) {
-      // Determinar prefixo baseado no tipo
+
+    if (
+      nameWithoutExt.startsWith('blob-') ||
+      nameWithoutExt.length < 3 ||
+      !/^[a-zA-Z0-9]/.test(nameWithoutExt)
+    ) {
       if (file.mimetype.startsWith('image/')) {
         nameWithoutExt = 'image';
       } else if (file.mimetype === 'application/pdf') {
@@ -47,52 +50,123 @@ const storage = multer.diskStorage({
         nameWithoutExt = 'file';
       }
     } else {
-      // Sanitizar nome original (remover caracteres especiais)
       nameWithoutExt = nameWithoutExt
-        .replace(/[^a-zA-Z0-9_-]/g, '-') // Sanitizar nome
-        .replace(/-+/g, '-') // Remover múltiplos hífens
-        .replace(/^-|-$/g, '') // Remover hífens do início/fim
-        .substring(0, 50); // Limitar tamanho
+        .replace(/[^a-zA-Z0-9_-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 50);
     }
-    
-    // Garantir que o nome final não comece com "blob-"
+
     const finalName = `${nameWithoutExt}-${uniqueSuffix}${ext}`;
-    
     cb(null, finalName);
-  }
+  },
 });
 
-// Filtro de tipos de arquivo
-const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Aceitar apenas imagens e PDFs
-  const allowedMimes = [
-    'image/jpeg',
-    'image/jpg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'application/pdf',
-  ];
+// Filtro inicial — apenas pelo mimetype declarado (defesa em profundidade;
+// magic bytes são validados depois em `verifyMagicBytes`).
+// SVG é bloqueado explicitamente: pode conter <script> e executar JS quando
+// renderizado inline.
+const ALLOWED_MIMES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+]);
 
-  if (allowedMimes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Tipo de arquivo não permitido. Apenas imagens (JPEG, PNG, GIF, WebP) e PDF são aceitos.'));
+const fileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  if (file.mimetype === 'image/svg+xml') {
+    cb(new Error('SVG não é permitido por segurança.'));
+    return;
   }
+  if (ALLOWED_MIMES.has(file.mimetype)) {
+    cb(null, true);
+    return;
+  }
+  cb(new Error('Tipo de arquivo não permitido. Apenas imagens (JPEG, PNG, GIF, WebP) e PDF são aceitos.'));
 };
 
 // Configuração do multer
 export const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
+  storage,
+  fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB max por arquivo
-  }
+  },
 });
 
 // Middleware para múltiplos arquivos
-export const uploadMultiple = upload.array('files', 10); // Máximo 10 arquivos por vez
+export const uploadMultiple = upload.array('files', 10);
 
 // Middleware para arquivo único
 export const uploadSingle = upload.single('file');
 
+/**
+ * Remove um arquivo do disco silenciosamente.
+ */
+const unlinkSilently = (filePath: string): void => {
+  try {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch (err) {
+    logWarn('Falha ao remover arquivo inválido', { filePath, error: String(err) });
+  }
+};
+
+/**
+ * Middleware que roda DEPOIS do multer e valida o conteúdo real dos arquivos
+ * (magic bytes). Se algum não bater com a whitelist, deleta tudo e retorna 400.
+ *
+ * Use em sequência:
+ *   router.post('/single', uploadSingle, verifyMagicBytes, uploadFileController)
+ */
+export const verifyMagicBytes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const files: Express.Multer.File[] = [];
+    if (req.file) files.push(req.file);
+    if (Array.isArray(req.files)) files.push(...(req.files as Express.Multer.File[]));
+
+    if (files.length === 0) {
+      next();
+      return;
+    }
+
+    for (const file of files) {
+      const detected = await validateFileOnDisk(file.path);
+      if (!detected) {
+        logWarn('🚫 Upload bloqueado: magic bytes não reconhecidos', {
+          filename: file.filename,
+          declaredMime: file.mimetype,
+          originalname: file.originalname,
+        });
+        files.forEach((f) => unlinkSilently(f.path));
+        res.status(400).json({ error: 'Tipo de arquivo não permitido (conteúdo inválido).' });
+        return;
+      }
+      if (!mimeMatchesDetected(file.mimetype, detected)) {
+        logWarn('🚫 Upload bloqueado: mimetype declarado não bate com conteúdo', {
+          filename: file.filename,
+          declaredMime: file.mimetype,
+          detectedMime: detected.mime,
+        });
+        files.forEach((f) => unlinkSilently(f.path));
+        res.status(400).json({ error: 'Tipo de arquivo declarado não corresponde ao conteúdo.' });
+        return;
+      }
+    }
+
+    next();
+  } catch (err) {
+    logError('Erro ao validar magic bytes de upload', err);
+    // Limpa arquivos antes de propagar — não deixa lixo no disco
+    const files: Express.Multer.File[] = [];
+    if (req.file) files.push(req.file);
+    if (Array.isArray(req.files)) files.push(...(req.files as Express.Multer.File[]));
+    files.forEach((f) => unlinkSilently(f.path));
+    next(err);
+  }
+};
