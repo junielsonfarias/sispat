@@ -168,17 +168,19 @@ export const createTransfer = async (req: Request, res: Response): Promise<void>
 };
 
 /**
- * Aprovar transferência
+ * Aprovar transferência — atualiza FKs (sectorId, localId), strings de display,
+ * cria entrada no histórico e registra ActivityLog. Tudo em transação atômica.
+ *
  * PATCH /api/transfers/:id/approve
  */
 export const approveTransfer = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { observacoes } = req.body;
+    const { observacoes } = req.body ?? {};
 
     const transfer = await prisma.transferencia.findUnique({
       where: { id },
-      include: { patrimonio: true }
+      include: { patrimonio: { select: { id: true, municipalityId: true } } },
     });
 
     if (!transfer) {
@@ -191,31 +193,74 @@ export const approveTransfer = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Atualizar transferência
-    const updatedTransfer = await prisma.transferencia.update({
-      where: { id },
-      data: {
-        status: 'aprovada',
-        observacoes: observacoes || transfer.observacoes
-      }
+    // Tenant isolation: aprovador deve ser do mesmo município (exceto superuser)
+    if (
+      req.user?.role !== 'superuser' &&
+      transfer.patrimonio.municipalityId !== req.user?.municipalityId
+    ) {
+      res.status(403).json({ error: 'Sem permissão: transferência de outro município' });
+      return;
+    }
+
+    // Resolver setor destino (precisa existir no mesmo município)
+    const setorDestino = await prisma.sector.findFirst({
+      where: {
+        name: transfer.setorDestino,
+        municipalityId: transfer.patrimonio.municipalityId,
+      },
+      select: { id: true },
     });
+    if (!setorDestino) {
+      res.status(404).json({ error: 'Setor destino não encontrado no município' });
+      return;
+    }
 
-    // Atualizar patrimônio
-    await prisma.patrimonio.update({
-      where: { id: transfer.patrimonioId },
-      data: {
-        setor_responsavel: transfer.setorDestino,
-        local_objeto: transfer.localDestino
-      }
-    });
+    // Resolver local destino (opcional, mas se foi informado deve existir)
+    let localDestinoId: string | null = null;
+    if (transfer.localDestino) {
+      const local = await prisma.local.findFirst({
+        where: {
+          name: transfer.localDestino,
+          municipalityId: transfer.patrimonio.municipalityId,
+        },
+        select: { id: true },
+      });
+      localDestinoId = local?.id ?? null;
+    }
 
-    // Log da atividade
-    await logActivity(req, 'UPDATE', 'TRANSFER', id, 'Transferência aprovada');
+    const [updatedTransfer] = await prisma.$transaction([
+      prisma.transferencia.update({
+        where: { id },
+        data: {
+          status: 'aprovada',
+          observacoes: observacoes || transfer.observacoes,
+        },
+      }),
+      prisma.patrimonio.update({
+        where: { id: transfer.patrimonioId },
+        data: {
+          sectorId: setorDestino.id,
+          setor_responsavel: transfer.setorDestino,
+          ...(localDestinoId ? { localId: localDestinoId, local_objeto: transfer.localDestino } : {}),
+          updatedBy: req.user!.userId,
+        },
+      }),
+      prisma.historicoEntry.create({
+        data: {
+          patrimonioId: transfer.patrimonioId,
+          action: 'Transferência Aprovada',
+          details: `Transferido de ${transfer.setorOrigem} para ${transfer.setorDestino}. Motivo: ${transfer.motivo}`,
+          user: req.user!.email,
+          origem: transfer.setorOrigem,
+          destino: transfer.setorDestino,
+        },
+      }),
+    ]);
 
-    // ✅ CACHE: Invalidar cache de transferências e patrimônios após aprovação
+    await logActivity(req, 'APPROVE', 'TRANSFER', id, 'Transferência aprovada');
     await CacheUtils.invalidateTransferencias();
     await CacheUtils.invalidatePatrimonios();
-    logDebug('✅ Cache de transferências e patrimônios invalidado após aprovação');
+    await redisCache.delete(`patrimonio:${transfer.patrimonioId}`);
 
     res.json(updatedTransfer);
   } catch (error) {
@@ -247,17 +292,27 @@ export const rejectTransfer = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Atualizar transferência
-    const updatedTransfer = await prisma.transferencia.update({
-      where: { id },
-      data: {
-        status: 'rejeitada',
-        observacoes: motivo || transfer.observacoes
-      }
-    });
+    const [updatedTransfer] = await prisma.$transaction([
+      prisma.transferencia.update({
+        where: { id },
+        data: {
+          status: 'rejeitada',
+          observacoes: motivo || transfer.observacoes,
+        },
+      }),
+      prisma.historicoEntry.create({
+        data: {
+          patrimonioId: transfer.patrimonioId,
+          action: 'Transferência Rejeitada',
+          details: `Transferência de ${transfer.setorOrigem} para ${transfer.setorDestino} rejeitada${motivo ? `. Motivo: ${motivo}` : ''}`,
+          user: req.user!.email,
+          origem: transfer.setorOrigem,
+          destino: transfer.setorDestino,
+        },
+      }),
+    ]);
 
-    // Log da atividade
-    await logActivity(req, 'UPDATE', 'TRANSFER', id, 'Transferência rejeitada');
+    await logActivity(req, 'REJECT', 'TRANSFER', id, 'Transferência rejeitada');
 
     // ✅ CACHE: Invalidar cache de transferências após rejeição
     await CacheUtils.invalidateTransferencias();
