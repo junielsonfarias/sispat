@@ -120,6 +120,30 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 10: UX e refinamento
+
+**M4 — Auto-save em formulários longos**
+Novo hook `useFormAutosave` persiste `form.watch()` em localStorage com debounce de 1s. Restaura ao montar se o form estiver pristine. `clearDraft()` limpa quando submit foi bem-sucedido. Aplicado em `BensCreate` e `ImoveisCreate`. Exclui automaticamente Files e campos opt-out. BensEdit ficou de fora (auto-save em edição é arriscado — pode sobrescrever dados do servidor).
+
+**M6 — Paginação correta no PDF de relatório**
+`ReportView.handleDownloadPDF` fazia `pdf.addImage()` único. Relatórios maiores que 1 página A4 eram truncados. Agora calcula quantas páginas a imagem precisa e adiciona páginas com `pdf.addPage()` deslocando Y negativamente. Hardlimit de 50 páginas.
+
+**M3 — Paginação interna do histórico em BensView**
+Antes mostrava todas as 50 entradas de uma vez. Agora 10 por vez com botão "Mostrar mais (+10)". Performance melhora em bens com muita movimentação.
+
+**M9 — Templates de relatório no banco**
+Análise inicial errada: modelo `ReportTemplate` já existe no schema, endpoints `/api/config/report-templates` (GET/POST/PUT/DELETE) já implementados em `configController`, frontend já usa via `ReportTemplateContext`. Nada a fazer.
+
+**M8 — generateImovelPDF**
+Análise inicial errada: implementação completa de 417 linhas existe em `components/imoveis/ImovelPDFGenerator.tsx`. Sem alteração.
+
+**M10 — Mapa de imóveis**
+`Imovel` tinha lat/lng sem visualização. Adicionados em `ImoveisView`:
+- Link "🗺️ Ver no mapa" (OpenStreetMap)
+- Link "Google Maps"
+- Card com `<iframe>` do OpenStreetMap embed (preview inline)
+Zero dependências adicionais — não precisou de Leaflet.
+
 ### 2026-05-12 — Sprint 9: completar fluxos e polimento
 
 **Frontend Empréstimos conectado ao backend**

@@ -120,11 +120,11 @@
 - **Sintoma:** Se backend atrasa, UX mostra inconsistência (alguns itens filtrados local, outros vindo do servidor).
 - **Solução:** Confiar no backend. Frontend só mostra loading enquanto espera.
 
-### M3. Sem virtualização em listas grandes
+### M3. ✅ Paginação interna no histórico de BensView
 - **Onde:** `BensView.tsx` carrega 50 históricos + 20 notas + sub-patrimônios sem virtualização. `BensCadastrados.tsx` paginado (OK).
 - **Solução:** `react-window` ou paginação interna para histórico/notas.
 
-### M4. Sem auto-save em formulários longos
+### M4. ✅ Auto-save em formulários longos
 - **Onde:** `BensCreate.tsx`, `BensEdit.tsx`, `ImoveisCreate.tsx` — perdem dados ao recarregar.
 - **Solução:** localStorage com chave por formulário, restore ao montar, limpar ao submit.
 
@@ -133,7 +133,7 @@
 - **Sintoma:** UI trava em datasets grandes.
 - **Solução:** Web Workers para geração de PDF. Alternativa simples: gerar no backend (Puppeteer ou similar).
 
-### M6. PDF de relatório com paginação quebrada
+### M6. ✅ PDF de relatório com paginação quebrada
 - **Onde:** `ReportView.tsx:321` — `jsPDF.addImage()` único; uma imagem virou várias páginas seria via `addPage()` loop.
 - **Sintoma:** Relatórios grandes ficam truncados ou esticados.
 - **Solução:** Calcular altura total, dividir em páginas com `addPage()`.
@@ -147,12 +147,12 @@
 - **Onde:** `generateImovelPDF()` referenciado em vários lugares mas implementação ausente.
 - **Solução:** Implementar análogo ao `PatrimonioPDFGenerator`.
 
-### M9. Templates de relatório só em localStorage
+### M9. ✅ Templates de relatório (já estavam no banco)
 - **Onde:** `ReportTemplate` é `type` TypeScript, não modelo Prisma. Salvos só em `localStorage`.
 - **Sintoma:** Admin perde templates ao trocar de máquina. Não compartilhável.
 - **Solução:** Já existe `imovel_report_templates` no banco; criar análogo para bens móveis OU usar `FichaTemplate` que serve ambos.
 
-### M10. Coordenadas de imóveis sem mapa
+### M10. ✅ Coordenadas de imóveis sem mapa
 - **Onde:** schema `Imovel` tem `latitude`/`longitude`, mas nenhuma visualização em mapa.
 - **Solução:** Componente `<MapView lat lng />` usando Leaflet (já dep `react-leaflet`?). Verificar se vale o esforço.
 
