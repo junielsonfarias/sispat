@@ -120,7 +120,7 @@ export class FichaTemplateController {
       })
 
       if (!template) {
-        return res.status(404).json({ error: 'Template não encontrado' })
+        res.status(404).json({ error: 'Template não encontrado' }); return
       }
 
       res.json(template)
@@ -171,10 +171,10 @@ export class FichaTemplateController {
       res.status(201).json(template)
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
+        res.status(400).json({
           error: 'Dados inválidos',
-          details: error.errors
-        })
+          details: (error as { errors: unknown }).errors,
+        }); return
       }
       logError('Erro ao criar template', error, { userId: req.user?.userId, name: req.body.name })
       res.status(500).json({ error: 'Erro interno do servidor' })
@@ -197,7 +197,7 @@ export class FichaTemplateController {
       })
 
       if (!existingTemplate) {
-        return res.status(404).json({ error: 'Template não encontrado' })
+        res.status(404).json({ error: 'Template não encontrado' }); return
       }
 
       // Se for marcado como padrão, remover padrão dos outros templates do mesmo tipo
@@ -235,10 +235,10 @@ export class FichaTemplateController {
       res.json(template)
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
+        res.status(400).json({
           error: 'Dados inválidos',
-          details: error.errors
-        })
+          details: (error as { errors: unknown }).errors,
+        }); return
       }
       logError('Erro ao atualizar template', error, { templateId: req.params.id, userId: req.user?.userId })
       res.status(500).json({ error: 'Erro interno do servidor' })
@@ -260,7 +260,7 @@ export class FichaTemplateController {
       })
 
       if (!template) {
-        return res.status(404).json({ error: 'Template não encontrado' })
+        res.status(404).json({ error: 'Template não encontrado' }); return
       }
 
       // Remover padrão dos outros templates do mesmo tipo
@@ -306,12 +306,12 @@ export class FichaTemplateController {
       })
 
       if (!template) {
-        return res.status(404).json({ error: 'Template não encontrado' })
+        res.status(404).json({ error: 'Template não encontrado' }); return
       }
 
       // Não permitir deletar template padrão
       if (template.isDefault) {
-        return res.status(400).json({ error: 'Não é possível deletar o template padrão' })
+        res.status(400).json({ error: 'Não é possível deletar o template padrão' }); return
       }
 
       await prisma.fichaTemplate.delete({
@@ -339,7 +339,7 @@ export class FichaTemplateController {
       })
 
       if (!originalTemplate) {
-        return res.status(404).json({ error: 'Template não encontrado' })
+        res.status(404).json({ error: 'Template não encontrado' }); return
       }
 
       const duplicatedTemplate = await prisma.fichaTemplate.create({

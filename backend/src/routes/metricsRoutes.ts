@@ -21,7 +21,8 @@ router.get('/system', authorize('admin', 'supervisor', 'superuser'), async (req,
     const metrics = await metricsCollector.getCurrentSystemMetrics()
     
     if (!metrics) {
-      return res.status(404).json({ error: 'Métricas não disponíveis' })
+      res.status(404).json({ error: 'Métricas não disponíveis' })
+      return
     }
 
     res.json({
@@ -45,7 +46,8 @@ router.get('/application', authorize('admin', 'supervisor', 'superuser'), async 
     const metrics = await metricsCollector.getCurrentApplicationMetrics()
     
     if (!metrics) {
-      return res.status(404).json({ error: 'Métricas não disponíveis' })
+      res.status(404).json({ error: 'Métricas não disponíveis' })
+      return
     }
 
     res.json({
@@ -69,7 +71,8 @@ router.get('/summary', authorize('admin', 'supervisor', 'superuser'), async (req
     const summary = await metricsCollector.getMetricsSummary()
     
     if (!summary) {
-      return res.status(404).json({ error: 'Resumo não disponível' })
+      res.status(404).json({ error: 'Resumo não disponível' })
+      return
     }
 
     res.json({
@@ -115,10 +118,11 @@ router.get('/health', async (req, res) => {
     const summary = await metricsCollector.getMetricsSummary()
     
     if (!summary) {
-      return res.status(503).json({ 
+      res.status(503).json({
         status: 'unhealthy',
         message: 'Sistema não está respondendo adequadamente'
       })
+      return
     }
 
     const healthScore = summary.health
