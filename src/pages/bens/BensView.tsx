@@ -106,6 +106,7 @@ function BensView() {
   const [isSavingNote, setIsSavingNote] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false)
+  const [historyVisibleCount, setHistoryVisibleCount] = useState(10)
   const [selectedPrintFields, setSelectedPrintFields] = useState<string[]>([])
   const [printConfig, setPrintConfig] = useState({
     template: 'standard',
@@ -815,27 +816,49 @@ function BensView() {
                       </div>
                     )}
                     
-                    {/* Histórico de movimentação */}
-                    {(patrimonio.historico_movimentacao || patrimonio.historicoMovimentacao)?.map((entry, index) => (
-                      <div key={index} className="flex gap-4 p-4 border rounded-lg">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">
-                            {entry.action[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium">{entry.action}</p>
-                            <Badge variant="outline" className="text-xs">
-                              {formatDate(entry.date)}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {entry.details}
-                          </p>
-                        </div>
-                      </div>
-                    )) || null}
+                    {/* Histórico de movimentação — paginado em blocos de 10
+                        para não estourar a Card com bens muito movimentados (M3) */}
+                    {(() => {
+                      const all =
+                        patrimonio.historico_movimentacao ||
+                        patrimonio.historicoMovimentacao ||
+                        []
+                      const visible = all.slice(0, historyVisibleCount)
+                      return (
+                        <>
+                          {visible.map((entry, index) => (
+                            <div key={index} className="flex gap-4 p-4 border rounded-lg">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="text-xs">
+                                  {entry.action[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium">{entry.action}</p>
+                                  <Badge variant="outline" className="text-xs">
+                                    {formatDate(entry.date)}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {entry.details}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          {historyVisibleCount < all.length && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => setHistoryVisibleCount((c) => c + 10)}
+                            >
+                              Mostrar mais ({all.length - historyVisibleCount} restantes)
+                            </Button>
+                          )}
+                        </>
+                      )
+                    })()}
                     
                     {/* Mensagem quando não há histórico além da criação */}
                     {(!patrimonio.historico_movimentacao || patrimonio.historico_movimentacao.length === 0) && 
