@@ -26,9 +26,6 @@ const NotificationsPage = lazy(() => import('@/pages/Notifications'))
 const UnifiedDashboard = lazy(
   () => import('@/pages/dashboards/UnifiedDashboard'),
 )
-const TestDashboard = lazy(
-  () => import('@/pages/dashboards/TestDashboard'),
-)
 const AdminDashboard = lazy(() => import('@/pages/dashboards/AdminDashboard'))
 const UserDashboard = lazy(() => import('@/pages/dashboards/UserDashboard'))
 const ViewerDashboard = lazy(() => import('@/pages/dashboards/ViewerDashboard'))
