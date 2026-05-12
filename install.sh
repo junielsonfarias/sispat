@@ -829,31 +829,74 @@ EOF
     
     # Configurar backend
     cat > "$INSTALL_DIR/backend/.env" << EOF
+# ===========================================
+# SISPAT 2.0 - Backend (gerado pelo install.sh)
+# ===========================================
+
 NODE_ENV=production
 PORT=$APP_PORT
+HOST=0.0.0.0
 
+# --- Database (Postgres local) ---
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}"
 DATABASE_SSL=false
 DATABASE_POOL_SIZE=20
+DATABASE_TIMEOUT=30000
 
+# --- JWT (token gerado por openssl rand -hex 64) ---
 JWT_SECRET="${JWT_SECRET}"
 JWT_EXPIRES_IN="24h"
 JWT_REFRESH_EXPIRES_IN="7d"
 
+# --- CORS (origem do frontend) ---
 FRONTEND_URL="${PROTOCOL}://${DOMAIN}"
 CORS_ORIGIN="${PROTOCOL}://${DOMAIN}"
 CORS_CREDENTIALS=true
 
+# --- Segurança ---
 BCRYPT_ROUNDS=12
+HELMET_ENABLED=true
+
+# --- Rate limiting (atenção: 5/15min é muito agressivo para NAT; 20 é melhor) ---
 RATE_LIMIT_WINDOW=15
-RATE_LIMIT_MAX=5
+RATE_LIMIT_MAX=100
 MAX_REQUEST_SIZE=10mb
 
+# --- Upload ---
 MAX_FILE_SIZE=10485760
+ALLOWED_FILE_TYPES="image/jpeg,image/png,image/gif,image/webp,application/pdf"
 UPLOAD_PATH="./uploads"
 
-LOG_LEVEL=error
+# --- Logs ---
+LOG_LEVEL=info
 LOG_FILE="./logs/app.log"
+LOG_MAX_SIZE=10m
+LOG_MAX_FILES=5
+
+# --- Redis (opcional; descomente para ativar rate limit distribuído e cache) ---
+# ENABLE_REDIS=true
+# REDIS_URL=redis://localhost:6379
+# REDIS_PASSWORD=
+# REDIS_DB=0
+
+# --- Email/SMTP (necessário para reset de senha) ---
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=587
+# SMTP_SECURE=false
+# SMTP_USER=
+# SMTP_PASS=
+# SMTP_FROM="SISPAT <noreply@${DOMAIN}>"
+
+# --- Observabilidade (opcional) ---
+# SENTRY_DSN=
+ENABLE_HEALTH_MONITOR=true
+ENABLE_METRICS=true
+
+# --- Backup ---
+BACKUP_ENABLED=true
+BACKUP_SCHEDULE="0 2 * * *"
+BACKUP_RETENTION_DAYS=30
+BACKUP_PATH="/var/backups/sispat"
 EOF
     
     success "Variáveis de ambiente configuradas"

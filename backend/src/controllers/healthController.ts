@@ -6,16 +6,16 @@ import { logInfo, logError } from '../config/logger'
  * Health Check simples
  * GET /api/health
  */
-export const healthCheck = async (req: Request, res: Response): Promise<void> => {
+export const healthCheck = async (_req: Request, res: Response): Promise<void> => {
   try {
     const health = {
-      status: 'ok',
+      status: 'healthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'development',
+      version: process.env.npm_package_version || '2.1.0',
     }
 
-    logInfo('Health Check', health)
     res.status(200).json(health)
   } catch (error) {
     logError('Health Check Failed', error)
@@ -101,19 +101,21 @@ export const detailedHealthCheck = async (req: Request, res: Response): Promise<
  * Endpoint de prontidão (readiness)
  * GET /api/health/ready
  */
-export const readinessCheck = async (req: Request, res: Response): Promise<void> => {
+export const readinessCheck = async (_req: Request, res: Response): Promise<void> => {
   try {
     // Verificar se o sistema está pronto para receber requisições
     await prisma.$queryRaw`SELECT 1`
-    
+
     res.status(200).json({
       status: 'ready',
+      ready: true,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
     logError('Readiness Check Failed', error)
     res.status(503).json({
       status: 'not_ready',
+      ready: false,
       timestamp: new Date().toISOString(),
     })
   }
@@ -123,10 +125,10 @@ export const readinessCheck = async (req: Request, res: Response): Promise<void>
  * Endpoint de vivacidade (liveness)
  * GET /api/health/live
  */
-export const livenessCheck = (req: Request, res: Response): void => {
-  // Verificação simples se o processo está rodando
+export const livenessCheck = (_req: Request, res: Response): void => {
   res.status(200).json({
     status: 'alive',
+    alive: true,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   })
