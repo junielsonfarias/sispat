@@ -247,40 +247,16 @@ function App() {
                 </ProtectedRoute>
               }
             >
+              {/* M15: rota unificada — todos os roles autenticados (exceto superuser)
+                  veem o mesmo UnifiedDashboard. Rotas role-específicas legadas (admin/
+                  supervisor/usuario/visualizador) mantidas para back-compat e redirecionam
+                  para o mesmo componente. */}
               <Route path="/" element={<UnifiedDashboard />} />
               <Route path="/dashboard" element={<UnifiedDashboard />} />
-              <Route
-                path="/dashboard/admin"
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/supervisor"
-                element={
-                  <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
-                    <UnifiedDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/usuario"
-                element={
-                  <ProtectedRoute allowedRoles={['usuario']}>
-                    <UserDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/visualizador"
-                element={
-                  <ProtectedRoute allowedRoles={['visualizador']}>
-                    <ViewerDashboard />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/dashboard/admin" element={<UnifiedDashboard />} />
+              <Route path="/dashboard/supervisor" element={<UnifiedDashboard />} />
+              <Route path="/dashboard/usuario" element={<UnifiedDashboard />} />
+              <Route path="/dashboard/visualizador" element={<UnifiedDashboard />} />
               <Route
                 path="/dashboard/depreciacao"
                 element={

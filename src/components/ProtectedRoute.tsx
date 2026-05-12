@@ -38,15 +38,10 @@ export const ProtectedRoute = ({
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    const defaultDashboardMap: Record<UserRole, string> = {
-      superuser: '/superuser',
-      admin: '/dashboard/admin',
-      supervisor: '/dashboard/supervisor',
-      usuario: '/dashboard/usuario',
-      visualizador: '/dashboard/visualizador',
-    }
-    const defaultDashboard = user ? defaultDashboardMap[user.role] : '/'
-    return <Navigate to={defaultDashboard} replace />
+    // Unificado (M15): todos os roles autenticados (exceto superuser) caem
+    // em `/dashboard` — o componente UnifiedDashboard adapta o conteúdo.
+    const fallback = user.role === 'superuser' ? '/superuser' : '/dashboard'
+    return <Navigate to={fallback} replace />
   }
 
   return children ? <>{children}</> : <Outlet />

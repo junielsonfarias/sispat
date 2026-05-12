@@ -1,24 +1,19 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { UserRole } from '@/types'
 
+/**
+ * Após M15: existe apenas UM dashboard por rota raiz (UnifiedDashboard).
+ * Superuser tem entrada separada em /superuser. Demais roles vão para /dashboard.
+ */
 const DashboardRedirect = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (user) {
-      const dashboardMap: Record<UserRole, string> = {
-        superuser: '/superuser',
-        admin: '/',
-        supervisor: '/',
-        usuario: '/dashboard/usuario',
-        visualizador: '/dashboard/visualizador',
-      }
-      const destination = dashboardMap[user.role] || '/'
-      navigate(destination, { replace: true })
-    }
+    if (!user) return
+    const destination = user.role === 'superuser' ? '/superuser' : '/dashboard'
+    navigate(destination, { replace: true })
   }, [user, navigate])
 
   return null
