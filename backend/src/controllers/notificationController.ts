@@ -78,17 +78,55 @@ export const markAllNotificationsAsRead = async (req: Request, res: Response): P
 };
 
 /**
- * @desc    Criar notificação
- * @route   POST /api/notifications
- * @access  Private
+ * Criar notificação.
+ *
+ * Permissão:
+ * - Usuário comum: pode criar apenas para si mesmo (`userId` ignorado, força `req.user.userId`).
+ * - admin/superuser: pode criar para qualquer usuário (mas se for cross-tenant,
+ *   verifica que o alvo é do mesmo município — exceto superuser).
+ *
+ * Antes desta correção, qualquer usuário autenticado podia criar notificação
+ * para qualquer outro usuário (spoofing/spam interno).
+ *
+ * POST /api/notifications
  */
 export const createNotification = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, tipo, titulo, mensagem, link } = req.body;
+    if (!req.user) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
+    const { userId: bodyUserId, tipo, titulo, mensagem, link } = req.body;
+
+    if (!tipo || !titulo || !mensagem) {
+      res.status(400).json({ error: 'Campos obrigatórios: tipo, titulo, mensagem' });
+      return;
+    }
+
+    const isPrivileged = req.user.role === 'admin' || req.user.role === 'superuser';
+    const targetUserId = isPrivileged && bodyUserId ? bodyUserId : req.user.userId;
+
+    // Se admin tentou criar para outro usuário, garantir mesmo município (superuser bypassa).
+    if (
+      isPrivileged &&
+      bodyUserId &&
+      bodyUserId !== req.user.userId &&
+      req.user.role !== 'superuser'
+    ) {
+      const target = await prisma.user.findUnique({
+        where: { id: bodyUserId },
+        select: { municipalityId: true },
+      });
+      if (!target || target.municipalityId !== req.user.municipalityId) {
+        res.status(403).json({ error: 'Usuário alvo não pertence ao seu município' });
+        return;
+      }
+    }
 
     const notification = await prisma.notification.create({
       data: {
-        userId,
+        userId: targetUserId,
         tipo,
         titulo,
         mensagem,
@@ -98,7 +136,7 @@ export const createNotification = async (req: Request, res: Response): Promise<v
 
     res.status(201).json(notification);
   } catch (error) {
-    logError('Erro ao criar notificação', error);
+    logError('Erro ao criar notificação', error, { userId: req.user?.userId });
     res.status(500).json({ error: 'Erro ao criar notificação' });
   }
 };

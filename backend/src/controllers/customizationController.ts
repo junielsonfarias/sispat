@@ -38,6 +38,37 @@ type AllowedField = (typeof ALLOWED_FIELDS)[number];
 const ALLOWED_ROLES_WRITE = ['superuser', 'supervisor', 'admin'] as const;
 
 /**
+ * Campos que armazenam URLs e portanto precisam de validação de protocolo.
+ * Sem isso, um admin malicioso poderia gravar `javascript:alert(1)` em
+ * `activeLogoUrl` e o frontend renderizaria como href/src → XSS estocado.
+ *
+ * Aceita:
+ *  - `http://...` e `https://...` (URLs absolutas válidas)
+ *  - `/uploads/...` (caminhos relativos, vindos do /api/upload)
+ *  - string vazia (limpar o campo)
+ */
+const URL_FIELDS = new Set<AllowedField>([
+  'activeLogoUrl',
+  'secondaryLogoUrl',
+  'backgroundImageUrl',
+  'backgroundVideoUrl',
+  'faviconUrl',
+]);
+
+const isSafeUrl = (value: unknown): boolean => {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  if (trimmed === '') return true; // limpar campo
+  if (trimmed.startsWith('/uploads/')) return true; // upload local
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Buscar customização do município (público - para tela de login)
  * GET /api/customization/public
  */
@@ -127,10 +158,27 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
 
     // Whitelist: aceita apenas campos permitidos.
     const data: Prisma.CustomizationUpdateInput = {};
+    const rejectedUrlFields: string[] = [];
     for (const field of ALLOWED_FIELDS) {
-      if (body[field] !== undefined) {
-        (data as Record<AllowedField, unknown>)[field] = body[field];
+      if (body[field] === undefined) continue;
+      // Validação extra para campos de URL — bloqueia javascript:/data:/etc.
+      if (URL_FIELDS.has(field) && !isSafeUrl(body[field])) {
+        rejectedUrlFields.push(field);
+        continue;
       }
+      (data as Record<AllowedField, unknown>)[field] = body[field];
+    }
+
+    if (rejectedUrlFields.length > 0) {
+      logWarn('❌ URLs rejeitadas em saveCustomization', {
+        fields: rejectedUrlFields,
+        userId: req.user.userId,
+      });
+      res.status(400).json({
+        error: 'URL inválida (use http://, https:// ou caminho /uploads/)',
+        fields: rejectedUrlFields,
+      });
+      return;
     }
 
     if (Object.keys(data).length === 0) {

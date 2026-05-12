@@ -4,6 +4,23 @@ import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 import { redisCache, CacheUtils } from '../config/redis';
 
 /**
+ * Tenant isolation para Inventory: o model não tem coluna municipalityId
+ * (TODO: sprint de schema). Filtramos via `responsavel ∈ users do município`.
+ * Superuser bypassa. Retorna `null` quando bypass — chamadores devem ignorar
+ * o filtro se receber null.
+ */
+const tenantResponsavelFilter = async (
+  req: Request,
+): Promise<{ in: string[] } | null> => {
+  if (req.user?.role === 'superuser' || !req.user?.municipalityId) return null;
+  const users = await prisma.user.findMany({
+    where: { municipalityId: req.user.municipalityId },
+    select: { id: true },
+  });
+  return { in: users.map((u) => u.id) };
+};
+
+/**
  * @desc    Obter todos os inventários
  * @route   GET /api/inventarios
  * @access  Private
@@ -22,8 +39,14 @@ export const getInventarios = async (req: Request, res: Response): Promise<void>
     // Construir filtros
     const where: any = {};
 
-    // ✅ CORREÇÃO: Admin/Superuser veem todos, outros veem apenas os seus
-    if (userRole !== 'admin' && userRole !== 'superuser') {
+    // Tenant isolation:
+    // - superuser: vê tudo
+    // - admin: vê todos os inventários do município (via responsavel ∈ users do município)
+    // - supervisor/usuario: vê apenas os seus
+    if (userRole === 'admin') {
+      const tenantFilter = await tenantResponsavelFilter(req);
+      if (tenantFilter) where.responsavel = tenantFilter;
+    } else if (userRole !== 'superuser') {
       where.responsavel = userId;
     }
 
@@ -120,11 +143,38 @@ export const getInventarios = async (req: Request, res: Response): Promise<void>
  * @route   GET /api/inventarios/:id
  * @access  Private
  */
+/**
+ * Garante que o inventário pertence ao tenant do usuário (via responsavel.municipalityId).
+ * Retorna o inventário ou envia 404 (mascarando como não-existe para não vazar IDs).
+ */
+const findInventarioOfTenant = async (
+  id: string,
+  req: Request,
+): Promise<{ id: string; responsavel: string } | null> => {
+  const inv = await prisma.inventory.findUnique({
+    where: { id },
+    select: { id: true, responsavel: true },
+  });
+  if (!inv) return null;
+  if (req.user?.role === 'superuser') return inv;
+  const responsavel = await prisma.user.findUnique({
+    where: { id: inv.responsavel },
+    select: { municipalityId: true },
+  });
+  if (!responsavel || responsavel.municipalityId !== req.user?.municipalityId) return null;
+  return inv;
+};
+
 export const getInventarioById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
-    // ✅ QUERY N+1: Include otimizado com select específico
+    const guard = await findInventarioOfTenant(id, req);
+    if (!guard) {
+      res.status(404).json({ error: 'Inventário não encontrado' });
+      return;
+    }
+
     const inventario = await prisma.inventory.findUnique({
       where: { id },
       include: {
@@ -164,11 +214,6 @@ export const getInventarioById = async (req: Request, res: Response): Promise<vo
         }
       },
     });
-
-    if (!inventario) {
-      res.status(404).json({ error: 'Inventário não encontrado' });
-      return;
-    }
 
     res.json(inventario);
   } catch (error) {
@@ -228,11 +273,12 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
       scope: scope || 'sector',
     });
 
-    // ✅ NOVO: Buscar patrimônios que estarão no escopo do inventário
-    // O campo 'setor' no inventário é o nome do setor (string), então usamos setor_responsavel
+    // Buscar patrimônios no escopo — filtrando por município do usuário para
+    // evitar trazer bens de outros municípios com setor de mesmo nome.
     let patrimoniosInScope = await prisma.patrimonio.findMany({
       where: {
-        setor_responsavel: setor, // Buscar pelo nome do setor (campo texto)
+        municipalityId: req.user?.municipalityId,
+        setor_responsavel: setor,
         ...(scope === 'location' && local
           ? {
               local_objeto: {
@@ -243,7 +289,7 @@ export const createInventario = async (req: Request, res: Response): Promise<voi
           : {}),
         ...(scope === 'specific_location' && local
           ? {
-              localId: local, // Para local específico, usar o ID do local
+              localId: local,
             }
           : {}),
       },
@@ -386,6 +432,22 @@ export const updateInventario = async (req: Request, res: Response): Promise<voi
     const userId = req.user?.userId;
     const { title, description, setor, local, status, dataFim } = req.body;
 
+    const guard = await findInventarioOfTenant(id, req);
+    if (!guard) {
+      res.status(404).json({ error: 'Inventário não encontrado' });
+      return;
+    }
+
+    // Apenas superuser, admin ou o próprio responsável podem editar
+    if (
+      req.user?.role !== 'superuser' &&
+      req.user?.role !== 'admin' &&
+      guard.responsavel !== userId
+    ) {
+      res.status(403).json({ error: 'Sem permissão para editar este inventário' });
+      return;
+    }
+
     const inventario = await prisma.inventory.findUnique({
       where: { id },
     });
@@ -445,6 +507,12 @@ export const deleteInventario = async (req: Request, res: Response): Promise<voi
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
+
+    const guard = await findInventarioOfTenant(id, req);
+    if (!guard) {
+      res.status(404).json({ error: 'Inventário não encontrado' });
+      return;
+    }
 
     const inventario = await prisma.inventory.findUnique({
       where: { id },

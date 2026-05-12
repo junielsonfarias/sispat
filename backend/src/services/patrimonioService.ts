@@ -604,6 +604,22 @@ export const updatePatrimonio = async (
     );
   }
 
+  // Guard de estado: bem em transferência pendente é imutável (impede edição
+  // que invalidaria a transferência). Aprovar/rejeitar/deletar a transferência
+  // libera. Superuser bypassa (resgate operacional).
+  if (existing.status === 'em_transferencia' && actor.role !== 'superuser') {
+    throw new PatrimonioConflictError(
+      'Patrimônio está em uma transferência pendente. Aprove, rejeite ou cancele a transferência antes de editar.',
+    );
+  }
+
+  // Guard de estado: bem emprestado é imutável (devolver primeiro). Superuser bypassa.
+  if (existing.status === 'emprestado' && actor.role !== 'superuser') {
+    throw new PatrimonioConflictError(
+      'Patrimônio está emprestado. Registre a devolução antes de editar.',
+    );
+  }
+
   const dataToUpdate = parseUpdateData(raw, actor.userId);
 
   const patrimonio = await prisma.$transaction(async (tx) => {

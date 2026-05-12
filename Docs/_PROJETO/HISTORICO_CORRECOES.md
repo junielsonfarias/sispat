@@ -120,6 +120,37 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 15: tenant isolation + guards de estado (críticos)
+
+Fechamento de 5 vetores reais de vazamento entre tenants e 3 brechas operacionais. Riscos eram concretos: usuário do município X enxergava/criava transferências sobre patrimônios do município Y; admin do município X listava inventários do município Y; qualquer usuário criava notificação spoofando o `userId` alvo; admin podia gravar `javascript:alert(1)` em URLs de logo/favicon (XSS estocado); bem em transferência ou empréstimo continuava editável durante o ciclo.
+
+**T1 — Tenant isolation em `transferController`**
+`listTransfers` antes tinha `where = {}` com um comentário "será aplicado através da relação" mas nada filtrava — qualquer usuário autenticado via todas as transferências do sistema. Adicionado helper `tenantWhere(req)` que aplica `patrimonio: { is: { municipalityId } }` para não-superuser. `getTransfer/rejectTransfer/deleteTransfer` também não checavam tenant — agora cada um valida via `transfer.patrimonio.municipalityId`. `createTransfer` antes aceitava qualquer `patrimonioId` — agora rejeita se o patrimônio não pertence ao município do criador. `approveTransfer` já tinha o check (foi feito num sprint anterior); mantido.
+
+**T2 — Status do patrimônio durante transferência pendente**
+Bem em transferência pendente continuava com `status: 'ativo'` — podia ser editado, baixado ou transferido de novo. `createTransfer` agora muda status para `em_transferencia`; `approveTransfer/rejectTransfer/deleteTransfer` (este último só se ainda estava pendente) restauram o status original. Como o schema Prisma não tem campo `previousStatus`, guardamos o estado anterior num marker `[__prev_status__:X]` dentro de `observacoes` — feio mas evita migration. TODO: trocar por coluna dedicada em sprint de schema.
+
+**T3 — Tenant isolation em `inventarioController`**
+Inventory não tem `municipalityId` direto no schema (TODO: sprint de schema). Solução por subquery: `tenantResponsavelFilter(req)` busca os ids de usuários do município e filtra `responsavel ∈ {esses ids}`. `getInventarios` agora aplica isso para `admin` (antes ele via tudo). `getInventarioById/updateInventario/deleteInventario` ganharam helper `findInventarioOfTenant` que retorna 404 se o inventário não pertence ao tenant (não vaza ID). `createInventario` antes buscava `patrimoniosInScope` apenas por `setor_responsavel: setor` — podia trazer bens de município diferente se houvesse setor de mesmo nome em outro tenant. Adicionado filtro por `municipalityId` na query.
+
+**T4 — `notificationController.createNotification` aceita `userId` arbitrário**
+Antes qualquer usuário autenticado podia criar notificação para qualquer outro (`userId` vinha do body sem validação). Agora: usuário comum força `userId = req.user.userId` (body ignorado); admin/superuser pode criar para terceiros, mas admin é restrito a usuários do mesmo município. Também adicionada validação de campos obrigatórios (tipo, titulo, mensagem).
+
+**T5 — `customizationController` valida URLs**
+Campos `activeLogoUrl/secondaryLogoUrl/backgroundImageUrl/backgroundVideoUrl/faviconUrl` aceitavam qualquer string — incluindo `javascript:alert(1)`. Frontend renderiza esses campos como `src`/`href`/CSS-`url()`, então um admin malicioso (ou um admin comprometido) poderia injetar XSS estocado. Adicionado `isSafeUrl()` que aceita só `http://`, `https://`, caminhos `/uploads/` e string vazia. URLs rejeitadas voltam em 400 com lista dos campos inválidos.
+
+**T6 — Guards de estado adicionais em `patrimonioService.updatePatrimonio`**
+Já bloqueava `baixado`; agora também bloqueia `em_transferencia` e `emprestado` (superuser bypassa). Sem isso, um usuário podia editar campos de um bem com transferência pendente ou empréstimo aberto e invalidar o ciclo.
+
+**Não-fix:** o middleware `authorize(...roles)` que o relatório sugeria criar (R1) **já existia** em `auth.ts:105`. Verificado uso nas rotas — está aplicado onde necessário. Removido da lista.
+
+**Validação:** 17 testes existentes (`patrimonioService.normalize.test.ts` + `patrimonioService.gerarNumero.test.ts`) continuam passando. Typecheck do backend: só os 2 erros pré-existentes (`zod`, `cookie-parser`) que se resolvem no `npm install` da VPS.
+
+**Pendências para sprint de schema (futuro):**
+- Adicionar coluna `municipalityId` em `Inventory` (eliminaria a subquery).
+- Adicionar coluna `previousStatus` em `Transferencia` (eliminaria o marker em `observacoes`).
+- Adicionar enum tipado para `Patrimonio.status` (hoje é string livre).
+
 ### 2026-05-12 — Sprint 14: hardening do frontend (F1-F11)
 
 Implementação do bloco crítico + importante do `PLANO_FRONTEND.md`.

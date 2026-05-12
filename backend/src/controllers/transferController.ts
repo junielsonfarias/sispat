@@ -1,9 +1,19 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
-import { AppError } from '../middlewares/errorHandler';
 import { logActivity } from '../utils/activityLogger';
 import { logError, logDebug } from '../config/logger';
 import { redisCache, CacheUtils } from '../config/redis';
+
+/**
+ * Tenant isolation para Transferencia: o model não tem municipalityId direto,
+ * filtra via a relação com Patrimonio. Superuser bypassa.
+ */
+const tenantWhere = (
+  req: Request,
+): Record<string, unknown> => {
+  if (req.user?.role === 'superuser' || !req.user?.municipalityId) return {};
+  return { patrimonio: { is: { municipalityId: req.user.municipalityId } } };
+};
 
 /**
  * Listar transferências
@@ -11,23 +21,19 @@ import { redisCache, CacheUtils } from '../config/redis';
  */
 export const listTransfers = async (req: Request, res: Response): Promise<void> => {
   try {
-    // ✅ PAGINAÇÃO: Padronizar paginação
     const { page = 1, limit = 10, status, sector } = req.query;
     const pageNum = Math.max(1, parseInt(page as string) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 10));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
-    
-    // Filtrar por município
-    if (req.user?.municipalityId) {
-      // Filtro será aplicado através da relação com patrimônio
-    }
-    
+    // Tenant isolation: filtra pela relação com patrimônio do mesmo município
+    // (superuser bypassa). Cache key inclui municipalityId para não vazar entre tenants.
+    const where: any = { ...tenantWhere(req) };
+
     if (status) {
       where.status = status;
     }
-    
+
     if (sector) {
       where.OR = [
         { setorOrigem: sector },
@@ -35,14 +41,12 @@ export const listTransfers = async (req: Request, res: Response): Promise<void> 
       ];
     }
 
-    // ✅ CACHE: Gerar chave de cache baseada nos filtros
-    const cacheKey = CacheUtils.getTransferenciasKey({ where, page: pageNum, limit: limitNum });
-    
-    // Tentar obter do cache Redis primeiro
+    const tenantKey = req.user?.role === 'superuser' ? 'all' : (req.user?.municipalityId ?? 'anon');
+    const cacheKey = CacheUtils.getTransferenciasKey({ tenant: tenantKey, where, page: pageNum, limit: limitNum });
+
     let result = await redisCache.get<{ transfers: any[], total: number }>(cacheKey);
-    
+
     if (!result) {
-      // ✅ QUERY N+1: Include otimizado com select específico
       const [transfers, total] = await Promise.all([
         prisma.transferencia.findMany({
           where,
@@ -57,6 +61,7 @@ export const listTransfers = async (req: Request, res: Response): Promise<void> 
                 descricao_bem: true,
                 sectorId: true,
                 localId: true,
+                municipalityId: true,
                 sector: {
                   select: {
                     id: true,
@@ -82,7 +87,6 @@ export const listTransfers = async (req: Request, res: Response): Promise<void> 
         total
       };
 
-      // ✅ CACHE: Armazenar no cache Redis por 5 minutos
       await redisCache.set(cacheKey, result, 300);
       logDebug('✅ Cache de transferências criado', { page: pageNum, limit: limitNum });
     } else {
@@ -105,7 +109,10 @@ export const listTransfers = async (req: Request, res: Response): Promise<void> 
 };
 
 /**
- * Criar transferência
+ * Criar transferência. Valida tenant (patrimônio do município do usuário),
+ * impede dupla transferência (bem já em transferência pendente) e marca o
+ * patrimônio como `em_transferencia` para bloquear edição/baixa concorrente.
+ *
  * POST /api/transfers
  */
 export const createTransfer = async (req: Request, res: Response): Promise<void> => {
@@ -123,7 +130,6 @@ export const createTransfer = async (req: Request, res: Response): Promise<void>
       observacoes
     } = req.body;
 
-    // Validar se o patrimônio existe
     const patrimonio = await prisma.patrimonio.findUnique({
       where: { id: patrimonioId },
       include: { sector: true, local: true }
@@ -134,30 +140,70 @@ export const createTransfer = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Criar transferência
-    const transfer = await prisma.transferencia.create({
-      data: {
-        patrimonioId,
-        numero_patrimonio: patrimonio.numero_patrimonio,
-        descricao_bem: patrimonio.descricao_bem,
-        setorOrigem,
-        setorDestino,
-        localOrigem,
-        localDestino,
-        motivo,
-        dataTransferencia: new Date(dataTransferencia),
-        responsavelOrigem,
-        responsavelDestino,
-        observacoes,
-        status: 'pendente'
-      }
-    });
+    // Tenant: usuário precisa ser do mesmo município (exceto superuser)
+    if (
+      req.user?.role !== 'superuser' &&
+      patrimonio.municipalityId !== req.user?.municipalityId
+    ) {
+      logError('🚫 Tentativa de criar transferência cross-tenant', new Error('tenant-leak'), {
+        userId: req.user?.userId,
+        userMunicipality: req.user?.municipalityId,
+        patrimonioMunicipality: patrimonio.municipalityId,
+      });
+      res.status(403).json({ error: 'Patrimônio não pertence ao seu município' });
+      return;
+    }
 
-    // Log da atividade
+    // Estado: bem baixado não pode ser transferido; bem já em transferência também não
+    if (patrimonio.status === 'baixado') {
+      res.status(400).json({ error: 'Patrimônio baixado não pode ser transferido' });
+      return;
+    }
+    if (patrimonio.status === 'em_transferencia') {
+      res.status(409).json({ error: 'Patrimônio já está em uma transferência em andamento' });
+      return;
+    }
+    if (patrimonio.status === 'emprestado') {
+      res.status(409).json({ error: 'Patrimônio está emprestado — devolva antes de transferir' });
+      return;
+    }
+
+    // Snapshot do status original para poder restaurar em aprovar/rejeitar/deletar
+    const previousStatus = patrimonio.status;
+
+    const [transfer] = await prisma.$transaction([
+      prisma.transferencia.create({
+        data: {
+          patrimonioId,
+          numero_patrimonio: patrimonio.numero_patrimonio,
+          descricao_bem: patrimonio.descricao_bem,
+          setorOrigem,
+          setorDestino,
+          localOrigem,
+          localDestino,
+          motivo,
+          dataTransferencia: new Date(dataTransferencia),
+          responsavelOrigem,
+          responsavelDestino,
+          // Guardamos o status original no campo observacoes (prefixado) só se vazio,
+          // ou anexamos. Solução leve sem migration: usar prefixo machine-readable.
+          observacoes: observacoes
+            ? `${observacoes}\n[__prev_status__:${previousStatus}]`
+            : `[__prev_status__:${previousStatus}]`,
+          status: 'pendente'
+        }
+      }),
+      prisma.patrimonio.update({
+        where: { id: patrimonioId },
+        data: { status: 'em_transferencia', updatedBy: req.user!.userId },
+      }),
+    ]);
+
     await logActivity(req, 'CREATE', 'TRANSFER', transfer.id, 'Transferência criada');
 
-    // ✅ CACHE: Invalidar cache de transferências após criação
     await CacheUtils.invalidateTransferencias();
+    await CacheUtils.invalidatePatrimonios();
+    await redisCache.delete(`patrimonio:${patrimonioId}`);
     logDebug('✅ Cache de transferências invalidado após criação');
 
     res.status(201).json(transfer);
@@ -167,9 +213,23 @@ export const createTransfer = async (req: Request, res: Response): Promise<void>
   }
 };
 
+/** Extrai o status original gravado pelo createTransfer; defaults para 'ativo'. */
+const extractPreviousStatus = (observacoes?: string | null): string => {
+  if (!observacoes) return 'ativo';
+  const match = observacoes.match(/\[__prev_status__:([^\]]+)\]/);
+  return match?.[1] ?? 'ativo';
+};
+
+const stripPreviousStatusMarker = (observacoes?: string | null): string | null => {
+  if (!observacoes) return null;
+  const cleaned = observacoes.replace(/\n?\[__prev_status__:[^\]]+\]/g, '').trim();
+  return cleaned || null;
+};
+
 /**
  * Aprovar transferência — atualiza FKs (sectorId, localId), strings de display,
- * cria entrada no histórico e registra ActivityLog. Tudo em transação atômica.
+ * restaura status do patrimônio, cria entrada no histórico e registra ActivityLog.
+ * Tudo em transação atômica.
  *
  * PATCH /api/transfers/:id/approve
  */
@@ -193,7 +253,6 @@ export const approveTransfer = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Tenant isolation: aprovador deve ser do mesmo município (exceto superuser)
     if (
       req.user?.role !== 'superuser' &&
       transfer.patrimonio.municipalityId !== req.user?.municipalityId
@@ -202,7 +261,6 @@ export const approveTransfer = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Resolver setor destino (precisa existir no mesmo município)
     const setorDestino = await prisma.sector.findFirst({
       where: {
         name: transfer.setorDestino,
@@ -215,7 +273,6 @@ export const approveTransfer = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Resolver local destino (opcional, mas se foi informado deve existir)
     let localDestinoId: string | null = null;
     if (transfer.localDestino) {
       const local = await prisma.local.findFirst({
@@ -228,12 +285,15 @@ export const approveTransfer = async (req: Request, res: Response): Promise<void
       localDestinoId = local?.id ?? null;
     }
 
+    const previousStatus = extractPreviousStatus(transfer.observacoes);
+    const cleanObservacoes = stripPreviousStatusMarker(observacoes || transfer.observacoes);
+
     const [updatedTransfer] = await prisma.$transaction([
       prisma.transferencia.update({
         where: { id },
         data: {
           status: 'aprovada',
-          observacoes: observacoes || transfer.observacoes,
+          observacoes: cleanObservacoes,
         },
       }),
       prisma.patrimonio.update({
@@ -242,6 +302,8 @@ export const approveTransfer = async (req: Request, res: Response): Promise<void
           sectorId: setorDestino.id,
           setor_responsavel: transfer.setorDestino,
           ...(localDestinoId ? { localId: localDestinoId, local_objeto: transfer.localDestino } : {}),
+          // Restaura status original (era 'ativo' tipicamente; o create salvou na marker)
+          status: previousStatus,
           updatedBy: req.user!.userId,
         },
       }),
@@ -270,7 +332,8 @@ export const approveTransfer = async (req: Request, res: Response): Promise<void
 };
 
 /**
- * Rejeitar transferência
+ * Rejeitar transferência. Restaura status do patrimônio.
+ *
  * PATCH /api/transfers/:id/reject
  */
 export const rejectTransfer = async (req: Request, res: Response): Promise<void> => {
@@ -279,7 +342,8 @@ export const rejectTransfer = async (req: Request, res: Response): Promise<void>
     const { motivo } = req.body;
 
     const transfer = await prisma.transferencia.findUnique({
-      where: { id }
+      where: { id },
+      include: { patrimonio: { select: { id: true, municipalityId: true } } },
     });
 
     if (!transfer) {
@@ -292,13 +356,28 @@ export const rejectTransfer = async (req: Request, res: Response): Promise<void>
       return;
     }
 
+    if (
+      req.user?.role !== 'superuser' &&
+      transfer.patrimonio.municipalityId !== req.user?.municipalityId
+    ) {
+      res.status(403).json({ error: 'Sem permissão: transferência de outro município' });
+      return;
+    }
+
+    const previousStatus = extractPreviousStatus(transfer.observacoes);
+    const cleanObservacoes = stripPreviousStatusMarker(motivo || transfer.observacoes);
+
     const [updatedTransfer] = await prisma.$transaction([
       prisma.transferencia.update({
         where: { id },
         data: {
           status: 'rejeitada',
-          observacoes: motivo || transfer.observacoes,
+          observacoes: cleanObservacoes,
         },
+      }),
+      prisma.patrimonio.update({
+        where: { id: transfer.patrimonioId },
+        data: { status: previousStatus, updatedBy: req.user!.userId },
       }),
       prisma.historicoEntry.create({
         data: {
@@ -313,10 +392,9 @@ export const rejectTransfer = async (req: Request, res: Response): Promise<void>
     ]);
 
     await logActivity(req, 'REJECT', 'TRANSFER', id, 'Transferência rejeitada');
-
-    // ✅ CACHE: Invalidar cache de transferências após rejeição
     await CacheUtils.invalidateTransferencias();
-    logDebug('✅ Cache de transferências invalidado após rejeição');
+    await CacheUtils.invalidatePatrimonios();
+    await redisCache.delete(`patrimonio:${transfer.patrimonioId}`);
 
     res.json(updatedTransfer);
   } catch (error) {
@@ -326,7 +404,7 @@ export const rejectTransfer = async (req: Request, res: Response): Promise<void>
 };
 
 /**
- * Obter transferência por ID
+ * Obter transferência por ID. Tenant check.
  * GET /api/transfers/:id
  */
 export const getTransfer = async (req: Request, res: Response): Promise<void> => {
@@ -342,13 +420,22 @@ export const getTransfer = async (req: Request, res: Response): Promise<void> =>
             numero_patrimonio: true,
             descricao_bem: true,
             sectorId: true,
-            localId: true
+            localId: true,
+            municipalityId: true,
           }
         }
       }
     });
 
     if (!transfer) {
+      res.status(404).json({ error: 'Transferência não encontrada' });
+      return;
+    }
+
+    if (
+      req.user?.role !== 'superuser' &&
+      transfer.patrimonio.municipalityId !== req.user?.municipalityId
+    ) {
       res.status(404).json({ error: 'Transferência não encontrada' });
       return;
     }
@@ -361,7 +448,9 @@ export const getTransfer = async (req: Request, res: Response): Promise<void> =>
 };
 
 /**
- * Deletar transferência
+ * Deletar transferência. Tenant check + restaura status do patrimônio
+ * se a transferência ainda estava pendente.
+ *
  * DELETE /api/transfers/:id
  */
 export const deleteTransfer = async (req: Request, res: Response): Promise<void> => {
@@ -369,11 +458,20 @@ export const deleteTransfer = async (req: Request, res: Response): Promise<void>
     const { id } = req.params;
 
     const transfer = await prisma.transferencia.findUnique({
-      where: { id }
+      where: { id },
+      include: { patrimonio: { select: { id: true, municipalityId: true } } },
     });
 
     if (!transfer) {
       res.status(404).json({ error: 'Transferência não encontrada' });
+      return;
+    }
+
+    if (
+      req.user?.role !== 'superuser' &&
+      transfer.patrimonio.municipalityId !== req.user?.municipalityId
+    ) {
+      res.status(403).json({ error: 'Sem permissão: transferência de outro município' });
       return;
     }
 
@@ -382,15 +480,29 @@ export const deleteTransfer = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    await prisma.transferencia.delete({
-      where: { id }
-    });
+    const wasPending = transfer.status === 'pendente';
+    const previousStatus = extractPreviousStatus(transfer.observacoes);
 
-    // Log da atividade
+    await prisma.$transaction([
+      prisma.transferencia.delete({ where: { id } }),
+      // Se ainda estava pendente, o patrimônio estava em 'em_transferencia' — restaurar.
+      ...(wasPending
+        ? [
+            prisma.patrimonio.update({
+              where: { id: transfer.patrimonioId },
+              data: { status: previousStatus, updatedBy: req.user!.userId },
+            }),
+          ]
+        : []),
+    ]);
+
     await logActivity(req, 'DELETE', 'TRANSFER', id, 'Transferência deletada');
 
-    // ✅ CACHE: Invalidar cache de transferências após deleção
     await CacheUtils.invalidateTransferencias();
+    if (wasPending) {
+      await CacheUtils.invalidatePatrimonios();
+      await redisCache.delete(`patrimonio:${transfer.patrimonioId}`);
+    }
     logDebug('✅ Cache de transferências invalidado após deleção');
 
     res.status(204).send();
