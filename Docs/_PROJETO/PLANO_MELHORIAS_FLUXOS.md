@@ -51,53 +51,55 @@
 
 ## 🟠 Importantes — bugs/inconsistências de fluxo
 
-### I1. Frontend não revoga refresh token no logout
+> **Sprint 7 concluído em 2026-05-12.** Todos os 10 itens (I1-I10) ✅.
+
+### I1. ✅ Frontend não revoga refresh token no logout
 - **Onde:** `src/contexts/AuthContext.tsx:46-56` — só limpa localStorage.
 - **Sintoma:** Refresh token continua válido no banco por 7 dias após logout. Se roubado, atacante usa.
 - **Solução:** No logout do frontend: `POST /api/auth/logout` com `{ refreshToken: <token> }` no body **antes** de limpar storage. Backend já suporta isso (implementamos no Sprint 2).
 
-### I2. changePassword aceita senha fraca
+### I2. ✅ changePassword aceita senha fraca
 - **Onde:** `backend/src/controllers/authController.ts:369-435` — valida só `newPassword.length < 6`. Reset usa regex forte (12+ chars com símbolos).
 - **Sintoma:** Inconsistência: usuário troca senha pelo perfil e pode usar `123456`.
 - **Solução:** Aplicar mesmo regex de `resetPassword` em `changePassword`.
 
-### I3. `checkMunicipality` pode ser bypassado
+### I3. ✅ `checkMunicipality` pode ser bypassado
 - **Onde:** `backend/src/middlewares/auth.ts:129` — busca `municipalityId` em `req.params` OU `req.body`, **não em `req.user`**.
 - **Sintoma:** Usuário pode passar `municipalityId` no body apontando para outro município. Hoje os controllers re-filtram, mas se um novo controller esquecer, fica vulnerável.
 - **Solução:** Sempre validar `req.params.municipalityId === req.user.municipalityId` (exceto superuser).
 
-### I4. Estados inconsistentes em Patrimônio
+### I4. ✅ Estados inconsistentes em Patrimônio
 - **Cenários:**
   - Bem em **transferência pendente** ainda pode ser editado, baixado ou transferido de novo (sem check)
   - Bem **baixado** com empréstimo ativo (sem validação de status durante baixa)
   - Bem **em manutenção** sem bloqueio em outras operações
 - **Solução:** Adicionar guards no service: `if (patrimonio.status === 'baixado') throw new ConflictError(...)`. Centralizado em `patrimonioService.ts`.
 
-### I5. Manutenção sem garantia patrimonio XOR imovel
+### I5. ✅ Manutenção sem garantia patrimonio XOR imovel
 - **Onde:** `controllers/manutencaoController.ts` — cria com `patrimonioId: patrimonioId || null` sem validar que pelo menos um foi passado.
 - **Sintoma:** Tarefas de manutenção órfãs (sem bem associado).
 - **Solução:** Zod schema com `.refine(data => data.patrimonioId || data.imovelId, "informe patrimônio ou imóvel")`.
 
-### I6. Numero_licitacao sem unicidade
+### I6. ✅ Numero_licitacao sem unicidade
 - **Onde:** schema `Patrimonio.numero_licitacao` — sem `@unique`.
 - **Sintoma:** Múltiplos bens podem ter mesmo número de licitação sem aviso. Auditoria difícil.
 - **Solução:** Adicionar `@@index` se unicidade não é desejada, ou validar no service que a combinação `numero_licitacao + ano_licitacao` é única dentro do município.
 
-### I7. PublicAssets sem rate limit específico
+### I7. ✅ PublicAssets sem rate limit específico
 - **Onde:** `backend/src/middlewares/advanced-rate-limit.ts:46` — rotas `/api/public` são **skipped** no rate limiter global.
 - **Sintoma:** Endpoint público sem cap → potencial DDoS ou scraping massivo.
 - **Solução:** Rate limit específico: 60-100 req/min por IP em `/api/public/*`.
 
-### I8. Fotos órfãs em upload abortado
+### I8. ✅ Fotos órfãs em upload abortado
 - **Onde:** `src/components/bens/ImageUpload.tsx` — se upload de 5 fotos falha na 3ª, as 2 que subiram ficam órfãs no `uploads/` sem referência no banco.
 - **Solução:** Endpoint de cleanup que roda semanal (cron) e deleta arquivos sem referência. Já temos `isFileOwnedByMunicipality()` que pode listar órfãos.
 
-### I9. JSON.parse em refresh token frágil
+### I9. ✅ JSON.parse em refresh token frágil
 - **Onde:** `src/services/http-api.ts:68` — faz `JSON.parse(refreshToken)` mas o `AuthContext.tsx:121` salva como string simples.
 - **Sintoma:** Pode dar erro silencioso ao tentar refresh.
 - **Solução:** Padronizar: salvar e ler como string crua, ou ambos como JSON wrapper consistente.
 
-### I10. Mensagens de erro de login não diferenciadas
+### I10. ✅ Mensagens de erro de login não diferenciadas
 - **Onde:** `AuthContext.tsx:133` — sempre "Credenciais inválidas" sem distinguir email errado, senha errada, ou conta desativada (que dá 403 no backend).
 - **Sintoma:** Usuário desativado fica achando que esqueceu a senha.
 - **Solução:** Backend já retorna 403 com mensagem específica para conta desativada. Frontend deve exibir.

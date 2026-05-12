@@ -120,6 +120,44 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 7: 9 importantes resolvidos (I1-I10)
+
+**I1 — Logout server-side**
+AuthContext.logout agora chama `POST /api/auth/logout` com refreshToken antes de limpar storage. Suporta opção `allDevices: true` para revogar todos. Fire-and-forget para não bloquear UX.
+
+**I2 — Política de senha unificada** (já feita no Sprint 6 B1)
+
+**I3 — checkMunicipality endurecido**
+Middleware agora injeta `req.user.municipalityId` em `req.body` quando ausente. Garante que controllers usem fonte de verdade do JWT. Superuser que envia valor explícito mantém override (operação cross-tenant intencional).
+
+**I4 — Guards de estado em Patrimônio**
+- `updatePatrimonio`: rejeita 409 se status='baixado' (exceto superuser).
+- `deletePatrimonio`: rejeita 409 se há empréstimo ativo OU transferência pendente.
+
+**I5 — Manutenção exige patrimonio XOR imovel**
+- Valida que exatamente um dos dois foi informado.
+- Valida que o bem existe e pertence ao município (superuser bypassa).
+- Valida campos obrigatórios antes do create.
+
+**I6 — Unicidade de licitação**
+`createPatrimonio` valida que (numero_licitacao + ano_licitacao + municipalityId) é único. Mesmo número OK em anos diferentes.
+
+**I7 — Rate limit em rotas públicas**
+Novo `publicRateLimiter`: 120 req/min por IP em `/api/public/*`. Antes estava skipped do limiter global (vulnerável a scraping/DDoS).
+
+**I8 — Script de cleanup de uploads órfãos**
+`backend/scripts/cleanup-orphan-uploads.ts` varre uploads/ e cruza com TODAS as entidades que referenciam URLs. Flags `--delete` e `--older=N`. Scripts npm: `cleanup:uploads` (dry-run) e `cleanup:uploads:apply` (remove >30 dias). Sugestão de cron semanal documentada.
+
+**I9 — Refresh token tolerante + rotação no frontend**
+http-api interceptor: aceita refreshToken JSON-encoded ou cru (try/catch). Persiste o NOVO refresh token retornado pelo backend (rotação Sprint 2 não estava sendo aproveitada pelo frontend).
+
+**I10 — Mensagens de erro de login diferenciadas**
+AuthContext.login mapeia status → mensagem:
+- 401 → "Email ou senha incorretos"
+- 403 → "Conta desativada. Entre em contato com o administrador"
+- 429 → "Muitas tentativas. Aguarde 15 minutos"
+- Lê backendMsg quando presente.
+
 ### 2026-05-12 — Sprint 6: 6 bloqueadores resolvidos
 
 **B1) Recuperação de senha reativada**
