@@ -120,6 +120,19 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 11: UX coerente
+
+**P4 — Customização superuser vs admin**
+Mantida a separação (telas têm campos distintos) mas adicionado Alert informativo em cada uma com link cruzado:
+- `/configuracoes/personalizacao` é do município (logos, info, tela login)
+- `/superuser/customization` é da plataforma (browserTitle, favicon, footers)
+
+**M15 — Dashboards unificados**
+Existiam 7 dashboards diferentes (Admin/User/Viewer/Supervisor/Depreciation/Unified). `UnifiedDashboard` já contém todo o conteúdo necessário. Rotas `/dashboard/admin`, `/supervisor`, `/usuario`, `/visualizador` agora renderizam o mesmo componente (back-compat). `ProtectedRoute` e `DashboardRedirect` simplificados — superuser → `/superuser`, resto → `/dashboard`. `DepreciationDashboard` mantido (escopo distinto).
+
+**M5 — PDF não-bloqueante**
+`html2canvas` exige DOM, então não pode rodar em Web Worker. Solução: `yieldToBrowser()` via `requestIdleCallback` entre etapas do PDF (carregamento de imagens, render do canvas, cada página, save). Botão "Baixar PDF" mostra estágio atual ("Gerando página 3 de 7...") e fica desabilitado. `alert()` de erro substituído por toast. `finally` garante reset de estado.
+
 ### 2026-05-12 — Sprint 10: UX e refinamento
 
 **M4 — Auto-save em formulários longos**

@@ -128,7 +128,7 @@
 - **Onde:** `BensCreate.tsx`, `BensEdit.tsx`, `ImoveisCreate.tsx` — perdem dados ao recarregar.
 - **Solução:** localStorage com chave por formulário, restore ao montar, limpar ao submit.
 
-### M5. PDF e Excel síncronos (bloqueantes)
+### M5. ✅ PDF e Excel síncronos (bloqueantes)
 - **Onde:** `ReportView.tsx` → `html2canvas` + `jsPDF` no main thread. `Exportacao.tsx` com mock `setTimeout(1500)`.
 - **Sintoma:** UI trava em datasets grandes.
 - **Solução:** Web Workers para geração de PDF. Alternativa simples: gerar no backend (Puppeteer ou similar).
@@ -173,7 +173,7 @@
 - **Onde:** `config/metrics.ts` — valores random para alguns KPIs.
 - **Solução:** Trocar por queries reais via Prisma (counts) e middleware de performance real.
 
-### M15. Dashboards inconsistentes
+### M15. ✅ Dashboards inconsistentes
 - **Onde:** 7 dashboards diferentes, com UX divergente. SuperuserDashboard minimalista, AdminDashboard rico.
 - **Solução:** Unificar em `UnifiedDashboard` com seções por role visíveis condicionalmente.
 
@@ -184,7 +184,7 @@
 - **P1.** ✅ `situacao_bem` vs `status` — documentado em `REGRAS_NEGOCIO.md §3.1`.
 - **P2.** ✅ Endpoint `/api/health/metrics` agora redireciona para `/api/metrics/summary`.
 - **P3.** ✅ CHECK constraints aplicadas via migration `add_patrimonio_check_constraints`.
-- **P4.** Customização em **dois lugares** (`SystemCustomization` superuser vs `Personalization` admin) — unificar ou deixar muito claro o que cada um controla.
+- **P4.** ✅ Customização em **dois lugares** — separação mantida com avisos cruzados e docs.
 - **P5.** `ReportView.tsx` filtra campo `descricao` duplicado (linhas 221, 471) — limpar.
 - **P6.** `PatrimonioPDFGenerator` tem código de detecção de transparência (linhas 21-100) que pode ser extraído para utility.
 - **P7.** Frontend Sentry desabilitado (`src/lib/sentry.ts` em bloco `/* */`) — ativar via `pnpm add @sentry/react`.
