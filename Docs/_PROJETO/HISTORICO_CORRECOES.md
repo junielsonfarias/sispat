@@ -120,6 +120,36 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 8: qualidade e polimento
+
+**M1 — Cleanup de código morto**
+Após auditoria de imports/rotas, removidos:
+- `SubPatrimoniosManagerOptimized.tsx` (variante nunca importada)
+- `TestDashboard.tsx` (import em App.tsx mas sem rota)
+- `TransferenciasPage.v2.tsx` (v2 paralela órfã)
+- pasta `src/pages/transferencias/` (vazia após delete)
+
+**M7 — Removido fallback externo de QR**
+`LabelPreview` tinha fallback para `api.qrserver.com` que: (1) criava dependência externa em produção, (2) enviava número de patrimônio em URL para terceiro. Agora se geração local falhar, exibe placeholder com log. Adicionado cleanup do useEffect contra race conditions.
+
+**M13 — Logout de todos os dispositivos**
+Card de Segurança no perfil com botão que chama `logout({ allDevices: true })`. Backend já suportava (Sprint 2 + I1).
+
+**M2 — Filtro dupla-aplicação eliminado**
+`BensCadastrados` fazia `.filter()` em cima do array já filtrado pelo backend, causando inconsistências durante paginação. Frontend agora só renderiza o que recebe.
+
+**M11 — QR codes no PDF de inventário**
+`InventarioPrint` pre-gera QR codes (Promise.all) para todos os itens. Nova coluna na tabela com QR data URL. Funciona em print e html2canvas/PDF. Cleanup do useEffect contra trocas rápidas.
+
+**P2 — `/api/health/metrics` redireciona**
+Endpoint tinha bloco inteiro comentado. Substituído por redirect 308 para `/api/metrics/summary` (endpoint dedicado vive em `metricsRoutes.ts`).
+
+**P3 — CHECK constraints em Patrimônio**
+Nova migration `add_patrimonio_check_constraints` aplica:
+- `CHECK (valor_aquisicao >= 0)`
+- `CHECK (quantidade > 0)`
+Schema atualizado com docstring (Prisma não suporta `@check` ainda).
+
 ### 2026-05-12 — Sprint 7: 9 importantes resolvidos (I1-I10)
 
 **I1 — Logout server-side**

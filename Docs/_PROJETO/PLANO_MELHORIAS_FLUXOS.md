@@ -108,14 +108,14 @@
 
 ## 🟡 Melhorias — qualidade e UX
 
-### M1. Cleanup de código morto
+### M1. ✅ Cleanup de código morto
 - **Duplicações:**
   - `Transferencias.tsx` + `TransferenciasPage.v2.tsx` — uma é morta
   - `SubPatrimoniosManager`, `SubPatrimoniosManagerRefactored`, `SubPatrimoniosManagerOptimized` — só 1 deve sobreviver
   - Múltiplos dashboards: `AdminDashboard`, `SuperuserDashboard`, `UserDashboard`, `ViewerDashboard`, `DepreciationDashboard`, `UnifiedDashboard`, `TestDashboard` — `DashboardRedirect.tsx` deve rotear, mas sem lógica clara
 - **Solução:** Auditar cada um, marcar morto, deletar.
 
-### M2. Filtro dupla-aplicação em listas
+### M2. ✅ Filtro dupla-aplicação em listas
 - **Onde:** `BensCadastrados.tsx` — filtra localmente E manda filtro pro backend.
 - **Sintoma:** Se backend atrasa, UX mostra inconsistência (alguns itens filtrados local, outros vindo do servidor).
 - **Solução:** Confiar no backend. Frontend só mostra loading enquanto espera.
@@ -138,7 +138,7 @@
 - **Sintoma:** Relatórios grandes ficam truncados ou esticados.
 - **Solução:** Calcular altura total, dividir em páginas com `addPage()`.
 
-### M7. QR code com fallback externo (api.qrserver.com)
+### M7. ✅ QR code com fallback externo (api.qrserver.com)
 - **Onde:** `LabelPreview.tsx:37` — se geração local falha, usa serviço externo.
 - **Risco:** Dependência externa em produção; URL contém o número do patrimônio (pode vazar info).
 - **Solução:** Remover fallback. Se `qrcode` local falhar, mostrar erro.
@@ -156,7 +156,7 @@
 - **Onde:** schema `Imovel` tem `latitude`/`longitude`, mas nenhuma visualização em mapa.
 - **Solução:** Componente `<MapView lat lng />` usando Leaflet (já dep `react-leaflet`?). Verificar se vale o esforço.
 
-### M11. Sem QR codes no PDF de inventário
+### M11. ✅ Sem QR codes no PDF de inventário
 - **Onde:** `InventarioPrint.tsx` — PDF tem stats mas sem QR codes.
 - **Solução:** Adicionar QR code por item via lib `qrcode` (já dep).
 
@@ -164,7 +164,7 @@
 - **Onde:** `HistoricoEntry.details` é texto livre. Update massa de bens só registra "Atualização".
 - **Solução:** JSON com `{ field, before, after }[]` no `details`. Permite diff visual.
 
-### M13. Logout não invalida tokens entre dispositivos
+### M13. ✅ Logout não invalida tokens entre dispositivos
 - **Onde:** `logout` no backend só revoga refresh do dispositivo (ou todos se `allDevices: true`).
 - **Sintoma:** Frontend não expõe "Logout de todos os dispositivos" para o usuário.
 - **Solução:** Adicionar botão no perfil — `POST /api/auth/logout` com body `{ allDevices: true }`.
@@ -182,8 +182,8 @@
 ## 🟢 Polimento — débito menor
 
 - **P1.** `situacao_bem` vs `status` em Patrimônio — semânticas sobrepostas; padronizar uso.
-- **P2.** Endpoint `/api/health/metrics` em `healthRoutes.ts` está "TEMPORARIAMENTE DESABILITADO PARA DEBUG" (linhas 18-44) — limpar.
-- **P3.** Campos `valor_aquisicao` e `quantidade` em `schema.prisma:153-154` têm `TODO: Adicionar @check`. Adicionar constraints SQL (`CHECK (valor_aquisicao >= 0)`).
+- **P2.** ✅ Endpoint `/api/health/metrics` agora redireciona para `/api/metrics/summary`.
+- **P3.** ✅ CHECK constraints aplicadas via migration `add_patrimonio_check_constraints`.
 - **P4.** Customização em **dois lugares** (`SystemCustomization` superuser vs `Personalization` admin) — unificar ou deixar muito claro o que cada um controla.
 - **P5.** `ReportView.tsx` filtra campo `descricao` duplicado (linhas 221, 471) — limpar.
 - **P6.** `PatrimonioPDFGenerator` tem código de detecção de transparência (linhas 21-100) que pode ser extraído para utility.
