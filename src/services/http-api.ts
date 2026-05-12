@@ -5,46 +5,66 @@ import { logger } from '@/lib/logger';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // Criar instância do Axios
+// withCredentials: true → envia/recebe cookies HttpOnly (sessão JWT + CSRF)
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Interceptor de requisição para adicionar token
+/**
+ * Lê o cookie csrf_token (set pelo backend após login/refresh, não HttpOnly).
+ * Retorna string vazia se não houver — caller deve buscar /api/auth/csrf antes
+ * de mutações se isso for crítico (em geral o cookie está presente após login).
+ */
+const readCsrfCookie = (): string => {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+};
+
+const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete']);
+
+// Interceptor de requisição: cookies HttpOnly + CSRF header + fallback Bearer
 axiosInstance.interceptors.request.use(
   (config) => {
-    // ✅ Rotas públicas não precisam de autenticação
     const isPublicRoute = /\/public(\/|$)/.test(config.url || '');
-    
+
     if (!isPublicRoute) {
-      // Pegar token do localStorage (SecureStorage armazena como JSON)
+      // Fallback Bearer: se ainda houver token em localStorage (back-compat
+      // pré-Sprint 13), envia também no header. Cookies HttpOnly têm
+      // precedência no backend mas isso facilita transição.
       const tokenData = localStorage.getItem('sispat_token');
-      
       if (tokenData) {
         try {
-          // SecureStorage armazena como JSON, então precisamos fazer parse
           const token = JSON.parse(tokenData);
           config.headers.Authorization = `Bearer ${token}`;
-        } catch (error) {
-          // Se não conseguir fazer parse, usar o valor direto
+        } catch {
           config.headers.Authorization = `Bearer ${tokenData}`;
         }
       }
-      
-      // ✅ Logs apenas em desenvolvimento (sem expor tokens)
-      logger.debug(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`, { token: !!tokenData ? 'presente' : 'ausente' });
+
+      // CSRF: se request é mutável e existe cookie csrf, ecoar no header.
+      // Backend faz double-submit check em rotas com cookie de sessão.
+      const method = (config.method || 'get').toLowerCase();
+      if (MUTATING_METHODS.has(method)) {
+        const csrf = readCsrfCookie();
+        if (csrf) {
+          config.headers['X-CSRF-Token'] = csrf;
+        }
+      }
+
+      logger.debug(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`);
     } else {
       logger.debug(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`, { rota: 'pública' });
     }
-    
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error),
 );
 
 // Interceptor de resposta para lidar com erros
