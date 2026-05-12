@@ -47,10 +47,10 @@ logInfo('🚀 Criando aplicação Express...');
 const app: Express = express();
 logInfo('✅ Aplicação Express criada');
 
-// ✅ Inicializar Sentry ANTES de qualquer outro middleware
-// TEMPORARIAMENTE DESABILITADO PARA BUILD
-// import { initSentry, getSentryErrorHandler } from './config/sentry';
-// initSentry(app);
+// Inicializar Sentry ANTES de qualquer outro middleware.
+// Se SENTRY_DSN estiver vazio, vira no-op (sem custo).
+import { initSentry } from './config/sentry';
+initSentry();
 
 // ✅ Trust proxy para rate limiting funcionar corretamente atrás do Nginx
 app.set('trust proxy', 1);
@@ -293,9 +293,10 @@ app.use('/api/performance', performanceRoutes);
 // 404 - Rota não encontrada
 app.use(notFound);
 
-// Sentry error handler (ANTES do error handler global)
-// TEMPORARIAMENTE DESABILITADO PARA BUILD
-// app.use(getSentryErrorHandler());
+// Sentry error handler — captura exceptions ANTES do handler global.
+// No-op se SENTRY_DSN não estiver definido.
+import { sentryErrorHandler } from './config/sentry';
+app.use(sentryErrorHandler);
 
 // Error handler global
 app.use(errorHandler);

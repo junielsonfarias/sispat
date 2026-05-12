@@ -1,109 +1,96 @@
-import * as Sentry from '@sentry/node'
-import { nodeProfilingIntegration } from '@sentry/profiling-node'
-import { Express } from 'express'
+/**
+ * Configuração mínima do Sentry para o backend.
+ *
+ * - Se `SENTRY_DSN` estiver vazio, todas as funções são no-op.
+ * - Sanitiza dados sensíveis antes de enviar (Authorization, cookies, password, token).
+ * - Inicializado em `index.ts` ANTES de outros middlewares.
+ */
+import * as Sentry from '@sentry/node';
+import type { NextFunction, Request, Response } from 'express';
 
-export const initSentry = (app: Express) => {
-  const dsn = process.env.SENTRY_DSN
+const isEnabled = (): boolean => Boolean(process.env.SENTRY_DSN);
+
+export const initSentry = (): void => {
+  const dsn = process.env.SENTRY_DSN;
 
   if (!dsn) {
-    console.info('🔍 Sentry: DSN não configurado. Error tracking desabilitado.')
-    return
+    // Log apenas em dev — em produção sem DSN é silencioso para não poluir
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('🔍 Sentry: SENTRY_DSN não configurado, error tracking desabilitado.');
+    }
+    return;
   }
 
   Sentry.init({
     dsn,
     environment: process.env.NODE_ENV || 'production',
-    
-    // Performance Monitoring
-    integrations: [
-      nodeProfilingIntegration(),
-    ],
-    
-    // Performance
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    
-    // Release tracking
-    release: `sispat-backend@${process.env.APP_VERSION || '2.0.0'}`,
-    
-    // Before send hook para sanitizar dados sensíveis
-    beforeSend(event, hint) {
-      // Remover dados sensíveis
+    release: `sispat-backend@${process.env.APP_VERSION || '2.1.0'}`,
+
+    beforeSend(event) {
       if (event.request) {
-        delete event.request.cookies
+        delete event.request.cookies;
         if (event.request.headers) {
-          delete event.request.headers.authorization
-          delete event.request.headers.Authorization
+          delete event.request.headers.authorization;
+          delete event.request.headers.Authorization;
         }
       }
-      
-      // Remover dados sensíveis do corpo da requisição
-      if (event.request?.data) {
-        const data = event.request.data as any
-        if (data.password) delete data.password
-        if (data.token) delete data.token
+      if (event.request?.data && typeof event.request.data === 'object') {
+        const data = event.request.data as Record<string, unknown>;
+        if ('password' in data) delete data.password;
+        if ('token' in data) delete data.token;
+        if ('refreshToken' in data) delete data.refreshToken;
       }
-      
-      // Log apenas em development
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Sentry Event:', event)
-        console.error('Original Error:', hint.originalException)
-      }
-      
-      return event
+      return event;
     },
-  })
+  });
 
-  // Request handler deve ser o primeiro middleware
-  // Note: Na versão nova do Sentry, o express integration é automático
-  // Não é necessário usar Handlers manualmente
+  console.info('✅ Sentry inicializado');
+};
 
-  console.info('✅ Sentry inicializado com sucesso!')
-}
-
-// Error handler deve ser usado APÓS todas as rotas
-// Retorna uma função para garantir que Sentry está inicializado
-export const getSentryErrorHandler = () => {
-  const dsn = process.env.SENTRY_DSN
-  if (!dsn) {
-    // Se Sentry não configurado, retorna middleware dummy
-    return (err: any, req: any, res: any, next: any) => {
-      next(err)
-    }
+/**
+ * Middleware de erro para Express — chama Sentry e propaga.
+ * Se Sentry desabilitado, vira passthrough.
+ */
+export const sentryErrorHandler = (
+  err: Error,
+  _req: Request,
+  _res: Response,
+  next: NextFunction,
+): void => {
+  if (isEnabled()) {
+    Sentry.captureException(err);
   }
-  // Error handler simplificado - Sentry captura automaticamente erros não tratados
-  return (err: any, req: any, res: any, next: any) => {
-    Sentry.captureException(err)
-    next(err)
-  }
-}
+  next(err);
+};
 
-// Helper para capturar erros manualmente
-export const captureError = (error: Error, context?: Record<string, any>) => {
-  if (!process.env.SENTRY_DSN) return
-  
-  if (context) {
-    Sentry.setContext('custom', context)
-  }
-  Sentry.captureException(error)
-}
+export const captureError = (error: Error, context?: Record<string, unknown>): void => {
+  if (!isEnabled()) return;
+  if (context) Sentry.setContext('custom', context);
+  Sentry.captureException(error);
+};
 
-// Helper para capturar mensagens
-export const captureMessage = (message: string, level: Sentry.SeverityLevel = 'info') => {
-  if (!process.env.SENTRY_DSN) return
-  
-  Sentry.captureMessage(message, level)
-}
+export const captureMessage = (
+  message: string,
+  level: Sentry.SeverityLevel = 'info',
+): void => {
+  if (!isEnabled()) return;
+  Sentry.captureMessage(message, level);
+};
 
-// Helper para set user context
-export const setUserContext = (user: { id: string; email: string; name: string; role: string }) => {
+export const setUserContext = (user: {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}): void => {
+  if (!isEnabled()) return;
   Sentry.setUser({
     id: user.id,
     email: user.email,
     username: user.name,
-  })
-  Sentry.setTag('role', user.role)
-}
+  });
+  Sentry.setTag('role', user.role);
+};
 
-export default Sentry
-
+export default Sentry;

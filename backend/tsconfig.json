@@ -36,7 +36,6 @@
     "src/**/__tests__/**",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
-    "src/config/sentry.ts",
     "src/middlewares/advanced-rate-limit.ts",
     "src/utils/health-monitor.ts",
     "src/utils/circuit-breaker.ts",
