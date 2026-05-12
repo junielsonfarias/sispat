@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { useInactivityTimeout } from '@/hooks/use-inactivity-timeout'
 import { api } from '@/services/api-adapter'
 import { SecureStorage } from '@/lib/storage-utils'
+import { queryClient } from '@/lib/query-client'
 
 export interface AuthContextType {
   isAuthenticated: boolean
@@ -64,6 +65,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       SecureStorage.removeItem('sispat_user')
       SecureStorage.removeItem('sispat_token')
       SecureStorage.removeItem('sispat_refresh_token')
+
+      // Tenant isolation: limpa cache do React Query no logout para evitar que
+      // um próximo usuário (em PC compartilhado) veja dados em cache do anterior.
+      // F6 do PLANO_FRONTEND.
+      queryClient.clear()
+
       navigate('/login', { state: { sessionExpired: options?.sessionExpired } })
     },
     [navigate],
