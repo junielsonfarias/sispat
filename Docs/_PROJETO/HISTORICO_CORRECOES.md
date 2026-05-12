@@ -120,6 +120,27 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 12: cleanup + observabilidade + ops
+
+**Cleanup — dashboards mortos**
+Após M15 unificar todas as rotas em `UnifiedDashboard`, os componentes `AdminDashboard`, `UserDashboard` e `ViewerDashboard` ficaram dead. Deletados (3 arquivos + imports lazy).
+
+**Frontend Sentry ativado**
+`src/lib/sentry.ts` antes era stub com bloco `/* */` inteiro comentado. Reescrito com dynamic import condicional:
+- Prod + `@sentry/react` instalado + `VITE_SENTRY_DSN`: ativa com browserTracing + replay + filtros de erros esperados (401, Network Error)
+- Sem pacote ou DSN: no-op silencioso
+- Em dev: sempre no-op
+Para ativar: `pnpm add @sentry/react` + setar DSN.
+
+**Backup off-site (rclone)**
+`scripts/backup-offsite.sh` sincroniza `/var/backups/sispat` com bucket remoto (S3/B2/MinIO/R2 — qualquer um suportado por rclone). Idempotente: sem rclone ou sem `OFFSITE_REMOTE`/`OFFSITE_BUCKET`, é no-op. Usa `rclone copy` (não sync) para nunca deletar no remoto. Retenção configurável (default 180 dias).
+
+**Healthcheck com Redis**
+`GET /api/health/detailed` agora reporta `services.redis.status: 'ready' | 'disabled' | 'unavailable'`. Novo método `RedisCache.getStatus()`.
+
+**Docs**
+DEPLOY_NOVO.md atualizado com seções de Sentry frontend e backup off-site.
+
 ### 2026-05-12 — Sprint 11: UX coerente
 
 **P4 — Customização superuser vs admin**
