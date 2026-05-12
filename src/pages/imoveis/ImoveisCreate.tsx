@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useNavigate } from 'react-router-dom'
+import { useFormAutosave } from '@/hooks/useFormAutosave'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -138,6 +139,11 @@ export default function ImoveisCreate() {
     },
   })
 
+  const { clearDraft } = useFormAutosave(form, {
+    key: 'ImoveisCreate',
+    excludeFields: ['fotos', 'documentos', 'documentos_pdf'],
+  })
+
   const [isGeneratingNumber, setIsGeneratingNumber] = useState(false)
   const selectedSector = form.watch('setor')
 
@@ -246,6 +252,7 @@ export default function ImoveisCreate() {
         title: 'Sucesso!',
         description: 'Imóvel cadastrado com sucesso.',
       })
+      clearDraft()
       navigate('/imoveis')
     } catch (error) {
       toast({

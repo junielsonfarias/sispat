@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useNavigate } from 'react-router-dom'
 import { FEATURES } from '@/lib/features'
+import { useFormAutosave } from '@/hooks/useFormAutosave'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -113,6 +114,13 @@ const BensCreate = () => {
       url_documentos: '',
       documentos_pdf: [],
     },
+  })
+
+  // Auto-save: persiste rascunho em localStorage a cada 1s; restaura ao montar.
+  // Limpamos no sucesso do submit (clearDraft chamado abaixo).
+  const { clearDraft } = useFormAutosave(form, {
+    key: 'BensCreate',
+    excludeFields: ['fotos', 'documentos', 'documentos_pdf'],
   })
 
   const selectedSectorName = form.watch('setor_responsavel')
@@ -271,6 +279,7 @@ const BensCreate = () => {
         title: 'Sucesso!',
         description: successMessage,
       })
+      clearDraft()
       navigate('/bens-cadastrados')
     } catch (error) {
       const errorMessage =
