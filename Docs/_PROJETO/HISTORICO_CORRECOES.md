@@ -1,0 +1,155 @@
+# HISTÓRICO DE CORREÇÕES — SISPAT 2.0
+
+> Registro consolidado de erros encontrados e correções aplicadas.
+> A partir de 2026-05-12, **toda nova correção não-trivial deve ser registrada aqui** — não criar `.md` na raiz nem em `Docs/`.
+
+---
+
+## Convenção de entrada
+
+```
+### YYYY-MM-DD — Título curto
+- **Sintoma:** o que estava errado
+- **Causa-raiz:** porque acontecia
+- **Correção:** o que foi feito
+- **Arquivos:** caminhos:linhas
+- **Commit:** sha (se aplicável)
+- **Lição:** para evitar repetir
+```
+
+---
+
+## 2025
+
+### 2025-11-19 — Permissões, PM2 e Nginx no install.sh
+- **Sintoma:** Instalação fresh em VPS quebrava em vários pontos (uploads sem write, PM2 não iniciava no boot, Nginx servia 502).
+- **Correção:** revisão completa do `install.sh`, agora com ordem correta de locations Nginx, permissões 755/775 para uploads, `pm2 startup` + `pm2 save`.
+- **Commit:** `84d0e39`
+- **Lição:** consolidar tudo em `install.sh` — pare de criar `CORRIGIR_*.sh` paralelos.
+
+### 2025-11 — Fotos com URL `blob-*` no banco
+- **Sintoma:** Após salvar patrimônio, fotos apareciam quebradas; o frontend gravava URL `blob:` (referência de memória do navegador) em vez do URL retornado pelo upload.
+- **Causa:** lógica de update permitia que o array de fotos contivesse blob URLs não processadas.
+- **Correção:** validação explícita no `updatePatrimonio` bloqueando URLs com `blob:` ou `blob-`. Script `limpar-fotos-invalidas.sh` para limpar banco.
+- **Commits:** `953f7cd`, `55ca1f3`, `625f66f`
+- **Lição:** validar formato de URL na entrada e na borda do banco.
+
+### 2025-11 — Nginx ordem de locations e SSL
+- **Sintoma:** Algumas rotas (uploads, /api) caíam em fallback errado.
+- **Correção:** reorganização das diretivas `location` (mais específicas primeiro), bloco SSL corrigido.
+- **Commit:** `c76c6d9`
+- **Lição:** ordem de `location` no Nginx importa; sempre testar com `nginx -t` + curl direto.
+
+### 2025-11 — Erro de `regclass` no Prisma
+- **Sintoma:** Queries falhavam com erro de deserialização de `regclass`.
+- **Causa:** uso de tipos Postgres-específicos não suportados pelo Prisma diretamente.
+- **Correção:** ajuste do `schema.prisma` (cast explícito) — ver docs antigas (`CORRECAO_ERRO_REGCLASS.md`).
+- **Lição:** evitar tipos PG não-padrão no Prisma; preferir `String`/`Bytes`.
+
+### 2025-11 — Rate limit muito agressivo no login
+- **Sintoma:** Usuários legítimos recebiam 429 ao tentar logar várias vezes em sequência.
+- **Causa:** limite original era 5 tentativas / 15 min em rede compartilhada (IP único da prefeitura).
+- **Correção:** mantido 5/15min para auth (proteção brute-force) e ajustada lógica de chave (usar `email` como adicional) — confirmar implementação atual.
+- **Lição:** rate limit por IP é problemático em NAT corporativo; combinar com chave por usuário.
+
+### 2025-11 — Métricas retornavam 404
+- **Sintoma:** Página de métricas no admin quebrava (404).
+- **Causa:** rotas não estavam registradas no `app.use` principal; cache do Nginx servia versão antiga.
+- **Correção:** registro de rotas em `backend/src/index.ts` + recompile + restart PM2.
+- **Lição:** após `git pull`, sempre rebuild + restart antes de testar.
+
+### 2025-11 — Nginx resolvendo `localhost` como IPv6
+- **Sintoma:** Backend respondia mas Nginx retornava 502 `connection refused`.
+- **Causa:** `proxy_pass http://localhost:3000` resolvia para `[::1]:3000`, mas Node.js bindava apenas em IPv4.
+- **Correção:** trocar `localhost` por `127.0.0.1` em todos os `proxy_pass`.
+- **Lição:** SEMPRE usar `127.0.0.1` em upstreams Nginx para apps Node em VPS.
+
+### 2025-11 — Multer types breaking build
+- **Sintoma:** TypeScript não compilava após upgrade do `@types/multer`.
+- **Correção:** ajustes nos type guards de `req.file`/`req.files`.
+- **Lição:** travar versões de types em `package.json` ou validar antes de subir tipos novos.
+
+### 2025-11 — Backend offline / conexão recusada
+- **Sintoma:** vários relatos de "backend offline" após deploys.
+- **Causa-raiz consolidada:** combinação de (1) IPv6/Nginx, (2) PM2 não persistido no boot, (3) ENV inválido fazia o processo crashar.
+- **Correção:** validação de env na startup, PM2 startup script, healthcheck no install.
+- **Lição:** falhar cedo (validar ENV) > falhar tarde (crash em runtime).
+
+### 2025-11 — Credenciais inválidas após reset
+- **Sintoma:** Login falhava com "credenciais inválidas" após rotação de senha.
+- **Causa:** seed não atualizava registro existente.
+- **Correção:** lógica de upsert no seed + script manual `atualizar-senha-superuser.sh`.
+- **Lição:** seed sempre idempotente (upsert, não insert).
+
+### 2025-11 — Report Templates retornando 500
+- **Sintoma:** lista de templates de relatório dava 500.
+- **Causa:** join faltante ou coluna nullable não tratada.
+- **Correção:** ver `CORRIGIR_ERRO_500_REPORT_TEMPLATES.sh` (a consolidar).
+
+---
+
+## 2026
+
+### 2026-05-12 — Auditoria geral do projeto (Claude)
+- **Sintoma:** projeto cresceu sem governança — 553 docs (124 duplicados), 60+ scripts shell na raiz, controllers de 1300+ linhas, 222 `any`'s, 236 `console.log`s, backend sem linter, cobertura de teste ~10%.
+- **Ação:** criada estrutura `Docs/_PROJETO/` com ARQUITETURA, REGRAS_NEGOCIO, CONVENCOES, INFRAESTRUTURA, SEGURANCA, HISTORICO, PLANO_CORRECOES. Criado `CLAUDE.md` na raiz para orientar IA.
+- **Lição:** sem documentação canônica, qualquer nova feature gerava 2-3 `.md` paralelos. A partir de agora, atualizar **um** arquivo em `Docs/_PROJETO/` é o caminho.
+
+### 2026-05-12 — `.claude/` adicionado ao `.gitignore`
+- **Sintoma:** `.claude/` aparecia como untracked em todas as sessões.
+- **Correção:** adicionada entrada `.claude/` no `.gitignore`.
+- **Lição:** diretórios de ferramenta local (IDE, AI) devem ser ignorados sempre.
+
+### 2026-05-12 — Sprint 1 P0: 4 correções críticas aplicadas
+
+**1.1) IDOR no delete de upload (CRÍTICO)**
+- **Sintoma:** `DELETE /api/upload/:filename` validava apenas autenticação, permitindo que usuário de um município deletasse arquivo de outro município se conhecesse o nome.
+- **Correção:** adicionado helper `isFileOwnedByMunicipality()` em `uploadController.ts` que valida via referências em `Patrimonio.fotos[]`/`documentos[]`, `Imovel.fotos[]`/`documentos[]`, `Documento.url`, `Customization.*Url`, `Municipality.logoUrl`, `User.avatar` — tudo filtrado por `municipalityId` do usuário. Superuser bypassa. Também adicionada sanitização de filename contra path-traversal.
+- **Arquivos:** `backend/src/controllers/uploadController.ts`
+- **Lição:** todo endpoint que aceita identificador externo precisa validar ownership do tenant, não só autenticação.
+
+**1.2) `$queryRaw` removido de customizationController**
+- **Sintoma:** uso de `$queryRaw`/`$queryRawUnsafe`/`$executeRaw` para CRUD da tabela `customizations` — frágil, propenso a SQL injection se mal usado, e ignora API do Prisma já disponível.
+- **Correção:** reescrito usando `prisma.customization.findUnique/upsert/deleteMany/create`. Implementado whitelist explícita de campos (`ALLOWED_FIELDS`) para evitar mass-assignment. Reset agora usa transação atômica.
+- **Arquivos:** `backend/src/controllers/customizationController.ts`
+- **Lição:** se o modelo Prisma existe, use a API tipada — não há motivo para raw SQL.
+
+**1.3) ESLint habilitado no backend**
+- **Sintoma:** `backend/package.json` tinha `"lint": "echo No linting configured"` — CI não detectava problemas, código novo entrava sem revisão automática.
+- **Correção:** criado `backend/eslint.config.mjs` (flat config + typescript-eslint), regras pragmáticas (`no-console` warn, `no-debugger` error, `no-explicit-any` warn). Adicionados scripts `lint`, `lint:fix`, `type-check`. Deploy:check agora roda lint + type-check.
+- **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
+- **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
+
+**1.4) Script de rollback (`scripts/rollback.sh`)**
+- **Sintoma:** Sem fluxo padronizado para reverter deploys ruins. Recovery dependia de operador escrever comandos manualmente.
+- **Correção:** criado `scripts/rollback.sh` com:
+  - Detecção do commit anterior (`HEAD~1`) por default ou sha específico via argumento
+  - Tag local `rollback-pre-<timestamp>` antes de mover HEAD (forward-recovery)
+  - Rebuild backend (npm ci + prisma generate + tsc) e frontend (pnpm build)
+  - PM2 restart + nginx reload
+  - Health check pós-rollback (curl com retry)
+  - Flag `--with-db` para restaurar último backup do banco (com confirmação dupla)
+  - Flags `--list`, `--dry-run`, `--help`
+- **Arquivos:** `scripts/rollback.sh`
+- **Lição:** rollback deve ser tão fácil quanto deploy. Snapshot do estado atual em tag antes de qualquer movimento, para forward-recovery.
+
+---
+
+## Padrões recorrentes identificados
+
+1. **Múltiplos scripts para o mesmo problema** — toda nova falha gerou um `.sh` novo, levando a 15 variações de `corrigir-nginx-*`. Consolidar em um único script idempotente.
+2. **`.md` paralelos com sufixo "copy", "FINAL", "v2"** — não usar; confiar em git.
+3. **`localhost` vs `127.0.0.1`** — fonte recorrente de bug Nginx → Node.
+4. **Permissões de arquivos em uploads** — toda fresh-install esquecia algo. Agora coberto em `install.sh`.
+5. **Cache do Nginx servia versão antiga** após deploys — adicionar etapa de purge no script de deploy.
+
+---
+
+## Bugs conhecidos em aberto (mover para issues quando GitHub Issues for ativado)
+
+- `customizationController.ts` usa `$queryRaw` — auditar e migrar para `findMany`.
+- `uploadController.ts` permite deletar arquivos de outros municípios (IDOR).
+- Refresh token não pode ser revogado.
+- Pasta `Docs/` com 124 arquivos duplicados (sufixo `copy`, `FINAL`, etc.).
+- 60+ scripts `.sh` redundantes na raiz e em `scripts/`.
+- 236 `console.log` em código de produção.

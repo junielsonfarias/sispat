@@ -1,0 +1,104 @@
+# CLAUDE.md — Guia do Projeto SISPAT 2.0
+
+> Este arquivo orienta o Claude Code ao trabalhar neste repositório.
+> Leia também os documentos em `Docs/_PROJETO/` antes de tarefas grandes.
+
+---
+
+## 1. Visão geral
+
+**SISPAT 2.0** — Sistema Integrado de Patrimônio (gestão de bens públicos municipais).
+Aplicação multi-tenant por `municipalityId` com 5 papéis: `superuser`, `admin`, `supervisor`, `usuario`, `visualizador`.
+
+- **Frontend:** React 19 + Vite + TypeScript + Tailwind + Shadcn/UI (`src/`)
+- **Backend:** Node.js + Express 5 + Prisma 6 + PostgreSQL 15 + Redis (`backend/`)
+- **Auth:** JWT (access 24h + refresh 7d), bcrypt 12 rounds
+- **Deploy:** VPS Linux com Nginx + PM2 (alt. Docker Compose). CI/CD em `.github/workflows/`
+- **Repositório:** https://github.com/junielsonfarias/sispat
+
+## 2. Comandos essenciais
+
+### Frontend (raiz)
+```bash
+pnpm install
+pnpm run dev              # vite dev server
+pnpm run build            # build produção
+pnpm run lint             # eslint --cache
+pnpm run type-check       # tsc --noEmit
+pnpm test                 # vitest
+pnpm run test:e2e         # playwright
+```
+
+### Backend (`backend/`)
+```bash
+npm install
+npm run dev               # nodemon + ts-node
+npm run build             # tsc
+npm start                 # node dist/index.js
+npm run prisma:migrate    # migrations em dev
+npm run prisma:studio     # GUI do banco
+npm test                  # jest
+```
+
+## 3. Onde está cada coisa (essencial)
+
+| Área | Caminho |
+|------|---------|
+| Rotas API | `backend/src/routes/` |
+| Controllers | `backend/src/controllers/` |
+| Middlewares (auth, validation, rate-limit) | `backend/src/middlewares/` |
+| Schema do banco | `backend/src/prisma/schema.prisma` |
+| Migrations | `backend/prisma/migrations/` |
+| Validação de env | `backend/src/config/validate-env.ts` |
+| Páginas React | `src/pages/` |
+| Componentes | `src/components/` |
+| Contexts (estado global) | `src/contexts/` |
+| HTTP client + interceptors | `src/services/http-api.ts` |
+| Validações Zod | `src/lib/validations/` |
+| Hooks | `src/hooks/` |
+| Tipos globais | `src/types/index.ts` |
+| Instalação VPS | `install.sh` (raiz) |
+| Workflows CI/CD | `.github/workflows/` |
+| Docs do projeto | `Docs/_PROJETO/` |
+
+## 4. Convenções obrigatórias
+
+### Código
+- **NÃO criar `*.md`, scripts `.sh` ou arquivos de debug na raiz.** Já temos >60 scripts e >500 docs poluindo. Use `Docs/_PROJETO/` para docs de referência e `scripts/` para scripts versionados.
+- **NÃO usar `console.log` em código de produção.** Use o `logger` do Winston no backend (`backend/src/config/logger.ts`) e remova logs ao entregar feature no frontend (ou condicione a `import.meta.env.DEV`).
+- **Sem `any` novo no TypeScript.** Backend tem `strict: false`, mas o objetivo é reduzir os 222 `any`'s existentes — não adicionar mais.
+- **Backend controllers:** lógica nova vai em `services/` (a criar), controllers só orquestram. NÃO engordar controllers existentes.
+- **Multi-tenant:** TODA query Prisma com dados de usuário precisa filtrar por `municipalityId`. `superuser` pode bypassar (verificar em código existente como referência).
+- **Validação de input:** rotas POST/PUT/PATCH devem ter `express-validator` aplicado + `handleValidationErrors`.
+
+### Git
+- Branch principal: `main`. Sem PRs por enquanto (commits direto).
+- Mensagens em pt-BR (manter padrão existente): `feat:`, `fix:`, `chore:`, `docs:`.
+- **Não rodar `git push --force` em `main`.** **Não usar `--no-verify`.**
+
+### Skills do Claude (este projeto)
+Quando executar tarefas substanciais:
+1. **Antes de mudar código backend** — confira `Docs/_PROJETO/ARQUITETURA.md` e `REGRAS_NEGOCIO.md`.
+2. **Antes de mudar infra (install.sh, Nginx, PM2)** — confira `Docs/_PROJETO/INFRAESTRUTURA.md` e `HISTORICO_CORRECOES.md` (vários problemas já resolvidos lá).
+3. **Após resolver um bug não-trivial** — registre em `Docs/_PROJETO/HISTORICO_CORRECOES.md` (não criar novo `.md` na raiz).
+4. **Mudança que afeta deploy** — atualize `CHECKLIST_DEPLOY.md` (raiz, já existe).
+
+## 5. Pontos de atenção (débitos conhecidos)
+
+- 🔴 `customizationController.ts` usa `$queryRaw` — auditar antes de tocar.
+- 🔴 `uploadController.ts:135-176` — IDOR no delete de arquivos (não valida municipalityId). **Corrigir antes de qualquer mudança nessa área.**
+- 🟡 `patrimonioController.ts` tem 1320 linhas. Ao adicionar funcionalidade, extrair para `services/`.
+- 🟡 Não há linter no backend (`"lint": "echo No linting configured"` em `backend/package.json`).
+- 🟡 Cobertura de testes muito baixa (2 arquivos backend, 7 frontend).
+- 🟡 Refresh token sem rotação/revogação.
+
+Plano detalhado em `Docs/_PROJETO/PLANO_CORRECOES.md`.
+
+## 6. Skills disponíveis para Claude trabalhar neste projeto
+
+- `update-config` — para mudar `settings.json`/permissões do Claude Code.
+- `simplify` — revisar código alterado para qualidade e reuso.
+- `claude-api` — se for tocar integração com SDK Anthropic.
+- `review`, `security-review` — auditoria do branch atual.
+
+Não invente outras. Não use Vercel/Next skills aqui (este projeto não é Vercel/Next).
