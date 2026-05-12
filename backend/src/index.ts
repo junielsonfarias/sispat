@@ -235,6 +235,7 @@ import auditLogRoutes from './routes/auditLogRoutes';
 import manutencaoRoutes from './routes/manutencaoRoutes';
 import imovelFieldRoutes from './routes/imovelFieldRoutes';
 import transferRoutes from './routes/transferRoutes';
+import emprestimoRoutes from './routes/emprestimoRoutes';
 import documentRoutes from './routes/documentRoutes';
 import fichaTemplatesRoutes from './routes/fichaTemplates';
 import labelTemplateRoutes from './routes/labelTemplateRoutes';
@@ -274,6 +275,7 @@ app.use('/api/imovel-fields', imovelFieldRoutes);
 
 // Aplicar cache específico para transferências e documentos
 app.use('/api/transfers', transferenciasCacheMiddleware(), transferRoutes);
+app.use('/api/emprestimos', emprestimoRoutes);
 app.use('/api/documents', documentosCacheMiddleware(), documentRoutes);
 app.use('/api/ficha-templates', fichaTemplatesRoutes);
 app.use('/api/label-templates', labelTemplateRoutes);
