@@ -18,10 +18,10 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
-import * as XLSX from 'xlsx'
-import { saveAs } from 'file-saver'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+// xlsx, jspdf, jspdf-autotable e file-saver são lazy-loaded nas funções de
+// exportação (handleExportExcel, handleExportCsv, handleExportPDF). Isso
+// remove ~150KB gzip do bundle inicial — usuário público só baixa essas
+// libs se realmente clicar em exportar.
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -277,7 +277,7 @@ export default function PublicAssets() {
   }
 
   // Exportar para Excel
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
       if (filteredData.length === 0) {
         toast({
@@ -310,10 +310,11 @@ export default function PublicAssets() {
         }
       })
 
+      const XLSX = await import('xlsx')
       const ws = XLSX.utils.json_to_sheet(data)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Bens')
-      
+
       const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.xlsx`
       XLSX.writeFile(wb, fileName)
       
@@ -332,7 +333,7 @@ export default function PublicAssets() {
   }
 
   // Exportar para CSV
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     try {
       if (filteredData.length === 0) {
         toast({
@@ -365,10 +366,12 @@ export default function PublicAssets() {
         }
       })
 
+      const XLSX = await import('xlsx')
+      const { saveAs } = await import('file-saver')
       const ws = XLSX.utils.json_to_sheet(data)
       const csv = XLSX.utils.sheet_to_csv(ws)
       const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
-      
+
       const fileName = `consulta_publica_${new Date().toISOString().split('T')[0]}.csv`
       saveAs(blob, fileName)
       
@@ -398,8 +401,12 @@ export default function PublicAssets() {
         return
       }
 
+      // Lazy load (jspdf ~385KB + autoTable) — só baixa se o usuário exportar
+      const { default: jsPDF } = await import('jspdf')
+      const { default: autoTable } = await import('jspdf-autotable')
+
       const doc = new jsPDF()
-      
+
       // ✅ NOVO: Converter logo para base64 (se existir)
       let logoBase64: string | null = null
       if (selectedMunicipality.logoUrl) {

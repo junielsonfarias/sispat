@@ -40,8 +40,8 @@ import {
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
+// jspdf (385KB) e html2canvas (200KB) são lazy-loaded em handleDownloadPDF
+// para evitar inflar o bundle inicial do app.
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { logger } from '@/lib/logger'
 
@@ -313,6 +313,14 @@ const ReportView = () => {
       await yieldToBrowser()
       await new Promise(resolve => setTimeout(resolve, 500))
 
+      setPdfStage('Carregando gerador de PDF...')
+      // Lazy load (~600KB combined) — só ao usuário clicar em exportar
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas'),
+      ])
+      await yieldToBrowser()
+
       setPdfStage('Renderizando relatório (pode levar alguns segundos)...')
       await yieldToBrowser()
       
@@ -387,7 +395,11 @@ const ReportView = () => {
         
         logger.debug('Tentando fallback')
         logger.debug('Elemento dimensions', { width: printableElement.offsetWidth, height: printableElement.offsetHeight })
-        
+
+        // Re-import (catch tem scope próprio; libs já estão em cache)
+        const { default: jsPDF } = await import('jspdf')
+        const { default: html2canvas } = await import('html2canvas')
+
         const canvas = await html2canvas(printableElement, {
           scale: 1,
           backgroundColor: '#ffffff',
