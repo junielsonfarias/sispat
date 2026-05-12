@@ -7,57 +7,30 @@ import {
   deleteInventario,
 } from '../controllers/inventarioController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, inventarioValidations, queryValidations } from '../middlewares/validation';
-import { param } from 'express-validator';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createInventarioSchema,
+  updateInventarioSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
-// Todas as rotas requerem autenticação
 router.use(authenticateToken);
 
-/**
- * @route GET /api/inventarios
- * @desc Obter todos os inventários
- * @access Private
- */
-router.get('/', queryValidations.pagination, handleValidationErrors, getInventarios);
-
-/**
- * @route GET /api/inventarios/:id
- * @desc Obter inventário por ID
- * @access Private
- */
-router.get(
+router.get('/', zodValidate({ query: paginationQuerySchema }), getInventarios);
+router.get('/:id', zodValidate({ params: uuidParamSchema }), getInventarioById);
+router.post('/', zodValidate({ body: createInventarioSchema }), createInventario);
+router.put(
   '/:id',
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
-  getInventarioById,
+  zodValidate({ params: uuidParamSchema, body: updateInventarioSchema }),
+  updateInventario,
 );
-
-/**
- * @route POST /api/inventarios
- * @desc Criar novo inventário
- * @access Private
- */
-router.post('/', inventarioValidations.create, handleValidationErrors, createInventario);
-
-/**
- * @route PUT /api/inventarios/:id
- * @desc Atualizar inventário
- * @access Private
- */
-router.put('/:id', inventarioValidations.update, handleValidationErrors, updateInventario);
-
-/**
- * @route DELETE /api/inventarios/:id
- * @desc Deletar inventário
- * @access Superuser/Supervisor
- */
 router.delete(
   '/:id',
   authorize('superuser', 'supervisor'),
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteInventario,
 );
 

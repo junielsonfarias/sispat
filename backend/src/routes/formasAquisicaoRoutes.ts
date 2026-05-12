@@ -7,42 +7,39 @@ import {
   deleteFormaAquisicao,
 } from '../controllers/formasAquisicaoController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, formaAquisicaoValidations, queryValidations } from '../middlewares/validation';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createFormaAquisicaoSchema,
+  updateFormaAquisicaoSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/', queryValidations.pagination, handleValidationErrors, getFormasAquisicao);
-
-router.get(
-  '/:id',
-  formaAquisicaoValidations.byId,
-  handleValidationErrors,
-  getFormaAquisicaoById,
-);
+router.get('/', zodValidate({ query: paginationQuerySchema }), getFormasAquisicao);
+router.get('/:id', zodValidate({ params: uuidParamSchema }), getFormaAquisicaoById);
 
 router.post(
   '/',
   authorize('superuser', 'supervisor'),
-  formaAquisicaoValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createFormaAquisicaoSchema }),
   createFormaAquisicao,
 );
 
 router.put(
   '/:id',
   authorize('superuser', 'supervisor'),
-  formaAquisicaoValidations.update,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: updateFormaAquisicaoSchema }),
   updateFormaAquisicao,
 );
 
 router.delete(
   '/:id',
   authorize('superuser', 'supervisor'),
-  formaAquisicaoValidations.byId,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteFormaAquisicao,
 );
 

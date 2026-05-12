@@ -6,29 +6,32 @@ import {
   listEmprestimos,
 } from '../controllers/emprestimoController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, emprestimoValidations, queryValidations } from '../middlewares/validation';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createEmprestimoSchema,
+  devolverEmprestimoSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/', queryValidations.pagination, handleValidationErrors, listEmprestimos);
-
-router.get('/:id', emprestimoValidations.byId, handleValidationErrors, getEmprestimo);
+router.get('/', zodValidate({ query: paginationQuerySchema }), listEmprestimos);
+router.get('/:id', zodValidate({ params: uuidParamSchema }), getEmprestimo);
 
 router.post(
   '/',
   authorize('admin', 'supervisor', 'usuario'),
-  emprestimoValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createEmprestimoSchema }),
   createEmprestimo,
 );
 
 router.post(
   '/:id/devolver',
   authorize('admin', 'supervisor', 'usuario'),
-  emprestimoValidations.devolver,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: devolverEmprestimoSchema }),
   devolverEmprestimo,
 );
 

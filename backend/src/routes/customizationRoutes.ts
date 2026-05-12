@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middlewares/auth';
-import { handleValidationErrors, customizationValidations } from '../middlewares/validation';
+import { zodValidate } from '../middlewares/zodValidate';
+import { saveCustomizationSchema } from '@sispat/shared';
 import {
   getCustomization,
   getPublicCustomization,
@@ -17,13 +18,12 @@ router.get('/public', getPublicCustomization);
 router.get('/', authenticateToken, getCustomization);
 
 // Salvar customização (autenticado).
-// O controller faz a validação crítica (whitelist + isSafeUrl). Esta camada
-// rejeita payloads grossos cedo.
+// O controller faz a validação crítica (whitelist ALLOWED_FIELDS + isSafeUrl).
+// Esta camada rejeita payloads grossos cedo.
 router.put(
   '/',
   authenticateToken,
-  customizationValidations.save,
-  handleValidationErrors,
+  zodValidate({ body: saveCustomizationSchema }),
   saveCustomization,
 );
 

@@ -112,10 +112,11 @@
 - Esforço: 3 dias.
 
 ### 13. ✅ Centralizar validação Zod (compartilhar cliente↔servidor)
-- **PoC + expansão concluídos (Sprints 19 e 20, 2026-05-12).** Ver `HISTORICO_CORRECOES.md`.
-- **Sprint 19:** pacote `@sispat/shared`, middleware `zodValidate`, 6 rotas de auth + 3 páginas frontend (Login/ForgotPassword/ResetPassword) migradas. `STRONG_PASSWORD_REGEX` unificado.
-- **Sprint 20:** 4 domínios config (user/sector/local/tipoBem) — 20 endpoints migrados. Schemas `common` (UUID/pagination) reutilizáveis. `validation.ts` reduziu de 1066→814 linhas. 28 testes novos.
-- **Pendente (Sprint 21+):** patrimonio/imovel (complexos, têm schemas no frontend que divergem do backend); inventario/transfer/manutencao; frontend pages (TipoBemManagement, etc) que têm schemas locais redundantes.
+- **Sprints 19, 20 e 21 concluídos (2026-05-12).** Ver `HISTORICO_CORRECOES.md`.
+- **Sprint 19:** pacote `@sispat/shared`, middleware `zodValidate`, 6 rotas auth + 3 páginas frontend migradas. `STRONG_PASSWORD_REGEX` unificado.
+- **Sprint 20:** user/sector/local/tipoBem — 20 endpoints. `common` (UUID/pagination). `validation.ts`: 1066→814.
+- **Sprint 21:** inventario/transfer/manutencao/notification/customization/document/labelTemplate/formaAquisicao/emprestimo — ~30 endpoints. `validation.ts`: 814→383 (-64% acumulado). 50+ schemas em `@sispat/shared`. 151 testes backend.
+- **Pendente (Sprint 22+):** patrimonio (152 linhas) e imovel (158 linhas) — complexos, têm schemas Zod no frontend; envolve `BensCreate`/`BensEdit`/`ImoveisCreate`/`ImoveisEdit`. Frontend pages com schemas locais redundantes (TipoBemManagement, AcquisitionFormManagement).
 
 ### 14. Camada de Repository
 - Após services, introduzir repositories para isolar Prisma.

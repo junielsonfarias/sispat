@@ -5,81 +5,50 @@ import {
   approveTransfer,
   rejectTransfer,
   getTransfer,
-  deleteTransfer
+  deleteTransfer,
 } from '../controllers/transferController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, transferValidations, queryValidations } from '../middlewares/validation';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createTransferSchema,
+  approveTransferSchema,
+  rejectTransferSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
-/**
- * Todas as rotas requerem autenticação
- */
 router.use(authenticateToken);
 
-/**
- * @route GET /api/transfers
- * @desc Listar transferências
- * @access Private (All authenticated users)
- */
-router.get('/', queryValidations.pagination, handleValidationErrors, listTransfers);
+router.get('/', zodValidate({ query: paginationQuerySchema }), listTransfers);
+router.get('/:id', zodValidate({ params: uuidParamSchema }), getTransfer);
 
-/**
- * @route GET /api/transfers/:id
- * @desc Obter transferência por ID
- * @access Private (All authenticated users)
- */
-router.get('/:id', transferValidations.byId, handleValidationErrors, getTransfer);
-
-/**
- * @route POST /api/transfers
- * @desc Criar transferência
- * @access Private (admin, supervisor, usuario)
- */
 router.post(
   '/',
   authorize('admin', 'supervisor', 'usuario'),
-  transferValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createTransferSchema }),
   createTransfer,
 );
 
-/**
- * @route PATCH /api/transfers/:id/approve
- * @desc Aprovar transferência
- * @access Private (admin, supervisor)
- */
 router.patch(
   '/:id/approve',
   authorize('admin', 'supervisor'),
-  transferValidations.approve,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: approveTransferSchema }),
   approveTransfer,
 );
 
-/**
- * @route PATCH /api/transfers/:id/reject
- * @desc Rejeitar transferência
- * @access Private (admin, supervisor)
- */
 router.patch(
   '/:id/reject',
   authorize('admin', 'supervisor'),
-  transferValidations.reject,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: rejectTransferSchema }),
   rejectTransfer,
 );
 
-/**
- * @route DELETE /api/transfers/:id
- * @desc Deletar transferência
- * @access Private (admin, supervisor)
- */
 router.delete(
   '/:id',
   authorize('admin', 'supervisor'),
-  transferValidations.byId,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteTransfer,
 );
 

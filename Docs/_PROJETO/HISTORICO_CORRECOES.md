@@ -90,6 +90,71 @@
 
 ## 2026
 
+### 2026-05-12 — Sprint 21: shared schemas para 9 domínios operacionais
+
+Continuação da Sprint 20. Mais 9 domínios migrados para `@sispat/shared`: inventario, transfer, manutencao, notification, customization, document, labelTemplate, formaAquisicao, emprestimo. `validation.ts` agora só tem patrimonio + imovel + queryValidations.
+
+**Schemas novos em `shared/src/schemas/`**
+
+- `inventario.ts`: `inventarioScopeSchema` (sector/location/specific_location), `inventarioStatusSchema` (em_andamento/concluido/cancelado), `createInventarioSchema`, `updateInventarioSchema` (strict).
+- `transfer.ts`: `createTransferSchema` (patrimonioId UUID + setores + motivo + dataTransferencia ISO), `approveTransferSchema` e `rejectTransferSchema` strict.
+- `manutencao.ts`: 3 enums tipados (`manutencaoTipoSchema`: preventiva/corretiva/preditiva; `manutencaoPrioridadeSchema`: baixa/media/alta/urgente; `manutencaoStatusSchema`: pendente/em_andamento/concluida/cancelada), create/update com `z.coerce.number()` no custo. XOR patrimonioId/imovelId fica no controller (mais semântico que refine).
+- `notification.ts`: `createNotificationSchema` (userId opcional UUID, link opcional). Controller força `userId = req.user.userId` para não-admin (anti-spoof).
+- `customization.ts`: `saveCustomizationSchema` cobrindo os 22 campos visuais. NÃO usa `.strict()` (controller já tem ALLOWED_FIELDS + isSafeUrl para descartar extras silenciosamente).
+- `document.ts`: `createDocumentSchema` (campos textuais do multipart), `updateDocumentSchema` strict. `publico` usa `z.coerce.boolean()` para aceitar 'true'/'false' do multipart.
+- `labelTemplate.ts`: `labelUnitSchema` (mm/cm/in), `elementos: z.array(z.unknown())` (JSON livre, validar profundamente amarraria backend a formato de UI).
+- `formaAquisicao.ts`: create/update simples com ativo opcional.
+- `emprestimo.ts`: `createEmprestimoSchema` (com setor/motivo opcionais que o express-validator antigo não tinha), `devolverEmprestimoSchema` strict.
+
+**Rotas migradas (9 arquivos, ~30 endpoints)**
+
+inventarioRoutes, transferRoutes, manutencaoRoutes, notificationRoutes, customizationRoutes, documentRoutes, labelTemplateRoutes, formasAquisicaoRoutes, emprestimoRoutes.
+
+Padrão consistente do Sprint 20 mantido:
+```ts
+router.get('/', zodValidate({ query: paginationQuerySchema }), ctrl);
+router.get('/:id', zodValidate({ params: uuidParamSchema }), ctrl);
+router.post('/', authorize(...), zodValidate({ body: createXSchema }), ctrl);
+router.put('/:id', authorize(...), zodValidate({ params: uuidParamSchema, body: updateXSchema }), ctrl);
+router.delete('/:id', authorize(...), zodValidate({ params: uuidParamSchema }), ctrl);
+```
+
+`customizationRoutes` mantém só PUT (sem CRUD completo). `transferRoutes` tem 2 ações PATCH (`/approve`, `/reject`) com schemas dedicados. `emprestimoRoutes` tem `POST /:id/devolver`. `manutencaoRoutes` deixou `GET /` sem validação (controller faz seu próprio paginate — pendência menor).
+
+**Limpeza de `validation.ts`**
+
+Removidos 9 blocos de validação. `validation.ts` reduziu de **814 → 383 linhas** (-431 linhas, -53%). Total acumulado desde Sprint 19: **1066 → 383** (-683, -64%). Restam só:
+- `handleValidationErrors` (compat com patrimonio/imovel ainda usando express-validator)
+- `patrimonioValidations` (152 linhas — Sprint 22)
+- `imovelValidations` (158 linhas — Sprint 22)
+- `queryValidations.pagination` (idem)
+
+**Bug pré-existente encontrado em manutencaoRoutes**
+
+`GET /api/manutencoes` não tinha validação de query e o controller também não validava — qualquer query passava. Mantido como está nesta sprint (escopo: só migração, não adicionar regras). Pode ser endereçado em Sprint 22+ junto com paginação consistente.
+
+**Testes**
+
+34 novos em `backend/src/__tests__/shared/operationalSchemas.test.ts` cobrindo todos os 9 domínios. Foco em pontos onde Zod adiciona valor real: enums tipados, coerce numérico (custo, largura), coerce boolean ('true'/'false' do multipart), strict mode.
+
+Resultado: **151/151 testes backend passam** (117 anteriores + 34 novos).
+
+**Métrica acumulada**
+
+| | Sprint 18 (antes) | Sprint 19 | Sprint 20 | Sprint 21 |
+|---|--:|--:|--:|--:|
+| `validation.ts` (linhas) | 1066 | 1066 | 814 | 383 |
+| Schemas em `@sispat/shared` | 0 | 8 (auth) | 21 | 50+ |
+| Domínios usando Zod no backend | 0 | 1 (auth) | 5 (+user+sector+local+tipoBem) | 14 (+9) |
+| Testes de schemas/zod | 0 | 10 | 38 | 72 |
+| Testes backend totais | ~75 | 89 | 117 | 151 |
+
+**Frontend (deferido)**
+
+Mesmas pendências do Sprint 20 (TipoBemManagement, etc.). Sprint 22 deve atacar patrimonio/imovel — esses TÊM Zod schemas no frontend e a migração inclui as 2 lâminas (backend route + frontend forms `BensCreate`/`BensEdit`/`ImoveisCreate`/`ImoveisEdit`).
+
+- **Lição:** Zod ganha quando há enums e tipos numéricos/booleanos chegando como string (query, multipart). O `z.coerce` elimina o boilerplate de `parseInt(req.query.page as string)` espalhado pelos controllers — agora o middleware já entrega valores tipados.
+
 ### 2026-05-12 — Sprint 20: shared schemas para user + sector + local + tipoBem
 
 Expansão do padrão `@sispat/shared` (Sprint 19) para 4 domínios de configuração: usuários, setores, locais e tipos de bens. Quatro rotas backend migradas do `express-validator + handleValidationErrors` para `zodValidate + schema do @sispat/shared`.

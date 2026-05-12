@@ -7,42 +7,39 @@ import {
   deleteLabelTemplate,
 } from '../controllers/labelTemplateController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, labelTemplateValidations, queryValidations } from '../middlewares/validation';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createLabelTemplateSchema,
+  updateLabelTemplateSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/', queryValidations.pagination, handleValidationErrors, getLabelTemplates);
-
-router.get(
-  '/:id',
-  labelTemplateValidations.byId,
-  handleValidationErrors,
-  getLabelTemplateById,
-);
+router.get('/', zodValidate({ query: paginationQuerySchema }), getLabelTemplates);
+router.get('/:id', zodValidate({ params: uuidParamSchema }), getLabelTemplateById);
 
 router.post(
   '/',
   authorize('admin', 'supervisor'),
-  labelTemplateValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createLabelTemplateSchema }),
   createLabelTemplate,
 );
 
 router.put(
   '/:id',
   authorize('admin', 'supervisor'),
-  labelTemplateValidations.update,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: updateLabelTemplateSchema }),
   updateLabelTemplate,
 );
 
 router.delete(
   '/:id',
   authorize('admin', 'supervisor'),
-  labelTemplateValidations.byId,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteLabelTemplate,
 );
 

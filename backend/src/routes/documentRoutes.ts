@@ -7,10 +7,16 @@ import {
   updateDocument,
   deleteDocument,
   listPublicDocuments,
-  upload
+  upload,
 } from '../controllers/documentController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, documentValidations, queryValidations } from '../middlewares/validation';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createDocumentSchema,
+  updateDocumentSchema,
+  uuidParamSchema,
+  paginationQuerySchema,
+} from '@sispat/shared';
 
 const router = Router();
 
@@ -18,34 +24,29 @@ router.get('/public', listPublicDocuments);
 
 router.use(authenticateToken);
 
-router.get('/', queryValidations.pagination, handleValidationErrors, listDocuments);
-
-router.get('/:id', documentValidations.byId, handleValidationErrors, getDocument);
-
-router.get('/:id/download', documentValidations.byId, handleValidationErrors, downloadDocument);
+router.get('/', zodValidate({ query: paginationQuerySchema }), listDocuments);
+router.get('/:id', zodValidate({ params: uuidParamSchema }), getDocument);
+router.get('/:id/download', zodValidate({ params: uuidParamSchema }), downloadDocument);
 
 router.post(
   '/',
   authorize('admin', 'supervisor', 'usuario'),
   upload.single('file'),
-  documentValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createDocumentSchema }),
   createDocument,
 );
 
 router.put(
   '/:id',
   authorize('admin', 'supervisor', 'usuario'),
-  documentValidations.update,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: updateDocumentSchema }),
   updateDocument,
 );
 
 router.delete(
   '/:id',
   authorize('admin', 'supervisor', 'usuario'),
-  documentValidations.byId,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteDocument,
 );
 
