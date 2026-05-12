@@ -23,10 +23,12 @@
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
-    "lint": "echo \"No linting configured\"",
+    "lint": "eslint src --ext .ts --cache",
+    "lint:fix": "eslint src --ext .ts --fix --cache",
+    "type-check": "tsc --noEmit",
     "clean": "rm -rf dist",
     "deploy:build": "npm run clean && npm run build:prod",
-    "deploy:check": "npm run lint"
+    "deploy:check": "npm run lint && npm run type-check"
   },
   "keywords": [
     "patrimonio",
@@ -69,6 +71,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@eslint/js": "^9.18.0",
     "@playwright/test": "^1.56.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/bcryptjs": "^2.4.6",
@@ -80,12 +83,15 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^24.7.0",
     "@types/supertest": "^6.0.3",
+    "eslint": "^9.18.0",
+    "globals": "^15.14.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.10",
     "prisma": "^6.17.1",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.20.0"
   }
 }
