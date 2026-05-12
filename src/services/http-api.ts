@@ -110,7 +110,26 @@ axiosInstance.interceptors.response.use(
           localStorage.removeItem('sispat_token');
           localStorage.removeItem('sispat_refresh_token');
           localStorage.removeItem('sispat_user');
-          window.location.href = '/login';
+
+          // Toast antes de redirecionar — usuário entende o que aconteceu.
+          // Import dinâmico para não acoplar todo o axios a use-toast.
+          import('@/hooks/use-toast')
+            .then(({ toast }) => {
+              toast({
+                variant: 'destructive',
+                title: 'Sessão expirada',
+                description: 'Sua sessão expirou. Faça login novamente.',
+              });
+            })
+            .catch(() => {
+              // toast não disponível — apenas redireciona
+            });
+
+          // Pequeno delay para o toast aparecer antes do hard reload
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 600);
+
           return Promise.reject(refreshError);
         }
       }
