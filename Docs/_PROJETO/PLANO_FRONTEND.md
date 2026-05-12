@@ -9,6 +9,8 @@ Severidades: 🔴 crítico, 🟠 importante, 🟡 médio, 🟢 baixo.
 
 ## 🔴 Críticos — corrigir agora
 
+> **Sprint 14 (2026-05-12)**: F1, F2, F3, F4 ✅ implementados.
+
 ### F1. ErrorBoundary expõe stack trace completo em produção
 - **Onde:** `src/components/ErrorBoundary.tsx:62-84`
 - **Problema:** o `<details>` sempre renderiza `error.stack`, `componentStack` e `error.toString()` — mesmo em prod. Vaza caminhos internos, nomes de componentes, IDs.
@@ -32,6 +34,8 @@ Severidades: 🔴 crítico, 🟠 importante, 🟡 médio, 🟢 baixo.
 ---
 
 ## 🟠 Importantes
+
+> **Sprint 14 (2026-05-12)**: F6, F9, F10, F11 ✅ implementados. F5/F7/F8 aguardam validação.
 
 ### F5. Tokens em localStorage (legado pré-Sprint 13)
 - **Onde:** `src/contexts/AuthContext.tsx:133`, `src/services/http-api.ts:40-48`
