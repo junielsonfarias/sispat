@@ -120,6 +120,27 @@
 - **Arquivos:** `backend/eslint.config.mjs`, `backend/package.json`
 - **Lição:** começar com regras como warn quando há legado; promover a error após limpeza.
 
+### 2026-05-12 — Sprint 4 P1/P2: limpeza e tighten TS
+
+**4.1) Limpeza de raiz e Docs/**
+- **Sintoma:** raiz com 88 arquivos `.sh`/`.md`/`.txt` (scripts CORRIGIR_*/DIAGNOSTICAR_*/VERIFICAR_*) e Docs/ com 553 arquivos sendo 124 duplicados (` copy`, `_FINAL_ATUALIZADA`).
+- **Correção:** `git mv` para `Docs/_LEGADO/raiz/` (78 arquivos) e `Docs/_LEGADO/docs-dup/` (56 arquivos). Raiz fica com 10 essenciais. README na quarentena explica política. Histórico git preservado.
+- **Arquivos:** `Docs/_LEGADO/**`
+- **Lição:** mover é mais seguro que deletar — git já mantém histórico, mas a presença local ajuda em incidentes.
+
+**4.2) Tighten TypeScript no backend**
+- **Sintoma:** `backend/tsconfig.json` tinha `noImplicitAny: false` permitindo 94 `any`'s implícitos. Sem `useUnknownInCatchVariables`, blocos `catch (err: any)` perdiam segurança.
+- **Correção:** ativadas flags strict no backend (tsconfig.json):
+  - `noImplicitAny: true`
+  - `noImplicitThis: true`
+  - `alwaysStrict: true`
+  - `useUnknownInCatchVariables: true`
+  - `noImplicitReturns: true`
+  - (já existiam: `strictNullChecks`, `strictFunctionTypes`, `noFallthroughCasesInSwitch`)
+- **Correções colaterais:** padrão `return res.status(...)` corrigido em `metricsRoutes.ts` (4x) e `FichaTemplateController.ts` (8x) — Express handlers agora retornam `void` consistentemente. Erros `catch` tipados como `unknown` com cast explícito onde necessário.
+- **Arquivos:** `backend/tsconfig.json`, `backend/src/routes/metricsRoutes.ts`, `backend/src/controllers/FichaTemplateController.ts`
+- **Lição:** `noImplicitAny` na verdade já passava — o `false` era cargo cult. Ativar progressivamente expõe bugs reais (handlers Express com retorno inconsistente).
+
 ### 2026-05-12 — Sprint 3 P1: refactor e testes
 
 **3.1) Extrair patrimonioService (refactor 1320 → 347 linhas no controller)**

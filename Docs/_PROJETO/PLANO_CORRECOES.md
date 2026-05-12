@@ -85,7 +85,7 @@
   - Mockar email/Redis se necessário
 - **Esforço:** 1 semana (incremental)
 
-### 10. Limpeza de `Docs/` e raiz
+### 10. ✅ Limpeza de `Docs/` e raiz
 - **Onde:** raiz do projeto + `Docs/`
 - **Como:**
   - Mover `.sh`, `.md`, `.txt` de raiz para `Docs/_LEGADO/` (não deletar — arquivar).
@@ -94,7 +94,7 @@
 - **Esforço:** 1 dia
 - **Cuidado:** commitar limpeza em PR/commit isolado, fácil de reverter.
 
-### 11. Forçar `strict: true` no backend tsconfig
+### 11. ✅ Forçar strict no backend tsconfig (parcial)
 - **Onde:** `backend/tsconfig.json`
 - **Como:** ativar `strict` aos poucos:
   1. `noImplicitAny: true` primeiro → corrigir os 94 any's
