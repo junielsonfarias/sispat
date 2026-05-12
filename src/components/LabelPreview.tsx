@@ -22,20 +22,26 @@ export const LabelPreview = forwardRef<HTMLDivElement, LabelPreviewProps>(
     const { settings } = useCustomization()
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
 
-    // Gerar QR code local quando o asset mudar
+    // Gera QR code localmente — sem fallback para serviço externo
+    // (api.qrserver.com poderia vazar nº de patrimônio em URL).
     useEffect(() => {
-      if (asset?.numero_patrimonio) {
-        generatePatrimonioQRCode(asset.numero_patrimonio, asset.assetType)
-          .then(setQrCodeUrl)
-          .catch(() => {
-            // Fallback para QR code externo se falhar
-            const baseUrl = window.location.origin
-            const path = asset.assetType === 'imovel'
-              ? `/consulta-publica/imovel/${asset.numero_patrimonio}`
-              : `/consulta-publica/bem/${asset.numero_patrimonio}`
-            const publicUrl = `${baseUrl}${path}`
-            setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(publicUrl)}&q=H`)
-          })
+      if (!asset?.numero_patrimonio) {
+        setQrCodeUrl('')
+        return
+      }
+      let cancelled = false
+      generatePatrimonioQRCode(asset.numero_patrimonio, asset.assetType)
+        .then((url) => {
+          if (!cancelled) setQrCodeUrl(url)
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setQrCodeUrl('')
+            console.error('Falha ao gerar QR code local', err)
+          }
+        })
+      return () => {
+        cancelled = true
       }
     }, [asset?.numero_patrimonio, asset?.assetType])
 
