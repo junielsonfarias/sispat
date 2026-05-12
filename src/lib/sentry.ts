@@ -1,134 +1,101 @@
 /**
- * Configuração do Sentry para Error Tracking
- * 
- * Para habilitar:
- * 1. Criar conta em https://sentry.io
- * 2. Adicionar VITE_SENTRY_DSN no .env
- * 3. Descomentar import no main.tsx
+ * Configuração do Sentry para o frontend.
+ *
+ * Estratégia: dynamic import de `@sentry/react`. Se o pacote não estiver
+ * instalado (cold dev environment), funções viram no-op em vez de quebrar
+ * o build.
+ *
+ * Para ativar em produção:
+ * 1. `pnpm add @sentry/react`
+ * 2. Criar projeto em https://sentry.io e copiar o DSN
+ * 3. Setar `VITE_SENTRY_DSN` em `.env.production`
+ * 4. `pnpm run build` — initSentry detectará o pacote e ativará
+ *
+ * Em desenvolvimento (MODE !== 'production'), Sentry fica desligado mesmo
+ * com DSN definido — evita poluir o projeto com erros locais.
  */
-
-// Descomentar após instalar @sentry/react
-/*
-import * as Sentry from '@sentry/react'
-
-export const initSentry = () => {
-  // Apenas em produção
-  if (import.meta.env.MODE !== 'production') {
-    console.log('🔍 Sentry: Desabilitado em desenvolvimento')
-    return
-  }
-
-  const dsn = import.meta.env.VITE_SENTRY_DSN
-
-  if (!dsn) {
-    console.warn('⚠️ Sentry DSN não configurado')
-    return
-  }
-
-  Sentry.init({
-    dsn,
-    environment: import.meta.env.MODE,
-    
-    // Performance Monitoring
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration({
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
-
-    // Performance
-    tracesSampleRate: 1.0, // 100% das transações (ajustar em prod para 0.1)
-    
-    // Session Replay
-    replaysSessionSampleRate: 0.1,  // 10% das sessões
-    replaysOnErrorSampleRate: 1.0,  // 100% quando há erro
-
-    // Filtros
-    beforeSend(event, hint) {
-      // Filtrar erros conhecidos/esperados
-      if (event.exception) {
-        const error = hint.originalException as Error
-        
-        // Ignorar erros de rede temporários
-        if (error?.message?.includes('Network Error')) {
-          return null
-        }
-        
-        // Ignorar erros de autenticação (esperados)
-        if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
-          return null
-        }
-      }
-      
-      return event
-    },
-
-    // Contexto adicional
-    beforeBreadcrumb(breadcrumb) {
-      // Adicionar informações úteis
-      if (breadcrumb.category === 'xhr') {
-        // Logs de requisições HTTP
-        return breadcrumb
-      }
-      return breadcrumb
-    },
-  })
-
-  console.log('✅ Sentry inicializado com sucesso')
-}
-
-// Error Boundary customizado com Sentry
-export const SentryErrorBoundary = Sentry.ErrorBoundary
-
-// Capture manual de erros
-export const captureError = (error: Error, context?: Record<string, any>) => {
-  Sentry.captureException(error, {
-    extra: context,
-  })
-}
-
-// Capture de mensagem
-export const captureMessage = (message: string, level: 'info' | 'warning' | 'error' = 'info') => {
-  Sentry.captureMessage(message, level)
-}
-
-// Set user context
-export const setSentryUser = (user: { id: string; email: string; name: string }) => {
-  Sentry.setUser({
-    id: user.id,
-    email: user.email,
-    username: user.name,
-  })
-}
-
-// Clear user context (logout)
-export const clearSentryUser = () => {
-  Sentry.setUser(null)
-}
-*/
-
 import { logger } from '@/lib/logger'
 
-// Fallbacks para quando Sentry não está instalado
-export const initSentry = () => {
-  logger.debug('Sentry: Não configurado (instale @sentry/react para habilitar)')
+type SentryUser = { id: string; email: string; name: string }
+type SentryLevel = 'info' | 'warning' | 'error'
+
+// Cliente Sentry carregado dinamicamente, ou null se indisponível.
+let sentryClient: typeof import('@sentry/react') | null = null
+
+const isProd = import.meta.env.MODE === 'production'
+const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined
+
+/**
+ * Inicializa Sentry se: ambiente prod + DSN configurado + pacote instalado.
+ * Caso contrário, é no-op silencioso.
+ */
+export const initSentry = async (): Promise<void> => {
+  if (!isProd) {
+    logger.debug('Sentry: desabilitado em desenvolvimento')
+    return
+  }
+  if (!dsn) {
+    logger.debug('Sentry: VITE_SENTRY_DSN não configurado')
+    return
+  }
+  try {
+    // @vite-ignore — pacote opcional. Se não estiver no node_modules, dynamic
+    // import lança e caímos no catch (no-op).
+    const mod = await import(/* @vite-ignore */ '@sentry/react')
+    sentryClient = mod
+    mod.init({
+      dsn,
+      environment: import.meta.env.MODE,
+      integrations: [
+        mod.browserTracingIntegration(),
+        mod.replayIntegration({ maskAllText: true, blockAllMedia: true }),
+      ],
+      tracesSampleRate: 0.1,
+      replaysSessionSampleRate: 0.1,
+      replaysOnErrorSampleRate: 1.0,
+      beforeSend(event, hint) {
+        const error = hint?.originalException as Error | undefined
+        // Filtra erros esperados (não são bugs)
+        if (error?.message?.includes('Network Error')) return null
+        if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) return null
+        return event
+      },
+    })
+    logger.info('✅ Sentry frontend inicializado')
+  } catch (err) {
+    // Pacote não instalado ou falha de init — silencioso
+    logger.debug('Sentry: não disponível (instale @sentry/react para habilitar)')
+  }
 }
 
-export const captureError = (error: Error, context?: Record<string, any>) => {
-  console.error('❌ Error captured:', error, context)
+export const captureError = (error: Error, context?: Record<string, unknown>): void => {
+  if (sentryClient) {
+    sentryClient.captureException(error, context ? { extra: context } : undefined)
+  } else {
+    console.error('❌ Error captured:', error, context)
+  }
 }
 
-export const captureMessage = (message: string, level: 'info' | 'warning' | 'error' = 'info') => {
-  logger.debug(`[${level}] ${message}`)
+export const captureMessage = (message: string, level: SentryLevel = 'info'): void => {
+  if (sentryClient) {
+    sentryClient.captureMessage(message, level)
+  } else {
+    logger.debug(`[${level}] ${message}`)
+  }
 }
 
-export const setSentryUser = (user: any) => {
-  logger.debug('User set', { email: user.email })
+export const setSentryUser = (user: SentryUser): void => {
+  if (sentryClient) {
+    sentryClient.setUser({ id: user.id, email: user.email, username: user.name })
+  } else {
+    logger.debug('User set', { email: user.email })
+  }
 }
 
-export const clearSentryUser = () => {
-  logger.debug('User cleared')
+export const clearSentryUser = (): void => {
+  if (sentryClient) {
+    sentryClient.setUser(null)
+  } else {
+    logger.debug('User cleared')
+  }
 }
-

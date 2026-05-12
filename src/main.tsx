@@ -2,10 +2,10 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './main.css'
-// import { initSentry } from './config/sentry'
+import { initSentry } from '@/lib/sentry'
 
-// Inicializar Sentry antes de renderizar o app
-// TEMPORARIAMENTE DESABILITADO - Sentry é opcional
-// initSentry()
+// Inicializa Sentry (no-op se pacote não instalado ou DSN ausente).
+// Não bloqueia render — dynamic import resolve em paralelo.
+void initSentry()
 
 createRoot(document.getElementById('root')!).render(<App />)
