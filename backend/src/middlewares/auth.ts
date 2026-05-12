@@ -34,9 +34,13 @@ export const authenticateToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Pegar token do header Authorization
+    // Prioriza cookie HttpOnly (caminho preferido pós-Sprint 13). Fallback
+    // para header Authorization: Bearer ... (back-compat e clientes máquina).
+    const cookieToken =
+      (req as Request & { cookies?: Record<string, string> }).cookies?.sispat_access;
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const bearerToken = authHeader && authHeader.split(' ')[1];
+    const token = cookieToken || bearerToken;
 
     if (!token) {
       res.status(401).json({ error: 'Token não fornecido' });

@@ -6,6 +6,11 @@ import { prisma } from '../lib/prisma';
 import { logActivity } from '../utils/activityLogger';
 import { emailService } from '../config/email';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import {
+  clearAuthCookies,
+  issueCsrfToken,
+  setAuthCookies,
+} from '../utils/auth-cookies';
 
 // ✅ Validar JWT_SECRET obrigatório em produção
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -130,10 +135,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     await logActivity(req, 'LOGIN', 'USER', user.id, 'Login realizado com sucesso', user.id);
 
+    // Cookies HttpOnly (caminho preferido) + CSRF token (cookie legível)
+    const csrfToken = setAuthCookies(res, token, refreshToken);
+
     res.json({
       message: 'Login realizado com sucesso',
+      // Mantemos token/refreshToken no body por back-compat com clientes
+      // antigos que usam localStorage. Frontend novo deve preferir os cookies.
       token,
       refreshToken,
+      csrfToken,
       user: {
         id: user.id,
         email: user.email,
@@ -151,12 +162,26 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * GET /api/auth/csrf
+ * Emite (ou renova) o cookie CSRF e retorna o valor para o frontend
+ * usar em headers de operações mutáveis.
+ */
+export const getCsrfToken = (_req: Request, res: Response): void => {
+  const csrfToken = issueCsrfToken(res);
+  res.json({ csrfToken });
+};
+
+/**
  * Refresh token — com rotation e revogação do anterior.
  * POST /api/auth/refresh
  */
 export const refreshToken = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { refreshToken: token } = req.body;
+    // Prioriza cookie HttpOnly; cai para body por back-compat
+    const cookieToken = (req as Request & { cookies?: Record<string, string> })
+      .cookies?.sispat_refresh;
+    const { refreshToken: bodyToken } = req.body ?? {};
+    const token = cookieToken || bodyToken;
 
     if (!token) {
       res.status(400).json({ error: 'Refresh token não fornecido' });
@@ -254,9 +279,13 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
 
     const newToken = generateToken(user.id, user.email, user.role, user.municipalityId);
 
+    // Atualiza cookies (rotation também acontece aqui)
+    const csrfToken = setAuthCookies(res, newToken, newJwt);
+
     res.json({
       token: newToken,
       refreshToken: newJwt,
+      csrfToken,
     });
   } catch (error) {
     logError('Erro ao processar refresh token', error);
@@ -320,7 +349,11 @@ export const me = async (req: Request, res: Response): Promise<void> => {
 export const logout = async (req: Request, res: Response): Promise<void> => {
   try {
     if (req.user) {
-      const { refreshToken: token, allDevices } = req.body ?? {};
+      // Aceita refreshToken do body (back-compat) OU do cookie HttpOnly
+      const cookieRefresh = (req as Request & { cookies?: Record<string, string> })
+        .cookies?.sispat_refresh;
+      const { refreshToken: bodyToken, allDevices } = req.body ?? {};
+      const token = bodyToken || cookieRefresh;
 
       if (allDevices === true) {
         // Logout global: revoga todos os refresh tokens ativos
@@ -354,6 +387,9 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
         },
       });
     }
+
+    // Limpa cookies de autenticação (HttpOnly + CSRF)
+    clearAuthCookies(res);
 
     res.json({ message: 'Logout realizado com sucesso' });
   } catch (error) {

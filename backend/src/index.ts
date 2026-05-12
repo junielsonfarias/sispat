@@ -103,6 +103,15 @@ const MAX_REQUEST_SIZE = process.env.MAX_REQUEST_SIZE || '10mb';
 app.use(express.json({ limit: MAX_REQUEST_SIZE }));
 app.use(express.urlencoded({ extended: true, limit: MAX_REQUEST_SIZE }));
 
+// Cookie parser — habilita req.cookies para cookies HttpOnly (Sprint 13)
+import cookieParser from 'cookie-parser';
+app.use(cookieParser());
+
+// CSRF protection: double-submit cookie em rotas mutáveis com sessão por cookie.
+// Endpoints de auth iniciais e métodos seguros são isentos (ver middleware).
+import { csrfProtection } from './middlewares/csrf';
+app.use('/api', csrfProtection);
+
 // Servir arquivos estáticos (uploads)
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 

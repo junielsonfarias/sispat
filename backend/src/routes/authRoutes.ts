@@ -8,6 +8,7 @@ import {
   forgotPassword,
   validateResetToken,
   resetPassword,
+  getCsrfToken,
 } from '../controllers/authController';
 import { authenticateToken } from '../middlewares/auth';
 import rateLimit from 'express-rate-limit';
@@ -92,6 +93,14 @@ const resetLimiter = rateLimit({
  * @access Public
  */
 router.post('/login', authLimiter, login);
+
+/**
+ * @route GET /api/auth/csrf
+ * @desc Emite/renova cookie CSRF. Frontend chama antes de operações mutáveis
+ *       quando o cookie estiver ausente ou suspeito.
+ * @access Public (sem JWT necessário; rate-limit é o autoritativo)
+ */
+router.get('/csrf', getCsrfToken);
 
 /**
  * @route POST /api/auth/refresh
