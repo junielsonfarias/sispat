@@ -10,7 +10,7 @@ import { logError, logInfo, logWarn, logDebug } from '../config/logger';
  */
 export const getEmailConfig = async (req: Request, res: Response): Promise<void> => {
   try {
-    // @ts-ignore - Modelo EmailConfig pode não estar disponível ainda
+    // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
     const emailConfig = await prisma.emailConfig?.findFirst();
 
     if (!emailConfig) {
@@ -74,14 +74,14 @@ export const updateEmailConfig = async (req: Request, res: Response): Promise<vo
     }
 
     // Verificar se já existe configuração
-    // @ts-ignore - Modelo EmailConfig pode não estar disponível ainda
+    // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
     const existingConfig = await prisma.emailConfig?.findFirst();
 
     let emailConfig;
 
     if (existingConfig) {
       // Atualizar configuração existente
-      // @ts-ignore - Modelo EmailConfig pode não estar disponível ainda
+      // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
       emailConfig = await prisma.emailConfig?.update({
         where: { id: existingConfig.id },
         data: {
@@ -102,7 +102,7 @@ export const updateEmailConfig = async (req: Request, res: Response): Promise<vo
         return;
       }
 
-      // @ts-ignore - Modelo EmailConfig pode não estar disponível ainda
+      // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
       emailConfig = await prisma.emailConfig?.create({
         data: {
           host,
@@ -235,7 +235,7 @@ export const deleteEmailConfig = async (req: Request, res: Response): Promise<vo
 
     logDebug('🗑️ Desabilitando configuração de email', { userId: req.user?.userId });
 
-    // @ts-ignore - Modelo EmailConfig pode não estar disponível ainda
+    // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
     const existingConfig = await prisma.emailConfig?.findFirst();
 
     if (!existingConfig) {
@@ -244,7 +244,7 @@ export const deleteEmailConfig = async (req: Request, res: Response): Promise<vo
     }
 
     // Desabilitar em vez de deletar (manter histórico)
-    // @ts-ignore - Modelo EmailConfig pode não estar disponível ainda
+    // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
     await prisma.emailConfig?.update({
       where: { id: existingConfig.id },
       data: {

@@ -41,6 +41,9 @@ export default tseslint.config(
 
       // Específicos do backend
       'no-process-exit': 'off', // process.exit é legítimo em scripts e shutdown
+      // Augmentação do Express Request usa `declare global { namespace Express }`
+      // (padrão idiomático) — permitir namespaces declarados.
+      '@typescript-eslint/no-namespace': ['error', { allowDeclarations: true }],
     },
   },
   {

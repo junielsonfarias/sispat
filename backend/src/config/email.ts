@@ -40,7 +40,7 @@ export class EmailService {
       // Verificar se o modelo existe antes de usar
       let emailConfig: any = null;
       try {
-        // @ts-ignore - Modelo pode não estar disponível ainda
+        // @ts-expect-error Modelo pode não estar disponível ainda
         emailConfig = await prisma.emailConfig?.findFirst();
       } catch (error) {
         // Modelo não existe, usar configuração de variáveis de ambiente
