@@ -22,7 +22,8 @@ logInfo('✅ Configuração do banco carregada');
 
 // Inicializar Redis
 logInfo('📦 Carregando configuração do Redis...');
-import { initializeRedis } from './config/redis';
+import { initializeRedis, closeRedis } from './config/redis';
+import { archiveOldLogs } from './jobs/logRetention';
 const redis = initializeRedis();
 logInfo('✅ Configuração do Redis carregada');
 
@@ -339,8 +340,8 @@ async function connectDatabase() {
 async function startServer() {
   await connectDatabase();
   
-  // Criar servidor HTTP
-  const httpServer = createServer(app);
+  // Criar servidor HTTP (módulo-level para o graceful shutdown poder fechá-lo)
+  httpServer = createServer(app);
   
   // Inicializar WebSocket
   webSocketManager.initialize(httpServer);
@@ -369,21 +370,63 @@ async function startServer() {
         logError('❌ Erro ao iniciar health monitor', err);
       }
     }
+
+    // 🗄️ Agendar retenção de logs de auditoria (arquiva > 365 dias) a cada 24h.
+    // Antes o job existia mas NUNCA era agendado — a tabela activityLog crescia
+    // indefinidamente.
+    if (isProduction || process.env.ENABLE_LOG_RETENTION === 'true') {
+      const runRetention = () =>
+        archiveOldLogs().catch((err) => logError('❌ Erro na retenção de logs', err));
+      logRetentionTimer = setInterval(runRetention, 24 * 60 * 60 * 1000);
+      logInfo('   🗄️  Retenção de logs agendada (a cada 24h)');
+    }
   });
 }
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  logInfo('\n👋 Encerrando servidor...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
+// Referências de módulo usadas pelo graceful shutdown
+let httpServer: ReturnType<typeof createServer> | undefined;
+let logRetentionTimer: NodeJS.Timeout | undefined;
+let isShuttingDown = false;
 
-process.on('SIGTERM', async () => {
-  logInfo('\n👋 Encerrando servidor...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
+/**
+ * Graceful shutdown: para de aceitar novas conexões, drena as em voo e fecha
+ * websocket / health-monitor / retenção / Redis / Prisma antes de sair. Com
+ * timeout de segurança para não travar o rollout.
+ */
+async function gracefulShutdown(signal: string): Promise<void> {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  logInfo(`\n👋 ${signal} recebido — encerrando com elegância...`);
+
+  const forceTimer = setTimeout(() => {
+    logError('⏱️  Shutdown excedeu 15s — forçando saída');
+    process.exit(1);
+  }, 15000);
+  forceTimer.unref();
+
+  try {
+    if (logRetentionTimer) clearInterval(logRetentionTimer);
+    healthMonitor.stop();
+    webSocketManager.close();
+
+    // Para de aceitar novas conexões e espera as em voo concluírem
+    if (httpServer) {
+      await new Promise<void>((resolve) => httpServer!.close(() => resolve()));
+    }
+
+    await closeRedis();
+    await prisma.$disconnect();
+    logInfo('✅ Recursos liberados. Até logo.');
+    clearTimeout(forceTimer);
+    process.exit(0);
+  } catch (err) {
+    logError('❌ Erro durante o shutdown', err);
+    process.exit(1);
+  }
+}
+
+process.on('SIGINT', () => void gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => void gracefulShutdown('SIGTERM'));
 
 // Iniciar
 startServer().catch((error) => {

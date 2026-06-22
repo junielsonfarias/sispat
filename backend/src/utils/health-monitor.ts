@@ -169,16 +169,29 @@ export class HealthMonitor {
   /**
    * Iniciar monitoramento periódico
    */
+  private monitoringInterval?: NodeJS.Timeout
+
   start(): void {
     logInfo(`📊 Health Monitoring iniciado (intervalo: ${this.monitoringIntervalMs}ms)`)
-    
+
     // Check imediato
     this.checkHealth()
-    
+
     // Checks periódicos
-    setInterval(() => {
+    this.monitoringInterval = setInterval(() => {
       this.checkHealth()
     }, this.monitoringIntervalMs)
+  }
+
+  /**
+   * Parar monitoramento (usado no graceful shutdown para liberar o intervalo)
+   */
+  stop(): void {
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval)
+      this.monitoringInterval = undefined
+      logInfo('📊 Health Monitoring parado')
+    }
   }
   
   /**
