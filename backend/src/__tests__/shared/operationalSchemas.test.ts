@@ -40,6 +40,8 @@ import {
   // emprestimo
   createEmprestimoSchema,
   devolverEmprestimoSchema,
+  // auditLog
+  createAuditLogSchema,
 } from '@sispat/shared';
 
 const validUuid = '550e8400-e29b-41d4-a716-446655440000';
@@ -271,5 +273,51 @@ describe('@sispat/shared — emprestimo', () => {
   it('devolverEmprestimoSchema strict, body vazio aceito', () => {
     expect(devolverEmprestimoSchema.safeParse({}).success).toBe(true);
     expect(devolverEmprestimoSchema.safeParse({ foo: 1 }).success).toBe(false);
+  });
+});
+
+describe('@sispat/shared — auditLog', () => {
+  it('createAuditLogSchema exige action', () => {
+    expect(createAuditLogSchema.safeParse({}).success).toBe(false);
+    expect(createAuditLogSchema.safeParse({ action: '' }).success).toBe(false);
+    expect(createAuditLogSchema.safeParse({ action: 'LOGIN' }).success).toBe(true);
+  });
+
+  it('aceita campos opcionais (entityType, entityId, details)', () => {
+    const r = createAuditLogSchema.safeParse({
+      action: 'UPDATE_PATRIMONIO',
+      entityType: 'patrimonio',
+      entityId: validUuid,
+      details: { campo: 'valor', antes: 1, depois: 2 },
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('strict: rejeita campos extras (anti mass-assignment, ex.: userId/municipalityId forjados)', () => {
+    expect(
+      createAuditLogSchema.safeParse({ action: 'LOGIN', userId: 'forjado' }).success,
+    ).toBe(false);
+    expect(
+      createAuditLogSchema.safeParse({ action: 'LOGIN', municipalityId: 'outro-tenant' })
+        .success,
+    ).toBe(false);
+    expect(
+      createAuditLogSchema.safeParse({ action: 'LOGIN', ipAddress: '1.2.3.4' }).success,
+    ).toBe(false);
+  });
+
+  it('details deve ser objeto, não string/array soltos', () => {
+    expect(
+      createAuditLogSchema.safeParse({ action: 'X', details: 'texto' }).success,
+    ).toBe(false);
+    expect(
+      createAuditLogSchema.safeParse({ action: 'X', details: [1, 2] }).success,
+    ).toBe(false);
+  });
+
+  it('action rejeita string acima de 100 chars', () => {
+    expect(
+      createAuditLogSchema.safeParse({ action: 'a'.repeat(101) }).success,
+    ).toBe(false);
   });
 });

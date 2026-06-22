@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { zodValidate } from '../middlewares/zodValidate';
+import { updateSystemConfigSchema } from '@sispat/shared';
 import {
   getPublicSystemConfiguration,
   getSystemConfiguration,
@@ -13,7 +15,13 @@ const router = Router();
 
 // Rotas autenticadas
 router.get('/', authenticateToken, getSystemConfiguration);
-router.put('/', authenticateToken, authorize('admin', 'superuser'), updateSystemConfiguration);
+router.put(
+  '/',
+  authenticateToken,
+  authorize('admin', 'superuser'),
+  zodValidate({ body: updateSystemConfigSchema }),
+  updateSystemConfiguration,
+);
 
 export default router;
 

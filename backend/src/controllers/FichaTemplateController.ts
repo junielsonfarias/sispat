@@ -4,10 +4,11 @@ import { z } from 'zod'
 import { logError, logInfo, logWarn, logDebug } from '../config/logger'
 
 // Schemas de validação
-const createFichaTemplateSchema = z.object({
+export const createFichaTemplateSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
   description: z.string().optional(),
   type: z.enum(['bens', 'imoveis']),
+  isDefault: z.boolean().optional(),
   config: z.object({
     header: z.object({
       showLogo: z.boolean(),
@@ -62,7 +63,7 @@ const createFichaTemplateSchema = z.object({
   })
 })
 
-const updateFichaTemplateSchema = createFichaTemplateSchema.partial()
+export const updateFichaTemplateSchema = createFichaTemplateSchema.partial()
 
 export class FichaTemplateController {
   // Listar todos os templates

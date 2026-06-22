@@ -29,3 +29,8 @@ export * from './schemas/customization';
 export * from './schemas/inventario';
 export * from './schemas/transfer';
 export * from './schemas/manutencao';
+export * from './schemas/auditLog';
+export * from './schemas/imovelField';
+export * from './schemas/systemConfig';
+export * from './schemas/emailConfig';
+export * from './schemas/config';

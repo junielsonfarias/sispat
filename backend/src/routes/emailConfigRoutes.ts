@@ -7,6 +7,8 @@ import {
 } from '../controllers/emailConfigController';
 import { authenticateToken } from '../middlewares/auth';
 import { authorize } from '../middlewares/auth';
+import { zodValidate } from '../middlewares/zodValidate';
+import { updateEmailConfigSchema, testEmailConfigSchema } from '@sispat/shared';
 
 const router = Router();
 
@@ -103,7 +105,7 @@ router.get('/', getEmailConfig);
  * @desc Atualizar configuração de email
  * @access Private (Superuser only)
  */
-router.put('/', updateEmailConfig);
+router.put('/', zodValidate({ body: updateEmailConfigSchema }), updateEmailConfig);
 
 /**
  * @swagger
@@ -140,7 +142,7 @@ router.put('/', updateEmailConfig);
  * @desc Testar configuração de email
  * @access Private (Superuser only)
  */
-router.post('/test', testEmailConfig);
+router.post('/test', zodValidate({ body: testEmailConfigSchema }), testEmailConfig);
 
 /**
  * @swagger

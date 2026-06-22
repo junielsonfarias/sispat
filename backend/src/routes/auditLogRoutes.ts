@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import { authenticateToken, authorize } from '../middlewares/auth'
+import { zodValidate } from '../middlewares/zodValidate'
+import { createAuditLogSchema } from '@sispat/shared'
 import {
   listAuditLogs,
   createAuditLog,
@@ -13,7 +15,7 @@ const router = Router()
 router.use(authenticateToken)
 
 // Criar log de auditoria (todos os usuários autenticados)
-router.post('/', createAuditLog)
+router.post('/', zodValidate({ body: createAuditLogSchema }), createAuditLog)
 
 // Listar logs (apenas supervisores e admins)
 router.get('/', authorize('supervisor', 'admin'), listAuditLogs)
