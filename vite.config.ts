@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => ({
     host: '::',
     port: 8080,
   },
+  optimizeDeps: {
+    // @sentry/react é dep opcional (ver rollupOptions.external abaixo). Sem o
+    // pacote instalado, o scanner do dev server quebraria ao tentar pré-bundlar
+    // o dynamic import em src/lib/sentry.ts. Excluir evita o erro em dev.
+    exclude: ['@sentry/react'],
+  },
   build: {
     minify: mode === 'production' ? 'terser' : false,
     sourcemap: mode === 'development',

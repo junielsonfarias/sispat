@@ -39,9 +39,12 @@ export const initSentry = async (): Promise<void> => {
     return
   }
   try {
-    // @vite-ignore — pacote opcional. Se não estiver no node_modules, dynamic
-    // import lança e caímos no catch (no-op).
-    const mod = await import(/* @vite-ignore */ '@sentry/react')
+    // Pacote opcional. O especificador fica numa variável de propósito: import
+    // dinâmico com string não-literal não é estaticamente analisável, então o
+    // Vite/Rollup não tenta resolvê-lo em dev/build (evita "Failed to resolve
+    // import @sentry/react"). Se não estiver instalado, lança e cai no catch.
+    const sentryPkg = '@sentry/react'
+    const mod = (await import(/* @vite-ignore */ sentryPkg)) as typeof import('@sentry/react')
     sentryClient = mod
     mod.init({
       dsn,
