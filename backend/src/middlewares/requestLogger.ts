@@ -1,6 +1,23 @@
 import { Request, Response, NextFunction } from 'express'
 import { logHttp, logInfo } from '../config/logger'
 
+// Chaves cujo valor nunca deve ir para os logs (PII / credenciais)
+const SENSITIVE_KEYS =
+  /^(password|senha|token|accesstoken|refreshtoken|authorization|secret|apikey|currentpassword|newpassword|confirmpassword)$/i
+
+/**
+ * Redige recursivamente campos sensíveis de um objeto antes de logar.
+ */
+function redactSensitive(value: unknown, depth = 0): unknown {
+  if (depth > 4 || value === null || typeof value !== 'object') return value
+  if (Array.isArray(value)) return value.map((v) => redactSensitive(v, depth + 1))
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    out[k] = SENSITIVE_KEYS.test(k) ? '[REDACTED]' : redactSensitive(v, depth + 1)
+  }
+  return out
+}
+
 /**
  * Middleware de logging de requisições HTTP
  * Registra todas as requisições com detalhes úteis
@@ -13,7 +30,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     method: req.method,
     url: req.url,
     path: req.path,
-    query: req.query,
+    query: redactSensitive(req.query),
     ip: req.ip || req.socket.remoteAddress,
     userAgent: req.get('user-agent'),
     user: req.user ? {
@@ -69,7 +86,7 @@ export const auditLogger = (action: string) => {
       } : null,
       ip: req.ip || req.socket.remoteAddress,
       timestamp: new Date().toISOString(),
-      body: req.body,
+      body: redactSensitive(req.body),
       params: req.params,
     }
 

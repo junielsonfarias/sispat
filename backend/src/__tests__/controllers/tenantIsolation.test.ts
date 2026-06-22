@@ -15,23 +15,24 @@ jest.mock('../../config/logger', () => ({
 }));
 
 const mockPrisma = {
-  tipoBem: { findMany: jest.fn(() => []), findFirst: jest.fn() },
+  tipoBem: { findMany: jest.fn(() => []), findFirst: jest.fn(), create: jest.fn(() => ({ id: 't1' })) },
   acquisitionForm: { findMany: jest.fn(() => []) },
   sector: { findMany: jest.fn(() => []) },
   local: { findMany: jest.fn(() => []) },
   manutencaoTask: {
     findMany: jest.fn(() => []),
     findFirst: jest.fn(),
-    update: jest.fn(),
+    update: jest.fn(() => ({ id: 'task-1' })),
     delete: jest.fn(),
   },
   activityLog: { findMany: jest.fn(() => []), count: jest.fn(() => 0), create: jest.fn() },
   excelCsvTemplate: { findMany: jest.fn(() => []), findFirst: jest.fn(), delete: jest.fn() },
+  systemConfiguration: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn(() => ({ id: 'cfg-1' })) },
   user: { findUnique: jest.fn() },
 };
 jest.mock('../../index', () => ({ prisma: mockPrisma }));
 
-import { getTiposBens, getTipoBemById } from '../../controllers/tiposBensController';
+import { getTiposBens, getTipoBemById, createTipoBem } from '../../controllers/tiposBensController';
 import { getFormasAquisicao } from '../../controllers/formasAquisicaoController';
 import { getSectors } from '../../controllers/sectorsController';
 import { getLocais } from '../../controllers/locaisController';
@@ -41,6 +42,7 @@ import {
 } from '../../controllers/manutencaoController';
 import { listAuditLogs } from '../../controllers/auditLogController';
 import { getExcelCsvTemplates, deleteExcelCsvTemplate } from '../../controllers/configController';
+import { updateSystemConfiguration } from '../../controllers/systemConfigController';
 
 type Role = 'usuario' | 'admin' | 'supervisor' | 'superuser';
 
@@ -48,6 +50,7 @@ function makeReq(
   user: { role: Role; municipalityId?: string } | null,
   query: Record<string, unknown> = {},
   params: Record<string, unknown> = {},
+  body: Record<string, unknown> = {},
 ) {
   return {
     user: user
@@ -55,7 +58,7 @@ function makeReq(
       : undefined,
     query,
     params,
-    body: {},
+    body,
   } as any;
 }
 
@@ -221,5 +224,62 @@ describe('IDOR por id — update/delete checam propriedade antes de alterar', ()
     await deleteExcelCsvTemplate(makeReq({ role: 'admin', municipalityId: 'mun-A' }, {}, { id: 'tpl-de-B' }), res);
     expect(res.statusCode).toBe(404);
     expect(mockPrisma.excelCsvTemplate.delete).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================
+// Mass-assignment — apenas campos da whitelist chegam ao Prisma
+// ============================================================
+
+describe('mass-assignment — updateManutencaoTask', () => {
+  it('ignora campos fora da whitelist (id, patrimonioId) e mantém os válidos', async () => {
+    mockPrisma.manutencaoTask.findFirst.mockResolvedValueOnce({ id: 'task-1' });
+    await updateManutencaoTask(
+      makeReq(
+        { role: 'usuario', municipalityId: 'mun-A' },
+        {},
+        { id: 'task-1' },
+        { status: 'concluida', custo: 50, id: 'hack', patrimonioId: 'de-outro-mun' },
+      ),
+      makeRes(),
+    );
+    const arg = (mockPrisma.manutencaoTask.update.mock.calls[0] as any[])[0];
+    expect(arg.data).toEqual({ status: 'concluida', custo: 50 });
+    expect(arg.data.patrimonioId).toBeUndefined();
+    expect(arg.data.id).toBeUndefined();
+  });
+});
+
+describe('mass-assignment — updateSystemConfiguration', () => {
+  it('ignora campos não permitidos (id, updatedAt) e aceita os da whitelist', async () => {
+    mockPrisma.systemConfiguration.findFirst.mockResolvedValueOnce({ id: 'cfg-1' });
+    await updateSystemConfiguration(
+      makeReq(
+        { role: 'admin', municipalityId: 'mun-A' },
+        {},
+        {},
+        { maintenanceMode: true, maxUploadSize: 999, id: 'hack', updatedAt: 'x' },
+      ),
+      makeRes(),
+    );
+    const arg = (mockPrisma.systemConfiguration.update.mock.calls[0] as any[])[0];
+    expect(arg.data).toEqual({ maintenanceMode: true, maxUploadSize: 999 });
+  });
+});
+
+// ============================================================
+// Unicidade de nome escopada por município
+// ============================================================
+
+describe('unicidade por município — createTipoBem', () => {
+  it('verifica duplicidade de nome dentro do município do usuário', async () => {
+    mockPrisma.tipoBem.findFirst.mockResolvedValueOnce(null);
+    await createTipoBem(
+      makeReq({ role: 'admin', municipalityId: 'mun-A' }, {}, {}, { nome: 'Mesa' }),
+      makeRes(),
+    );
+    expect(mockPrisma.tipoBem.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { nome: 'Mesa', municipalityId: 'mun-A' } }),
+    );
   });
 });

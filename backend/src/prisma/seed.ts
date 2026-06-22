@@ -38,10 +38,23 @@ async function main() {
   const SUPERUSER_EMAIL = process.env.SUPERUSER_EMAIL || 'admin@sistema.com';
   const SUPERUSER_PASSWORD = process.env.SUPERUSER_PASSWORD || 'Admin@123';
   const SUPERUSER_NAME = process.env.SUPERUSER_NAME || 'Administrador do Sistema';
-  
+  const superuserPwIsDefault = !process.env.SUPERUSER_PASSWORD;
+
   const SUPERVISOR_EMAIL = process.env.SUPERVISOR_EMAIL || 'supervisor@sistema.com';
   const SUPERVISOR_PASSWORD = process.env.SUPERVISOR_PASSWORD || 'Supervisor@123!';
   const SUPERVISOR_NAME = process.env.SUPERVISOR_NAME || 'Supervisor do Sistema';
+  const supervisorPwIsDefault = !process.env.SUPERVISOR_PASSWORD;
+
+  // Nunca ecoar senha definida via env nem qualquer senha em produção.
+  // Em dev, mostrar apenas a senha PADRÃO (já pública no código) para conveniência.
+  const maskPassword = (pw: string, isDefault: boolean): string => {
+    if (process.env.NODE_ENV === 'production') {
+      return '[definida — verifique suas variáveis de ambiente]';
+    }
+    return isDefault
+      ? `${pw}  (PADRÃO — altere imediatamente!)`
+      : '[definida via variável de ambiente]';
+  };
 
   // Hash das senhas
   // ✅ Bcrypt rounds aumentado para 12 (mais seguro em 2025)
@@ -238,11 +251,11 @@ async function main() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('\n👑 SUPERUSUÁRIO (Controle Total):');
   console.log(`   📧 Email: ${SUPERUSER_EMAIL}`);
-  console.log(`   🔑 Senha: ${SUPERUSER_PASSWORD}`);
+  console.log(`   🔑 Senha: ${maskPassword(SUPERUSER_PASSWORD, superuserPwIsDefault)}`);
   console.log(`   👤 Nome:  ${SUPERUSER_NAME}`);
   console.log('\n👨‍💼 SUPERVISOR (Gestão Operacional):');
   console.log(`   📧 Email: ${SUPERVISOR_EMAIL}`);
-  console.log(`   🔑 Senha: ${SUPERVISOR_PASSWORD}`);
+  console.log(`   🔑 Senha: ${maskPassword(SUPERVISOR_PASSWORD, supervisorPwIsDefault)}`);
   console.log(`   👤 Nome:  ${SUPERVISOR_NAME}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   console.log('📝 CONFIGURAÇÃO INICIAL NECESSÁRIA:');

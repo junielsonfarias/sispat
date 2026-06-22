@@ -90,6 +90,13 @@
 
 ## 2026
 
+### 2026-06-22 — Hardening: mass-assignment, PII em logs e unicidade por município
+- **Sintoma:** (1) `updateManutencaoTask` e `updateSystemConfiguration` passavam `req.body` inteiro ao Prisma (mass-assignment — permitia injetar/alterar campos arbitrários, inclusive reatribuir `patrimonioId` cruzando tenant). (2) `requestLogger`/`auditLogger` gravavam `req.body` e `req.query` sem redação (senha/token iam para `logs/`). (3) `seed.ts` imprimia senhas em texto puro no stdout (visível em logs de PM2/CI). (4) Checagem de nome duplicado em `create` de tipoBem/forma/setor era global, não por município.
+- **Correção:** (1) Whitelists explícitas de campos atualizáveis em ambos os controllers. (2) Helper `redactSensitive` (recursivo, chaves password/senha/token/secret/etc → `[REDACTED]`) aplicado a `body`/`query` nos logs. (3) `maskPassword` no seed: nunca ecoa senha de env nem nada em produção; em dev mostra só a senha PADRÃO. (4) Unicidade escopada por `municipalityId`.
+- **Testes:** suíte de hardening (3 casos) somada à de tenant — 21 casos, todos passando. Backend: 99 passam, 0 regressões.
+- **Arquivos:** `backend/src/controllers/{manutencaoController,systemConfigController,tiposBensController,formasAquisicaoController,sectorsController}.ts`; `backend/src/middlewares/requestLogger.ts`; `backend/src/prisma/seed.ts`; `backend/src/__tests__/controllers/tenantIsolation.test.ts`
+- **Lição:** Reutilizar o padrão de whitelist do `customizationController` (`ALLOWED_FIELDS`) em todo handler que aceita `req.body`. Rodar o agente `security-auditor` antes de declarar pronto.
+
 ### 2026-06-22 — Vazamento multi-tenant em controllers "estilo config"
 - **Sintoma:** Endpoints de listagem retornavam dados de TODOS os municípios, sem filtro por `municipalityId`. Latente porque a app roda hoje em modo município único, mas expõe dados entre prefeituras assim que um 2º município for cadastrado.
 - **Causa-raiz:** Controllers não migrados para o padrão `Actor`/service (tiposBens, formasAquisicao, sectors, locais, manutencao, auditLog) faziam `findMany` sem `where: { municipalityId }`. O `configController` usava `const MUNICIPALITY_ID = '1'` hardcoded em 15 pontos (templates, numbering, cloud storage), ignorando o usuário autenticado.

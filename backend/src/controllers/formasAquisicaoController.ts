@@ -86,9 +86,9 @@ export const createFormaAquisicao = async (req: Request, res: Response): Promise
       return;
     }
 
-    // Verificar se já existe
+    // Verificar se já existe no mesmo município
     const existente = await prisma.acquisitionForm.findFirst({
-      where: { nome },
+      where: { nome, municipalityId: req.user?.municipalityId || '' },
     });
 
     if (existente) {

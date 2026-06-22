@@ -129,9 +129,10 @@ export const createSector = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Verificar se já existe
+    // Verificar se já existe no mesmo município
     const existente = await prisma.sector.findFirst({
       where: {
+        municipalityId: req.user?.municipalityId || '',
         OR: [{ name }, { codigo }],
       },
     });

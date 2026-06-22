@@ -176,7 +176,6 @@ export const createManutencaoTask = async (req: Request, res: Response): Promise
 export const updateManutencaoTask = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params
-    const updates = req.body
 
     // ✅ MULTI-TENANT: garantir que a tarefa pertence ao município antes de alterar
     const isSuperuser = req.user?.role === 'superuser'
@@ -195,17 +194,30 @@ export const updateManutencaoTask = async (req: Request, res: Response): Promise
       return
     }
 
-    // Converter datas se necessário
-    if (updates.dataPrevista) {
-      updates.dataPrevista = new Date(updates.dataPrevista)
+    // ✅ Whitelist de campos atualizáveis (evita mass-assignment;
+    // patrimonioId/imovelId NÃO são reatribuíveis para não cruzar tenant)
+    const ALLOWED_FIELDS = [
+      'tipo',
+      'titulo',
+      'descricao',
+      'prioridade',
+      'status',
+      'responsavel',
+      'dataPrevista',
+      'dataConclusao',
+      'custo',
+      'observacoes',
+    ] as const
+    const updateData: any = {}
+    for (const field of ALLOWED_FIELDS) {
+      if (req.body[field] !== undefined) updateData[field] = req.body[field]
     }
-    if (updates.dataConclusao) {
-      updates.dataConclusao = new Date(updates.dataConclusao)
-    }
+    if (updateData.dataPrevista) updateData.dataPrevista = new Date(updateData.dataPrevista)
+    if (updateData.dataConclusao) updateData.dataConclusao = new Date(updateData.dataConclusao)
 
     const task = await prisma.manutencaoTask.update({
       where: { id },
-      data: updates,
+      data: updateData,
       include: {
         patrimonio: true,
         imovel: true,
@@ -215,7 +227,7 @@ export const updateManutencaoTask = async (req: Request, res: Response): Promise
     logInfo('Maintenance task updated', {
       userId: req.user?.userId,
       taskId: task.id,
-      updates: Object.keys(updates),
+      updates: Object.keys(updateData),
     })
 
     res.json(task)

@@ -91,9 +91,9 @@ export const createTipoBem = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Verificar se já existe
+    // Verificar se já existe no mesmo município
     const existente = await prisma.tipoBem.findFirst({
-      where: { nome },
+      where: { nome, municipalityId: req.user?.municipalityId || '' },
     });
 
     if (existente) {
