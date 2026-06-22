@@ -189,7 +189,7 @@ export function cacheMiddleware(ttlSeconds: number = 300) {
       // Override res.json para cachear a resposta
       const originalJson = res.json.bind(res)
       res.json = (body: any) => {
-        cache.set(key, body, ttlSeconds).catch(console.error)
+        cache.set(key, body, ttlSeconds).catch((e) => logError('Falha ao gravar cache Redis', e))
         return originalJson(body)
       }
 

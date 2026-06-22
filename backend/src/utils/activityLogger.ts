@@ -1,5 +1,6 @@
 import { Request } from 'express'
 import { prisma } from '../index'
+import { logError } from '../config/logger'
 
 /**
  * Helper para registrar atividades com IP tracking
@@ -37,7 +38,7 @@ export async function logActivity(
       },
     })
   } catch (error) {
-    console.error('❌ Erro ao registrar activity log:', error)
+    logError('Erro ao registrar activity log', error)
     // Não lançar erro para não interromper o fluxo principal
   }
 }

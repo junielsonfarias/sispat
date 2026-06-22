@@ -4,7 +4,7 @@ import RedisStore from 'rate-limit-redis'
 // Cliente Redis para rate limiting
 // ✅ Usar a mesma instância do Redis configurada no sistema
 import { getRedis } from '../config/redis'
-import { logInfo } from '../config/logger'
+import { logInfo, logWarn, logError } from '../config/logger'
 
 const redis = getRedis() // Pode retornar null se Redis não estiver disponível
 
@@ -63,8 +63,12 @@ export const globalRateLimiter = rateLimit({
   
   // Handler customizado para quando exceder
   handler: (req: any, res) => {
-    console.warn(`⚠️ Rate limit exceeded: ${req.ip} → ${req.method} ${req.path}`)
-    
+    logWarn('Rate limit excedido', {
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+    })
+
     res.status(429).json({
       error: 'Too Many Requests',
       message: 'Você excedeu o limite de requisições. Tente novamente mais tarde.',
@@ -96,8 +100,11 @@ export const authRateLimiter = rateLimit({
   },
   
   handler: (req: any, res) => {
-    console.error(`🚨 Possível brute force attack: ${req.ip} → ${req.body?.email || 'unknown'}`)
-    
+    logError('Possível brute force attack', undefined, {
+      ip: req.ip,
+      email: req.body?.email || 'unknown',
+    })
+
     res.status(429).json({
       error: 'Too Many Requests',
       message: 'Muitas tentativas de login. Por segurança, aguarde 15 minutos.',
@@ -177,7 +184,11 @@ export const publicRateLimiter = rateLimit({
   },
 
   handler: (req: any, res) => {
-    console.warn(`⚠️ Rate limit (público) excedido: ${req.ip} → ${req.method} ${req.path}`);
+    logWarn('Rate limit (público) excedido', {
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+    });
     res.status(429).json({
       error: 'Too Many Requests',
       message: 'Limite de acessos à consulta pública atingido.',

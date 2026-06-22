@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { logInfo } from './logger'
+import { logInfo, logWarn, logError } from './logger'
 
 /**
  * Instância singleton do Prisma Client com connection pooling otimizado
@@ -16,11 +16,11 @@ const queryEventHandler = (e: any) => {
   const duration = e.duration
   
   if (duration > 1000) {
-    console.warn(`⚠️  Slow query detected (${duration}ms):`, e.query)
+    logWarn(`⚠️  Slow query detected (${duration}ms)`, { query: e.query })
   }
-  
+
   if (duration > 3000) {
-    console.error(`🚨 Very slow query (${duration}ms):`, e.query)
+    logError(`🚨 Very slow query (${duration}ms)`, undefined, { query: e.query })
     
     // Alertar no Sentry se configurado
     // TEMPORARIAMENTE DESABILITADO
@@ -73,7 +73,7 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
     await prisma.$queryRaw`SELECT 1`
     return true
   } catch (error) {
-    console.error('❌ Erro ao conectar ao banco:', error)
+    logError('❌ Erro ao conectar ao banco', error)
     return false
   }
 }

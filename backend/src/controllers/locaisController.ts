@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 
@@ -15,7 +16,7 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
 
     logDebug('🔍 GET /api/locais', { role: userRole, email: userEmail, sectorId });
 
-    let where: any = {};
+    const where: Prisma.LocalWhereInput = {};
 
     // ✅ MULTI-TENANT: superuser vê todos; demais ficam restritos ao município
     if (userRole !== 'superuser') {

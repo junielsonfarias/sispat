@@ -6,7 +6,7 @@
  */
 
 import { prisma } from './database'
-import { logInfo } from './logger'
+import { logInfo, logError } from './logger'
 
 export interface QueryOptimizationConfig {
   // Configurações de paginação
@@ -218,7 +218,7 @@ export async function executeOptimizedQuery<T>(
     
     return result
   } catch (error) {
-    console.error(`Erro na query ${queryKey}:`, error)
+    logError(`Erro na query ${queryKey}`, error)
     throw error
   }
 }
@@ -288,7 +288,7 @@ export async function applyOptimizationIndexes() {
       await prisma.$executeRawUnsafe(indexQuery)
       logInfo(`✅ Índice aplicado: ${indexQuery.split(' ')[5]}`)
     } catch (error) {
-      console.error(`❌ Erro ao aplicar índice: ${error}`)
+      logError(`Erro ao aplicar índice: ${indexQuery.split(' ')[5]}`, error)
     }
   }
 

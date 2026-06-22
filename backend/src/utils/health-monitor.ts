@@ -1,6 +1,6 @@
 import { prisma } from '../config/database'
 import { captureMessage } from '../config/sentry'
-import { logError, logInfo, logDebug } from '../config/logger'
+import { logError, logWarn, logInfo, logDebug } from '../config/logger'
 
 /**
  * Métricas de saúde da aplicação
@@ -117,7 +117,7 @@ export class HealthMonitor {
       }
       
     } catch (error) {
-      console.error('❌ Erro ao coletar métricas de saúde:', error)
+      logError('❌ Erro ao coletar métricas de saúde', error as Error)
     }
   }
   
@@ -128,7 +128,7 @@ export class HealthMonitor {
     // Memória alta
     if (metrics.memoryUsageMB > this.thresholds.memoryUsageMB) {
       const message = `⚠️ Uso de memória alto: ${metrics.memoryUsageMB.toFixed(2)}MB (threshold: ${this.thresholds.memoryUsageMB}MB)`
-      console.warn(message)
+      logWarn(message)
       
       // Alerta crítico se muito alto
       if (metrics.memoryUsageMB > this.thresholds.memoryUsageMB * 1.2) {
@@ -141,7 +141,7 @@ export class HealthMonitor {
     // Database lento
     if (metrics.dbResponseTimeMs > this.thresholds.dbResponseTimeMs) {
       const message = `⚠️ Database lento: ${metrics.dbResponseTimeMs}ms (threshold: ${this.thresholds.dbResponseTimeMs}ms)`
-      console.warn(message)
+      logWarn(message)
       
       // Alerta crítico se muito lento
       if (metrics.dbResponseTimeMs > this.thresholds.dbResponseTimeMs * 2) {
@@ -154,14 +154,14 @@ export class HealthMonitor {
     // Database offline
     if (metrics.dbResponseTimeMs === -1) {
       const message = '🚨 Database OFFLINE!'
-      console.error(message)
+      logError(message)
       captureMessage(message, 'fatal')
     }
     
     // Taxa de erro alta
     if (metrics.errorRate > this.thresholds.errorRatePercent) {
       const message = `⚠️ Taxa de erro alta: ${metrics.errorRate.toFixed(2)}% (threshold: ${this.thresholds.errorRatePercent}%)`
-      console.warn(message)
+      logWarn(message)
       captureMessage(message, 'warning')
     }
   }

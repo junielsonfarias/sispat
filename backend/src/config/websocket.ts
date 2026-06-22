@@ -11,7 +11,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from './database'
 import { metricsCollector } from './metrics'
 import { alertManager } from './alerts'
-import { logInfo, logDebug } from './logger'
+import { logInfo, logDebug, logError } from './logger'
 
 export interface AuthenticatedSocket extends Socket {
   userId: string
@@ -210,7 +210,7 @@ class WebSocketManager {
 
       return { user }
     } catch (error) {
-      console.error('Erro na autenticação WebSocket:', error)
+      logError('Erro na autenticação WebSocket', error)
       socket.emit('error', { message: 'Token inválido' })
       return null
     }
@@ -325,7 +325,7 @@ class WebSocketManager {
           this.io.to('metrics').emit('metrics:update', summary)
         }
       } catch (error) {
-        console.error('Erro ao broadcast métricas:', error)
+        logError('Erro ao broadcast métricas', error)
       }
     }, 10000) // A cada 10 segundos
   }

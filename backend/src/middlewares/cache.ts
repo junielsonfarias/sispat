@@ -6,7 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express'
 import { redisCache, CacheUtils } from '../config/redis'
-import { logInfo, logDebug } from '../config/logger'
+import { logInfo, logDebug, logError } from '../config/logger'
 
 export interface CacheOptions {
   ttl?: number // Time to live em segundos
@@ -62,7 +62,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
       
       next()
     } catch (error) {
-      console.error('Erro no middleware de cache:', error)
+      logError('Erro no middleware de cache', error)
       next()
     }
   }
@@ -236,7 +236,7 @@ async function invalidateRelevantCache(req: Request) {
     }
     
   } catch (error) {
-    console.error('Erro ao invalidar cache:', error)
+    logError('Erro ao invalidar cache', error)
   }
 }
 

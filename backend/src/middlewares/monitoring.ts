@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { performance } from 'perf_hooks';
 import { metricsCollector } from '../config/metrics';
-import { logInfo, logDebug } from '../config/logger';
+import { logInfo, logDebug, logWarn, logError } from '../config/logger';
 
 // Interface para métricas
 interface Metrics {
@@ -63,18 +63,18 @@ export const monitoringMiddleware = (req: Request, res: Response, next: NextFunc
     }
     
     // Integrar com sistema de métricas
-    metricsCollector.incrementMetric('total_requests', 1, 300).catch(console.error);
-    
+    metricsCollector.incrementMetric('total_requests', 1, 300).catch((e) => logError('Falha ao registrar métrica', e));
+
     if (res.statusCode >= 400) {
-      metricsCollector.incrementMetric('error_requests', 1, 300).catch(console.error);
+      metricsCollector.incrementMetric('error_requests', 1, 300).catch((e) => logError('Falha ao registrar métrica', e));
     }
-    
+
     // Atualizar tempo médio de resposta
-    metricsCollector.setMetric('avg_response_time', responseTime, 300).catch(console.error);
+    metricsCollector.setMetric('avg_response_time', responseTime, 300).catch((e) => logError('Falha ao registrar métrica', e));
     
     // Log de performance
     if (responseTime > 1000) { // Log requests lentos (>1s)
-      console.warn(`[PERFORMANCE] Slow request: ${req.method} ${req.originalUrl} - ${responseTime.toFixed(2)}ms`);
+      logWarn(`[PERFORMANCE] Slow request: ${req.method} ${req.originalUrl} - ${responseTime.toFixed(2)}ms`);
     }
     
     return originalSend.call(this, data);
@@ -199,13 +199,13 @@ export const alertingMiddleware = (req: Request, res: Response, next: NextFuncti
   const memoryUsagePercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
   
   if (memoryUsagePercent > 85) {
-    console.error(`[ALERT] High memory usage: ${memoryUsagePercent.toFixed(2)}%`);
+    logError(`[ALERT] High memory usage: ${memoryUsagePercent.toFixed(2)}%`);
   }
   
   // Verificar taxa de erro
   const errorRate = metrics.requests > 0 ? (metrics.errors / metrics.requests) * 100 : 0;
   if (errorRate > 5) {
-    console.error(`[ALERT] High error rate: ${errorRate.toFixed(2)}%`);
+    logError(`[ALERT] High error rate: ${errorRate.toFixed(2)}%`);
   }
   
   next();

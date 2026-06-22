@@ -209,7 +209,7 @@ if (require.main === module) {
       process.exit(0)
     })
     .catch((error) => {
-      console.error('❌ Erro:', error)
+      logError('❌ Erro ao arquivar logs', error)
       process.exit(1)
     })
 }

@@ -5,7 +5,7 @@
  */
 
 import Redis from 'ioredis'
-import { logInfo, logDebug } from './logger'
+import { logInfo, logDebug, logError } from './logger'
 
 export interface RedisConfig {
   host: string
@@ -76,7 +76,7 @@ export function initializeRedis(): Redis | null {
     redis.on('error', (error: any) => {
       // ✅ Não logar erros de conexão repetidamente
       if (error.code !== 'ECONNREFUSED') {
-        console.error('❌ Erro no Redis:', error.message)
+        logError('Erro no Redis', error)
       }
     })
     
@@ -88,13 +88,11 @@ export function initializeRedis(): Redis | null {
     })
     
     // ✅ Remover listener de reconexão para evitar logs excessivos
-    // redis.on('reconnecting', () => {
-    //   console.log('🔄 Reconectando ao Redis...')
-    // })
-    
+    // redis.on('reconnecting', () => { ... })
+
     return redis
   } catch (error) {
-    console.error('❌ Erro ao inicializar Redis:', error)
+    logError('Erro ao inicializar Redis', error)
     return null // Retornar null em vez de throw
   }
 }
@@ -163,7 +161,6 @@ export class RedisCache {
       await this.redis.setex(key, expiration, serializedValue)
     } catch (error) {
       // ✅ Silenciosamente ignorar erros de Redis
-      // console.error(`Erro ao definir cache para chave ${key}:`, error)
     }
   }
 
@@ -216,7 +213,7 @@ export class RedisCache {
     try {
       await this.redis.del(key)
     } catch (error) {
-      console.error(`Erro ao deletar cache para chave ${key}:`, error)
+      logError(`Erro ao deletar cache para chave ${key}`, error)
     }
   }
 
@@ -234,7 +231,7 @@ export class RedisCache {
         await this.redis.del(...keys)
       }
     } catch (error) {
-      console.error(`Erro ao deletar cache por padrão ${pattern}:`, error)
+      logError(`Erro ao deletar cache por padrão ${pattern}`, error)
     }
   }
 
@@ -249,7 +246,7 @@ export class RedisCache {
     try {
       await this.redis.expire(key, ttl)
     } catch (error) {
-      console.error(`Erro ao definir TTL para chave ${key}:`, error)
+      logError(`Erro ao definir TTL para chave ${key}`, error)
     }
   }
 
@@ -264,7 +261,7 @@ export class RedisCache {
     try {
       return await this.redis.ttl(key)
     } catch (error) {
-      console.error(`Erro ao obter TTL para chave ${key}:`, error)
+      logError(`Erro ao obter TTL para chave ${key}`, error)
       return -1
     }
   }
@@ -280,7 +277,7 @@ export class RedisCache {
     try {
       return await this.redis.incrby(key, value)
     } catch (error) {
-      console.error(`Erro ao incrementar chave ${key}:`, error)
+      logError(`Erro ao incrementar chave ${key}`, error)
       return 0
     }
   }
@@ -296,7 +293,7 @@ export class RedisCache {
     try {
       return await this.redis.decrby(key, value)
     } catch (error) {
-      console.error(`Erro ao decrementar chave ${key}:`, error)
+      logError(`Erro ao decrementar chave ${key}`, error)
       return 0
     }
   }
@@ -319,7 +316,7 @@ export class RedisCache {
         connected: this.redis.status === 'ready'
       }
     } catch (error) {
-      console.error('Erro ao obter estatísticas do Redis:', error)
+      logError('Erro ao obter estatísticas do Redis', error)
       return null
     }
   }
@@ -335,7 +332,7 @@ export class RedisCache {
     try {
       await this.redis.flushall()
     } catch (error) {
-      console.error('Erro ao limpar cache:', error)
+      logError('Erro ao limpar cache', error)
     }
   }
 
@@ -350,7 +347,7 @@ export class RedisCache {
     try {
       return await this.redis.keys(pattern)
     } catch (error) {
-      console.error(`Erro ao obter chaves por padrão ${pattern}:`, error)
+      logError(`Erro ao obter chaves por padrão ${pattern}`, error)
       return []
     }
   }
@@ -505,7 +502,7 @@ export function cacheMiddleware(ttl = 300) {
       
       next()
     } catch (error) {
-      console.error('Erro no middleware de cache:', error)
+      logError('Erro no middleware de cache', error)
       next()
     }
   }

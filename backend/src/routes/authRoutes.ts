@@ -21,6 +21,7 @@ import {
   validateResetTokenParamsSchema,
 } from '@sispat/shared';
 import rateLimit from 'express-rate-limit';
+import { logWarn } from '../config/logger';
 
 const router = Router();
 
@@ -33,7 +34,10 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req: any, res) => {
-    console.warn(`⚠️ Rate limit de autenticação excedido: ${req.ip} → ${req.body?.email || 'unknown'}`)
+    logWarn('Rate limit de autenticação excedido', {
+      ip: req.ip,
+      email: req.body?.email || 'unknown',
+    })
     res.status(429).json({
       error: 'Too Many Requests',
       message: 'Muitas tentativas de login. Por segurança, aguarde 15 minutos.',

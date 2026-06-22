@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { authenticateToken, authorize } from '../middlewares/auth'
 import { metricsCollector } from '../config/metrics'
 import { alertManager } from '../config/alerts'
-import { logInfo } from '../config/logger'
+import { logInfo, logError } from '../config/logger'
 
 const router = Router()
 
@@ -31,7 +31,7 @@ router.get('/system', authorize('admin', 'supervisor', 'superuser'), async (req,
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Erro ao obter métricas do sistema:', error)
+    logError('Erro ao obter métricas do sistema', error)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
@@ -56,7 +56,7 @@ router.get('/application', authorize('admin', 'supervisor', 'superuser'), async 
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Erro ao obter métricas da aplicação:', error)
+    logError('Erro ao obter métricas da aplicação', error)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
@@ -81,7 +81,7 @@ router.get('/summary', authorize('admin', 'supervisor', 'superuser'), async (req
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Erro ao obter resumo das métricas:', error)
+    logError('Erro ao obter resumo das métricas', error)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
@@ -103,7 +103,7 @@ router.get('/history', authorize('admin', 'supervisor', 'superuser'), async (req
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Erro ao obter histórico de métricas:', error)
+    logError('Erro ao obter histórico de métricas', error)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
@@ -146,7 +146,7 @@ router.get('/health', async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('Erro ao verificar saúde do sistema:', error)
+    logError('Erro ao verificar saúde do sistema', error)
     res.status(500).json({ 
       status: 'error',
       message: 'Erro ao verificar saúde do sistema'
@@ -173,7 +173,7 @@ router.get('/alerts', authorize('admin', 'supervisor', 'superuser'), async (req,
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Erro ao obter alertas:', error)
+    logError('Erro ao obter alertas', error)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
@@ -197,7 +197,7 @@ router.post('/alerts/:alertId/resolve', authorize('admin', 'supervisor', 'superu
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Erro ao resolver alerta:', error)
+    logError('Erro ao resolver alerta', error)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
@@ -233,7 +233,7 @@ router.get('/export', authorize('admin', 'supervisor', 'superuser'), async (req,
       })
     }
   } catch (error) {
-    console.error('Erro ao exportar métricas:', error)
+    logError('Erro ao exportar métricas', error)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })

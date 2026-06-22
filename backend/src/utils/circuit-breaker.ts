@@ -1,5 +1,5 @@
 import { captureMessage } from '../config/sentry'
-import { logInfo } from '../config/logger'
+import { logInfo, logWarn } from '../config/logger'
 
 /**
  * Estados do Circuit Breaker
@@ -128,8 +128,8 @@ export class CircuitBreaker {
       this.nextAttemptTime = Date.now() + this.options.resetTimeout
       this.lastStateChange = Date.now()
       
-      console.error(
-        `🚨 Circuit breaker '${this.name}' ABERTO após ${this.failures} falhas. ` +
+      logWarn(
+        `Circuit breaker '${this.name}' ABERTO após ${this.failures} falhas. ` +
         `Reset em ${this.options.resetTimeout}ms`
       )
       

@@ -1,5 +1,5 @@
 import { captureMessage } from '../config/sentry'
-import { logInfo } from '../config/logger'
+import { logInfo, logError } from '../config/logger'
 
 /**
  * Retry operation with exponential backoff
@@ -36,7 +36,7 @@ export const retryOperation = async <T>(
       lastError = error as Error
       
       // Log da falha
-      console.error(`❌ Tentativa ${attempt}/${maxRetries} falhou:`, error)
+      logError(`❌ Tentativa ${attempt}/${maxRetries} falhou`, error)
       
       // Se não é a última tentativa, aguardar e tentar novamente
       if (attempt < maxRetries) {
@@ -49,7 +49,7 @@ export const retryOperation = async <T>(
   
   // Todas as tentativas falharam
   const errorMessage = `Operação falhou após ${maxRetries} tentativas: ${lastError!.message}`
-  console.error(`💥 ${errorMessage}`)
+  logError(`💥 ${errorMessage}`, lastError!)
   
   // Capturar erro crítico no Sentry
   captureMessage(errorMessage, 'error')

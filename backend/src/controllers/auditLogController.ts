@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { Prisma } from '@prisma/client'
 import { prisma } from '../index'
 import { logInfo, logError } from '../config/logger'
 
@@ -10,7 +11,7 @@ export const listAuditLogs = async (req: Request, res: Response): Promise<void> 
   try {
     const { page = 1, limit = 50, action, userId, startDate, endDate } = req.query
 
-    const where: any = {}
+    const where: Prisma.ActivityLogWhereInput = {}
 
     // ✅ MULTI-TENANT: superuser vê tudo; demais veem apenas logs do seu município
     if (req.user?.role !== 'superuser') {
@@ -18,8 +19,8 @@ export const listAuditLogs = async (req: Request, res: Response): Promise<void> 
     }
 
     // Filtros
-    if (action) where.action = action
-    if (userId) where.userId = userId
+    if (action) where.action = action as string
+    if (userId) where.userId = userId as string
     if (startDate || endDate) {
       where.createdAt = {}
       // ✅ CORREÇÃO: Validar datas antes de usar
@@ -140,7 +141,7 @@ export const getAuditLogStats = async (req: Request, res: Response): Promise<voi
   try {
     const { startDate, endDate } = req.query
 
-    const where: any = {}
+    const where: Prisma.ActivityLogWhereInput = {}
     if (startDate || endDate) {
       where.createdAt = {}
       // ✅ CORREÇÃO: Validar datas antes de usar

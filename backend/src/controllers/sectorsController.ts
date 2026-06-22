@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 
@@ -14,7 +15,7 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
 
     logDebug('🔍 GET /api/sectors', { role: userRole, email: userEmail });
 
-    let where: any = {};
+    const where: Prisma.SectorWhereInput = {};
 
     // ✅ MULTI-TENANT: superuser vê todos; demais ficam restritos ao município
     if (userRole !== 'superuser') {
@@ -209,7 +210,7 @@ export const updateSector = async (req: Request, res: Response): Promise<void> =
     logDebug('📊 Setor atual', { sectorId: sector.id, name: sector.name });
 
     // Preparar dados para atualização (apenas campos fornecidos)
-    const updateData: any = {};
+    const updateData: Prisma.SectorUpdateInput = {};
     if (name !== undefined) updateData.name = name;
     if (sigla !== undefined) updateData.sigla = sigla;
     if (codigo !== undefined) updateData.codigo = codigo;

@@ -7,6 +7,7 @@
  */
 import * as Sentry from '@sentry/node';
 import type { NextFunction, Request, Response } from 'express';
+import { logInfo } from './logger';
 
 const isEnabled = (): boolean => Boolean(process.env.SENTRY_DSN);
 
@@ -45,7 +46,7 @@ export const initSentry = (): void => {
     },
   });
 
-  console.info('✅ Sentry inicializado');
+  logInfo('✅ Sentry inicializado');
 };
 
 /**

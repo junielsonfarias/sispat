@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { logError, logInfo, logDebug } from '../config/logger';
 
@@ -557,25 +558,28 @@ export const createReportTemplate = async (req: Request, res: Response): Promise
 
     logInfo('Template de relatório criado', { templateId: template.id, name, municipalityId });
     res.status(201).json(template);
-  } catch (error: any) {
-    logError('Erro ao criar template de relatório', error, { 
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    const errorCode =
+      error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined;
+    logError('Erro ao criar template de relatório', err, {
       name: req.body.name,
       municipalityId: req.user?.municipalityId,
       hasLayout: !!req.body.layout,
       hasFields: !!req.body.fields,
-      errorMessage: error?.message,
-      errorCode: error?.code,
+      errorMessage: err.message,
+      errorCode,
     });
-    
+
     // Retornar mensagem de erro mais específica
-    if (error?.code === 'P2002') {
+    if (errorCode === 'P2002') {
       res.status(409).json({ error: 'Já existe um template com este nome' });
-    } else if (error?.message?.includes('municipalityId')) {
+    } else if (err.message.includes('municipalityId')) {
       res.status(400).json({ error: 'Município inválido' });
     } else {
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Erro ao criar template de relatório',
-        details: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined,
       });
     }
   }
@@ -609,7 +613,7 @@ export const updateReportTemplate = async (req: Request, res: Response): Promise
     }
 
     // Preparar dados para atualização
-    const updateData: any = {};
+    const updateData: Prisma.ReportTemplateUpdateInput = {};
     
     if (name !== undefined) {
       if (!name || name.trim() === '') {
@@ -686,11 +690,12 @@ export const updateReportTemplate = async (req: Request, res: Response): Promise
 
     logInfo('Template de relatório atualizado', { templateId: id, municipalityId });
     res.json(template);
-  } catch (error: any) {
-    logError('Erro ao atualizar template de relatório', error, { 
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logError('Erro ao atualizar template de relatório', err, {
       id: req.params.id,
       municipalityId: req.user?.municipalityId,
-      errorMessage: error?.message,
+      errorMessage: err.message,
     });
     res.status(500).json({ error: 'Erro ao atualizar template de relatório' });
   }
@@ -725,11 +730,12 @@ export const deleteReportTemplate = async (req: Request, res: Response): Promise
     await prisma.reportTemplate.delete({ where: { id } });
     logInfo('Template de relatório excluído', { templateId: id, municipalityId });
     res.json({ message: 'Template excluído com sucesso' });
-  } catch (error: any) {
-    logError('Erro ao excluir template de relatório', error, { 
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logError('Erro ao excluir template de relatório', err, {
       id: req.params.id,
       municipalityId: req.user?.municipalityId,
-      errorMessage: error?.message,
+      errorMessage: err.message,
     });
     res.status(500).json({ error: 'Erro ao excluir template de relatório' });
   }

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { Prisma } from '@prisma/client'
 import { prisma } from '../index'
 import { logInfo, logError } from '../config/logger'
 
@@ -10,12 +11,12 @@ export const listManutencaoTasks = async (req: Request, res: Response): Promise<
   try {
     const { status, tipo, imovelId, patrimonioId } = req.query
 
-    const where: any = {}
+    const where: Prisma.ManutencaoTaskWhereInput = {}
 
-    if (status) where.status = status
-    if (tipo) where.tipo = tipo
-    if (imovelId) where.imovelId = imovelId
-    if (patrimonioId) where.patrimonioId = patrimonioId
+    if (status) where.status = String(status)
+    if (tipo) where.tipo = String(tipo)
+    if (imovelId) where.imovelId = String(imovelId)
+    if (patrimonioId) where.patrimonioId = String(patrimonioId)
 
     // ✅ MULTI-TENANT: tarefa pertence ao município via patrimônio OU imóvel
     if (req.user?.role !== 'superuser') {
@@ -208,12 +209,15 @@ export const updateManutencaoTask = async (req: Request, res: Response): Promise
       'custo',
       'observacoes',
     ] as const
-    const updateData: any = {}
+    const DATE_FIELDS = new Set<string>(['dataPrevista', 'dataConclusao'])
+    const updateData: Prisma.ManutencaoTaskUpdateInput = {}
     for (const field of ALLOWED_FIELDS) {
-      if (req.body[field] !== undefined) updateData[field] = req.body[field]
+      const value = req.body[field]
+      if (value === undefined) continue
+      ;(updateData as Record<string, unknown>)[field] = DATE_FIELDS.has(field)
+        ? new Date(value)
+        : value
     }
-    if (updateData.dataPrevista) updateData.dataPrevista = new Date(updateData.dataPrevista)
-    if (updateData.dataConclusao) updateData.dataConclusao = new Date(updateData.dataConclusao)
 
     const task = await prisma.manutencaoTask.update({
       where: { id },

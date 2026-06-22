@@ -1,7 +1,7 @@
 import nodemailer, { createTransport } from 'nodemailer';
 import Handlebars from 'handlebars';
 import { prisma } from '../lib/prisma';
-import { logInfo } from './logger';
+import { logInfo, logWarn, logError } from './logger';
 
 export interface EmailConfig {
   host: string;
@@ -45,7 +45,7 @@ export class EmailService {
       } catch (error) {
         // Modelo não existe, usar configuração de variáveis de ambiente
         if (process.env.NODE_ENV === 'development') {
-          console.warn('⚠️ Modelo EmailConfig não encontrado, usando variáveis de ambiente');
+          logWarn('⚠️ Modelo EmailConfig não encontrado, usando variáveis de ambiente');
         }
       }
       
@@ -77,13 +77,13 @@ export class EmailService {
         }
       } else {
         if (process.env.NODE_ENV === 'development') {
-          console.warn('⚠️ Configuração de email não encontrada ou desabilitada');
+          logWarn('⚠️ Configuração de email não encontrada ou desabilitada');
         }
       }
     } catch (error) {
       // ✅ Log de erro usando logger apropriado
       if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Erro ao carregar configuração de email:', error);
+        logError('❌ Erro ao carregar configuração de email', error);
       }
       this.config = null;
       this.transporter = null;
@@ -112,7 +112,7 @@ export class EmailService {
    */
   async sendEmail(to: string, subject: string, html: string, text?: string): Promise<boolean> {
     if (!(await this.isConfigured())) {
-      console.error('❌ Serviço de email não configurado');
+      logError('❌ Serviço de email não configurado');
       return false;
     }
 
@@ -128,7 +128,7 @@ export class EmailService {
       logInfo('✅ Email enviado', { messageId: info.messageId });
       return true;
     } catch (error) {
-      console.error('❌ Erro ao enviar email:', error);
+      logError('❌ Erro ao enviar email', error);
       return false;
     }
   }
