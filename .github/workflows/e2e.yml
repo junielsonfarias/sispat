@@ -1,0 +1,90 @@
+name: E2E (Playwright)
+
+# Disparo MANUAL (workflow_dispatch) — NÃO bloqueia o CI/merge enquanto a suíte
+# não estiver estabilizada (credenciais semeadas + seletores). Sobe a stack
+# completa: Postgres -> backend (migrate+seed+start na :3000) -> frontend
+# (vite dev na :8080, que consome http://localhost:3000/api por padrão) ->
+# Playwright. Ao estabilizar, mover para `pull_request` e tornar bloqueante.
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: sispat_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/sispat_test
+      JWT_SECRET: test-secret-key-for-ci-cd-minimum-32-characters-long
+      # development: o backend sobe sem as validações estritas de produção
+      # (o segredo de teste contém palavras que validate-env barra em produção).
+      NODE_ENV: development
+      PORT: '3000'
+      FRONTEND_URL: http://localhost:8080
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      # ---------- Backend: deps, migrate, seed, build, start ----------
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Prisma generate + migrate + seed
+        working-directory: backend
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run prisma:seed
+
+      - name: Build + start backend
+        working-directory: backend
+        run: |
+          npm run build
+          node dist/index.js &
+          echo "Aguardando backend em /api/health..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/health >/dev/null; then echo "backend OK"; exit 0; fi
+            sleep 2
+          done
+          echo "backend nao respondeu" && exit 1
+
+      # ---------- Frontend + Playwright ----------
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run Playwright (sobe o vite dev via webServer do playwright.config)
+        run: pnpm exec playwright test
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
