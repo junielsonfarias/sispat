@@ -25,6 +25,7 @@
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:integration": "jest --config jest.integration.config.js",
     "lint": "eslint src --ext .ts --cache",
     "lint:fix": "eslint src --ext .ts --fix --cache",
     "type-check": "tsc --noEmit",

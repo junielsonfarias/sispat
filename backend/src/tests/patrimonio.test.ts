@@ -4,6 +4,7 @@
 
 import request from 'supertest';
 import { Express } from 'express';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../config/database';
 
 describe('Patrimônios API', () => {
@@ -22,6 +23,12 @@ describe('Patrimônios API', () => {
     const { default: appModule } = await import('../index');
     app = appModule;
 
+    // Município de teste (FK obrigatória para User/Patrimonio)
+    const municipality = await prisma.municipality.create({
+      data: { name: 'Município de Teste', state: 'TS' },
+    });
+    testMunicipalityId = municipality.id;
+
     // Criar usuário de teste
     const testUser = await prisma.user.create({
       data: {
@@ -29,15 +36,22 @@ describe('Patrimônios API', () => {
         name: 'Test User',
         password: 'hashedpassword',
         role: 'admin',
-        municipalityId: testMunicipalityId || 'test-municipality-id',
+        municipalityId: testMunicipalityId,
         isActive: true,
       },
     });
     testUserId = testUser.id;
 
-    // Obter token de autenticação (simplificado para teste)
-    // Em produção, usar endpoint de login real
-    authToken = 'test-token'; // Substituir por token real
+    // Token JWT real, assinado com o mesmo JWT_SECRET que o authenticateToken valida
+    authToken = jwt.sign(
+      {
+        userId: testUserId,
+        email: testUser.email,
+        role: testUser.role,
+        municipalityId: testMunicipalityId,
+      },
+      process.env.JWT_SECRET as string,
+    );
   });
 
   afterAll(async () => {
@@ -45,6 +59,9 @@ describe('Patrimônios API', () => {
     await prisma.user.deleteMany({
       where: { email: 'test@example.com' },
     });
+    if (testMunicipalityId) {
+      await prisma.municipality.deleteMany({ where: { id: testMunicipalityId } });
+    }
     await prisma.$disconnect();
   });
 
