@@ -90,6 +90,12 @@
 
 ## 2026
 
+### 2026-06-22 — Médio prazo: começa a quebra do god-controller configController
+- **Contexto:** `configController.ts` (~975 linhas, 9 domínios) é um god-controller (0% de teste). Abordagem segura: testes de caracterização PRIMEIRO, depois extrair domínio por domínio para `services/`, verificando que os testes seguem verdes.
+- **1º domínio extraído — Excel/CSV Templates:** lógica/queries dos 4 endpoints (list/create/update/delete) movidas para `services/excelCsvTemplateService.ts` (padrão Actor + erro de domínio `ExcelCsvTemplateNotFoundError` mapeado a 404 no controller). Controller ficou fino (guard 401 + delegação + mapeamento de erro). `prisma` importado de `'../index'` (mesma instância — preservar comportamento; unificar p/ config/database é tarefa à parte).
+- **Rede de proteção:** os testes existentes de `tenantIsolation` (que exercem `getExcelCsvTemplates`/`deleteExcelCsvTemplate` no controller) **continuaram verdes** após a extração — prova de que o comportamento foi preservado. +7 testes de caracterização do service. Suíte: 347 verdes, tsc 0, lint 0.
+- **Próximos (mesmo padrão):** FormFieldConfig, NumberingPattern, CloudStorage, ReportTemplate, ImovelReportTemplate, UserReportConfig, UserDashboard, RolePermission — extrair um por vez, sempre com a rede de teste antes.
+
 ### 2026-06-22 — Médio prazo: numero_patrimonio único POR MUNICÍPIO (multi-tenant)
 - **Sintoma:** `numero_patrimonio` era `@unique` GLOBAL (linhas 180/246 do schema) — contradiz a regra "único por município" e bloqueia o 2º município de reusar numeração. Pior: a GERAÇÃO de número era sequencial GLOBAL — o 1º bem do município B continuaria a sequência do A. Bug latente de multi-tenant.
 - **Correção (schema + migration):** `@@unique([municipalityId, numero_patrimonio])` em Patrimonio e Imovel (mantido o `@@index([numero_patrimonio])` de busca). Migration `20260622000000_numero_patrimonio_unique_per_municipality` (DROP do unique global + CREATE do composto, em ambas as tabelas).

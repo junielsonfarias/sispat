@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { logError, logInfo, logDebug } from '../config/logger';
+import * as excelCsvTemplates from '../services/excelCsvTemplateService';
 
 // ============================================
 // USER REPORT CONFIGS
@@ -83,12 +84,10 @@ export const getExcelCsvTemplates = async (req: Request, res: Response): Promise
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    const templates = await prisma.excelCsvTemplate.findMany({
-      where: { municipalityId },
-      orderBy: { createdAt: 'desc' },
+    const templates = await excelCsvTemplates.listExcelCsvTemplates({
+      role: req.user!.role,
+      municipalityId,
     });
-
     res.json(templates);
   } catch (error) {
     logError('Erro ao buscar templates de exportação', error);
@@ -103,18 +102,11 @@ export const createExcelCsvTemplate = async (req: Request, res: Response): Promi
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
     const { name, columns, conditionalFormatting } = req.body;
-
-    const template = await prisma.excelCsvTemplate.create({
-      data: {
-        name,
-        municipalityId,
-        columns,
-        conditionalFormatting,
-      },
-    });
-
+    const template = await excelCsvTemplates.createExcelCsvTemplate(
+      { role: req.user!.role, municipalityId },
+      { name, columns, conditionalFormatting },
+    );
     res.status(201).json(template);
   } catch (error) {
     logError('Erro ao criar template de exportação', error);
@@ -124,36 +116,24 @@ export const createExcelCsvTemplate = async (req: Request, res: Response): Promi
 
 export const updateExcelCsvTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const isSuperuser = req.user?.role === 'superuser';
     const municipalityId = req.user?.municipalityId;
     if (!municipalityId) {
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    const existing = await prisma.excelCsvTemplate.findFirst({
-      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
-      select: { id: true },
-    });
-    if (!existing) {
+    const { id } = req.params;
+    const { name, columns, conditionalFormatting } = req.body;
+    const template = await excelCsvTemplates.updateExcelCsvTemplate(
+      { role: req.user!.role, municipalityId },
+      id,
+      { name, columns, conditionalFormatting },
+    );
+    res.json(template);
+  } catch (error) {
+    if (error instanceof excelCsvTemplates.ExcelCsvTemplateNotFoundError) {
       res.status(404).json({ error: 'Template não encontrado' });
       return;
     }
-
-    const { name, columns, conditionalFormatting } = req.body;
-
-    const template = await prisma.excelCsvTemplate.update({
-      where: { id },
-      data: {
-        name,
-        columns,
-        conditionalFormatting,
-      },
-    });
-
-    res.json(template);
-  } catch (error) {
     logError('Erro ao atualizar template de exportação', error, { id: req.params.id });
     res.status(500).json({ error: 'Erro ao atualizar template de exportação' });
   }
@@ -161,26 +141,22 @@ export const updateExcelCsvTemplate = async (req: Request, res: Response): Promi
 
 export const deleteExcelCsvTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const isSuperuser = req.user?.role === 'superuser';
     const municipalityId = req.user?.municipalityId;
     if (!municipalityId) {
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    const existing = await prisma.excelCsvTemplate.findFirst({
-      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
-      select: { id: true },
-    });
-    if (!existing) {
+    const { id } = req.params;
+    await excelCsvTemplates.removeExcelCsvTemplate(
+      { role: req.user!.role, municipalityId },
+      id,
+    );
+    res.json({ message: 'Template excluído com sucesso' });
+  } catch (error) {
+    if (error instanceof excelCsvTemplates.ExcelCsvTemplateNotFoundError) {
       res.status(404).json({ error: 'Template não encontrado' });
       return;
     }
-
-    await prisma.excelCsvTemplate.delete({ where: { id } });
-    res.json({ message: 'Template excluído com sucesso' });
-  } catch (error) {
     logError('Erro ao excluir template de exportação', error, { id: req.params.id });
     res.status(500).json({ error: 'Erro ao excluir template de exportação' });
   }
