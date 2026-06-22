@@ -353,7 +353,7 @@ export default function Login() {
                 {/* Links */}
                 <div className="text-center space-y-3 sm:space-y-4 pt-3 sm:pt-4">
                   <Link
-                    to="/forgot-password"
+                    to="/esqueci-minha-senha"
                     className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
                   >
                     Esqueceu sua senha?

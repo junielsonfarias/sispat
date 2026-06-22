@@ -39,6 +39,7 @@ export default function ResetPassword() {
   const [isValid, setIsValid] = useState(false)
   const [userInfo, setUserInfo] = useState<{name: string, email: string} | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const token = searchParams.get('token')
 
   const form = useForm<ResetPasswordFormValues>({
@@ -49,7 +50,7 @@ export default function ResetPassword() {
   // Validar token quando o componente monta
   useEffect(() => {
     if (!token) {
-      navigate('/forgot-password')
+      navigate('/esqueci-minha-senha')
       return
     }
 
@@ -67,7 +68,7 @@ export default function ResetPassword() {
           description: 'Este link de redefinição é inválido ou expirou.',
         })
         // Redirecionar após 3 segundos
-        setTimeout(() => navigate('/forgot-password'), 3000)
+        setTimeout(() => navigate('/esqueci-minha-senha'), 3000)
       } finally {
         setIsValidating(false)
       }
@@ -80,6 +81,7 @@ export default function ResetPassword() {
     if (!token) return
     
     setIsLoading(true)
+    setError(null)
 
     try {
       await resetPassword(token, data.password)
@@ -88,7 +90,8 @@ export default function ResetPassword() {
         description: 'Sua senha foi alterada com sucesso.',
       })
       navigate('/login')
-    } catch (error) {
+    } catch {
+      setError('Não foi possível redefinir a senha. Tente novamente.')
       toast({
         variant: 'destructive',
         title: 'Erro',
