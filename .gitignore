@@ -32,3 +32,6 @@ screenshot.png
 
 # Claude Code
 .claude/
+
+# Cobertura de testes (jest/vitest --coverage)
+coverage/
