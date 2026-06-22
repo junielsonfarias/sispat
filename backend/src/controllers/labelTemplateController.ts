@@ -50,9 +50,16 @@ export const getLabelTemplates = async (req: Request, res: Response): Promise<vo
 export const getLabelTemplateById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
 
-    const template = await prisma.labelTemplate.findUnique({
-      where: { id },
+    // Isolamento tenant: não-superuser só lê template do próprio município.
+    // Sem o filtro (findUnique por id puro), qualquer usuário autenticado de
+    // outro tenant poderia ler templates de etiqueta alheios informando o id
+    // (IDOR / vazamento cross-tenant). 404 quando não encontrado para não
+    // vazar a existência do registro.
+    const template = await prisma.labelTemplate.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
       include: {
         creator: {
           select: {
@@ -175,8 +182,16 @@ export const updateLabelTemplate = async (req: Request, res: Response): Promise<
 
     const { name, width, height, isDefault, elements } = req.body;
 
-    const existingTemplate = await prisma.labelTemplate.findUnique({
-      where: { id },
+    // Isolamento tenant: valida ownership do registro alvo antes de atualizar.
+    // Sem o filtro por municipalityId, admin/supervisor de outro município
+    // poderia alterar (e marcar como padrão) templates de etiqueta de outro
+    // tenant (IDOR). Apenas admin/supervisor chegam aqui (guard acima), logo
+    // não há caso superuser a tratar.
+    const existingTemplate = await prisma.labelTemplate.findFirst({
+      where: {
+        id,
+        municipalityId,
+      },
     });
 
     if (!existingTemplate) {
@@ -248,6 +263,7 @@ export const deleteLabelTemplate = async (req: Request, res: Response): Promise<
     const { id } = req.params;
     const userId = req.user?.userId;
     const userRole = req.user?.role;
+    const municipalityId = req.user?.municipalityId;
 
     // Apenas admin e supervisor podem deletar templates
     if (userRole !== 'admin' && userRole !== 'supervisor') {
@@ -255,8 +271,16 @@ export const deleteLabelTemplate = async (req: Request, res: Response): Promise<
       return;
     }
 
-    const template = await prisma.labelTemplate.findUnique({
-      where: { id },
+    // Isolamento tenant: valida ownership do registro alvo antes do soft-delete.
+    // Sem o filtro por municipalityId, admin/supervisor de outro município
+    // poderia desativar (cross-tenant tampering/DoS) templates de etiqueta de
+    // outro tenant (IDOR). Apenas admin/supervisor chegam aqui (guard acima),
+    // logo não há caso superuser a tratar.
+    const template = await prisma.labelTemplate.findFirst({
+      where: {
+        id,
+        municipalityId,
+      },
     });
 
     if (!template) {

@@ -123,12 +123,21 @@ export const getPatrimonio = async (req: Request, res: Response): Promise<void> 
  */
 export const getByNumero = async (req: Request, res: Response): Promise<void> => {
   try {
-    const patrimonio = await svcGetByNumero(req.params.numero);
-    if (!patrimonio) {
+    const actor = asActor(req);
+    if (!actor) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+    const result = await svcGetByNumero(req.params.numero, actor);
+    if (result.kind === 'not-found') {
       res.status(404).json({ error: 'Patrimônio não encontrado' });
       return;
     }
-    res.json({ patrimonio });
+    if (result.kind === 'forbidden') {
+      res.status(403).json({ error: 'Acesso negado: sem permissão para este setor' });
+      return;
+    }
+    res.json({ patrimonio: result.patrimonio });
   } catch (error) {
     logError('Erro ao buscar patrimônio por número', error, { numero: req.params.numero });
     res.status(500).json({ error: 'Erro ao buscar patrimônio' });

@@ -10,7 +10,15 @@ export const listImovelFields = async (req: Request, res: Response): Promise<voi
   try {
     const { active } = req.query
 
-    const where: any = {}
+    // ✅ MULTI-TENANT: filtrar por município (superuser vê todos)
+    const isSuperuser = req.user?.role === 'superuser'
+    const municipalityId = req.user?.municipalityId
+    if (!isSuperuser && !municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' })
+      return
+    }
+
+    const where: any = isSuperuser ? {} : { municipalityId }
     if (active !== undefined) {
       where.isActive = active === 'true'
     }
@@ -90,9 +98,50 @@ export const createImovelField = async (req: Request, res: Response): Promise<vo
 export const updateImovelField = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params
-    const updates = req.body
 
-    // Serializar arrays para JSON se necessário
+    // ✅ MULTI-TENANT: derivar do token (superuser bypassa)
+    const isSuperuser = req.user?.role === 'superuser'
+    const municipalityId = req.user?.municipalityId
+    if (!isSuperuser && !municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' })
+      return
+    }
+
+    // ✅ IDOR: garantir que o campo pertence ao município antes de alterar
+    const existing = await prisma.imovelCustomField.findFirst({
+      where: isSuperuser ? { id } : { id, municipalityId },
+    })
+    if (!existing) {
+      // 404 (não vaza existência cross-tenant)
+      res.status(404).json({ error: 'Campo personalizado não encontrado' })
+      return
+    }
+
+    // ✅ MASS-ASSIGNMENT: whitelist explícita — nunca aceitar municipalityId/id do body
+    const body = req.body ?? {}
+    const ALLOWED_FIELDS = [
+      'name',
+      'label',
+      'type',
+      'required',
+      'defaultValue',
+      'options',
+      'placeholder',
+      'helpText',
+      'validationRules',
+      'displayOrder',
+      'isActive',
+      'isSystem',
+    ] as const
+
+    const updates: Record<string, unknown> = {}
+    for (const key of ALLOWED_FIELDS) {
+      if (body[key] !== undefined) {
+        updates[key] = body[key]
+      }
+    }
+
+    // Serializar arrays/objetos para JSON se necessário
     if (updates.options && Array.isArray(updates.options)) {
       updates.options = JSON.stringify(updates.options)
     }
@@ -129,12 +178,26 @@ export const deleteImovelField = async (req: Request, res: Response): Promise<vo
   try {
     const { id } = req.params
 
-    // Verificar se é campo do sistema
-    const field = await prisma.imovelCustomField.findUnique({
-      where: { id },
-    })
+    // ✅ MULTI-TENANT: derivar do token (superuser bypassa)
+    const isSuperuser = req.user?.role === 'superuser'
+    const municipalityId = req.user?.municipalityId
+    if (!isSuperuser && !municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' })
+      return
+    }
 
-    if (field?.isSystem) {
+    // ✅ IDOR: garantir que o campo pertence ao município antes de excluir
+    const field = await prisma.imovelCustomField.findFirst({
+      where: isSuperuser ? { id } : { id, municipalityId },
+    })
+    if (!field) {
+      // 404 (não vaza existência cross-tenant)
+      res.status(404).json({ error: 'Campo personalizado não encontrado' })
+      return
+    }
+
+    // Verificar se é campo do sistema
+    if (field.isSystem) {
       res.status(400).json({ error: 'Campos do sistema não podem ser excluídos' })
       return
     }
@@ -171,11 +234,20 @@ export const reorderImovelFields = async (req: Request, res: Response): Promise<
       return
     }
 
-    // Atualizar em transação
+    // ✅ MULTI-TENANT: derivar do token (superuser bypassa)
+    const isSuperuser = req.user?.role === 'superuser'
+    const municipalityId = req.user?.municipalityId
+    if (!isSuperuser && !municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' })
+      return
+    }
+
+    // ✅ IDOR: escopar cada update por município — ids de outro tenant não casam
+    // o where e não são alterados (updateMany por id+municipalityId).
     await prisma.$transaction(
       fieldOrders.map(({ id, displayOrder }) =>
-        prisma.imovelCustomField.update({
-          where: { id },
+        prisma.imovelCustomField.updateMany({
+          where: isSuperuser ? { id } : { id, municipalityId },
           data: { displayOrder },
         })
       )

@@ -4,6 +4,33 @@ import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 import { redisCache, CacheUtils } from '../config/redis';
 
 /**
+ * Hierarquia de papéis (quanto maior, mais privilégio).
+ * Guard anti-escalada: um ator só pode atribuir papéis cujo nível seja
+ * <= ao seu próprio. Assim um 'supervisor' não consegue criar/promover
+ * para 'admin' ou 'superuser' (o que daria bypass de municipalityId).
+ */
+const ROLE_RANK: Record<string, number> = {
+  superuser: 4,
+  admin: 3,
+  supervisor: 2,
+  usuario: 1,
+  visualizador: 0,
+};
+
+/**
+ * Retorna true se o ator (actorRole) tem permissão para atribuir targetRole.
+ * Papéis desconhecidos são tratados como não-atribuíveis.
+ */
+function canAssignRole(actorRole: string, targetRole: string): boolean {
+  const actorRank = ROLE_RANK[actorRole];
+  const targetRank = ROLE_RANK[targetRole];
+  if (actorRank === undefined || targetRank === undefined) {
+    return false;
+  }
+  return targetRank <= actorRank;
+}
+
+/**
  * Listar todos os usuários
  * GET /api/users
  */
@@ -135,6 +162,18 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     // presença dos campos, formato do e-mail e força da senha
     // (STRONG_PASSWORD_REGEX: ≥12 chars, lower/upper/digit/símbolo).
 
+    // 🔒 Anti-escalada de privilégio: o ator não pode atribuir um papel de
+    // nível superior ao seu (ex.: supervisor criando admin/superuser).
+    if (!canAssignRole(req.user.role, role)) {
+      logWarn('Tentativa de escalada de privilégio bloqueada (createUser)', {
+        userId: req.user.userId,
+        actorRole: req.user.role,
+        attemptedRole: role,
+      });
+      res.status(403).json({ error: 'Acesso negado: papel não permitido para seu nível' });
+      return;
+    }
+
     // Verificar se email já existe
     const existingUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -230,6 +269,30 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     // Apenas superuser e supervisor podem atualizar usuários
     if (!['superuser', 'supervisor'].includes(req.user.role)) {
       res.status(403).json({ error: 'Acesso negado' });
+      return;
+    }
+
+    // 🔒 Anti-escalada de privilégio: ao alterar o papel, o ator não pode
+    // promover alvo (nem a si mesmo) para um nível acima do seu, e também
+    // não pode rebaixar/tocar um usuário cujo papel atual já seja superior
+    // ao seu (ex.: supervisor não mexe em admin/superuser existente).
+    if (!canAssignRole(req.user.role, existingUser.role)) {
+      logWarn('Tentativa de alterar usuário de nível superior bloqueada (updateUser)', {
+        userId: req.user.userId,
+        actorRole: req.user.role,
+        targetCurrentRole: existingUser.role,
+      });
+      res.status(403).json({ error: 'Acesso negado: usuário de nível superior' });
+      return;
+    }
+
+    if (role !== undefined && !canAssignRole(req.user.role, role)) {
+      logWarn('Tentativa de escalada de privilégio bloqueada (updateUser)', {
+        userId: req.user.userId,
+        actorRole: req.user.role,
+        attemptedRole: role,
+      });
+      res.status(403).json({ error: 'Acesso negado: papel não permitido para seu nível' });
       return;
     }
 

@@ -245,7 +245,12 @@ export const getPatrimonioById = async (
   actor: Actor,
 ): Promise<GetPatrimonioResult> => {
   const cacheKey = `patrimonio:${id}`;
-  let patrimonio = await redisCache.get<{ sectorId: string; fotos?: unknown; documentos?: unknown }>(cacheKey);
+  let patrimonio = await redisCache.get<{
+    municipalityId: string;
+    sectorId: string;
+    fotos?: unknown;
+    documentos?: unknown;
+  }>(cacheKey);
 
   if (!patrimonio) {
     const fetched = await prisma.patrimonio.findUnique({
@@ -262,13 +267,23 @@ export const getPatrimonioById = async (
 
   if (!patrimonio) return { kind: 'not-found' };
 
+  // Isolamento de tenant: nunca devolver patrimônio de outro município.
+  // Retorna not-found (não forbidden) para não vazar a existência cross-tenant.
+  // superuser opera na plataforma inteira e pode acessar qualquer município.
+  if (actor.role !== 'superuser' && patrimonio.municipalityId !== actor.municipalityId) {
+    return { kind: 'not-found' };
+  }
+
   const { allowed } = await ensureSectorAccess(actor, patrimonio.sectorId);
   if (!allowed) return { kind: 'forbidden' };
 
   return { kind: 'ok', patrimonio: normalizeOnRead(patrimonio) };
 };
 
-export const getByNumero = async (numero: string) => {
+export const getByNumero = async (
+  numero: string,
+  actor: Actor,
+): Promise<GetPatrimonioResult> => {
   const patrimonio = await prisma.patrimonio.findUnique({
     where: { numero_patrimonio: numero },
     include: {
@@ -278,7 +293,19 @@ export const getByNumero = async (numero: string) => {
       historico: { orderBy: { date: 'desc' }, take: 10 },
     },
   });
-  return patrimonio ? normalizeOnRead(patrimonio) : null;
+  if (!patrimonio) return { kind: 'not-found' };
+
+  // Isolamento de tenant: nunca devolver patrimônio de outro município.
+  // Retorna not-found (não forbidden) para não vazar a existência cross-tenant.
+  // superuser opera na plataforma inteira e pode acessar qualquer município.
+  if (actor.role !== 'superuser' && patrimonio.municipalityId !== actor.municipalityId) {
+    return { kind: 'not-found' };
+  }
+
+  const { allowed } = await ensureSectorAccess(actor, patrimonio.sectorId);
+  if (!allowed) return { kind: 'forbidden' };
+
+  return { kind: 'ok', patrimonio: normalizeOnRead(patrimonio) };
 };
 
 // ===========================================================================
@@ -532,33 +559,38 @@ export const diffPatrimonioFields = (
   return diffs;
 };
 
-const READONLY_FIELDS = new Set([
-  'id',
-  'createdAt',
-  'createdBy',
-  'updatedAt',
-  'sector',
-  'local',
-  'tipoBem',
-  'municipality',
-  'acquisitionForm',
-  'creator',
-  'historico',
-  'notes',
-  'notas',
-  'transferencias',
-  'emprestimos',
-  'subPatrimonios',
-  'inventoryItems',
-  'manutencoes',
-  'documentosFiles',
+// Allow-list positiva de campos escalares atualizáveis via PUT.
+// Exclui DELIBERADAMENTE: id, createdAt/createdBy, updatedAt, numero_patrimonio,
+// status (controlado só pelo sistema), e as FKs municipalityId/sectorId/localId/
+// tipoId/acquisitionFormId — evita mass-assignment e tenant escape.
+const UPDATABLE_FIELDS = new Set([
+  'descricao_bem',
+  'tipo',
+  'marca',
+  'modelo',
+  'cor',
+  'numero_serie',
+  'data_aquisicao',
+  'valor_aquisicao',
+  'quantidade',
+  'numero_nota_fiscal',
+  'forma_aquisicao',
+  'setor_responsavel',
+  'local_objeto',
+  'situacao_bem',
+  'observacoes',
+  'fotos',
+  'documentos',
+  'metodo_depreciacao',
+  'vida_util_anos',
+  'valor_residual',
 ]);
 
 const parseUpdateData = (raw: Record<string, unknown>, actorUserId: string): Record<string, unknown> => {
   const out: Record<string, unknown> = { updatedBy: actorUserId };
 
   for (const [key, value] of Object.entries(raw)) {
-    if (READONLY_FIELDS.has(key)) continue;
+    if (!UPDATABLE_FIELDS.has(key)) continue;
     // Excluir relações (objetos), mas permitir Date e arrays
     if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)) {
       continue;
@@ -590,6 +622,13 @@ export const updatePatrimonio = async (
   // Pega todos os campos para poder diffar contra dataToUpdate (histórico granular M12)
   const existing = await prisma.patrimonio.findUnique({ where: { id } });
   if (!existing) throw new PatrimonioNotFoundError();
+
+  // Isolamento de tenant: nunca permitir escrita em patrimônio de outro município.
+  // Trata como não encontrado (404) para não vazar existência cross-tenant.
+  // superuser opera na plataforma inteira e pode editar qualquer município.
+  if (actor.role !== 'superuser' && existing.municipalityId !== actor.municipalityId) {
+    throw new PatrimonioNotFoundError();
+  }
 
   const { allowed, sectorName } = await ensureSectorAccess(actor, existing.sectorId);
   if (!allowed) {
@@ -717,9 +756,16 @@ export const deletePatrimonio = async (
 
   const existing = await prisma.patrimonio.findUnique({
     where: { id },
-    select: { id: true, numero_patrimonio: true },
+    select: { id: true, numero_patrimonio: true, municipalityId: true },
   });
   if (!existing) throw new PatrimonioNotFoundError();
+
+  // Isolamento de tenant: nunca permitir delete em patrimônio de outro município.
+  // Trata como não encontrado (404) para não vazar existência cross-tenant.
+  // superuser opera na plataforma inteira e pode deletar de qualquer município.
+  if (actor.role !== 'superuser' && existing.municipalityId !== actor.municipalityId) {
+    throw new PatrimonioNotFoundError();
+  }
 
   await prisma.patrimonio.delete({ where: { id } });
 
@@ -754,9 +800,17 @@ export const registrarBaixa = async (
 ) => {
   const patrimonio = await prisma.patrimonio.findUnique({
     where: { id },
-    select: { id: true, status: true, sectorId: true, numero_patrimonio: true },
+    select: { id: true, status: true, sectorId: true, numero_patrimonio: true, municipalityId: true },
   });
   if (!patrimonio) throw new PatrimonioNotFoundError();
+
+  // Isolamento de tenant: nunca permitir baixa em patrimônio de outro município.
+  // Trata como não encontrado (404) para não vazar existência cross-tenant.
+  // superuser opera na plataforma inteira e pode dar baixa em qualquer município.
+  if (actor.role !== 'superuser' && patrimonio.municipalityId !== actor.municipalityId) {
+    throw new PatrimonioNotFoundError();
+  }
+
   if (patrimonio.status === 'baixado') {
     throw new PatrimonioConflictError('Patrimônio já está baixado');
   }
@@ -833,9 +887,16 @@ export const addNote = async (patrimonioId: string, text: string, actor: Actor) 
 
   const patrimonio = await prisma.patrimonio.findUnique({
     where: { id: patrimonioId },
-    select: { id: true },
+    select: { id: true, municipalityId: true },
   });
   if (!patrimonio) throw new PatrimonioNotFoundError();
+
+  // Isolamento de tenant: não permitir adicionar observação em patrimônio de
+  // outro município. Trata como não encontrado (404) para não vazar existência
+  // cross-tenant. superuser opera na plataforma inteira.
+  if (actor.role !== 'superuser' && patrimonio.municipalityId !== actor.municipalityId) {
+    throw new PatrimonioNotFoundError();
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: actor.userId },

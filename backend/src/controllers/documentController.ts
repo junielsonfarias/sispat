@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { AppError } from '../middlewares/errorHandler';
 import { logActivity } from '../utils/activityLogger';
@@ -23,21 +24,46 @@ const storage = multer.diskStorage({
   }
 });
 
+// Extensões permitidas — regex ANCORADA na extensão final (.../$).
+// Sem isso, nomes como 'x.php.pdf' passavam por substring.
+const ALLOWED_EXT = /\.(jpe?g|png|gif|pdf|docx?|xlsx?|txt)$/i;
+
+// Whitelist EXATA de mimetypes. Sem isso, qualquer mimetype contendo a
+// substring 'txt' (ex.: 'application/octet-stream;name=evil.txt') passava.
+const ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'application/pdf',
+  'application/msword', // .doc
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/vnd.ms-excel', // .xls
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'text/plain', // .txt
+]);
+
+/**
+ * Valida um arquivo de upload de documento por extensão ANCORADA + mimetype
+ * EXATO (whitelist). Função pura para ser testável isoladamente.
+ * Bloqueia bypasses de substring como 'x.php.pdf' ou mimetypes contendo 'txt'.
+ */
+export const isAllowedDocumentFile = (originalname: string, mimetype: string): boolean => {
+  const extOk = ALLOWED_EXT.test(path.extname(originalname).toLowerCase());
+  const mimeOk = ALLOWED_MIME.has(mimetype.trim().toLowerCase());
+  return extOk && mimeOk;
+};
+
 const upload = multer({
   storage,
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|txt/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (mimetype && extname) {
+    if (isAllowedDocumentFile(file.originalname, file.mimetype)) {
       return cb(null, true);
-    } else {
-      cb(new Error('Tipo de arquivo não permitido'));
     }
+    cb(new Error('Tipo de arquivo não permitido'));
   }
 });
 
@@ -49,22 +75,34 @@ export { upload };
  */
 export const listDocuments = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: 'Usuário não autenticado' });
+      return;
+    }
+
     const { page = 1, limit = 10, type, search } = req.query;
     const pageNum = Math.max(1, parseInt(page as string) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit as string) || 10));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
-    
-    // ✅ Filtrar por município do usuário através da relação uploadedBy
-    if (req.user?.municipalityId) {
+    const where: Prisma.DocumentoGeralWhereInput = {};
+
+    // ✅ Isolamento multi-tenant: DocumentoGeral não tem municipalityId direto,
+    // o escopo se dá via uploadedBy.municipalityId. superuser bypassa.
+    // Exigir municipalityId para não-superuser: sem ele, listar TODOS os
+    // municípios seria vazamento cross-tenant — negar com 401.
+    if (req.user.role !== 'superuser') {
+      if (!req.user.municipalityId) {
+        res.status(401).json({ error: 'Município não identificado' });
+        return;
+      }
       where.uploadedBy = {
         municipalityId: req.user.municipalityId
       };
     }
-    
+
     if (type) {
-      where.tipo = type;
+      where.tipo = type as string;
     }
     
     if (search) {
@@ -78,7 +116,10 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
     const cacheKey = CacheUtils.getDocumentosKey({ where, page: pageNum, limit: limitNum });
     
     // Tentar obter do cache Redis primeiro
-    let result = await redisCache.get<{ documents: any[], total: number }>(cacheKey);
+    type DocumentoComUploader = Prisma.DocumentoGeralGetPayload<{
+      include: { uploadedBy: { select: { id: true; name: true; email: true } } };
+    }>;
+    let result = await redisCache.get<{ documents: DocumentoComUploader[], total: number }>(cacheKey);
     
     if (!result) {
       // ✅ Buscar documentos com include otimizado
@@ -97,11 +138,11 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
               }
             }
           }
-        }).catch((error: any) => {
+        }).catch((error: unknown) => {
           logError('❌ Erro na query findMany', error);
           throw error;
         }),
-        prisma.documentoGeral.count({ where }).catch((error: any) => {
+        prisma.documentoGeral.count({ where }).catch((error: unknown) => {
           logError('❌ Erro na query count', error);
           throw error;
         })
@@ -128,14 +169,14 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
         pages: Math.ceil(result.total / limitNum)
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logError('❌ Erro ao listar documentos', error, {
       userId: req.user?.userId,
       query: req.query
     });
-    
+
     // ✅ Retornar array vazio em caso de erro para não quebrar o frontend
-    res.status(200).json({ 
+    res.status(200).json({
       documents: [],
       pagination: {
         page: Number(req.query.page) || 1,
@@ -143,7 +184,7 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
         total: 0,
         pages: 0
       },
-      error: process.env.NODE_ENV === 'development' ? error?.message : 'Erro ao carregar documentos'
+      error: process.env.NODE_ENV === 'development' && error instanceof Error ? error.message : 'Erro ao carregar documentos'
     });
   }
 };
@@ -205,8 +246,20 @@ export const getDocument = async (req: Request, res: Response): Promise<void> =>
   try {
     const { id } = req.params;
 
-    const document = await prisma.documentoGeral.findUnique({
-      where: { id },
+    if (!req.user) {
+      res.status(401).json({ error: 'Usuário não autenticado' });
+      return;
+    }
+
+    // ✅ Isolamento multi-tenant: DocumentoGeral não tem municipalityId direto,
+    // o escopo se dá via uploadedBy.municipalityId. superuser bypassa.
+    const where: Prisma.DocumentoGeralWhereInput = { id };
+    if (req.user.role !== 'superuser') {
+      where.uploadedBy = { municipalityId: req.user.municipalityId };
+    }
+
+    const document = await prisma.documentoGeral.findFirst({
+      where,
       include: {
         uploadedBy: {
           select: {
@@ -219,6 +272,7 @@ export const getDocument = async (req: Request, res: Response): Promise<void> =>
     });
 
     if (!document) {
+      // Não vaza existência cross-tenant: 404 (não 403).
       res.status(404).json({ error: 'Documento não encontrado' });
       return;
     }
@@ -238,11 +292,24 @@ export const downloadDocument = async (req: Request, res: Response): Promise<voi
   try {
     const { id } = req.params;
 
-    const document = await prisma.documentoGeral.findUnique({
-      where: { id }
+    if (!req.user) {
+      res.status(401).json({ error: 'Usuário não autenticado' });
+      return;
+    }
+
+    // ✅ Isolamento multi-tenant: DocumentoGeral não tem municipalityId direto,
+    // o escopo se dá via uploadedBy.municipalityId. superuser bypassa.
+    const where: Prisma.DocumentoGeralWhereInput = { id };
+    if (req.user.role !== 'superuser') {
+      where.uploadedBy = { municipalityId: req.user.municipalityId };
+    }
+
+    const document = await prisma.documentoGeral.findFirst({
+      where
     });
 
     if (!document) {
+      // Não vaza existência cross-tenant: 404 (não 403).
       res.status(404).json({ error: 'Documento não encontrado' });
       return;
     }
@@ -273,17 +340,26 @@ export const updateDocument = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const document = await prisma.documentoGeral.findUnique({
-      where: { id }
+    // ✅ Isolamento multi-tenant: DocumentoGeral não tem municipalityId direto,
+    // o escopo se dá via uploadedBy.municipalityId. superuser bypassa.
+    // Sem esse filtro, um admin de outro município poderia editar documentos alheios.
+    const where: Prisma.DocumentoGeralWhereInput = { id };
+    if (req.user.role !== 'superuser') {
+      where.uploadedBy = { municipalityId: req.user.municipalityId };
+    }
+
+    const document = await prisma.documentoGeral.findFirst({
+      where
     });
 
     if (!document) {
+      // Não vaza existência cross-tenant: 404 (não 403).
       res.status(404).json({ error: 'Documento não encontrado' });
       return;
     }
 
-    // Verificar se o usuário pode editar (apenas o uploader ou admin)
-    if (document.uploadedById !== req.user.userId && req.user.role !== 'admin') {
+    // Verificar se o usuário pode editar (apenas o uploader ou admin do mesmo município)
+    if (document.uploadedById !== req.user.userId && req.user.role !== 'admin' && req.user.role !== 'superuser') {
       res.status(403).json({ error: 'Sem permissão para editar este documento' });
       return;
     }
@@ -327,17 +403,27 @@ export const deleteDocument = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const document = await prisma.documentoGeral.findUnique({
-      where: { id }
+    // ✅ Isolamento multi-tenant: DocumentoGeral não tem municipalityId direto,
+    // o escopo se dá via uploadedBy.municipalityId. superuser bypassa.
+    // Sem esse filtro, um admin de outro município poderia deletar (e apagar o
+    // arquivo físico) de documentos enviados por usuários de OUTRO município.
+    const where: Prisma.DocumentoGeralWhereInput = { id };
+    if (req.user.role !== 'superuser') {
+      where.uploadedBy = { municipalityId: req.user.municipalityId };
+    }
+
+    const document = await prisma.documentoGeral.findFirst({
+      where
     });
 
     if (!document) {
+      // Não vaza existência cross-tenant: 404 (não 403).
       res.status(404).json({ error: 'Documento não encontrado' });
       return;
     }
 
-    // Verificar se o usuário pode deletar (apenas o uploader ou admin)
-    if (document.uploadedById !== req.user.userId && req.user.role !== 'admin') {
+    // Verificar se o usuário pode deletar (apenas o uploader ou admin do mesmo município)
+    if (document.uploadedById !== req.user.userId && req.user.role !== 'admin' && req.user.role !== 'superuser') {
       res.status(403).json({ error: 'Sem permissão para deletar este documento' });
       return;
     }
@@ -375,7 +461,7 @@ export const listPublicDocuments = async (req: Request, res: Response): Promise<
     const { page = 1, limit = 10, search } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    const where: any = {
+    const where: Prisma.DocumentoGeralWhereInput = {
       isPublic: true
     };
     

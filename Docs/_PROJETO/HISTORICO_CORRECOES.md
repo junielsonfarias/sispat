@@ -90,6 +90,20 @@
 
 ## 2026
 
+### 2026-06-22 — Auditoria automatizada (workflow multi-agente): 61 achados corrigidos
+- **Contexto:** workflow `sispat-audit-fix` (auditores multi-tenant/segurança/higiene em paralelo + fixer em série, com test-gating) rodou 2 rodadas, 69 agentes. Derrubou a premissa de que os services migrados eram seguros.
+- **Críticos (segurança):**
+  - **IDOR cross-tenant no núcleo** — `patrimonioService` (`getById`, `getByNumero`, `update`, `delete`, `registrarBaixa`, `addNote`): `ensureSectorAccess` NÃO comparava `municipalityId`, então admin/supervisor de um município liam/editavam/deletavam/baixavam bens de outro. Guard de tenant adicionado (404, não vaza existência; superuser bypassa).
+  - **Mass-assignment → fuga de tenant** — `patrimonioService.parseUpdateData` usava deny-list sem `municipalityId`/`sectorId`; trocado por allow-list `UPDATABLE_FIELDS`.
+  - **Escalada de privilégio** — `userController`: supervisor podia criar/promover para superuser/admin. Corrigido com hierarquia `ROLE_RANK`.
+  - **IDOR** em `labelTemplateController` (getById/update/delete), `imovelFieldController` (list/update/delete/reorder + mass-assignment) e `documentController` (listDocuments + getById/download/update/delete).
+  - **Bypass de upload** em `documentController`: regex não-ancorada aceitava `x.php.pdf`; endurecido (extensão ancorada + MIME exato).
+- **Higiene:** 22× `console.*` → logger Winston; 6× `any` → tipos `Prisma.*` nos controllers.
+- **Validação:** `zodValidate` em 5 rotas (config, emailConfig, fichaTemplates, imovelField, systemConfig) + 5 schemas em `@sispat/shared`.
+- **Infra:** `backend/node_modules/zod` e `cookie-parser` estavam VAZIOS (install quebrado) — causa raiz dos erros "Cannot find module" no tsc/ts-jest. Reparado com `npm install` (cookie-parser ^1.4.6→1.4.7). Resultado: tsc 0 erros, jest 332 testes passando (só `health/ready` e `patrimonio.test.ts` falham, ambos precisam de DB/Redis).
+- **Bug do próprio workflow corrigido na revisão:** teste `fichaTemplatesValidation` quebrava por dependência circular (importava schema de dentro do controller, que puxava `../index`); resolvido mockando `../index`.
+- **Commits:** 3 (fix segurança / chore higiene / feat validação). **Lição:** rodar a automação NÃO dispensa revisão humana — os achados críticos foram verificados adversarialmente e um bug do fixer foi pego antes do commit.
+
 ### 2026-06-22 — Hardening: mass-assignment, PII em logs e unicidade por município
 - **Sintoma:** (1) `updateManutencaoTask` e `updateSystemConfiguration` passavam `req.body` inteiro ao Prisma (mass-assignment — permitia injetar/alterar campos arbitrários, inclusive reatribuir `patrimonioId` cruzando tenant). (2) `requestLogger`/`auditLogger` gravavam `req.body` e `req.query` sem redação (senha/token iam para `logs/`). (3) `seed.ts` imprimia senhas em texto puro no stdout (visível em logs de PM2/CI). (4) Checagem de nome duplicado em `create` de tipoBem/forma/setor era global, não por município.
 - **Correção:** (1) Whitelists explícitas de campos atualizáveis em ambos os controllers. (2) Helper `redactSensitive` (recursivo, chaves password/senha/token/secret/etc → `[REDACTED]`) aplicado a `body`/`query` nos logs. (3) `maskPassword` no seed: nunca ecoa senha de env nem nada em produção; em dev mostra só a senha PADRÃO. (4) Unicidade escopada por `municipalityId`.
