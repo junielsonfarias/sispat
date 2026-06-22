@@ -9,6 +9,8 @@ import * as userReportConfigs from '../services/userReportConfigService';
 import * as rolePermissionService from '../services/rolePermissionService';
 import * as numberingPatternService from '../services/numberingPatternService';
 import * as userDashboardService from '../services/userDashboardService';
+import * as reportTemplateService from '../services/reportTemplateService';
+import * as imovelReportTemplates from '../services/imovelReportTemplateService';
 
 // ============================================
 // USER REPORT CONFIGS
@@ -328,11 +330,7 @@ export const getReportTemplates = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const templates = await prisma.reportTemplate.findMany({
-      where: { municipalityId },
-      orderBy: { createdAt: 'desc' },
-    });
-
+    const templates = await reportTemplateService.listReportTemplates(municipalityId);
     res.json(templates);
   } catch (error) {
     logError('Erro ao buscar templates de relatório', error, { municipalityId: req.user?.municipalityId });
@@ -349,111 +347,20 @@ export const createReportTemplate = async (req: Request, res: Response): Promise
       return;
     }
 
-    const { name, layout, fields, filters, isDefault } = req.body;
-
-    // Validação básica
-    if (!name || name.trim() === '') {
-      res.status(400).json({ error: 'Nome do template é obrigatório' });
-      return;
-    }
-
-    // Se o frontend enviar fields mas não layout, criar layout padrão baseado nos fields
-    let finalLayout = layout;
-    if (!finalLayout && fields && Array.isArray(fields) && fields.length > 0) {
-      // Criar layout padrão tabular com os campos selecionados
-      finalLayout = [
-        {
-          id: 'header',
-          type: 'HEADER',
-          x: 0,
-          y: 0,
-          w: 12,
-          h: 1,
-          styles: { paddingBottom: 16, borderBottomWidth: 2, borderStyle: 'solid' },
-        },
-        {
-          id: 'table',
-          type: 'TABLE',
-          x: 0,
-          y: 1,
-          w: 12,
-          h: 10,
-          styles: { fontSize: 10 },
-          props: { fields },
-        },
-        {
-          id: 'footer',
-          type: 'FOOTER',
-          x: 0,
-          y: 11,
-          w: 12,
-          h: 1,
-          styles: {
-            paddingTop: 16,
-            fontSize: 8,
-            textAlign: 'center',
-            borderTopWidth: 1,
-            borderStyle: 'solid',
-          },
-        },
-      ];
-    }
-
-    // Se ainda não tiver layout, usar layout padrão vazio
-    if (!finalLayout) {
-      finalLayout = [
-        {
-          id: 'header',
-          type: 'HEADER',
-          x: 0,
-          y: 0,
-          w: 12,
-          h: 1,
-        },
-        {
-          id: 'table',
-          type: 'TABLE',
-          x: 0,
-          y: 1,
-          w: 12,
-          h: 10,
-        },
-        {
-          id: 'footer',
-          type: 'FOOTER',
-          x: 0,
-          y: 11,
-          w: 12,
-          h: 1,
-        },
-      ];
-    }
-
-    // Se for marcado como padrão, desmarcar outros
-    if (isDefault) {
-      await prisma.reportTemplate.updateMany({
-        where: {
-          municipalityId,
-          isDefault: true,
-        },
-        data: {
-          isDefault: false,
-        },
-      });
-    }
-
-    const template = await prisma.reportTemplate.create({
-      data: {
-        name: name.trim(),
-        municipalityId,
-        layout: finalLayout,
-        isDefault: isDefault || false,
-      },
+    const { name, layout, fields, isDefault } = req.body;
+    const template = await reportTemplateService.createReportTemplate(municipalityId, {
+      name,
+      layout,
+      fields,
+      isDefault,
     });
-
     logInfo('Template de relatório criado', { templateId: template.id, name, municipalityId });
     res.status(201).json(template);
   } catch (error: unknown) {
+    if (error instanceof reportTemplateService.ReportTemplateValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     const err = error instanceof Error ? error : new Error(String(error));
     const errorCode =
       error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined;
@@ -490,102 +397,28 @@ export const updateReportTemplate = async (req: Request, res: Response): Promise
     }
 
     const { id } = req.params;
-    const { name, layout, fields, filters, isDefault } = req.body;
-
-    // Verificar se o template pertence ao município do usuário
-    const existingTemplate = await prisma.reportTemplate.findUnique({
-      where: { id },
+    const { name, layout, fields, isDefault } = req.body;
+    const template = await reportTemplateService.updateReportTemplate(municipalityId, id, {
+      name,
+      layout,
+      fields,
+      isDefault,
     });
-
-    if (!existingTemplate) {
-      res.status(404).json({ error: 'Template não encontrado' });
-      return;
-    }
-
-    if (existingTemplate.municipalityId !== municipalityId) {
-      res.status(403).json({ error: 'Acesso negado: template de outro município' });
-      return;
-    }
-
-    // Preparar dados para atualização
-    const updateData: Prisma.ReportTemplateUpdateInput = {};
-    
-    if (name !== undefined) {
-      if (!name || name.trim() === '') {
-        res.status(400).json({ error: 'Nome do template é obrigatório' });
-        return;
-      }
-      updateData.name = name.trim();
-    }
-
-    if (layout !== undefined) {
-      updateData.layout = layout;
-    } else if (fields !== undefined && Array.isArray(fields) && fields.length > 0) {
-      // Se enviou fields mas não layout, atualizar layout
-      updateData.layout = [
-        {
-          id: 'header',
-          type: 'HEADER',
-          x: 0,
-          y: 0,
-          w: 12,
-          h: 1,
-          styles: { paddingBottom: 16, borderBottomWidth: 2, borderStyle: 'solid' },
-        },
-        {
-          id: 'table',
-          type: 'TABLE',
-          x: 0,
-          y: 1,
-          w: 12,
-          h: 10,
-          styles: { fontSize: 10 },
-          props: { fields },
-        },
-        {
-          id: 'footer',
-          type: 'FOOTER',
-          x: 0,
-          y: 11,
-          w: 12,
-          h: 1,
-          styles: {
-            paddingTop: 16,
-            fontSize: 8,
-            textAlign: 'center',
-            borderTopWidth: 1,
-            borderStyle: 'solid',
-          },
-        },
-      ];
-    }
-
-    if (isDefault !== undefined) {
-      updateData.isDefault = isDefault;
-      
-      // Se for marcado como padrão, desmarcar outros
-      if (isDefault) {
-        await prisma.reportTemplate.updateMany({
-          where: {
-            municipalityId,
-            isDefault: true,
-            id: { not: id },
-          },
-          data: {
-            isDefault: false,
-          },
-        });
-      }
-    }
-
-    const template = await prisma.reportTemplate.update({
-      where: { id },
-      data: updateData,
-    });
-
     logInfo('Template de relatório atualizado', { templateId: id, municipalityId });
     res.json(template);
   } catch (error: unknown) {
+    if (error instanceof reportTemplateService.ReportTemplateNotFoundError) {
+      res.status(404).json({ error: 'Template não encontrado' });
+      return;
+    }
+    if (error instanceof reportTemplateService.ReportTemplateForbiddenError) {
+      res.status(403).json({ error: 'Acesso negado: template de outro município' });
+      return;
+    }
+    if (error instanceof reportTemplateService.ReportTemplateValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     const err = error instanceof Error ? error : new Error(String(error));
     logError('Erro ao atualizar template de relatório', err, {
       id: req.params.id,
@@ -606,26 +439,18 @@ export const deleteReportTemplate = async (req: Request, res: Response): Promise
     }
 
     const { id } = req.params;
-
-    // Verificar se o template pertence ao município do usuário
-    const existingTemplate = await prisma.reportTemplate.findUnique({
-      where: { id },
-    });
-
-    if (!existingTemplate) {
-      res.status(404).json({ error: 'Template não encontrado' });
-      return;
-    }
-
-    if (existingTemplate.municipalityId !== municipalityId) {
-      res.status(403).json({ error: 'Acesso negado: template de outro município' });
-      return;
-    }
-
-    await prisma.reportTemplate.delete({ where: { id } });
+    await reportTemplateService.removeReportTemplate(municipalityId, id);
     logInfo('Template de relatório excluído', { templateId: id, municipalityId });
     res.json({ message: 'Template excluído com sucesso' });
   } catch (error: unknown) {
+    if (error instanceof reportTemplateService.ReportTemplateNotFoundError) {
+      res.status(404).json({ error: 'Template não encontrado' });
+      return;
+    }
+    if (error instanceof reportTemplateService.ReportTemplateForbiddenError) {
+      res.status(403).json({ error: 'Acesso negado: template de outro município' });
+      return;
+    }
     const err = error instanceof Error ? error : new Error(String(error));
     logError('Erro ao excluir template de relatório', err, {
       id: req.params.id,
@@ -647,12 +472,10 @@ export const getImovelReportTemplates = async (req: Request, res: Response): Pro
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    const templates = await prisma.imovelReportTemplate.findMany({
-      where: { municipalityId },
-      orderBy: { createdAt: 'desc' },
+    const templates = await imovelReportTemplates.listImovelReportTemplates({
+      role: req.user!.role,
+      municipalityId,
     });
-
     res.json(templates);
   } catch (error) {
     logError('Erro ao buscar templates de relatório de imóveis', error);
@@ -667,18 +490,11 @@ export const createImovelReportTemplate = async (req: Request, res: Response): P
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
     const { name, fields, filters } = req.body;
-
-    const template = await prisma.imovelReportTemplate.create({
-      data: {
-        name,
-        municipalityId,
-        fields,
-        filters,
-      },
-    });
-
+    const template = await imovelReportTemplates.createImovelReportTemplate(
+      { role: req.user!.role, municipalityId },
+      { name, fields, filters },
+    );
     res.status(201).json(template);
   } catch (error) {
     logError('Erro ao criar template de relatório de imóveis', error);
@@ -688,36 +504,24 @@ export const createImovelReportTemplate = async (req: Request, res: Response): P
 
 export const updateImovelReportTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const isSuperuser = req.user?.role === 'superuser';
     const municipalityId = req.user?.municipalityId;
     if (!municipalityId) {
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    const existing = await prisma.imovelReportTemplate.findFirst({
-      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
-      select: { id: true },
-    });
-    if (!existing) {
+    const { id } = req.params;
+    const { name, fields, filters } = req.body;
+    const template = await imovelReportTemplates.updateImovelReportTemplate(
+      { role: req.user!.role, municipalityId },
+      id,
+      { name, fields, filters },
+    );
+    res.json(template);
+  } catch (error) {
+    if (error instanceof imovelReportTemplates.ImovelReportTemplateNotFoundError) {
       res.status(404).json({ error: 'Template não encontrado' });
       return;
     }
-
-    const { name, fields, filters } = req.body;
-
-    const template = await prisma.imovelReportTemplate.update({
-      where: { id },
-      data: {
-        name,
-        fields,
-        filters,
-      },
-    });
-
-    res.json(template);
-  } catch (error) {
     logError('Erro ao atualizar template de relatório de imóveis', error, { id: req.params.id });
     res.status(500).json({ error: 'Erro ao atualizar template de relatório de imóveis' });
   }
@@ -725,26 +529,22 @@ export const updateImovelReportTemplate = async (req: Request, res: Response): P
 
 export const deleteImovelReportTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const isSuperuser = req.user?.role === 'superuser';
     const municipalityId = req.user?.municipalityId;
     if (!municipalityId) {
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    const existing = await prisma.imovelReportTemplate.findFirst({
-      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
-      select: { id: true },
-    });
-    if (!existing) {
+    const { id } = req.params;
+    await imovelReportTemplates.removeImovelReportTemplate(
+      { role: req.user!.role, municipalityId },
+      id,
+    );
+    res.json({ message: 'Template excluído com sucesso' });
+  } catch (error) {
+    if (error instanceof imovelReportTemplates.ImovelReportTemplateNotFoundError) {
       res.status(404).json({ error: 'Template não encontrado' });
       return;
     }
-
-    await prisma.imovelReportTemplate.delete({ where: { id } });
-    res.json({ message: 'Template excluído com sucesso' });
-  } catch (error) {
     logError('Erro ao excluir template de relatório de imóveis', error, { id: req.params.id });
     res.status(500).json({ error: 'Erro ao excluir template de relatório de imóveis' });
   }

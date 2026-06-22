@@ -90,11 +90,26 @@
 
 ## 2026
 
+### 2026-06-22 — Ambiente dev: subir banco + credenciais de demonstração
+- **Sintoma:** `npm run dev` (backend) crashava em `Can't reach database server at localhost:5432`; depois o frontend (Vite) quebrava com `Failed to resolve import "@sentry/react"` e o `node_modules` do front estava incompleto (`node_modules/vite` vazio).
+- **Causa-raiz:**
+  1. Não havia PostgreSQL na máquina (sem Docker/Postgres nativo). Além disso, o `backend/docker-compose.yml` criava o banco `sispat_db` enquanto o `.env` aponta para `sispat_dev` (mismatch).
+  2. `@sentry/react` é dep opcional; o `/* @vite-ignore */` com **string literal** não é confiável (o transform TS→JS reposiciona o comentário e o `vite:import-analysis` volta a tentar resolver o literal).
+  3. Lockfile do front (`pnpm-lock.yaml`) desatualizado (faltava `@sispat/shared@file:./shared`); `node_modules` quebrado.
+- **Correção:**
+  - Docker Desktop + `docker compose up -d` (postgres:15-alpine), `prisma migrate deploy` + `prisma generate` + `prisma:seed`. Alinhado `POSTGRES_DB: sispat_dev` no `backend/docker-compose.yml`.
+  - `pnpm install` (via corepack) recriou o `node_modules` e atualizou o `pnpm-lock.yaml`.
+  - `src/lib/sentry.ts`: especificador do dynamic import movido para **variável** (`const sentryPkg = '@sentry/react'`) → não-analisável estaticamente, Vite/Rollup não tentam resolver. Reforço: `optimizeDeps.exclude: ['@sentry/react']` no `vite.config.ts`.
+  - **Credenciais de demonstração:** novo `backend/src/prisma/seed-demo.ts` (script `prisma:seed:demo`) cria 1 usuário por papel (`superuser/admin/supervisor/usuario/visualizador @sispat.demo`, senha `Demo@2025`). Card de 1 clique em `src/components/auth/DemoCredentials.tsx` ligado no `Login.tsx`, **gated** por `import.meta.env.DEV || VITE_DEMO_MODE === 'true'` (nunca em produção real).
+  - Removido `package-lock.json` residual da raiz (projeto usa pnpm).
+- **Arquivos:** `backend/docker-compose.yml`, `vite.config.ts`, `src/lib/sentry.ts`, `backend/src/prisma/seed-demo.ts`, `backend/package.json`, `src/components/auth/DemoCredentials.tsx`, `src/pages/auth/Login.tsx`, `package-lock.json` (removido).
+- **Lição:** import dinâmico opcional no Vite deve usar especificador em variável, não `@vite-ignore` em literal. Credenciais de demo sempre atrás de flag de ambiente. Manter um único gerenciador de pacotes (pnpm) — nada de `package-lock.json` paralelo.
+
 ### 2026-06-22 — Médio prazo: começa a quebra do god-controller configController
 - **Contexto:** `configController.ts` (~975 linhas, 9 domínios) é um god-controller (0% de teste). Abordagem segura: testes de caracterização PRIMEIRO, depois extrair domínio por domínio para `services/`, verificando que os testes seguem verdes.
 - **1º domínio extraído — Excel/CSV Templates:** lógica/queries dos 4 endpoints (list/create/update/delete) movidas para `services/excelCsvTemplateService.ts` (padrão Actor + erro de domínio `ExcelCsvTemplateNotFoundError` mapeado a 404 no controller). Controller ficou fino (guard 401 + delegação + mapeamento de erro). `prisma` importado de `'../index'` (mesma instância — preservar comportamento; unificar p/ config/database é tarefa à parte).
 - **Rede de proteção:** os testes existentes de `tenantIsolation` (que exercem `getExcelCsvTemplates`/`deleteExcelCsvTemplate` no controller) **continuaram verdes** após a extração — prova de que o comportamento foi preservado. +7 testes de caracterização do service. Suíte: 347 verdes, tsc 0, lint 0.
-- **Próximos (mesmo padrão):** FormFieldConfig, NumberingPattern, CloudStorage, ReportTemplate, ImovelReportTemplate, UserReportConfig, UserDashboard, RolePermission — extrair um por vez, sempre com a rede de teste antes.
+- **CONCLUÍDO (9/9 domínios):** ExcelCsv, FormFieldConfig, CloudStorage, UserReportConfig, RolePermission, NumberingPattern, UserDashboard, ReportTemplate (complexo: layout/isDefault/erros 404-403-400-409), ImovelReportTemplate — todos em `services/`. `configController` foi de ~975 para **622 linhas** com **ZERO chamadas Prisma diretas** (orquestração pura). +30 testes de caracterização. `tenantIsolation` seguiu verde em cada batch. 378 testes, tsc 0, lint 0. Padrão replicável aos demais controllers legados.
 
 ### 2026-06-22 — Médio prazo: numero_patrimonio único POR MUNICÍPIO (multi-tenant)
 - **Sintoma:** `numero_patrimonio` era `@unique` GLOBAL (linhas 180/246 do schema) — contradiz a regra "único por município" e bloqueia o 2º município de reusar numeração. Pior: a GERAÇÃO de número era sequencial GLOBAL — o 1º bem do município B continuaria a sequência do A. Bug latente de multi-tenant.
