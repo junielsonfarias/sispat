@@ -40,7 +40,12 @@ const mockPrisma = {
     update: jest.fn(() => ({ id: 'task-1' })),
     delete: jest.fn(),
   },
-  activityLog: { findMany: jest.fn(() => []), count: jest.fn(() => 0), create: jest.fn() },
+  activityLog: {
+    findMany: jest.fn(() => []),
+    count: jest.fn(() => 0),
+    create: jest.fn(),
+    groupBy: jest.fn(() => []),
+  },
   excelCsvTemplate: { findMany: jest.fn(() => []), findFirst: jest.fn(), delete: jest.fn() },
   systemConfiguration: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn(() => ({ id: 'cfg-1' })) },
   documentoGeral: {
@@ -75,7 +80,7 @@ import {
   listManutencaoTasks,
   updateManutencaoTask,
 } from '../../controllers/manutencaoController';
-import { listAuditLogs } from '../../controllers/auditLogController';
+import { listAuditLogs, getAuditLogStats } from '../../controllers/auditLogController';
 import { getExcelCsvTemplates, deleteExcelCsvTemplate } from '../../controllers/configController';
 import { updateSystemConfiguration } from '../../controllers/systemConfigController';
 import {
@@ -401,6 +406,21 @@ describe('tenant isolation — audit logs (via relação user)', () => {
     await listAuditLogs(makeReq({ role: 'superuser' }), makeRes());
     const arg = (mockPrisma.activityLog.findMany.mock.calls[0] as any[])[0];
     expect(arg.where.user).toBeUndefined();
+  });
+
+  it('getAuditLogStats: admin só agrega estatísticas do próprio município', async () => {
+    await getAuditLogStats(makeReq({ role: 'admin', municipalityId: 'mun-A' }), makeRes());
+    const groupByArg = (mockPrisma.activityLog.groupBy.mock.calls[0] as any[])[0];
+    expect(groupByArg.where.user).toEqual({ municipalityId: 'mun-A' });
+    // a agregação diária (findMany) também é escopada
+    const dailyArg = (mockPrisma.activityLog.findMany.mock.calls[0] as any[])[0];
+    expect(dailyArg.where.user).toEqual({ municipalityId: 'mun-A' });
+  });
+
+  it('getAuditLogStats: superuser agrega de todos os municípios', async () => {
+    await getAuditLogStats(makeReq({ role: 'superuser' }), makeRes());
+    const groupByArg = (mockPrisma.activityLog.groupBy.mock.calls[0] as any[])[0];
+    expect(groupByArg.where.user).toBeUndefined();
   });
 });
 

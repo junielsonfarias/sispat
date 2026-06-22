@@ -159,6 +159,12 @@ export const getAuditLogStats = async (req: Request, res: Response): Promise<voi
       }
     }
 
+    // ✅ MULTI-TENANT: superuser vê tudo; demais só estatísticas do próprio município
+    const isSuperuser = req.user?.role === 'superuser'
+    if (!isSuperuser) {
+      where.user = { municipalityId: req.user?.municipalityId }
+    }
+
     // Agrupar por ação
     const actionStats = await prisma.activityLog.groupBy({
       by: ['action'],
@@ -191,19 +197,30 @@ export const getAuditLogStats = async (req: Request, res: Response): Promise<voi
     // Total de logs
     const total = await prisma.activityLog.count({ where })
 
-    // Logs por dia (últimos 30 dias)
+    // Logs por dia (últimos 30 dias) — escopado por município, sem SQL cru
+    // (o $queryRaw anterior referenciava `created_at` mas a coluna real é
+    // `createdAt`, então quebrava em runtime; além de não filtrar tenant).
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const dailyStats = await prisma.$queryRaw`
-      SELECT 
-        DATE(created_at) as date,
-        COUNT(*) as count
-      FROM activity_logs
-      WHERE created_at >= ${thirtyDaysAgo}
-      GROUP BY DATE(created_at)
-      ORDER BY date DESC
-    `
+    const dailyWhere: Prisma.ActivityLogWhereInput = {
+      createdAt: { gte: thirtyDaysAgo },
+    }
+    if (!isSuperuser) {
+      dailyWhere.user = { municipalityId: req.user?.municipalityId }
+    }
+    const recentLogs = await prisma.activityLog.findMany({
+      where: dailyWhere,
+      select: { createdAt: true },
+    })
+    const dailyMap = new Map<string, number>()
+    for (const log of recentLogs) {
+      const date = log.createdAt.toISOString().slice(0, 10)
+      dailyMap.set(date, (dailyMap.get(date) || 0) + 1)
+    }
+    const dailyStats = Array.from(dailyMap.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
 
     res.json({
       total,
