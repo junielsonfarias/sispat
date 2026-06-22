@@ -222,24 +222,28 @@ export default function ImoveisView() {
                 Imprimir Etiqueta
               </Button>
               
-              <Button
-                variant="outline"
-                onClick={() => openTransferDialog('transferencia')}
-                className="touch-target border-blue-300 text-blue-700 hover:bg-blue-50"
-              >
-                <Send className="mr-2 h-4 w-4" />
-                Transferir
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => openTransferDialog('doacao')}
-                className="touch-target border-purple-300 text-purple-700 hover:bg-purple-50"
-              >
-                <Gift className="mr-2 h-4 w-4" />
-                Doar
-              </Button>
-              
+              {canEdit && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => openTransferDialog('transferencia')}
+                    className="touch-target border-blue-300 text-blue-700 hover:bg-blue-50"
+                  >
+                    <Send className="mr-2 h-4 w-4" />
+                    Transferir
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => openTransferDialog('doacao')}
+                    className="touch-target border-purple-300 text-purple-700 hover:bg-purple-50"
+                  >
+                    <Gift className="mr-2 h-4 w-4" />
+                    Doar
+                  </Button>
+                </>
+              )}
+
               {canDelete && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

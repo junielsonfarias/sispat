@@ -149,6 +149,10 @@ export default function ImoveisList() {
   }
 
   const canDelete = user?.role === 'supervisor' || user?.role === 'admin'
+  // criar/editar: gestão e operação (visualizador é read-only). Backend reforça.
+  const canCreate =
+    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'usuario'
+  const canEdit = canCreate
 
   return (
     <div className="flex-1 p-3 sm:p-4 lg:p-6">
@@ -164,11 +168,13 @@ export default function ImoveisList() {
                 Gerencie todos os imóveis cadastrados no sistema
               </p>
             </div>
-            <Button asChild className="min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]">
-              <Link to="/imoveis/novo">
-                <Plus className="mr-2 h-4 w-4" /> Cadastrar Imóvel
-              </Link>
-            </Button>
+            {canCreate && (
+              <Button asChild className="min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]">
+                <Link to="/imoveis/novo">
+                  <Plus className="mr-2 h-4 w-4" /> Cadastrar Imóvel
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -239,11 +245,13 @@ export default function ImoveisList() {
                                 Ver Detalhes
                               </Link>
                             </Button>
-                            <Button variant="ghost" size="icon" asChild>
-                              <Link to={`/imoveis/editar/${item.id}`}>
-                                <Edit className="h-4 w-4" />
-                              </Link>
-                            </Button>
+                            {canEdit && (
+                              <Button variant="ghost" size="icon" asChild>
+                                <Link to={`/imoveis/editar/${item.id}`}>
+                                  <Edit className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
                             {canDelete && (
                               <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -328,17 +336,19 @@ export default function ImoveisList() {
                             Ver
                           </Link>
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                          className="h-8 px-3 text-xs"
-                        >
-                          <Link to={`/imoveis/editar/${item.id}`}>
-                            <Edit className="h-3 w-3 mr-1" />
-                            Editar
-                          </Link>
-                        </Button>
+                        {canEdit && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            asChild
+                            className="h-8 px-3 text-xs"
+                          >
+                            <Link to={`/imoveis/editar/${item.id}`}>
+                              <Edit className="h-3 w-3 mr-1" />
+                              Editar
+                            </Link>
+                          </Button>
+                        )}
                       </div>
                       {canDelete && (
                         <AlertDialog>
