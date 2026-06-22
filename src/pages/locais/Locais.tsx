@@ -17,6 +17,7 @@ import {
 import { PlusCircle, Edit, Trash2 } from 'lucide-react'
 import { useLocais } from '@/contexts/LocalContext'
 import { useSectors } from '@/contexts/SectorContext'
+import { useAuth } from '@/hooks/useAuth'
 import { Local } from '@/types'
 import { SectorLocalForm } from '@/components/admin/SectorLocalForm'
 import {
@@ -29,6 +30,9 @@ import {
 export default function Locais() {
   const { locais, addLocal, updateLocal, deleteLocal } = useLocais()
   const { sectors } = useSectors()
+  const { user } = useAuth()
+  // Gerir locais (estrutura): admin/supervisor. Demais papéis só visualizam.
+  const canManage = user?.role === 'admin' || user?.role === 'supervisor'
   const [isDialogOpen, setDialogOpen] = useState(false)
   const [editingLocal, setEditingLocal] = useState<Local | undefined>()
   const [parentSectorId, setParentSectorId] = useState<string | null>(null)
@@ -89,32 +93,36 @@ export default function Locais() {
                         className="flex items-center justify-between p-2 rounded-md border"
                       >
                         <span>{local.name}</span>
-                        <div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(local)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => deleteLocal(local.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {canManage && (
+                          <div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(local)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => deleteLocal(local.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ))}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCreate(sector.id)}
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Local
-                    </Button>
+                    {canManage && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCreate(sector.id)}
+                      >
+                        <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Local
+                      </Button>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
