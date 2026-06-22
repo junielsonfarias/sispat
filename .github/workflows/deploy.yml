@@ -5,110 +5,69 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   test:
+    name: Gate (lint + type-check + test + build)
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
-        cache: 'npm'
-        
+        node-version: '20'
+
     - name: Install pnpm
       run: npm install -g pnpm
-      
-    - name: Install frontend dependencies
-      run: pnpm install
-      
+
+    # ---------- Backend (gate completo) ----------
     - name: Install backend dependencies
-      run: |
-        cd backend
-        npm install
-        
-    - name: Run frontend tests
-      run: pnpm run test
-      
-    - name: Run frontend lint
+      working-directory: backend
+      run: npm ci
+
+    - name: Generate Prisma client
+      working-directory: backend
+      run: npx prisma generate
+
+    - name: Backend lint
+      working-directory: backend
+      run: npm run lint
+
+    - name: Backend type-check
+      working-directory: backend
+      run: npm run type-check
+
+    - name: Backend tests
+      working-directory: backend
+      run: npm test
+
+    - name: Backend build
+      working-directory: backend
+      run: npm run build
+
+    # ---------- Frontend ----------
+    - name: Install frontend dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Frontend lint
       run: pnpm run lint
-      
+
+    - name: Frontend tests
+      run: pnpm run test
+
     - name: Build frontend
       run: pnpm run build
-      
-    - name: Build backend
-      run: |
-        cd backend
-        npm run build
-
-  build-and-push:
-    needs: test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-          
-    - name: Build and push backend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./backend
-        file: ./backend/Dockerfile.prod
-        push: true
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        
-    - name: Build and push frontend image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.frontend.prod
-        push: true
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
 
   deploy:
-    needs: build-and-push
+    name: Deploy to production
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
-    - name: Deploy to production
+    - name: Deploy via SSH (build no servidor)
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.PROD_HOST }}
@@ -117,10 +76,12 @@ jobs:
         script: |
           cd /opt/sispat
           git pull origin main
-          docker-compose -f docker-compose.prod.yml pull
-          docker-compose -f docker-compose.prod.yml up -d
-          docker system prune -f
-          
+          # docker-compose.prod.yml monta o serviço da app via `build:` (Dockerfile
+          # raiz, multi-stage), não por imagem de registry — por isso buildamos no
+          # servidor com --build em vez de `pull`.
+          docker-compose -f docker-compose.prod.yml up -d --build
+          docker image prune -f
+
     - name: Health check
       run: |
         sleep 30
