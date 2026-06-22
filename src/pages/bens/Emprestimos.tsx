@@ -34,6 +34,7 @@ import { formatDate } from '@/lib/utils'
 import { differenceInDays, isBefore } from 'date-fns'
 import { AlertTriangle, CheckCircle, Clock, RotateCcw } from 'lucide-react'
 import { logger } from '@/lib/logger'
+import { useAuth } from '@/hooks/useAuth'
 
 interface EmprestimoAPI {
   id: string
@@ -82,6 +83,10 @@ const getLoanStatus = (e: EmprestimoAPI) => {
 }
 
 const Emprestimos = () => {
+  const { user } = useAuth()
+  // Registrar devolução: gestão e operação (visualizador é read-only). Backend reforça.
+  const canReturn =
+    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'usuario'
   const [emprestimos, setEmprestimos] = useState<EmprestimoAPI[]>([])
   const [loading, setLoading] = useState(true)
   const [devolucao, setDevolucao] = useState<DevolucaoState>({
@@ -211,7 +216,7 @@ const Emprestimos = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {e.status !== 'devolvido' && (
+                        {canReturn && e.status !== 'devolvido' && (
                           <Button
                             variant="outline"
                             size="sm"

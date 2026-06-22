@@ -40,6 +40,9 @@ import {
 export default function InventariosList() {
   const { inventories, deleteInventory } = useInventory()
   const { user } = useAuth()
+  // Criar inventário: gestão e operação (visualizador é read-only). Backend reforça.
+  const canCreate =
+    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'usuario'
   const [locationFilter, setLocationFilter] = useState<string | null>(null)
 
   const locationOptions = useMemo(() => {
@@ -66,11 +69,13 @@ export default function InventariosList() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Gerenciamento de Inventários</h1>
-        <Button asChild>
-          <Link to="/inventarios/novo">
-            <PlusCircle className="mr-2 h-4 w-4" /> Novo Inventário
-          </Link>
-        </Button>
+        {canCreate && (
+          <Button asChild>
+            <Link to="/inventarios/novo">
+              <PlusCircle className="mr-2 h-4 w-4" /> Novo Inventário
+            </Link>
+          </Button>
+        )}
       </div>
       <Card>
         <CardHeader>

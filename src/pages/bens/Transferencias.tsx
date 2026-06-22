@@ -27,6 +27,8 @@ import { useAuth } from '@/hooks/useAuth'
 const Transferencias = () => {
   const { transferencias, updateTransferenciaStatus } = useTransfers()
   const { user } = useAuth()
+  // Aprovar/rejeitar transferências: apenas gestão (admin/supervisor). Backend reforça.
+  const canApprove = user?.role === 'admin' || user?.role === 'supervisor'
 
   const filteredTransfers = (status: TransferenciaStatus) =>
     transferencias.filter((t) => t.status === status)
@@ -81,7 +83,7 @@ const Transferencias = () => {
               </Badge>
             </TableCell>
             <TableCell>
-              {t.status === 'pendente' && (
+              {canApprove && t.status === 'pendente' && (
                 <div className="flex gap-2">
                   <Button
                     size="sm"
