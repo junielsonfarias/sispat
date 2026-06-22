@@ -90,6 +90,14 @@
 
 ## 2026
 
+### 2026-06-22 — Frente "PRÓXIMAS SEMANAS": ops, infra e guardrail multi-tenant
+- **Graceful shutdown real** (`index.ts`): SIGINT/SIGTERM agora param de aceitar conexões (`httpServer.close`), drenam as em voo, fecham websocket, param o health-monitor (novo `stop()`), fecham Redis (`closeRedis`) e Prisma, com timeout de segurança de 15s. Antes só `prisma.$disconnect()` → cortava requisições em voo no rollout.
+- **Retenção de logs agendada:** `logRetention.archiveOldLogs` agora roda via `setInterval` 24h em produção (antes existia mas nunca era agendado → `activityLog` crescia indefinidamente).
+- **Infra:** Postgres/Redis no `docker-compose.prod.yml` passaram a bindar em `127.0.0.1` (antes `0.0.0.0` expunha banco/cache à rede do servidor); a app acessa via rede interna.
+- **Guardrail multi-tenant:** `authenticateToken` ganhou uma checagem não-mutante que bloqueia (403) qualquer não-superuser que tente operar em município diferente do JWT via `body`/`params.municipalityId` — defesa-em-profundidade para controllers futuros, sem injetar nada no body (não interfere com schemas Zod strict). Coberto por `authGuardrail.test.ts` (5 casos).
+- **Verificação:** 340 testes verdes, tsc 0, lint 0 errors.
+- **Pendência (não feita — script não-testável):** `scripts/backup-sispat.sh` ainda inclui `.env` (com segredos) em tarball não-criptografado. Encriptar o backup ou excluir o `.env` exige testar o ciclo backup/restore — recomendado fazer com acesso ao servidor.
+
 ### 2026-06-22 — Frente "AGORA" da avaliação E2E: CI lint, deploy.yml e schema único
 - **Sintoma:** (1) `npm run lint` do backend saía com exit 1 (9 errors → CI vermelho); (2) `deploy.yml` referenciava `Dockerfile.prod`/`Dockerfile.frontend.prod` inexistentes e fazia `docker-compose pull` de imagens que o compose monta via `build:` → deploy automatizado quebrado e sem gate de backend; (3) dois `schema.prisma` divergentes.
 - **Correção CI lint:** os 9 errors eram 7× `@ts-ignore` (convertidos para `@ts-expect-error` com descrição — as linhas erram de verdade por causa do modelo fantasma `emailConfig`) e 2× `no-namespace` na augmentação idiomática do Express (`declare global { namespace Express }` — habilitado `allowDeclarations: true` no eslint.config). Resultado: **0 errors** (152 warnings não falham o CI), tsc 0.

@@ -85,6 +85,21 @@ export const authenticateToken = async (
       municipalityId: user.municipalityId,
     };
 
+    // 🛡️ Guardrail de defesa-em-profundidade: bloqueia tentativa de operar em
+    // município diferente do JWT (não-superuser) via body/params. NÃO injeta
+    // nada (evita interferir com schemas Zod strict) — apenas rejeita divergência.
+    // Vale para TODA rota autenticada, protegendo controllers futuros que
+    // esquecerem de filtrar por req.user.municipalityId.
+    const providedMunicipality = req.params?.municipalityId || req.body?.municipalityId;
+    if (
+      providedMunicipality &&
+      providedMunicipality !== user.municipalityId &&
+      user.role !== 'superuser'
+    ) {
+      res.status(403).json({ error: 'Acesso negado: município diferente' });
+      return;
+    }
+
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
