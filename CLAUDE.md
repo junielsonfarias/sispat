@@ -47,7 +47,7 @@ npm test                  # jest
 | Rotas API | `backend/src/routes/` |
 | Controllers | `backend/src/controllers/` |
 | Middlewares (auth, validation, rate-limit) | `backend/src/middlewares/` |
-| Schema do banco | `backend/src/prisma/schema.prisma` |
+| Schema do banco (CANÔNICO) | `backend/prisma/schema.prisma` — local padrão do Prisma, casa com as migrations e com o client gerado. O antigo `backend/src/prisma/schema.prisma` foi removido (estava dessincronizado: modelos fantasma e faltando models reais). |
 | Migrations | `backend/prisma/migrations/` |
 | Validação de env | `backend/src/config/validate-env.ts` |
 | Páginas React | `src/pages/` |

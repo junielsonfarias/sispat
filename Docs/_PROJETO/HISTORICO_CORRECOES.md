@@ -90,6 +90,13 @@
 
 ## 2026
 
+### 2026-06-22 — Frente "AGORA" da avaliação E2E: CI lint, deploy.yml e schema único
+- **Sintoma:** (1) `npm run lint` do backend saía com exit 1 (9 errors → CI vermelho); (2) `deploy.yml` referenciava `Dockerfile.prod`/`Dockerfile.frontend.prod` inexistentes e fazia `docker-compose pull` de imagens que o compose monta via `build:` → deploy automatizado quebrado e sem gate de backend; (3) dois `schema.prisma` divergentes.
+- **Correção CI lint:** os 9 errors eram 7× `@ts-ignore` (convertidos para `@ts-expect-error` com descrição — as linhas erram de verdade por causa do modelo fantasma `emailConfig`) e 2× `no-namespace` na augmentação idiomática do Express (`declare global { namespace Express }` — habilitado `allowDeclarations: true` no eslint.config). Resultado: **0 errors** (152 warnings não falham o CI), tsc 0.
+- **Correção deploy.yml:** removido o job `build-and-push` (Dockerfiles inexistentes; o compose builda local). O gate `test` agora roda lint+type-check+test+build do **backend** (333 testes verdes) além do frontend, node 20 + `npm ci`. O deploy passou a buildar no servidor (`docker-compose up -d --build`), alinhado ao `build:` do compose.
+- **Schema único:** o canônico é `backend/prisma/schema.prisma` (36 models — local padrão do Prisma, casa com as migrations e o client gerado, tem campos de licitação). O `backend/src/prisma/schema.prisma` (26 models) era **stale e ativamente errado** (modelo fantasma `EmailConfig` que NÃO existe no client nem em migration, e faltando 11 models reais). Removido (git preserva o histórico). CLAUDE.md atualizado. `src/prisma/seed.ts` preservado.
+- **⚠️ Pendência de reconciliação:** `emailConfigController`/`config/email.ts` usam `prisma.emailConfig`, que NÃO existe no client gerado (suprimido por `@ts-expect-error`) — feature de e-mail provavelmente quebrada. Resolver com `prisma db pull` contra o banco real para verificar se há tabela órfã e regenerar o client. **Lição:** nunca manter dois `schema.prisma`; o Prisma usa só o do local padrão (`prisma/`).
+
 ### 2026-06-22 — Auditoria automatizada (workflow multi-agente): 61 achados corrigidos
 - **Contexto:** workflow `sispat-audit-fix` (auditores multi-tenant/segurança/higiene em paralelo + fixer em série, com test-gating) rodou 2 rodadas, 69 agentes. Derrubou a premissa de que os services migrados eram seguros.
 - **Críticos (segurança):**
