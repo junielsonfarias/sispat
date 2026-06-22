@@ -42,8 +42,14 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Container } from '@/components/ui/responsive-container'
+import { DemoCredentials } from '@/components/auth/DemoCredentials'
 
 type LoginFormValues = LoginInput
+
+// Exibe o card de credenciais de demonstração apenas em dev ou quando
+// VITE_DEMO_MODE=true (ambiente de demo). Nunca em produção real.
+const SHOW_DEMO_CREDENTIALS =
+  import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true'
 
 export default function Login() {
   const { login, isAuthenticated, user } = useAuth()
@@ -138,6 +144,12 @@ export default function Login() {
         setIsLoading(false)
       }
     }
+  }
+
+  const fillDemoCredentials = (email: string, password: string) => {
+    setError(null)
+    form.setValue('email', email, { shouldValidate: true })
+    form.setValue('password', password, { shouldValidate: true })
   }
 
   const backgroundStyle =
@@ -366,6 +378,14 @@ export default function Login() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Credenciais de demonstração (apenas dev / VITE_DEMO_MODE) */}
+            {SHOW_DEMO_CREDENTIALS && (
+              <DemoCredentials
+                onSelect={fillDemoCredentials}
+                disabled={isLoading}
+              />
+            )}
 
             {/* Mobile Features and Consultation Link - Below form */}
             <div className="lg:hidden mt-6 space-y-6">
