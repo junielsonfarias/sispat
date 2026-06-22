@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { logError, logInfo, logDebug } from '../config/logger';
 import * as excelCsvTemplates from '../services/excelCsvTemplateService';
+import * as formFieldConfigs from '../services/formFieldConfigService';
+import * as cloudStorageService from '../services/cloudStorageService';
 
 // ============================================
 // USER REPORT CONFIGS
@@ -173,12 +175,10 @@ export const getFormFieldConfigs = async (req: Request, res: Response): Promise<
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    const fields = await prisma.formFieldConfig.findMany({
-      where: { municipalityId },
-      orderBy: { id: 'asc' },
+    const fields = await formFieldConfigs.listFormFieldConfigs({
+      role: req.user!.role,
+      municipalityId,
     });
-
     res.json(fields);
   } catch (error) {
     logError('Erro ao buscar configurações de campos', error);
@@ -193,23 +193,11 @@ export const createFormFieldConfig = async (req: Request, res: Response): Promis
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
     const { key, label, type, required, defaultValue, options, isCustom, isSystem } = req.body;
-
-    const field = await prisma.formFieldConfig.create({
-      data: {
-        key,
-        label,
-        type,
-        required: required || false,
-        defaultValue,
-        options: options || [],
-        isCustom: isCustom || false,
-        isSystem: isSystem || false,
-        municipalityId,
-      },
-    });
-
+    const field = await formFieldConfigs.createFormFieldConfig(
+      { role: req.user!.role, municipalityId },
+      { key, label, type, required, defaultValue, options, isCustom, isSystem },
+    );
     res.status(201).json(field);
   } catch (error) {
     logError('Erro ao criar configuração de campo', error);
@@ -219,41 +207,24 @@ export const createFormFieldConfig = async (req: Request, res: Response): Promis
 
 export const updateFormFieldConfig = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const isSuperuser = req.user?.role === 'superuser';
     const municipalityId = req.user?.municipalityId;
     if (!municipalityId) {
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    const existing = await prisma.formFieldConfig.findFirst({
-      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
-      select: { id: true },
-    });
-    if (!existing) {
+    const { id } = req.params;
+    const { key, label, type, required, defaultValue, options, isCustom, isSystem } = req.body;
+    const field = await formFieldConfigs.updateFormFieldConfig(
+      { role: req.user!.role, municipalityId },
+      id,
+      { key, label, type, required, defaultValue, options, isCustom, isSystem },
+    );
+    res.json(field);
+  } catch (error) {
+    if (error instanceof formFieldConfigs.FormFieldConfigNotFoundError) {
       res.status(404).json({ error: 'Configuração de campo não encontrada' });
       return;
     }
-
-    const { key, label, type, required, defaultValue, options, isCustom, isSystem } = req.body;
-
-    const field = await prisma.formFieldConfig.update({
-      where: { id },
-      data: {
-        key,
-        label,
-        type,
-        required,
-        defaultValue,
-        options,
-        isCustom,
-        isSystem,
-      },
-    });
-
-    res.json(field);
-  } catch (error) {
     logError('Erro ao atualizar configuração de campo', error, { id: req.params.id });
     res.status(500).json({ error: 'Erro ao atualizar configuração de campo' });
   }
@@ -261,26 +232,19 @@ export const updateFormFieldConfig = async (req: Request, res: Response): Promis
 
 export const deleteFormFieldConfig = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const isSuperuser = req.user?.role === 'superuser';
     const municipalityId = req.user?.municipalityId;
     if (!municipalityId) {
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    const existing = await prisma.formFieldConfig.findFirst({
-      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
-      select: { id: true },
-    });
-    if (!existing) {
+    const { id } = req.params;
+    await formFieldConfigs.removeFormFieldConfig({ role: req.user!.role, municipalityId }, id);
+    res.json({ message: 'Configuração de campo excluída com sucesso' });
+  } catch (error) {
+    if (error instanceof formFieldConfigs.FormFieldConfigNotFoundError) {
       res.status(404).json({ error: 'Configuração de campo não encontrada' });
       return;
     }
-
-    await prisma.formFieldConfig.delete({ where: { id } });
-    res.json({ message: 'Configuração de campo excluída com sucesso' });
-  } catch (error) {
     logError('Erro ao excluir configuração de campo', error, { id: req.params.id });
     res.status(500).json({ error: 'Erro ao excluir configuração de campo' });
   }
@@ -339,20 +303,7 @@ export const getCloudStorage = async (req: Request, res: Response): Promise<void
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    let cloudStorage = await prisma.cloudStorage.findUnique({
-      where: { municipalityId },
-    });
-
-    if (!cloudStorage) {
-      cloudStorage = await prisma.cloudStorage.create({
-        data: {
-          municipalityId,
-          isConnected: false,
-        },
-      });
-    }
-
+    const cloudStorage = await cloudStorageService.getCloudStorage(municipalityId);
     res.json(cloudStorage);
   } catch (error) {
     logError('Erro ao buscar configuração de cloud storage', error);
@@ -367,28 +318,14 @@ export const updateCloudStorage = async (req: Request, res: Response): Promise<v
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
     const { provider, isConnected, accessToken, refreshToken, expiresAt } = req.body;
-
-    const cloudStorage = await prisma.cloudStorage.upsert({
-      where: { municipalityId },
-      update: {
-        provider,
-        isConnected,
-        accessToken,
-        refreshToken,
-        expiresAt,
-      },
-      create: {
-        municipalityId,
-        provider,
-        isConnected,
-        accessToken,
-        refreshToken,
-        expiresAt,
-      },
+    const cloudStorage = await cloudStorageService.upsertCloudStorage(municipalityId, {
+      provider,
+      isConnected,
+      accessToken,
+      refreshToken,
+      expiresAt,
     });
-
     res.json(cloudStorage);
   } catch (error) {
     logError('Erro ao atualizar configuração de cloud storage', error);
