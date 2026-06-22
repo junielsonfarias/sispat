@@ -34,7 +34,7 @@ import {
 } from 'lucide-react'
 import { Patrimonio, Note, TransferenciaType } from '@/types'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
-import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { toast } from '@/hooks/use-toast'
@@ -96,7 +96,11 @@ function BensView() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { getPatrimonioById, fetchPatrimonioById, updatePatrimonio, deletePatrimonio } = usePatrimonio()
-  const { user } = useAuth()
+  const { hasPermission } = usePermissions()
+  // RBAC de UI: esconde ações mutantes de quem não tem permissão (o backend
+  // também reforça). visualizador é read-only; delete fica com admin/superuser.
+  const canUpdate = hasPermission('bens:update')
+  const canDelete = hasPermission('bens:delete')
   const { settings } = useCustomization()
   const { templates: labelTemplates } = useLabelTemplates()
   
@@ -430,15 +434,17 @@ function BensView() {
             </div>
           
             <div className="flex gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/bens-cadastrados/editar/${patrimonio.id}`)}
-                className="touch-target"
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Editar
-              </Button>
-              
+              {canUpdate && (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/bens-cadastrados/editar/${patrimonio.id}`)}
+                  className="touch-target"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar
+                </Button>
+              )}
+
               <Button
                 variant="outline"
                 onClick={handleOpenPDFConfig}
@@ -461,7 +467,7 @@ function BensView() {
                 Imprimir Etiqueta
               </Button>
               
-              {patrimonio.status !== 'baixado' && (
+              {canUpdate && patrimonio.status !== 'baixado' && (
                 <>
                   <Button
                     variant="outline"
@@ -492,7 +498,7 @@ function BensView() {
                 </>
               )}
               
-              {(user?.role === 'admin' || user?.role === 'superuser') && (
+              {canDelete && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="touch-target">
