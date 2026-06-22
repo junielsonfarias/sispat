@@ -16,6 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useSync } from '@/contexts/SyncContext'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useSectors } from '@/contexts/SectorContext'
 import { useTiposBens } from '@/contexts/TiposBensContext'
@@ -87,7 +88,9 @@ const renderTable = (
   setPatrimonios: React.Dispatch<React.SetStateAction<Patrimonio[]>>,
   setSelectedAssets: React.Dispatch<React.SetStateAction<string[]>>,
   setTotalItems: React.Dispatch<React.SetStateAction<number>>,
-  handleShowQrCode: (patrimonio: Patrimonio) => void
+  handleShowQrCode: (patrimonio: Patrimonio) => void,
+  canUpdate: boolean,
+  canDelete: boolean
 ) => {
   if (!Array.isArray(filteredData)) {
     return (
@@ -241,6 +244,7 @@ const renderTable = (
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    {canUpdate && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -261,6 +265,8 @@ const renderTable = (
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    )}
+                    {canDelete && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -323,6 +329,7 @@ const renderTable = (
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -337,6 +344,12 @@ const renderTable = (
 const BensCadastrados = () => {
   const { isSyncing, startSync } = useSync()
   const { user } = useAuth()
+  // RBAC de UI: esconde criar/editar/excluir de quem não tem permissão
+  // (visualizador é read-only). O backend também reforça.
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('bens:create')
+  const canUpdate = hasPermission('bens:update')
+  const canDelete = hasPermission('bens:delete')
   const { templates: labelTemplates } = useLabelTemplates()
   const { deletePatrimonio } = usePatrimonio()
   const sectorsContext = useSectors()
@@ -615,18 +628,22 @@ const BensCadastrados = () => {
                   </Tooltip>
                 </TooltipProvider>
               )}
-              <Button asChild variant="outline" className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]">
-                <Link to="/bens-cadastrados/novo-lote">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Cadastro em Lote
-                </Link>
-              </Button>
-              <Button asChild className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]">
-                <Link to="/bens-cadastrados/novo">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Bem
-                </Link>
-              </Button>
+              {canCreate && (
+                <>
+                  <Button asChild variant="outline" className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]">
+                    <Link to="/bens-cadastrados/novo-lote">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Cadastro em Lote
+                    </Link>
+                  </Button>
+                  <Button asChild className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]">
+                    <Link to="/bens-cadastrados/novo">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Novo Bem
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -906,7 +923,9 @@ const BensCadastrados = () => {
               setPatrimonios,
               setSelectedAssets,
               setTotalItems,
-              handleShowQrCode
+              handleShowQrCode,
+              canUpdate,
+              canDelete
             )}
 
             {/* Mobile Cards */}
@@ -1034,6 +1053,7 @@ const BensCadastrados = () => {
                               Ver
                             </Link>
                           </Button>
+                          {canUpdate && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1045,6 +1065,7 @@ const BensCadastrados = () => {
                               Editar
                             </Link>
                           </Button>
+                          )}
                         </div>
                         <div className="flex items-center gap-1">
                     <TooltipProvider>
@@ -1065,6 +1086,7 @@ const BensCadastrados = () => {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    {canDelete && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -1127,6 +1149,7 @@ const BensCadastrados = () => {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    )}
                         </div>
                       </div>
                     </CardContent>
