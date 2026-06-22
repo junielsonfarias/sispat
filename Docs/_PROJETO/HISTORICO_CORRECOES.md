@@ -90,6 +90,14 @@
 
 ## 2026
 
+### 2026-06-22 — Médio prazo: numero_patrimonio único POR MUNICÍPIO (multi-tenant)
+- **Sintoma:** `numero_patrimonio` era `@unique` GLOBAL (linhas 180/246 do schema) — contradiz a regra "único por município" e bloqueia o 2º município de reusar numeração. Pior: a GERAÇÃO de número era sequencial GLOBAL — o 1º bem do município B continuaria a sequência do A. Bug latente de multi-tenant.
+- **Correção (schema + migration):** `@@unique([municipalityId, numero_patrimonio])` em Patrimonio e Imovel (mantido o `@@index([numero_patrimonio])` de busca). Migration `20260622000000_numero_patrimonio_unique_per_municipality` (DROP do unique global + CREATE do composto, em ambas as tabelas).
+- **Correção (código):** `gerarNumeroPatrimonial`/`gerarNumeroImovel` agora recebem `municipalityId` e escopam a sequência (startsWith) E a checagem de colisão por município. `getByNumero`/`getImovelByNumero` e os dup-checks de `createPatrimonio`/`createImovel` migrados de `findUnique({ numero })` para `findFirst` escopado por município (tsc apontou os 5 pontos). Controllers passam `req.user.municipalityId`.
+- **Testes:** `gerarNumero` e `getByNumero` reescritos (collision/lookup agora via findFirst escopado). 340 testes verdes, tsc 0, lint 0.
+- **⚠️ Migration NÃO aplicada aqui (sem banco):** aplicar com `prisma migrate deploy`. Pré-requisito: nenhum `numero_patrimonio` duplicado ENTRE municípios (seguro em modo município único).
+- **Pendência (follow-up):** lookup público por número (consulta pública) fica ambíguo em multi-município (mesmo número em 2 municípios) — é design da rota pública, fora deste escopo.
+
 ### 2026-06-22 — Frente "PRÓXIMAS SEMANAS": ops, infra e guardrail multi-tenant
 - **Graceful shutdown real** (`index.ts`): SIGINT/SIGTERM agora param de aceitar conexões (`httpServer.close`), drenam as em voo, fecham websocket, param o health-monitor (novo `stop()`), fecham Redis (`closeRedis`) e Prisma, com timeout de segurança de 15s. Antes só `prisma.$disconnect()` → cortava requisições em voo no rollout.
 - **Retenção de logs agendada:** `logRetention.archiveOldLogs` agora roda via `setInterval` 24h em produção (antes existia mas nunca era agendado → `activityLog` crescia indefinidamente).

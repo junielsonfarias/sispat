@@ -284,8 +284,11 @@ export const getByNumero = async (
   numero: string,
   actor: Actor,
 ): Promise<GetPatrimonioResult> => {
-  const patrimonio = await prisma.patrimonio.findUnique({
-    where: { numero_patrimonio: numero },
+  const patrimonio = await prisma.patrimonio.findFirst({
+    where: {
+      numero_patrimonio: numero,
+      ...(actor.role === 'superuser' ? {} : { municipalityId: actor.municipalityId }),
+    },
     include: {
       sector: { select: { id: true, name: true, codigo: true } },
       local: { select: { id: true, name: true } },
@@ -314,11 +317,15 @@ export const getByNumero = async (
 // ===========================================================================
 
 export const gerarNumeroPatrimonial = async (params: {
+  municipalityId: string;
   prefix?: string;
   year?: string | number;
   sectorCode?: string;
   maxRetries?: number;
 }): Promise<{ numero: string; year: number; sectorCode: string; sequencial: number }> => {
+  // ✅ MULTI-TENANT: a numeração é sequencial POR MUNICÍPIO (antes era global —
+  // o 1º bem do município B continuava a sequência do A).
+  const { municipalityId } = params;
   const prefix = params.prefix ?? 'PAT';
   const year = Number(params.year ?? new Date().getFullYear());
   const sectorCode = params.sectorCode ?? '00';
@@ -328,7 +335,10 @@ export const gerarNumeroPatrimonial = async (params: {
     try {
       return await prisma.$transaction(async (tx) => {
         const ultimo = await tx.patrimonio.findFirst({
-          where: { numero_patrimonio: { startsWith: `${prefix}${year}${sectorCode}` } },
+          where: {
+            municipalityId,
+            numero_patrimonio: { startsWith: `${prefix}${year}${sectorCode}` },
+          },
           orderBy: { numero_patrimonio: 'desc' },
           select: { numero_patrimonio: true },
         });
@@ -342,8 +352,8 @@ export const gerarNumeroPatrimonial = async (params: {
 
         const numero = `${prefix}${year}${sectorCode}${String(proximo).padStart(6, '0')}`;
 
-        const existe = await tx.patrimonio.findUnique({
-          where: { numero_patrimonio: numero },
+        const existe = await tx.patrimonio.findFirst({
+          where: { municipalityId, numero_patrimonio: numero },
           select: { id: true },
         });
         if (existe) throw new Error('CONFLICT_RETRY');
@@ -419,8 +429,11 @@ export const createPatrimonio = async (
   actor: Actor,
   audit: AuditContext = {},
 ) => {
-  const existing = await prisma.patrimonio.findUnique({
-    where: { numero_patrimonio: input.numero_patrimonio },
+  const existing = await prisma.patrimonio.findFirst({
+    where: {
+      municipalityId: actor.municipalityId,
+      numero_patrimonio: input.numero_patrimonio,
+    },
     select: { id: true },
   });
   if (existing) throw new PatrimonioConflictError('Número de patrimônio já existe');

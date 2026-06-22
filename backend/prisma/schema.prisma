@@ -177,7 +177,7 @@ model AcquisitionForm {
 /// - CHECK (quantidade > 0)
 model Patrimonio {
   id                 String           @id @default(uuid())
-  numero_patrimonio  String           @unique
+  numero_patrimonio  String
   descricao_bem      String
   tipo               String
   marca              String?
@@ -238,12 +238,13 @@ model Patrimonio {
   @@index([sectorId, status])
   @@index([numero_licitacao])
   @@index([ano_licitacao])
+  @@unique([municipalityId, numero_patrimonio])
   @@map("patrimonios")
 }
 
 model Imovel {
   id                String           @id @default(uuid())
-  numero_patrimonio String           @unique
+  numero_patrimonio String
   denominacao       String
   endereco          String
   setor             String
@@ -280,6 +281,7 @@ model Imovel {
   @@index([createdAt])
   @@index([data_aquisicao])
   @@index([municipalityId, sectorId])
+  @@unique([municipalityId, numero_patrimonio])
   @@map("imoveis")
 }
 

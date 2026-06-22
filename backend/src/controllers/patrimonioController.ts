@@ -150,8 +150,13 @@ export const getByNumero = async (req: Request, res: Response): Promise<void> =>
  */
 export const gerarNumeroPatrimonial = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
     const { prefix, year, sectorCode } = req.query as Record<string, string | undefined>;
-    const result = await svcGerarNumero({ prefix, year, sectorCode });
+    const result = await svcGerarNumero({ municipalityId, prefix, year, sectorCode });
     res.json(result);
   } catch (error) {
     logError('Erro ao gerar número patrimonial', error, {

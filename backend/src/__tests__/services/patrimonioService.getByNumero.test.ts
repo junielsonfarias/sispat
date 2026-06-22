@@ -1,15 +1,10 @@
 /**
- * Testes de isolamento multi-tenant em getByNumero (auditoria 2026).
+ * Testes de isolamento multi-tenant em getByNumero.
  *
- * Bug corrigido: getByNumero fazia findUnique({ where: { numero_patrimonio } })
- * e retornava o registro normalizado SEM nenhuma checagem de tenant nem
- * ensureSectorAccess. A rota autenticada GET /api/patrimonios/numero/:numero
- * permitia que qualquer usuário lesse dados completos de bem de outro município
- * conhecendo o número (IDOR cross-tenant de leitura).
- *
- * Princípio (tenant negativo): não-superuser só lê patrimônio do próprio
- * município; cross-tenant retorna { kind: 'not-found' } (não 'forbidden' —
- * não vaza existência). superuser bypassa.
+ * Após a numeração por município (@@unique([municipalityId, numero_patrimonio])),
+ * getByNumero usa findFirst escopado por município (não-superuser): a própria
+ * query filtra por municipalityId, então cross-tenant simplesmente não encontra
+ * (not-found, sem vazar existência). superuser bypassa o filtro.
  */
 
 jest.mock('../../config/logger', () => ({
@@ -40,7 +35,7 @@ jest.mock('../../config/database-optimization', () => ({
 
 const mockPrisma = {
   patrimonio: {
-    findUnique: jest.fn(),
+    findFirst: jest.fn(),
   },
   user: {
     findUnique: jest.fn(),
@@ -61,40 +56,33 @@ const actorMunA = (role: string): Actor => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // responsibleSectors vazio = acesso a todos os setores do próprio município.
   mockPrisma.user.findUnique.mockResolvedValue({ responsibleSectors: [] });
   mockPrisma.sector.findUnique.mockResolvedValue({ name: 'Setor X' });
 });
 
 describe('getByNumero — isolamento de tenant', () => {
-  it('admin do município A NÃO lê patrimônio do município B (404, não forbidden)', async () => {
-    mockPrisma.patrimonio.findUnique.mockResolvedValue({
-      id: 'p1',
-      numero_patrimonio: 'PAT2026001',
-      municipalityId: 'mun-B',
-      sectorId: 's-de-B',
-    });
+  it('admin do município A: a query é escopada por municipalityId (cross-tenant → not-found)', async () => {
+    // Query escopada a mun-A não encontra o registro de mun-B.
+    mockPrisma.patrimonio.findFirst.mockResolvedValue(null);
 
     const result = await getByNumero('PAT2026001', actorMunA('admin'));
 
     expect(result.kind).toBe('not-found');
+    const where = mockPrisma.patrimonio.findFirst.mock.calls[0][0].where;
+    expect(where.municipalityId).toBe('mun-A');
   });
 
-  it('usuario do município A (responsibleSectors vazio) NÃO lê patrimônio do município B', async () => {
-    mockPrisma.patrimonio.findUnique.mockResolvedValue({
-      id: 'p1',
-      numero_patrimonio: 'PAT2026001',
-      municipalityId: 'mun-B',
-      sectorId: 's-de-B',
-    });
+  it('usuario do município A: query escopada por município', async () => {
+    mockPrisma.patrimonio.findFirst.mockResolvedValue(null);
 
     const result = await getByNumero('PAT2026001', actorMunA('usuario'));
 
     expect(result.kind).toBe('not-found');
+    expect(mockPrisma.patrimonio.findFirst.mock.calls[0][0].where.municipalityId).toBe('mun-A');
   });
 
   it('admin do município A lê patrimônio do próprio município', async () => {
-    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+    mockPrisma.patrimonio.findFirst.mockResolvedValue({
       id: 'p1',
       numero_patrimonio: 'PAT2026001',
       municipalityId: 'mun-A',
@@ -108,8 +96,8 @@ describe('getByNumero — isolamento de tenant', () => {
     expect(result.kind).toBe('ok');
   });
 
-  it('superuser lê patrimônio de qualquer município', async () => {
-    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+  it('superuser lê de qualquer município (query NÃO escopada)', async () => {
+    mockPrisma.patrimonio.findFirst.mockResolvedValue({
       id: 'p1',
       numero_patrimonio: 'PAT2026001',
       municipalityId: 'mun-B',
@@ -125,10 +113,11 @@ describe('getByNumero — isolamento de tenant', () => {
     });
 
     expect(result.kind).toBe('ok');
+    expect(mockPrisma.patrimonio.findFirst.mock.calls[0][0].where.municipalityId).toBeUndefined();
   });
 
   it('número inexistente retorna not-found', async () => {
-    mockPrisma.patrimonio.findUnique.mockResolvedValue(null);
+    mockPrisma.patrimonio.findFirst.mockResolvedValue(null);
 
     const result = await getByNumero('NAO-EXISTE', actorMunA('admin'));
 

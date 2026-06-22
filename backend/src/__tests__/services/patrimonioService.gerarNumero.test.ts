@@ -5,10 +5,11 @@ jest.mock('../../config/logger', () => ({
   logError: jest.fn(),
 }));
 
+// Após a numeração por município, tanto a busca do "último" quanto a checagem
+// de colisão usam findFirst (escopadas por municipalityId).
 const mockTx = {
   patrimonio: {
     findFirst: jest.fn(),
-    findUnique: jest.fn(),
   },
 };
 
@@ -20,17 +21,24 @@ jest.mock('../../config/database', () => ({
 
 import { gerarNumeroPatrimonial } from '../../services/patrimonioService';
 
+const MUN = 'mun-A';
+
 describe('gerarNumeroPatrimonial', () => {
   beforeEach(() => {
     mockTx.patrimonio.findFirst.mockReset();
-    mockTx.patrimonio.findUnique.mockReset();
   });
 
-  it('gera o primeiro número quando não há patrimônios anteriores', async () => {
-    mockTx.patrimonio.findFirst.mockResolvedValueOnce(null);
-    mockTx.patrimonio.findUnique.mockResolvedValueOnce(null);
+  it('gera o primeiro número quando não há patrimônios anteriores no município', async () => {
+    mockTx.patrimonio.findFirst
+      .mockResolvedValueOnce(null) // último
+      .mockResolvedValueOnce(null); // colisão
 
-    const result = await gerarNumeroPatrimonial({ prefix: 'PAT', year: 2026, sectorCode: '01' });
+    const result = await gerarNumeroPatrimonial({
+      municipalityId: MUN,
+      prefix: 'PAT',
+      year: 2026,
+      sectorCode: '01',
+    });
 
     expect(result).toEqual({
       numero: 'PAT202601000001',
@@ -38,15 +46,21 @@ describe('gerarNumeroPatrimonial', () => {
       sectorCode: '01',
       sequencial: 1,
     });
+    // a busca do último é escopada por município
+    expect(mockTx.patrimonio.findFirst.mock.calls[0][0].where.municipalityId).toBe(MUN);
   });
 
-  it('incrementa o sequencial baseado no último patrimônio', async () => {
-    mockTx.patrimonio.findFirst.mockResolvedValueOnce({
-      numero_patrimonio: 'PAT202601000042',
-    });
-    mockTx.patrimonio.findUnique.mockResolvedValueOnce(null);
+  it('incrementa o sequencial baseado no último patrimônio do município', async () => {
+    mockTx.patrimonio.findFirst
+      .mockResolvedValueOnce({ numero_patrimonio: 'PAT202601000042' })
+      .mockResolvedValueOnce(null);
 
-    const result = await gerarNumeroPatrimonial({ prefix: 'PAT', year: 2026, sectorCode: '01' });
+    const result = await gerarNumeroPatrimonial({
+      municipalityId: MUN,
+      prefix: 'PAT',
+      year: 2026,
+      sectorCode: '01',
+    });
 
     expect(result.sequencial).toBe(43);
     expect(result.numero).toBe('PAT202601000043');
@@ -54,13 +68,13 @@ describe('gerarNumeroPatrimonial', () => {
 
   it('faz retry quando o número gerado já existe e sucesso na segunda tentativa', async () => {
     mockTx.patrimonio.findFirst
-      .mockResolvedValueOnce({ numero_patrimonio: 'PAT202601000010' })
-      .mockResolvedValueOnce({ numero_patrimonio: 'PAT202601000011' });
-    mockTx.patrimonio.findUnique
-      .mockResolvedValueOnce({ id: 'existe' }) // conflito na 1ª
-      .mockResolvedValueOnce(null); // ok na 2ª
+      .mockResolvedValueOnce({ numero_patrimonio: 'PAT202601000010' }) // último (1ª)
+      .mockResolvedValueOnce({ id: 'existe' }) // colisão (1ª) -> retry
+      .mockResolvedValueOnce({ numero_patrimonio: 'PAT202601000011' }) // último (2ª)
+      .mockResolvedValueOnce(null); // colisão (2ª) -> ok
 
     const result = await gerarNumeroPatrimonial({
+      municipalityId: MUN,
       prefix: 'PAT',
       year: 2026,
       sectorCode: '01',
@@ -71,19 +85,26 @@ describe('gerarNumeroPatrimonial', () => {
   });
 
   it('lança erro após esgotar retries', async () => {
-    mockTx.patrimonio.findFirst.mockResolvedValue({ numero_patrimonio: 'PAT202601000005' });
-    mockTx.patrimonio.findUnique.mockResolvedValue({ id: 'sempre-existe' });
+    mockTx.patrimonio.findFirst.mockResolvedValue({
+      numero_patrimonio: 'PAT202601000005',
+      id: 'sempre-existe',
+    });
 
     await expect(
-      gerarNumeroPatrimonial({ prefix: 'PAT', year: 2026, sectorCode: '01', maxRetries: 2 }),
+      gerarNumeroPatrimonial({
+        municipalityId: MUN,
+        prefix: 'PAT',
+        year: 2026,
+        sectorCode: '01',
+        maxRetries: 2,
+      }),
     ).rejects.toThrow();
   });
 
   it('aplica defaults (prefix PAT, ano corrente, setor 00)', async () => {
-    mockTx.patrimonio.findFirst.mockResolvedValueOnce(null);
-    mockTx.patrimonio.findUnique.mockResolvedValueOnce(null);
+    mockTx.patrimonio.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
 
-    const result = await gerarNumeroPatrimonial({});
+    const result = await gerarNumeroPatrimonial({ municipalityId: MUN });
     const year = new Date().getFullYear();
     expect(result.numero).toBe(`PAT${year}00000001`);
     expect(result.year).toBe(year);

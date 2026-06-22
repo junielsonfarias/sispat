@@ -202,8 +202,11 @@ export const getImovelById = async (id: string, actor: Actor) => {
 };
 
 export const getImovelByNumero = async (numero: string, actor: Actor) => {
-  const imovel = await prisma.imovel.findUnique({
-    where: { numero_patrimonio: numero },
+  const imovel = await prisma.imovel.findFirst({
+    where: {
+      numero_patrimonio: numero,
+      ...(actor.role === 'superuser' ? {} : { municipalityId: actor.municipalityId }),
+    },
     include: {
       sector: { select: { id: true, name: true, codigo: true } },
       historico: { orderBy: { date: 'desc' }, take: 10 },
@@ -261,9 +264,12 @@ export const createImovel = async (
     throw new ImovelValidationError('Campos obrigatórios faltando');
   }
 
-  // Número único
-  const existing = await prisma.imovel.findUnique({
-    where: { numero_patrimonio: input.numero_patrimonio },
+  // Número único POR MUNICÍPIO
+  const existing = await prisma.imovel.findFirst({
+    where: {
+      municipalityId: actor.municipalityId,
+      numero_patrimonio: input.numero_patrimonio,
+    },
   });
   if (existing) {
     throw new ImovelConflictError('Número de patrimônio já existe');
@@ -502,7 +508,7 @@ export const deleteImovel = async (id: string, actor: Actor, audit: AuditContext
 // Gerar próximo número
 // ===========================================================================
 
-export const gerarNumeroImovel = async (sectorId: string) => {
+export const gerarNumeroImovel = async (sectorId: string, municipalityId: string) => {
   if (!sectorId) {
     throw new ImovelValidationError('ID do setor é obrigatório');
   }
@@ -520,7 +526,7 @@ export const gerarNumeroImovel = async (sectorId: string) => {
   const prefix = `IML${currentYear}${sector.codigo}`;
 
   const ultimo = await prisma.imovel.findFirst({
-    where: { numero_patrimonio: { startsWith: prefix } },
+    where: { municipalityId, numero_patrimonio: { startsWith: prefix } },
     orderBy: { numero_patrimonio: 'desc' },
     select: { numero_patrimonio: true },
   });

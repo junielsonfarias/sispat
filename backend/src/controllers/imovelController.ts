@@ -179,8 +179,13 @@ export const deleteImovel = async (req: Request, res: Response): Promise<void> =
  */
 export const gerarNumeroImovel = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
     const sectorId = (req.query.sectorId as string) || '';
-    const result = await imovelService.gerarNumeroImovel(sectorId);
+    const result = await imovelService.gerarNumeroImovel(sectorId, municipalityId);
     res.json(result);
   } catch (error) {
     handleServiceError(res, error, 'Erro ao gerar número de imóvel');
