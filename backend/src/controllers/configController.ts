@@ -5,6 +5,10 @@ import { logError, logInfo, logDebug } from '../config/logger';
 import * as excelCsvTemplates from '../services/excelCsvTemplateService';
 import * as formFieldConfigs from '../services/formFieldConfigService';
 import * as cloudStorageService from '../services/cloudStorageService';
+import * as userReportConfigs from '../services/userReportConfigService';
+import * as rolePermissionService from '../services/rolePermissionService';
+import * as numberingPatternService from '../services/numberingPatternService';
+import * as userDashboardService from '../services/userDashboardService';
 
 // ============================================
 // USER REPORT CONFIGS
@@ -13,12 +17,11 @@ import * as cloudStorageService from '../services/cloudStorageService';
 export const getUserReportConfigs = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.userId;
-
-    const configs = await prisma.userReportConfig.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
-
+    if (!userId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+    const configs = await userReportConfigs.listUserReportConfigs(userId);
     res.json(configs);
   } catch (error) {
     logError('Erro ao buscar configurações de relatório', error, { userId: req.user?.userId });
@@ -33,19 +36,13 @@ export const createUserReportConfig = async (req: Request, res: Response): Promi
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-    
     const { name, columns, filters, format } = req.body;
-
-    const config = await prisma.userReportConfig.create({
-      data: {
-        userId,
-        name,
-        columns,
-        filters: filters || {},
-        format: format || 'csv',
-      },
+    const config = await userReportConfigs.createUserReportConfig(userId, {
+      name,
+      columns,
+      filters,
+      format,
     });
-
     res.status(201).json(config);
   } catch (error) {
     logError('Erro ao criar configuração de relatório', error, { userId: req.user?.userId });
@@ -55,21 +52,19 @@ export const createUserReportConfig = async (req: Request, res: Response): Promi
 
 export const deleteUserReportConfig = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
     const userId = req.user?.userId;
-
-    const existingConfig = await prisma.userReportConfig.findUnique({
-      where: { id },
-    });
-
-    if (!existingConfig || existingConfig.userId !== userId) {
+    if (!userId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+    const { id } = req.params;
+    await userReportConfigs.removeUserReportConfig(userId, id);
+    res.json({ message: 'Configuração excluída com sucesso' });
+  } catch (error) {
+    if (error instanceof userReportConfigs.UserReportConfigNotFoundError) {
       res.status(404).json({ error: 'Configuração não encontrada' });
       return;
     }
-
-    await prisma.userReportConfig.delete({ where: { id } });
-    res.json({ message: 'Configuração excluída com sucesso' });
-  } catch (error) {
     logError('Erro ao excluir configuração de relatório', error, { id: req.params.id });
     res.status(500).json({ error: 'Erro ao excluir configuração de relatório' });
   }
@@ -256,10 +251,7 @@ export const deleteFormFieldConfig = async (req: Request, res: Response): Promis
 
 export const getRolePermissions = async (req: Request, res: Response): Promise<void> => {
   try {
-    const permissions = await prisma.rolePermission.findMany({
-      orderBy: { roleId: 'asc' },
-    });
-
+    const permissions = await rolePermissionService.listRolePermissions();
     res.json(permissions);
   } catch (error) {
     logError('Erro ao buscar permissões de roles', error);
@@ -271,20 +263,10 @@ export const updateRolePermissions = async (req: Request, res: Response): Promis
   try {
     const { roleId } = req.params;
     const { name, permissions } = req.body;
-
-    const rolePermission = await prisma.rolePermission.upsert({
-      where: { roleId },
-      update: {
-        name,
-        permissions,
-      },
-      create: {
-        roleId,
-        name,
-        permissions,
-      },
+    const rolePermission = await rolePermissionService.upsertRolePermission(roleId, {
+      name,
+      permissions,
     });
-
     res.json(rolePermission);
   } catch (error) {
     logError('Erro ao atualizar permissões de role', error, { roleId: req.params.roleId });
@@ -779,21 +761,7 @@ export const getNumberingPattern = async (req: Request, res: Response): Promise<
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    let pattern = await prisma.numberingPattern.findUnique({
-      where: { municipalityId },
-    });
-
-    if (!pattern) {
-      // Criar padrão padrão se não existir
-      pattern = await prisma.numberingPattern.create({
-        data: {
-          municipalityId,
-          components: [],
-        },
-      });
-    }
-
+    const pattern = await numberingPatternService.getNumberingPattern(municipalityId);
     res.json(pattern);
   } catch (error) {
     logError('Erro ao buscar padrão de numeração', error);
@@ -808,18 +776,8 @@ export const updateNumberingPattern = async (req: Request, res: Response): Promi
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
     const { components } = req.body;
-
-    const pattern = await prisma.numberingPattern.upsert({
-      where: { municipalityId },
-      update: { components },
-      create: {
-        municipalityId,
-        components,
-      },
-    });
-
+    const pattern = await numberingPatternService.upsertNumberingPattern(municipalityId, components);
     res.json(pattern);
   } catch (error) {
     logError('Erro ao atualizar padrão de numeração', error);
@@ -838,21 +796,7 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-
-    let dashboard = await prisma.userDashboard.findUnique({
-      where: { userId },
-    });
-
-    if (!dashboard) {
-      // Criar dashboard vazio se não existir
-      dashboard = await prisma.userDashboard.create({
-        data: {
-          userId,
-          widgets: [],
-        },
-      });
-    }
-
+    const dashboard = await userDashboardService.getUserDashboard(userId);
     res.json(dashboard);
   } catch (error) {
     logError('Erro ao buscar dashboard do usuário', error, { userId: req.user?.userId });
@@ -867,18 +811,8 @@ export const updateUserDashboard = async (req: Request, res: Response): Promise<
       res.status(401).json({ error: 'Não autenticado' });
       return;
     }
-    
     const { widgets } = req.body;
-
-    const dashboard = await prisma.userDashboard.upsert({
-      where: { userId },
-      update: { widgets },
-      create: {
-        userId,
-        widgets,
-      },
-    });
-
+    const dashboard = await userDashboardService.upsertUserDashboard(userId, widgets);
     res.json(dashboard);
   } catch (error) {
     logError('Erro ao atualizar dashboard do usuário', error, { userId: req.user?.userId });
