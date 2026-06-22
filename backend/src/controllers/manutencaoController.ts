@@ -17,6 +17,15 @@ export const listManutencaoTasks = async (req: Request, res: Response): Promise<
     if (imovelId) where.imovelId = imovelId
     if (patrimonioId) where.patrimonioId = patrimonioId
 
+    // ✅ MULTI-TENANT: tarefa pertence ao município via patrimônio OU imóvel
+    if (req.user?.role !== 'superuser') {
+      const municipalityId = req.user?.municipalityId
+      where.OR = [
+        { patrimonio: { municipalityId } },
+        { imovel: { municipalityId } },
+      ]
+    }
+
     const tasks = await prisma.manutencaoTask.findMany({
       where,
       orderBy: { dataPrevista: 'asc' },
@@ -169,6 +178,23 @@ export const updateManutencaoTask = async (req: Request, res: Response): Promise
     const { id } = req.params
     const updates = req.body
 
+    // ✅ MULTI-TENANT: garantir que a tarefa pertence ao município antes de alterar
+    const isSuperuser = req.user?.role === 'superuser'
+    const municipalityId = req.user?.municipalityId
+    const existing = await prisma.manutencaoTask.findFirst({
+      where: {
+        id,
+        ...(isSuperuser
+          ? {}
+          : { OR: [{ patrimonio: { municipalityId } }, { imovel: { municipalityId } }] }),
+      },
+      select: { id: true },
+    })
+    if (!existing) {
+      res.status(404).json({ error: 'Tarefa não encontrada' })
+      return
+    }
+
     // Converter datas se necessário
     if (updates.dataPrevista) {
       updates.dataPrevista = new Date(updates.dataPrevista)
@@ -210,6 +236,23 @@ export const deleteManutencaoTask = async (req: Request, res: Response): Promise
   try {
     const { id } = req.params
 
+    // ✅ MULTI-TENANT: garantir que a tarefa pertence ao município antes de excluir
+    const isSuperuser = req.user?.role === 'superuser'
+    const municipalityId = req.user?.municipalityId
+    const existing = await prisma.manutencaoTask.findFirst({
+      where: {
+        id,
+        ...(isSuperuser
+          ? {}
+          : { OR: [{ patrimonio: { municipalityId } }, { imovel: { municipalityId } }] }),
+      },
+      select: { id: true },
+    })
+    if (!existing) {
+      res.status(404).json({ error: 'Tarefa não encontrada' })
+      return
+    }
+
     await prisma.manutencaoTask.delete({
       where: { id },
     })
@@ -236,9 +279,16 @@ export const deleteManutencaoTask = async (req: Request, res: Response): Promise
 export const getManutencaoTask = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params
+    const isSuperuser = req.user?.role === 'superuser'
+    const municipalityId = req.user?.municipalityId
 
-    const task = await prisma.manutencaoTask.findUnique({
-      where: { id },
+    const task = await prisma.manutencaoTask.findFirst({
+      where: {
+        id,
+        ...(isSuperuser
+          ? {}
+          : { OR: [{ patrimonio: { municipalityId } }, { imovel: { municipalityId } }] }),
+      },
       include: {
         patrimonio: true,
         imovel: true,

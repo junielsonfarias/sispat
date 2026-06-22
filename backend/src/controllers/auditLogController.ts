@@ -12,6 +12,11 @@ export const listAuditLogs = async (req: Request, res: Response): Promise<void> 
 
     const where: any = {}
 
+    // ✅ MULTI-TENANT: superuser vê tudo; demais veem apenas logs do seu município
+    if (req.user?.role !== 'superuser') {
+      where.user = { municipalityId: req.user?.municipalityId }
+    }
+
     // Filtros
     if (action) where.action = action
     if (userId) where.userId = userId

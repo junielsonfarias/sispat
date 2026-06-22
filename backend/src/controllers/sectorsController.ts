@@ -16,10 +16,15 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
 
     let where: any = {};
 
+    // ✅ MULTI-TENANT: superuser vê todos; demais ficam restritos ao município
+    if (userRole !== 'superuser') {
+      where.municipalityId = req.user?.municipalityId;
+    }
+
     // ✅ FILTRO POR PERMISSÃO DE USUÁRIO
-    // Admin e Supervisor veem TODOS os setores
+    // Admin e Supervisor veem TODOS os setores do município
     // Usuário e Visualizador veem apenas seus setores responsáveis
-    if (userRole !== 'admin' && userRole !== 'supervisor') {
+    if (userRole !== 'admin' && userRole !== 'supervisor' && userRole !== 'superuser') {
       // Buscar setores do usuário
       const user = await prisma.user.findUnique({
         where: { email: userEmail },
@@ -76,9 +81,11 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
 export const getSectorById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
 
-    const sector = await prisma.sector.findUnique({
-      where: { id },
+    const sector = await prisma.sector.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
       include: {
         locais: true,
         _count: {
@@ -185,8 +192,11 @@ export const updateSector = async (req: Request, res: Response): Promise<void> =
       usuario: userId,
     });
 
-    const sector = await prisma.sector.findUnique({
-      where: { id },
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+
+    const sector = await prisma.sector.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
     });
 
     if (!sector) {
@@ -251,9 +261,11 @@ export const deleteSector = async (req: Request, res: Response): Promise<void> =
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
 
-    const sector = await prisma.sector.findUnique({
-      where: { id },
+    const sector = await prisma.sector.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
       include: {
         _count: {
           select: {

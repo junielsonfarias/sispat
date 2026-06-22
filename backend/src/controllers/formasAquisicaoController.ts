@@ -9,7 +9,12 @@ import { logError } from '../config/logger';
  */
 export const getFormasAquisicao = async (req: Request, res: Response): Promise<void> => {
   try {
+    // ✅ MULTI-TENANT: filtrar por município (superuser vê todos)
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+
     const formasAquisicao = await prisma.acquisitionForm.findMany({
+      where: isSuperuser ? {} : { municipalityId },
       include: {
         _count: {
           select: {
@@ -39,9 +44,11 @@ export const getFormasAquisicao = async (req: Request, res: Response): Promise<v
 export const getFormaAquisicaoById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
 
-    const formaAquisicao = await prisma.acquisitionForm.findUnique({
-      where: { id },
+    const formaAquisicao = await prisma.acquisitionForm.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
       include: {
         _count: {
           select: {
@@ -124,10 +131,12 @@ export const updateFormaAquisicao = async (req: Request, res: Response): Promise
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
     const { nome, descricao } = req.body;
 
-    const formaAquisicao = await prisma.acquisitionForm.findUnique({
-      where: { id },
+    const formaAquisicao = await prisma.acquisitionForm.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
     });
 
     if (!formaAquisicao) {
@@ -170,9 +179,11 @@ export const deleteFormaAquisicao = async (req: Request, res: Response): Promise
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
 
-    const formaAquisicao = await prisma.acquisitionForm.findUnique({
-      where: { id },
+    const formaAquisicao = await prisma.acquisitionForm.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
       include: {
         _count: {
           select: {

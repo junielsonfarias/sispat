@@ -2,8 +2,6 @@ import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { logError, logInfo, logDebug } from '../config/logger';
 
-const MUNICIPALITY_ID = '1'; // ID fixo do município único
-
 // ============================================
 // USER REPORT CONFIGS
 // ============================================
@@ -79,8 +77,14 @@ export const deleteUserReportConfig = async (req: Request, res: Response): Promi
 
 export const getExcelCsvTemplates = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     const templates = await prisma.excelCsvTemplate.findMany({
-      where: { municipalityId: MUNICIPALITY_ID },
+      where: { municipalityId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -93,12 +97,18 @@ export const getExcelCsvTemplates = async (req: Request, res: Response): Promise
 
 export const createExcelCsvTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     const { name, columns, conditionalFormatting } = req.body;
 
     const template = await prisma.excelCsvTemplate.create({
       data: {
         name,
-        municipalityId: MUNICIPALITY_ID,
+        municipalityId,
         columns,
         conditionalFormatting,
       },
@@ -114,6 +124,22 @@ export const createExcelCsvTemplate = async (req: Request, res: Response): Promi
 export const updateExcelCsvTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
+    const existing = await prisma.excelCsvTemplate.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
+      select: { id: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: 'Template não encontrado' });
+      return;
+    }
+
     const { name, columns, conditionalFormatting } = req.body;
 
     const template = await prisma.excelCsvTemplate.update({
@@ -135,6 +161,21 @@ export const updateExcelCsvTemplate = async (req: Request, res: Response): Promi
 export const deleteExcelCsvTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
+    const existing = await prisma.excelCsvTemplate.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
+      select: { id: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: 'Template não encontrado' });
+      return;
+    }
 
     await prisma.excelCsvTemplate.delete({ where: { id } });
     res.json({ message: 'Template excluído com sucesso' });
@@ -150,8 +191,14 @@ export const deleteExcelCsvTemplate = async (req: Request, res: Response): Promi
 
 export const getFormFieldConfigs = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     const fields = await prisma.formFieldConfig.findMany({
-      where: { municipalityId: MUNICIPALITY_ID },
+      where: { municipalityId },
       orderBy: { id: 'asc' },
     });
 
@@ -164,6 +211,12 @@ export const getFormFieldConfigs = async (req: Request, res: Response): Promise<
 
 export const createFormFieldConfig = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     const { key, label, type, required, defaultValue, options, isCustom, isSystem } = req.body;
 
     const field = await prisma.formFieldConfig.create({
@@ -176,7 +229,7 @@ export const createFormFieldConfig = async (req: Request, res: Response): Promis
         options: options || [],
         isCustom: isCustom || false,
         isSystem: isSystem || false,
-        municipalityId: MUNICIPALITY_ID,
+        municipalityId,
       },
     });
 
@@ -190,6 +243,22 @@ export const createFormFieldConfig = async (req: Request, res: Response): Promis
 export const updateFormFieldConfig = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
+    const existing = await prisma.formFieldConfig.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
+      select: { id: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: 'Configuração de campo não encontrada' });
+      return;
+    }
+
     const { key, label, type, required, defaultValue, options, isCustom, isSystem } = req.body;
 
     const field = await prisma.formFieldConfig.update({
@@ -216,6 +285,21 @@ export const updateFormFieldConfig = async (req: Request, res: Response): Promis
 export const deleteFormFieldConfig = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
+    const existing = await prisma.formFieldConfig.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
+      select: { id: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: 'Configuração de campo não encontrada' });
+      return;
+    }
 
     await prisma.formFieldConfig.delete({ where: { id } });
     res.json({ message: 'Configuração de campo excluída com sucesso' });
@@ -273,14 +357,20 @@ export const updateRolePermissions = async (req: Request, res: Response): Promis
 
 export const getCloudStorage = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     let cloudStorage = await prisma.cloudStorage.findUnique({
-      where: { municipalityId: MUNICIPALITY_ID },
+      where: { municipalityId },
     });
 
     if (!cloudStorage) {
       cloudStorage = await prisma.cloudStorage.create({
         data: {
-          municipalityId: MUNICIPALITY_ID,
+          municipalityId,
           isConnected: false,
         },
       });
@@ -295,10 +385,16 @@ export const getCloudStorage = async (req: Request, res: Response): Promise<void
 
 export const updateCloudStorage = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     const { provider, isConnected, accessToken, refreshToken, expiresAt } = req.body;
 
     const cloudStorage = await prisma.cloudStorage.upsert({
-      where: { municipalityId: MUNICIPALITY_ID },
+      where: { municipalityId },
       update: {
         provider,
         isConnected,
@@ -307,7 +403,7 @@ export const updateCloudStorage = async (req: Request, res: Response): Promise<v
         expiresAt,
       },
       create: {
-        municipalityId: MUNICIPALITY_ID,
+        municipalityId,
         provider,
         isConnected,
         accessToken,
@@ -645,8 +741,14 @@ export const deleteReportTemplate = async (req: Request, res: Response): Promise
 
 export const getImovelReportTemplates = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     const templates = await prisma.imovelReportTemplate.findMany({
-      where: { municipalityId: MUNICIPALITY_ID },
+      where: { municipalityId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -659,12 +761,18 @@ export const getImovelReportTemplates = async (req: Request, res: Response): Pro
 
 export const createImovelReportTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     const { name, fields, filters } = req.body;
 
     const template = await prisma.imovelReportTemplate.create({
       data: {
         name,
-        municipalityId: MUNICIPALITY_ID,
+        municipalityId,
         fields,
         filters,
       },
@@ -680,6 +788,22 @@ export const createImovelReportTemplate = async (req: Request, res: Response): P
 export const updateImovelReportTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
+    const existing = await prisma.imovelReportTemplate.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
+      select: { id: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: 'Template não encontrado' });
+      return;
+    }
+
     const { name, fields, filters } = req.body;
 
     const template = await prisma.imovelReportTemplate.update({
@@ -701,6 +825,21 @@ export const updateImovelReportTemplate = async (req: Request, res: Response): P
 export const deleteImovelReportTemplate = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
+    const existing = await prisma.imovelReportTemplate.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
+      select: { id: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: 'Template não encontrado' });
+      return;
+    }
 
     await prisma.imovelReportTemplate.delete({ where: { id } });
     res.json({ message: 'Template excluído com sucesso' });
@@ -716,15 +855,21 @@ export const deleteImovelReportTemplate = async (req: Request, res: Response): P
 
 export const getNumberingPattern = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     let pattern = await prisma.numberingPattern.findUnique({
-      where: { municipalityId: MUNICIPALITY_ID },
+      where: { municipalityId },
     });
 
     if (!pattern) {
       // Criar padrão padrão se não existir
       pattern = await prisma.numberingPattern.create({
         data: {
-          municipalityId: MUNICIPALITY_ID,
+          municipalityId,
           components: [],
         },
       });
@@ -739,13 +884,19 @@ export const getNumberingPattern = async (req: Request, res: Response): Promise<
 
 export const updateNumberingPattern = async (req: Request, res: Response): Promise<void> => {
   try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
     const { components } = req.body;
 
     const pattern = await prisma.numberingPattern.upsert({
-      where: { municipalityId: MUNICIPALITY_ID },
+      where: { municipalityId },
       update: { components },
       create: {
-        municipalityId: MUNICIPALITY_ID,
+        municipalityId,
         components,
       },
     });

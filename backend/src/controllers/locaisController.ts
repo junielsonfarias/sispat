@@ -17,15 +17,20 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
 
     let where: any = {};
 
+    // ✅ MULTI-TENANT: superuser vê todos; demais ficam restritos ao município
+    if (userRole !== 'superuser') {
+      where.municipalityId = req.user?.municipalityId;
+    }
+
     // ✅ FILTRO POR SETOR (se especificado na query)
     if (sectorId) {
       where.sectorId = sectorId as string;
     }
 
     // ✅ FILTRO POR PERMISSÃO DE USUÁRIO
-    // Admin e Supervisor veem TODOS os locais
+    // Admin e Supervisor veem TODOS os locais do município
     // Usuário e Visualizador veem apenas locais dos seus setores
-    if (userRole !== 'admin' && userRole !== 'supervisor') {
+    if (userRole !== 'admin' && userRole !== 'supervisor' && userRole !== 'superuser') {
       // Buscar setores do usuário
       const user = await prisma.user.findUnique({
         where: { email: userEmail },
@@ -93,9 +98,11 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
 export const getLocalById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
 
-    const local = await prisma.local.findUnique({
-      where: { id },
+    const local = await prisma.local.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
       include: {
         sector: true,
         _count: {
@@ -134,9 +141,11 @@ export const createLocal = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Verificar se setor existe
-    const sector = await prisma.sector.findUnique({
-      where: { id: sectorId },
+    // Verificar se setor existe E pertence ao município do usuário (evita anexar local a setor de outro município)
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+    const sector = await prisma.sector.findFirst({
+      where: { id: sectorId, ...(isSuperuser ? {} : { municipalityId }) },
     });
 
     if (!sector) {
@@ -183,10 +192,12 @@ export const updateLocal = async (req: Request, res: Response): Promise<void> =>
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
     const { name, description, sectorId } = req.body;
 
-    const local = await prisma.local.findUnique({
-      where: { id },
+    const local = await prisma.local.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
     });
 
     if (!local) {
@@ -233,9 +244,11 @@ export const deleteLocal = async (req: Request, res: Response): Promise<void> =>
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
 
-    const local = await prisma.local.findUnique({
-      where: { id },
+    const local = await prisma.local.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
       include: {
         _count: {
           select: {

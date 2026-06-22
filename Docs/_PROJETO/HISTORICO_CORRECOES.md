@@ -90,6 +90,15 @@
 
 ## 2026
 
+### 2026-06-22 — Vazamento multi-tenant em controllers "estilo config"
+- **Sintoma:** Endpoints de listagem retornavam dados de TODOS os municípios, sem filtro por `municipalityId`. Latente porque a app roda hoje em modo município único, mas expõe dados entre prefeituras assim que um 2º município for cadastrado.
+- **Causa-raiz:** Controllers não migrados para o padrão `Actor`/service (tiposBens, formasAquisicao, sectors, locais, manutencao, auditLog) faziam `findMany` sem `where: { municipalityId }`. O `configController` usava `const MUNICIPALITY_ID = '1'` hardcoded em 15 pontos (templates, numbering, cloud storage), ignorando o usuário autenticado.
+- **Correção (listagens):** Filtro por `municipalityId` adicionado com bypass de `superuser` em cada listagem (relação `patrimonio`/`imovel` na manutenção; relação `user` no audit log). `MUNICIPALITY_ID` removido — todos os handlers do `configController` agora derivam `req.user.municipalityId` + guard 401.
+- **Correção (IDOR por id):** `getById`/`update`/`delete` de `tipoBem`, `acquisitionForm`, `sector`, `local` migrados de `findUnique({ id })` para `findFirst({ id, municipalityId })` (superuser bypassa); acesso cruzado retorna 404 sem vazar existência. `manutencaoTask` (sem `municipalityId` direto) usa pré-checagem por relação antes de update/delete. `excelCsvTemplate`/`formFieldConfig`/`imovelReportTemplate` ganham pré-checagem de propriedade. `createLocal` passou a validar que o setor pertence ao município.
+- **Testes:** Nova suíte de "tenant negativo" — 18 casos (listagens + IDOR por id), todos passando. Suíte do backend: 96 passam, 0 regressões.
+- **Arquivos:** `backend/src/controllers/{configController,tiposBensController,formasAquisicaoController,sectorsController,locaisController,manutencaoController,auditLogController}.ts`; `backend/src/__tests__/controllers/tenantIsolation.test.ts`
+- **Lição:** A garantia "TODA query filtra municipalityId" do CLAUDE.md valia só nos controllers migrados. Rodar o agente `multitenancy-guard` (`.claude/agents/`) antes de declarar isolamento completo. Ver memória `tenant-isolation-two-cohorts`.
+
 ### 2026-05-12 — Sprint 21: shared schemas para 9 domínios operacionais
 
 Continuação da Sprint 20. Mais 9 domínios migrados para `@sispat/shared`: inventario, transfer, manutencao, notification, customization, document, labelTemplate, formaAquisicao, emprestimo. `validation.ts` agora só tem patrimonio + imovel + queryValidations.

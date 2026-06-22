@@ -9,7 +9,12 @@ import { logError } from '../config/logger';
  */
 export const getTiposBens = async (req: Request, res: Response): Promise<void> => {
   try {
+    // ✅ MULTI-TENANT: filtrar por município (superuser vê todos)
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
+
     const tiposBens = await prisma.tipoBem.findMany({
+      where: isSuperuser ? {} : { municipalityId },
       include: {
         _count: {
           select: {
@@ -39,9 +44,11 @@ export const getTiposBens = async (req: Request, res: Response): Promise<void> =
 export const getTipoBemById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
 
-    const tipoBem = await prisma.tipoBem.findUnique({
-      where: { id },
+    const tipoBem = await prisma.tipoBem.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
       include: {
         _count: {
           select: {
@@ -131,6 +138,8 @@ export const updateTipoBem = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
     const {
       nome,
       descricao,
@@ -138,8 +147,8 @@ export const updateTipoBem = async (req: Request, res: Response): Promise<void> 
       taxaDepreciacao,
     } = req.body;
 
-    const tipoBem = await prisma.tipoBem.findUnique({
-      where: { id },
+    const tipoBem = await prisma.tipoBem.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
     });
 
     if (!tipoBem) {
@@ -184,9 +193,11 @@ export const deleteTipoBem = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
+    const isSuperuser = req.user?.role === 'superuser';
+    const municipalityId = req.user?.municipalityId;
 
-    const tipoBem = await prisma.tipoBem.findUnique({
-      where: { id },
+    const tipoBem = await prisma.tipoBem.findFirst({
+      where: { id, ...(isSuperuser ? {} : { municipalityId }) },
       include: {
         _count: {
           select: {
