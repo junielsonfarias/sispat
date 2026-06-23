@@ -671,7 +671,7 @@ function BensView() {
                       
                       <div>
                         <label className="text-sm font-medium text-gray-600">Valor de Aquisição</label>
-                        <p className="text-lg text-gray-900 mt-1 font-semibold">{formatCurrency(patrimonio.valor_aquisicao || patrimonio.valorAquisicao)}</p>
+                        <p className="text-lg text-gray-900 mt-1 font-semibold">{formatCurrency(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)}</p>
                       </div>
                       
                       <div>

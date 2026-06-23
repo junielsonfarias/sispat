@@ -244,7 +244,7 @@ const RelatoriosDepreciacao = () => {
                 <TableRow key={item.id}>
                   <TableCell>{item.numero_patrimonio || item.numeroPatrimonio}</TableCell>
                   <TableCell>{item.descricao_bem || item.descricaoBem}</TableCell>
-                  <TableCell>{formatCurrency(item.valor_aquisicao || item.valorAquisicao)}</TableCell>
+                  <TableCell>{formatCurrency(item.valor_aquisicao ?? item.valorAquisicao)}</TableCell>
                   <TableCell>
                     {formatCurrency(
                       item.depreciationInfo.accumulatedDepreciation,

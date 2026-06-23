@@ -160,7 +160,7 @@ const Depreciacao = () => {
                     </Link>
                   </TableCell>
                   <TableCell>{item.descricao_bem || item.descricaoBem}</TableCell>
-                  <TableCell>{formatCurrency(item.valor_aquisicao || item.valorAquisicao)}</TableCell>
+                  <TableCell>{formatCurrency(item.valor_aquisicao ?? item.valorAquisicao)}</TableCell>
                   <TableCell>{item.metodo_depreciacao || 'N/A'}</TableCell>
                   <TableCell>{item.vida_util_anos || 0} anos</TableCell>
                   <TableCell>

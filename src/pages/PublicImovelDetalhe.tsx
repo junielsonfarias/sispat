@@ -161,7 +161,7 @@ export default function PublicImovelDetalhe() {
               />
               <DetailItem
                 label="Valor de Aquisição"
-                value={formatCurrency(imovel.valor_aquisicao || imovel.valorAquisicao)}
+                value={formatCurrency(imovel.valor_aquisicao ?? imovel.valorAquisicao)}
               />
               <DetailItem
                 label="Área do Terreno"

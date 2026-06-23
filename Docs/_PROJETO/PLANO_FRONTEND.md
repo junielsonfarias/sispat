@@ -90,9 +90,9 @@ Severidades: 🔴 crítico, 🟠 importante, 🟡 médio, 🟢 baixo.
 - `text-gray-900` em 184 ocorrências (audit do agent).
 - Fix incremental: rodar regex replace `text-gray-900` → `text-foreground`, `bg-white` → `bg-card`, etc. Verificar visual.
 
-### F15. `0` falsy escondendo valores reais
-- `formatCurrency(p.valor_aquisicao || p.valorAquisicao)` — se valor for 0, fallback entra. Hoje cosmético (mostra "R$ 0,00"), mas se algum caso retornar 0 quando dado existe, esconde.
-- Fix: trocar `||` por `??` em todos os números que podem legitimamente ser zero.
+### F15. ✅ `0` falsy escondendo valores reais (2026-06-23)
+- Era: `formatCurrency(p.valor_aquisicao || p.valorAquisicao)` — valor 0 caía no fallback (vira `undefined`/NaN no display) nos sites SEM terminador `|| 0`.
+- Feito: trocado `||` por `??` nos sites de **exibição** de valor (SimplePrintForm, Depreciacao, RelatoriosDepreciacao, BensView, BensCadastrados, BensCadastradosSimplificado, PublicConsultation, PublicImovelDetalhe). Os fallbacks terminados em `|| 0` (agregações) já davam resultado numérico correto — não tocados. tsc + build OK.
 
 ### F16. Empty states sem CTA
 - `<CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>` — sem ação proposta.

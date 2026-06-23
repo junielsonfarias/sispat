@@ -177,7 +177,7 @@ const BensCadastradosSimplificado = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-gray-700">
-                          R$ {(patrimonio.valor_aquisicao || patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
+                          R$ {(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}

@@ -197,7 +197,7 @@ const renderTable = (
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm text-gray-700">
-                  R$ {(patrimonio.valor_aquisicao || patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
+                  R$ {(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -1019,7 +1019,7 @@ const BensCadastrados = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500">Valor:</span>
                           <span className="text-sm font-medium text-gray-900">
-                            R$ {(patrimonio.valor_aquisicao || patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
+                            R$ {(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}

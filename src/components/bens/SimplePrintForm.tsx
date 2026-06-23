@@ -116,7 +116,7 @@ export const SimplePrintForm = ({ patrimonio, fieldsToPrint }: SimplePrintFormPr
           {shouldPrint('valor_aquisicao') && (
             <>
               <div style={{ fontWeight: 'bold' }}>Valor de Aquisição:</div>
-              <div>{formatCurrency(patrimonio.valor_aquisicao || patrimonio.valorAquisicao)}</div>
+              <div>{formatCurrency(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)}</div>
             </>
           )}
         </div>

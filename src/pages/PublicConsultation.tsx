@@ -201,7 +201,7 @@ export default function PublicConsultation() {
               />
               <DetailItem
                 label="Valor de Aquisição"
-                value={formatCurrency(patrimonio.valor_aquisicao || patrimonio.valorAquisicao)}
+                value={formatCurrency(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)}
               />
             </div>
           </CardContent>
