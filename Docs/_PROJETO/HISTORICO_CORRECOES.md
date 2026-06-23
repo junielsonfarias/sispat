@@ -90,6 +90,21 @@
 
 ## 2026
 
+### 2026-06-23 — Hardening do Docker de produção + dump SQL fora do git
+- **Sintoma:** A stack Docker de produção (`docker-compose.prod.yml` + `Dockerfile`) tinha vários "explode na primeira execução real": secrets default públicos, backend exposto à internet, build quebrado, Redis efetivamente desligado e healthchecks que nunca passariam. Além disso, um dump SQL real estava versionado no git.
+- **Causa-raiz / correções:**
+  1. **Secrets default** (`DB_PASSWORD:-CHANGE_THIS_PASSWORD`, `JWT_SECRET:-CHANGE_THIS...`, `REDIS_PASSWORD:-` vazio): trocados por `${VAR:?msg}` — a stack agora **falha ao subir** se `DB_PASSWORD`/`REDIS_PASSWORD`/`JWT_SECRET`/`FRONTEND_URL` não forem fornecidos.
+  2. **Backend exposto** (`"3000:3000"` em `0.0.0.0`): alterado para `"127.0.0.1:3000:3000"` — só o Nginx (rede interna) acessa; Swagger/`/health/detailed` deixam de ser alcançáveis direto da internet.
+  3. **Build do Dockerfile quebrado:** `npm ci --only=production` rodava antes de `build:prod` (`tsc && prisma generate`, ambos devDeps). Trocado por `npm ci` completo + `npm prune --production` após o build. Imagem final continua só com deps de produção (+ client Prisma gerado).
+  4. **Redis ignorado/colidindo:** o compose passava só `REDIS_URL`, mas a app lê `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`/`ENABLE_REDIS` (`config/redis.ts`) → Redis ficava **desabilitado** e ainda colidiria com `--requirepass`. Agora passa as 4 vars corretas; healthcheck do Redis usa `redis-cli -a` (senão NOAUTH falharia).
+  5. **Healthchecks errados:** Dockerfile/compose batiam em `/health`, mas o backend serve `/api/health`. Também o `location /health` do Nginx fazia `proxy_pass .../health` (404). Todos apontam para `/api/health` agora.
+  6. **Higiene:** removido `version: '3.8'` (obsoleto no Compose v2) e Node 18→20 (alinha com o CI; Node 18 perto do EOL).
+  7. **Dump SQL no git:** `backend/backups/sispat_backup_20251012_210803.sql.zip` removido do índice (`git rm --cached`, arquivo mantido em disco) e `.gitignore` passa a bloquear `backend/backups/`, `/backup/`, `*.sql.zip`, `*.dump`.
+- **Arquivos:** `Dockerfile`, `docker-compose.prod.yml`, `nginx/conf.d/sispat.conf`, `.gitignore`
+- **Verificação:** `docker compose -f docker-compose.prod.yml config` falha sem segredos e valida com eles; interpolação de Redis/porta/healthcheck conferida no config resolvido.
+- **Pendente (não feito aqui):** purgar o dump do **histórico** do git exige reescrita + force-push em `main` (proibido por convenção) — fazer só com decisão explícita e rotação dos segredos que possam estar no dump. Deploy ainda faz `git pull && build` no servidor (sem registry/rollback). CSP do Nginx ainda permissiva.
+- **Lição:** validar a stack Docker ponta-a-ponta (`compose config` + subir) a cada mudança; o deploy real vinha dependendo do `install.sh` nativo, então o compose acumulou drift.
+
 ### 2026-06-23 — Dois vazamentos multi-tenant residuais fechados
 - **Sintoma:** Auditoria multi-tenant encontrou 2 vazamentos reais ainda abertos após as correções de 2026-06-22:
   1. `auditLogController.cleanupOldLogs` fazia `activityLog.deleteMany({ where: { createdAt: { lt: cutoff } } })` SEM filtro de município — um `admin` (autorizado na rota `DELETE /api/audit-logs/cleanup`) apagava logs de auditoria de TODOS os municípios.

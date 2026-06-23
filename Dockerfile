@@ -3,7 +3,7 @@
 # ===========================================
 
 # Multi-stage build para otimização
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Instalar dependências do sistema
 RUN apk add --no-cache libc6-compat
@@ -35,21 +35,21 @@ RUN pnpm run build:prod
 # ===========================================
 FROM base AS backend-builder
 
-# Instalar dependências do backend
+# Instalar TODAS as dependências (build precisa de devDeps: typescript + prisma CLI)
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Copiar código fonte
 COPY backend/ .
 
-# Build do backend
-RUN npm run build:prod
+# Build do backend (tsc + prisma generate) e poda das devDeps para a imagem final
+RUN npm run build:prod && npm prune --production
 
 # ===========================================
 # STAGE 3: Imagem de Produção
 # ===========================================
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 # Instalar dependências do sistema
 RUN apk add --no-cache \
@@ -82,7 +82,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/health || exit 1
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Comando de inicialização
 ENTRYPOINT ["dumb-init", "--"]

@@ -39,3 +39,9 @@ screenshot.png
 
 # Cobertura de testes (jest/vitest --coverage)
 coverage/
+
+# Backups de banco de dados (podem conter dados sensíveis — nunca versionar)
+backend/backups/
+/backup/
+*.sql.zip
+*.dump
