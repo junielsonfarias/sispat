@@ -29,7 +29,10 @@ export const compressImage = async (
   const defaultOptions: CompressionOptions = {
     maxSizeMB: 1,
     maxWidthOrHeight: 1920,
-    useWebWorker: true,
+    // useWebWorker:false de propósito: o worker da lib faz importScripts() de um
+    // CDN (cdn.jsdelivr.net), bloqueado pela CSP. Na main thread roda o código já
+    // empacotado (sem rede externa). Custo: compressão não sai do thread principal.
+    useWebWorker: false,
     quality: 0.9,
   }
 
@@ -47,7 +50,7 @@ export const compressImage = async (
 
     return compressedFile
   } catch (error) {
-    console.error('Erro ao comprimir imagem:', error)
+    logger.error('Erro ao comprimir imagem:', error)
     // Retornar arquivo original se compressão falhar
     return file
   }

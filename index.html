@@ -16,8 +16,9 @@
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/favicon.ico" />
-    <!-- Preload critical resources -->
-    <link rel="preload" href="/src/main.tsx" as="script" crossorigin="anonymous" />
+    <!-- O Vite injeta automaticamente o modulepreload do entry e suas deps no
+         build. NÃO adicionar <link rel="preload" href="/src/main.tsx"> manual:
+         o Vite o converte num data: URI (bloqueado pela CSP e vaza o source). -->
   </head>
 
   <body>

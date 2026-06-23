@@ -90,6 +90,16 @@
 
 ## 2026
 
+### 2026-06-23 — Validação da CSP contra o build real do Vite (2 quebras corrigidas)
+- **Contexto:** após endurecer a CSP do Nginx (commit anterior), validei contra o build de produção real (`vite build`) inspecionando `dist/index.html`, CSS e JS gerados. A CSP estrita (`default-src 'self'; script-src 'self' 'unsafe-inline'; ...`) quebraria 2 coisas:
+  1. **`<link rel="preload" href="/src/main.tsx" as="script">` no `index.html`** (raiz): o Vite não reconhece esse preload manual como o entry e o converte num **`data:` URI com o código-fonte** — bloqueado por `script-src` (sem `data:`) e ainda vaza o source TS no HTML. **Correção:** removido o preload manual (o Vite já injeta `modulepreload` do entry+deps automaticamente). Build passou a ter só `<script src="/assets/...">` (self), zero `data:`, zero origens externas.
+  2. **`browser-image-compression` com `useWebWorker:true`** (`src/lib/image-utils.ts`): o worker faz `importScripts('https://cdn.jsdelivr.net/...')`, bloqueado pela CSP → compressão caía no catch e subia a imagem sem comprimir. **Correção:** `useWebWorker:false` (roda o código já empacotado na main thread, sem rede externa).
+- **Falso alarme verificado:** o bundle contém `https://cdnjs.cloudflare.com/.../pdfobject.min.js` — vem do **jsPDF** (modo de saída `output('pdfobjectnewwindow')`). O app só usa `doc.save()`, nunca `.output(...)`, então é dead code: a CSP não quebra nada. Não foi preciso liberar a cloudflare.
+- **Resultado:** o `index.html` e os assets do build são 100% compatíveis com a CSP (tudo `self`; sem inline script; sem CDN executável). CSS sem `url()` externa; sem fontes externas. `connect-src 'self' https: wss:` cobre API same-origin, Sentry (https) e WebSocket.
+- **Arquivos:** `index.html` (raiz), `src/lib/image-utils.ts`
+- **Verificação:** `vite build` OK; `dist/index.html` sem `data:`/inline/externos; sem erros novos de tsc nos arquivos tocados.
+- **Atenção deploy:** garantir `VITE_API_URL` same-origin (ex.: `/api`) no build de produção — o default de dev é `http://localhost:3000/api`, que além de errado em prod não passaria no `connect-src`. Validar no browser real em staging (console sem violações de CSP) ao subir.
+
 ### 2026-06-23 — Lote 🟡: cache por tenant, XSS em notificação, CSP, env fatal, logger
 - **Cache cross-tenant (latente):** `CacheUtils.getPatrimoniosKey/getImoveisKey/getTransferenciasKey/getDocumentosKey` (`config/redis.ts`) faziam hash só dos filtros, SEM `municipalityId` — dois municípios com os mesmos filtros compartilhariam a entrada de cache. Agora a chave inclui o `municipalityId` (`<prefixo><mun>:<hash>`), passado pelo `middlewares/cache.ts` (`req.user.municipalityId`, superuser='all'). Invalidação por prefixo (`patrimonios:*`) continua válida. As listagens são escopadas só por município (scoping por setor é no acesso individual), então o hit rate entre usuários do mesmo município é preservado. O `defaultKeyGenerator` já era por-usuário (seguro).
 - **XSS estocado via `link` de notificação:** `notificationController.createNotification` persistia `link` sem validar protocolo. Agora só aceita caminho relativo (`/x`) ou `http(s)://`; bloqueia `javascript:`/`data:`/`vbscript:`/protocol-relative (`//evil`).
