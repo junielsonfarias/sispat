@@ -99,7 +99,7 @@
 - **Regularização (Cap XIII / Cap IX):** `regularizacaoService` — constatação (descrição, características, estado, localização, **valor justo**, comissão, termo, fotos) + `incorporar`, que numa transação cria o Patrimônio (forma_aquisicao "Regularização", observação "regularização — bem pré-existente", valor = valorJusto, número gerado por `gerarNumeroPatrimonial` se ausente, destinacaoRevisada=true), grava HistoricoEntry e marca a regularização como `incorporado`. Bloqueia exclusão após incorporar. CRUD + cancelar. RBAC: leitura admin/supervisor/usuario; escrita admin/supervisor/superuser; delete admin/superuser.
 - **Arquivos:** `backend/prisma/schema.prisma` (+migration), `shared/src/schemas/{inventario,regularizacao}.ts`, `backend/src/services/{inventario,conformidade,regularizacao}Service.ts`, `backend/src/controllers/regularizacaoController.ts`, `backend/src/routes/regularizacaoRoutes.ts`, `backend/src/index.ts` (mount `/api/regularizacoes`).
 - **Verificação:** `tsc --noEmit` backend limpo; 423/423 testes Jest (+7). Migration aplicada no dev.
-- **Pendente:** frontend (form de inventário com tipo/data-base + tela de Regularização com incorporação).
+- **Frontend (concluído):** `src/pages/regularizacao/RegularizacaoList.tsx` (constatação + incorporar [cria patrimônio] + cancelar/excluir, RBAC); `InventoryContext.createInventory` e `InventarioCreate.tsx` estendidos com tipo de inventário + campos condicionais (anual: exercício/data-base 31/12; transferência: agentes). Rota `/regularizacoes` + link em NavContent. Build Vite OK; zero erro tsc novo.
 
 ### 2026-06-23 — Feature Fase 3: Conformidade + Conciliação contábil (SIAFI) — backend
 - **Origem:** continuação da análise das leis municipais. Atende "alertas de acordo com a lei e SIAFI".

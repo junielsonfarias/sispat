@@ -23,6 +23,12 @@ interface InventoryContextType {
     scope: 'sector' | 'location' | 'specific_location'
     locationType?: string
     specificLocationId?: string
+    // Campos opcionais novos (Sprint 18 — tipos de inventário)
+    tipo?: 'anual' | 'transferencia' | 'extraordinario' | 'inicial'
+    dataBase?: string
+    exercicio?: number
+    agenteAnterior?: string
+    agenteNovo?: string
   }) => Promise<Inventory>
   updateInventory: (inventoryId: string, updatedInventory: Inventory) => Promise<void>
   updateInventoryItemStatus: (
@@ -118,11 +124,28 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       scope: 'sector' | 'location' | 'specific_location'
       locationType?: string
       specificLocationId?: string
+      // Campos opcionais novos (Sprint 18 — tipos de inventário)
+      tipo?: 'anual' | 'transferencia' | 'extraordinario' | 'inicial'
+      dataBase?: string
+      exercicio?: number
+      agenteAnterior?: string
+      agenteNovo?: string
     }) => {
       try {
-        const { name, sectorName, scope, locationType, specificLocationId } = data
+        const {
+          name,
+          sectorName,
+          scope,
+          locationType,
+          specificLocationId,
+          tipo,
+          dataBase,
+          exercicio,
+          agenteAnterior,
+          agenteNovo,
+        } = data
 
-        const inventoryPayload = {
+        const inventoryPayload: Record<string, unknown> = {
           title: name,
           description: `Inventário do setor ${sectorName}`,
           setor: sectorName,
@@ -130,6 +153,13 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           dataInicio: new Date().toISOString(),
           scope,
         }
+
+        // Incluir campos opcionais apenas quando definidos
+        if (tipo !== undefined) inventoryPayload.tipo = tipo
+        if (dataBase !== undefined && dataBase !== '') inventoryPayload.dataBase = dataBase
+        if (exercicio !== undefined) inventoryPayload.exercicio = exercicio
+        if (agenteAnterior !== undefined && agenteAnterior !== '') inventoryPayload.agenteAnterior = agenteAnterior
+        if (agenteNovo !== undefined && agenteNovo !== '') inventoryPayload.agenteNovo = agenteNovo
         
         const newInventory = await api.post<any>('/inventarios', inventoryPayload)
         

@@ -114,6 +114,7 @@ const Profile = lazy(() => import('@/pages/Profile'))
 const ComissoesList = lazy(() => import('@/pages/comissoes/ComissoesList'))
 const DesafetacaoList = lazy(() => import('@/pages/desafetacao/DesafetacaoList'))
 const Conformidade = lazy(() => import('@/pages/conformidade/Conformidade'))
+const RegularizacaoList = lazy(() => import('@/pages/regularizacao/RegularizacaoList'))
 
 // Superuser Pages
 const SuperuserDashboard = lazy(
@@ -641,6 +642,16 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
                     <Conformidade />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Regularização — leitura admin/supervisor/usuario; escrita gateada internamente */}
+              <Route
+                path="/regularizacoes"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'supervisor', 'usuario']}>
+                    <RegularizacaoList />
                   </ProtectedRoute>
                 }
               />

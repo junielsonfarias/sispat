@@ -34,6 +34,7 @@ import {
   UsersRound,
   Gavel,
   ClipboardCheck,
+  PackagePlus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -75,6 +76,7 @@ const supervisorAndAdminLinks: NavItem[] = [
       { to: '/comissoes', icon: UsersRound, label: 'Comissões' },
       { to: '/conformidade', icon: ClipboardCheck, label: 'Conformidade' },
       { to: '/desafetacoes', icon: Gavel, label: 'Desafetação' },
+      { to: '/regularizacoes', icon: PackagePlus, label: 'Regularização' },
     ]
   },
 
@@ -209,6 +211,7 @@ const navLinks: Record<UserRole, NavItem[]> = {
         { to: '/inventarios', icon: ClipboardList, label: 'Inventários' },
         { to: '/locais', icon: MapPin, label: 'Locais' },
         { to: '/desafetacoes', icon: Gavel, label: 'Desafetação' },
+        { to: '/regularizacoes', icon: PackagePlus, label: 'Regularização' },
       ]
     },
 
