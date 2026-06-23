@@ -20,6 +20,7 @@ import {
   sanitizeIncomingUrls as sharedSanitizeIncomingUrls,
   normalizeOnRead as sharedNormalizeOnRead,
 } from '../utils/photo-urls';
+import { generateSubPatrimonioNumber } from './subPatrimonioService';
 
 // Re-exports para back-compat com os testes em __tests__/services/patrimonioService.normalize.test.ts
 export const normalizeUrlArray = sharedNormalizeUrlArray;
@@ -78,12 +79,12 @@ const DETAIL_INCLUDE = {
   subPatrimonios: {
     select: {
       id: true,
-      descricao: true,
-      quantidade: true,
-      valor: true,
+      numero: true,
       status: true,
+      localizacao_especifica: true,
       observacoes: true,
     },
+    orderBy: { numero: 'asc' as const },
   },
 } satisfies Prisma.PatrimonioInclude;
 
@@ -403,6 +404,8 @@ export interface CreatePatrimonioInput {
   localId?: string;
   tipoId?: string;
   acquisitionFormId?: string;
+  eh_kit?: boolean;
+  quantidade_unidades?: string | number;
 }
 
 export class PatrimonioConflictError extends Error {
@@ -484,6 +487,10 @@ export const createPatrimonio = async (
         metodo_depreciacao: input.metodo_depreciacao || 'Linear',
         vida_util_anos: input.vida_util_anos ? parseInt(String(input.vida_util_anos), 10) : null,
         valor_residual: input.valor_residual ? parseFloat(String(input.valor_residual)) : null,
+        eh_kit: input.eh_kit === true,
+        quantidade_unidades: input.eh_kit
+          ? parseInt(String(input.quantidade_unidades ?? 0), 10) || null
+          : null,
         municipalityId: actor.municipalityId,
         sectorId: input.sectorId,
         localId: input.localId || null,
@@ -520,6 +527,20 @@ export const createPatrimonio = async (
         userAgent: audit.userAgent ?? 'unknown',
       },
     });
+
+    // B2: kit gera N sub-patrimônios (unidades) automaticamente na criação.
+    const qtdUnidades = novo.eh_kit
+      ? parseInt(String(input.quantidade_unidades ?? 0), 10) || 0
+      : 0;
+    if (qtdUnidades > 1) {
+      await tx.subPatrimonio.createMany({
+        data: Array.from({ length: qtdUnidades }, (_, i) => ({
+          patrimonioId: novo.id,
+          numero: generateSubPatrimonioNumber(novo.numero_patrimonio, i + 1),
+          status: 'ativo',
+        })),
+      });
+    }
 
     return novo;
   });

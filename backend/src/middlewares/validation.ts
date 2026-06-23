@@ -92,9 +92,19 @@ export const patrimonioValidations = {
         if (typeof v === 'string') return true;
         if (v && typeof v === 'object' && (typeof v.file_url === 'string' || typeof v.url === 'string')) return true;
         throw new Error('Cada foto deve ser URL (string) ou objeto { file_url }');
-      })
+      }),
+
+    body('eh_kit')
+      .optional()
+      .isBoolean()
+      .withMessage('eh_kit deve ser booleano'),
+
+    body('quantidade_unidades')
+      .optional({ nullable: true })
+      .isInt({ min: 1, max: 10000 })
+      .withMessage('Quantidade de unidades deve ser um inteiro entre 1 e 10000'),
   ],
-  
+
   update: [
     param('id').isUUID().withMessage('ID deve ser um UUID válido'),
     
@@ -173,7 +183,17 @@ export const patrimonioValidations = {
         if (typeof v === 'string') return true;
         if (v && typeof v === 'object' && (typeof v.file_url === 'string' || typeof v.url === 'string')) return true;
         throw new Error('Cada foto deve ser URL (string) ou objeto { file_url }');
-      })
+      }),
+
+    body('eh_kit')
+      .optional()
+      .isBoolean()
+      .withMessage('eh_kit deve ser booleano'),
+
+    body('quantidade_unidades')
+      .optional({ nullable: true })
+      .isInt({ min: 1, max: 10000 })
+      .withMessage('Quantidade de unidades deve ser um inteiro entre 1 e 10000'),
   ]
 };
 

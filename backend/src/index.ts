@@ -262,6 +262,7 @@ import conformidadeRoutes from './routes/conformidadeRoutes';
 import regularizacaoRoutes from './routes/regularizacaoRoutes';
 import desfazimentoRoutes from './routes/desfazimentoRoutes';
 import termosRoutes from './routes/termosRoutes';
+import subPatrimonioRoutes from './routes/subPatrimonioRoutes';
 
 logInfo('✅ Rotas carregadas');
 
@@ -274,6 +275,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/sectors', sectorsRoutes);
 
 // Aplicar cache específico para patrimônios
+// Sub-patrimônios (kits, B2) — aninhado; antes do mount geral e sem cache de
+// patrimônio (é recurso filho, com chave de cache própria por patrimonioId).
+app.use('/api/patrimonios/:patrimonioId/sub-patrimonios', subPatrimonioRoutes);
 app.use('/api/patrimonios', patrimoniosCacheMiddleware(), patrimonioRoutes);
 
 // Rotas secundárias - HABILITADAS

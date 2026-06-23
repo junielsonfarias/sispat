@@ -46,7 +46,6 @@ import {
 import { generatePatrimonialNumber } from '@/lib/asset-utils'
 import { patrimonioCreateSchema } from '@/lib/validations/patrimonioSchema'
 import { Label } from '@/components/ui/label'
-import { generateSubPatrimonios } from '@/lib/sub-patrimonio-utils'
 import { logger } from '@/lib/logger'
 import {
   BensIdentificacaoFields,
@@ -244,33 +243,9 @@ const BensCreate = () => {
         'id' | 'historico_movimentacao' | 'entityName' | 'notes'
       >
 
+      // Os campos eh_kit/quantidade_unidades vão no payload (via ...data); o
+      // backend gera os sub-patrimônios (unidades) automaticamente na criação.
       const newPatrimonio = await addPatrimonio(newPatrimonioData)
-
-      // Se for um kit, gerar sub-patrimônios automaticamente
-      if ((data.eh_kit || data.ehKit) && (data.quantidade_unidades || data.quantidadeUnidades) && (data.quantidade_unidades || data.quantidadeUnidades) > 1) {
-        try {
-          const subPatrimonios = generateSubPatrimonios(
-            newPatrimonio.id,
-            newPatrimonio.numero_patrimonio || newPatrimonio.numeroPatrimonio,
-            data.quantidade_unidades || data.quantidadeUnidades
-          )
-          
-          // Em produção, aqui seria feita a chamada para a API para salvar os sub-patrimônios
-          logger.debug('Sub-patrimônios gerados', { subPatrimonios })
-          
-          logActivity('SUB_PATRIMONIOS_CREATE', {
-            record_id: newPatrimonio.id,
-            new_value: { 
-              patrimonio_id: newPatrimonio.id,
-              quantidade: data.quantidade_unidades || data.quantidadeUnidades,
-              sub_patrimonios: subPatrimonios 
-            },
-          })
-        } catch (error) {
-          console.error('Erro ao gerar sub-patrimônios:', error)
-          // Não falha o cadastro principal se houver erro nos sub-patrimônios
-        }
-      }
 
       logActivity('PATRIMONIO_CREATE', {
         record_id: newPatrimonio.id,

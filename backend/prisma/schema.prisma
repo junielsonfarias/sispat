@@ -310,6 +310,11 @@ model Patrimonio {
   metodo_depreciacao String?          @default("Linear")
   vida_util_anos     Int?
   valor_residual     Float?
+  // Kits/conjuntos (B2): quando eh_kit, o bem agrega N sub-patrimônios
+  // (unidades individuais com número próprio). quantidade_unidades é o total
+  // gerado na criação.
+  eh_kit              Boolean         @default(false)
+  quantidade_unidades Int?
   createdAt          DateTime         @default(now())
   createdBy          String
   updatedAt          DateTime         @updatedAt
@@ -475,18 +480,20 @@ model Emprestimo {
   @@map("emprestimos")
 }
 
+/// Sub-patrimônio (B2): uma unidade individual de um bem do tipo kit.
+/// `numero` é derivado do número do patrimônio pai + sequencial (ex.: 0001-003).
 model SubPatrimonio {
-  id           String     @id @default(uuid())
-  patrimonioId String
-  descricao    String
-  quantidade   Int
-  valor        Float
-  status       String     @default("ativo")
-  observacoes  String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  patrimonio   Patrimonio @relation(fields: [patrimonioId], references: [id], onDelete: Cascade)
+  id                     String     @id @default(uuid())
+  patrimonioId           String
+  numero                 String
+  status                 String     @default("ativo")
+  localizacao_especifica String?
+  observacoes            String?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  patrimonio             Patrimonio @relation(fields: [patrimonioId], references: [id], onDelete: Cascade)
 
+  @@unique([patrimonioId, numero])
   @@index([patrimonioId])
   @@map("sub_patrimonios")
 }

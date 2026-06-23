@@ -39,3 +39,4 @@ export * from './schemas/desafetacao';
 export * from './schemas/conciliacao';
 export * from './schemas/regularizacao';
 export * from './schemas/desfazimento';
+export * from './schemas/subPatrimonio';

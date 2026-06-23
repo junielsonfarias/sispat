@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
 import { SubPatrimonio, SubPatrimonioStatus } from '@/types'
+import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
+import { downloadCsv } from '@/lib/sub-patrimonio-utils'
 import { SubPatrimoniosHeader } from './SubPatrimoniosHeader'
 import { SubPatrimoniosBulkActions } from './SubPatrimoniosBulkActions'
 import { SubPatrimoniosTable } from './SubPatrimoniosTable'
@@ -28,13 +31,30 @@ export function SubPatrimoniosManagerRefactored({
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  // Carregar sub-patrimônios quando o componente monta
-  useEffect(() => {
-    if (isKit) {
-      // TODO - Integrar com API real para carregar sub-patrimônios
-      setSubPatrimonios([])
+  const endpoint = `/patrimonios/${patrimonioId}/sub-patrimonios`
+
+  const fetchSubPatrimonios = useCallback(async () => {
+    if (!isKit) return
+    setIsLoading(true)
+    try {
+      const data = await api.get<SubPatrimonio[]>(endpoint)
+      setSubPatrimonios(data ?? [])
+    } catch (error) {
+      logger.error('[SubPatrimonios] Erro ao carregar', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Não foi possível carregar os sub-patrimônios.',
+      })
+    } finally {
+      setIsLoading(false)
     }
-  }, [patrimonioId, isKit])
+  }, [endpoint, isKit])
+
+  // Carregar sub-patrimônios quando o componente monta / muda o patrimônio
+  useEffect(() => {
+    void fetchSubPatrimonios()
+  }, [fetchSubPatrimonios])
 
   const filteredSubPatrimonios = subPatrimonios.filter((subPatrimonio) => {
     const matchesSearch = subPatrimonio.numero_subpatrimonio
@@ -75,54 +95,34 @@ export function SubPatrimoniosManagerRefactored({
     setEditingSubPatrimonio(null)
   }
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: {
+    status: SubPatrimonioStatus
+    localizacao_especifica?: string
+    observacoes?: string
+  }) => {
     setIsLoading(true)
+    const payload = {
+      status: data.status,
+      localizacao_especifica: data.localizacao_especifica || null,
+      observacoes: data.observacoes || null,
+    }
     try {
-      // Simular delay da API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
       if (editingSubPatrimonio) {
-        // Editar sub-patrimônio existente
-        setSubPatrimonios(prev =>
-          prev.map(sp =>
-            sp.id === editingSubPatrimonio.id
-              ? {
-                  ...sp,
-                  ...data,
-                  updated_at: new Date(),
-                }
-              : sp
-          )
-        )
-        toast({
-          title: 'Sucesso!',
-          description: 'Sub-patrimônio atualizado com sucesso.',
-        })
+        await api.put(`${endpoint}/${editingSubPatrimonio.id}`, payload)
+        toast({ title: 'Sucesso!', description: 'Sub-patrimônio atualizado com sucesso.' })
       } else {
-        // Criar novo sub-patrimônio (gerar número sequencial)
-        const nextNumber = subPatrimonios.length + 1
-        const numeroSubPatrimonio = `${patrimonioNumero}-${nextNumber.toString().padStart(3, '0')}`
-        
-        const newSubPatrimonio: SubPatrimonio = {
-          id: Date.now().toString(),
-          patrimonio_id: patrimonioId,
-          numero_subpatrimonio: numeroSubPatrimonio,
-          ...data,
-          created_at: new Date(),
-          updated_at: new Date(),
-        }
-        setSubPatrimonios(prev => [...prev, newSubPatrimonio])
-        toast({
-          title: 'Sucesso!',
-          description: 'Sub-patrimônio criado com sucesso.',
-        })
+        // O número é gerado pelo backend a partir do número do bem pai.
+        await api.post(endpoint, payload)
+        toast({ title: 'Sucesso!', description: 'Sub-patrimônio criado com sucesso.' })
       }
       handleCloseDialog()
+      await fetchSubPatrimonios()
     } catch (error) {
+      logger.error('[SubPatrimonios] Erro ao salvar', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Falha ao salvar sub-patrimônio.',
+        description: (error as Error)?.message || 'Falha ao salvar sub-patrimônio.',
       })
     } finally {
       setIsLoading(false)
@@ -135,16 +135,16 @@ export function SubPatrimoniosManagerRefactored({
     }
 
     try {
+      await api.delete(`${endpoint}/${id}`)
       setSubPatrimonios(prev => prev.filter(sp => sp.id !== id))
-      toast({
-        title: 'Sucesso!',
-        description: 'Sub-patrimônio excluído com sucesso.',
-      })
+      setSelectedItems(prev => prev.filter(item => item !== id))
+      toast({ title: 'Sucesso!', description: 'Sub-patrimônio excluído com sucesso.' })
     } catch (error) {
+      logger.error('[SubPatrimonios] Erro ao excluir', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Falha ao excluir sub-patrimônio.',
+        description: (error as Error)?.message || 'Falha ao excluir sub-patrimônio.',
       })
     }
   }
@@ -168,34 +168,28 @@ export function SubPatrimoniosManagerRefactored({
   const handleBulkStatusChange = async (newStatus: SubPatrimonioStatus) => {
     if (selectedItems.length === 0) return
 
+    const count = selectedItems.length
     try {
-      setSubPatrimonios(prev =>
-        prev.map(sp =>
-          selectedItems.includes(sp.id)
-            ? { ...sp, status: newStatus, updated_at: new Date() }
-            : sp
-        )
-      )
+      await api.post(`${endpoint}/bulk-status`, { ids: selectedItems, status: newStatus })
       setSelectedItems([])
-      toast({
-        title: 'Sucesso!',
-        description: `${selectedItems.length} sub-patrimônios atualizados.`,
-      })
+      toast({ title: 'Sucesso!', description: `${count} sub-patrimônios atualizados.` })
+      await fetchSubPatrimonios()
     } catch (error) {
+      logger.error('[SubPatrimonios] Erro no bulk', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Falha ao atualizar sub-patrimônios.',
+        description: (error as Error)?.message || 'Falha ao atualizar sub-patrimônios.',
       })
     }
   }
 
   const handleExport = () => {
-    // Implementar exportação para Excel/CSV
-    toast({
-      title: 'Exportação',
-      description: 'Funcionalidade de exportação será implementada em breve.',
-    })
+    if (subPatrimonios.length === 0) {
+      toast({ title: 'Nada para exportar', description: 'Não há sub-patrimônios na lista.' })
+      return
+    }
+    downloadCsv(subPatrimonios, `sub-patrimonios-${patrimonioNumero}.csv`)
   }
 
   if (!isKit) {

@@ -17,11 +17,9 @@
 - **Solução:** Ativar `prisma.passwordResetToken.create/findUnique/update`. O modelo já existe (`schema.prisma:620-637`). Deve ser 1h de trabalho.
 - **Risco:** Baixo, escopo cirúrgico.
 
-### B2. Sub-patrimônios (kits) não implementados
-- **Onde:** `src/components/bens/SubPatrimoniosManagerRefactored.tsx:34` — comentário `TODO: Integrar com API real`.
-- **Sintoma:** Campos `eh_kit` e `quantidade_unidades` existem mas não persistem. Kits cadastrados ficam órfãos.
-- **Impacto:** Recurso "ativo" na UI que não funciona — usuários se confundem.
-- **Solução:** Implementar endpoint + UI ou esconder a feature até estar pronta.
+### B2. ✅ Sub-patrimônios (kits) — implementado (2026-06-23)
+- **Era:** `SubPatrimoniosManagerRefactored.tsx` usava estado mock (`TODO: Integrar com API real`); `eh_kit`/`quantidade_unidades` não persistiam; model `SubPatrimonio` do schema era vestigial (descricao/quantidade/valor) e divergia do frontend.
+- **Feito:** migration `add_sub_patrimonios_kit` — `eh_kit`/`quantidade_unidades` no `Patrimonio` + `SubPatrimonio` reestruturado (`numero`/`status`/`localizacao_especifica`/`observacoes`, unique `[patrimonioId, numero]`). Backend: `subPatrimonioService` + controller + rotas aninhadas `/api/patrimonios/:id/sub-patrimonios` (list/create/update/delete/bulk-status), isolamento multi-tenant via patrimônio pai, RBAC. `patrimonioService.create` gera N sub-patrimônios na transação quando `eh_kit`. Schema compartilhado `@sispat/shared`. Frontend: manager ligado à API real (CRUD + bulk + export CSV), `BensCreate` envia os campos do kit (backend gera), feature flag `subPatrimonios` ligada. Verificado: tsc + 455 testes Jest + build + smoke test end-to-end (criação de kit gera unidades, CRUD, bulk, cascata).
 
 ### B3. Devolução de empréstimo sem fluxo
 - **Onde:** `src/pages/bens/Emprestimos.tsx` — sem `handleDevolucao`. Campo `dataDevolucao` no schema nunca populado.

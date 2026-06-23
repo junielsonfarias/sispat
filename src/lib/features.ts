@@ -9,9 +9,9 @@
  */
 export const FEATURES = {
   /**
-   * Sub-patrimônios (kits/conjuntos).
-   * Backend ainda não tem endpoint para gerenciar. Ver
-   * `Docs/_PROJETO/PLANO_MELHORIAS_FLUXOS.md` — B2.
+   * Sub-patrimônios (kits/conjuntos) — B2.
+   * Backend completo: CRUD em /api/patrimonios/:id/sub-patrimonios + geração
+   * automática na criação do kit. Ver `Docs/_PROJETO/PLANO_MELHORIAS_FLUXOS.md`.
    */
-  subPatrimonios: false,
+  subPatrimonios: true,
 } as const;

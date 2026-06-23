@@ -148,6 +148,28 @@ export const exportSubPatrimoniosToCSV = (subPatrimonios: SubPatrimonio[]): stri
 }
 
 /**
+ * Dispara o download de um CSV de sub-patrimônios no navegador.
+ * @param subPatrimonios - Lista de sub-patrimônios
+ * @param filename - Nome do arquivo a baixar
+ */
+export const downloadCsv = (
+  subPatrimonios: SubPatrimonio[],
+  filename: string
+): void => {
+  // BOM para o Excel reconhecer UTF-8 (acentos)
+  const csv = '﻿' + exportSubPatrimoniosToCSV(subPatrimonios)
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+/**
  * Exporta sub-patrimônios para formato Excel (JSON para xlsx)
  * @param subPatrimonios - Lista de sub-patrimônios
  * @returns Array de objetos para conversão em Excel
