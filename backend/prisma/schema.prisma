@@ -59,6 +59,17 @@ enum StatusDesafetacao {
   cancelada
 }
 
+// Conciliação físico-contábil / SIAFIC (Art. 3 II e Art. 8 V da Lei).
+enum CategoriaConciliacao {
+  bens_moveis
+  bens_imoveis
+}
+
+enum StatusConciliacao {
+  conciliada
+  divergente
+}
+
 model User {
   id                    String          @id @default(uuid())
   email                 String          @unique
@@ -143,6 +154,7 @@ model Municipality {
   users          User[]
   comissoes      Comissao[]
   desafetacoes   Desafetacao[]
+  conciliacoes   Conciliacao[]
 
   @@map("municipalities")
 }
@@ -888,4 +900,29 @@ model Desafetacao {
   @@index([patrimonioId])
   @@index([imovelId])
   @@map("desafetacoes")
+}
+
+// Conciliação físico-contábil (SIAFIC) — Art. 3 II e Art. 8 V da Lei. Para uma
+// competência (YYYY-MM) e categoria, compara o saldo contábil informado (do
+// SIAFIC) com o saldo físico calculado a partir do acervo, sinalizando divergência.
+model Conciliacao {
+  id             String               @id @default(uuid())
+  competencia    String               // "YYYY-MM"
+  dataBase       DateTime
+  categoria      CategoriaConciliacao
+  valorContabil  Float                // informado (origem SIAFIC)
+  valorFisico    Float                // calculado do acervo no momento
+  divergencia    Float                // valorFisico - valorContabil
+  status         StatusConciliacao
+  observacoes    String?
+  municipalityId String
+  createdAt      DateTime             @default(now())
+  createdBy      String?
+  updatedAt      DateTime             @updatedAt
+  municipality   Municipality         @relation(fields: [municipalityId], references: [id])
+
+  @@unique([municipalityId, competencia, categoria])
+  @@index([municipalityId])
+  @@index([municipalityId, status])
+  @@map("conciliacoes")
 }

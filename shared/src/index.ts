@@ -36,3 +36,4 @@ export * from './schemas/emailConfig';
 export * from './schemas/config';
 export * from './schemas/comissao';
 export * from './schemas/desafetacao';
+export * from './schemas/conciliacao';

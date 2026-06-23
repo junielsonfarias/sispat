@@ -90,6 +90,15 @@
 
 ## 2026
 
+### 2026-06-23 — Feature Fase 3: Conformidade + Conciliação contábil (SIAFI) — backend
+- **Origem:** continuação da análise das leis municipais. Atende "alertas de acordo com a lei e SIAFI".
+- **Schema (migration `20260623131135_add_conciliacao_contabil`):** enums `CategoriaConciliacao` (bens_moveis/bens_imoveis) e `StatusConciliacao` (conciliada/divergente); model `Conciliacao` (competencia YYYY-MM, dataBase, categoria, valorContabil informado, valorFisico calculado, divergencia, status; unique por município+competência+categoria).
+- **Conciliação físico-contábil (Art. 3 II / Art. 8 V — SIAFIC):** `conciliacaoService` calcula o saldo FÍSICO (custo histórico = soma de `valor_aquisicao`; móveis excluem baixados; imóveis somam todos), compara com o saldo CONTÁBIL informado do SIAFIC e marca `divergente` se |diferença| ≥ R$0,01. Endpoints: list/get/create/`:id/recalcular`/delete. RBAC: leitura admin/supervisor/superuser, escrita admin/superuser.
+- **Checklist de conformidade (read-only, computado):** `conformidadeService.getChecklist` avalia o estado atual contra a lei e devolve itens com status conforme/atenção/não-conforme + referência legal: 4 comissões instituídas/ativas com mandato vigente e ≥3 membros (Art. 19); bens com destinação revisada (Art. 6); conciliação por categoria (Art. 8 V); bens dominicais (Art. 22). `getAlertas` filtra os itens que exigem ação. Rotas `GET /api/conformidade/checklist` e `/alertas`.
+- **Arquivos:** `backend/prisma/schema.prisma` (+migration), `shared/src/schemas/conciliacao.ts`, `backend/src/services/{conciliacao,conformidade}Service.ts`, `backend/src/controllers/{conciliacao,conformidade}Controller.ts`, `backend/src/routes/{conciliacao,conformidade}Routes.ts`, `backend/src/index.ts` (mount `/api/conciliacoes`, `/api/conformidade`).
+- **Verificação:** `tsc --noEmit` backend limpo; 416/416 testes Jest (+13). Migration aplicada no dev.
+- **Decisão de modelagem:** saldo físico usa custo histórico (valor_aquisicao), não valor líquido depreciado — documentar/ajustar quando a depreciação contábil mensal (MCASP) for refletida no backend. Pendente: frontend (tela de Conformidade + Conciliação).
+
 ### 2026-06-23 — Feature: Comissões + Desafetação (Lei de Gestão Patrimonial) — backend
 - **Origem:** análise da Lei e do Decreto Municipais de Gestão Patrimonial de São Sebastião da Boa Vista/PA (`Docs/analise/*.docx`). Fase 1+2 de ~6 módulos planejados.
 - **Schema (migration `20260623123259_add_comissoes_e_desafetacao`):**

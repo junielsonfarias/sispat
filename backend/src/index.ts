@@ -257,6 +257,8 @@ import notificationRoutes from './routes/notificationRoutes';
 import performanceRoutes from './routes/performanceRoutes';
 import comissaoRoutes from './routes/comissaoRoutes';
 import desafetacaoRoutes from './routes/desafetacaoRoutes';
+import conciliacaoRoutes from './routes/conciliacaoRoutes';
+import conformidadeRoutes from './routes/conformidadeRoutes';
 
 logInfo('✅ Rotas carregadas');
 
@@ -298,6 +300,8 @@ app.use('/api/system-configuration', systemConfigRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/comissoes', comissaoRoutes);
 app.use('/api/desafetacoes', desafetacaoRoutes);
+app.use('/api/conciliacoes', conciliacaoRoutes);
+app.use('/api/conformidade', conformidadeRoutes);
 
 // Rotas de métricas e monitoramento
 import metricsRoutes from './routes/metricsRoutes';
