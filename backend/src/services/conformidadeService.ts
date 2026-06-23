@@ -42,8 +42,15 @@ const tenant = (actor: Actor): Prisma.ComissaoWhereInput =>
 export const getChecklist = async (actor: Actor, now: Date = new Date()) => {
   const munWhere = actor.role !== 'superuser' ? { municipalityId: actor.municipalityId } : {};
 
-  const [comissoes, patrimoniosPendentes, imoveisPendentes, dominicaisP, dominicaisI, conciliacoes] =
-    await Promise.all([
+  const [
+    comissoes,
+    patrimoniosPendentes,
+    imoveisPendentes,
+    dominicaisP,
+    dominicaisI,
+    conciliacoes,
+    inventariosAnuais,
+  ] = await Promise.all([
       prisma.comissao.findMany({
         where: { ...tenant(actor), status: 'ativa' },
         include: { _count: { select: { membros: true } } },
@@ -65,6 +72,11 @@ export const getChecklist = async (actor: Actor, now: Date = new Date()) => {
       prisma.conciliacao.findMany({
         where: munWhere,
         orderBy: { competencia: 'desc' },
+      }),
+      prisma.inventory.findMany({
+        where: { ...munWhere, tipo: 'anual', status: 'concluido' },
+        select: { exercicio: true },
+        orderBy: { exercicio: 'desc' },
       }),
     ]);
 
@@ -152,7 +164,36 @@ export const getChecklist = async (actor: Actor, now: Date = new Date()) => {
     });
   }
 
-  // 4. Bens dominicais (informativo) — desafetados, aptos à alienação.
+  // 4. Inventário anual de verificação (Art. 16, data-base 31/12).
+  const exerciciosAnuais = inventariosAnuais
+    .map((i) => i.exercicio)
+    .filter((e): e is number => typeof e === 'number');
+  const anoEsperado = now.getUTCFullYear() - 1; // último exercício encerrado
+  if (exerciciosAnuais.length === 0) {
+    itens.push({
+      chave: 'inventario_anual',
+      categoria: 'Inventário',
+      descricao: 'Inventário anual de verificação concluído',
+      status: 'nao_conforme',
+      detalhe: 'Nenhum inventário anual concluído.',
+      referenciaLegal: 'Art. 16 da Lei / Art. 96 da Lei 4.320',
+    });
+  } else {
+    const ultimo = Math.max(...exerciciosAnuais);
+    itens.push({
+      chave: 'inventario_anual',
+      categoria: 'Inventário',
+      descricao: 'Inventário anual de verificação concluído',
+      status: ultimo >= anoEsperado ? 'conforme' : 'atencao',
+      detalhe:
+        ultimo >= anoEsperado
+          ? `Último inventário anual concluído: exercício ${ultimo}.`
+          : `Último inventário anual é do exercício ${ultimo} (esperado ${anoEsperado}).`,
+      referenciaLegal: 'Art. 16 da Lei / Art. 96 da Lei 4.320',
+    });
+  }
+
+  // 5. Bens dominicais (informativo) — desafetados, aptos à alienação.
   const dominicais = dominicaisP + dominicaisI;
   itens.push({
     chave: 'bens_dominicais',

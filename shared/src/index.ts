@@ -37,3 +37,4 @@ export * from './schemas/config';
 export * from './schemas/comissao';
 export * from './schemas/desafetacao';
 export * from './schemas/conciliacao';
+export * from './schemas/regularizacao';

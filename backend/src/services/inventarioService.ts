@@ -184,6 +184,11 @@ export interface CreateInventarioInput {
   local?: string;
   dataInicio?: string | Date;
   scope?: string;
+  tipo?: string;
+  dataBase?: string | Date | null;
+  exercicio?: number | null;
+  agenteAnterior?: string | null;
+  agenteNovo?: string | null;
 }
 
 export const createInventario = async (input: CreateInventarioInput, actor: Actor) => {
@@ -216,6 +221,11 @@ export const createInventario = async (input: CreateInventarioInput, actor: Acto
         dataInicio: input.dataInicio ? new Date(input.dataInicio) : new Date(),
         status: 'em_andamento',
         scope,
+        tipo: (input.tipo ?? 'extraordinario') as Prisma.InventoryCreateInput['tipo'],
+        dataBase: input.dataBase ? new Date(input.dataBase) : null,
+        exercicio: input.exercicio ?? null,
+        agenteAnterior: input.agenteAnterior ?? null,
+        agenteNovo: input.agenteNovo ?? null,
         municipalityId: actor.municipalityId,
       },
     });
@@ -285,6 +295,11 @@ export interface UpdateInventarioInput {
   local?: string;
   status?: string;
   dataFim?: string | Date | null;
+  tipo?: string;
+  dataBase?: string | Date | null;
+  exercicio?: number | null;
+  agenteAnterior?: string | null;
+  agenteNovo?: string | null;
 }
 
 export const updateInventario = async (
@@ -319,6 +334,15 @@ export const updateInventario = async (
       local: input.local,
       status: input.status,
       dataFim: input.dataFim ? new Date(input.dataFim) : null,
+      ...(input.tipo !== undefined
+        ? { tipo: input.tipo as Prisma.InventoryUpdateInput['tipo'] }
+        : {}),
+      ...(input.dataBase !== undefined
+        ? { dataBase: input.dataBase ? new Date(input.dataBase) : null }
+        : {}),
+      ...(input.exercicio !== undefined ? { exercicio: input.exercicio } : {}),
+      ...(input.agenteAnterior !== undefined ? { agenteAnterior: input.agenteAnterior } : {}),
+      ...(input.agenteNovo !== undefined ? { agenteNovo: input.agenteNovo } : {}),
     },
     include: { items: { include: { patrimonio: true } } },
   });

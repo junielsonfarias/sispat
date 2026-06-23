@@ -39,18 +39,46 @@ const setorSchema = z
   .min(1, 'Setor é obrigatório.')
   .max(100, 'Setor deve ter no máximo 100 caracteres.');
 
-export const createInventarioSchema = z.object({
-  title: titleSchema,
-  description: descriptionSchema,
-  setor: setorSchema,
-  local: z.string().max(100).optional(),
-  // `scope` controla como o service vai puxar os patrimônios:
-  //   - sector: todos do setor (filtro padrão).
-  //   - location: filtra também por `local_objeto` (case-insensitive).
-  //   - specific_location: trata `local` como localId UUID.
-  scope: inventarioScopeSchema.optional(),
-  dataInicio: isoDateSchema.optional(),
-});
+// Tipos de inventário (Cap VII da Lei): anual (data-base 31/12), transferência
+// (troca de responsável), extraordinário, inicial (implantação).
+export const tipoInventarioSchema = z.enum([
+  'anual',
+  'transferencia',
+  'extraordinario',
+  'inicial',
+]);
+export type TipoInventario = z.infer<typeof tipoInventarioSchema>;
+
+export const createInventarioSchema = z
+  .object({
+    title: titleSchema,
+    description: descriptionSchema,
+    setor: setorSchema,
+    local: z.string().max(100).optional(),
+    // `scope` controla como o service vai puxar os patrimônios:
+    //   - sector: todos do setor (filtro padrão).
+    //   - location: filtra também por `local_objeto` (case-insensitive).
+    //   - specific_location: trata `local` como localId UUID.
+    scope: inventarioScopeSchema.optional(),
+    dataInicio: isoDateSchema.optional(),
+    tipo: tipoInventarioSchema.optional(),
+    dataBase: isoDateSchema.optional(),
+    exercicio: z.coerce.number().int().min(2000).max(2100).optional(),
+    agenteAnterior: z.string().max(150).optional(),
+    agenteNovo: z.string().max(150).optional(),
+  })
+  // Inventário anual exige exercício (data-base 31/12 — Art. 16).
+  .refine((d) => d.tipo !== 'anual' || !!d.exercicio, {
+    message: 'Inventário anual requer o exercício (ano).',
+    path: ['exercicio'],
+  })
+  .refine(
+    (d) =>
+      d.tipo !== 'anual' ||
+      !d.dataBase ||
+      (new Date(d.dataBase).getUTCMonth() === 11 && new Date(d.dataBase).getUTCDate() === 31),
+    { message: 'No inventário anual a data-base deve ser 31/12.', path: ['dataBase'] },
+  );
 export type CreateInventarioInput = z.infer<typeof createInventarioSchema>;
 
 export const updateInventarioSchema = z
@@ -61,6 +89,11 @@ export const updateInventarioSchema = z
     local: z.string().max(100).optional(),
     status: inventarioStatusSchema.optional(),
     dataFim: isoDateSchema.optional().nullable(),
+    tipo: tipoInventarioSchema.optional(),
+    dataBase: isoDateSchema.optional().nullable(),
+    exercicio: z.coerce.number().int().min(2000).max(2100).optional().nullable(),
+    agenteAnterior: z.string().max(150).optional().nullable(),
+    agenteNovo: z.string().max(150).optional().nullable(),
   })
   .strict();
 export type UpdateInventarioInput = z.infer<typeof updateInventarioSchema>;

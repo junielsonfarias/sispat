@@ -7,6 +7,7 @@ const mockPrisma = {
   patrimonio: { count: jest.fn() },
   imovel: { count: jest.fn() },
   conciliacao: { findMany: jest.fn() },
+  inventory: { findMany: jest.fn() },
 };
 
 jest.mock('../../config/database', () => ({ prisma: mockPrisma }));
@@ -22,6 +23,7 @@ beforeEach(() => {
   mockPrisma.imovel.count.mockResolvedValue(0);
   mockPrisma.conciliacao.findMany.mockResolvedValue([]);
   mockPrisma.comissao.findMany.mockResolvedValue([]);
+  mockPrisma.inventory.findMany.mockResolvedValue([]);
 });
 
 const item = (r: any, chave: string) => r.itens.find((i: any) => i.chave === chave);
@@ -65,6 +67,19 @@ describe('conformidadeService — getChecklist', () => {
     const r = await getChecklist(actor, now);
     expect(item(r, 'conciliacao_bens_moveis').status).toBe('nao_conforme');
     expect(item(r, 'conciliacao_bens_imoveis').status).toBe('atencao');
+  });
+
+  it('inventário anual: ausente => nao_conforme; exercício recente => conforme', async () => {
+    let r = await getChecklist(actor, now);
+    expect(item(r, 'inventario_anual').status).toBe('nao_conforme');
+
+    mockPrisma.inventory.findMany.mockResolvedValue([{ exercicio: 2025 }]);
+    r = await getChecklist(actor, now); // anoEsperado = 2025
+    expect(item(r, 'inventario_anual').status).toBe('conforme');
+
+    mockPrisma.inventory.findMany.mockResolvedValue([{ exercicio: 2023 }]);
+    r = await getChecklist(actor, now);
+    expect(item(r, 'inventario_anual').status).toBe('atencao');
   });
 
   it('resumo conta os status corretamente', async () => {

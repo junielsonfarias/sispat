@@ -90,6 +90,17 @@
 
 ## 2026
 
+### 2026-06-23 — Feature Fase 4: Inventário por tipo + Regularização — backend
+- **Schema (migration `20260623133251_add_inventario_tipo_e_regularizacao`):**
+  - Enums `TipoInventario` (anual/transferencia/extraordinario/inicial), `TipoOrigemBem` (origem_desconhecida/pre_existente), `StatusRegularizacao` (em_andamento/incorporado/cancelado).
+  - `Inventory` ganhou `tipo` (default extraordinario), `dataBase`, `exercicio`, `agenteAnterior`, `agenteNovo`.
+  - Novo model `Regularizacao` (FK opcional a Comissao e ao Patrimonio criado).
+- **Inventário (Cap VII):** `inventarioService` create/update aceitam tipo/dataBase/exercício/agentes. Schema compartilhado valida que inventário **anual** exige exercício e, se houver data-base, ela deve ser **31/12** (Art. 16). Conformidade passou a checar "inventário anual de verificação concluído" (`nao_conforme` se nunca houve; `atencao` se o último é de exercício anterior ao esperado).
+- **Regularização (Cap XIII / Cap IX):** `regularizacaoService` — constatação (descrição, características, estado, localização, **valor justo**, comissão, termo, fotos) + `incorporar`, que numa transação cria o Patrimônio (forma_aquisicao "Regularização", observação "regularização — bem pré-existente", valor = valorJusto, número gerado por `gerarNumeroPatrimonial` se ausente, destinacaoRevisada=true), grava HistoricoEntry e marca a regularização como `incorporado`. Bloqueia exclusão após incorporar. CRUD + cancelar. RBAC: leitura admin/supervisor/usuario; escrita admin/supervisor/superuser; delete admin/superuser.
+- **Arquivos:** `backend/prisma/schema.prisma` (+migration), `shared/src/schemas/{inventario,regularizacao}.ts`, `backend/src/services/{inventario,conformidade,regularizacao}Service.ts`, `backend/src/controllers/regularizacaoController.ts`, `backend/src/routes/regularizacaoRoutes.ts`, `backend/src/index.ts` (mount `/api/regularizacoes`).
+- **Verificação:** `tsc --noEmit` backend limpo; 423/423 testes Jest (+7). Migration aplicada no dev.
+- **Pendente:** frontend (form de inventário com tipo/data-base + tela de Regularização com incorporação).
+
 ### 2026-06-23 — Feature Fase 3: Conformidade + Conciliação contábil (SIAFI) — backend
 - **Origem:** continuação da análise das leis municipais. Atende "alertas de acordo com a lei e SIAFI".
 - **Schema (migration `20260623131135_add_conciliacao_contabil`):** enums `CategoriaConciliacao` (bens_moveis/bens_imoveis) e `StatusConciliacao` (conciliada/divergente); model `Conciliacao` (competencia YYYY-MM, dataBase, categoria, valorContabil informado, valorFisico calculado, divergencia, status; unique por município+competência+categoria).

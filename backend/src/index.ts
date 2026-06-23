@@ -259,6 +259,7 @@ import comissaoRoutes from './routes/comissaoRoutes';
 import desafetacaoRoutes from './routes/desafetacaoRoutes';
 import conciliacaoRoutes from './routes/conciliacaoRoutes';
 import conformidadeRoutes from './routes/conformidadeRoutes';
+import regularizacaoRoutes from './routes/regularizacaoRoutes';
 
 logInfo('✅ Rotas carregadas');
 
@@ -302,6 +303,7 @@ app.use('/api/comissoes', comissaoRoutes);
 app.use('/api/desafetacoes', desafetacaoRoutes);
 app.use('/api/conciliacoes', conciliacaoRoutes);
 app.use('/api/conformidade', conformidadeRoutes);
+app.use('/api/regularizacoes', regularizacaoRoutes);
 
 // Rotas de métricas e monitoramento
 import metricsRoutes from './routes/metricsRoutes';

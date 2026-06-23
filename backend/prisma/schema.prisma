@@ -70,6 +70,26 @@ enum StatusConciliacao {
   divergente
 }
 
+// Tipos de inventário (Cap VII da Lei / Cap VI do Decreto).
+enum TipoInventario {
+  anual          // verificação anual, data-base 31/12 (Art. 16)
+  transferencia  // troca de agente responsável (Art. 17)
+  extraordinario // por determinação do Executivo/Controle Interno (Art. 17)
+  inicial        // implantação / regularização do acervo (Cap XIII)
+}
+
+// Regularização de acervo pré-existente / origem desconhecida (Cap XIII).
+enum TipoOrigemBem {
+  origem_desconhecida
+  pre_existente
+}
+
+enum StatusRegularizacao {
+  em_andamento
+  incorporado
+  cancelado
+}
+
 model User {
   id                    String          @id @default(uuid())
   email                 String          @unique
@@ -155,6 +175,7 @@ model Municipality {
   comissoes      Comissao[]
   desafetacoes   Desafetacao[]
   conciliacoes   Conciliacao[]
+  regularizacoes Regularizacao[]
 
   @@map("municipalities")
 }
@@ -289,6 +310,7 @@ model Patrimonio {
   subPatrimonios     SubPatrimonio[]
   transferencias     Transferencia[]  @relation("TransferenciaPatrimonio")
   desafetacoes       Desafetacao[]
+  regularizacoes     Regularizacao[]
 
   @@index([numero_patrimonio])
   @@index([municipalityId])
@@ -454,6 +476,12 @@ model Inventory {
   scope              String
   specificLocationId String?
   status             String          @default("em_andamento")
+  // Tipo de inventário (Cap VII). Acervo existente entra como extraordinario.
+  tipo               TipoInventario  @default(extraordinario)
+  dataBase           DateTime?       // data de referência (31/12 no anual)
+  exercicio          Int?            // ano-exercício (inventário anual)
+  agenteAnterior     String?         // inventário de transferência
+  agenteNovo         String?         // inventário de transferência
   dataInicio         DateTime        @default(now())
   dataFim            DateTime?
   createdAt          DateTime        @default(now())
@@ -465,7 +493,40 @@ model Inventory {
   @@index([status])
   @@index([setor])
   @@index([municipalityId])
+  @@index([municipalityId, tipo])
   @@map("inventarios")
+}
+
+// Regularização de bem pré-existente / origem desconhecida (Cap XIII da Lei /
+// Cap IX do Decreto): constatação + avaliação a valor justo + incorporação.
+model Regularizacao {
+  id                String              @id @default(uuid())
+  descricao         String
+  caracteristicas   String?
+  estadoConservacao String?
+  localizacao       String?
+  tipoOrigem        TipoOrigemBem       @default(pre_existente)
+  valorJusto        Float
+  comissaoId        String?
+  termoConstatacao  String?             // nº/identificação do termo
+  observacoes       String?
+  fotos             String[]            @default([])
+  status            StatusRegularizacao @default(em_andamento)
+  patrimonioId      String?             // preenchido ao incorporar
+  dataConstatacao   DateTime            @default(now())
+  dataIncorporacao  DateTime?
+  municipalityId    String
+  createdAt         DateTime            @default(now())
+  createdBy         String?
+  updatedAt         DateTime            @updatedAt
+  municipality      Municipality        @relation(fields: [municipalityId], references: [id])
+  comissao          Comissao?           @relation(fields: [comissaoId], references: [id])
+  patrimonio        Patrimonio?         @relation(fields: [patrimonioId], references: [id])
+
+  @@index([municipalityId])
+  @@index([municipalityId, status])
+  @@index([patrimonioId])
+  @@map("regularizacoes")
 }
 
 model InventoryItem {
@@ -842,6 +903,7 @@ model Comissao {
   municipality   Municipality     @relation(fields: [municipalityId], references: [id])
   membros        ComissaoMembro[]
   desafetacoes   Desafetacao[]
+  regularizacoes Regularizacao[]
 
   @@index([municipalityId])
   @@index([municipalityId, status])
