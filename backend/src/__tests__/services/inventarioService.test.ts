@@ -29,9 +29,17 @@ const mockTx = {
   inventory: {
     create: jest.fn(),
     findUnique: jest.fn(),
+    update: jest.fn(),
   },
   inventoryItem: {
     createMany: jest.fn(),
+    findMany: jest.fn(),
+  },
+  patrimonio: {
+    update: jest.fn(),
+  },
+  historicoEntry: {
+    create: jest.fn(),
   },
   activityLog: {
     create: jest.fn(),
@@ -45,6 +53,10 @@ const mockPrisma = {
     count: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+  },
+  inventoryItem: {
+    findFirst: jest.fn(),
+    update: jest.fn(),
   },
   patrimonio: {
     findMany: jest.fn(),
@@ -61,12 +73,14 @@ import {
   Actor,
   createInventario,
   deleteInventario,
+  finalizeInventario,
   getInventarioById,
   InventarioForbiddenError,
   InventarioNotFoundError,
   InventarioValidationError,
   listInventarios,
   updateInventario,
+  updateInventarioItem,
 } from '../../services/inventarioService';
 
 const baseActor: Actor = {
@@ -342,6 +356,129 @@ describe('inventarioService — updateInventario', () => {
     const result = await updateInventario('inv-1', { title: 'novo' }, baseActor);
     expect(result.id).toBe('inv-1');
     expect(mockCache.deletePattern).toHaveBeenCalledWith('inventarios:*');
+  });
+});
+
+describe('inventarioService — updateInventarioItem', () => {
+  it('lança NotFound quando inventário não existe', async () => {
+    mockPrisma.inventory.findUnique.mockResolvedValueOnce(null);
+    await expect(
+      updateInventarioItem('inv-1', 'p1', { encontrado: true }, baseActor),
+    ).rejects.toBeInstanceOf(InventarioNotFoundError);
+  });
+
+  it('lança Validation quando inventário não está em andamento', async () => {
+    mockPrisma.inventory.findUnique.mockResolvedValueOnce({
+      id: 'inv-1',
+      title: 't',
+      municipalityId: 'mun-1',
+      responsavel: 'user-1',
+      status: 'concluido',
+    });
+    await expect(
+      updateInventarioItem('inv-1', 'p1', { encontrado: true }, baseActor),
+    ).rejects.toBeInstanceOf(InventarioValidationError);
+  });
+
+  it('lança NotFound quando item não pertence ao inventário', async () => {
+    mockPrisma.inventory.findUnique.mockResolvedValueOnce({
+      id: 'inv-1',
+      title: 't',
+      municipalityId: 'mun-1',
+      responsavel: 'user-1',
+      status: 'em_andamento',
+    });
+    mockPrisma.inventoryItem.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      updateInventarioItem('inv-1', 'p-x', { encontrado: true }, baseActor),
+    ).rejects.toBeInstanceOf(InventarioNotFoundError);
+  });
+
+  it('persiste encontrado + verificadoEm/Por e invalida cache', async () => {
+    mockPrisma.inventory.findUnique.mockResolvedValueOnce({
+      id: 'inv-1',
+      title: 't',
+      municipalityId: 'mun-1',
+      responsavel: 'user-1',
+      status: 'em_andamento',
+    });
+    mockPrisma.inventoryItem.findFirst.mockResolvedValueOnce({ id: 'item-1' });
+    mockPrisma.inventoryItem.update.mockResolvedValueOnce({ id: 'item-1', encontrado: true });
+
+    await updateInventarioItem('inv-1', 'p1', { encontrado: true }, baseActor);
+
+    const updateArg = mockPrisma.inventoryItem.update.mock.calls[0][0];
+    expect(updateArg.where).toEqual({ id: 'item-1' });
+    expect(updateArg.data.encontrado).toBe(true);
+    expect(updateArg.data.verificadoPor).toBe('user-1');
+    expect(updateArg.data.verificadoEm).toBeInstanceOf(Date);
+    expect(mockCache.deletePattern).toHaveBeenCalledWith('inventarios:*');
+  });
+
+  it('respeita permissão: usuario não-responsável recebe Forbidden', async () => {
+    mockPrisma.inventory.findUnique.mockResolvedValueOnce({
+      id: 'inv-1',
+      title: 't',
+      municipalityId: 'mun-1',
+      responsavel: 'OUTRO',
+      status: 'em_andamento',
+    });
+    await expect(
+      updateInventarioItem('inv-1', 'p1', { encontrado: true }, { ...baseActor, role: 'usuario' }),
+    ).rejects.toBeInstanceOf(InventarioForbiddenError);
+  });
+});
+
+describe('inventarioService — finalizeInventario', () => {
+  it('lança Validation quando já finalizado', async () => {
+    mockPrisma.inventory.findUnique.mockResolvedValueOnce({
+      id: 'inv-1',
+      title: 't',
+      municipalityId: 'mun-1',
+      responsavel: 'user-1',
+      status: 'concluido',
+    });
+    await expect(finalizeInventario('inv-1', baseActor)).rejects.toBeInstanceOf(
+      InventarioValidationError,
+    );
+  });
+
+  it('marca não-encontrados como extraviados, conclui e invalida caches', async () => {
+    mockPrisma.inventory.findUnique.mockResolvedValueOnce({
+      id: 'inv-1',
+      title: 'Estoque',
+      municipalityId: 'mun-1',
+      responsavel: 'user-1',
+      status: 'em_andamento',
+    });
+    mockTx.inventoryItem.findMany.mockResolvedValueOnce([
+      { encontrado: true, patrimonio: { id: 'p1', status: 'ativo', numero_patrimonio: '0001' } },
+      { encontrado: false, patrimonio: { id: 'p2', status: 'ativo', numero_patrimonio: '0002' } },
+      // já baixado: não deve virar extraviado
+      { encontrado: false, patrimonio: { id: 'p3', status: 'baixado', numero_patrimonio: '0003' } },
+    ]);
+    mockTx.patrimonio.update.mockResolvedValue({});
+    mockTx.historicoEntry.create.mockResolvedValue({});
+    mockTx.inventory.update.mockResolvedValue({ id: 'inv-1', status: 'concluido', items: [] });
+    mockTx.activityLog.create.mockResolvedValue({});
+
+    const result = await finalizeInventario('inv-1', baseActor);
+
+    // Só p2 vira extraviado (p1 encontrado, p3 baixado)
+    expect(mockTx.patrimonio.update).toHaveBeenCalledTimes(1);
+    expect(mockTx.patrimonio.update).toHaveBeenCalledWith({
+      where: { id: 'p2' },
+      data: { status: 'extraviado' },
+    });
+    expect(mockTx.inventory.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'inv-1' },
+        data: expect.objectContaining({ status: 'concluido' }),
+      }),
+    );
+    expect(result.extraviados).toEqual([{ id: 'p2', numero_patrimonio: '0002' }]);
+    expect(mockCache.deletePattern).toHaveBeenCalledWith('inventarios:*');
+    expect(mockCache.deletePattern).toHaveBeenCalledWith('patrimonios:*');
   });
 });
 

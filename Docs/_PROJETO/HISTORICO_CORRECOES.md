@@ -90,6 +90,19 @@
 
 ## 2026
 
+### 2026-06-23 — Persistência da conferência de inventário (módulo estava efêmero)
+- **Sintoma:** O fluxo de inventário não gravava nada no banco. Marcar item como "encontrado/não encontrado" (`InventarioDetail.tsx`) só mexia em estado React via `InventoryContext.updateInventoryItemStatus` — não havia endpoint. `finalizeInventory` iterava o estado local e chamava `updatePatrimonio` direto (gravação dupla), e **nunca** marcava o `Inventory` como `concluido`. Ao recarregar a página, todo o progresso da conferência sumia; o inventário ficava eternamente `em_andamento`. Módulo inútil para auditoria. (INC-03 da auditoria de 2026-06-23.)
+- **Causa-raiz:** os endpoints de conferência por item e de finalização nunca existiram; o frontend simulava tudo em memória.
+- **Correção (backend):**
+  - `PATCH /api/inventarios/:id/items/:patrimonioId` → `updateInventarioItem` persiste `InventoryItem.encontrado` + `verificadoEm`/`verificadoPor`. Exige inventário `em_andamento`; reusa guard de tenant/responsável (`loadEditableInventario`).
+  - `POST /api/inventarios/:id/finalizar` → `finalizeInventario` numa transação: marca como `extraviado` os itens `encontrado=false` (pulando `baixado`/já `extraviado`), grava `HistoricoEntry` de EXTRAVIO por bem, conclui o inventário (`status='concluido'`, `dataFim`), registra `FINALIZE_INVENTORY` e invalida caches `inventarios:*` **e** `patrimonios:*`.
+  - Ambas as rotas com `authorize('superuser','admin','supervisor','usuario')` (bloqueia visualizador) e zodValidate.
+- **Correção (shared):** novos `updateInventarioItemSchema` e `inventarioItemParamsSchema` em `@sispat/shared` (rebuild do `dist`).
+- **Correção (frontend):** `InventoryContext.updateInventoryItemStatus` agora é async — atualização otimista + `api.patch`, com revert+refetch em erro. `finalizeInventory` chama `api.post('/finalizar')`, ressincroniza os status de patrimônio localmente via `setPatrimonios` (sem chamada extra) e retorna os extraviados. `InventarioDetail.handleStatusChange` ficou async com update otimista. Removida a gravação dupla (`updatePatrimonio`) e o import morto `generateId`.
+- **Arquivos:** `backend/src/services/inventarioService.ts`, `backend/src/controllers/inventarioController.ts`, `backend/src/routes/inventarioRoutes.ts`, `shared/src/schemas/inventario.ts`, `src/contexts/InventoryContext.tsx`, `src/pages/inventarios/InventarioDetail.tsx`
+- **Verificação:** `tsc --noEmit` (backend) limpo; 385/385 testes Jest (+7 novos cobrindo item-update e finalização). Frontend: erros de tsc nos arquivos tocados são pré-existentes e não relacionados (o `||item.numeroPatrimonio` legado etc.).
+- **Lição:** features que "funcionam na UI" mas só mexem em estado de Context são uma classe de bug recorrente neste projeto (ver SubPatrimonio, ainda pendente) — checar sempre se há endpoint persistindo de verdade.
+
 ### 2026-06-23 — Hardening do Docker de produção + dump SQL fora do git
 - **Sintoma:** A stack Docker de produção (`docker-compose.prod.yml` + `Dockerfile`) tinha vários "explode na primeira execução real": secrets default públicos, backend exposto à internet, build quebrado, Redis efetivamente desligado e healthchecks que nunca passariam. Além disso, um dump SQL real estava versionado no git.
 - **Causa-raiz / correções:**

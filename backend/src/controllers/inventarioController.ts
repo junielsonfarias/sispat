@@ -14,9 +14,11 @@ import {
   InventarioValidationError,
   createInventario as svcCreate,
   deleteInventario as svcDelete,
+  finalizeInventario as svcFinalize,
   getInventarioById as svcGetById,
   listInventarios as svcList,
   updateInventario as svcUpdate,
+  updateInventarioItem as svcUpdateItem,
 } from '../services/inventarioService';
 
 const buildActor = (req: Request): Actor | null => {
@@ -102,6 +104,34 @@ export const updateInventario = async (req: Request, res: Response): Promise<voi
     res.json(updated);
   } catch (error) {
     sendError(res, error, 'Erro ao atualizar inventário');
+  }
+};
+
+export const updateInventarioItem = async (req: Request, res: Response): Promise<void> => {
+  const actor = buildActor(req);
+  if (!actor) {
+    res.status(401).json({ error: 'Não autenticado' });
+    return;
+  }
+  try {
+    const updated = await svcUpdateItem(req.params.id, req.params.patrimonioId, req.body, actor);
+    res.json(updated);
+  } catch (error) {
+    sendError(res, error, 'Erro ao conferir item do inventário');
+  }
+};
+
+export const finalizeInventario = async (req: Request, res: Response): Promise<void> => {
+  const actor = buildActor(req);
+  if (!actor) {
+    res.status(401).json({ error: 'Não autenticado' });
+    return;
+  }
+  try {
+    const result = await svcFinalize(req.params.id, actor);
+    res.json(result);
+  } catch (error) {
+    sendError(res, error, 'Erro ao finalizar inventário');
   }
 };
 

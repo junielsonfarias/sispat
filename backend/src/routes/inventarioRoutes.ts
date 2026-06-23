@@ -4,6 +4,8 @@ import {
   getInventarioById,
   createInventario,
   updateInventario,
+  updateInventarioItem,
+  finalizeInventario,
   deleteInventario,
 } from '../controllers/inventarioController';
 import { authenticateToken, authorize } from '../middlewares/auth';
@@ -11,6 +13,8 @@ import { zodValidate } from '../middlewares/zodValidate';
 import {
   createInventarioSchema,
   updateInventarioSchema,
+  updateInventarioItemSchema,
+  inventarioItemParamsSchema,
   uuidParamSchema,
   paginationQuerySchema,
 } from '@sispat/shared';
@@ -32,6 +36,20 @@ router.put(
   authorize('superuser', 'admin', 'supervisor', 'usuario'),
   zodValidate({ params: uuidParamSchema, body: updateInventarioSchema }),
   updateInventario,
+);
+// Conferência de um item (marca encontrado/não encontrado e persiste)
+router.patch(
+  '/:id/items/:patrimonioId',
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
+  zodValidate({ params: inventarioItemParamsSchema, body: updateInventarioItemSchema }),
+  updateInventarioItem,
+);
+// Finalizar inventário (conclui e marca não encontrados como extraviados)
+router.post(
+  '/:id/finalizar',
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
+  zodValidate({ params: uuidParamSchema }),
+  finalizeInventario,
 );
 router.delete(
   '/:id',

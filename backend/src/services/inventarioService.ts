@@ -338,6 +338,173 @@ export const updateInventario = async (
 };
 
 // ===========================================================================
+// Conferência de item — persiste InventoryItem.encontrado + verificadoEm/Por
+// ===========================================================================
+
+/**
+ * Carrega o inventário garantindo tenant + permissão de edição (superuser/admin
+ * ou responsável). Lança erro tipado. Reaproveitado por item-update e finalizar.
+ */
+const loadEditableInventario = async (id: string, actor: Actor) => {
+  const existing = await prisma.inventory.findUnique({
+    where: { id },
+    select: { id: true, title: true, municipalityId: true, responsavel: true, status: true },
+  });
+
+  if (!existing) throw new InventarioNotFoundError();
+  if (actor.role !== 'superuser' && existing.municipalityId !== actor.municipalityId) {
+    throw new InventarioNotFoundError();
+  }
+  if (
+    actor.role !== 'superuser' &&
+    actor.role !== 'admin' &&
+    existing.responsavel !== actor.userId
+  ) {
+    throw new InventarioForbiddenError('Sem permissão para alterar este inventário');
+  }
+  return existing;
+};
+
+export interface UpdateInventarioItemInput {
+  encontrado: boolean;
+  observacoes?: string | null;
+}
+
+export const updateInventarioItem = async (
+  inventarioId: string,
+  patrimonioId: string,
+  input: UpdateInventarioItemInput,
+  actor: Actor,
+) => {
+  const inventario = await loadEditableInventario(inventarioId, actor);
+
+  if (inventario.status !== 'em_andamento') {
+    throw new InventarioValidationError(
+      'Inventário não está em andamento — não é possível conferir itens',
+    );
+  }
+
+  const item = await prisma.inventoryItem.findFirst({
+    where: { inventoryId: inventarioId, patrimonioId },
+    select: { id: true },
+  });
+  if (!item) throw new InventarioNotFoundError('Item não encontrado neste inventário');
+
+  const updated = await prisma.inventoryItem.update({
+    where: { id: item.id },
+    data: {
+      encontrado: input.encontrado,
+      observacoes: input.observacoes ?? null,
+      verificadoEm: new Date(),
+      verificadoPor: actor.userId,
+    },
+    include: {
+      patrimonio: {
+        select: { id: true, numero_patrimonio: true, descricao_bem: true, status: true },
+      },
+    },
+  });
+
+  await redisCache.deletePattern('inventarios:*');
+  logDebug('✅ Item de inventário conferido', {
+    inventarioId,
+    patrimonioId,
+    encontrado: input.encontrado,
+  });
+
+  return updated;
+};
+
+// ===========================================================================
+// Finalização — conclui o inventário e marca bens não encontrados como extraviados
+// ===========================================================================
+
+export const finalizeInventario = async (id: string, actor: Actor) => {
+  const existing = await loadEditableInventario(id, actor);
+
+  if (existing.status !== 'em_andamento') {
+    throw new InventarioValidationError('Inventário já foi finalizado');
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const items = await tx.inventoryItem.findMany({
+      where: { inventoryId: id },
+      include: { patrimonio: { select: { id: true, status: true, numero_patrimonio: true } } },
+    });
+
+    const extraviados: { id: string; numero_patrimonio: string }[] = [];
+
+    for (const item of items) {
+      if (
+        !item.encontrado &&
+        item.patrimonio &&
+        item.patrimonio.status !== 'extraviado' &&
+        item.patrimonio.status !== 'baixado'
+      ) {
+        await tx.patrimonio.update({
+          where: { id: item.patrimonio.id },
+          data: { status: 'extraviado' },
+        });
+        await tx.historicoEntry.create({
+          data: {
+            patrimonioId: item.patrimonio.id,
+            date: new Date(),
+            action: 'EXTRAVIO',
+            details: `Marcado como extraviado na finalização do inventário "${existing.title}"`,
+            user: actor.userId,
+          },
+        });
+        extraviados.push({
+          id: item.patrimonio.id,
+          numero_patrimonio: item.patrimonio.numero_patrimonio,
+        });
+      }
+    }
+
+    const inventario = await tx.inventory.update({
+      where: { id },
+      data: { status: 'concluido', dataFim: new Date() },
+      include: {
+        items: {
+          include: {
+            patrimonio: {
+              select: {
+                id: true,
+                numero_patrimonio: true,
+                descricao_bem: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    await tx.activityLog.create({
+      data: {
+        userId: actor.userId,
+        action: 'FINALIZE_INVENTORY',
+        entityType: 'Inventory',
+        entityId: id,
+        details: `Inventário "${existing.title}" finalizado — ${extraviados.length} bem(ns) extraviado(s)`,
+      },
+    });
+
+    return { inventario, extraviados };
+  });
+
+  // Status de patrimônio mudou → invalida ambos os caches.
+  await redisCache.deletePattern('inventarios:*');
+  await redisCache.deletePattern('patrimonios:*');
+  logInfo('✅ Inventário finalizado', {
+    inventarioId: id,
+    extraviados: result.extraviados.length,
+  });
+
+  return result;
+};
+
+// ===========================================================================
 // Deleção — admin/superuser, ou responsável.
 // ===========================================================================
 

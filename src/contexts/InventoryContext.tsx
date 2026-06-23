@@ -8,7 +8,6 @@ import {
   useMemo,
 } from 'react'
 import { Inventory, InventoryItem, Patrimonio } from '@/types'
-import { generateId } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { usePatrimonio } from './PatrimonioContext'
 import { useAuth } from './AuthContext'
@@ -29,7 +28,7 @@ interface InventoryContextType {
     inventoryId: string,
     patrimonioId: string,
     status: 'found' | 'not_found',
-  ) => void
+  ) => Promise<void>
   finalizeInventory: (inventoryId: string) => Promise<Patrimonio[]>
   deleteInventory: (inventoryId: string) => Promise<void>
 }
@@ -38,7 +37,7 @@ const InventoryContext = createContext<InventoryContextType | null>(null)
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const [allInventories, setAllInventories] = useState<Inventory[]>([])
-  const { patrimonios, updatePatrimonio } = usePatrimonio()
+  const { patrimonios, setPatrimonios } = usePatrimonio()
   const { user } = useAuth()
 
   const fetchInventories = useCallback(async () => {
@@ -105,10 +104,6 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     // pois temos apenas um município
     return allInventories
   }, [allInventories])
-
-  const persistInventories = (newInventories: Inventory[]) => {
-    setAllInventories(newInventories)
-  }
 
   const getInventoryById = useCallback(
     (id: string) => inventories.find((inv) => inv.id === id),
@@ -195,57 +190,69 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   )
 
   const updateInventoryItemStatus = useCallback(
-    (
+    async (
       inventoryId: string,
       patrimonioId: string,
       status: 'found' | 'not_found',
     ) => {
-      const newInventories = allInventories.map((inv) => {
-        if (inv.id === inventoryId) {
-          return {
-            ...inv,
-            items: inv.items.map((item) =>
-              item.patrimonioId === patrimonioId ? { ...item, status } : item,
-            ),
-          }
-        }
-        return inv
-      })
-      persistInventories(newInventories)
+      // Atualização otimista para UX imediata...
+      setAllInventories((prev) =>
+        prev.map((inv) =>
+          inv.id === inventoryId
+            ? {
+                ...inv,
+                items: inv.items.map((item) =>
+                  item.patrimonioId === patrimonioId ? { ...item, status } : item,
+                ),
+              }
+            : inv,
+        ),
+      )
+      // ...e persistência no backend (InventoryItem.encontrado + verificadoEm/Por).
+      try {
+        await api.patch(`/inventarios/${inventoryId}/items/${patrimonioId}`, {
+          encontrado: status === 'found',
+        })
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao salvar a conferência. Recarregando dados.',
+        })
+        // Reverte para o estado real do servidor.
+        await fetchInventories()
+        throw error
+      }
     },
-    [allInventories],
+    [fetchInventories],
   )
 
   const finalizeInventory = useCallback(
     async (inventoryId: string): Promise<Patrimonio[]> => {
-      const inventory = allInventories.find((inv) => inv.id === inventoryId)
-      if (!inventory) throw new Error('Inventário não encontrado.')
+      // O backend conclui o inventário e marca os não-encontrados como extraviados
+      // de forma atômica (transação) — é a fonte da verdade.
+      const result = await api.post<{
+        inventario: unknown
+        extraviados: { id: string; numero_patrimonio: string }[]
+      }>(`/inventarios/${inventoryId}/finalizar`)
 
-      const newlyMissingPatrimonios: Patrimonio[] = []
-      inventory.items.forEach((item) => {
-        if (item.status === 'not_found') {
-          const patrimonioToUpdate = patrimonios.find(
-            (p) => p.id === item.patrimonioId,
-          )
-          if (
-            patrimonioToUpdate &&
-            patrimonioToUpdate.status !== 'extraviado'
-          ) {
-            updatePatrimonio({ ...patrimonioToUpdate, status: 'extraviado' })
-            newlyMissingPatrimonios.push(patrimonioToUpdate)
-          }
-        }
-      })
+      const extraviadoIds = new Set((result.extraviados || []).map((e) => e.id))
 
-      const newInventories = allInventories.map((inv) =>
-        inv.id === inventoryId
-          ? { ...inv, status: 'completed', finalizedAt: new Date() }
-          : inv,
-      )
-      persistInventories(newInventories)
-      return newlyMissingPatrimonios
+      // Ressincroniza o estado local de patrimônios (sem nova chamada de API),
+      // para que dashboard/listas reflitam os bens extraviados imediatamente.
+      const newlyMissing = patrimonios.filter((p) => extraviadoIds.has(p.id))
+      if (extraviadoIds.size > 0) {
+        setPatrimonios(
+          patrimonios.map((p) =>
+            extraviadoIds.has(p.id) ? { ...p, status: 'extraviado' } : p,
+          ),
+        )
+      }
+
+      await fetchInventories()
+      return newlyMissing
     },
-    [allInventories, patrimonios, updatePatrimonio],
+    [patrimonios, setPatrimonios, fetchInventories],
   )
 
   const deleteInventory = useCallback(

@@ -62,13 +62,29 @@ export default function InventarioDetail() {
     }
   }, [inventory])
 
-  const handleStatusChange = (
+  const handleStatusChange = async (
     patrimonioId: string,
     status: 'found' | 'not_found',
   ) => {
     if (!id) return
-    updateInventoryItemStatus(id, patrimonioId, status)
-    setInventory(getInventoryById(id)!)
+    // Atualização otimista local para resposta imediata.
+    setInventory((prev) =>
+      prev
+        ? {
+            ...prev,
+            items: prev.items.map((item) =>
+              item.patrimonioId === patrimonioId ? { ...item, status } : item,
+            ),
+          }
+        : prev,
+    )
+    try {
+      await updateInventoryItemStatus(id, patrimonioId, status)
+    } catch {
+      // O contexto já reverteu e recarregou; ressincroniza o estado local.
+      const fresh = getInventoryById(id)
+      if (fresh) setInventory(fresh)
+    }
   }
 
   const handleFinalize = async () => {

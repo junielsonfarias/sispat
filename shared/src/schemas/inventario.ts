@@ -64,3 +64,20 @@ export const updateInventarioSchema = z
   })
   .strict();
 export type UpdateInventarioInput = z.infer<typeof updateInventarioSchema>;
+
+// Conferência de um item do inventário (marca encontrado/não encontrado).
+// Persiste em InventoryItem.encontrado + verificadoEm/verificadoPor.
+export const updateInventarioItemSchema = z
+  .object({
+    encontrado: z.boolean(),
+    observacoes: z.string().max(1000).optional().nullable(),
+  })
+  .strict();
+export type UpdateInventarioItemInput = z.infer<typeof updateInventarioItemSchema>;
+
+// Params da rota de conferência de item: /inventarios/:id/items/:patrimonioId
+export const inventarioItemParamsSchema = z.object({
+  id: z.string().uuid('ID do inventário inválido.'),
+  patrimonioId: z.string().uuid('ID do patrimônio inválido.'),
+});
+export type InventarioItemParams = z.infer<typeof inventarioItemParamsSchema>;
