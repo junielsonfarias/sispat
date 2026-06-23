@@ -60,6 +60,18 @@ export const createImovelField = async (req: Request, res: Response): Promise<vo
       isSystem,
     } = req.body
 
+    // ✅ MULTI-TENANT: derivar do token; superuser pode informar no body
+    const isSuperuser = req.user?.role === 'superuser'
+    const municipalityId = isSuperuser
+      ? (req.body.municipalityId ?? req.user?.municipalityId)
+      : req.user?.municipalityId
+    if (!municipalityId) {
+      res.status(isSuperuser ? 400 : 401).json({
+        error: isSuperuser ? 'municipalityId é obrigatório' : 'Não autenticado',
+      })
+      return
+    }
+
     const field = await prisma.imovelCustomField.create({
       data: {
         name,
@@ -74,7 +86,7 @@ export const createImovelField = async (req: Request, res: Response): Promise<vo
         displayOrder: displayOrder || 0,
         isActive: true,
         isSystem: isSystem || false,
-        municipalityId: '1', // Sistema single-municipality
+        municipalityId,
       },
     })
 

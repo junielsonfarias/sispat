@@ -33,21 +33,21 @@ router.get(
 
 router.post(
   '/',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ body: createSectorSchema }),
   createSector,
 );
 
 router.put(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema, body: updateSectorSchema }),
   updateSector,
 );
 
 router.delete(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema }),
   deleteSector,
 );

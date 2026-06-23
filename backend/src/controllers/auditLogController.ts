@@ -261,13 +261,17 @@ export const cleanupOldLogs = async (req: Request, res: Response): Promise<void>
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - Number(days))
 
-    const result = await prisma.activityLog.deleteMany({
-      where: {
-        createdAt: {
-          lt: cutoffDate,
-        },
+    // ✅ MULTI-TENANT: superuser limpa tudo; admin só do próprio município
+    const where: Prisma.ActivityLogWhereInput = {
+      createdAt: {
+        lt: cutoffDate,
       },
-    })
+    }
+    if (req.user?.role !== 'superuser') {
+      where.user = { municipalityId: req.user?.municipalityId }
+    }
+
+    const result = await prisma.activityLog.deleteMany({ where })
 
     logInfo('Old audit logs cleaned up', {
       userId: req.user!.userId,

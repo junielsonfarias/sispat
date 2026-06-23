@@ -33,21 +33,21 @@ router.get(
 
 router.post(
   '/',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ body: createTipoBemSchema }),
   createTipoBem,
 );
 
 router.put(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema, body: updateTipoBemSchema }),
   updateTipoBem,
 );
 
 router.delete(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema }),
   deleteTipoBem,
 );

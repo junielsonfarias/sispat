@@ -17,14 +17,14 @@ router.use(authenticateToken)
 // Criar log de auditoria (todos os usuários autenticados)
 router.post('/', zodValidate({ body: createAuditLogSchema }), createAuditLog)
 
-// Listar logs (apenas supervisores e admins)
-router.get('/', authorize('supervisor', 'admin'), listAuditLogs)
+// Listar logs (superuser, supervisores e admins)
+router.get('/', authorize('superuser', 'admin', 'supervisor'), listAuditLogs)
 
-// Estatísticas (apenas supervisores e admins)
-router.get('/stats', authorize('supervisor', 'admin'), getAuditLogStats)
+// Estatísticas (superuser, supervisores e admins)
+router.get('/stats', authorize('superuser', 'admin', 'supervisor'), getAuditLogStats)
 
-// Limpeza de logs antigos (apenas admins)
-router.delete('/cleanup', authorize('admin'), cleanupOldLogs)
+// Limpeza de logs antigos (apenas superuser e admins)
+router.delete('/cleanup', authorize('superuser', 'admin'), cleanupOldLogs)
 
 export default router
 

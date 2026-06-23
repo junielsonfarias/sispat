@@ -24,21 +24,21 @@ router.get('/:id', zodValidate({ params: uuidParamSchema }), getFormaAquisicaoBy
 
 router.post(
   '/',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ body: createFormaAquisicaoSchema }),
   createFormaAquisicao,
 );
 
 router.put(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema, body: updateFormaAquisicaoSchema }),
   updateFormaAquisicao,
 );
 
 router.delete(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema }),
   deleteFormaAquisicao,
 );

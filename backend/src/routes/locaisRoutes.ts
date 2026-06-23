@@ -33,21 +33,21 @@ router.get(
 
 router.post(
   '/',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ body: createLocalSchema }),
   createLocal,
 );
 
 router.put(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema, body: updateLocalSchema }),
   updateLocal,
 );
 
 router.delete(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema }),
   deleteLocal,
 );

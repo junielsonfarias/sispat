@@ -90,6 +90,27 @@
 
 ## 2026
 
+### 2026-06-23 — Dois vazamentos multi-tenant residuais fechados
+- **Sintoma:** Auditoria multi-tenant encontrou 2 vazamentos reais ainda abertos após as correções de 2026-06-22:
+  1. `auditLogController.cleanupOldLogs` fazia `activityLog.deleteMany({ where: { createdAt: { lt: cutoff } } })` SEM filtro de município — um `admin` (autorizado na rota `DELETE /api/audit-logs/cleanup`) apagava logs de auditoria de TODOS os municípios.
+  2. `imovelFieldController.createImovelField` gravava `municipalityId: '1'` hardcoded, ignorando `req.user.municipalityId` — campos personalizados de imóveis de qualquer tenant iam para o município `'1'`.
+- **Causa-raiz:** funções escritas no modo "município único" (`MUNICIPALITY_ID='1'`) que escaparam da varredura anterior; `cleanupOldLogs` nunca recebeu o guard de tenant aplicado às outras funções do mesmo controller (`listAuditLogs`/`getAuditLogStats` já filtravam).
+- **Correção:** `cleanupOldLogs` agora monta `where` com `user: { municipalityId }` para não-superuser (superuser segue limpando tudo). `createImovelField` deriva o `municipalityId` do token (superuser pode informar no body; a rota só permite `supervisor`/`admin`, que sempre têm município). As demais funções de `imovelFieldController` (list/update/delete/reorder) já estavam corretas.
+- **Arquivos:** `backend/src/controllers/auditLogController.ts` (cleanupOldLogs), `backend/src/controllers/imovelFieldController.ts` (createImovelField)
+- **Verificação:** `tsc --noEmit` limpo; 378/378 testes Jest passam.
+- **Lição:** buscar `'1'` hardcoded e `deleteMany`/`updateMany` sem `where` de tenant ao auditar multi-tenancy — esses dois padrões são os pontos cegos mais comuns. Resta latente: `cacheMiddleware` genérico em `redis.ts` chaveia por URL sem `municipalityId`.
+
+### 2026-06-23 — RBAC nas rotas: `admin` bloqueado e `visualizador` com escrita
+- **Sintoma:** Auditoria de todas as rotas por papel revelou duas falhas de RBAC no backend:
+  1. O papel `admin` (gestor do município) **não estava** nos `authorize()` das operações de escrita de patrimônio, imóvel, usuários, setores, locais, tipos de bens e formas de aquisição. O frontend exibia os botões (via `PermissionContext`), mas toda chamada retornava 403 — papel mais administrativo praticamente inoperante.
+  2. As rotas de **inventário** (`POST`/`PUT`) e **manutenção** (`POST`/`PUT`/`DELETE`) não tinham nenhum `authorize()`. Qualquer autenticado, incluindo `visualizador` (somente leitura), podia criar/editar/excluir via API direta (a UI escondia os botões, mas a barreira real faltava).
+  3. Adjacente: `superuser` estava fora da leitura de audit-logs (`GET /` e `/stats`).
+- **Causa-raiz:** `authorize()` não tem bypass implícito para `admin`/`superuser` — valida `allowedRoles.includes(req.user.role)` estritamente. As listas de papéis foram montadas sem `admin` e algumas rotas novas (inventário/manutenção em zodValidate) nasceram sem guard de papel.
+- **Correção:** alinhado o `authorize()` de todas as rotas ao modelo de `REGRAS_NEGOCIO.md §2`. `admin` incluído em todas as escritas de seu escopo; inventário/manutenção passam a exigir `superuser/admin/supervisor/usuario` (create/update) e `superuser/admin/supervisor` (delete), bloqueando `visualizador`; `superuser` incluído na leitura de audit-logs.
+- **Arquivos:** `backend/src/routes/{patrimonioRoutes,imovelRoutes,userRoutes,sectorsRoutes,locaisRoutes,tiposBensRoutes,formasAquisicaoRoutes,inventarioRoutes,manutencaoRoutes,auditLogRoutes}.ts`
+- **Verificação:** `tsc --noEmit` limpo; 378/378 testes Jest passam.
+- **Lição:** toda rota de escrita precisa de `authorize()` explícito; gerar uma matriz rota×papel e confrontar com `REGRAS_NEGOCIO.md` ao adicionar rotas. Pendências relacionadas ainda abertas: vazamento multi-tenant em `auditLogController.cleanupOldLogs` e `imovelFieldController` (`municipalityId:'1'` hardcoded), e o módulo de inventário que não persiste a conferência.
+
 ### 2026-06-22 — Ambiente dev: subir banco + credenciais de demonstração
 - **Sintoma:** `npm run dev` (backend) crashava em `Can't reach database server at localhost:5432`; depois o frontend (Vite) quebrava com `Failed to resolve import "@sentry/react"` e o `node_modules` do front estava incompleto (`node_modules/vite` vazio).
 - **Causa-raiz:**

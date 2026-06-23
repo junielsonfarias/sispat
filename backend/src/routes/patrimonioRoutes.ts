@@ -34,7 +34,7 @@ router.get('/sync', queryValidations.pagination, handleValidationErrors, listPat
  * @route GET /api/patrimonios/gerar-numero
  * @desc Gerar próximo número patrimonial (DEVE VIR ANTES DE /:id)
  */
-router.get('/gerar-numero', authorize('superuser', 'supervisor', 'usuario'), gerarNumeroPatrimonial);
+router.get('/gerar-numero', authorize('superuser', 'admin', 'supervisor', 'usuario'), gerarNumeroPatrimonial);
 
 /**
  * @route GET /api/patrimonios/numero/:numero
@@ -59,7 +59,7 @@ router.get(
  */
 router.post(
   '/',
-  authorize('superuser', 'supervisor', 'usuario'),
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
   patrimonioValidations.create,
   handleValidationErrors,
   createPatrimonio,
@@ -71,7 +71,7 @@ router.post(
  */
 router.put(
   '/:id',
-  authorize('superuser', 'supervisor', 'usuario'),
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
   patrimonioValidations.update,
   handleValidationErrors,
   updatePatrimonio,
@@ -83,7 +83,7 @@ router.put(
  */
 router.delete(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
   handleValidationErrors,
   deletePatrimonio,
@@ -109,7 +109,7 @@ router.post(
  */
 router.post(
   '/:id/baixa',
-  authorize('superuser', 'supervisor', 'usuario'),
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
   [
     param('id').isUUID().withMessage('ID deve ser um UUID válido'),
     body('data_baixa').optional().isISO8601().withMessage('Data de baixa deve ser uma data válida'),

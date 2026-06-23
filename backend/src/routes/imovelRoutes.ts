@@ -59,7 +59,7 @@ router.get(
  */
 router.post(
   '/',
-  authorize('superuser', 'supervisor', 'usuario'),
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
   imovelValidations.create,
   handleValidationErrors,
   createImovel,
@@ -72,7 +72,7 @@ router.post(
  */
 router.put(
   '/:id',
-  authorize('superuser', 'supervisor', 'usuario'),
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
   imovelValidations.update,
   handleValidationErrors,
   updateImovel,
@@ -85,7 +85,7 @@ router.put(
  */
 router.delete(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
   handleValidationErrors,
   deleteImovel,

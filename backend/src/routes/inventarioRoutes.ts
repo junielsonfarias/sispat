@@ -21,15 +21,21 @@ router.use(authenticateToken);
 
 router.get('/', zodValidate({ query: paginationQuerySchema }), getInventarios);
 router.get('/:id', zodValidate({ params: uuidParamSchema }), getInventarioById);
-router.post('/', zodValidate({ body: createInventarioSchema }), createInventario);
+router.post(
+  '/',
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
+  zodValidate({ body: createInventarioSchema }),
+  createInventario,
+);
 router.put(
   '/:id',
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
   zodValidate({ params: uuidParamSchema, body: updateInventarioSchema }),
   updateInventario,
 );
 router.delete(
   '/:id',
-  authorize('superuser', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema }),
   deleteInventario,
 );

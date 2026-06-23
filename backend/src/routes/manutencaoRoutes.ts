@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middlewares/auth';
+import { authenticateToken, authorize } from '../middlewares/auth';
 import {
   listManutencaoTasks,
   createManutencaoTask,
@@ -20,12 +20,23 @@ router.use(authenticateToken);
 
 router.get('/', listManutencaoTasks);
 router.get('/:id', zodValidate({ params: uuidParamSchema }), getManutencaoTask);
-router.post('/', zodValidate({ body: createManutencaoSchema }), createManutencaoTask);
+router.post(
+  '/',
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
+  zodValidate({ body: createManutencaoSchema }),
+  createManutencaoTask,
+);
 router.put(
   '/:id',
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
   zodValidate({ params: uuidParamSchema, body: updateManutencaoSchema }),
   updateManutencaoTask,
 );
-router.delete('/:id', zodValidate({ params: uuidParamSchema }), deleteManutencaoTask);
+router.delete(
+  '/:id',
+  authorize('superuser', 'admin', 'supervisor'),
+  zodValidate({ params: uuidParamSchema }),
+  deleteManutencaoTask,
+);
 
 export default router;
