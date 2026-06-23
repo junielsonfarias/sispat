@@ -21,6 +21,7 @@ import {
   setAuthCookies,
 } from '../utils/auth-cookies';
 import * as authService from '../services/authService';
+import { maskEmail } from '../utils/mask';
 import {
   AuthInvalidCredentialsError,
   AuthAccountDisabledError,
@@ -34,6 +35,8 @@ const clientMeta = (req: Request) => ({
   ipAddress: req.ip || req.socket.remoteAddress || null,
   userAgent: req.get('user-agent') || null,
 });
+
+const isProduction = () => process.env.NODE_ENV === 'production';
 
 /** Mapeia erros tipados do service para status HTTP. */
 const handleServiceError = (res: Response, error: unknown, defaultMessage: string): void => {
@@ -80,9 +83,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     res.json({
       message: 'Login realizado com sucesso',
-      // Mantém token/refreshToken no body por back-compat com clientes antigos.
-      token: result.token,
-      refreshToken: result.refreshToken,
+      // Em produção a sessão é apenas via cookie HttpOnly — não expor tokens no
+      // body (mitiga roubo via XSS/logs de rede). Em dev o frontend é cross-origin
+      // (:8080 → :3000) e o cookie SameSite=Lax não é enviado, então mantemos o
+      // fallback Bearer apenas fora de produção.
+      ...(isProduction()
+        ? {}
+        : { token: result.token, refreshToken: result.refreshToken }),
       csrfToken,
       user: result.user,
     });
@@ -119,8 +126,10 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
     const csrfToken = setAuthCookies(res, result.token, result.refreshToken);
 
     res.json({
-      token: result.token,
-      refreshToken: result.refreshToken,
+      // Mesma política do login: em produção, só cookie HttpOnly.
+      ...(isProduction()
+        ? {}
+        : { token: result.token, refreshToken: result.refreshToken }),
       csrfToken,
     });
   } catch (error) {
@@ -270,7 +279,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         'REQUEST_PASSWORD_RESET',
         'User',
         'unknown',
-        `Solicitação de reset de senha para ${email}`,
+        `Solicitação de reset de senha para ${maskEmail(email)}`,
       );
     } catch (logErr) {
       logWarn('⚠️ Erro ao registrar atividade', { error: String(logErr) });

@@ -90,6 +90,17 @@
 
 ## 2026
 
+### 2026-06-23 — Auth 🟠: tokens fora do body em prod + email mascarado nos logs
+- **Sintoma:** (A) `/auth/login` e `/auth/refresh` devolviam `token`/`refreshToken` no corpo JSON (back-compat) — expostos a roubo via XSS/logs de rede mesmo com cookie HttpOnly. (B) email em claro em logs: `ActivityLog` de reset (`authController`), `logDebug`/`logInfo` do fluxo de reset (`authService`) e em todo request HTTP (`requestLogger` logava `user.email`).
+- **Causa-raiz:** o sistema usa cookie HttpOnly **e** fallback Bearer (localStorage). Em dev o frontend é cross-origin (`:8080`→`:3000`) e o cookie `SameSite=Lax` não é enviado, então o Bearer é necessário; em prod é mesma origem (Nginx) e o cookie funciona. Os tokens no body existiam para o caminho Bearer; faltava distinguir os ambientes.
+- **Correção:**
+  - Backend: `login`/`refresh` só incluem `token`/`refreshToken` no body **fora de produção** (`NODE_ENV !== 'production'`). Em prod, sessão exclusivamente por cookie HttpOnly.
+  - Frontend cookie-first: `AuthContext.login` guarda tokens só se vierem; restauração de sessão não exige mais token no storage (valida via API/cookie); `logout` sempre chama `/auth/logout` (backend revoga pelo cookie em prod). `http-api`: o refresh no 401 usa `withCredentials` e não depende de token no storage; **rotas `/auth/*` são excluídas do auto-refresh** (um 401 de login deve propagar "senha incorreta", não disparar refresh+redirect).
+  - PII: novo `backend/src/utils/mask.ts` (`maskEmail`: `jo***@x.gov`), aplicado no `authController` (reset), `authService` (debug/info) e `requestLogger` (`user.email`); `email` adicionado às `SENSITIVE_KEYS` do redact.
+- **Arquivos:** `backend/src/controllers/authController.ts`, `backend/src/services/authService.ts`, `backend/src/middlewares/requestLogger.ts`, `backend/src/utils/mask.ts` (+ teste), `src/contexts/AuthContext.tsx`, `src/services/http-api.ts`
+- **Verificação:** `tsc --noEmit` backend limpo; 390/390 testes Jest (+5 de `maskEmail`). Frontend: sem erros novos nos arquivos tocados (o `useWebSocket.ts:115` que acessa `auth.token` é erro PRÉ-EXISTENTE — a interface nunca expôs `token`).
+- **Atenção para deploy:** em produção, login/refresh dependem do cookie funcionar (mesma origem via Nginx, `secure`+`SameSite`). Validar o fluxo de login/refresh/logout em staging antes do release. O backend ainda **aceita** Bearer (back-compat) — remoção é item 🟡 separado.
+
 ### 2026-06-23 — Persistência da conferência de inventário (módulo estava efêmero)
 - **Sintoma:** O fluxo de inventário não gravava nada no banco. Marcar item como "encontrado/não encontrado" (`InventarioDetail.tsx`) só mexia em estado React via `InventoryContext.updateInventoryItemStatus` — não havia endpoint. `finalizeInventory` iterava o estado local e chamava `updatePatrimonio` direto (gravação dupla), e **nunca** marcava o `Inventory` como `concluido`. Ao recarregar a página, todo o progresso da conferência sumia; o inventário ficava eternamente `em_andamento`. Módulo inútil para auditoria. (INC-03 da auditoria de 2026-06-23.)
 - **Causa-raiz:** os endpoints de conferência por item e de finalização nunca existiram; o frontend simulava tudo em memória.

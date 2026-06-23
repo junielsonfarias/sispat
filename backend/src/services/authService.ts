@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import { prisma } from '../lib/prisma';
 import { emailService } from '../config/email';
 import { logDebug, logError, logInfo, logWarn } from '../config/logger';
+import { maskEmail } from '../utils/mask';
 
 // ===========================================================================
 // Validação obrigatória de JWT_SECRET (no startup do módulo)
@@ -361,7 +362,7 @@ export const requestPasswordReset = async (
 
   // Não revelar se o email existe
   if (!user || !user.isActive) {
-    logDebug('📧 Email não encontrado ou inativo (resposta neutra)', { email });
+    logDebug('📧 Email não encontrado ou inativo (resposta neutra)', { email: maskEmail(email) });
     return;
   }
 
@@ -399,7 +400,7 @@ export const requestPasswordReset = async (
     throw new Error('Erro ao enviar email. Tente novamente mais tarde.');
   }
 
-  logInfo('✅ Email de reset enviado', { email: user.email, audit });
+  logInfo('✅ Email de reset enviado', { email: maskEmail(user.email), audit });
 };
 
 export interface ResetTokenInfo {

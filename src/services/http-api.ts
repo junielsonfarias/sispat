@@ -76,62 +76,76 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Rotas de autenticação não devem disparar refresh: um 401 ali é credencial
+    // inválida / sessão ausente e deve propagar para a UI (ex.: "senha incorreta").
+    const reqUrl = originalRequest?.url || '';
+    const isAuthRoute = /\/auth\/(login|refresh|logout|forgot-password|reset-password)/.test(reqUrl);
+
     // Se erro 401 e não é retry
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true;
 
-      // Tentar refresh token
-      const refreshRaw = localStorage.getItem('sispat_refresh_token');
-      if (refreshRaw) {
-        try {
-          // SecureStorage grava como JSON; tenta parse, mas tolera string crua
-          let refreshToken: string;
+      // Tenta refresh. Em produção a sessão é por cookie HttpOnly (sem token no
+      // storage), então a tentativa é sempre feita com withCredentials; em dev
+      // (cross-origin), envia o refresh token do storage no body.
+      try {
+        // SecureStorage grava como JSON; tenta parse, mas tolera string crua
+        const refreshRaw = localStorage.getItem('sispat_refresh_token');
+        let refreshToken: string | undefined;
+        if (refreshRaw) {
           try {
             refreshToken = JSON.parse(refreshRaw);
           } catch {
             refreshToken = refreshRaw;
           }
-
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-
-          const { token: newToken, refreshToken: newRefreshToken } = response.data;
-          localStorage.setItem('sispat_token', JSON.stringify(newToken));
-          // Importante: backend gira o refresh token a cada renovação — salvar o novo
-          if (newRefreshToken) {
-            localStorage.setItem('sispat_refresh_token', JSON.stringify(newRefreshToken));
-          }
-
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return axiosInstance(originalRequest);
-        } catch (refreshError) {
-          if (import.meta.env.DEV) {
-            console.error('[HTTP] Refresh token falhou - redirecionando para login');
-          }
-          localStorage.removeItem('sispat_token');
-          localStorage.removeItem('sispat_refresh_token');
-          localStorage.removeItem('sispat_user');
-
-          // Toast antes de redirecionar — usuário entende o que aconteceu.
-          // Import dinâmico para não acoplar todo o axios a use-toast.
-          import('@/hooks/use-toast')
-            .then(({ toast }) => {
-              toast({
-                variant: 'destructive',
-                title: 'Sessão expirada',
-                description: 'Sua sessão expirou. Faça login novamente.',
-              });
-            })
-            .catch(() => {
-              // toast não disponível — apenas redireciona
-            });
-
-          // Pequeno delay para o toast aparecer antes do hard reload
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 600);
-
-          return Promise.reject(refreshError);
         }
+
+        const response = await axios.post(
+          `${API_BASE_URL}/auth/refresh`,
+          refreshToken ? { refreshToken } : {},
+          { withCredentials: true },
+        );
+
+        const { token: newToken, refreshToken: newRefreshToken } = response.data;
+        // Em produção não vêm tokens no body (o cookie já foi renovado no Set-Cookie).
+        if (newToken) {
+          localStorage.setItem('sispat_token', JSON.stringify(newToken));
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        }
+        // Backend gira o refresh token a cada renovação — salvar o novo, se houver.
+        if (newRefreshToken) {
+          localStorage.setItem('sispat_refresh_token', JSON.stringify(newRefreshToken));
+        }
+
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        if (import.meta.env.DEV) {
+          console.error('[HTTP] Refresh token falhou - redirecionando para login');
+        }
+        localStorage.removeItem('sispat_token');
+        localStorage.removeItem('sispat_refresh_token');
+        localStorage.removeItem('sispat_user');
+
+        // Toast antes de redirecionar — usuário entende o que aconteceu.
+        // Import dinâmico para não acoplar todo o axios a use-toast.
+        import('@/hooks/use-toast')
+          .then(({ toast }) => {
+            toast({
+              variant: 'destructive',
+              title: 'Sessão expirada',
+              description: 'Sua sessão expirou. Faça login novamente.',
+            });
+          })
+          .catch(() => {
+            // toast não disponível — apenas redireciona
+          });
+
+        // Pequeno delay para o toast aparecer antes do hard reload
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 600);
+
+        return Promise.reject(refreshError);
       }
     }
 

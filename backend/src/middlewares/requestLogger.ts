@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import { logHttp, logInfo } from '../config/logger'
+import { maskEmail } from '../utils/mask'
 
 // Chaves cujo valor nunca deve ir para os logs (PII / credenciais)
 const SENSITIVE_KEYS =
-  /^(password|senha|token|accesstoken|refreshtoken|authorization|secret|apikey|currentpassword|newpassword|confirmpassword)$/i
+  /^(password|senha|token|accesstoken|refreshtoken|authorization|secret|apikey|currentpassword|newpassword|confirmpassword|email)$/i
 
 /**
  * Redige recursivamente campos sensíveis de um objeto antes de logar.
@@ -35,7 +36,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     userAgent: req.get('user-agent'),
     user: req.user ? {
       id: req.user.userId,
-      email: req.user.email,
+      email: maskEmail(req.user.email),
       role: req.user.role
     } : null,
   }

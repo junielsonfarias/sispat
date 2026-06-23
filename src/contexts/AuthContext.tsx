@@ -46,19 +46,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = useCallback(
     (options?: { sessionExpired?: boolean; allDevices?: boolean }) => {
-      // Tenta revogar refresh token no servidor antes de limpar.
-      // É fire-and-forget: se falhar, o frontend ainda sai (o token pode estar inválido).
+      // Revoga a sessão no servidor antes de limpar. Fire-and-forget: se falhar,
+      // o frontend ainda sai. O backend lê o refresh do cookie HttpOnly (prod) ou
+      // do body (dev, onde ainda há token no storage).
       const refreshToken = SecureStorage.getItem<string>('sispat_refresh_token')
-      if (refreshToken) {
-        api
-          .post('/auth/logout', {
-            refreshToken,
-            allDevices: options?.allDevices ?? false,
-          })
-          .catch(() => {
-            // ignorar — limpar localmente é o que importa para o usuário
-          })
-      }
+      api
+        .post('/auth/logout', {
+          refreshToken: refreshToken ?? undefined,
+          allDevices: options?.allDevices ?? false,
+        })
+        .catch(() => {
+          // ignorar — limpar localmente é o que importa para o usuário
+        })
 
       setUser(null)
       setUsers([])
@@ -82,15 +81,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const fetchInitialData = async () => {
       try {
         const storedUser = SecureStorage.getItem('sispat_user')
-        const storedToken = SecureStorage.getItem('sispat_token')
-        
-        // ✅ CORREÇÃO: Verificar se há token válido antes de fazer requisições
-        if (storedUser && storedToken) {
+
+        // A sessão é validada pelo servidor (cookie HttpOnly em prod, fallback
+        // Bearer em dev). Basta haver um usuário persistido para tentar restaurar;
+        // se a sessão estiver inválida, as chamadas abaixo retornam 401 e o
+        // interceptor do http-api cuida do refresh/redirect.
+        if (storedUser) {
           const loggedInUser: User = storedUser as User
-          
-          // ✅ CORREÇÃO: Primeiro definir o usuário para evitar redirecionamento
+
+          // ✅ Primeiro definir o usuário para evitar redirecionamento
           setUser(loggedInUser)
-          
+
           try {
             // Tentar buscar dados atualizados do usuário
             const [profile, allUsers] = await Promise.all([
@@ -105,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUsers([loggedInUser])
           }
         } else {
-          // ✅ CORREÇÃO: Limpar dados inválidos
+          // ✅ Limpar dados inválidos
           setUser(null)
           SecureStorage.removeItem('sispat_user')
           SecureStorage.removeItem('sispat_token')
@@ -129,8 +130,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await api.post<{
         user: User
-        token: string
-        refreshToken: string
+        token?: string
+        refreshToken?: string
       }>('/auth/login', { email, password })
 
       const { user, token, refreshToken } = response
@@ -138,8 +139,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(user)
       setUsers([user])
       SecureStorage.setItem('sispat_user', user)
-      SecureStorage.setItem('sispat_token', token)
-      SecureStorage.setItem('sispat_refresh_token', refreshToken)
+      // Em produção o backend não devolve tokens no body (sessão via cookie
+      // HttpOnly). Em dev (cross-origin) eles vêm e alimentam o fallback Bearer.
+      if (token) SecureStorage.setItem('sispat_token', token)
+      if (refreshToken) SecureStorage.setItem('sispat_refresh_token', refreshToken)
 
       if (user.role === 'admin' || user.role === 'superuser') {
         try {
