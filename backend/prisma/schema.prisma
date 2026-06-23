@@ -90,6 +90,29 @@ enum StatusRegularizacao {
   cancelado
 }
 
+// Desfazimento de bens inservíveis (Art. 24 da Lei / Art. 13-14 do Decreto).
+enum ClassificacaoInservivel {
+  ocioso
+  recuperavel
+  antieconomico
+  irrecuperavel
+}
+
+enum ModalidadeDesfazimento {
+  doacao
+  leilao
+  permuta
+  transferencia
+  cessao
+  inutilizacao
+}
+
+enum StatusDesfazimento {
+  em_andamento
+  concluido
+  cancelado
+}
+
 model User {
   id                    String          @id @default(uuid())
   email                 String          @unique
@@ -176,6 +199,7 @@ model Municipality {
   desafetacoes   Desafetacao[]
   conciliacoes   Conciliacao[]
   regularizacoes Regularizacao[]
+  desfazimentos  Desfazimento[]
 
   @@map("municipalities")
 }
@@ -311,6 +335,7 @@ model Patrimonio {
   transferencias     Transferencia[]  @relation("TransferenciaPatrimonio")
   desafetacoes       Desafetacao[]
   regularizacoes     Regularizacao[]
+  desfazimentos      Desfazimento[]
 
   @@index([numero_patrimonio])
   @@index([municipalityId])
@@ -904,6 +929,7 @@ model Comissao {
   membros        ComissaoMembro[]
   desafetacoes   Desafetacao[]
   regularizacoes Regularizacao[]
+  desfazimentos  Desfazimento[]
 
   @@index([municipalityId])
   @@index([municipalityId, status])
@@ -987,4 +1013,33 @@ model Conciliacao {
   @@index([municipalityId])
   @@index([municipalityId, status])
   @@map("conciliacoes")
+}
+
+// Desfazimento de bem inservível (Art. 24 da Lei / Art. 13-14 do Decreto):
+// classificação do inservível + modalidade + laudo/justificativa; ao concluir,
+// dá baixa no patrimônio (Art. 25).
+model Desfazimento {
+  id             String                  @id @default(uuid())
+  patrimonioId   String
+  classificacao  ClassificacaoInservivel
+  modalidade     ModalidadeDesfazimento
+  valorAvaliacao Float?
+  justificativa  String
+  laudo          String?
+  comissaoId     String?
+  status         StatusDesfazimento      @default(em_andamento)
+  dataConclusao  DateTime?
+  observacoes    String?
+  municipalityId String
+  createdAt      DateTime                @default(now())
+  createdBy      String?
+  updatedAt      DateTime                @updatedAt
+  municipality   Municipality            @relation(fields: [municipalityId], references: [id])
+  comissao       Comissao?               @relation(fields: [comissaoId], references: [id])
+  patrimonio     Patrimonio              @relation(fields: [patrimonioId], references: [id])
+
+  @@index([municipalityId])
+  @@index([municipalityId, status])
+  @@index([patrimonioId])
+  @@map("desfazimentos")
 }

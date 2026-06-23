@@ -1,0 +1,131 @@
+/**
+ * Testes do desfazimentoService — bloqueios de status, conclusão (baixa do bem)
+ * e tenant.
+ */
+
+jest.mock('../../config/logger', () => ({
+  logInfo: jest.fn(),
+  logDebug: jest.fn(),
+  logWarn: jest.fn(),
+  logError: jest.fn(),
+}));
+
+const mockCache = { deletePattern: jest.fn() };
+jest.mock('../../config/redis', () => ({ redisCache: mockCache }));
+
+const mockTx = {
+  patrimonio: { update: jest.fn() },
+  historicoEntry: { create: jest.fn() },
+  desfazimento: { update: jest.fn() },
+  activityLog: { create: jest.fn() },
+};
+
+const mockPrisma = {
+  patrimonio: { findUnique: jest.fn() },
+  comissao: { findUnique: jest.fn() },
+  desfazimento: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    count: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  activityLog: { create: jest.fn() },
+  $transaction: jest.fn((fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
+};
+
+jest.mock('../../config/database', () => ({ prisma: mockPrisma }));
+
+import {
+  Actor,
+  DesfazimentoValidationError,
+  createDesfazimento,
+  concluirDesfazimento,
+} from '../../services/desfazimentoService';
+
+const actor: Actor = { userId: 'u1', role: 'admin', municipalityId: 'mun-1', email: 'a@x.gov' };
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockCache.deletePattern.mockResolvedValue(undefined);
+});
+
+const baseInput = {
+  patrimonioId: 'p1',
+  classificacao: 'irrecuperavel',
+  modalidade: 'inutilizacao',
+  justificativa: 'Bem sem condições de uso e sem recuperação econômica.',
+};
+
+describe('createDesfazimento', () => {
+  it('rejeita bem já baixado', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'baixado', numero_patrimonio: '0001', municipalityId: 'mun-1',
+    });
+    await expect(createDesfazimento(baseInput, actor)).rejects.toBeInstanceOf(
+      DesfazimentoValidationError,
+    );
+  });
+
+  it('rejeita duplicado em andamento', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
+    });
+    mockPrisma.desfazimento.findFirst.mockResolvedValue({ id: 'existente' });
+    await expect(createDesfazimento(baseInput, actor)).rejects.toBeInstanceOf(
+      DesfazimentoValidationError,
+    );
+  });
+
+  it('cria quando o bem está ativo', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
+    });
+    mockPrisma.desfazimento.findFirst.mockResolvedValue(null);
+    mockPrisma.desfazimento.create.mockResolvedValue({ id: 'd1', classificacao: 'irrecuperavel', modalidade: 'inutilizacao' });
+    mockPrisma.activityLog.create.mockResolvedValue({});
+    const r = await createDesfazimento(baseInput, actor);
+    expect(mockPrisma.desfazimento.create.mock.calls[0][0].data.municipalityId).toBe('mun-1');
+    expect(r.id).toBe('d1');
+  });
+});
+
+describe('concluirDesfazimento', () => {
+  it('baixa o patrimônio e marca concluído', async () => {
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
+      classificacao: 'irrecuperavel', modalidade: 'inutilizacao', justificativa: 'x',
+    });
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
+    });
+    mockTx.patrimonio.update.mockResolvedValue({});
+    mockTx.historicoEntry.create.mockResolvedValue({});
+    mockTx.desfazimento.update.mockResolvedValue({ id: 'd1', status: 'concluido' });
+    mockTx.activityLog.create.mockResolvedValue({});
+
+    await concluirDesfazimento('d1', actor);
+
+    const pdata = mockTx.patrimonio.update.mock.calls[0][0].data;
+    expect(pdata.status).toBe('baixado');
+    expect(pdata.data_baixa).toBeInstanceOf(Date);
+    expect(pdata.motivo_baixa).toContain('Desfazimento');
+    expect(mockTx.desfazimento.update.mock.calls[0][0].data.status).toBe('concluido');
+    expect(mockCache.deletePattern).toHaveBeenCalledWith('patrimonios:*');
+  });
+
+  it('rejeita baixar bem emprestado', async () => {
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
+      classificacao: 'ocioso', modalidade: 'doacao', justificativa: 'x',
+    });
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'emprestado', numero_patrimonio: '0001', municipalityId: 'mun-1',
+    });
+    await expect(concluirDesfazimento('d1', actor)).rejects.toBeInstanceOf(
+      DesfazimentoValidationError,
+    );
+  });
+});

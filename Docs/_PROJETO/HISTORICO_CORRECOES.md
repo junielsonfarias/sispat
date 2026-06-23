@@ -90,6 +90,14 @@
 
 ## 2026
 
+### 2026-06-23 — Feature Fase 5: Desfazimento de inservíveis + Termos — backend
+- **Schema (migration `20260623135903_add_desfazimento`):** enums `ClassificacaoInservivel` (ocioso/recuperavel/antieconomico/irrecuperavel), `ModalidadeDesfazimento` (doacao/leilao/permuta/transferencia/cessao/inutilizacao), `StatusDesfazimento`; model `Desfazimento` (FK a Patrimonio e Comissao).
+- **Desfazimento (Art. 24 / Art. 13-14):** `desfazimentoService` — classifica o inservível + modalidade + laudo/justificativa; ao **concluir**, numa transação dá **baixa** no patrimônio (status=baixado, data_baixa, motivo_baixa) + HistoricoEntry (Art. 25). Bloqueia bem já baixado, duplicado em andamento, e baixar bem emprestado/em transferência (REGRAS §7). CRUD + cancelar. RBAC: leitura autenticados; escrita admin/supervisor/superuser; delete admin/superuser.
+- **Termos (read-only):** `termosService.getTermo(tipo, patrimonioId)` monta os dados estruturados de **carga** (Art. 14), **incorporação** (Art. 11) e **baixa** (Art. 25) — município, bem, setor, responsável, datas, valores e texto legal — para o frontend renderizar/imprimir. `GET /api/termos/:tipo/:patrimonioId`. Termo de baixa exige bem baixado.
+- **Arquivos:** `backend/prisma/schema.prisma` (+migration), `shared/src/schemas/desfazimento.ts`, `backend/src/services/{desfazimento,termos}Service.ts`, `backend/src/controllers/{desfazimento,termos}Controller.ts`, `backend/src/routes/{desfazimento,termos}Routes.ts`, `backend/src/index.ts` (mount `/api/desfazimentos`, `/api/termos`).
+- **Verificação:** `tsc --noEmit` backend limpo; 432/432 testes Jest (+9). Migration aplicada no dev.
+- **Pendente:** frontend (tela de Desfazimento + impressão de termos). **Conclui o roadmap das 5 fases** da análise das leis municipais.
+
 ### 2026-06-23 — Feature Fase 4: Inventário por tipo + Regularização — backend
 - **Schema (migration `20260623133251_add_inventario_tipo_e_regularizacao`):**
   - Enums `TipoInventario` (anual/transferencia/extraordinario/inicial), `TipoOrigemBem` (origem_desconhecida/pre_existente), `StatusRegularizacao` (em_andamento/incorporado/cancelado).
