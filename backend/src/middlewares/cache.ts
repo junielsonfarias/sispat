@@ -74,9 +74,12 @@ export function cacheMiddleware(options: CacheOptions = {}) {
 function defaultKeyGenerator(req: Request): string {
   const baseKey = req.originalUrl
   const queryString = JSON.stringify(req.query)
+  // Isolamento multi-tenant: a chave SEMPRE inclui o município (e o usuário,
+  // quando autenticado) para nunca servir dados de um tenant a outro.
+  const tenant = `:mun:${req.user?.municipalityId ?? 'public'}`
   const userInfo = req.user ? `:user:${req.user.userId}` : ''
-  
-  return `${baseKey}${userInfo}:${Buffer.from(queryString).toString('base64')}`
+
+  return `${baseKey}${tenant}${userInfo}:${Buffer.from(queryString).toString('base64')}`
 }
 
 /**

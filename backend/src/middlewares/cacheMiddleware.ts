@@ -20,7 +20,10 @@ export const cacheResponse = (strategy: 'STATIC' | 'NORMAL' | 'DYNAMIC' = 'NORMA
       return
     }
 
-    const cacheKey = `api:${req.path}:${JSON.stringify(req.query)}`
+    // Isolamento multi-tenant: a chave inclui o município para nunca servir
+    // dados de um tenant a outro.
+    const tenant = req.user?.municipalityId ?? 'public'
+    const cacheKey = `api:${req.path}:mun:${tenant}:${JSON.stringify(req.query)}`
 
     try {
       // Tentar buscar do cache

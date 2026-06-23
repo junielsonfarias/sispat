@@ -90,8 +90,6 @@ Quando executar tarefas substanciais:
 Em aberto (deixados por decisão de produto/risco — ver memória `security-hardening-2026-06-23`):
 - 🟡 Rotas públicas (`listPublicDocuments`, `listPublicPatrimonios`, customization public) não filtram `municipalityId` — latente em deploy mono-município; corrigir exige schema (`municipalityId` em `DocumentoGeral`) ou contrato com `municipalitySlug`.
 - 🟡 `PUT /api/system-configuration` permite `admin` alterar config global da plataforma — restringir a `superuser` é hardening, mas afeta o toggle de busca pública (decisão de produto).
-- 🟡 `cacheMiddleware` genérico (`config/redis.ts`) chaveia por URL sem `municipalityId` — risco de cache cross-tenant quando houver 2º município.
-- 🟡 Bug pré-existente: `PublicSearchContext.tsx` faz `PUT /public/system-configuration`, rota que só tem GET → 404 silencioso no toggle de busca pública.
 
 Plano detalhado em `Docs/_PROJETO/PLANO_CORRECOES.md`.
 

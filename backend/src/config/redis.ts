@@ -481,11 +481,16 @@ export function cacheMiddleware(ttl = 300) {
       return next()
     }
 
-    const cacheKey = `${req.originalUrl}:${JSON.stringify(req.query)}`
-    
+    // Isolamento multi-tenant: a chave inclui o município para não servir
+    // dados de um tenant a outro caso este middleware seja usado em rota
+    // autenticada (defesa em profundidade — preferir os middlewares de
+    // middlewares/cache.ts, que já chaveiam por município).
+    const tenant = req.user?.municipalityId ?? 'public'
+    const cacheKey = `${req.originalUrl}:mun:${tenant}:${JSON.stringify(req.query)}`
+
     try {
       const cached = await redisCache.get(cacheKey)
-      
+
       if (cached) {
         logDebug(`✅ Cache hit: ${cacheKey}`)
         return res.json(cached)

@@ -51,7 +51,9 @@ export const PublicSearchProvider = ({ children }: { children: ReactNode }) => {
   const togglePublicSearch = useCallback(
     async (enabled: boolean) => {
       try {
-        await api.put('/public/system-configuration', { allowPublicSearch: enabled })
+        // Escrita exige a rota autenticada (a /public só tem GET). Requer
+        // papel admin/superuser no backend.
+        await api.put('/system-configuration', { allowPublicSearch: enabled })
         setSettings({ isPublicSearchEnabled: enabled })
       } catch (error) {
         // Reverter mudanças

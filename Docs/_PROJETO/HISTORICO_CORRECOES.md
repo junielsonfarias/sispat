@@ -90,6 +90,11 @@
 
 ## 2026
 
+### 2026-06-23 — Cache tenant-aware + fix do toggle de busca pública
+- **Cache cross-tenant (🟡 latente):** auditoria mapeou 3 definições de middleware de cache. Os **ativos** (`patrimoniosCacheMiddleware`, `imoveis`, `transferencias`, `documents`, `dashboard` em `middlewares/cache.ts`) já chaveavam por `municipalityId` via `CacheUtils.get*Key(...)` — seguros. Os genéricos `cacheMiddleware` (`config/redis.ts`) e `cacheResponse` (`middlewares/cacheMiddleware.ts`) chaveavam só por URL/path+query (sem município) — **footguns** (hoje não montados em nenhuma rota, mas vazariam se usados). Endurecidos os 3 geradores genéricos (incluindo o `defaultKeyGenerator` de `cache.ts`) para SEMPRE incluir `:mun:<municipalityId|public>` na chave. Defesa em profundidade.
+- **Bug do toggle de busca pública:** `PublicSearchContext.togglePublicSearch` fazia `PUT /public/system-configuration` — rota que só tem GET (404 silencioso, toggle não persistia). Corrigido para `PUT /system-configuration` (rota autenticada admin/superuser, que aceita `allowPublicSearch` no `updateSystemConfigSchema`). Leitura continua no GET público.
+- **Verificação:** `tsc` backend+frontend limpo; 455/455 testes Jest.
+
 ### 2026-06-23 — Feature B2: Sub-patrimônios (kits) — backend + frontend
 - **Origem:** último bloqueador do `PLANO_MELHORIAS_FLUXOS.md`. O `SubPatrimoniosManager` era mock (estado local, `TODO: Integrar com API real`) e estava escondido atrás da flag `FEATURES.subPatrimonios=false`. O model `SubPatrimonio` do schema era vestigial (descricao/quantidade/valor) e divergia do conceito do frontend (unidades com número/localização); a tabela nunca foi gravada.
 - **Schema (migration `add_sub_patrimonios_kit`):** `Patrimonio` ganhou `eh_kit Boolean @default(false)` + `quantidade_unidades Int?`. `SubPatrimonio` reestruturado: `numero`, `status`, `localizacao_especifica`, `observacoes`, `@@unique([patrimonioId, numero])`. Migration gerada via `migrate diff` + aplicada com `migrate deploy` (o `migrate dev` é interativo e barra drop de coluna em ambiente não-interativo). Tabela estava vazia → drop seguro.
