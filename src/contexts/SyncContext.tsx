@@ -102,7 +102,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       
       // Sincronização concluída com sucesso
     } catch (error) {
-      console.error('❌ Erro na sincronização:', error)
+      logger.error('Erro na sincronização:', error)
       toast({
         title: 'Falha na sincronização',
         description: 'Não foi possível sincronizar os dados. Tente novamente.',

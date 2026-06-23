@@ -375,33 +375,36 @@ export class CacheUtils {
   /**
    * Gerar chave de cache para patrimônios
    */
-  static getPatrimoniosKey(filters: any): string {
+  // NOTA: as listagens são escopadas por município (multi-tenant). A chave de
+  // cache PRECISA incluir o municipalityId, senão dois municípios com os mesmos
+  // filtros compartilhariam o cache (vazamento cross-tenant). superuser usa 'all'.
+  static getPatrimoniosKey(filters: any, municipalityId = 'all'): string {
     const hash = Buffer.from(JSON.stringify(filters)).toString('base64')
-    return `${this.PREFIXES.PATRIMONIOS}${hash}`
+    return `${this.PREFIXES.PATRIMONIOS}${municipalityId}:${hash}`
   }
 
   /**
    * Gerar chave de cache para imóveis
    */
-  static getImoveisKey(filters: any): string {
+  static getImoveisKey(filters: any, municipalityId = 'all'): string {
     const hash = Buffer.from(JSON.stringify(filters)).toString('base64')
-    return `${this.PREFIXES.IMOVEIS}${hash}`
+    return `${this.PREFIXES.IMOVEIS}${municipalityId}:${hash}`
   }
 
   /**
    * Gerar chave de cache para transferências
    */
-  static getTransferenciasKey(filters: any): string {
+  static getTransferenciasKey(filters: any, municipalityId = 'all'): string {
     const hash = Buffer.from(JSON.stringify(filters)).toString('base64')
-    return `${this.PREFIXES.TRANSFERENCIAS}${hash}`
+    return `${this.PREFIXES.TRANSFERENCIAS}${municipalityId}:${hash}`
   }
 
   /**
    * Gerar chave de cache para documentos
    */
-  static getDocumentosKey(filters: any): string {
+  static getDocumentosKey(filters: any, municipalityId = 'all'): string {
     const hash = Buffer.from(JSON.stringify(filters)).toString('base64')
-    return `${this.PREFIXES.DOCUMENTOS}${hash}`
+    return `${this.PREFIXES.DOCUMENTOS}${municipalityId}:${hash}`
   }
 
   /**

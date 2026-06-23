@@ -12,6 +12,7 @@ import { useInactivityTimeout } from '@/hooks/use-inactivity-timeout'
 import { api } from '@/services/api-adapter'
 import { SecureStorage } from '@/lib/storage-utils'
 import { queryClient } from '@/lib/query-client'
+import { logger } from '@/lib/logger'
 
 export interface AuthContextType {
   isAuthenticated: boolean
@@ -102,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUsers(allUsers)
           } catch (apiError) {
             // Se a API falhar, manter o usuário do localStorage
-            console.warn('Erro ao buscar dados atualizados do usuário:', apiError)
+            logger.warn('Erro ao buscar dados atualizados do usuário:', { error: apiError })
             setUsers([loggedInUser])
           }
         } else {
@@ -114,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (error) {
         // Error fetching user data - handled by error boundary
-        console.error('Erro ao carregar dados do usuário:', error)
+        logger.error('Erro ao carregar dados do usuário:', error)
         setUser(null)
         SecureStorage.removeItem('sispat_user')
         SecureStorage.removeItem('sispat_token')
@@ -149,7 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const allUsers = await api.get<User[]>('/users')
           setUsers(allUsers)
         } catch (error) {
-          console.warn('Erro ao buscar usuários:', error)
+          logger.warn('Erro ao buscar usuários:', { error })
         }
       }
     } catch (error: unknown) {
@@ -179,7 +180,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await api.post('/auth/forgot-password', { email })
     } catch (error) {
       // Sempre mostrar sucesso por segurança (não revelar se email existe)
-      console.warn('Erro ao enviar email de reset:', error)
+      logger.warn('Erro ao enviar email de reset:', { error })
     }
   }
 

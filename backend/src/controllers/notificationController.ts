@@ -104,6 +104,18 @@ export const createNotification = async (req: Request, res: Response): Promise<v
       return;
     }
 
+    // Anti-XSS estocado: o link só pode ser caminho relativo (/x) ou http(s).
+    // Bloqueia javascript:, data:, vbscript: e protocol-relative (//evil.com).
+    if (link != null && link !== '') {
+      const safeLink =
+        typeof link === 'string' &&
+        (/^\/(?!\/)/.test(link) || /^https?:\/\//i.test(link));
+      if (!safeLink) {
+        res.status(400).json({ error: 'Link inválido' });
+        return;
+      }
+    }
+
     const isPrivileged = req.user.role === 'admin' || req.user.role === 'superuser';
     const targetUserId = isPrivileged && bodyUserId ? bodyUserId : req.user.userId;
 

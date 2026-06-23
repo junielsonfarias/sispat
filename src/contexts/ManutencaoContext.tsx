@@ -41,7 +41,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         createdAt: new Date(t.createdAt),
       })))
     } catch (error) {
-      console.error('Failed to load maintenance tasks:', error)
+      logger.error('Failed to load maintenance tasks:', error)
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
@@ -91,7 +91,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         }])
         toast({ description: 'Tarefa de manutenção criada com sucesso.' })
       } catch (error) {
-        console.error('❌ Erro ao criar tarefa de manutenção:', error)
+        logger.error('Erro ao criar tarefa de manutenção:', error)
         
         // ✅ CORREÇÃO: Se for erro de conexão, salvar apenas localmente
         if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
@@ -141,7 +141,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         ))
         toast({ description: 'Tarefa atualizada com sucesso.' })
       } catch (error) {
-        console.error('❌ Erro ao atualizar tarefa de manutenção:', error)
+        logger.error('Erro ao atualizar tarefa de manutenção:', error)
         
         // ✅ CORREÇÃO: Se for erro de conexão, atualizar apenas localmente
         if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
@@ -180,7 +180,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         setAllTasks(prev => prev.filter(t => t.id !== taskId))
         toast({ description: 'Tarefa excluída com sucesso.' })
       } catch (error) {
-        console.error('❌ Erro ao deletar tarefa de manutenção:', error)
+        logger.error('Erro ao deletar tarefa de manutenção:', error)
         
         // ✅ CORREÇÃO: Se for erro de conexão, deletar apenas localmente
         if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {

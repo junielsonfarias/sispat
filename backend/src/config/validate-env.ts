@@ -56,20 +56,28 @@ export function validateEnvironment(): void {
       process.exit(1);
     }
 
-    // Validar DATABASE_URL
+    // Validar DATABASE_URL — senha padrão/insegura é fatal em produção
     const dbUrl = process.env.DATABASE_URL || '';
-    if (dbUrl.includes('CHANGE_THIS') || dbUrl.includes('password') || dbUrl.includes('123') || 
-        dbUrl.includes('postgres') && dbUrl.includes('postgres')) {
-      logWarn('⚠️  ATENÇÃO: DATABASE_URL parece conter senha padrão!', {
-        recommendation: 'Recomenda-se usar senha forte e única.'
+    if (dbUrl.includes('CHANGE_THIS') || /:(password|postgres|123456?)@/i.test(dbUrl)) {
+      logError('❌ DATABASE_URL contém senha padrão/insegura em produção!', undefined, {
+        recommendation: 'Use uma senha forte e única (sem "password"/"postgres"/"CHANGE_THIS").'
       });
+      process.exit(1);
     }
 
-    // Validar se DATABASE_URL tem SSL em produção
-    if (dbUrl && !dbUrl.includes('sslmode=require') && !dbUrl.includes('sslmode=prefer')) {
-      logWarn('⚠️  DATABASE_URL não tem SSL habilitado!', {
-        recommendation: 'Adicione ?sslmode=require à URL do banco para produção.'
+    // SSL no banco: fatal se o host for REMOTO (banco interno em docker/loopback
+    // não exige TLS). Detecta host pelo trecho após @.
+    const dbHost = (dbUrl.match(/@([^:/?]+)/)?.[1] || '').toLowerCase();
+    const isLocalDb = ['localhost', '127.0.0.1', '::1', 'postgres', 'db'].includes(dbHost);
+    const hasSsl = dbUrl.includes('sslmode=require') || dbUrl.includes('sslmode=prefer');
+    if (dbUrl && !hasSsl && !isLocalDb) {
+      logError('❌ DATABASE_URL remoto sem SSL em produção!', undefined, {
+        host: dbHost,
+        recommendation: 'Adicione ?sslmode=require à URL do banco.'
       });
+      process.exit(1);
+    } else if (dbUrl && !hasSsl) {
+      logWarn('ℹ️  Banco local/interno sem SSL (aceitável em rede privada).', { host: dbHost });
     }
 
     // Validar FRONTEND_URL
@@ -83,13 +91,14 @@ export function validateEnvironment(): void {
       });
     }
 
-    // Validar BCRYPT_ROUNDS
-    const bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || '10');
+    // Validar BCRYPT_ROUNDS — fatal em produção (custo de hash é controle de segurança)
+    const bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
     if (bcryptRounds < 12) {
-      logWarn('⚠️  BCRYPT_ROUNDS baixo para produção!', {
+      logError('❌ BCRYPT_ROUNDS baixo demais para produção!', undefined, {
         current: bcryptRounds,
-        recommended: '12 ou superior'
+        minimum: 12
       });
+      process.exit(1);
     }
 
     // Validar PORT

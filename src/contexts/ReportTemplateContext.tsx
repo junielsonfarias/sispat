@@ -11,6 +11,7 @@ import { ReportTemplate, ReportComponent, Patrimonio } from '@/types'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 interface ReportTemplateContextType {
   templates: ReportTemplate[]
@@ -116,7 +117,7 @@ export const ReportTemplateProvider = ({
       setAllTemplates(adaptedTemplates)
     } catch (error: any) {
       // Log do erro para debug, mas não quebrar a aplicação
-      console.error('Erro ao buscar templates de relatório:', error)
+      logger.error('Erro ao buscar templates de relatório:', error)
       // Se for erro 404 ou lista vazia, não é problema crítico
       if (error?.response?.status === 404) {
         setAllTemplates([])

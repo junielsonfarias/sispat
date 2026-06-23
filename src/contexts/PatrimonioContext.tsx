@@ -64,9 +64,7 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
       
       setPatrimonios(patrimoniosData)
     } catch (err) {
-      if (import.meta.env.DEV) {
-        console.error('❌ [DEV] PatrimonioContext: Erro ao carregar:', err)
-      }
+      logger.error('PatrimonioContext: Erro ao carregar:', err)
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de erro
       if (err?.code === 'ERR_NETWORK' || err?.code === 'ERR_CONNECTION_REFUSED') {
@@ -164,9 +162,7 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
         const response = await api.get<{ patrimonio: Patrimonio }>(`/patrimonios/${patrimonioId}`)
         return response
       } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('Erro ao buscar patrimônio por ID:', error)
-        }
+        logger.error('Erro ao buscar patrimônio por ID:', error)
         throw error
       }
     },

@@ -12,6 +12,7 @@ import { generateId } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 interface ImovelFieldContextType {
   fields: ImovelFieldConfig[]
@@ -76,7 +77,7 @@ export const ImovelFieldProvider = ({ children }: { children: ReactNode }) => {
       if (error?.response?.status === 500) {
         // console.warn('⚠️ imovel-fields endpoint não disponível, usando dados iniciais')
       } else {
-        console.error('Failed to load imovel fields:', error)
+        logger.error('Failed to load imovel fields:', error)
       }
       
       // Usar fallback

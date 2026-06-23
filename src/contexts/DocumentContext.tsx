@@ -13,6 +13,7 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { useNotifications } from './NotificationContext'
 import { api } from '@/lib/api'
+import { logger } from '@/lib/logger'
 
 interface DocumentContextType {
   documents: GeneralDocument[]
@@ -62,7 +63,7 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
         }))
       )
     } catch (error) {
-      console.error('Erro ao buscar documentos:', error)
+      logger.error('Erro ao buscar documentos:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -126,7 +127,7 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
           description: 'Documento adicionado com sucesso.',
         })
       } catch (error) {
-        console.error('Erro ao adicionar documento:', error)
+        logger.error('Erro ao adicionar documento:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',
@@ -174,7 +175,7 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
           description: 'Documento atualizado com sucesso.',
         })
       } catch (error) {
-        console.error('Erro ao atualizar documento:', error)
+        logger.error('Erro ao atualizar documento:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',
@@ -204,7 +205,7 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
           description: 'Documento removido com sucesso.',
         })
       } catch (error) {
-        console.error('Erro ao deletar documento:', error)
+        logger.error('Erro ao deletar documento:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',
@@ -243,7 +244,7 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
           description: 'Download iniciado com sucesso.',
         })
       } catch (error) {
-        console.error('Erro ao fazer download do documento:', error)
+        logger.error('Erro ao fazer download do documento:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',

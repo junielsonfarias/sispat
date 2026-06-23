@@ -46,9 +46,7 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
       logger.debug('SectorContext: Setores carregados', { count: sectorsData.length })
       setSectors(sectorsData)
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('❌ SectorContext: Erro ao buscar setores:', error)
-      }
+      logger.error('SectorContext: Erro ao buscar setores:', error)
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {

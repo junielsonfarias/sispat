@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast'
 import { usePatrimonio } from './PatrimonioContext'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 interface InventoryContextType {
   inventories: Inventory[]
@@ -86,7 +87,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       
       setAllInventories(mappedInventories)
     } catch (error) {
-      console.error('❌ [ERROR] fetchInventories: Erro ao carregar inventários:', error)
+      logger.error('fetchInventories: Erro ao carregar inventários:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -161,8 +162,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         
         return inventoryData
       } catch (error) {
-        console.error('❌ [ERROR] Erro ao criar inventário:', error)
-        console.error('❌ [ERROR] Stack trace:', error instanceof Error ? error.stack : 'N/A')
+        logger.error('Erro ao criar inventário:', error)
+        logger.debug('Stack trace do erro de inventário', { stack: error instanceof Error ? error.stack : 'N/A' })
         throw error // Re-throw para que o componente possa capturar
       }
     },

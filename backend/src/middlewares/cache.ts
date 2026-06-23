@@ -96,8 +96,8 @@ export function patrimoniosCacheMiddleware() {
         orderBy: req.query.orderBy,
         orderDirection: req.query.orderDirection
       }
-      
-      return CacheUtils.getPatrimoniosKey(filters)
+
+      return CacheUtils.getPatrimoniosKey(filters, req.user?.municipalityId || 'all')
     },
     skipCache: (req) => {
       // Pular cache se for busca muito específica
@@ -120,7 +120,7 @@ export function imoveisCacheMiddleware() {
         limit: req.query.limit
       }
       
-      return CacheUtils.getImoveisKey(filters)
+      return CacheUtils.getImoveisKey(filters, req.user?.municipalityId || 'all')
     }
   })
 }
@@ -138,7 +138,7 @@ export function transferenciasCacheMiddleware() {
         limit: req.query.limit
       }
       
-      return CacheUtils.getTransferenciasKey(filters)
+      return CacheUtils.getTransferenciasKey(filters, req.user?.municipalityId || 'all')
     }
   })
 }
@@ -159,7 +159,7 @@ export function documentosCacheMiddleware() {
         limit: req.query.limit
       }
       
-      return CacheUtils.getDocumentosKey(filters)
+      return CacheUtils.getDocumentosKey(filters, req.user?.municipalityId || 'all')
     }
   })
 }

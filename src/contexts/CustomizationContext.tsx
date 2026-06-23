@@ -180,7 +180,7 @@ export const CustomizationProvider = ({
       // Limpar localStorage
       localStorage.removeItem('sispat_customization_settings')
     } catch (error) {
-      console.error('⚠️ Erro ao resetar no banco, resetando apenas no localStorage:', error)
+      logger.error('Erro ao resetar no banco, resetando apenas no localStorage:', error)
       // Fallback: resetar apenas localStorage
       localStorage.removeItem('sispat_customization_settings')
       setSettings(defaultSettings)

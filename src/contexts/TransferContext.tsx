@@ -19,6 +19,7 @@ import { useAuth } from './AuthContext'
 import { usePatrimonio } from './PatrimonioContext'
 import { useNotifications } from './NotificationContext'
 import { api } from '@/lib/api'
+import { logger } from '@/lib/logger'
 
 interface TransferContextType {
   transferencias: Transferencia[]
@@ -62,7 +63,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
         }))
       )
     } catch (error) {
-      console.error('Erro ao buscar transferências:', error)
+      logger.error('Erro ao buscar transferências:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -121,7 +122,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
           description: 'Transferência solicitada com sucesso.',
         })
       } catch (error) {
-        console.error('Erro ao criar transferência:', error)
+        logger.error('Erro ao criar transferência:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',
@@ -183,7 +184,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
           description: `Transferência ${status === 'aprovada' ? 'aprovada' : 'rejeitada'} com sucesso.`,
         })
       } catch (error) {
-        console.error('Erro ao atualizar status da transferência:', error)
+        logger.error('Erro ao atualizar status da transferência:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',
@@ -207,7 +208,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
           description: 'Transferência deletada com sucesso.',
         })
       } catch (error) {
-        console.error('Erro ao deletar transferência:', error)
+        logger.error('Erro ao deletar transferência:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',
