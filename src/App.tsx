@@ -111,6 +111,8 @@ const Metrics = lazy(() => import('@/pages/admin/Metrics'))
 const InventarioEdit = lazy(() => import('@/pages/inventarios/InventarioEdit'))
 const InventarioPrint = lazy(() => import('@/pages/inventarios/InventarioPrint'))
 const Profile = lazy(() => import('@/pages/Profile'))
+const ComissoesList = lazy(() => import('@/pages/comissoes/ComissoesList'))
+const DesafetacaoList = lazy(() => import('@/pages/desafetacao/DesafetacaoList'))
 
 // Superuser Pages
 const SuperuserDashboard = lazy(
@@ -621,6 +623,19 @@ function App() {
               />
               <Route path="/perfil" element={<Profile />} />
               <Route path="/notificacoes" element={<NotificationsPage />} />
+
+              {/* Comissões — leitura admin/supervisor; escrita gateada internamente */}
+              <Route
+                path="/comissoes"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+                    <ComissoesList />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Desafetação — leitura todos autenticados (exceto superuser usa layout próprio) */}
+              <Route path="/desafetacoes" element={<DesafetacaoList />} />
 
               <Route path="*" element={<NotFound />} />
             </Route>

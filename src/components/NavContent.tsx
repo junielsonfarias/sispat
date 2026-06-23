@@ -31,6 +31,8 @@ import {
   Package,
   Hash,
   TrendingDown,
+  UsersRound,
+  Gavel,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -59,9 +61,9 @@ const supervisorAndAdminLinks: NavItem[] = [
     ]
   },
 
-  { 
-    label: 'Patrimônio', 
-    icon: Archive, 
+  {
+    label: 'Patrimônio',
+    icon: Archive,
     isGroupLabel: true,
     groupColor: 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100',
     children: [
@@ -69,6 +71,8 @@ const supervisorAndAdminLinks: NavItem[] = [
       { to: '/bens-cadastrados/novo', icon: Plus, label: 'Novo Cadastro' },
       { to: '/inventarios', icon: ClipboardList, label: 'Inventários' },
       { to: '/locais', icon: MapPin, label: 'Locais' },
+      { to: '/comissoes', icon: UsersRound, label: 'Comissões' },
+      { to: '/desafetacoes', icon: Gavel, label: 'Desafetação' },
     ]
   },
 
@@ -192,9 +196,9 @@ const navLinks: Record<UserRole, NavItem[]> = {
   usuario: [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
 
-    { 
-      label: 'Patrimônio', 
-      icon: Archive, 
+    {
+      label: 'Patrimônio',
+      icon: Archive,
       isGroupLabel: true,
       groupColor: 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100',
       children: [
@@ -202,6 +206,7 @@ const navLinks: Record<UserRole, NavItem[]> = {
         { to: '/bens-cadastrados/novo', icon: Plus, label: 'Novo Cadastro' },
         { to: '/inventarios', icon: ClipboardList, label: 'Inventários' },
         { to: '/locais', icon: MapPin, label: 'Locais' },
+        { to: '/desafetacoes', icon: Gavel, label: 'Desafetação' },
       ]
     },
 
@@ -237,15 +242,16 @@ const navLinks: Record<UserRole, NavItem[]> = {
   visualizador: [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
 
-    { 
-      label: 'Consulta', 
-      icon: Archive, 
+    {
+      label: 'Consulta',
+      icon: Archive,
       isGroupLabel: true,
       groupColor: 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100',
       children: [
         { to: '/bens-cadastrados', icon: List, label: 'Listagem de Bens' },
         { to: '/imoveis', icon: List, label: 'Listagem de Imóveis' },
         { to: '/locais', icon: MapPin, label: 'Locais' },
+        { to: '/desafetacoes', icon: Gavel, label: 'Desafetação' },
       ]
     },
   ],
