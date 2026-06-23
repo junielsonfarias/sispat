@@ -115,6 +115,8 @@ const ComissoesList = lazy(() => import('@/pages/comissoes/ComissoesList'))
 const DesafetacaoList = lazy(() => import('@/pages/desafetacao/DesafetacaoList'))
 const Conformidade = lazy(() => import('@/pages/conformidade/Conformidade'))
 const RegularizacaoList = lazy(() => import('@/pages/regularizacao/RegularizacaoList'))
+const DesfazimentoList = lazy(() => import('@/pages/desfazimento/DesfazimentoList'))
+const Termos = lazy(() => import('@/pages/termos/Termos'))
 
 // Superuser Pages
 const SuperuserDashboard = lazy(
@@ -658,6 +660,12 @@ function App() {
 
               {/* Desafetação — leitura todos autenticados (exceto superuser usa layout próprio) */}
               <Route path="/desafetacoes" element={<DesafetacaoList />} />
+
+              {/* Desfazimento de inservíveis — leitura todos autenticados; escrita/delete gateados internamente */}
+              <Route path="/desfazimentos" element={<DesfazimentoList />} />
+
+              {/* Termos patrimoniais (carga/incorporação/baixa) — leitura todos autenticados */}
+              <Route path="/termos" element={<Termos />} />
 
               <Route path="*" element={<NotFound />} />
             </Route>

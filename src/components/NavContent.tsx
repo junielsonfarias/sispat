@@ -35,6 +35,8 @@ import {
   Gavel,
   ClipboardCheck,
   PackagePlus,
+  Recycle,
+  ScrollText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -77,12 +79,14 @@ const supervisorAndAdminLinks: NavItem[] = [
       { to: '/conformidade', icon: ClipboardCheck, label: 'Conformidade' },
       { to: '/desafetacoes', icon: Gavel, label: 'Desafetação' },
       { to: '/regularizacoes', icon: PackagePlus, label: 'Regularização' },
+      { to: '/desfazimentos', icon: Recycle, label: 'Desfazimento' },
+      { to: '/termos', icon: ScrollText, label: 'Termos' },
     ]
   },
 
-  { 
-    label: 'Imóveis', 
-    icon: Building2, 
+  {
+    label: 'Imóveis',
+    icon: Building2,
     isGroupLabel: true,
     groupColor: 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100',
     children: [
@@ -212,6 +216,8 @@ const navLinks: Record<UserRole, NavItem[]> = {
         { to: '/locais', icon: MapPin, label: 'Locais' },
         { to: '/desafetacoes', icon: Gavel, label: 'Desafetação' },
         { to: '/regularizacoes', icon: PackagePlus, label: 'Regularização' },
+        { to: '/desfazimentos', icon: Recycle, label: 'Desfazimento' },
+        { to: '/termos', icon: ScrollText, label: 'Termos' },
       ]
     },
 
