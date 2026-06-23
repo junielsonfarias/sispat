@@ -17,6 +17,48 @@ enum PatrimonioStatus {
   emprestado
 }
 
+// Classificação do bem quanto à destinação (Art. 6 da Lei de Gestão Patrimonial).
+// Bens de uso comum/especial são inalienáveis até a desafetação -> dominical.
+enum DestinacaoBem {
+  uso_comum
+  uso_especial
+  dominical
+  nao_classificado
+}
+
+// Comissões da gestão patrimonial (Art. 19 da Lei / Art. 8 do Decreto).
+enum TipoComissao {
+  inventario
+  avaliacao
+  regularizacao
+  desfazimento_desafetacao
+}
+
+enum StatusComissao {
+  ativa
+  encerrada
+  suspensa
+}
+
+enum PapelMembro {
+  presidente
+  secretario
+  membro
+}
+
+// Desafetação (Art. 22 da Lei): por lei, decreto ou ato administrativo.
+enum BaseLegalTipo {
+  lei
+  decreto
+  ato_administrativo
+}
+
+enum StatusDesafetacao {
+  em_andamento
+  concluida
+  cancelada
+}
+
 model User {
   id                    String          @id @default(uuid())
   email                 String          @unique
@@ -38,6 +80,7 @@ model User {
   patrimoniosCreated    Patrimonio[]    @relation("PatrimonioCreator")
   refreshTokens         RefreshToken[]
   passwordResetTokens   PasswordResetToken[]
+  comissaoMembros       ComissaoMembro[] @relation("ComissaoMembroUser")
   municipality          Municipality    @relation(fields: [municipalityId], references: [id])
 
   @@index([email])
@@ -98,6 +141,8 @@ model Municipality {
   patrimonios    Patrimonio[]
   sectors        Sector[]
   users          User[]
+  comissoes      Comissao[]
+  desafetacoes   Desafetacao[]
 
   @@map("municipalities")
 }
@@ -195,6 +240,10 @@ model Patrimonio {
   local_objeto       String
   status             PatrimonioStatus @default(ativo)
   situacao_bem       String?
+  // Destinação (Art. 6): default uso_especial para o acervo existente; revisar
+  // marca os bens que ainda precisam de classificação confirmada por um agente.
+  destinacao         DestinacaoBem    @default(uso_especial)
+  destinacaoRevisada Boolean          @default(false)
   observacoes        String?
   fotos              String[]         @default([])
   documentos         String[]         @default([])
@@ -227,6 +276,7 @@ model Patrimonio {
   tipoBem            TipoBem?         @relation(fields: [tipoId], references: [id])
   subPatrimonios     SubPatrimonio[]
   transferencias     Transferencia[]  @relation("TransferenciaPatrimonio")
+  desafetacoes       Desafetacao[]
 
   @@index([numero_patrimonio])
   @@index([municipalityId])
@@ -258,6 +308,8 @@ model Imovel {
   observacoes       String?
   tipo_imovel       String?
   situacao          String?
+  destinacao        DestinacaoBem    @default(uso_especial)
+  destinacaoRevisada Boolean         @default(false)
   fotos             String[]         @default([])
   documentos        String[]         @default([])
   url_documentos    String?
@@ -274,6 +326,7 @@ model Imovel {
   municipality      Municipality     @relation(fields: [municipalityId], references: [id])
   sector            Sector           @relation(fields: [sectorId], references: [id])
   manutencoes       ManutencaoTask[]
+  desafetacoes      Desafetacao[]
 
   @@index([numero_patrimonio])
   @@index([municipalityId])
@@ -752,4 +805,87 @@ model UserDashboard {
 
   @@index([userId])
   @@map("user_dashboards")
+}
+
+// ===========================================================================
+// Gestão Patrimonial — Comissões e Desafetação (Lei/Decreto Municipal)
+// ===========================================================================
+
+// Comissões (Art. 19 da Lei / Art. 8 do Decreto): designadas por portaria,
+// mandato de até 2 anos (recondução permitida), mínimo de 3 membros.
+model Comissao {
+  id             String           @id @default(uuid())
+  tipo           TipoComissao
+  nome           String?
+  portariaNumero String
+  portariaData   DateTime
+  mandatoInicio  DateTime
+  mandatoFim     DateTime
+  status         StatusComissao   @default(ativa)
+  observacoes    String?
+  municipalityId String
+  createdAt      DateTime         @default(now())
+  createdBy      String?
+  updatedAt      DateTime         @updatedAt
+  municipality   Municipality     @relation(fields: [municipalityId], references: [id])
+  membros        ComissaoMembro[]
+  desafetacoes   Desafetacao[]
+
+  @@index([municipalityId])
+  @@index([municipalityId, status])
+  @@index([tipo])
+  @@map("comissoes")
+}
+
+// Membros da comissão. `nome` é sempre preenchido (preserva histórico mesmo se
+// o servidor não for usuário do sistema); `userId` vincula quando for usuário.
+model ComissaoMembro {
+  id         String      @id @default(uuid())
+  comissaoId String
+  userId     String?
+  nome       String
+  matricula  String?
+  cargo      String?
+  papel      PapelMembro @default(membro)
+  dataInicio DateTime    @default(now())
+  dataFim    DateTime?
+  ativo      Boolean     @default(true)
+  comissao   Comissao    @relation(fields: [comissaoId], references: [id], onDelete: Cascade)
+  user       User?       @relation("ComissaoMembroUser", fields: [userId], references: [id])
+
+  @@index([comissaoId])
+  @@index([userId])
+  @@map("comissao_membros")
+}
+
+// Desafetação (Art. 22 da Lei): retira a destinação de uso comum/especial,
+// passando o bem à categoria dominical (passível de alienação). Por lei, decreto
+// ou ato administrativo. Ao concluir, atualiza Patrimonio/Imovel.destinacao.
+model Desafetacao {
+  id                 String            @id @default(uuid())
+  patrimonioId       String?
+  imovelId           String?
+  comissaoId         String?
+  baseLegalTipo      BaseLegalTipo
+  baseLegalNumero    String
+  baseLegalData      DateTime
+  justificativa      String
+  destinacaoAnterior DestinacaoBem
+  status             StatusDesafetacao @default(em_andamento)
+  dataConclusao      DateTime?
+  observacoes        String?
+  municipalityId     String
+  createdAt          DateTime          @default(now())
+  createdBy          String?
+  updatedAt          DateTime          @updatedAt
+  municipality       Municipality      @relation(fields: [municipalityId], references: [id])
+  comissao           Comissao?         @relation(fields: [comissaoId], references: [id])
+  patrimonio         Patrimonio?       @relation(fields: [patrimonioId], references: [id])
+  imovel             Imovel?           @relation(fields: [imovelId], references: [id])
+
+  @@index([municipalityId])
+  @@index([municipalityId, status])
+  @@index([patrimonioId])
+  @@index([imovelId])
+  @@map("desafetacoes")
 }

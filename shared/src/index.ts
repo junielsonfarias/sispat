@@ -34,3 +34,5 @@ export * from './schemas/imovelField';
 export * from './schemas/systemConfig';
 export * from './schemas/emailConfig';
 export * from './schemas/config';
+export * from './schemas/comissao';
+export * from './schemas/desafetacao';

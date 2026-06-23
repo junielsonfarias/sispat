@@ -90,6 +90,19 @@
 
 ## 2026
 
+### 2026-06-23 — Feature: Comissões + Desafetação (Lei de Gestão Patrimonial) — backend
+- **Origem:** análise da Lei e do Decreto Municipais de Gestão Patrimonial de São Sebastião da Boa Vista/PA (`Docs/analise/*.docx`). Fase 1+2 de ~6 módulos planejados.
+- **Schema (migration `20260623123259_add_comissoes_e_desafetacao`):**
+  - Enums: `DestinacaoBem` (uso_comum/uso_especial/dominical/nao_classificado), `TipoComissao` (inventario/avaliacao/regularizacao/desfazimento_desafetacao), `StatusComissao`, `PapelMembro`, `BaseLegalTipo`, `StatusDesafetacao`.
+  - Models: `Comissao`, `ComissaoMembro` (cascade), `Desafetacao`.
+  - Patrimonio/Imovel ganharam `destinacao DestinacaoBem @default(uso_especial)` + `destinacaoRevisada Boolean` (acervo existente entra como uso_especial p/ revisão — Art. 6).
+- **Comissões (Art. 19 lei / Art. 8 decreto):** 4 tipos, portaria, mandato, membros (papel presidente/secretario/membro, vínculo opcional a User). CRUD multi-tenant + `GET /api/comissoes/alertas` (mandato vencido/vencendo ≤30d e < 3 membros). RBAC: leitura admin/supervisor/superuser, escrita admin/superuser.
+- **Desafetação (Art. 22 lei):** fluxo bem uso_comum/especial → dominical por lei/decreto/ato. Regra central em `concluirDesafetacao`: transação que seta `destinacao=dominical` + `HistoricoEntry` (action DESAFETACAO) + invalida cache. Valida XOR patrimônio/imóvel, bloqueia bem já dominical e duplicada em andamento. Também `reclassificarDestinacao` (saneamento do acervo). RBAC escrita admin/supervisor/superuser.
+- **Arquivos:** `backend/prisma/schema.prisma` (+migration), `shared/src/schemas/{comissao,desafetacao}.ts`, `backend/src/services/{comissao,desafetacao}Service.ts`, `backend/src/controllers/{comissao,desafetacao}Controller.ts`, `backend/src/routes/{comissao,desafetacao}Routes.ts`, `backend/src/index.ts` (mount `/api/comissoes`, `/api/desafetacoes`).
+- **Verificação:** `tsc --noEmit` backend limpo; 403/403 testes Jest (+13 cobrindo tenant, alertas, XOR, conclusão→dominical). Migration aplicada no dev.
+- **Pendente:** frontend (telas de comissões/desafetação) e fases seguintes (conformidade/SIAFI, inventário por tipo/data-base, regularização, termos, desfazimento de inservíveis).
+- **Nota deploy:** rodar `prisma migrate deploy` no release. `prisma generate` no Windows pode dar EPERM (lock da DLL) — fechar processos node que seguram o engine antes de gerar.
+
 ### 2026-06-23 — Validação da CSP contra o build real do Vite (2 quebras corrigidas)
 - **Contexto:** após endurecer a CSP do Nginx (commit anterior), validei contra o build de produção real (`vite build`) inspecionando `dist/index.html`, CSS e JS gerados. A CSP estrita (`default-src 'self'; script-src 'self' 'unsafe-inline'; ...`) quebraria 2 coisas:
   1. **`<link rel="preload" href="/src/main.tsx" as="script">` no `index.html`** (raiz): o Vite não reconhece esse preload manual como o entry e o converte num **`data:` URI com o código-fonte** — bloqueado por `script-src` (sem `data:`) e ainda vaza o source TS no HTML. **Correção:** removido o preload manual (o Vite já injeta `modulepreload` do entry+deps automaticamente). Build passou a ter só `<script src="/assets/...">` (self), zero `data:`, zero origens externas.

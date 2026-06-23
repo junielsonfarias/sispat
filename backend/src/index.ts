@@ -255,6 +255,8 @@ import configRoutes from './routes/configRoutes';
 import systemConfigRoutes from './routes/systemConfigRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import performanceRoutes from './routes/performanceRoutes';
+import comissaoRoutes from './routes/comissaoRoutes';
+import desafetacaoRoutes from './routes/desafetacaoRoutes';
 
 logInfo('✅ Rotas carregadas');
 
@@ -294,6 +296,8 @@ app.use('/api/label-templates', labelTemplateRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/system-configuration', systemConfigRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/comissoes', comissaoRoutes);
+app.use('/api/desafetacoes', desafetacaoRoutes);
 
 // Rotas de métricas e monitoramento
 import metricsRoutes from './routes/metricsRoutes';
