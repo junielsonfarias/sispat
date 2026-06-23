@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma';
 import { emailService } from '../config/email';
 import { logActivity } from '../utils/activityLogger';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import { maskEmail } from '../utils/mask';
 
 /**
  * Obter configuração de email
@@ -200,7 +201,7 @@ export const testEmailConfig = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    logInfo('✅ Email de teste enviado com sucesso', { email });
+    logInfo('✅ Email de teste enviado com sucesso', { email: maskEmail(email) });
 
     // Log da atividade
     try {
@@ -220,7 +221,7 @@ export const testEmailConfig = async (req: Request, res: Response): Promise<void
       email,
     });
   } catch (error) {
-    logError('❌ Erro ao testar configuração de email', error, { userId: req.user?.userId, email });
+    logError('❌ Erro ao testar configuração de email', error, { userId: req.user?.userId, email: maskEmail(email) });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };

@@ -22,6 +22,7 @@ import {
 } from '@sispat/shared';
 import rateLimit from 'express-rate-limit';
 import { logWarn } from '../config/logger';
+import { maskEmail } from '../utils/mask';
 
 const router = Router();
 
@@ -36,7 +37,7 @@ const authLimiter = rateLimit({
   handler: (req: any, res) => {
     logWarn('Rate limit de autenticação excedido', {
       ip: req.ip,
-      email: req.body?.email || 'unknown',
+      email: maskEmail(req.body?.email),
     })
     res.status(429).json({
       error: 'Too Many Requests',

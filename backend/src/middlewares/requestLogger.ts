@@ -82,7 +82,7 @@ export const auditLogger = (action: string) => {
       action,
       user: req.user ? {
         id: req.user.userId,
-        email: req.user.email,
+        email: maskEmail(req.user.email),
         role: req.user.role
       } : null,
       ip: req.ip || req.socket.remoteAddress,

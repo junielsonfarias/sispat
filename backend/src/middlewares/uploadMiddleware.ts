@@ -3,7 +3,11 @@ import path from 'path';
 import fs from 'fs';
 import { NextFunction, Request, Response } from 'express';
 import { logError, logWarn } from '../config/logger';
-import { validateFileOnDisk, mimeMatchesDetected } from '../utils/file-validation';
+import {
+  validateFileOnDisk,
+  mimeMatchesDetected,
+  validateDocumentOnDisk,
+} from '../utils/file-validation';
 
 // Garantir que a pasta uploads existe
 const uploadsDir = path.join(__dirname, '../../uploads');
@@ -167,6 +171,54 @@ export const verifyMagicBytes = async (
     if (req.file) files.push(req.file);
     if (Array.isArray(req.files)) files.push(...(req.files as Express.Multer.File[]));
     files.forEach((f) => unlinkSilently(f.path));
+    next(err);
+  }
+};
+
+/**
+ * Variante de `verifyMagicBytes` para o upload de DOCUMENTOS, que aceita
+ * (além de imagens/PDF) Office moderno/legado e texto puro. Roda DEPOIS do
+ * multer do documentController e valida o conteúdo contra o mimetype declarado.
+ *
+ *   router.post('/', upload.single('file'), verifyDocumentMagicBytes, createDocument)
+ */
+export const verifyDocumentMagicBytes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const collectFiles = (): Express.Multer.File[] => {
+    const files: Express.Multer.File[] = [];
+    if (req.file) files.push(req.file);
+    if (Array.isArray(req.files)) files.push(...(req.files as Express.Multer.File[]));
+    return files;
+  };
+
+  try {
+    const files = collectFiles();
+    if (files.length === 0) {
+      next();
+      return;
+    }
+
+    for (const file of files) {
+      const ok = await validateDocumentOnDisk(file.path, file.mimetype);
+      if (!ok) {
+        logWarn('🚫 Upload de documento bloqueado: conteúdo não corresponde ao tipo declarado', {
+          filename: file.filename,
+          declaredMime: file.mimetype,
+          originalname: file.originalname,
+        });
+        files.forEach((f) => unlinkSilently(f.path));
+        res.status(400).json({ error: 'Tipo de arquivo não permitido (conteúdo inválido).' });
+        return;
+      }
+    }
+
+    next();
+  } catch (err) {
+    logError('Erro ao validar magic bytes de documento', err);
+    collectFiles().forEach((f) => unlinkSilently(f.path));
     next(err);
   }
 };

@@ -101,3 +101,105 @@ export const mimeMatchesDetected = (declaredMime: string, detected: DetectedFile
   if (detected.kind === 'jpeg' && declaredMime === 'image/jpg') return true;
   return false;
 };
+
+// ---------------------------------------------------------------------------
+// Validação de DOCUMENTOS (estende imagens/PDF com Office e texto puro).
+//
+// O upload de documentos aceita, além de imagens/PDF, os formatos do Office
+// (doc/docx/xls/xlsx) e texto puro. Esses não cabem no detector estrito acima:
+//   - Office moderno (docx/xlsx) é um contêiner ZIP (assinatura "PK").
+//   - Office legado (doc/xls) é um contêiner OLE2 (Compound File Binary).
+//   - Texto puro NÃO tem assinatura — usamos heurística de conteúdo.
+// ---------------------------------------------------------------------------
+
+// OLE2 / Compound File Binary (doc, xls, ppt legados): D0 CF 11 E0 A1 B1 1A E1
+const OLE2_SIGNATURE = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+
+export const isOle2Container = (header: Buffer): boolean =>
+  header.length >= 8 && OLE2_SIGNATURE.every((byte, i) => header[i] === byte);
+
+/**
+ * Contêiner ZIP — base de docx/xlsx/pptx (OOXML). Aceita as três variantes
+ * da assinatura: local file (PK\x03\x04), empty archive (PK\x05\x06) e
+ * spanned (PK\x07\x08).
+ */
+export const isZipContainer = (header: Buffer): boolean => {
+  if (header.length < 4) return false;
+  if (header[0] !== 0x50 || header[1] !== 0x4b) return false;
+  return (
+    (header[2] === 0x03 && header[3] === 0x04) ||
+    (header[2] === 0x05 && header[3] === 0x06) ||
+    (header[2] === 0x07 && header[3] === 0x08)
+  );
+};
+
+/**
+ * Heurística para texto puro (txt não tem magic bytes). Rejeita se houver
+ * byte NUL (sinal forte de binário) ou se a fração de caracteres imprimíveis
+ * for baixa. Considera imprimíveis: tab/LF/CR, ASCII 0x20–0x7E e bytes altos
+ * (≥0x80, presumindo continuação UTF-8).
+ */
+export const looksLikeText = (buffer: Buffer): boolean => {
+  if (buffer.length === 0) return true; // arquivo vazio é texto trivial
+  let printable = 0;
+  for (const byte of buffer) {
+    if (byte === 0x00) return false;
+    if (
+      byte === 0x09 ||
+      byte === 0x0a ||
+      byte === 0x0d ||
+      (byte >= 0x20 && byte <= 0x7e) ||
+      byte >= 0x80
+    ) {
+      printable++;
+    }
+  }
+  return printable / buffer.length >= 0.9;
+};
+
+const OOXML_MIMES = new Set([
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+]);
+
+const LEGACY_OFFICE_MIMES = new Set([
+  'application/msword', // doc
+  'application/vnd.ms-excel', // xls
+]);
+
+/**
+ * Valida pelo CONTEÚDO se um header bate com o mimetype declarado de um
+ * documento. Reaproveita o detector estrito para imagens/PDF e estende para
+ * Office (ZIP/OLE2) e texto puro.
+ */
+export const documentContentMatches = (header: Buffer, declaredMime: string): boolean => {
+  const mime = declaredMime.trim().toLowerCase();
+
+  // imagens e PDF: o conteúdo precisa bater exatamente com o tipo declarado.
+  const detected = detectAllowedFile(header);
+  if (detected) return mimeMatchesDetected(mime, detected);
+
+  if (OOXML_MIMES.has(mime)) return isZipContainer(header);
+  if (LEGACY_OFFICE_MIMES.has(mime)) return isOle2Container(header);
+  if (mime === 'text/plain') return looksLikeText(header);
+
+  return false;
+};
+
+/**
+ * Lê o início de um documento no disco e valida o conteúdo contra o mimetype
+ * declarado. Retorna true se aceitável.
+ */
+export const validateDocumentOnDisk = async (
+  filePath: string,
+  declaredMime: string,
+): Promise<boolean> => {
+  const fd = await fs.promises.open(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(512);
+    const { bytesRead } = await fd.read(buffer, 0, 512, 0);
+    return documentContentMatches(buffer.subarray(0, bytesRead), declaredMime);
+  } finally {
+    await fd.close();
+  }
+};

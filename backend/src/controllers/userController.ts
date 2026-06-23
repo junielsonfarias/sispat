@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 import { redisCache, CacheUtils } from '../config/redis';
+import { maskEmail } from '../utils/mask';
 
 /**
  * Hierarquia de papéis (quanto maior, mais privilégio).
@@ -234,7 +235,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
     res.status(201).json(newUser);
   } catch (error) {
-    logError('Erro ao criar usuário', error, { userId: req.user?.userId, email: req.body.email });
+    logError('Erro ao criar usuário', error, { userId: req.user?.userId, email: maskEmail(req.body.email) });
     res.status(500).json({ error: 'Erro ao criar usuário' });
   }
 };

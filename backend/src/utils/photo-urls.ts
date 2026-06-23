@@ -53,10 +53,36 @@ export const sanitizeIncomingUrls = (arr: unknown): string[] => {
         logWarn('URL blob- bloqueada', { url });
         return null;
       }
+      // Protocolos perigosos: podem executar script ao renderizar em
+      // <a href>/<img src> no frontend. Só permitimos http(s) e caminhos
+      // relativos (/uploads/...). Mesma postura do isSafeUrl do customization.
+      if (/^\s*(javascript|data|vbscript):/i.test(url)) {
+        logWarn('URL com protocolo perigoso bloqueada', { url });
+        return null;
+      }
       if (url === '[object Object]') return null;
       return url;
     })
     .filter((v): v is string => Boolean(v && v.trim() !== ''));
+};
+
+/**
+ * Sanitiza uma ÚNICA URL (campo string, não array). Bloqueia protocolos
+ * perigosos e blob:, devolvendo `null` quando a URL é rejeitada/ausente.
+ * Caminhos relativos (/uploads/...) e http(s) passam.
+ */
+export const sanitizeSingleUrl = (value: unknown): string | null => {
+  const url = extractUrlFromAny(value);
+  if (!url || url.trim() === '' || url === '[object Object]') return null;
+  if (url.startsWith('blob:')) {
+    logWarn('URL blob- bloqueada', { url });
+    return null;
+  }
+  if (/^\s*(javascript|data|vbscript):/i.test(url)) {
+    logWarn('URL com protocolo perigoso bloqueada', { url });
+    return null;
+  }
+  return url;
 };
 
 export const normalizeOnRead = <T extends { fotos?: unknown; documentos?: unknown }>(

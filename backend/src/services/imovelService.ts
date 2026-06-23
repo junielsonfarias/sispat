@@ -9,7 +9,7 @@
 import { prisma } from '../config/database';
 import { redisCache, CacheUtils } from '../config/redis';
 import { logDebug, logError, logInfo, logWarn } from '../config/logger';
-import { sanitizeIncomingUrls, normalizeOnRead } from '../utils/photo-urls';
+import { sanitizeIncomingUrls, sanitizeSingleUrl, normalizeOnRead } from '../utils/photo-urls';
 
 export interface Actor {
   userId: string;
@@ -316,7 +316,7 @@ export const createImovel = async (
         situacao: input.situacao,
         fotos: processedFotos,
         documentos: processedDocumentos,
-        url_documentos: input.url_documentos,
+        url_documentos: sanitizeSingleUrl(input.url_documentos),
         customFields:
           input.customFields && typeof input.customFields === 'object'
             ? (input.customFields as any)
@@ -418,6 +418,9 @@ export const updateImovel = async (
   }
   if (dataToUpdate.documentos !== undefined) {
     dataToUpdate.documentos = sanitizeIncomingUrls(dataToUpdate.documentos);
+  }
+  if (dataToUpdate.url_documentos !== undefined) {
+    dataToUpdate.url_documentos = sanitizeSingleUrl(dataToUpdate.url_documentos);
   }
 
   // Conversões de tipo

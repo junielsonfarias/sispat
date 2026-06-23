@@ -10,6 +10,7 @@ import {
   upload,
 } from '../controllers/documentController';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { verifyDocumentMagicBytes } from '../middlewares/uploadMiddleware';
 import { zodValidate } from '../middlewares/zodValidate';
 import {
   createDocumentSchema,
@@ -32,6 +33,7 @@ router.post(
   '/',
   authorize('admin', 'supervisor', 'usuario'),
   upload.single('file'),
+  verifyDocumentMagicBytes,
   zodValidate({ body: createDocumentSchema }),
   createDocument,
 );
