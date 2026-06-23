@@ -85,12 +85,13 @@ Quando executar tarefas substanciais:
 
 ## 5. Pontos de atenção (débitos conhecidos)
 
-- 🔴 `customizationController.ts` usa `$queryRaw` — auditar antes de tocar.
-- 🔴 `uploadController.ts:135-176` — IDOR no delete de arquivos (não valida municipalityId). **Corrigir antes de qualquer mudança nessa área.**
-- 🟡 `patrimonioController.ts` tem 1320 linhas. Ao adicionar funcionalidade, extrair para `services/`.
-- 🟡 Não há linter no backend (`"lint": "echo No linting configured"` em `backend/package.json`).
-- 🟡 Cobertura de testes muito baixa (2 arquivos backend, 7 frontend).
-- 🟡 Refresh token sem rotação/revogação.
+> Atualizado 2026-06-23 após re-auditoria. **Resolvidos** (não são mais débitos): IDOR do `uploadController.deleteFile` (tem `isFileOwnedByMunicipality`); `$queryRaw` de `customizationController`/`auditLogController` (migrados p/ Prisma); `patrimonioController` (1320→361 linhas, lógica em `services/`); linter backend (`eslint src --ext .ts`); refresh token com rotação (`authService`); cobertura (36 suites Jest). Histórico em `HISTORICO_CORRECOES.md`.
+
+Em aberto (deixados por decisão de produto/risco — ver memória `security-hardening-2026-06-23`):
+- 🟡 Rotas públicas (`listPublicDocuments`, `listPublicPatrimonios`, customization public) não filtram `municipalityId` — latente em deploy mono-município; corrigir exige schema (`municipalityId` em `DocumentoGeral`) ou contrato com `municipalitySlug`.
+- 🟡 `PUT /api/system-configuration` permite `admin` alterar config global da plataforma — restringir a `superuser` é hardening, mas afeta o toggle de busca pública (decisão de produto).
+- 🟡 `cacheMiddleware` genérico (`config/redis.ts`) chaveia por URL sem `municipalityId` — risco de cache cross-tenant quando houver 2º município.
+- 🟡 Bug pré-existente: `PublicSearchContext.tsx` faz `PUT /public/system-configuration`, rota que só tem GET → 404 silencioso no toggle de busca pública.
 
 Plano detalhado em `Docs/_PROJETO/PLANO_CORRECOES.md`.
 
