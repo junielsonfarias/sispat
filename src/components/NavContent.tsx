@@ -33,6 +33,7 @@ import {
   TrendingDown,
   UsersRound,
   Gavel,
+  ClipboardCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -72,6 +73,7 @@ const supervisorAndAdminLinks: NavItem[] = [
       { to: '/inventarios', icon: ClipboardList, label: 'Inventários' },
       { to: '/locais', icon: MapPin, label: 'Locais' },
       { to: '/comissoes', icon: UsersRound, label: 'Comissões' },
+      { to: '/conformidade', icon: ClipboardCheck, label: 'Conformidade' },
       { to: '/desafetacoes', icon: Gavel, label: 'Desafetação' },
     ]
   },
