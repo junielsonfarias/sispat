@@ -202,4 +202,18 @@ describe('updatePatrimonio — mass-assignment (allow-list de campos)', () => {
     // valor fora do enum cai no padrão seguro 'proprio'
     expect((mockTx.patrimonio.update.mock.calls[0] as any[])[0].data.tipo_posse).toBe('proprio');
   });
+
+  it('persiste origem_recurso e clausulas_reversao (Art. 4 Decreto / Art. 13 §2)', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', municipalityId: 'mun-A', sectorId: 's-de-A', status: 'ativo',
+    });
+    await updatePatrimonio(
+      'p1',
+      { origem_recurso: 'convenio', clausulas_reversao: 'Reverte ao concedente em 5 anos.' },
+      actorMunA('admin'),
+    );
+    const data = (mockTx.patrimonio.update.mock.calls[0] as any[])[0].data;
+    expect(data.origem_recurso).toBe('convenio');
+    expect(data.clausulas_reversao).toBe('Reverte ao concedente em 5 anos.');
+  });
 });

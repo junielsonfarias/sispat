@@ -96,6 +96,20 @@ export const patrimonioBaseSchema = z.object({
     .min(1, 'Forma de aquisição é obrigatória.')
     .max(50, 'A forma de aquisição deve ter no máximo 50 caracteres.'),
 
+  // Origem do recurso e cláusulas de reversão (Art. 4 do Decreto / Art. 13 §2 da
+  // Lei): obrigatórios "quando for o caso" (convênio/emenda/repasse ou doação com
+  // encargo). Opcionais no schema; o formulário pede a reversão quando aplicável.
+  origem_recurso: z
+    .enum(['proprio', 'convenio', 'emenda', 'transferencia_ente', 'outro'])
+    .optional()
+    .nullable(),
+
+  clausulas_reversao: z
+    .string()
+    .max(2000, 'As cláusulas de reversão devem ter no máximo 2000 caracteres.')
+    .optional()
+    .nullable(),
+
   numero_licitacao: z
     .string()
     .max(50, 'O número da licitação deve ter no máximo 50 caracteres.')

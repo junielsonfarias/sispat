@@ -302,6 +302,11 @@ model Patrimonio {
   forma_aquisicao    String
   numero_licitacao   String?
   ano_licitacao      Int?
+  // Origem do recurso e cláusulas de reversão (Art. 4 do Decreto / Art. 13 §2 da
+  // Lei): "quando for o caso" — bens de convênio/emenda/repasse ou doações com
+  // encargo registram a fonte do recurso e as condições de reversão do instrumento.
+  origem_recurso     String?
+  clausulas_reversao String?
   setor_responsavel  String
   local_objeto       String
   status             PatrimonioStatus @default(ativo)

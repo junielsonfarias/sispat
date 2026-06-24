@@ -54,6 +54,12 @@ export type PatrimonioSituacao =
   | 'RUIM'
   | 'PESSIMO'
 export type TipoPosse = 'proprio' | 'cessao' | 'comodato'
+export type OrigemRecurso =
+  | 'proprio'
+  | 'convenio'
+  | 'emenda'
+  | 'transferencia_ente'
+  | 'outro'
 
 export type SubPatrimonioStatus = 'ativo' | 'baixado' | 'manutencao'
 
@@ -150,6 +156,9 @@ export interface Patrimonio {
   situacao_bem: PatrimonioSituacao
   // Título de posse (Art. 13 §3): bens em cessão/comodato não somam ao ativo.
   tipo_posse?: TipoPosse
+  // Origem do recurso e cláusulas de reversão (Art. 4 Decreto / Art. 13 §2 Lei).
+  origem_recurso?: OrigemRecurso | null
+  clausulas_reversao?: string | null
   fotos: string[]
   documentos: string[]
   historico_movimentacao: HistoricoEntry[]

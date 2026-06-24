@@ -104,6 +104,8 @@ const BensCreate = () => {
       situacao_bem: undefined,
       status: 'ativo',
       tipo_posse: 'proprio',
+      origem_recurso: 'proprio',
+      clausulas_reversao: undefined,
       fotos: [],
       documentos: [],
       metodo_depreciacao: 'Linear',

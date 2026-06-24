@@ -116,6 +116,8 @@ const BensEdit = () => {
           numero_licitacao: data.numero_licitacao || '',
           ano_licitacao: data.ano_licitacao,
           tipo_posse: data.tipo_posse || 'proprio',
+          origem_recurso: data.origem_recurso || undefined,
+          clausulas_reversao: data.clausulas_reversao || undefined,
         } as unknown as PatrimonioFormValues)
       } catch (error) {
         console.error('Erro ao carregar patrimônio:', error)
@@ -187,6 +189,11 @@ const BensEdit = () => {
         forma_aquisicao: data.forma_aquisicao,
         numero_licitacao: data.numero_licitacao,
         ano_licitacao: data.ano_licitacao,
+        // Conformidade: posse (Art. 13 §3) e origem do recurso/reversão (Art. 4
+        // Decreto / Art. 13 §2 Lei) — precisam ir no payload explícito de edição.
+        tipo_posse: data.tipo_posse,
+        origem_recurso: data.origem_recurso || null,
+        clausulas_reversao: data.clausulas_reversao || null,
         setor_responsavel: data.setor_responsavel,
         local_objeto: data.local_objeto,
         status: data.status,

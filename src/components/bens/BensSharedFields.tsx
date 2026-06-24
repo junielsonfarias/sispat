@@ -14,8 +14,9 @@
  * Reduz ~250 linhas por página sem forçar abstração frágil.
  */
 
-import { Control } from 'react-hook-form'
+import { Control, useWatch } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/select'
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -157,56 +159,119 @@ interface AquisicaoProps {
   activeAcquisitionForms: AcquisitionForm[]
 }
 
-/**
- * Data de aquisição + Forma de aquisição. Idênticos entre BensCreate e BensEdit.
- */
-export const BensAquisicaoFields = ({ control, activeAcquisitionForms }: AquisicaoProps) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <FormField
-      control={control}
-      name="data_aquisicao"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Data de Aquisição</FormLabel>
-          <FormControl>
-            <Input
-              {...field}
-              type="date"
-              value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-              onChange={(e) => field.onChange(e.target.value)}
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+// Origens de recurso que envolvem instrumento de repasse/encargo e portanto
+// pedem o registro das cláusulas de reversão (Art. 13 §2 da Lei).
+const ORIGENS_COM_REVERSAO = ['convenio', 'emenda', 'transferencia_ente']
 
-    <FormField
-      control={control}
-      name="forma_aquisicao"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Forma de Aquisição</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a forma" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {activeAcquisitionForms.map((f) => (
-                <SelectItem key={f.id} value={f.nome}>
-                  {f.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  </div>
-)
+/**
+ * Data de aquisição + Forma de aquisição + Origem do recurso e cláusulas de
+ * reversão (Art. 4 do Decreto / Art. 13 §2 da Lei). Idênticos entre Create e Edit.
+ */
+export const BensAquisicaoFields = ({ control, activeAcquisitionForms }: AquisicaoProps) => {
+  const origemRecurso = useWatch({ control, name: 'origem_recurso' })
+  const exibeReversao = ORIGENS_COM_REVERSAO.includes(origemRecurso)
+
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={control}
+          name="data_aquisicao"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Data de Aquisição</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="date"
+                  value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                  onChange={(e) => field.onChange(e.target.value)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="forma_aquisicao"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Forma de Aquisição</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a forma" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {activeAcquisitionForms.map((f) => (
+                    <SelectItem key={f.id} value={f.nome}>
+                      {f.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={control}
+          name="origem_recurso"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Origem do Recurso</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="proprio">Recursos próprios</SelectItem>
+                  <SelectItem value="convenio">Convênio</SelectItem>
+                  <SelectItem value="emenda">Emenda parlamentar</SelectItem>
+                  <SelectItem value="transferencia_ente">Transferência de outro ente</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Bens de convênio/emenda/repasse devem registrar as cláusulas de reversão (Art. 13 §2).
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {exibeReversao && (
+          <FormField
+            control={control}
+            name="clausulas_reversao"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cláusulas de Reversão</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    value={field.value ?? ''}
+                    placeholder="Condições, encargos e cláusulas de reversão do instrumento de repasse."
+                    rows={3}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+      </div>
+    </>
+  )
+}
 
 interface LicitacaoProps {
   control: Control<any>
