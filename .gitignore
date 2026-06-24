@@ -45,3 +45,6 @@ backend/backups/
 /backup/
 *.sql.zip
 *.dump
+
+# Documentos de referência local (Projeto de Lei, Decreto, etc.) — não versionar
+Docs/analise/
