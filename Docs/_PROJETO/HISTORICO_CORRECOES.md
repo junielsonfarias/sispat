@@ -33,6 +33,13 @@
 - **Lição:** ao trocar `express-validator` (valida e deixa passar) por `zodValidate` (valida e SUBSTITUI o body), todo campo lido pelo service precisa estar no schema OU sob `.passthrough()` — senão some silenciosamente. E refactor de validação não deve mudar regras de negócio: confira diferenças front/back e preserve cada lado.
 - **Complemento (mesma data):** rotas `POST /:id/notes` e `POST /:id/baixa` do patrimônio também migradas (`addNoteSchema`/`registrarBaixaSchema` em `@sispat/shared`). `patrimonioRoutes` deixou de importar `express-validator`. Detalhe preservado: `data_baixa`/`motivo_baixa` ficam OPCIONAIS no Zod porque o controller faz a checagem própria e retorna a mensagem específica 'Data e motivo da baixa são obrigatórios'; `observacoes` declarado no schema (o service lê, o express-validator antigo não validava). +3 testes (473 Jest no total).
 
+### 2026-06-24 — Sprint 23: schemas Zod locais do admin → @sispat/shared
+- **Sintoma:** `TipoBemManagement` e `AcquisitionFormManagement` (`src/pages/admin/`) definiam schemas Zod locais (`tipoBemSchema`/`acquisitionFormSchema`) que divergiam do canônico do backend — nome `min(2)/max(50)` sem regex vs shared `min(1)/max(100)` (+regex no tipoBem), descrição `≤200` vs `≤500`. Drift clássico: o front aceitava nomes que o backend rejeitaria (faltava o regex) e bloqueava nomes que o backend aceita.
+- **Correção:** ambas as páginas passaram a derivar de `createTipoBemSchema`/`createFormaAquisicaoSchema` do `@sispat/shared`, estendendo só com `ativo: z.boolean().default(true)` (campo de formulário — o status real é gerenciado pelo endpoint de toggle, separado do create/update). `createTipoBemSchema` não tem `ativo` (e `updateTipoBemSchema` é `.strict()`), então o front nunca precisou enviar `ativo` no payload de create/update.
+- **Arquivos:** `src/pages/admin/{TipoBemManagement,AcquisitionFormManagement}.tsx`.
+- **Verificação:** frontend `tsc` no baseline (843); diff stash por arquivo confirmou **zero erro líquido novo** (os 10 erros nas 2 páginas são pré-existentes: `@/types`→`TipoBem` sem `vidaUtilPadrao`/`taxaDepreciacao`, imports não usados). Backend inalterado (já usava os schemas do shared desde a Sprint 20). Fecha o item #13 do PLANO (centralização Zod).
+- **Lição:** schemas de validação duplicados derivam silenciosamente. Quando o backend é o canônico, o front deve consumir o MESMO schema (estendendo só campos de UI) — divergência de regras é bug latente, não feature.
+
 ## 2025
 
 ### 2025-11-19 — Permissões, PM2 e Nginx no install.sh

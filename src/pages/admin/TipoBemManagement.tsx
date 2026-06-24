@@ -35,6 +35,7 @@ import { Plus, Edit, Trash2, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useTiposBens } from '@/contexts/TiposBensContext'
 import { TipoBem } from '@/types'
+import { createTipoBemSchema } from '@sispat/shared'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,25 +48,11 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
-const tipoBemSchema = z.object({
-  nome: z
-    .string()
-    .min(2, 'Nome deve ter no mínimo 2 caracteres')
-    .max(50, 'Nome deve ter no máximo 50 caracteres'),
-  descricao: z
-    .string()
-    .max(200, 'Descrição deve ter no máximo 200 caracteres')
-    .optional(),
-  vidaUtilPadrao: z
-    .number()
-    .min(1, 'Vida útil deve ser no mínimo 1 ano')
-    .max(100, 'Vida útil deve ser no máximo 100 anos')
-    .optional(),
-  taxaDepreciacao: z
-    .number()
-    .min(0, 'Taxa de depreciação deve ser no mínimo 0%')
-    .max(100, 'Taxa de depreciação deve ser no máximo 100%')
-    .optional(),
+// Sprint 23: schema canônico vem de @sispat/shared (mesmas regras que o
+// backend valida via zodValidate — inclui o regex de nome que faltava aqui).
+// Estendemos apenas com `ativo`, usado pelo formulário (o status também é
+// gerenciado pelo endpoint de toggle, separado do create/update).
+const tipoBemSchema = createTipoBemSchema.extend({
   ativo: z.boolean().default(true),
 })
 

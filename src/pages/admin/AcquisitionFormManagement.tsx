@@ -34,16 +34,12 @@ import { toast } from '@/hooks/use-toast'
 import { Plus, Edit, Trash2, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useAcquisitionForms } from '@/contexts/AcquisitionFormContext'
+import { createFormaAquisicaoSchema } from '@sispat/shared'
 
-const acquisitionFormSchema = z.object({
-  nome: z
-    .string()
-    .min(2, 'Nome deve ter no mínimo 2 caracteres')
-    .max(50, 'Nome deve ter no máximo 50 caracteres'),
-  descricao: z
-    .string()
-    .max(200, 'Descrição deve ter no máximo 200 caracteres')
-    .optional(),
+// Sprint 23: schema canônico vem de @sispat/shared (mesmas regras que o
+// backend valida via zodValidate). `ativo` é redefinido com default(true)
+// para o formulário (o status também é gerenciado pelo endpoint de toggle).
+const acquisitionFormSchema = createFormaAquisicaoSchema.extend({
   ativo: z.boolean().default(true),
 })
 
