@@ -5,6 +5,7 @@ import {
   createRegularizacao,
   updateRegularizacao,
   incorporarRegularizacao,
+  incorporarRegularizacaoLote,
   cancelarRegularizacao,
   deleteRegularizacao,
 } from '../controllers/regularizacaoController';
@@ -14,6 +15,7 @@ import {
   createRegularizacaoSchema,
   updateRegularizacaoSchema,
   incorporarRegularizacaoSchema,
+  incorporarRegularizacaoLoteSchema,
   uuidParamSchema,
 } from '@sispat/shared';
 
@@ -42,6 +44,14 @@ router.put(
   authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema, body: updateRegularizacaoSchema }),
   updateRegularizacao,
+);
+// Incorporação em lote (várias regularizações p/ mesmo setor/local/tipo).
+// Antes de /:id/incorporar para não capturar "incorporar-lote" como :id.
+router.post(
+  '/incorporar-lote',
+  authorize('superuser', 'admin', 'supervisor'),
+  zodValidate({ body: incorporarRegularizacaoLoteSchema }),
+  incorporarRegularizacaoLote,
 );
 router.post(
   '/:id/incorporar',

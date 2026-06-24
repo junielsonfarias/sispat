@@ -3,6 +3,7 @@ import {
   getDesafetacoes,
   getDesafetacaoById,
   createDesafetacao,
+  createDesafetacaoLote,
   updateDesafetacao,
   concluirDesafetacao,
   cancelarDesafetacao,
@@ -13,6 +14,7 @@ import { authenticateToken, authorize } from '../middlewares/auth';
 import { zodValidate } from '../middlewares/zodValidate';
 import {
   createDesafetacaoSchema,
+  createDesafetacaoLoteSchema,
   updateDesafetacaoSchema,
   reclassificarDestinacaoSchema,
   reclassificarParamsSchema,
@@ -42,6 +44,13 @@ router.post(
   authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ body: createDesafetacaoSchema }),
   createDesafetacao,
+);
+// Desafetação em lote (1 base legal/parecer p/ N bens — Art. 22). Antes de /:id.
+router.post(
+  '/lote',
+  authorize('superuser', 'admin', 'supervisor'),
+  zodValidate({ body: createDesafetacaoLoteSchema }),
+  createDesafetacaoLote,
 );
 router.put(
   '/:id',

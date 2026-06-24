@@ -16,7 +16,7 @@ jest.mock('../../config/redis', () => ({ redisCache: mockCache }));
 const mockTx = {
   patrimonio: { update: jest.fn() },
   historicoEntry: { create: jest.fn() },
-  desfazimento: { update: jest.fn() },
+  desfazimento: { update: jest.fn(), create: jest.fn() },
   activityLog: { create: jest.fn() },
 };
 
@@ -42,6 +42,7 @@ import {
   Actor,
   DesfazimentoValidationError,
   createDesfazimento,
+  createDesfazimentoLote,
   concluirDesfazimento,
 } from '../../services/desfazimentoService';
 
@@ -228,5 +229,66 @@ describe('trava de alienação sem desafetação (Art. 22/23)', () => {
       destinacao: 'uso_especial',
     });
     await expect(concluirDesfazimento('d1', actor)).rejects.toThrow(/desafeta/i);
+  });
+});
+
+describe('createDesfazimentoLote — vários bens, mesma classificação/modalidade (Art. 24)', () => {
+  const loteBase = {
+    classificacao: 'irrecuperavel',
+    modalidade: 'inutilizacao',
+    justificativa: 'Lote de bens irrecuperáveis do acervo antigo para inutilização.',
+  };
+
+  it('cria N desfazimentos numa transação', async () => {
+    mockPrisma.patrimonio.findUnique
+      .mockResolvedValueOnce({ id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1', destinacao: 'uso_especial' })
+      .mockResolvedValueOnce({ id: 'p2', status: 'ativo', numero_patrimonio: '0002', municipalityId: 'mun-1', destinacao: 'uso_especial' });
+    mockPrisma.desfazimento.findFirst.mockResolvedValue(null);
+    mockTx.desfazimento.create.mockImplementation((args) => Promise.resolve({ id: `d-${args.data.patrimonioId}`, ...args.data }));
+    mockTx.activityLog.create.mockResolvedValue({});
+
+    const r = await createDesfazimentoLote(
+      { ...loteBase, bens: [{ patrimonioId: 'p1' }, { patrimonioId: 'p2' }] },
+      actor,
+    );
+    expect(r.total).toBe(2);
+    expect(mockTx.desfazimento.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('exige avaliação por bem em modalidade de alienação (Art. 23)', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1', destinacao: 'dominical',
+    });
+    mockPrisma.desfazimento.findFirst.mockResolvedValue(null);
+    await expect(
+      createDesfazimentoLote(
+        { ...loteBase, modalidade: 'leilao', bens: [{ patrimonioId: 'p1' }] }, // sem valorAvaliacao
+        actor,
+      ),
+    ).rejects.toThrow(/avaliação prévia/i);
+    expect(mockTx.desfazimento.create).not.toHaveBeenCalled();
+  });
+
+  it('aceita alienação em lote quando cada bem tem sua avaliação', async () => {
+    mockPrisma.patrimonio.findUnique
+      .mockResolvedValueOnce({ id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1', destinacao: 'dominical' })
+      .mockResolvedValueOnce({ id: 'p2', status: 'ativo', numero_patrimonio: '0002', municipalityId: 'mun-1', destinacao: 'dominical' });
+    mockPrisma.desfazimento.findFirst.mockResolvedValue(null);
+    mockTx.desfazimento.create.mockImplementation((args) => Promise.resolve({ id: 'x', ...args.data }));
+    mockTx.activityLog.create.mockResolvedValue({});
+
+    const r = await createDesfazimentoLote(
+      { ...loteBase, modalidade: 'leilao', bens: [{ patrimonioId: 'p1', valorAvaliacao: 100 }, { patrimonioId: 'p2', valorAvaliacao: 200 }] },
+      actor,
+    );
+    expect(r.total).toBe(2);
+    const valores = mockTx.desfazimento.create.mock.calls.map((c) => c[0].data.valorAvaliacao);
+    expect(valores).toEqual([100, 200]);
+  });
+
+  it('rejeita bens repetidos no lote', async () => {
+    await expect(
+      createDesfazimentoLote({ ...loteBase, bens: [{ patrimonioId: 'p1' }, { patrimonioId: 'p1' }] }, actor),
+    ).rejects.toBeInstanceOf(DesfazimentoValidationError);
   });
 });

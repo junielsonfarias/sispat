@@ -48,6 +48,7 @@ import {
   RegularizacaoValidationError,
   createRegularizacao,
   incorporarRegularizacao,
+  incorporarRegularizacaoLote,
   deleteRegularizacao,
 } from '../../services/regularizacaoService';
 
@@ -167,5 +168,66 @@ describe('deleteRegularizacao', () => {
     await expect(deleteRegularizacao('r1', actor)).rejects.toBeInstanceOf(
       RegularizacaoValidationError,
     );
+  });
+});
+
+describe('incorporarRegularizacaoLote — várias regularizações de uma vez', () => {
+  const comissaoOk = { id: 'c1', tipo: 'regularizacao', status: 'ativa', portariaNumero: '01' };
+  const regBase = (id: string) => ({
+    id, status: 'em_andamento', municipalityId: 'mun-1',
+    descricao: `Bem ${id}`, valorJusto: 300, dataConstatacao: new Date('2026-01-01'),
+    estadoConservacao: 'BOM', observacoes: null, fotos: [],
+    comissaoId: 'c1', comissao: comissaoOk,
+  });
+  const loteInput = {
+    sectorId: 's1', setor_responsavel: 'Almoxarifado', local_objeto: 'Depósito', tipo: 'Mobiliário',
+  };
+
+  beforeEach(() => {
+    mockPrisma.sector.findUnique.mockResolvedValue({ id: 's1', municipalityId: 'mun-1' });
+    mockGerarNumero.mockResolvedValue({ numero: 'PAT202600000001', sequencial: 1 });
+    mockTx.historicoEntry.create.mockResolvedValue({});
+    mockTx.regularizacao.update.mockResolvedValue({});
+    mockTx.activityLog.create.mockResolvedValue({});
+  });
+
+  it('incorpora N regularizações numa transação, gerando números sequenciais', async () => {
+    mockPrisma.regularizacao.findUnique
+      .mockResolvedValueOnce(regBase('r1'))
+      .mockResolvedValueOnce(regBase('r2'));
+    mockTx.patrimonio.create.mockImplementation((args) => Promise.resolve({ id: `p-${args.data.numero_patrimonio}`, ...args.data }));
+
+    const r = await incorporarRegularizacaoLote(
+      { ...loteInput, itens: [{ regularizacaoId: 'r1' }, { regularizacaoId: 'r2' }] },
+      actor,
+    );
+
+    expect(r.total).toBe(2);
+    const numeros = mockTx.patrimonio.create.mock.calls.map((c) => c[0].data.numero_patrimonio);
+    expect(numeros).toEqual(['PAT202600000001', 'PAT202600000002']);
+    expect(mockCache.deletePattern).toHaveBeenCalledWith('patrimonios:*');
+  });
+
+  it('rejeita o lote inteiro se UMA regularização não tem comissão (Art. 19)', async () => {
+    mockPrisma.regularizacao.findUnique
+      .mockResolvedValueOnce(regBase('r1'))
+      .mockResolvedValueOnce({ ...regBase('r2'), comissaoId: null, comissao: null });
+    await expect(
+      incorporarRegularizacaoLote({ ...loteInput, itens: [{ regularizacaoId: 'r1' }, { regularizacaoId: 'r2' }] }, actor),
+    ).rejects.toBeInstanceOf(RegularizacaoValidationError);
+    expect(mockTx.patrimonio.create).not.toHaveBeenCalled();
+  });
+
+  it('rejeita setor de outro município', async () => {
+    mockPrisma.sector.findUnique.mockResolvedValue({ id: 's1', municipalityId: 'OUTRO' });
+    await expect(
+      incorporarRegularizacaoLote({ ...loteInput, itens: [{ regularizacaoId: 'r1' }] }, actor),
+    ).rejects.toBeInstanceOf(RegularizacaoValidationError);
+  });
+
+  it('rejeita regularizações repetidas no lote', async () => {
+    await expect(
+      incorporarRegularizacaoLote({ ...loteInput, itens: [{ regularizacaoId: 'r1' }, { regularizacaoId: 'r1' }] }, actor),
+    ).rejects.toBeInstanceOf(RegularizacaoValidationError);
   });
 });

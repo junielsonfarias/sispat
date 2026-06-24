@@ -11,6 +11,7 @@ import {
   cancelarDesafetacao as svcCancelar,
   concluirDesafetacao as svcConcluir,
   createDesafetacao as svcCreate,
+  createDesafetacaoLote as svcCreateLote,
   deleteDesafetacao as svcDelete,
   getDesafetacaoById as svcGetById,
   listDesafetacoes as svcList,
@@ -77,6 +78,19 @@ export const createDesafetacao = async (req: Request, res: Response): Promise<vo
     res.status(201).json(await svcCreate(req.body, actor));
   } catch (error) {
     sendError(res, error, 'Erro ao criar desafetação');
+  }
+};
+
+export const createDesafetacaoLote = async (req: Request, res: Response): Promise<void> => {
+  const actor = buildActor(req);
+  if (!actor) {
+    res.status(401).json({ error: 'Não autenticado' });
+    return;
+  }
+  try {
+    res.status(201).json(await svcCreateLote(req.body, actor));
+  } catch (error) {
+    sendError(res, error, 'Erro ao criar desafetação em lote');
   }
 };
 

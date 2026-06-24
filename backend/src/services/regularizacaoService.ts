@@ -298,6 +298,146 @@ export const incorporarRegularizacao = async (
   return result;
 };
 
+export interface IncorporarLoteInput {
+  itens: { regularizacaoId: string; numero_patrimonio?: string | null }[];
+  sectorId: string;
+  localId?: string | null;
+  setor_responsavel: string;
+  local_objeto: string;
+  tipo: string;
+}
+
+// Incorporação em LOTE: incorpora várias regularizações ao mesmo setor/local/tipo
+// de uma vez (agiliza a regularização do acervo antigo). Cada regularização vira
+// um patrimônio. Atômico: valida todas antes; ou incorpora todas, ou nenhuma.
+export const incorporarRegularizacaoLote = async (input: IncorporarLoteInput, actor: Actor) => {
+  if (!input.itens?.length) {
+    throw new RegularizacaoValidationError('Informe ao menos uma regularização para o lote');
+  }
+
+  // Sem regularizações repetidas no lote.
+  const ids = new Set<string>();
+  for (const it of input.itens) {
+    if (ids.has(it.regularizacaoId)) {
+      throw new RegularizacaoValidationError('Há regularizações repetidas no lote');
+    }
+    ids.add(it.regularizacaoId);
+  }
+
+  // Setor (um só para o lote) deve ser do município.
+  const setor = await prisma.sector.findUnique({
+    where: { id: input.sectorId },
+    select: { id: true, municipalityId: true },
+  });
+  if (!setor || (actor.role !== 'superuser' && setor.municipalityId !== actor.municipalityId)) {
+    throw new RegularizacaoValidationError('Setor inválido');
+  }
+
+  // Valida CADA regularização (tenant, status, comissão obrigatória — Art. 19).
+  type RegValidada = Awaited<ReturnType<typeof getRegularizacaoById>>;
+  const validados: { reg: RegValidada; numero?: string | null }[] = [];
+  for (const it of input.itens) {
+    const reg = await getRegularizacaoById(it.regularizacaoId, actor);
+    if (reg.status !== 'em_andamento') {
+      throw new RegularizacaoValidationError(
+        `Regularização "${reg.descricao}" não está em andamento`,
+      );
+    }
+    if (!reg.comissaoId || !reg.comissao) {
+      throw new RegularizacaoValidationError(
+        `Incorporação exige Comissão de Regularização designada (Art. 19) — regularização "${reg.descricao}"`,
+      );
+    }
+    if (reg.comissao.tipo !== 'regularizacao') {
+      throw new RegularizacaoValidationError(
+        `A comissão da regularização "${reg.descricao}" deve ser do tipo "regularizacao" (Art. 19)`,
+      );
+    }
+    if (reg.comissao.status !== 'ativa') {
+      throw new RegularizacaoValidationError(
+        `A comissão da regularização "${reg.descricao}" não está ativa`,
+      );
+    }
+    validados.push({ reg, numero: it.numero_patrimonio });
+  }
+
+  // Numeração: gera o primeiro número e incrementa em memória para os itens sem
+  // número explícito (um $transaction aninhado por item não enxergaria os bens
+  // ainda não commitados, gerando colisão).
+  const primeiro = await gerarNumeroPatrimonial({ municipalityId: actor.municipalityId });
+  const prefixoSeq = primeiro.numero.slice(0, primeiro.numero.length - 6);
+  let seq = primeiro.sequencial;
+  const proximoNumeroAuto = (): string => {
+    const n = `${prefixoSeq}${String(seq).padStart(6, '0')}`;
+    seq += 1;
+    return n;
+  };
+
+  const result = await prisma.$transaction(async (tx) => {
+    const incorporados = [];
+    for (const { reg, numero } of validados) {
+      const numeroFinal = numero || proximoNumeroAuto();
+      const obs = [ANOTACAO, reg.observacoes].filter(Boolean).join(' | ');
+
+      const patrimonio = await tx.patrimonio.create({
+        data: {
+          numero_patrimonio: numeroFinal,
+          descricao_bem: reg.descricao,
+          tipo: input.tipo,
+          data_aquisicao: reg.dataConstatacao,
+          valor_aquisicao: reg.valorJusto,
+          forma_aquisicao: 'Regularização',
+          setor_responsavel: input.setor_responsavel,
+          local_objeto: input.local_objeto,
+          status: 'ativo',
+          situacao_bem: reg.estadoConservacao ?? null,
+          observacoes: obs,
+          fotos: reg.fotos,
+          destinacao: 'uso_especial',
+          destinacaoRevisada: true,
+          municipalityId: actor.municipalityId,
+          sectorId: input.sectorId,
+          localId: input.localId ?? null,
+          createdBy: actor.userId,
+        },
+      });
+
+      await tx.historicoEntry.create({
+        data: {
+          patrimonioId: patrimonio.id,
+          date: new Date(),
+          action: 'INCORPORACAO_REGULARIZACAO',
+          details: `Bem incorporado por regularização (${ANOTACAO}); valor justo R$ ${reg.valorJusto.toFixed(2)}`,
+          user: actor.userId,
+        },
+      });
+
+      await tx.regularizacao.update({
+        where: { id: reg.id },
+        data: { status: 'incorporado', patrimonioId: patrimonio.id, dataIncorporacao: new Date() },
+      });
+
+      incorporados.push({ regularizacaoId: reg.id, patrimonio });
+    }
+
+    await tx.activityLog.create({
+      data: {
+        userId: actor.userId,
+        action: 'INCORPORAR_REGULARIZACAO_LOTE',
+        entityType: 'Regularizacao',
+        entityId: incorporados[0].regularizacaoId,
+        details: `Incorporação em lote de ${incorporados.length} regularizações ao setor ${input.setor_responsavel}`,
+      },
+    });
+
+    return incorporados;
+  });
+
+  await redisCache.deletePattern('patrimonios:*');
+  logInfo('✅ Regularização incorporada em lote', { total: result.length });
+  return { total: result.length, incorporados: result };
+};
+
 export const cancelarRegularizacao = async (id: string, actor: Actor) => {
   const existing = await getRegularizacaoById(id, actor);
   if (existing.status !== 'em_andamento') {

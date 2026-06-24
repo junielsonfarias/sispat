@@ -13,6 +13,7 @@ import {
   deleteRegularizacao as svcDelete,
   getRegularizacaoById as svcGetById,
   incorporarRegularizacao as svcIncorporar,
+  incorporarRegularizacaoLote as svcIncorporarLote,
   listRegularizacoes as svcList,
   updateRegularizacao as svcUpdate,
 } from '../services/regularizacaoService';
@@ -102,6 +103,19 @@ export const incorporarRegularizacao = async (req: Request, res: Response): Prom
     res.status(201).json(await svcIncorporar(req.params.id, req.body, actor));
   } catch (error) {
     sendError(res, error, 'Erro ao incorporar regularização');
+  }
+};
+
+export const incorporarRegularizacaoLote = async (req: Request, res: Response): Promise<void> => {
+  const actor = buildActor(req);
+  if (!actor) {
+    res.status(401).json({ error: 'Não autenticado' });
+    return;
+  }
+  try {
+    res.status(201).json(await svcIncorporarLote(req.body, actor));
+  } catch (error) {
+    sendError(res, error, 'Erro ao incorporar regularizações em lote');
   }
 };
 

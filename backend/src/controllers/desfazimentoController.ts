@@ -11,6 +11,7 @@ import {
   cancelarDesfazimento as svcCancelar,
   concluirDesfazimento as svcConcluir,
   createDesfazimento as svcCreate,
+  createDesfazimentoLote as svcCreateLote,
   deleteDesfazimento as svcDelete,
   getDesfazimentoById as svcGetById,
   listDesfazimentos as svcList,
@@ -76,6 +77,19 @@ export const createDesfazimento = async (req: Request, res: Response): Promise<v
     res.status(201).json(await svcCreate(req.body, actor));
   } catch (error) {
     sendError(res, error, 'Erro ao criar desfazimento');
+  }
+};
+
+export const createDesfazimentoLote = async (req: Request, res: Response): Promise<void> => {
+  const actor = buildActor(req);
+  if (!actor) {
+    res.status(401).json({ error: 'Não autenticado' });
+    return;
+  }
+  try {
+    res.status(201).json(await svcCreateLote(req.body, actor));
+  } catch (error) {
+    sendError(res, error, 'Erro ao criar desfazimento em lote');
   }
 };
 

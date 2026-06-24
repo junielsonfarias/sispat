@@ -40,6 +40,33 @@ export const createDesafetacaoSchema = z
   });
 export type CreateDesafetacaoInput = z.infer<typeof createDesafetacaoSchema>;
 
+// Desafetação em LOTE — Art. 22: um único instrumento (lei/decreto/ato) e um
+// parecer da comissão podem abranger vários bens. Cada bem vira um registro de
+// desafetação compartilhando a mesma base legal. Atômico (tudo ou nada).
+export const createDesafetacaoLoteSchema = z.object({
+  bens: z
+    .array(
+      z
+        .object({
+          patrimonioId: z.string().uuid().optional().nullable(),
+          imovelId: z.string().uuid().optional().nullable(),
+        })
+        .refine((d) => !!d.patrimonioId !== !!d.imovelId, {
+          message: 'Cada item deve ter um patrimônio OU um imóvel.',
+          path: ['patrimonioId'],
+        }),
+    )
+    .min(1, 'Informe ao menos um bem.')
+    .max(200, 'Máximo de 200 bens por lote.'),
+  comissaoId: z.string().uuid().optional().nullable(),
+  baseLegalTipo: baseLegalTipoSchema,
+  baseLegalNumero: z.string().trim().min(1, 'Número do ato é obrigatório.').max(100),
+  baseLegalData: isoDate,
+  justificativa: z.string().trim().min(10, 'Justificativa muito curta.').max(4000),
+  observacoes: z.string().max(2000).optional().nullable(),
+});
+export type CreateDesafetacaoLoteInput = z.infer<typeof createDesafetacaoLoteSchema>;
+
 export const updateDesafetacaoSchema = z
   .object({
     comissaoId: z.string().uuid().optional().nullable(),

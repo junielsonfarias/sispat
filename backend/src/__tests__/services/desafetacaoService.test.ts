@@ -17,7 +17,7 @@ const mockTx = {
   patrimonio: { update: jest.fn() },
   imovel: { update: jest.fn() },
   historicoEntry: { create: jest.fn() },
-  desafetacao: { update: jest.fn() },
+  desafetacao: { update: jest.fn(), create: jest.fn() },
   activityLog: { create: jest.fn() },
 };
 
@@ -44,6 +44,7 @@ import {
   Actor,
   DesafetacaoValidationError,
   createDesafetacao,
+  createDesafetacaoLote,
   concluirDesafetacao,
   reclassificarDestinacao,
 } from '../../services/desafetacaoService';
@@ -152,5 +153,57 @@ describe('reclassificarDestinacao — não vira dominical direto (Art. 22)', () 
     ).rejects.toBeInstanceOf(DesafetacaoValidationError);
     // a trava lança antes de qualquer query
     expect(mockPrisma.patrimonio.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe('createDesafetacaoLote — vários bens, 1 base legal (Art. 22)', () => {
+  const loteBase = {
+    baseLegalTipo: 'decreto',
+    baseLegalNumero: 'DEC-10/2026',
+    baseLegalData: '2026-06-01',
+    justificativa: 'Desafetação do conjunto de bens do Anexo I do decreto.',
+  };
+
+  it('cria N desafetações compartilhando a mesma base legal, atômico', async () => {
+    mockPrisma.patrimonio.findUnique
+      .mockResolvedValueOnce({ id: 'p1', destinacao: 'uso_especial', numero_patrimonio: '0001', municipalityId: 'mun-1' })
+      .mockResolvedValueOnce({ id: 'p2', destinacao: 'uso_comum', numero_patrimonio: '0002', municipalityId: 'mun-1' });
+    mockPrisma.desafetacao.findFirst.mockResolvedValue(null);
+    mockTx.desafetacao.create.mockImplementation((args: any) => Promise.resolve({ id: `d-${args.data.patrimonioId}`, ...args.data }));
+    mockTx.activityLog.create.mockResolvedValue({});
+
+    const r = await createDesafetacaoLote(
+      { ...loteBase, bens: [{ patrimonioId: 'p1' }, { patrimonioId: 'p2' }] },
+      actor,
+    );
+
+    expect(r.total).toBe(2);
+    expect(mockTx.desafetacao.create).toHaveBeenCalledTimes(2);
+    // ambas com o mesmo número de ato
+    const numeros = mockTx.desafetacao.create.mock.calls.map((c: any) => c[0].data.baseLegalNumero);
+    expect(numeros).toEqual(['DEC-10/2026', 'DEC-10/2026']);
+  });
+
+  it('rejeita o lote inteiro se UM bem já é dominical (atomicidade)', async () => {
+    mockPrisma.patrimonio.findUnique
+      .mockResolvedValueOnce({ id: 'p1', destinacao: 'uso_especial', numero_patrimonio: '0001', municipalityId: 'mun-1' })
+      .mockResolvedValueOnce({ id: 'p2', destinacao: 'dominical', numero_patrimonio: '0002', municipalityId: 'mun-1' });
+    mockPrisma.desafetacao.findFirst.mockResolvedValue(null);
+    await expect(
+      createDesafetacaoLote({ ...loteBase, bens: [{ patrimonioId: 'p1' }, { patrimonioId: 'p2' }] }, actor),
+    ).rejects.toBeInstanceOf(DesafetacaoValidationError);
+    expect(mockTx.desafetacao.create).not.toHaveBeenCalled();
+  });
+
+  it('rejeita bens repetidos no lote', async () => {
+    await expect(
+      createDesafetacaoLote({ ...loteBase, bens: [{ patrimonioId: 'p1' }, { patrimonioId: 'p1' }] }, actor),
+    ).rejects.toBeInstanceOf(DesafetacaoValidationError);
+  });
+
+  it('rejeita lote vazio', async () => {
+    await expect(createDesafetacaoLote({ ...loteBase, bens: [] }, actor)).rejects.toBeInstanceOf(
+      DesafetacaoValidationError,
+    );
   });
 });

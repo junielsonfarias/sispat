@@ -196,6 +196,92 @@ export const createDesfazimento = async (input: CreateDesfazimentoInput, actor: 
   return created;
 };
 
+export interface CreateDesfazimentoLoteInput {
+  bens: { patrimonioId: string; valorAvaliacao?: number | null }[];
+  classificacao: string;
+  modalidade: string;
+  justificativa: string;
+  laudo?: string | null;
+  comissaoId?: string | null;
+  observacoes?: string | null;
+}
+
+// Desfazimento em LOTE (Art. 24): um processo/comissão para vários bens da mesma
+// classificação e modalidade. O valor de avaliação é POR bem. Atômico: valida
+// todos antes; ou cria todos, ou nenhum.
+export const createDesfazimentoLote = async (input: CreateDesfazimentoLoteInput, actor: Actor) => {
+  if (!input.bens?.length) {
+    throw new DesfazimentoValidationError('Informe ao menos um bem para o lote');
+  }
+
+  // Sem bens repetidos no lote.
+  const ids = new Set<string>();
+  for (const b of input.bens) {
+    if (ids.has(b.patrimonioId)) {
+      throw new DesfazimentoValidationError('Há bens repetidos no lote');
+    }
+    ids.add(b.patrimonioId);
+  }
+
+  if (input.comissaoId) await validateComissao(input.comissaoId, actor);
+
+  // Valida CADA bem antes da transação (tenant, status, desafetação, avaliação, duplicata).
+  const validados: { patrimonioId: string; valorAvaliacao: number | null }[] = [];
+  for (const b of input.bens) {
+    const patrimonio = await loadPatrimonio(b.patrimonioId, actor);
+    if (patrimonio.status === 'baixado') {
+      throw new DesfazimentoValidationError(`Patrimônio ${patrimonio.numero_patrimonio} já está baixado`);
+    }
+    assertDesafetadoParaAlienacao(input.modalidade, patrimonio.destinacao);
+    assertAvaliacaoParaAlienacao(input.modalidade, b.valorAvaliacao);
+
+    const emAndamento = await prisma.desfazimento.findFirst({
+      where: { patrimonioId: b.patrimonioId, status: 'em_andamento' },
+      select: { id: true },
+    });
+    if (emAndamento) {
+      throw new DesfazimentoValidationError(
+        `Já existe um desfazimento em andamento para o bem ${patrimonio.numero_patrimonio}`,
+      );
+    }
+    validados.push({ patrimonioId: b.patrimonioId, valorAvaliacao: b.valorAvaliacao ?? null });
+  }
+
+  const desfazimentos = await prisma.$transaction(async (tx) => {
+    const registros = [];
+    for (const v of validados) {
+      const d = await tx.desfazimento.create({
+        data: {
+          patrimonioId: v.patrimonioId,
+          classificacao: input.classificacao as Prisma.DesfazimentoCreateInput['classificacao'],
+          modalidade: input.modalidade as Prisma.DesfazimentoCreateInput['modalidade'],
+          valorAvaliacao: v.valorAvaliacao,
+          justificativa: input.justificativa,
+          laudo: input.laudo ?? null,
+          comissaoId: input.comissaoId ?? null,
+          observacoes: input.observacoes ?? null,
+          municipalityId: actor.municipalityId,
+          createdBy: actor.userId,
+        },
+      });
+      registros.push(d);
+    }
+    await tx.activityLog.create({
+      data: {
+        userId: actor.userId,
+        action: 'CREATE_DESFAZIMENTO_LOTE',
+        entityType: 'Desfazimento',
+        entityId: registros[0].id,
+        details: `Desfazimento em lote (${registros.length} bens) — ${input.classificacao}/${input.modalidade}`,
+      },
+    });
+    return registros;
+  });
+
+  logInfo('✅ Desfazimento em lote criado', { total: desfazimentos.length });
+  return { total: desfazimentos.length, desfazimentos };
+};
+
 export interface UpdateDesfazimentoInput {
   classificacao?: string;
   modalidade?: string;

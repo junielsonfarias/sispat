@@ -3,6 +3,7 @@ import {
   getDesfazimentos,
   getDesfazimentoById,
   createDesfazimento,
+  createDesfazimentoLote,
   updateDesfazimento,
   concluirDesfazimento,
   cancelarDesfazimento,
@@ -12,6 +13,7 @@ import { authenticateToken, authorize } from '../middlewares/auth';
 import { zodValidate } from '../middlewares/zodValidate';
 import {
   createDesfazimentoSchema,
+  createDesfazimentoLoteSchema,
   updateDesfazimentoSchema,
   uuidParamSchema,
 } from '@sispat/shared';
@@ -30,6 +32,13 @@ router.post(
   authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ body: createDesfazimentoSchema }),
   createDesfazimento,
+);
+// Desfazimento em lote (1 processo/comissão p/ N bens — Art. 24).
+router.post(
+  '/lote',
+  authorize('superuser', 'admin', 'supervisor'),
+  zodValidate({ body: createDesfazimentoLoteSchema }),
+  createDesfazimentoLote,
 );
 router.put(
   '/:id',

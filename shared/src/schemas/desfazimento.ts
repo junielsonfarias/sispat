@@ -36,6 +36,28 @@ export const createDesfazimentoSchema = z.object({
 });
 export type CreateDesfazimentoInput = z.infer<typeof createDesfazimentoSchema>;
 
+// Desfazimento em LOTE — Art. 24: um processo/comissão para vários bens da mesma
+// classificação e modalidade (ex.: lote de bens irrecuperáveis para inutilização).
+// O valor de avaliação é POR bem (cada bem alienado tem seu valor justo). Atômico.
+export const createDesfazimentoLoteSchema = z.object({
+  bens: z
+    .array(
+      z.object({
+        patrimonioId: z.string().uuid('Patrimônio é obrigatório.'),
+        valorAvaliacao: z.coerce.number().min(0).optional().nullable(),
+      }),
+    )
+    .min(1, 'Informe ao menos um bem.')
+    .max(200, 'Máximo de 200 bens por lote.'),
+  classificacao: classificacaoInservivelSchema,
+  modalidade: modalidadeDesfazimentoSchema,
+  justificativa: z.string().trim().min(10, 'Justificativa muito curta.').max(4000),
+  laudo: z.string().max(4000).optional().nullable(),
+  comissaoId: z.string().uuid().optional().nullable(),
+  observacoes: z.string().max(2000).optional().nullable(),
+});
+export type CreateDesfazimentoLoteInput = z.infer<typeof createDesfazimentoLoteSchema>;
+
 export const updateDesfazimentoSchema = z
   .object({
     classificacao: classificacaoInservivelSchema.optional(),

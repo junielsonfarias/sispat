@@ -55,3 +55,24 @@ export const incorporarRegularizacaoSchema = z.object({
   numero_patrimonio: z.string().max(50).optional().nullable(),
 });
 export type IncorporarRegularizacaoInput = z.infer<typeof incorporarRegularizacaoSchema>;
+
+// Incorporação em LOTE — agiliza a regularização do acervo antigo: incorpora
+// várias regularizações ao mesmo setor/local/tipo de uma vez. Cada regularização
+// vira um patrimônio (numero_patrimonio gerado se ausente). Atômico (tudo ou nada).
+export const incorporarRegularizacaoLoteSchema = z.object({
+  itens: z
+    .array(
+      z.object({
+        regularizacaoId: z.string().uuid('Regularização inválida.'),
+        numero_patrimonio: z.string().max(50).optional().nullable(),
+      }),
+    )
+    .min(1, 'Informe ao menos uma regularização.')
+    .max(200, 'Máximo de 200 regularizações por lote.'),
+  sectorId: z.string().uuid('Setor é obrigatório.'),
+  localId: z.string().uuid().optional().nullable(),
+  setor_responsavel: z.string().trim().min(1, 'Setor responsável é obrigatório.').max(150),
+  local_objeto: z.string().trim().min(1, 'Local do objeto é obrigatório.').max(200),
+  tipo: z.string().trim().min(1, 'Tipo/categoria do bem é obrigatório.').max(100),
+});
+export type IncorporarRegularizacaoLoteInput = z.infer<typeof incorporarRegularizacaoLoteSchema>;

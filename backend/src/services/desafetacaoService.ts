@@ -211,6 +211,114 @@ export const createDesafetacao = async (input: CreateDesafetacaoInput, actor: Ac
   return created;
 };
 
+export interface CreateDesafetacaoLoteInput {
+  bens: { patrimonioId?: string | null; imovelId?: string | null }[];
+  comissaoId?: string | null;
+  baseLegalTipo: string;
+  baseLegalNumero: string;
+  baseLegalData: string | Date;
+  justificativa: string;
+  observacoes?: string | null;
+}
+
+// Desafetação em LOTE (Art. 22): um único instrumento legal + parecer da comissão
+// para vários bens. Cada bem vira um registro de desafetação com a MESMA base
+// legal. Atômico: valida todos antes; ou cria todos, ou nenhum.
+export const createDesafetacaoLote = async (input: CreateDesafetacaoLoteInput, actor: Actor) => {
+  if (!input.bens?.length) {
+    throw new DesafetacaoValidationError('Informe ao menos um bem para o lote');
+  }
+
+  // Não permitir o mesmo bem repetido no lote.
+  const chaves = new Set<string>();
+  for (const b of input.bens) {
+    const chave = b.patrimonioId ? `p:${b.patrimonioId}` : `i:${b.imovelId}`;
+    if (chaves.has(chave)) {
+      throw new DesafetacaoValidationError('Há bens repetidos no lote');
+    }
+    chaves.add(chave);
+  }
+
+  // Comissão (uma só para o lote) deve ser do mesmo município.
+  if (input.comissaoId) {
+    const c = await prisma.comissao.findUnique({
+      where: { id: input.comissaoId },
+      select: { id: true, municipalityId: true },
+    });
+    if (!c || (actor.role !== 'superuser' && c.municipalityId !== actor.municipalityId)) {
+      throw new DesafetacaoValidationError('Comissão inválida');
+    }
+  }
+
+  // Valida CADA bem antes da transação (tenant, destinação, duplicata em andamento).
+  const validados: BemRef[] = [];
+  for (const b of input.bens) {
+    const bem = await loadBem(b.patrimonioId, b.imovelId, actor);
+    if (bem.destinacao === 'dominical') {
+      throw new DesafetacaoValidationError(
+        `Bem ${bem.identificacao} já é dominical — não requer desafetação`,
+      );
+    }
+    if (bem.destinacao === 'nao_classificado') {
+      throw new DesafetacaoValidationError(
+        `Classifique a destinação do bem ${bem.identificacao} (uso comum/especial) antes de desafetar`,
+      );
+    }
+    const emAndamento = await prisma.desafetacao.findFirst({
+      where: {
+        status: 'em_andamento',
+        ...(bem.tipo === 'patrimonio' ? { patrimonioId: bem.id } : { imovelId: bem.id }),
+      },
+      select: { id: true },
+    });
+    if (emAndamento) {
+      throw new DesafetacaoValidationError(
+        `Já existe uma desafetação em andamento para o bem ${bem.identificacao}`,
+      );
+    }
+    validados.push(bem);
+  }
+
+  const baseData = new Date(input.baseLegalData);
+  const desafetacoes = await prisma.$transaction(async (tx) => {
+    const registros = [];
+    for (const bem of validados) {
+      const d = await tx.desafetacao.create({
+        data: {
+          patrimonioId: bem.tipo === 'patrimonio' ? bem.id : null,
+          imovelId: bem.tipo === 'imovel' ? bem.id : null,
+          comissaoId: input.comissaoId ?? null,
+          baseLegalTipo: input.baseLegalTipo as Prisma.DesafetacaoCreateInput['baseLegalTipo'],
+          baseLegalNumero: input.baseLegalNumero,
+          baseLegalData: baseData,
+          justificativa: input.justificativa,
+          destinacaoAnterior: bem.destinacao as Prisma.DesafetacaoCreateInput['destinacaoAnterior'],
+          observacoes: input.observacoes ?? null,
+          municipalityId: actor.municipalityId,
+          createdBy: actor.userId,
+        },
+      });
+      registros.push(d);
+    }
+    await tx.activityLog.create({
+      data: {
+        userId: actor.userId,
+        action: 'CREATE_DESAFETACAO_LOTE',
+        entityType: 'Desafetacao',
+        entityId: registros[0].id,
+        details: `Desafetação em lote (${registros.length} bens) — base legal ${input.baseLegalNumero}`,
+      },
+    });
+    return registros;
+  });
+
+  logInfo('✅ Desafetação em lote criada', {
+    total: desafetacoes.length,
+    baseLegal: input.baseLegalNumero,
+  });
+  return { total: desafetacoes.length, desafetacoes };
+};
+
 export interface UpdateDesafetacaoInput {
   comissaoId?: string | null;
   baseLegalTipo?: string;
