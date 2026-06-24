@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useSync } from '@/hooks/useSync'
 import { useAuth } from '@/hooks/useAuth'
-import { Patrimonio } from '@/types'
 
 const getStatusColor = (status: string) => {
   switch (status?.toLowerCase()) {
@@ -27,7 +26,7 @@ const getStatusColor = (status: string) => {
 const BensCadastradosSimplificado = () => {
   const { patrimonios, isLoading } = usePatrimonio()
   const { isSyncing, startSync } = useSync()
-  const { user } = useAuth()
+  const { user: _user } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
 
   // Filtro simples
@@ -35,9 +34,9 @@ const BensCadastradosSimplificado = () => {
     if (!searchTerm) return true
     const searchLower = searchTerm.toLowerCase()
     return (
-      (patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio)?.toLowerCase().includes(searchLower) ||
-      (patrimonio.descricao_bem || patrimonio.descricaoBem)?.toLowerCase().includes(searchLower) ||
-      (patrimonio.setor_responsavel || patrimonio.setorResponsavel)?.toLowerCase().includes(searchLower)
+      patrimonio.numero_patrimonio?.toLowerCase().includes(searchLower) ||
+      patrimonio.descricao_bem?.toLowerCase().includes(searchLower) ||
+      patrimonio.setor_responsavel?.toLowerCase().includes(searchLower)
     )
   }) : []
 
@@ -163,30 +162,30 @@ const BensCadastradosSimplificado = () => {
                             to={`/bens-cadastrados/ver/${patrimonio.id}`}
                             className="text-blue-600 hover:text-blue-800 hover:underline"
                           >
-                            {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+                            {patrimonio.numero_patrimonio}
                           </Link>
                         </TableCell>
                         <TableCell className="text-sm text-gray-700">
-                          {patrimonio.descricao_bem || patrimonio.descricaoBem}
+                          {patrimonio.descricao_bem}
                         </TableCell>
                         <TableCell>
                           <Badge 
-                            className={`${getStatusColor(patrimonio.situacao_bem || patrimonio.situacaoBem)} border text-xs`}
+                            className={`${getStatusColor(patrimonio.situacao_bem)} border text-xs`}
                           >
-                            {patrimonio.situacao_bem || patrimonio.situacaoBem}
+                            {patrimonio.situacao_bem}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-gray-700">
-                          R$ {(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
+                          R$ {patrimonio.valor_aquisicao?.toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
                         </TableCell>
                         <TableCell className="text-sm text-gray-700">
-                          {patrimonio.setor_responsavel || patrimonio.setorResponsavel}
+                          {patrimonio.setor_responsavel}
                         </TableCell>
                         <TableCell className="text-sm text-gray-700">
-                          {patrimonio.local_objeto || patrimonio.localObjeto}
+                          {patrimonio.local_objeto}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">

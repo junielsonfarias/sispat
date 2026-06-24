@@ -7,7 +7,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -57,7 +56,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,7 +95,7 @@ const DetailItem = ({ label, value }: { label: string; value: React.ReactNode })
 function BensView() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getPatrimonioById, fetchPatrimonioById, updatePatrimonio, deletePatrimonio } = usePatrimonio()
+  const { fetchPatrimonioById, deletePatrimonio } = usePatrimonio()
   const { hasPermission } = usePermissions()
   // RBAC de UI: esconde ações mutantes de quem não tem permissão (o backend
   // também reforça). visualizador é read-only; delete fica com admin/superuser.
@@ -106,18 +105,13 @@ function BensView() {
   const { templates: labelTemplates } = useLabelTemplates()
   
   const [patrimonio, setPatrimonio] = useState<Patrimonio | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [_isLoading, setIsLoading] = useState(true)
   const [newNote, setNewNote] = useState('')
   const [isSavingNote, setIsSavingNote] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false)
   const [historyVisibleCount, setHistoryVisibleCount] = useState(10)
   const [selectedPrintFields, setSelectedPrintFields] = useState<string[]>([])
-  const [printConfig, setPrintConfig] = useState({
-    template: 'standard',
-    includeImages: true,
-    includeNotes: true,
-  })
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false)
   const [selectedLabelTemplate, setSelectedLabelTemplate] = useState<any>(null)
   const labelPrintRef = useRef<HTMLDivElement>(null)
@@ -269,7 +263,7 @@ function BensView() {
         console.error('❌ [ERROR] Erro ao salvar nota:', error)
         console.error('❌ [ERROR] Detalhes do erro:', {
           message: error instanceof Error ? error.message : 'Erro desconhecido',
-          response: error.response?.data || 'N/A'
+          response: error instanceof Error && 'response' in error ? (error as Record<string, unknown>)['response'] : 'N/A'
         })
       }
       
@@ -367,9 +361,8 @@ function BensView() {
       // Gerar PDF com os campos selecionados
       await generatePatrimonioPDF({
         patrimonio,
-        fieldsToPrint: selectedFields,
-        includeLogo: !!logoUrl,
-        logoUrl
+        selectedSections: selectedFields,
+        municipalityLogo: logoUrl || undefined,
       })
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -426,10 +419,10 @@ function BensView() {
               </Button>
               <div>
                 <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
-                  {patrimonio.descricao_bem || patrimonio.descricaoBem}
+                  {patrimonio.descricao_bem}
                 </h1>
                 <p className="text-base lg:text-lg text-gray-600">
-                  Patrimônio #{patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+                  Patrimônio #{patrimonio.numero_patrimonio}
                 </p>
               </div>
             </div>
@@ -553,11 +546,11 @@ function BensView() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-6 pb-6">
-                  {(patrimonio.fotos || patrimonio.photos) && (patrimonio.fotos || patrimonio.photos).length > 0 ? (
+                  {patrimonio.fotos && patrimonio.fotos.length > 0 ? (
                     <Carousel className="w-full">
                       <CarouselContent>
                         {(() => {
-                          const fotos = patrimonio.fotos || patrimonio.photos || []
+                          const fotos = patrimonio.fotos || []
                           logger.debug('Renderizando carrossel com fotos', {
                             total: fotos.length,
                             fotos: fotos,
@@ -576,7 +569,7 @@ function BensView() {
                             <div className="relative flex items-center justify-center bg-gray-100 rounded-lg min-h-[400px]">
                               <img
                                 src={getCloudImageUrl(String(fotoId))}
-                                alt={`${patrimonio.descricao_bem || patrimonio.descricaoBem} - Foto ${index + 1}`}
+                                alt={`${patrimonio.descricao_bem} - Foto ${index + 1}`}
                                 className="rounded-lg object-contain w-full h-full max-h-[600px]"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement
@@ -597,7 +590,7 @@ function BensView() {
                           </CarouselItem>
                         ))}
                       </CarouselContent>
-                      {(patrimonio.fotos || patrimonio.photos).length > 1 && (
+                      {patrimonio.fotos.length > 1 && (
                         <>
                           <CarouselPrevious className="left-2" />
                           <CarouselNext className="right-2" />
@@ -629,14 +622,14 @@ function BensView() {
                     <div className="space-y-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Descrição</label>
-                        <p className="text-base text-gray-900 mt-1 font-medium">{patrimonio.descricao_bem || patrimonio.descricaoBem}</p>
+                        <p className="text-base text-gray-900 mt-1 font-medium">{patrimonio.descricao_bem}</p>
                       </div>
                       
                       <div>
                         <label className="text-sm font-medium text-gray-600">Número do Patrimônio</label>
                         <div className="mt-1">
                           <Badge variant="secondary" className="font-mono text-sm px-3 py-1">
-                            {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+                            {patrimonio.numero_patrimonio}
                           </Badge>
                         </div>
                       </div>
@@ -657,27 +650,27 @@ function BensView() {
                         <div className="mt-1">
                           <Badge 
                             className={`text-sm px-3 py-1 ${
-                              (patrimonio.situacao_bem || patrimonio.situacaoBem) === 'ÓTIMO' ? 'bg-green-100 text-green-800 border-green-200' :
-                              (patrimonio.situacao_bem || patrimonio.situacaoBem) === 'BOM' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                              (patrimonio.situacao_bem || patrimonio.situacaoBem) === 'REGULAR' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                              (patrimonio.situacao_bem || patrimonio.situacaoBem) === 'RUIM' ? 'bg-red-100 text-red-800 border-red-200' :
-                              (patrimonio.situacao_bem || patrimonio.situacaoBem) === 'EM_MANUTENCAO' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                              patrimonio.situacao_bem === 'OTIMO' ? 'bg-green-100 text-green-800 border-green-200' :
+                              patrimonio.situacao_bem === 'BOM' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                              patrimonio.situacao_bem === 'REGULAR' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                              patrimonio.situacao_bem === 'RUIM' ? 'bg-red-100 text-red-800 border-red-200' :
+                              patrimonio.situacao_bem === 'PESSIMO' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                               'bg-gray-100 text-gray-800 border-gray-200'
                             } border font-medium`}
                           >
-                            {patrimonio.situacao_bem || patrimonio.situacaoBem}
+                            {patrimonio.situacao_bem}
                           </Badge>
                         </div>
                       </div>
                       
                       <div>
                         <label className="text-sm font-medium text-gray-600">Valor de Aquisição</label>
-                        <p className="text-lg text-gray-900 mt-1 font-semibold">{formatCurrency(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)}</p>
+                        <p className="text-lg text-gray-900 mt-1 font-semibold">{formatCurrency(patrimonio.valor_aquisicao)}</p>
                       </div>
                       
                       <div>
                         <label className="text-sm font-medium text-gray-600">Data de Aquisição</label>
-                        <p className="text-base text-gray-900 mt-1">{formatDate(patrimonio.data_aquisicao || patrimonio.dataAquisicao)}</p>
+                        <p className="text-base text-gray-900 mt-1">{formatDate(patrimonio.data_aquisicao)}</p>
                       </div>
                     </div>
                   </div>
@@ -705,7 +698,7 @@ function BensView() {
                   />
                   <DetailItem 
                     label="Forma de Aquisição" 
-                    value={patrimonio.forma_aquisicao || patrimonio.formaAquisicao} 
+                    value={patrimonio.forma_aquisicao} 
                   />
                   {/* Exibir informações de referência se disponíveis */}
                   {patrimonio.numero_licitacao && (
@@ -784,8 +777,8 @@ function BensView() {
               </CardHeader>
               <CardContent className="px-6 pb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <DetailItem label="Setor Responsável" value={patrimonio.setor_responsavel || patrimonio.setorResponsavel} />
-                  <DetailItem label="Local do Objeto" value={patrimonio.local_objeto || patrimonio.localObjeto} />
+                  <DetailItem label="Setor Responsável" value={patrimonio.setor_responsavel} />
+                  <DetailItem label="Local do Objeto" value={patrimonio.local_objeto} />
                 </div>
               </CardContent>
             </Card>
@@ -828,7 +821,6 @@ function BensView() {
                     {(() => {
                       const all =
                         patrimonio.historico_movimentacao ||
-                        patrimonio.historicoMovimentacao ||
                         []
                       const visible = all.slice(0, historyVisibleCount)
                       return (
@@ -868,8 +860,7 @@ function BensView() {
                     })()}
                     
                     {/* Mensagem quando não há histórico além da criação */}
-                    {(!patrimonio.historico_movimentacao || patrimonio.historico_movimentacao.length === 0) && 
-                     (!patrimonio.historicoMovimentacao || patrimonio.historicoMovimentacao.length === 0) && 
+                    {(!patrimonio.historico_movimentacao || patrimonio.historico_movimentacao.length === 0) &&
                      !patrimonio.createdAt && (
                       <div className="text-center py-8 text-muted-foreground">
                         <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -922,7 +913,7 @@ function BensView() {
 
                   {/* Notes List */}
                   <div className="space-y-3">
-                    {(patrimonio.notas || patrimonio.notes)?.map((note) => (
+                    {patrimonio.notes?.map((note: Note) => (
                       <div key={note.id} className="p-4 border rounded-lg bg-muted/30">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-medium">{note.userName}</p>
@@ -947,9 +938,9 @@ function BensView() {
             {FEATURES.subPatrimonios && (
               <SubPatrimoniosManager
                 patrimonioId={patrimonio.id}
-                patrimonioNumero={patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
-                isKit={patrimonio.eh_kit || patrimonio.ehKit || false}
-                quantidadeUnidades={patrimonio.quantidade_unidades || patrimonio.quantidadeUnidades}
+                patrimonioNumero={patrimonio.numero_patrimonio}
+                isKit={patrimonio.eh_kit ?? false}
+                quantidadeUnidades={patrimonio.quantidade_unidades}
               />
             )}
           </div>
@@ -1316,7 +1307,7 @@ function BensView() {
             onOpenChange={setIsPDFConfigOpen}
             onGenerate={handleGeneratePDF}
             hasPhotos={patrimonio.fotos && patrimonio.fotos.length > 0}
-            hasObservations={!!patrimonio.observacoes}
+            hasObservations={!!(patrimonio.notes && patrimonio.notes.length > 0)}
             hasDepreciation={!!patrimonio.metodo_depreciacao}
             isBaixado={patrimonio.status === 'baixado'}
           />

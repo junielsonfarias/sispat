@@ -36,7 +36,7 @@ import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { LabelPrintDialog } from '@/components/bens/LabelPrintDialog'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useDebounce } from '@/hooks/use-debounce'
-import { useConfirm } from '@/hooks/useConfirm'
+import { useConfirm, ConfirmOptions } from '@/hooks/useConfirm'
 import { api } from '@/services/api-adapter'
 import {
   Select,
@@ -72,8 +72,8 @@ const getStatusColor = (status: string) => {
 
 // Função auxiliar para renderizar a tabela de forma segura
 const renderTable = (
-  filteredData: Patrimonio[], 
-  isLoading: boolean, 
+  filteredData: Patrimonio[],
+  isLoading: boolean,
   searchTerm: string,
   selectedAssets: string[],
   onToggleAsset: (id: string) => void,
@@ -90,7 +90,8 @@ const renderTable = (
   setTotalItems: React.Dispatch<React.SetStateAction<number>>,
   handleShowQrCode: (patrimonio: Patrimonio) => void,
   canUpdate: boolean,
-  canDelete: boolean
+  canDelete: boolean,
+  confirm: (opts: ConfirmOptions) => Promise<boolean>
 ) => {
   if (!Array.isArray(filteredData)) {
     return (
@@ -177,7 +178,7 @@ const renderTable = (
                   <Checkbox
                     checked={selectedAssets.includes(patrimonio.id)}
                     onCheckedChange={() => onToggleAsset(patrimonio.id)}
-                    aria-label={`Selecionar patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                    aria-label={`Selecionar patrimônio ${patrimonio.numero_patrimonio}`}
                   />
                 </TableCell>
                 <TableCell className="font-medium font-mono text-sm text-gray-900">
@@ -185,25 +186,25 @@ const renderTable = (
                     to={`/bens-cadastrados/ver/${patrimonio.id}`}
                     className="text-blue-600 hover:text-blue-800 hover:underline"
                   >
-                    {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+                    {patrimonio.numero_patrimonio}
                   </Link>
                 </TableCell>
-                <TableCell className="text-sm text-gray-700">{patrimonio.descricao_bem || patrimonio.descricaoBem}</TableCell>
+                <TableCell className="text-sm text-gray-700">{patrimonio.descricao_bem}</TableCell>
                 <TableCell>
-                  <Badge 
-                    className={`${getStatusColor(patrimonio.situacao_bem || patrimonio.situacaoBem)} border text-xs`}
+                  <Badge
+                    className={`${getStatusColor(patrimonio.situacao_bem)} border text-xs`}
                   >
-                    {patrimonio.situacao_bem || patrimonio.situacaoBem}
+                    {patrimonio.situacao_bem}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm text-gray-700">
-                  R$ {(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
+                  R$ {patrimonio.valor_aquisicao?.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
                 </TableCell>
-                <TableCell className="text-sm text-gray-700">{patrimonio.setor_responsavel || patrimonio.setorResponsavel}</TableCell>
-                <TableCell className="text-sm text-gray-700">{patrimonio.local_objeto || patrimonio.localObjeto}</TableCell>
+                <TableCell className="text-sm text-gray-700">{patrimonio.setor_responsavel}</TableCell>
+                <TableCell className="text-sm text-gray-700">{patrimonio.local_objeto}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
                     <TooltipProvider>
@@ -213,7 +214,7 @@ const renderTable = (
                             variant="ghost"
                             size="icon"
                             asChild
-                            aria-label={`Visualizar patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            aria-label={`Visualizar patrimônio ${patrimonio.numero_patrimonio}`}
                             className="touch-target min-h-[40px] min-w-[40px] transition-all duration-200 hover:scale-110"
                           >
                             <Link to={`/bens-cadastrados/ver/${patrimonio.id}`}>
@@ -233,7 +234,7 @@ const renderTable = (
                             variant="ghost"
                             size="icon"
                             onClick={() => handleShowQrCode(patrimonio)}
-                            aria-label={`Gerar QR Code para patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            aria-label={`Gerar QR Code para patrimônio ${patrimonio.numero_patrimonio}`}
                             className="touch-target min-h-[40px] min-w-[40px] transition-all duration-200 hover:scale-110"
                           >
                             <QrCode className="h-4 w-4" />
@@ -252,7 +253,7 @@ const renderTable = (
                             variant="ghost"
                             size="icon"
                             asChild
-                            aria-label={`Editar patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            aria-label={`Editar patrimônio ${patrimonio.numero_patrimonio}`}
                             className="touch-target min-h-[40px] min-w-[40px] transition-all duration-200 hover:scale-110"
                           >
                             <Link to={`/bens-cadastrados/editar/${patrimonio.id}`}>
@@ -276,7 +277,7 @@ const renderTable = (
                             onClick={async () => {
                               const ok = await confirm({
                                 title: 'Excluir patrimônio?',
-                                description: `Patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio} será removido. Esta ação não pode ser desfeita.`,
+                                description: `Patrimônio ${patrimonio.numero_patrimonio} será removido. Esta ação não pode ser desfeita.`,
                                 confirmText: 'Excluir',
                                 variant: 'destructive',
                               })
@@ -303,7 +304,7 @@ const renderTable = (
                                   // Recarregar dados para atualizar paginação
                                   fetchPatrimonios()
                                 }
-                              } catch (error) {
+                              } catch (_error) {
                                 toast({
                                   variant: 'destructive',
                                   title: 'Erro ao excluir',
@@ -314,7 +315,7 @@ const renderTable = (
                               }
                             }}
                             disabled={deletingId === patrimonio.id}
-                            aria-label={`Excluir patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            aria-label={`Excluir patrimônio ${patrimonio.numero_patrimonio}`}
                             className="touch-target min-h-[40px] min-w-[40px] text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:scale-110"
                           >
                             {deletingId === patrimonio.id ? (
@@ -925,7 +926,8 @@ const BensCadastrados = () => {
               setTotalItems,
               handleShowQrCode,
               canUpdate,
-              canDelete
+              canDelete,
+              confirm
             )}
 
             {/* Mobile Cards */}
@@ -978,7 +980,7 @@ const BensCadastrados = () => {
                     key={`${patrimonio.id}-${index}`} 
                     className="border border-gray-200 hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
                     role="article"
-                    aria-label={`Patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                    aria-label={`Patrimônio ${patrimonio.numero_patrimonio}`}
                   >
                     <CardContent className="p-4">
                       {/* Header com checkbox, número e situação */}
@@ -1000,17 +1002,17 @@ const BensCadastrados = () => {
                             to={`/bens-cadastrados/ver/${patrimonio.id}`}
                             className="text-blue-600 hover:text-blue-800 hover:underline font-mono text-sm font-medium"
                           >
-                            {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+                            {patrimonio.numero_patrimonio}
                           </Link>
                           <p className="text-sm text-gray-600 mt-1">
-                            {patrimonio.descricao_bem || patrimonio.descricaoBem}
+                            {patrimonio.descricao_bem}
                           </p>
                         </div>
                         </div>
-                        <Badge 
-                          className={`${getStatusColor(patrimonio.situacao_bem || patrimonio.situacaoBem)} border text-xs ml-2`}
+                        <Badge
+                          className={`${getStatusColor(patrimonio.situacao_bem)} border text-xs ml-2`}
                         >
-                          {patrimonio.situacao_bem || patrimonio.situacaoBem}
+                          {patrimonio.situacao_bem}
                         </Badge>
                       </div>
 
@@ -1019,7 +1021,7 @@ const BensCadastrados = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500">Valor:</span>
                           <span className="text-sm font-medium text-gray-900">
-                            R$ {(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)?.toLocaleString('pt-BR', {
+                            R$ {patrimonio.valor_aquisicao?.toLocaleString('pt-BR', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}
@@ -1028,13 +1030,13 @@ const BensCadastrados = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500">Setor:</span>
                           <span className="text-sm text-gray-700 text-right flex-1 ml-2">
-                            {patrimonio.setor_responsavel || patrimonio.setorResponsavel}
+                            {patrimonio.setor_responsavel}
                           </span>
                         </div>
                         <div className="flex justify-between items-start">
                           <span className="text-xs text-gray-500">Local:</span>
                           <span className="text-sm text-gray-700 text-right flex-1 ml-2">
-                            {patrimonio.local_objeto || patrimonio.localObjeto}
+                            {patrimonio.local_objeto}
                           </span>
                         </div>
                       </div>
@@ -1075,7 +1077,7 @@ const BensCadastrados = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleShowQrCode(patrimonio)}
-                            aria-label={`Gerar QR Code para patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            aria-label={`Gerar QR Code para patrimônio ${patrimonio.numero_patrimonio}`}
                             className="h-8 w-8 transition-all duration-200 hover:scale-110"
                           >
                             <QrCode className="h-3 w-3" />
@@ -1096,7 +1098,7 @@ const BensCadastrados = () => {
                             onClick={async () => {
                               const ok = await confirm({
                                 title: 'Excluir patrimônio?',
-                                description: `Patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio} será removido. Esta ação não pode ser desfeita.`,
+                                description: `Patrimônio ${patrimonio.numero_patrimonio} será removido. Esta ação não pode ser desfeita.`,
                                 confirmText: 'Excluir',
                                 variant: 'destructive',
                               })
@@ -1123,7 +1125,7 @@ const BensCadastrados = () => {
                                   // Recarregar dados para atualizar paginação
                                   fetchPatrimonios()
                                 }
-                              } catch (error) {
+                              } catch (_error) {
                                 toast({
                                   variant: 'destructive',
                                   title: 'Erro ao excluir',
@@ -1134,7 +1136,7 @@ const BensCadastrados = () => {
                               }
                             }}
                             disabled={deletingId === patrimonio.id}
-                            aria-label={`Excluir patrimônio ${patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}`}
+                            aria-label={`Excluir patrimônio ${patrimonio.numero_patrimonio}`}
                             className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:scale-110"
                           >
                             {deletingId === patrimonio.id ? (
