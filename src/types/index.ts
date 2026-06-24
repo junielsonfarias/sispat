@@ -117,6 +117,14 @@ export interface Transferencia {
   dataAprovacao?: Date
   comentariosAprovador?: string
   municipalityId: string
+  // Campos do model Prisma `Transferencia` lidos/gravados pelo TransferContext
+  // (opcionais no frontend porque nem todo fluxo os preenche).
+  localOrigem?: string
+  localDestino?: string
+  dataTransferencia?: Date
+  responsavelOrigem?: string
+  responsavelDestino?: string
+  observacoes?: string
 }
 
 export interface Patrimonio {

@@ -20,6 +20,7 @@ import { usePatrimonio } from './PatrimonioContext'
 import { useNotifications } from './NotificationContext'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
+import { unwrapList } from '@/services/api-helpers'
 
 interface TransferContextType {
   transferencias: Transferencia[]
@@ -52,8 +53,8 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
     
     setIsLoading(true)
     try {
-      const response = await api.get('/transfers')
-      const transferencias = response.transfers || response
+      const response = await api.get<unknown>('/transfers')
+      const transferencias = unwrapList<Record<string, unknown>>(response, 'transfers')
       
       setAllTransferencias(
         transferencias.map((t: any) => ({
@@ -86,14 +87,16 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
   const addTransferencia = useCallback(
     async (data: Omit<Transferencia, 'id' | 'dataSolicitacao' | 'status'>) => {
       try {
-        const response = await api.post('/transfers', {
+        const response = await api.post<
+          Omit<Transferencia, 'dataSolicitacao'> & { createdAt: string; dataTransferencia: string; [k: string]: unknown }
+        >('/transfers', {
           patrimonioId: data.patrimonioId,
           setorOrigem: data.setorOrigem,
           setorDestino: data.setorDestino,
           localOrigem: data.localOrigem,
           localDestino: data.localDestino,
           motivo: data.motivo,
-          dataTransferencia: data.dataTransferencia.toISOString(),
+          dataTransferencia: data.dataTransferencia?.toISOString(),
           responsavelOrigem: data.responsavelOrigem,
           responsavelDestino: data.responsavelDestino,
           observacoes: data.observacoes,

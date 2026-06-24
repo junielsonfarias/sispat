@@ -84,6 +84,7 @@ import { generatePatrimonioPDF } from '@/components/bens/PatrimonioPDFGenerator'
 import { PDFConfigDialog } from '@/components/bens/PDFConfigDialog'
 import { api } from '@/services/api-adapter'
 import { logger } from '@/lib/logger'
+import { unwrapItem } from '@/services/api-helpers'
 
 const DetailItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="space-y-1">
@@ -224,14 +225,14 @@ function BensView() {
     setIsSavingNote(true)
     try {
       // Criar nota usando rota específica
-      const response = await api.post(`/patrimonios/${patrimonio.id}/notes`, {
+      const response = await api.post<unknown>(`/patrimonios/${patrimonio.id}/notes`, {
         text: newNote.trim()
       })
 
       logger.debug('Resposta da API', { response })
 
       // Extrair nota da resposta
-      const noteData = response.note || response
+      const noteData = unwrapItem<{ id: string; text: string; date: string; userId: string; userName: string }>(response, 'note')
 
       logger.debug('Dados da nota extraídos', { noteData })
 

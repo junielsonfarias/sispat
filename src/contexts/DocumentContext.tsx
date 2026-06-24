@@ -14,6 +14,7 @@ import { useAuth } from './AuthContext'
 import { useNotifications } from './NotificationContext'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
+import { unwrapList } from '@/services/api-helpers'
 
 interface DocumentContextType {
   documents: GeneralDocument[]
@@ -53,8 +54,8 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
     
     setIsLoading(true)
     try {
-      const response = await api.get('/documents')
-      const documents = response.documents || response
+      const response = await api.get<unknown>('/documents')
+      const documents = unwrapList<Record<string, unknown>>(response, 'documents')
       
       setAllDocuments(
         documents.map((d: any) => ({
@@ -102,11 +103,15 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
         formData.append('tags', metadata.tags?.join(',') || '')
         formData.append('isPublic', metadata.isPublic?.toString() || 'false')
 
-        const response = await api.post('/documents', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
+        const response = await api.post<Omit<GeneralDocument, 'uploadedAt'> & { createdAt: string }>(
+          '/documents',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
           },
-        })
+        )
 
         const newDocument: GeneralDocument = {
           ...response,
@@ -149,14 +154,17 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
       isPublic?: boolean
     }) => {
       try {
-        const response = await api.put(`/documents/${id}`, {
-          titulo: metadata.titulo,
-          descricao: metadata.descricao,
-          tipo: metadata.tipo,
-          categoria: metadata.categoria,
-          tags: metadata.tags?.join(','),
-          isPublic: metadata.isPublic,
-        })
+        const response = await api.put<Omit<GeneralDocument, 'uploadedAt'> & { updatedAt: string }>(
+          `/documents/${id}`,
+          {
+            titulo: metadata.titulo,
+            descricao: metadata.descricao,
+            tipo: metadata.tipo,
+            categoria: metadata.categoria,
+            tags: metadata.tags?.join(','),
+            isPublic: metadata.isPublic,
+          },
+        )
 
         setAllDocuments(prev =>
           prev.map(d =>

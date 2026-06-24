@@ -17,6 +17,7 @@ import { logger } from '@/lib/logger'
 import { toast } from '@/hooks/use-toast'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { api } from '@/services/api-adapter'
+import { unwrapItem } from '@/services/api-helpers'
 
 interface BensNotesDialogProps {
   patrimonio: Patrimonio
@@ -45,13 +46,13 @@ export const BensNotesDialog = ({
 
     try {
       // ✅ CORREÇÃO: Usar API para salvar nota no backend
-      const response = await api.post(`/patrimonios/${patrimonio.id}/notes`, {
+      const response = await api.post<unknown>(`/patrimonios/${patrimonio.id}/notes`, {
         text: newNote.trim()
       })
 
       logger.debug('BensNotesDialog - Resposta da API', { response })
 
-      const noteData = response.note || response
+      const noteData = unwrapItem<{ id: string; text: string; date: string; userId: string; userName: string }>(response, 'note')
 
       // ✅ CORREÇÃO: Mapear campos corretamente do backend
       const newNoteEntry: Note = {

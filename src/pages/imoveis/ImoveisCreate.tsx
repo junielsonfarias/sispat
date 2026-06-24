@@ -178,12 +178,12 @@ export default function ImoveisCreate() {
 
     setIsGeneratingNumber(true)
     try {
-      const response = await api.get('/imoveis/gerar-numero', {
+      const response = await api.get<{ numero: string }>('/imoveis/gerar-numero', {
         params: { sectorId: sector.id }
       })
-      
+
       form.setValue('numero_patrimonio', response.numero)
-      
+
       toast({
         title: 'Número Gerado',
         description: `Número: ${response.numero}`,

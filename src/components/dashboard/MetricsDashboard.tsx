@@ -124,8 +124,8 @@ const MetricsDashboard: React.FC = () => {
     try {
       setRefreshing(true)
       const [summaryRes, alertsRes] = await Promise.all([
-        api.get('/metrics/summary'),
-        api.get('/metrics/alerts')
+        api.get<{ data: { data: MetricsSummary } }>('/metrics/summary'),
+        api.get<{ data: { data: { active: Alert[] } } }>('/metrics/alerts')
       ])
 
       setSummary(summaryRes.data.data)

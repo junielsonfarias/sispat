@@ -214,7 +214,7 @@ export default function EditorTemplateFicha() {
   const loadTemplate = async () => {
     try {
       setLoading(true)
-      const response = await api.get(`/ficha-templates/${id}`)
+      const response = await api.get<FichaTemplate>(`/ficha-templates/${id}`)
       setTemplate(response)
       const normalizedConfig = normalizeConfig(response.config)
       setConfig(normalizedConfig)
