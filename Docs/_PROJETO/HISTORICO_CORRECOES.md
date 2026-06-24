@@ -21,6 +21,21 @@
 
 ## 2026
 
+### 2026-06-24 — Conformidade com a Lei de Gestão Patrimonial: enforcement das modalidades
+- **Contexto:** auditoria de fluxo de cada modalidade do patrimônio contra a Lei/Decreto de Gestão Patrimonial (docs em `Docs/analise/`). Diagnóstico: o sistema implementa TODAS as modalidades estruturalmente; as lacunas eram de **enforcement** (faltavam travas que impedissem operações fora da lei), não de modelagem. 5 gaps 🔴 críticos corrigidos com test-gating.
+- **Correções:**
+  1. **Art. 22/23 — alienação exige desafetação:** `desfazimentoService` bloqueia desfazimento por doacao/leilao/permuta/cessao/transferencia de bem não-dominical (uso comum/especial/não-classificado) sem desafetação prévia. Guard em `createDesfazimento` e `concluirDesfazimento`.
+  2. **Conciliação SIAFIC a valor LÍQUIDO:** `conciliacaoService.calcularSaldoFisico` deixou de somar custo histórico bruto e passou a usar valor contábil líquido (custo − depreciação acumulada linear, piso no residual) na data-base. Novo `backend/src/utils/depreciation.ts` (espelha `src/lib/depreciation-utils.ts`, sem date-fns).
+  3. **Art. 22 — reclassificação não vira dominical:** `desafetacaoService.reclassificarDestinacao` rejeita destino 'dominical' direto (lança antes de qualquer query) — tornar um bem dominical é desafetação formal com base legal, não reclassificação.
+  4. **Art. 19 — mínimo de 3 membros:** `comissaoService.removeMembro` impede reduzir comissão constituída de 3→2 membros; remoção durante a montagem (<3) segue liberada (sinalizada por alerta).
+  5. **Art. 13 §3 — tipo_posse:** enum `TipoPosse` (proprio/cessao/comodato) em `patrimonios` e `imoveis` (migration `20260624193545_add_tipo_posse`). Bens em cessão/comodato NÃO somam ao ativo na conciliação (filtro `tipo_posse: 'proprio'` em móveis e imóveis). Setável no create/update (validado contra o enum, valor inválido cai em 'proprio') e no formulário (BensCreate/BensEdit + campo no schema `@sispat/shared`).
+  6. **Art. 25/26 — BO no extravio:** `patrimonioService.registrarBaixa` exige documento anexado (Boletim de Ocorrência/comunicação) quando o `motivo_baixa` casa `/extravi|furto|roubo|desaparec|sumic|subtra/` (normalizado sem acento, case-insensitive). Baixa comum (obsoleto etc.) não exige.
+- **Arquivos:** `backend/src/services/{desfazimento,conciliacao,desafetacao,comissao,patrimonio}Service.ts`, `backend/src/utils/depreciation.ts` (novo), `backend/prisma/schema.prisma` + migration `add_tipo_posse`, `shared/src/schemas/patrimonio.ts`, `src/pages/bens/{BensCreate,BensEdit}.tsx`, `src/types/index.ts`, e testes Jest (`conciliacaoService`/`patrimonioService.baixa`/`patrimonioService.update`/`comissaoService`/`desafetacaoService`/`desfazimentoService` + `utils/depreciation`).
+- **Commits:** `c918a51` (desafetação no desfazimento), Task #7 (depreciação na conciliação), `fb102ca` (reclassificar + mín. 3 membros), `145b62d` (tipo_posse + BO backend), `ab92236` (seletor de posse no frontend).
+- **Verificação:** backend `tsc` limpo + **40 suites / 493 testes Jest** verdes; frontend `tsc` limpo (após rebuild de `@sispat/shared` + `corepack pnpm install`).
+- **Follow-ups não-críticos (deixados):** origem_recurso/cláusulas de reversão em doações, termos persistidos como entidades, inventário cobrindo imóveis, comissão obrigatória na regularização, entidade de alienação, escrituração mensal da depreciação.
+- **Lição:** conformidade legal num sistema que já modela tudo é, na prática, questão de **guards** — onde o código deixa uma operação acontecer fora da ordem que a lei exige (alienar sem desafetar, reduzir comissão abaixo do quórum, baixar extravio sem BO, somar bem de terceiro ao ativo). Cada trava é barata e fica travada por teste; o caro é mapear qual artigo cada fluxo viola.
+
 ### 2026-06-24 — Zerar erros de TypeScript do frontend (768 → 0)
 - **Sintoma:** `npx tsc --noEmit -p tsconfig.app.json` acusava **768 erros** no frontend (o build via Vite/esbuild não type-checa, então a dívida acumulou). Categorias: 205 `TS6133` (não usados), 132 `TS2551` (camelCase vs snake_case), 116 `TS2339`, 69 recharts×React19 (`TS2786/2607`), 35 `TS2307` (módulos), etc.
 - **Correção (faseada, ~10 commits `fix(types)`):**
