@@ -594,6 +594,10 @@ export interface TipoBem {
   nome: string
   descricao?: string
   codigo: string
+  // Espelham o model Prisma `TipoBem` (Int? / Float?). Usados na depreciação
+  // e no formulário de TipoBemManagement.
+  vidaUtilPadrao?: number
+  taxaDepreciacao?: number
   ativo: boolean
   municipalityId: string
   createdAt: Date

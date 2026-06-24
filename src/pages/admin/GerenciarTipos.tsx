@@ -62,7 +62,7 @@ const GerenciarTipos = () => {
       await createTipoBem({
         ...formData,
         ativo: true,
-        municipalityId: '1' // Será preenchido pelo contexto
+        // municipalityId é derivado do token no backend (multi-tenant)
       })
       setIsCreateDialogOpen(false)
       setFormData({ nome: '', descricao: '', codigo: '' })

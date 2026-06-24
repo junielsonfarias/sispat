@@ -8,7 +8,9 @@ interface TiposBensContextType {
   isLoading: boolean
   error: string | null
   fetchTiposBens: () => Promise<void>
-  createTipoBem: (data: Omit<TipoBem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<TipoBem>
+  // `codigo` e `municipalityId` são gerados/derivados no backend (do token),
+  // não são enviados pelo formulário.
+  createTipoBem: (data: Omit<TipoBem, 'id' | 'codigo' | 'municipalityId' | 'createdAt' | 'updatedAt'>) => Promise<TipoBem>
   updateTipoBem: (id: string, data: Partial<TipoBem>) => Promise<TipoBem>
   deleteTipoBem: (id: string) => Promise<void>
   toggleTipoBemStatus: (id: string) => Promise<TipoBem>
@@ -45,7 +47,7 @@ export const TiposBensProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }
 
-  const createTipoBem = async (data: Omit<TipoBem, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createTipoBem = async (data: Omit<TipoBem, 'id' | 'codigo' | 'municipalityId' | 'createdAt' | 'updatedAt'>) => {
     if (!user) throw new Error('Usuário não encontrado')
 
     const newTipoBem = await api.post<TipoBem>('/tipos-bens', data)
