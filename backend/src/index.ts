@@ -312,6 +312,8 @@ app.use('/api/conformidade', conformidadeRoutes);
 app.use('/api/regularizacoes', regularizacaoRoutes);
 app.use('/api/desfazimentos', desfazimentoRoutes);
 app.use('/api/termos', termosRoutes);
+import importacaoRoutes from './routes/importacaoRoutes';
+app.use('/api/importacao', importacaoRoutes);
 
 // Rotas de métricas e monitoramento
 import metricsRoutes from './routes/metricsRoutes';

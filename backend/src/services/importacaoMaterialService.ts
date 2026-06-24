@@ -16,6 +16,25 @@
  */
 
 import pdfParse from 'pdf-parse';
+import { prisma } from '../config/database';
+import { redisCache } from '../config/redis';
+import { logInfo } from '../config/logger';
+import { proximoNumeroPatrimonialTx } from './patrimonioService';
+
+export interface Actor {
+  userId: string;
+  role: string;
+  municipalityId: string;
+  email: string;
+  name?: string;
+}
+
+export class ImportacaoValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ImportacaoValidationError';
+  }
+}
 
 // Extrai o texto bruto do PDF preservando o layout de largura fixa (necessário
 // para o parser). Isolado para ser fácil de stubar nos testes do endpoint.
@@ -402,4 +421,157 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
     itens,
     avisos,
   };
+};
+
+// ===========================================================================
+// Importação (confirmar): cria N patrimônios POR UNIDADE, em transação.
+// ===========================================================================
+
+const VALID_ORIGEM = new Set(['proprio', 'convenio', 'emenda', 'transferencia_ente', 'outro']);
+const MAX_UNIDADES = 2000; // trava de segurança para um import único
+
+export interface ItemConfirmado {
+  descricao: string;
+  quantidade: number;
+  valorUnitario: number;
+  dataAquisicao: string; // ISO
+  numeroNotaFiscal?: string | null;
+  fornecedor?: string | null;
+  numeroEmpenho?: string | null;
+  numeroLiquidacao?: string | null;
+  tipo: string;
+  formaAquisicao: string;
+  origemRecurso?: string | null;
+  sectorId: string;
+  setorNome: string;
+  localObjeto?: string | null;
+  vidaUtilAnos?: number | null;
+  valorResidual?: number | null;
+}
+
+// Cria os patrimônios a partir dos itens revisados. Cada item explode em
+// `quantidade` registros (1 por unidade física), todos com a mesma NF/empenho.
+// Atômico: ou cria tudo, ou nada. A numeração é gerada uma vez e incrementada
+// em memória dentro da transação (evita race/colisão).
+export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor) => {
+  if (actor.role === 'superuser' && !actor.municipalityId) {
+    throw new ImportacaoValidationError('Superuser deve operar no contexto de um município');
+  }
+  if (!itens?.length) {
+    throw new ImportacaoValidationError('Nenhum item para importar');
+  }
+
+  const totalUnidades = itens.reduce((acc, it) => acc + (it.quantidade || 0), 0);
+  if (totalUnidades <= 0) {
+    throw new ImportacaoValidationError('A soma das quantidades deve ser maior que zero');
+  }
+  if (totalUnidades > MAX_UNIDADES) {
+    throw new ImportacaoValidationError(
+      `O lote tem ${totalUnidades} unidades — acima do limite de ${MAX_UNIDADES} por importação. Divida o relatório.`,
+    );
+  }
+
+  // Valida cada item e que o setor pertence ao município.
+  const setoresCache = new Map<string, string>(); // sectorId -> name
+  for (const it of itens) {
+    if (!it.descricao?.trim()) throw new ImportacaoValidationError('Item sem descrição');
+    if (!it.sectorId) throw new ImportacaoValidationError(`Item "${it.descricao}" sem setor`);
+    if (!Number.isInteger(it.quantidade) || it.quantidade < 1) {
+      throw new ImportacaoValidationError(`Quantidade inválida no item "${it.descricao}"`);
+    }
+    if (!(it.valorUnitario >= 0)) {
+      throw new ImportacaoValidationError(`Valor inválido no item "${it.descricao}"`);
+    }
+    if (Number.isNaN(Date.parse(it.dataAquisicao))) {
+      throw new ImportacaoValidationError(`Data inválida no item "${it.descricao}"`);
+    }
+    if (it.origemRecurso && !VALID_ORIGEM.has(it.origemRecurso)) {
+      throw new ImportacaoValidationError(`Origem de recurso inválida no item "${it.descricao}"`);
+    }
+    if (!setoresCache.has(it.sectorId)) {
+      const setor = await prisma.sector.findUnique({
+        where: { id: it.sectorId },
+        select: { id: true, name: true, municipalityId: true },
+      });
+      if (!setor || (actor.role !== 'superuser' && setor.municipalityId !== actor.municipalityId)) {
+        throw new ImportacaoValidationError(`Setor inválido em "${it.descricao}"`);
+      }
+      setoresCache.set(it.sectorId, setor.name);
+    }
+  }
+
+  const criados = await prisma.$transaction(async (tx) => {
+    // Numeração: gera o primeiro número e incrementa em memória (todos os bens
+    // do município compartilham a sequência PAT{ano}{00}NNNNNN).
+    const primeiro = await proximoNumeroPatrimonialTx(tx, { municipalityId: actor.municipalityId });
+    const prefixoSeq = primeiro.numero.slice(0, primeiro.numero.length - 6);
+    let seq = primeiro.sequencial;
+    const proximoNumero = (): string => {
+      const n = `${prefixoSeq}${String(seq).padStart(6, '0')}`;
+      seq += 1;
+      return n;
+    };
+
+    const registros: { id: string; numero_patrimonio: string }[] = [];
+    for (const it of itens) {
+      const setorNome = setoresCache.get(it.sectorId) ?? it.setorNome;
+      const obs = [
+        it.numeroLiquidacao ? `Liquidação ${it.numeroLiquidacao}` : '',
+        'Importado do relatório de liquidação SIAFIC',
+      ]
+        .filter(Boolean)
+        .join(' — ');
+
+      for (let u = 0; u < it.quantidade; u++) {
+        const p = await tx.patrimonio.create({
+          data: {
+            numero_patrimonio: proximoNumero(),
+            descricao_bem: it.descricao.trim(),
+            tipo: it.tipo || 'Não especificado',
+            data_aquisicao: new Date(it.dataAquisicao),
+            valor_aquisicao: it.valorUnitario,
+            quantidade: 1,
+            numero_nota_fiscal: it.numeroNotaFiscal ?? null,
+            forma_aquisicao: it.formaAquisicao || 'Compra',
+            setor_responsavel: setorNome,
+            local_objeto: it.localObjeto?.trim() || 'A definir',
+            status: 'ativo',
+            situacao_bem: 'OTIMO', // bens novos
+            destinacao: 'uso_especial',
+            destinacaoRevisada: true,
+            tipo_posse: 'proprio',
+            origem_recurso: it.origemRecurso ?? null,
+            fornecedor: it.fornecedor ?? null,
+            numero_empenho: it.numeroEmpenho ?? null,
+            numero_liquidacao: it.numeroLiquidacao ?? null,
+            metodo_depreciacao: 'Linear',
+            vida_util_anos: it.vidaUtilAnos ?? null,
+            valor_residual: it.valorResidual ?? null,
+            observacoes: obs,
+            municipalityId: actor.municipalityId,
+            sectorId: it.sectorId,
+            createdBy: actor.userId,
+          },
+          select: { id: true, numero_patrimonio: true },
+        });
+        registros.push(p);
+      }
+    }
+
+    await tx.activityLog.create({
+      data: {
+        userId: actor.userId,
+        action: 'IMPORTAR_PATRIMONIOS_LIQUIDACAO',
+        entityType: 'Patrimonio',
+        entityId: registros[0].id,
+        details: `Importados ${registros.length} bens do relatório de liquidação (${itens.length} linhas)`,
+      },
+    });
+
+    return registros;
+  });
+
+  await redisCache.deletePattern('patrimonios:*');
+  logInfo('✅ Importação de patrimônios concluída', { total: criados.length });
+  return { total: criados.length, linhas: itens.length, patrimonios: criados };
 };

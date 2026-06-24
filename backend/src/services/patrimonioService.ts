@@ -456,6 +456,9 @@ export interface CreatePatrimonioInput {
   tipo_posse?: string;
   origem_recurso?: string;
   clausulas_reversao?: string;
+  fornecedor?: string;
+  numero_empenho?: string;
+  numero_liquidacao?: string;
 }
 
 // Posse (Art. 13 §3): valida o título de posse informado; valor inválido cai no
@@ -539,6 +542,9 @@ export const createPatrimonio = async (
         tipo_posse: parsePosse(input.tipo_posse),
         origem_recurso: input.origem_recurso || null,
         clausulas_reversao: input.clausulas_reversao || null,
+        fornecedor: input.fornecedor || null,
+        numero_empenho: input.numero_empenho || null,
+        numero_liquidacao: input.numero_liquidacao || null,
         situacao_bem: input.situacao_bem,
         observacoes: input.observacoes,
         fotos: sanitizeIncomingUrls(input.fotos),
@@ -680,6 +686,9 @@ const UPDATABLE_FIELDS = new Set([
   'tipo_posse',
   'origem_recurso',
   'clausulas_reversao',
+  'fornecedor',
+  'numero_empenho',
+  'numero_liquidacao',
 ]);
 
 const parseUpdateData = (raw: Record<string, unknown>, actorUserId: string): Record<string, unknown> => {

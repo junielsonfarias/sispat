@@ -307,6 +307,10 @@ model Patrimonio {
   // encargo registram a fonte do recurso e as condições de reversão do instrumento.
   origem_recurso     String?
   clausulas_reversao String?
+  // Rastreabilidade contábil (importação do relatório de liquidação SIAFIC).
+  fornecedor         String?
+  numero_empenho     String?
+  numero_liquidacao  String?
   setor_responsavel  String
   local_objeto       String
   status             PatrimonioStatus @default(ativo)
