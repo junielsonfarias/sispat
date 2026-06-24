@@ -66,14 +66,31 @@ export const BaixaBemModal = ({
     },
   })
 
+  // Art. 25/26: baixa por extravio/furto/roubo exige Boletim de Ocorrência ou
+  // comunicação anexada (espelha a trava do backend). Detecta por palavra-chave.
+  const motivoWatch = form.watch('motivo_baixa') ?? ''
+  const requerBoletim = /extravi|furto|roubo|desaparec|sumic|subtra/i.test(
+    motivoWatch.normalize('NFD').replace(/[̀-ͯ]/g, ''),
+  )
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (files) {
       setSelectedFiles(Array.from(files))
+      if (files.length > 0) form.clearErrors('documentos_baixa')
     }
   }
 
   const handleSubmit = async (data: BaixaBemValues) => {
+    // Art. 25/26: extravio/furto/roubo exige documento comprobatório (BO).
+    if (requerBoletim && selectedFiles.length === 0) {
+      form.setError('documentos_baixa', {
+        type: 'manual',
+        message:
+          'Baixa por extravio/furto/roubo exige Boletim de Ocorrência ou comunicação anexada (Art. 25/26).',
+      })
+      return
+    }
     setIsSubmitting(true)
 
     try {
@@ -221,7 +238,19 @@ export const BaixaBemModal = ({
             />
 
             <FormItem>
-              <FormLabel>Documentos Comprobatórios</FormLabel>
+              <FormLabel>
+                Documentos Comprobatórios
+                {requerBoletim && <span className="text-destructive"> *</span>}
+              </FormLabel>
+              {requerBoletim && (
+                <Alert variant="destructive" className="mb-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Baixa por extravio/furto/roubo exige Boletim de Ocorrência ou comunicação
+                    formal anexada (Art. 25/26).
+                  </AlertDescription>
+                </Alert>
+              )}
               <FormControl>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -243,8 +272,15 @@ export const BaixaBemModal = ({
                 </div>
               </FormControl>
               <FormDescription>
-                Anexe documentos que comprovem a baixa (opcional)
+                {requerBoletim
+                  ? 'Anexe o Boletim de Ocorrência ou comunicação formal (obrigatório).'
+                  : 'Anexe documentos que comprovem a baixa (opcional).'}
               </FormDescription>
+              {form.formState.errors.documentos_baixa && (
+                <p className="text-sm font-medium text-destructive">
+                  {String(form.formState.errors.documentos_baixa.message)}
+                </p>
+              )}
             </FormItem>
 
             <DialogFooter className="gap-2">
