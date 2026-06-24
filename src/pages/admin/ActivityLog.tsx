@@ -73,6 +73,9 @@ const actionLabels: Record<ActivityLogAction, string> = {
   SYNC_SUCCESS: 'Sucesso na Sincronização',
   SYNC_FAIL: 'Falha na Sincronização',
   SYNC_CANCEL: 'Sincronização Cancelada',
+  ACQUISITION_FORM_CREATE: 'Criação de Forma de Aquisição',
+  ACQUISITION_FORM_UPDATE: 'Atualização de Forma de Aquisição',
+  ACQUISITION_FORM_DELETE: 'Exclusão de Forma de Aquisição',
 }
 
 const actionOptions: SearchableSelectOption[] = Object.entries(

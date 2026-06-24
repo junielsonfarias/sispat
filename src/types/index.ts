@@ -235,6 +235,9 @@ export type ActivityLogAction =
   | 'SYNC_SUCCESS'
   | 'SYNC_FAIL'
   | 'SYNC_CANCEL'
+  | 'ACQUISITION_FORM_CREATE'
+  | 'ACQUISITION_FORM_UPDATE'
+  | 'ACQUISITION_FORM_DELETE'
 
 export interface ActivityLog {
   id: string

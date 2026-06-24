@@ -114,7 +114,7 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
         }
         // Não adicionar novamente pois o mock API já adiciona à lista
         // setAcquisitionForms((prev) => [...prev, newForm])
-        logActivity('Forma de Aquisição', `Adicionou a forma: ${formData.nome}`)
+        logActivity('ACQUISITION_FORM_CREATE', { details: `Adicionou a forma: ${formData.nome}` })
         toast({ title: 'Sucesso', description: 'Forma de aquisição adicionada com sucesso.' })
         return newForm
       } catch (error: any) {
@@ -150,7 +150,7 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
         setAcquisitionForms((prev) =>
           prev.map((form) => (form.id === id ? updatedForm : form))
         )
-        logActivity('Forma de Aquisição', `Atualizou a forma: ${formData.nome || id}`)
+        logActivity('ACQUISITION_FORM_UPDATE', { details: `Atualizou a forma: ${formData.nome || id}` })
         toast({ title: 'Sucesso', description: 'Forma de aquisição atualizada com sucesso.' })
         return updatedForm
       } catch (error: any) {
@@ -176,7 +176,7 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
       try {
         await api.delete(`/formas-aquisicao/${id}`)
         setAcquisitionForms((prev) => prev.filter((form) => form.id !== id))
-        logActivity('Forma de Aquisição', `Excluiu a forma com ID: ${id}`)
+        logActivity('ACQUISITION_FORM_DELETE', { details: `Excluiu a forma com ID: ${id}` })
         toast({ title: 'Sucesso', description: 'Forma de aquisição excluída com sucesso.' })
         return true
       } catch (error: any) {
@@ -211,10 +211,9 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
         setAcquisitionForms((prev) =>
           prev.map((form) => (form.id === id ? updatedForm : form))
         )
-        logActivity(
-          'Forma de Aquisição',
-          `${currentStatus ? 'Desativou' : 'Ativou'} a forma com ID: ${id}`
-        )
+        logActivity('ACQUISITION_FORM_UPDATE', {
+          details: `${currentStatus ? 'Desativou' : 'Ativou'} a forma com ID: ${id}`,
+        })
         toast({
           title: 'Sucesso',
           description: `Forma de aquisição ${currentStatus ? 'desativada' : 'ativada'} com sucesso.`,

@@ -10,10 +10,7 @@ import {
 import {
   Transferencia,
   TransferenciaStatus,
-  HistoricoEntry,
-  User,
 } from '@/types'
-import { generateId } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { usePatrimonio } from './PatrimonioContext'
@@ -146,7 +143,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
     ) => {
       try {
         const endpoint = status === 'aprovada' ? 'approve' : 'reject'
-        const response = await api.patch(`/transfers/${id}/${endpoint}`, {
+        await api.patch(`/transfers/${id}/${endpoint}`, {
           observacoes: comentarios,
         })
 
@@ -156,21 +153,26 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
               ? {
                   ...t,
                   status,
-                  dataAprovacao: status === 'aprovada' ? new Date() : undefined,
-                  aprovadoPor: status === 'aprovada' ? user : undefined,
-                  comentarios: comentarios || t.comentarios,
+                  dataAprovacao: status === 'aprovada' ? new Date() : t.dataAprovacao,
+                  aprovadorId: status === 'aprovada' ? user.id : t.aprovadorId,
+                  aprovadorNome: status === 'aprovada' ? user.name : t.aprovadorNome,
+                  comentariosAprovador: comentarios || t.comentariosAprovador,
                 }
               : t,
           ),
         )
 
-        // Atualizar patrimônio se aprovado
+        // Atualizar patrimônio localmente se aprovado (o backend já moveu o bem).
         if (status === 'aprovada') {
           const transferencia = allTransferencias.find(t => t.id === id)
-          if (transferencia) {
-            await updatePatrimonio(transferencia.patrimonioId, {
-              setor_responsavel: transferencia.setorDestino,
-              local_objeto: transferencia.localDestino,
+          const patrimonio = transferencia
+            ? getPatrimonioById(transferencia.patrimonioId)
+            : undefined
+          if (transferencia && patrimonio) {
+            await updatePatrimonio({
+              ...patrimonio,
+              setor_responsavel: transferencia.setorDestino ?? patrimonio.setor_responsavel,
+              local_objeto: transferencia.localDestino ?? patrimonio.local_objeto,
             })
           }
         }
@@ -196,7 +198,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
         throw error
       }
     },
-    [allTransferencias, updatePatrimonio, addNotification]
+    [allTransferencias, updatePatrimonio, getPatrimonioById, addNotification]
   )
 
   const deleteTransferencia = useCallback(

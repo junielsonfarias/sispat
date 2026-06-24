@@ -8,7 +8,6 @@ import {
   useMemo,
 } from 'react'
 import { GeneralDocument } from '@/types'
-import { generateId } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { useNotifications } from './NotificationContext'
@@ -228,7 +227,7 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
   const downloadDocument = useCallback(
     async (id: string) => {
       try {
-        const response = await api.get(`/documents/${id}/download`, {
+        const response = await api.get<Blob>(`/documents/${id}/download`, {
           responseType: 'blob',
         })
 
@@ -236,11 +235,11 @@ export const DocumentProvider = ({ children }: { children: ReactNode }) => {
         const url = window.URL.createObjectURL(new Blob([response]))
         const link = document.createElement('a')
         link.href = url
-        
-        // Buscar nome do arquivo do documento
-        const document = allDocuments.find(d => d.id === id)
-        const fileName = document?.fileName || 'documento'
-        
+
+        // Buscar nome do arquivo do documento (evita sombrear o `document` do DOM)
+        const doc = allDocuments.find(d => d.id === id)
+        const fileName = doc?.fileName || 'documento'
+
         link.setAttribute('download', fileName)
         document.body.appendChild(link)
         link.click()

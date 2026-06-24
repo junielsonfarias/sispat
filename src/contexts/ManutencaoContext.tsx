@@ -8,7 +8,6 @@ import {
   useMemo,
 } from 'react'
 import { ManutencaoTask } from '@/types'
-import { generateId } from '@/lib/utils'
 import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
@@ -34,7 +33,8 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
   const fetchTasks = useCallback(async () => {
     if (!user) return
     try {
-      const response = await api.get<ManutencaoTask[]>('/manutencoes')
+      // Resposta crua do backend traz `dataPrevista` (o tipo de domínio usa `dueDate`).
+      const response = await api.get<Array<ManutencaoTask & { dataPrevista?: string }>>('/manutencoes')
       const tasksData = Array.isArray(response) ? response : []
       setAllTasks(tasksData.map(t => ({
         ...t,
@@ -81,7 +81,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
   const addTask = useCallback(
     async (taskData: Omit<ManutencaoTask, 'id' | 'createdAt' | 'municipalityId'>) => {
       try {
-        const newTask = await api.post<ManutencaoTask>('/manutencoes', {
+        const newTask = await api.post<ManutencaoTask & { dataPrevista?: string }>('/manutencoes', {
           ...taskData,
           dataPrevista: taskData.dueDate,
         })
@@ -129,7 +129,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
   const updateTask = useCallback(
     async (taskId: string, updates: Partial<ManutencaoTask>) => {
       try {
-        const updatedTask = await api.put<ManutencaoTask>(`/manutencoes/${taskId}`, {
+        const updatedTask = await api.put<ManutencaoTask & { dataPrevista?: string }>(`/manutencoes/${taskId}`, {
           ...updates,
           dataPrevista: updates.dueDate,
         })
