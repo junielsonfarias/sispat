@@ -108,7 +108,7 @@ const ChartTooltipContent = React.forwardRef<
       // Props derivadas do recharts Tooltip — `ComponentProps<typeof Tooltip>`
       // quebra com recharts 2.x + React 19, então tipamos manualmente.
       active?: boolean
-      payload: any[]
+      payload?: any[]
       label?: string
       labelFormatter?: (label: unknown, payload: unknown[]) => React.ReactNode
       labelClassName?: string

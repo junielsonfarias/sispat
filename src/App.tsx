@@ -19,7 +19,6 @@ const PublicBemDetalhes = lazy(() => import('@/pages/PublicBemDetalhes'))
 const PublicConsultation = lazy(() => import('@/pages/PublicConsultation'))
 const PublicImovelDetalhe = lazy(() => import('@/pages/PublicImovelDetalhe'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
-const DashboardRedirect = lazy(() => import('@/pages/DashboardRedirect'))
 const NotificationsPage = lazy(() => import('@/pages/Notifications'))
 
 // Main App Pages
