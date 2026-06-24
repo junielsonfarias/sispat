@@ -10,6 +10,7 @@ import {
   TermoValidationError,
   TipoTermo,
   getTermo as svcGetTermo,
+  emitirTermoCarga as svcEmitirTermoCarga,
 } from '../services/termosService';
 
 const TIPOS_VALIDOS: TipoTermo[] = ['carga', 'incorporacao', 'baixa'];
@@ -21,6 +22,7 @@ const buildActor = (req: Request): Actor | null => {
     role: req.user.role,
     municipalityId: req.user.municipalityId,
     email: req.user.email,
+    name: (req.user as { name?: string }).name,
   };
 };
 
@@ -48,5 +50,29 @@ export const getTermo = async (req: Request, res: Response): Promise<void> => {
     }
     logError('❌ Erro ao gerar termo', error);
     res.status(500).json({ error: 'Erro ao gerar termo' });
+  }
+};
+
+// POST /:patrimonioId/carga/emitir — formaliza a emissão do termo de carga,
+// registrando número sequencial + data + responsável (Art. 14/34 da Lei).
+export const emitirTermoCarga = async (req: Request, res: Response): Promise<void> => {
+  const actor = buildActor(req);
+  if (!actor) {
+    res.status(401).json({ error: 'Não autenticado' });
+    return;
+  }
+  try {
+    res.status(201).json(await svcEmitirTermoCarga(req.params.patrimonioId, actor));
+  } catch (error) {
+    if (error instanceof TermoNotFoundError) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+    if (error instanceof TermoValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    logError('❌ Erro ao emitir termo de carga', error);
+    res.status(500).json({ error: 'Erro ao emitir termo de carga' });
   }
 };

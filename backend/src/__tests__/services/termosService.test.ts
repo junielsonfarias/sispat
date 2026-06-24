@@ -5,6 +5,8 @@
 
 const mockPrisma = {
   patrimonio: { findUnique: jest.fn() },
+  historicoEntry: { count: jest.fn(), create: jest.fn() },
+  activityLog: { create: jest.fn() },
 };
 
 jest.mock('../../config/database', () => ({ prisma: mockPrisma }));
@@ -14,6 +16,7 @@ import {
   TermoNotFoundError,
   TermoValidationError,
   getTermo,
+  emitirTermoCarga,
 } from '../../services/termosService';
 
 const actor: Actor = { userId: 'u1', role: 'admin', municipalityId: 'mun-1', email: 'a@x.gov' };
@@ -72,5 +75,38 @@ describe('termosService — getTermo', () => {
     });
     const t = await getTermo('baixa', 'p1', actor);
     expect(t.baixa?.motivo_baixa).toContain('Desfazimento');
+  });
+});
+
+describe('termosService — emitirTermoCarga (Art. 14/34)', () => {
+  it('gera número sequencial, persiste em histórico e retorna o termo', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue(patrimonioBase);
+    mockPrisma.historicoEntry.count.mockResolvedValue(2); // já houve 2 no ano
+    mockPrisma.historicoEntry.create.mockResolvedValue({});
+    mockPrisma.activityLog.create.mockResolvedValue({});
+
+    const t = await emitirTermoCarga('p1', actor);
+
+    const ano = new Date().getFullYear();
+    expect(t.numero).toBe(`TC-${ano}-0003`);
+    expect(t.emitidoEm).not.toBeNull();
+    // persistiu a emissão no histórico do bem com a ação correta
+    const hist = mockPrisma.historicoEntry.create.mock.calls[0][0].data;
+    expect(hist.patrimonioId).toBe('p1');
+    expect(hist.action).toBe('TERMO_CARGA_EMITIDO');
+    expect(hist.details).toContain('TC-');
+    // contagem do ano filtra por município do bem
+    expect(mockPrisma.historicoEntry.count.mock.calls[0][0].where.patrimonio.municipalityId).toBe('mun-1');
+  });
+
+  it('rejeita emitir termo de carga de bem baixado', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({ ...patrimonioBase, status: 'baixado' });
+    await expect(emitirTermoCarga('p1', actor)).rejects.toBeInstanceOf(TermoValidationError);
+    expect(mockPrisma.historicoEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('mascara cross-tenant como NotFound', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({ ...patrimonioBase, municipalityId: 'OUTRO' });
+    await expect(emitirTermoCarga('p1', actor)).rejects.toBeInstanceOf(TermoNotFoundError);
   });
 });

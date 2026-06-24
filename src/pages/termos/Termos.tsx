@@ -62,6 +62,8 @@ interface TermoData {
   titulo: string
   referenciaLegal: string
   corpo: string
+  numero?: string | null
+  emitidoEm?: string | null
   geradoEm: string
   municipio: MunicipioInfo
   bem: BemInfo
@@ -103,6 +105,12 @@ function TermoDocumento({ termo }: TermoDocumentoProps) {
         </h1>
         {termo.referenciaLegal && (
           <p className="text-xs text-gray-500 mt-1">{termo.referenciaLegal}</p>
+        )}
+        {termo.numero && (
+          <p className="text-sm font-semibold mt-2">
+            Termo nº {termo.numero}
+            {termo.emitidoEm ? ` — emitido em ${formatDate(termo.emitidoEm)}` : ''}
+          </p>
         )}
       </div>
 
@@ -282,6 +290,35 @@ export default function Termos() {
     }
   }, [selectedPatrimonioId, selectedTipo])
 
+  // Art. 14/34: formaliza a emissão do termo de carga (número + data registrados
+  // no histórico do bem). A responsabilidade do agente consolida-se com a emissão.
+  const handleEmitirCarga = useCallback(async () => {
+    if (!selectedPatrimonioId || fetchingRef.current) return
+    fetchingRef.current = true
+    setLoading(true)
+    try {
+      const data = await api.post<TermoData>(
+        `/termos/${selectedPatrimonioId}/carga/emitir`,
+        {},
+      )
+      setTermoData(data)
+      toast({
+        title: 'Termo de carga emitido',
+        description: `Termo ${data.numero} registrado no histórico do bem.`,
+      })
+    } catch (err) {
+      logger.error('[Termos] Erro ao emitir termo de carga', err)
+      toast({
+        variant: 'destructive',
+        title: 'Não foi possível emitir o termo de carga',
+        description: (err as Error)?.message ?? 'Erro desconhecido',
+      })
+    } finally {
+      setLoading(false)
+      fetchingRef.current = false
+    }
+  }, [selectedPatrimonioId])
+
   const handleImprimir = useCallback(() => {
     window.print()
   }, [])
@@ -447,6 +484,18 @@ export default function Termos() {
                   </>
                 )}
               </Button>
+
+              {selectedTipo === 'carga' && (
+                <Button
+                  variant="secondary"
+                  onClick={() => void handleEmitirCarga()}
+                  disabled={!selectedPatrimonioId || loading}
+                  title="Registra número e data do termo de carga no histórico do bem (Art. 14/34)"
+                >
+                  <ScrollText className="mr-2 h-4 w-4" />
+                  Emitir termo de carga
+                </Button>
+              )}
 
               {termoData && (
                 <Button variant="outline" onClick={handleImprimir}>
