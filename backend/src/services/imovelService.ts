@@ -6,10 +6,17 @@
  * de forma consistente. Tenant isolation via municipalityId.
  */
 
+import { TipoPosse } from '@prisma/client';
 import { prisma } from '../config/database';
 import { redisCache, CacheUtils } from '../config/redis';
 import { logDebug, logError, logInfo, logWarn } from '../config/logger';
 import { sanitizeIncomingUrls, sanitizeSingleUrl, normalizeOnRead } from '../utils/photo-urls';
+
+// Posse (Art. 13 §3): imóveis em cessão/comodato não integram o ativo do
+// município (excluídos da conciliação). Valor inválido cai no padrão 'proprio'.
+const VALID_POSSE = new Set<string>(['proprio', 'cessao', 'comodato']);
+const parsePosse = (value: unknown): TipoPosse =>
+  typeof value === 'string' && VALID_POSSE.has(value) ? (value as TipoPosse) : TipoPosse.proprio;
 
 export interface Actor {
   userId: string;
@@ -242,6 +249,7 @@ export interface CreateImovelInput {
   observacoes?: string;
   tipo_imovel?: string;
   situacao?: string;
+  tipo_posse?: string;
   fotos?: unknown;
   documentos?: unknown;
   url_documentos?: string;
@@ -314,6 +322,7 @@ export const createImovel = async (
         observacoes: input.observacoes,
         tipo_imovel: input.tipo_imovel,
         situacao: input.situacao,
+        tipo_posse: parsePosse(input.tipo_posse),
         fotos: processedFotos,
         documentos: processedDocumentos,
         url_documentos: sanitizeSingleUrl(input.url_documentos),
@@ -373,6 +382,7 @@ const UPDATABLE_FIELDS = [
   'observacoes',
   'tipo_imovel',
   'situacao',
+  'tipo_posse',
   'fotos',
   'documentos',
   'url_documentos',
@@ -421,6 +431,9 @@ export const updateImovel = async (
   }
   if (dataToUpdate.url_documentos !== undefined) {
     dataToUpdate.url_documentos = sanitizeSingleUrl(dataToUpdate.url_documentos);
+  }
+  if (dataToUpdate.tipo_posse !== undefined) {
+    dataToUpdate.tipo_posse = parsePosse(dataToUpdate.tipo_posse);
   }
 
   // Conversões de tipo

@@ -213,6 +213,8 @@ export interface Imovel {
   observacoes?: string
   tipo_imovel?: string
   situacao?: string
+  // Posse (Art. 13 §3): imóveis em cessão/comodato não somam ao ativo.
+  tipo_posse?: TipoPosse
   fotos: string[]
   documentos: string[]
   url_documentos?: string

@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -47,6 +48,8 @@ const baseSchema = z.object({
     .min(0.01, 'O valor deve ser maior que zero.'),
   area_terreno: z.coerce.number().optional(),
   area_construida: z.coerce.number().optional(),
+  // Posse (Art. 13 §3): imóveis em cessão/comodato não integram o ativo.
+  tipo_posse: z.enum(['proprio', 'cessao', 'comodato']).default('proprio'),
   fotos: z.array(z.any()).optional(),
   documentos: z.array(z.any()).optional(),
 })
@@ -102,6 +105,7 @@ export default function ImoveisEdit() {
       valor_aquisicao: 0,
       area_terreno: undefined,
       area_construida: undefined,
+      tipo_posse: 'proprio',
       fotos: [],
       documentos: [],
     },
@@ -123,6 +127,7 @@ export default function ImoveisEdit() {
             data_aquisicao: data.data_aquisicao
               ? format(new Date(data.data_aquisicao), 'yyyy-MM-dd')
               : '',
+            tipo_posse: data.tipo_posse || 'proprio',
             fotos: data.fotos || [],
             documentos: data.documentos || [],
           })
@@ -282,6 +287,32 @@ export default function ImoveisEdit() {
               <CardContent className="px-6 pb-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ImoveisAreaFields control={form.control} />
+
+                  <FormField
+                    control={form.control}
+                    name="tipo_posse"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Título de Posse</FormLabel>
+                        <FormControl>
+                          <SearchableSelect
+                            options={[
+                              { value: 'proprio', label: 'Próprio (do município)' },
+                              { value: 'cessao', label: 'Cessão (de terceiros)' },
+                              { value: 'comodato', label: 'Comodato (de terceiros)' },
+                            ]}
+                            value={field.value as string}
+                            onChange={field.onChange}
+                            placeholder="Selecione a posse"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Imóveis em cessão/comodato não integram o ativo do município (Art. 13 §3).
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </CardContent>
             </Card>

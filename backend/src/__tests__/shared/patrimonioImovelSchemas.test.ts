@@ -176,4 +176,24 @@ describe('imovel — schemas (Sprint 22)', () => {
     });
     expect(bad.success).toBe(false);
   });
+
+  it('backend create aceita tipo_posse válido e rejeita inválido (Art. 13 §3)', () => {
+    const ok = createImovelBodySchema.safeParse({ ...validBackendCreate, tipo_posse: 'cessao' });
+    expect(ok.success).toBe(true);
+    const bad = createImovelBodySchema.safeParse({ ...validBackendCreate, tipo_posse: 'invalido' });
+    expect(bad.success).toBe(false);
+  });
+
+  it('frontend default de tipo_posse é proprio', () => {
+    const parsed = imovelFrontendSchema.parse({
+      numero_patrimonio: 'IM-001',
+      denominacao: 'Prédio',
+      endereco: 'Rua Principal, 100',
+      cidade: 'São Paulo',
+      estado: 'SP',
+      data_aquisicao: '2024-01-15T00:00:00.000Z',
+      valor_aquisicao: 50000,
+    });
+    expect((parsed as Record<string, unknown>).tipo_posse).toBe('proprio');
+  });
 });

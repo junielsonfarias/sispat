@@ -201,6 +201,10 @@ export const imovelFrontendSchema = z.object({
     .max(1000, 'Observações muito longas.')
     .optional(),
 
+  // Posse (Art. 13 §3): imóveis em cessão/comodato não integram o ativo do
+  // município (excluídos da conciliação). Default 'proprio'.
+  tipo_posse: z.enum(['proprio', 'cessao', 'comodato']).default('proprio'),
+
   fotos: fotosSchema,
 });
 
@@ -279,6 +283,8 @@ export const createImovelBodySchema = z
       .string()
       .max(50, 'Situação deve ter no máximo 50 caracteres.')
       .optional(),
+
+    tipo_posse: z.enum(['proprio', 'cessao', 'comodato']).optional(),
 
     latitude: z.coerce
       .number({ invalid_type_error: 'Latitude deve ser um número.' })
@@ -361,6 +367,8 @@ export const updateImovelBodySchema = z
       .string()
       .max(50, 'Situação deve ter no máximo 50 caracteres.')
       .optional(),
+
+    tipo_posse: z.enum(['proprio', 'cessao', 'comodato']).optional(),
 
     latitude: z.coerce
       .number({ invalid_type_error: 'Latitude deve ser um número.' })

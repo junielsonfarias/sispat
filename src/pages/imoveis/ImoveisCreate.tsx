@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -52,6 +53,8 @@ const baseSchema = z.object({
   observacoes: z.string().optional(),
   tipo_imovel: z.string().optional(),
   situacao: z.string().optional(),
+  // Posse (Art. 13 §3): imóveis em cessão/comodato não integram o ativo.
+  tipo_posse: z.enum(['proprio', 'cessao', 'comodato']).default('proprio'),
   fotos: z.array(z.any()).optional(),
   documentos: z.array(z.any()).optional(),
   url_documentos: z
@@ -135,6 +138,7 @@ export default function ImoveisCreate() {
       observacoes: '',
       tipo_imovel: '',
       situacao: '',
+      tipo_posse: 'proprio',
       fotos: [],
       documentos: [],
       url_documentos: '',
@@ -420,6 +424,32 @@ export default function ImoveisCreate() {
                             placeholder="Selecione a situação"
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tipo_posse"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Título de Posse</FormLabel>
+                        <FormControl>
+                          <SearchableSelect
+                            options={[
+                              { value: 'proprio', label: 'Próprio (do município)' },
+                              { value: 'cessao', label: 'Cessão (de terceiros)' },
+                              { value: 'comodato', label: 'Comodato (de terceiros)' },
+                            ]}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecione a posse"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Imóveis em cessão/comodato não integram o ativo do município (Art. 13 §3).
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
