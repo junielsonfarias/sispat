@@ -51,7 +51,12 @@ const mockPrisma = {
 };
 jest.mock('../../config/database', () => ({ prisma: mockPrisma }));
 
-import { Actor, registrarBaixa, PatrimonioNotFoundError } from '../../services/patrimonioService';
+import {
+  Actor,
+  registrarBaixa,
+  PatrimonioNotFoundError,
+  PatrimonioConflictError,
+} from '../../services/patrimonioService';
 
 const baixaInput = {
   data_baixa: '2026-06-22',
@@ -134,5 +139,47 @@ describe('registrarBaixa — isolamento de tenant', () => {
       PatrimonioNotFoundError,
     );
     expect(txClient.patrimonio.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('registrarBaixa — extravio exige Boletim de Ocorrência (Art. 25/26)', () => {
+  beforeEach(() => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1',
+      status: 'ativo',
+      sectorId: 's1',
+      numero_patrimonio: '2024-0001',
+      municipalityId: 'mun-A',
+    });
+  });
+
+  it('bloqueia baixa por extravio sem documento anexado', async () => {
+    await expect(
+      registrarBaixa('p1', { data_baixa: '2026-06-22', motivo_baixa: 'Extravio do bem' }, actorMunA('admin')),
+    ).rejects.toBeInstanceOf(PatrimonioConflictError);
+    expect(txClient.patrimonio.update).not.toHaveBeenCalled();
+  });
+
+  it('detecta furto/roubo mesmo com acento e caixa variada', async () => {
+    await expect(
+      registrarBaixa('p1', { data_baixa: '2026-06-22', motivo_baixa: 'FURTO em repartição' }, actorMunA('admin')),
+    ).rejects.toBeInstanceOf(PatrimonioConflictError);
+    await expect(
+      registrarBaixa('p1', { data_baixa: '2026-06-22', motivo_baixa: 'Bem desapareceu' }, actorMunA('admin')),
+    ).rejects.toBeInstanceOf(PatrimonioConflictError);
+  });
+
+  it('permite baixa por extravio quando o BO está anexado', async () => {
+    await registrarBaixa(
+      'p1',
+      { data_baixa: '2026-06-22', motivo_baixa: 'Extravio', documentos_baixa: ['bo-2026-123.pdf'] },
+      actorMunA('admin'),
+    );
+    expect(txClient.patrimonio.update).toHaveBeenCalled();
+  });
+
+  it('baixa comum (obsoleto) não exige documento', async () => {
+    await registrarBaixa('p1', baixaInput, actorMunA('admin'));
+    expect(txClient.patrimonio.update).toHaveBeenCalled();
   });
 });

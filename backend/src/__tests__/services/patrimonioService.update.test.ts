@@ -189,4 +189,17 @@ describe('updatePatrimonio — mass-assignment (allow-list de campos)', () => {
     expect(arg.data.id).toBeUndefined();
     expect(arg.data.createdBy).toBeUndefined();
   });
+
+  it('aceita tipo_posse válido (cessao) e ignora valor inválido (Art. 13 §3)', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', municipalityId: 'mun-A', sectorId: 's-de-A', status: 'ativo',
+    });
+    await updatePatrimonio('p1', { tipo_posse: 'cessao' }, actorMunA('admin'));
+    expect((mockTx.patrimonio.update.mock.calls[0] as any[])[0].data.tipo_posse).toBe('cessao');
+
+    mockTx.patrimonio.update.mockClear();
+    await updatePatrimonio('p1', { tipo_posse: 'invalido' }, actorMunA('admin'));
+    // valor fora do enum cai no padrão seguro 'proprio'
+    expect((mockTx.patrimonio.update.mock.calls[0] as any[])[0].data.tipo_posse).toBe('proprio');
+  });
 });

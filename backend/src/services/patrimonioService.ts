@@ -7,7 +7,7 @@
  * `AuditContext` com IP/userAgent.
  */
 
-import { Prisma, PatrimonioStatus } from '@prisma/client';
+import { Prisma, PatrimonioStatus, TipoPosse } from '@prisma/client';
 import { prisma } from '../config/database';
 import {
   QueryOptimizer,
@@ -418,7 +418,14 @@ export interface CreatePatrimonioInput {
   acquisitionFormId?: string;
   eh_kit?: boolean;
   quantidade_unidades?: string | number;
+  tipo_posse?: string;
 }
+
+// Posse (Art. 13 §3): valida o título de posse informado; valor inválido cai no
+// padrão 'proprio' (bem do município).
+const VALID_POSSE = new Set<string>(['proprio', 'cessao', 'comodato']);
+const parsePosse = (value: unknown): TipoPosse =>
+  typeof value === 'string' && VALID_POSSE.has(value) ? (value as TipoPosse) : TipoPosse.proprio;
 
 export class PatrimonioConflictError extends Error {
   constructor(message: string) {
@@ -492,6 +499,7 @@ export const createPatrimonio = async (
         setor_responsavel: input.setor_responsavel || 'Não especificado',
         local_objeto: input.local_objeto || 'Não especificado',
         status: (input.status as PatrimonioStatus) || PatrimonioStatus.ativo,
+        tipo_posse: parsePosse(input.tipo_posse),
         situacao_bem: input.situacao_bem,
         observacoes: input.observacoes,
         fotos: sanitizeIncomingUrls(input.fotos),
@@ -630,6 +638,7 @@ const UPDATABLE_FIELDS = new Set([
   'metodo_depreciacao',
   'vida_util_anos',
   'valor_residual',
+  'tipo_posse',
 ]);
 
 const parseUpdateData = (raw: Record<string, unknown>, actorUserId: string): Record<string, unknown> => {
@@ -655,6 +664,7 @@ const parseUpdateData = (raw: Record<string, unknown>, actorUserId: string): Rec
 
   if (out.fotos !== undefined) out.fotos = sanitizeIncomingUrls(out.fotos);
   if (out.documentos !== undefined) out.documentos = sanitizeIncomingUrls(out.documentos);
+  if (out.tipo_posse !== undefined) out.tipo_posse = parsePosse(out.tipo_posse);
 
   return out;
 };
@@ -838,6 +848,20 @@ export interface BaixaInput {
   observacoes?: string;
 }
 
+// Art. 25/26: baixa por extravio, furto, roubo ou desaparecimento exige
+// instauração de apuração com Boletim de Ocorrência / comunicação formal. Como
+// o motivo é texto livre, detectamos por palavra-chave (sem acento) e exigimos
+// ao menos um documento de baixa anexado (o BO/comunicação digitalizado).
+const RE_EXTRAVIO = /extravi|furto|roubo|desaparec|sumic|subtra/;
+
+const exigeBoletimOcorrencia = (motivo: string): boolean =>
+  RE_EXTRAVIO.test(
+    motivo
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase(),
+  );
+
 export const registrarBaixa = async (
   id: string,
   input: BaixaInput,
@@ -859,6 +883,15 @@ export const registrarBaixa = async (
 
   if (patrimonio.status === 'baixado') {
     throw new PatrimonioConflictError('Patrimônio já está baixado');
+  }
+
+  // Art. 25/26: extravio/furto/roubo exige Boletim de Ocorrência ou comunicação
+  // formal anexada (apuração de responsabilidade). Não é uma baixa comum.
+  if (exigeBoletimOcorrencia(input.motivo_baixa) && (input.documentos_baixa?.length ?? 0) === 0) {
+    throw new PatrimonioConflictError(
+      'Baixa por extravio/furto/roubo exige Boletim de Ocorrência ou comunicação formal ' +
+        'anexada (Art. 25/26). Anexe o documento em documentos_baixa antes de prosseguir.',
+    );
   }
 
   const { allowed, sectorName } = await ensureSectorAccess(actor, patrimonio.sectorId);

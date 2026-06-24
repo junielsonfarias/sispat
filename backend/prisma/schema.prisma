@@ -26,6 +26,15 @@ enum DestinacaoBem {
   nao_classificado
 }
 
+// Título de posse do bem (Art. 13 §3): apenas bens PRÓPRIOS integram o ativo
+// patrimonial do município. Bens recebidos em cessão/comodato são controlados
+// fisicamente, mas não somam ao saldo contábil na conciliação SIAFIC.
+enum TipoPosse {
+  proprio
+  cessao
+  comodato
+}
+
 // Comissões da gestão patrimonial (Art. 19 da Lei / Art. 8 do Decreto).
 enum TipoComissao {
   inventario
@@ -301,6 +310,8 @@ model Patrimonio {
   // marca os bens que ainda precisam de classificação confirmada por um agente.
   destinacao         DestinacaoBem    @default(uso_especial)
   destinacaoRevisada Boolean          @default(false)
+  // Posse (Art. 13 §3): bens em cessão/comodato não integram o ativo do município.
+  tipo_posse         TipoPosse        @default(proprio)
   observacoes        String?
   fotos              String[]         @default([])
   documentos         String[]         @default([])
@@ -374,6 +385,8 @@ model Imovel {
   situacao          String?
   destinacao        DestinacaoBem    @default(uso_especial)
   destinacaoRevisada Boolean         @default(false)
+  // Posse (Art. 13 §3): bens em cessão/comodato não integram o ativo do município.
+  tipo_posse        TipoPosse        @default(proprio)
   fotos             String[]         @default([])
   documentos        String[]         @default([])
   url_documentos    String?

@@ -54,7 +54,20 @@ describe('calcularSaldoFisico', () => {
     expect(mockPrisma.patrimonio.findMany.mock.calls[0][0].where).toEqual({
       municipalityId: 'mun-1',
       status: { not: 'baixado' },
+      tipo_posse: 'proprio',
     });
+  });
+
+  it('exclui bens em cessão/comodato do ativo (Art. 13 §3)', async () => {
+    mockPrisma.patrimonio.findMany.mockResolvedValue([]);
+    await calcularSaldoFisico('bens_moveis', 'mun-1');
+    expect(mockPrisma.patrimonio.findMany.mock.calls[0][0].where.tipo_posse).toBe('proprio');
+  });
+
+  it('bens_imoveis também restringe a bens próprios', async () => {
+    mockPrisma.imovel.aggregate.mockResolvedValue({ _sum: { valor_aquisicao: 9000 } });
+    await calcularSaldoFisico('bens_imoveis', 'mun-1');
+    expect(mockPrisma.imovel.aggregate.mock.calls[0][0].where.tipo_posse).toBe('proprio');
   });
 
   it('DESCONTA a depreciação acumulada (valor contábil líquido)', async () => {

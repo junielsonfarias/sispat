@@ -40,6 +40,8 @@ const TOLERANCIA = 0.01;
 // (custo - depreciação acumulada, piso no residual), para casar com o saldo do
 // SIAFIC. Bens móveis excluem os baixados (já saíram do ativo). Imóveis não têm
 // campos de depreciação no model, então entram pelo valor de aquisição (bruto).
+// Art. 13 §3: bens em cessão/comodato NÃO integram o ativo do município — só os
+// próprios (tipo_posse = 'proprio') somam ao saldo físico.
 export const calcularSaldoFisico = async (
   categoria: Categoria,
   municipalityId: string,
@@ -47,7 +49,7 @@ export const calcularSaldoFisico = async (
 ): Promise<number> => {
   if (categoria === 'bens_moveis') {
     const bens = await prisma.patrimonio.findMany({
-      where: { municipalityId, status: { not: 'baixado' } },
+      where: { municipalityId, status: { not: 'baixado' }, tipo_posse: 'proprio' },
       select: {
         valor_aquisicao: true,
         data_aquisicao: true,
@@ -60,7 +62,7 @@ export const calcularSaldoFisico = async (
   }
   const agg = await prisma.imovel.aggregate({
     _sum: { valor_aquisicao: true },
-    where: { municipalityId },
+    where: { municipalityId, tipo_posse: 'proprio' },
   });
   return agg._sum.valor_aquisicao ?? 0;
 };
