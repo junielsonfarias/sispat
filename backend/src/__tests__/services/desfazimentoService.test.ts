@@ -179,7 +179,7 @@ describe('trava de alienação sem desafetação (Art. 22/23)', () => {
     ).rejects.toThrow(/desafeta/i);
   });
 
-  it('permite INICIAR desfazimento por leilão de bem dominical', async () => {
+  it('permite INICIAR desfazimento por leilão de bem dominical avaliado', async () => {
     mockPrisma.patrimonio.findUnique.mockResolvedValue({
       id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
       destinacao: 'dominical',
@@ -188,9 +188,21 @@ describe('trava de alienação sem desafetação (Art. 22/23)', () => {
     mockPrisma.desfazimento.create.mockResolvedValue({ id: 'd2', classificacao: 'ocioso', modalidade: 'leilao' });
     mockPrisma.activityLog.create.mockResolvedValue({});
     const r = await createDesfazimento(
-      { ...baseInput, classificacao: 'ocioso', modalidade: 'leilao' }, actor,
+      { ...baseInput, classificacao: 'ocioso', modalidade: 'leilao', valorAvaliacao: 1500 }, actor,
     );
     expect(r.id).toBe('d2');
+  });
+
+  it('rejeita alienação (leilão) sem avaliação prévia (Art. 23 / Art. 14 Decreto)', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
+      destinacao: 'dominical',
+    });
+    mockPrisma.desfazimento.findFirst.mockResolvedValue(null);
+    await expect(
+      createDesfazimento({ ...baseInput, classificacao: 'ocioso', modalidade: 'leilao' }, actor),
+    ).rejects.toThrow(/avaliação prévia/i);
+    expect(mockPrisma.desfazimento.create).not.toHaveBeenCalled();
   });
 
   it('permite INUTILIZAÇÃO de bem não-dominical (não é alienação)', async () => {

@@ -49,6 +49,18 @@ const assertDesafetadoParaAlienacao = (modalidade: string, destinacao: string) =
   }
 };
 
+// Art. 23 da Lei / Art. 14 do Decreto: a alienação exige avaliação prévia (laudo
+// de valor justo). Modalidades de alienação não podem ser instruídas sem o valor
+// de avaliação. Inutilização (destruição de irrecuperável) dispensa avaliação.
+const assertAvaliacaoParaAlienacao = (modalidade: string, valorAvaliacao?: number | null) => {
+  if (MODALIDADES_ALIENACAO.includes(modalidade) && (valorAvaliacao == null || valorAvaliacao <= 0)) {
+    throw new DesfazimentoValidationError(
+      `A alienação por ${modalidade} exige avaliação prévia do bem (Art. 23 da Lei / Art. 14 do Decreto). ` +
+        `Informe o valor de avaliação (> 0) antes de prosseguir.`,
+    );
+  }
+};
+
 const loadPatrimonio = async (patrimonioId: string, actor: Actor) => {
   const p = await prisma.patrimonio.findUnique({
     where: { id: patrimonioId },
@@ -143,6 +155,8 @@ export const createDesfazimento = async (input: CreateDesfazimentoInput, actor: 
   }
   // Art. 22/23: alienar exige bem dominical (desafetação prévia).
   assertDesafetadoParaAlienacao(input.modalidade, patrimonio.destinacao);
+  // Art. 23/14 Decreto: alienar exige avaliação prévia.
+  assertAvaliacaoParaAlienacao(input.modalidade, input.valorAvaliacao);
   if (input.comissaoId) await validateComissao(input.comissaoId, actor);
 
   const emAndamento = await prisma.desfazimento.findFirst({
