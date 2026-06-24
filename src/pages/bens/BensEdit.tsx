@@ -15,6 +15,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -114,6 +115,7 @@ const BensEdit = () => {
           forma_aquisicao: (raw.acquisitionForm as { nome: string } | undefined)?.nome || data.forma_aquisicao || '',
           numero_licitacao: data.numero_licitacao || '',
           ano_licitacao: data.ano_licitacao,
+          tipo_posse: data.tipo_posse || 'proprio',
         } as unknown as PatrimonioFormValues)
       } catch (error) {
         console.error('Erro ao carregar patrimônio:', error)
@@ -408,6 +410,32 @@ const BensEdit = () => {
                           <SelectItem value="extraviado">Extraviado</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="tipo_posse"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título de Posse</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a posse" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="proprio">Próprio (do município)</SelectItem>
+                          <SelectItem value="cessao">Cessão (de terceiros)</SelectItem>
+                          <SelectItem value="comodato">Comodato (de terceiros)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Bens em cessão/comodato não integram o ativo do município (Art. 13 §3).
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -53,6 +53,7 @@ export type PatrimonioSituacao =
   | 'REGULAR'
   | 'RUIM'
   | 'PESSIMO'
+export type TipoPosse = 'proprio' | 'cessao' | 'comodato'
 
 export type SubPatrimonioStatus = 'ativo' | 'baixado' | 'manutencao'
 
@@ -147,6 +148,8 @@ export interface Patrimonio {
   local_objeto: string
   status: PatrimonioStatus
   situacao_bem: PatrimonioSituacao
+  // Título de posse (Art. 13 §3): bens em cessão/comodato não somam ao ativo.
+  tipo_posse?: TipoPosse
   fotos: string[]
   documentos: string[]
   historico_movimentacao: HistoricoEntry[]

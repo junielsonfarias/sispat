@@ -17,6 +17,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -102,6 +103,7 @@ const BensCreate = () => {
       local_objeto: '',
       situacao_bem: undefined,
       status: 'ativo',
+      tipo_posse: 'proprio',
       fotos: [],
       documentos: [],
       metodo_depreciacao: 'Linear',
@@ -393,6 +395,32 @@ const BensCreate = () => {
                           <SelectItem value="manutencao">Em Manutenção</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="tipo_posse"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título de Posse</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a posse" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="proprio">Próprio (do município)</SelectItem>
+                          <SelectItem value="cessao">Cessão (de terceiros)</SelectItem>
+                          <SelectItem value="comodato">Comodato (de terceiros)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Bens em cessão/comodato não integram o ativo do município (Art. 13 §3).
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

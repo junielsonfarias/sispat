@@ -144,6 +144,10 @@ export const patrimonioBaseSchema = z.object({
   fotos: fotosSchema,
   documentos: fotosSchema,
 
+  // Posse (Art. 13 §3): bens em cessão/comodato não integram o ativo do
+  // município (excluídos da conciliação físico-contábil). Default 'proprio'.
+  tipo_posse: z.enum(['proprio', 'cessao', 'comodato']).default('proprio'),
+
   metodo_depreciacao: z.enum(['Linear']).optional(),
 
   vida_util_anos: z.coerce
