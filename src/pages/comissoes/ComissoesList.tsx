@@ -949,23 +949,23 @@ export default function ComissoesList() {
           className="max-w-xs"
           aria-label="Buscar comissões"
         />
-        <Select value={filterTipo} onValueChange={setFilterTipo}>
+        <Select value={filterTipo || 'all'} onValueChange={(v) => setFilterTipo(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-52" aria-label="Filtrar por tipo">
             <SelectValue placeholder="Todos os tipos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os tipos</SelectItem>
+            <SelectItem value="all">Todos os tipos</SelectItem>
             {(Object.keys(TIPO_LABEL) as TipoComissao[]).map((t) => (
               <SelectItem key={t} value={t}>{TIPO_LABEL[t]}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <Select value={filterStatus || 'all'} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-36" aria-label="Filtrar por status">
             <SelectValue placeholder="Todos os status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os status</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
             {(Object.keys(STATUS_LABEL) as StatusComissao[]).map((s) => (
               <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
             ))}

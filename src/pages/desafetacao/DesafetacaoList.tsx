@@ -274,8 +274,8 @@ function CreateDesafetacaoForm({ comissoes, onSuccess, onClose }: CreateFormProp
             <FormItem>
               <FormLabel>Comissão Responsável (opcional)</FormLabel>
               <Select
-                onValueChange={field.onChange}
-                value={field.value ?? ''}
+                onValueChange={(v) => field.onChange(v === 'none' ? '' : v)}
+                value={field.value || 'none'}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -283,7 +283,7 @@ function CreateDesafetacaoForm({ comissoes, onSuccess, onClose }: CreateFormProp
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">Sem comissão</SelectItem>
+                  <SelectItem value="none">Sem comissão</SelectItem>
                   {comissoes.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       Portaria {c.portariaNumero}
@@ -519,12 +519,12 @@ export default function DesafetacaoList() {
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-2">
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <Select value={filterStatus || 'all'} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-44" aria-label="Filtrar por status">
             <SelectValue placeholder="Todos os status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os status</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
             {(Object.keys(STATUS_LABEL) as StatusDesafetacao[]).map((s) => (
               <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
             ))}

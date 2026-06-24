@@ -660,12 +660,12 @@ export default function DesfazimentoList() {
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-2">
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <Select value={filterStatus || 'all'} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-44" aria-label="Filtrar por status">
             <SelectValue placeholder="Todos os status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os status</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
             {(Object.keys(STATUS_LABEL) as StatusDesfazimento[]).map((s) => (
               <SelectItem key={s} value={s}>
                 {STATUS_LABEL[s]}
@@ -674,12 +674,12 @@ export default function DesfazimentoList() {
           </SelectContent>
         </Select>
 
-        <Select value={filterClassificacao} onValueChange={setFilterClassificacao}>
+        <Select value={filterClassificacao || 'all'} onValueChange={(v) => setFilterClassificacao(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-52" aria-label="Filtrar por classificação">
             <SelectValue placeholder="Todas as classificações" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas as classificações</SelectItem>
+            <SelectItem value="all">Todas as classificações</SelectItem>
             {(Object.keys(CLASSIFICACAO_LABEL) as ClassificacaoInservivel[]).map((c) => (
               <SelectItem key={c} value={c}>
                 {CLASSIFICACAO_LABEL[c]}

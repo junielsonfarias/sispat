@@ -739,12 +739,12 @@ export default function RegularizacaoList() {
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-2">
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <Select value={filterStatus || 'all'} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-44" aria-label="Filtrar por status">
             <SelectValue placeholder="Todos os status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os status</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
             {(Object.keys(STATUS_LABEL) as StatusRegularizacao[]).map((s) => (
               <SelectItem key={s} value={s}>
                 {STATUS_LABEL[s]}
@@ -753,12 +753,12 @@ export default function RegularizacaoList() {
           </SelectContent>
         </Select>
 
-        <Select value={filterTipoOrigem} onValueChange={setFilterTipoOrigem}>
+        <Select value={filterTipoOrigem || 'all'} onValueChange={(v) => setFilterTipoOrigem(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-52" aria-label="Filtrar por tipo de origem">
             <SelectValue placeholder="Todos os tipos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os tipos</SelectItem>
+            <SelectItem value="all">Todos os tipos</SelectItem>
             {(Object.keys(TIPO_ORIGEM_LABEL) as TipoOrigemBem[]).map((t) => (
               <SelectItem key={t} value={t}>
                 {TIPO_ORIGEM_LABEL[t]}
