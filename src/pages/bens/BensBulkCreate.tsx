@@ -5,7 +5,6 @@ import * as z from 'zod'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -24,11 +23,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
-import { Loader2, Plus, Trash2, Upload, Download } from 'lucide-react'
+import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useActivityLog } from '@/contexts/ActivityLogContext'
 import { useSectors } from '@/contexts/SectorContext'
-import { useLocais } from '@/contexts/LocalContext'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { generatePatrimonialNumber } from '@/lib/asset-utils'
 import { Patrimonio } from '@/types'
@@ -66,7 +64,6 @@ const BensBulkCreate = () => {
   const { patrimonios, addPatrimonio } = usePatrimonio()
   const { logActivity } = useActivityLog()
   const { sectors } = useSectors()
-  const { getLocaisBySectorId } = useLocais()
   const [isLoading, setIsLoading] = useState(false)
 
   const allowedSectors = useMemo(() => {
@@ -155,7 +152,7 @@ const BensBulkCreate = () => {
           historico_movimentacao: [],
           entityName: 'Patrimonio',
           municipalityId: user.municipalityId!,
-        } as Omit<Patrimonio, 'id' | 'notes'>
+        } as unknown as Omit<Patrimonio, 'id' | 'historico_movimentacao' | 'entityName' | 'notes' | 'municipalityId'>
 
         const newPatrimonio = await addPatrimonio(newPatrimonioData)
         createdPatrimonios.push(newPatrimonio)

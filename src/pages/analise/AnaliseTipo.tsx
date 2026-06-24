@@ -55,7 +55,7 @@ const AnaliseTipo = () => {
     })
 
     filteredPatrimonios.forEach((p) => {
-      const setor = p.setor_responsavel || p.setorResponsavel
+      const setor = p.setor_responsavel
       if (matrix[setor]) {
         matrix[setor][p.tipo] =
           (matrix[setor][p.tipo] || 0) + 1
@@ -65,7 +65,7 @@ const AnaliseTipo = () => {
     return Object.entries(matrix).map(([sector, types]) => ({
       sector,
       ...types,
-    }))
+    })) as Array<{ sector: string } & Record<string, number>>
   }, [filteredPatrimonios, sectors, allTypes])
 
   const evolutionData = useMemo(() => {
@@ -76,7 +76,7 @@ const AnaliseTipo = () => {
       const monthStr = format(month, 'MMM/yy')
       const acquisitionsInMonth = filteredPatrimonios.filter(
         (p) =>
-          format(new Date(p.data_aquisicao || p.dataAquisicao), 'yyyy-MM') ===
+          format(new Date(p.data_aquisicao), 'yyyy-MM') ===
           format(month, 'yyyy-MM'),
       )
       const acquisitionsByType = acquisitionsInMonth.reduce(
@@ -155,7 +155,7 @@ const AnaliseTipo = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip content={<ChartTooltipContent />} />
+                <Tooltip content={<ChartTooltipContent payload={[]} />} />
                 <Legend />
                 {allTypes.map((type, index) => (
                   <Area

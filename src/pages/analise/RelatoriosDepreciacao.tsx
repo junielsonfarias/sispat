@@ -5,7 +5,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card'
 import {
   Table,
@@ -18,15 +17,11 @@ import {
 import { Button } from '@/components/ui/button'
 import {
   Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { useSectors } from '@/contexts/SectorContext'
 import { useAuth } from '@/hooks/useAuth'
 import { DatePickerWithRange } from '@/components/ui/date-picker'
@@ -73,10 +68,10 @@ const RelatoriosDepreciacao = () => {
       .filter((p) => {
         const dateMatch =
           !dateRange?.from ||
-          (new Date(p.data_aquisicao || p.dataAquisicao) >= dateRange.from &&
-            (!dateRange.to || new Date(p.data_aquisicao || p.dataAquisicao) <= dateRange.to))
+          (new Date(p.data_aquisicao) >= dateRange.from &&
+            (!dateRange.to || new Date(p.data_aquisicao) <= dateRange.to))
         const sectorMatch =
-          !selectedSector || (p.setor_responsavel || p.setorResponsavel) === selectedSector
+          !selectedSector || p.setor_responsavel === selectedSector
         return dateMatch && sectorMatch
       })
       .map((p) => ({ ...p, depreciationInfo: calculateDepreciation(p) }))
@@ -85,7 +80,7 @@ const RelatoriosDepreciacao = () => {
   const summary = useMemo(() => {
     return filteredData.reduce(
       (acc, item) => {
-        acc.totalAcquisition += (item.valor_aquisicao || item.valorAquisicao || 0)
+        acc.totalAcquisition += (item.valor_aquisicao || 0)
         acc.totalAccumulatedDepreciation +=
           item.depreciationInfo.accumulatedDepreciation
         acc.totalBookValue += item.depreciationInfo.bookValue
@@ -113,7 +108,7 @@ const RelatoriosDepreciacao = () => {
       new Date().toISOString().split('T')[0]
     }`
 
-    if (batchConfig.enabled && exportFormat) {
+    if (batchConfig.enabled && exportFormat && exportFormat !== 'pdf') {
       exportInBatches(
         filteredData,
         columnsWithLabels,
@@ -242,9 +237,9 @@ const RelatoriosDepreciacao = () => {
             <TableBody>
               {filteredData.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.numero_patrimonio || item.numeroPatrimonio}</TableCell>
-                  <TableCell>{item.descricao_bem || item.descricaoBem}</TableCell>
-                  <TableCell>{formatCurrency(item.valor_aquisicao ?? item.valorAquisicao)}</TableCell>
+                  <TableCell>{item.numero_patrimonio}</TableCell>
+                  <TableCell>{item.descricao_bem}</TableCell>
+                  <TableCell>{formatCurrency(item.valor_aquisicao)}</TableCell>
                   <TableCell>
                     {formatCurrency(
                       item.depreciationInfo.accumulatedDepreciation,

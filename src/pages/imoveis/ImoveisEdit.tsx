@@ -21,8 +21,7 @@ import { Loader2, ArrowLeft } from 'lucide-react'
 import { ImageUpload } from '@/components/bens/ImageUpload'
 import { useImovel } from '@/hooks/useImovel'
 import { useImovelField } from '@/contexts/ImovelFieldContext'
-import { CurrencyInput } from '@/components/ui/currency-input'
-import { Imovel, ImovelFieldConfig } from '@/types'
+import { Imovel } from '@/types'
 import { format } from 'date-fns'
 import { Label } from '@/components/ui/label'
 import { useSectors } from '@/contexts/SectorContext'
@@ -65,22 +64,22 @@ export default function ImoveisEdit() {
 
   // Criar schema dinâmico baseado nos campos customizados
   const imovelEditSchema = useMemo(() => {
-    let schema = baseSchema
+    let schema: z.AnyZodObject = baseSchema
 
     customFieldConfigs.forEach((field) => {
-      if (field.type === 'text' || field.type === 'textarea') {
+      if (field.type === 'TEXT' || field.type === 'TEXTAREA') {
         schema = schema.extend({
           [field.id]: z.string().optional(),
         })
-      } else if (field.type === 'number') {
+      } else if (field.type === 'NUMBER') {
         schema = schema.extend({
           [field.id]: z.coerce.number().optional(),
         })
-      } else if (field.type === 'date') {
+      } else if (field.type === 'DATE') {
         schema = schema.extend({
           [field.id]: z.string().optional(),
         })
-      } else if (field.type === 'currency') {
+      } else if (field.type === 'CURRENCY') {
         schema = schema.extend({
           [field.id]: z.coerce.number().optional(),
         })
@@ -121,8 +120,8 @@ export default function ImoveisEdit() {
           setImovel(data)
           form.reset({
             ...data,
-            data_aquisicao: data.data_aquisicao || data.dataAquisicao 
-              ? format(new Date(data.data_aquisicao || data.dataAquisicao), 'yyyy-MM-dd')
+            data_aquisicao: data.data_aquisicao
+              ? format(new Date(data.data_aquisicao), 'yyyy-MM-dd')
               : '',
             fotos: data.fotos || [],
             documentos: data.documentos || [],
@@ -171,7 +170,7 @@ export default function ImoveisEdit() {
         documentos: documentosProcessados,
         updatedAt: new Date().toISOString(),
         updatedBy: user?.id || '',
-      })
+      } as unknown as Partial<Imovel>, user!)
       toast({
         title: 'Sucesso',
         description: 'Imóvel atualizado com sucesso.',
@@ -316,24 +315,24 @@ export default function ImoveisEdit() {
                       <FormField
                         key={field.id}
                         control={form.control}
-                        name={field.id as keyof ImovelFormValues}
+                        name={field.id as string & keyof ImovelFormValues}
                         render={({ field: formField }) => (
                           <FormItem>
                             <FormLabel>{field.label}</FormLabel>
                             <FormControl>
-                              {field.type === 'textarea' ? (
-                                <Textarea {...formField} placeholder={field.placeholder} />
-                              ) : field.type === 'number' || field.type === 'currency' ? (
+                              {field.type === 'TEXTAREA' ? (
+                                <Textarea {...formField} placeholder={(field as unknown as { placeholder?: string }).placeholder} />
+                              ) : field.type === 'NUMBER' || field.type === 'CURRENCY' ? (
                                 <Input
                                   type="number"
                                   {...formField}
                                   onChange={(e) => formField.onChange(parseFloat(e.target.value) || undefined)}
-                                  placeholder={field.placeholder}
+                                  placeholder={(field as unknown as { placeholder?: string }).placeholder}
                                 />
-                              ) : field.type === 'date' ? (
+                              ) : field.type === 'DATE' ? (
                                 <Input type="date" {...formField} />
                               ) : (
-                                <Input {...formField} placeholder={field.placeholder} />
+                                <Input {...formField} placeholder={(field as unknown as { placeholder?: string }).placeholder} />
                               )}
                             </FormControl>
                             <FormMessage />

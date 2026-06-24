@@ -18,10 +18,10 @@ export const calculateDepreciation = (
   patrimonio: Patrimonio,
 ): DepreciationInfo => {
   const {
-    valor_aquisicao = patrimonio.valorAquisicao,
-    data_aquisicao = patrimonio.dataAquisicao,
-    vida_util_anos = patrimonio.vidaUtilAnos || 0,
-    valor_residual = patrimonio.valorResidual || 0,
+    valor_aquisicao,
+    data_aquisicao,
+    vida_util_anos = 0,
+    valor_residual = 0,
   } = patrimonio
 
   const now = new Date()

@@ -5,7 +5,6 @@ import * as z from 'zod'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -24,23 +23,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
-import { Loader2, Info, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 import { ImageUpload } from '@/components/bens/ImageUpload'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useActivityLog } from '@/contexts/ActivityLogContext'
-import { Patrimonio } from '@/types'
+import { AcquisitionForm, Patrimonio } from '@/types'
 import { format } from 'date-fns'
 import { useSectors } from '@/contexts/SectorContext'
 import { useLocais } from '@/contexts/LocalContext'
 import { useTiposBens } from '@/contexts/TiposBensContext'
 import { useAcquisitionForms } from '@/contexts/AcquisitionFormContext'
-import { SearchableSelect } from '@/components/ui/searchable-select'
-import { CurrencyInput } from '@/components/ui/currency-input'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { patrimonioEditSchema } from '@/lib/validations/patrimonioSchema'
 import { logger } from '@/lib/logger'
 import {
@@ -56,7 +48,7 @@ const BensEdit = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { getPatrimonioById, fetchPatrimonioById, updatePatrimonio } = usePatrimonio()
+  const { fetchPatrimonioById, updatePatrimonio } = usePatrimonio()
   const { logActivity } = useActivityLog()
   const { sectors } = useSectors()
   const { getLocaisBySectorId } = useLocais()
@@ -92,7 +84,7 @@ const BensEdit = () => {
         setPatrimonio(data)
         
         // ✅ CORREÇÃO: Converter strings de URLs para objetos que ImageUpload espera
-        const fotosParaForm = (data.fotos || data.photos || []).map((foto: any, index: number) => {
+        const fotosParaForm = (data.fotos || ((data as unknown as Record<string, unknown>).photos as string[]) || []).map((foto: any, index: number) => {
           if (typeof foto === 'string') {
             // Converter string para objeto
             return {
@@ -104,24 +96,25 @@ const BensEdit = () => {
           return foto // Já é objeto
         })
         
+        const raw = data as unknown as Record<string, unknown>
         form.reset({
           ...data,
-          data_aquisicao: data.data_aquisicao || data.dataAquisicao 
-            ? format(new Date(data.data_aquisicao || data.dataAquisicao), 'yyyy-MM-dd')
+          data_aquisicao: (data.data_aquisicao || raw.dataAquisicao as Date | undefined)
+            ? format(new Date((data.data_aquisicao || raw.dataAquisicao as Date)!), 'yyyy-MM-dd')
             : '',
-          data_baixa: (data.data_baixa || data.dataBaixa)
-            ? format(new Date(data.data_baixa || data.dataBaixa), 'yyyy-MM-dd')
+          data_baixa: (data.data_baixa || raw.dataBaixa as Date | undefined)
+            ? format(new Date((data.data_baixa || raw.dataBaixa as Date)!), 'yyyy-MM-dd')
             : '',
           fotos: fotosParaForm,
-          documentos: data.documentos || data.documents || [],
+          documentos: data.documentos || (raw.documents as string[]) || [],
           // ✅ CORREÇÃO: Mapear relacionamentos para nomes
-          setor_responsavel: data.sector?.name || data.setor_responsavel || '',
-          local_objeto: data.local?.name || data.local_objeto || '',
-          tipo: data.tipoBem?.nome || data.tipo || '',
-          forma_aquisicao: data.acquisitionForm?.nome || data.forma_aquisicao || '',
+          setor_responsavel: (raw.sector as { name: string } | undefined)?.name || data.setor_responsavel || '',
+          local_objeto: (raw.local as { name: string } | undefined)?.name || data.local_objeto || '',
+          tipo: (raw.tipoBem as { nome: string } | undefined)?.nome || data.tipo || '',
+          forma_aquisicao: (raw.acquisitionForm as { nome: string } | undefined)?.nome || data.forma_aquisicao || '',
           numero_licitacao: data.numero_licitacao || '',
           ano_licitacao: data.ano_licitacao,
-        })
+        } as unknown as PatrimonioFormValues)
       } catch (error) {
         console.error('Erro ao carregar patrimônio:', error)
         toast({
@@ -147,26 +140,6 @@ const BensEdit = () => {
       .map((s) => ({ value: s.name, label: s.name }))
   }, [sectors, user])
 
-  const isSectorDisabled = useMemo(
-    () =>
-      user?.role !== 'admin' &&
-      user?.role !== 'supervisor' &&
-      allowedSectors.length === 1,
-    [user, allowedSectors],
-  )
-
-  const selectedSectorName = form.watch('setor_responsavel')
-  const selectedSector = sectors.find((s) => s.name === selectedSectorName)
-
-  const locationOptions = useMemo(() => {
-    if (!selectedSector) return []
-    return getLocaisBySectorId(selectedSector.id).map((l) => ({
-      value: l.name,
-      label: l.name,
-    }))
-  }, [selectedSector, getLocaisBySectorId])
-
-  const status = form.watch('status')
 
   const onSubmit = async (data: PatrimonioFormValues) => {
     if (!user || !patrimonio) {
@@ -175,23 +148,24 @@ const BensEdit = () => {
     
     setIsLoading(true)
 
+    const patrimonioRaw = patrimonio as unknown as Record<string, unknown>
     try {
       // Encontrar o setor pelo nome para pegar o ID
       const sectorData = sectors.find((s) => s.name === data.setor_responsavel)
-      const sectorId = sectorData?.id || patrimonio.sectorId
-      
+      const sectorId = sectorData?.id || (patrimonioRaw.sectorId as string | undefined)
+
       // Encontrar o local pelo nome para pegar o ID (se houver)
       const locais = sectorData ? getLocaisBySectorId(sectorData.id) : []
       const localData = locais.find((l) => l.name === data.local_objeto)
-      const localId = localData?.id || patrimonio.localId
-      
+      const localId = localData?.id || (patrimonioRaw.localId as string | undefined)
+
       // Encontrar o tipo de bem pelo nome para pegar o ID (se houver)
       const tipoData = tiposBens.find((t) => t.nome === data.tipo)
-      const tipoId = tipoData?.id || patrimonio.tipoId
-      
+      const tipoId = tipoData?.id || patrimonio.tipo
+
       // Encontrar a forma de aquisição pelo nome para pegar o ID (se houver)
       const formaData = activeAcquisitionForms.find((f) => f.nome === data.forma_aquisicao)
-      const acquisitionFormId = formaData?.id || patrimonio.acquisitionFormId
+      const acquisitionFormId = formaData?.id || (patrimonioRaw.acquisitionFormId as string | undefined)
 
       // ✅ CORREÇÃO: Enviar apenas os campos necessários, sem objetos de relacionamento
       const updatedPatrimonio: Patrimonio = {
@@ -203,8 +177,8 @@ const BensEdit = () => {
         modelo: data.modelo,
         cor: data.cor,
         numero_serie: data.numero_serie,
-        data_aquisicao: new Date(data.data_aquisicao || data.dataAquisicao),
-        data_baixa: (data.data_baixa || data.dataBaixa) ? new Date(data.data_baixa || data.dataBaixa) : undefined,
+        data_aquisicao: new Date(data.data_aquisicao!),
+        data_baixa: data.data_baixa ? new Date(data.data_baixa) : undefined,
         valor_aquisicao: data.valor_aquisicao,
         quantidade: data.quantidade,
         numero_nota_fiscal: data.numero_nota_fiscal,
@@ -265,7 +239,7 @@ const BensEdit = () => {
         createdBy: patrimonio.createdBy,
         updatedAt: patrimonio.updatedAt,
         updatedBy: patrimonio.updatedBy,
-      } as Patrimonio
+      } as unknown as Patrimonio
 
       await updatePatrimonio(updatedPatrimonio)
       
@@ -309,7 +283,7 @@ const BensEdit = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="mb-6">
           <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
-            Editar Bem: {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+            Editar Bem: {patrimonio.numero_patrimonio}
           </h1>
           <p className="text-base lg:text-lg text-gray-600">
             Edite as informações do bem patrimonial
@@ -395,7 +369,7 @@ const BensEdit = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Situação do Bem</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione a situação" />
@@ -460,7 +434,7 @@ const BensEdit = () => {
                 />
               </div>
 
-              <BensAquisicaoFields control={form.control} activeAcquisitionForms={activeAcquisitionForms} />
+              <BensAquisicaoFields control={form.control} activeAcquisitionForms={activeAcquisitionForms as unknown as AcquisitionForm[]} />
 
               <BensLicitacaoFields control={form.control} />
 

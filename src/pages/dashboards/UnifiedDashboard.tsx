@@ -1,19 +1,14 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { useAuth } from '@/hooks/useAuth'
-import { useSync } from '@/contexts/SyncContext'
-import { useVersion } from '@/contexts/VersionContext'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useImovel } from '@/hooks/useImovel'
 import { subMonths } from 'date-fns'
-import { Flex } from '@/components/ui/responsive-container'
 import { ErrorBoundary } from '@/components/ErrorBoundaries/ErrorBoundary'
 import { StatsCards } from '@/components/dashboard/StatsCards'
 import { ChartsSection } from '@/components/dashboard/ChartsSection'
@@ -21,59 +16,53 @@ import { RecentPatrimonios } from '@/components/dashboard/RecentPatrimonios'
 import { AlertsSection } from '@/components/dashboard/AlertsSection'
 
 const UnifiedDashboard = () => {
-  const { user } = useAuth()
-  const { isSyncing, startSync } = useSync()
   const { patrimonios } = usePatrimonio()
   const { imoveis } = useImovel()
-  const {
-    currentVersion,
-    latestVersion,
-    isLatestVersion,
-    isUpdating,
-    updateToLatestVersion,
-  } = useVersion()
 
   // Calcular estatísticas usando dados reais do backend (excluindo baixados)
-  const patrimoniosAtivos = Array.isArray(patrimonios) ? patrimonios.filter(p => p.status !== 'baixado') : []
-  const totalPatrimonios = patrimoniosAtivos.length
   const totalImoveis = Array.isArray(imoveis) ? imoveis.length : 0
-  const valorTotalPatrimonios = patrimoniosAtivos.reduce((sum, p) => {
-    const valor = p.valor_aquisicao || p.valorAquisicao || 0
-    const numValor = typeof valor === 'number' ? valor : parseFloat(valor) || 0
-    return sum + numValor
-  }, 0)
   const valorTotalImoveis = Array.isArray(imoveis) ? imoveis.reduce((sum, i) => {
-    const valor = i.valor_aquisicao || i.valor || 0
-    const numValor = typeof valor === 'number' ? valor : parseFloat(valor) || 0
+    const valor = i.valor_aquisicao || 0
+    const numValor = typeof valor === 'number' ? valor : parseFloat(String(valor)) || 0
     return sum + numValor
   }, 0) : 0
 
   // Usar apenas dados reais do backend
+  // data_aquisicao e createdAt serializados para string pois os componentes filhos usam interfaces locais com esses campos como string
   const dashboardData = Array.isArray(patrimonios) ? patrimonios.map(p => ({
     ...p,
-    data_aquisicao: p.data_aquisicao || p.dataAquisicao,
-    valor_aquisicao: p.valor_aquisicao || p.valorAquisicao,
-    situacao_bem: p.situacao_bem || (p.status === 'ativo' ? 'BOM' : p.status),
-    tipo_bem: p.tipo,
-    setor_responsavel: p.setor_responsavel || p.setorId || 'Sem Setor',
-    historico_movimentacao: p.historico_movimentacao || p.historicoMovimentacao || [],
-    createdAt: p.createdAt || p.createdAt || new Date().toISOString()
+    data_aquisicao: p.data_aquisicao ? (p.data_aquisicao instanceof Date ? p.data_aquisicao.toISOString() : String(p.data_aquisicao)) : undefined,
+    createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : String(p.createdAt),
+    situacao_bem: p.situacao_bem || 'BOM',
+    setor_responsavel: p.setor_responsavel || 'Sem Setor',
+    historico_movimentacao: p.historico_movimentacao || [],
   })) : []
 
   // ✅ CORREÇÃO: Formatar imóveis para o componente RecentPatrimonios
   const imoveisFormatted = Array.isArray(imoveis) ? imoveis.map(i => ({
     ...i,
-    id: i.id, // ✅ Garantir que o ID está presente
-    numero_patrimonio: i.numero_patrimonio || i.numeroPatrimonio || '',
-    denominacao: i.denominacao || '',
-    descricao_bem: i.denominacao || '', // Para imóveis, usar denominacao como descricao
-    tipo: i.tipo_imovel || i.tipo || 'Imóvel',
-    valor_aquisicao: i.valor_aquisicao || i.valor || 0,
-    valor: i.valor_aquisicao || i.valor || 0,
-    status: i.situacao || i.status || 'ativo',
-    setor_responsavel: (i as any).setor?.name || i.setorId || 'Sem Setor',
-    setorId: i.setorId,
-    createdAt: i.createdAt || (i as any).created_at || new Date().toISOString()
+    numero_patrimonio: i.numero_patrimonio,
+    descricao_bem: i.denominacao || '',
+    tipo: i.tipo_imovel || 'Imóvel',
+    valor_aquisicao: i.valor_aquisicao || 0,
+    status: i.situacao || 'ativo',
+    situacao_bem: 'BOM',
+    setor_responsavel: i.setor || 'Sem Setor',
+    historico_movimentacao: i.historico || [],
+    createdAt: i.data_aquisicao instanceof Date ? i.data_aquisicao.toISOString() : String(i.data_aquisicao || new Date()),
+    marca: '',
+    modelo: '',
+    cor: '',
+    numero_serie: '',
+    quantidade: 1,
+    numero_nota_fiscal: '',
+    forma_aquisicao: '',
+    local_objeto: '',
+    fotos: i.fotos || [],
+    documentos: i.documentos || [],
+    entityName: '',
+    municipalityId: i.municipalityId,
+    createdBy: '',
   })) : []
 
   const stats = useMemo(() => {
@@ -93,7 +82,7 @@ const UnifiedDashboard = () => {
     
     const totalValue = patrimoniosAtivosCalc.reduce(
       (acc, p) => {
-        const valor = p.valor_aquisicao || p.valorAquisicao || p.valor || 0
+        const valor = p.valor_aquisicao || 0
         const numValor = typeof valor === 'number' ? valor : parseFloat(String(valor)) || 0
         return acc + numValor
       },
@@ -120,14 +109,6 @@ const UnifiedDashboard = () => {
       setoresCount: uniqueSetores,
     }
   }, [dashboardData])
-
-  const handleSync = async () => {
-    await startSync()
-  }
-
-  const handleUpdateVersion = async () => {
-    await updateToLatestVersion()
-  }
 
   return (
     <ErrorBoundary type="dashboard">

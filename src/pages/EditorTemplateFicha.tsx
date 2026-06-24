@@ -8,10 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Save, Eye, Archive, Building, X, Plus } from 'lucide-react'
+import { ArrowLeft, Save, Eye, Archive, Building, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/http-api'
-import { FichaPreview } from '@/components/FichaPreview'
 import { FichaPreviewReal } from '@/components/FichaPreviewReal'
 
 interface FichaTemplate {
@@ -99,7 +98,7 @@ const fontFamilies = [
 
 export default function EditorTemplateFicha() {
   const { id } = useParams()
-  const { user } = useAuth()
+  const { user: _user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -907,7 +906,7 @@ export default function EditorTemplateFicha() {
             </CardHeader>
             <CardContent>
               <div className="border rounded-lg overflow-hidden bg-white shadow-sm scale-50 origin-top-left" style={{ width: '200%' }}>
-                <FichaPreviewReal config={config} type={template.type} />
+                <FichaPreviewReal config={config} />
               </div>
             </CardContent>
           </Card>
@@ -930,7 +929,7 @@ export default function EditorTemplateFicha() {
             </DialogTitle>
           </DialogHeader>
           <div className="mt-4">
-            <FichaPreviewReal config={config} type={template.type} />
+            <FichaPreviewReal config={config} />
           </div>
         </DialogContent>
       </Dialog>

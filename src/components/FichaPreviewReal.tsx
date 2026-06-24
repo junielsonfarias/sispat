@@ -30,6 +30,8 @@ export const FichaPreviewReal = ({
     numero_serie: 'SN123456789',
     data_aquisicao: new Date('2024-01-15'),
     valor_aquisicao: 4500.00,
+    quantidade: 1,
+    numero_nota_fiscal: '',
     forma_aquisicao: 'Compra Direta',
     setor_responsavel: 'Secretaria de Educação',
     local_objeto: 'Sala 101',
@@ -44,8 +46,9 @@ export const FichaPreviewReal = ({
     notes: [],
     municipalityId: '1',
     createdAt: new Date('2024-01-15'),
+    createdBy: 'sistema',
     updatedAt: new Date('2024-01-15'),
-    entityName: MUNICIPALITY_NAME
+    entityName: MUNICIPALITY_NAME,
   }
 
   // Aplicar configurações do template
@@ -200,7 +203,7 @@ export const FichaPreviewReal = ({
               <div style={{ padding: '12px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px', textAlign: 'center' }}>
                 <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500, marginBottom: '4px' }}>ÚLTIMA ATUALIZAÇÃO</p>
                 <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {formatDate(new Date(samplePatrimonio.updatedAt))}
+                  {samplePatrimonio.updatedAt ? formatDate(new Date(samplePatrimonio.updatedAt)) : '—'}
                 </p>
               </div>
             </div>
@@ -351,7 +354,7 @@ export const FichaPreviewReal = ({
               <div>
                 <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>VALOR RESIDUAL</p>
                 <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {formatCurrency(samplePatrimonio.valor_residual)}
+                  {samplePatrimonio.valor_residual != null ? formatCurrency(samplePatrimonio.valor_residual) : '—'}
                 </p>
               </div>
             </div>
@@ -359,14 +362,16 @@ export const FichaPreviewReal = ({
         )}
 
         {/* Observações */}
-        {shouldInclude('observacoes') && samplePatrimonio.notes && samplePatrimonio.notes.length > 0 && (
+        {shouldInclude('observacoes') && (samplePatrimonio.notes?.length ?? 0) > 0 && (
           <div style={{ marginBottom: '15px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '12px', color: '#000', borderBottom: '1px solid #ccc', paddingBottom: '4px' }}>
               OBSERVAÇÕES
             </h3>
             <div style={{ padding: '8px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' }}>
-              {samplePatrimonio.notes.map((note, index) => (
-                <div key={index} style={{ marginBottom: index < samplePatrimonio.notes.length - 1 ? '8px' : '0' }}>
+              {(samplePatrimonio.notes ?? []).map((note, index) => {
+                const notes = samplePatrimonio.notes ?? []
+                return (
+                <div key={index} style={{ marginBottom: index < notes.length - 1 ? '8px' : '0' }}>
                   <p style={{ margin: 0, fontSize: '11px', color: '#000', fontWeight: 600 }}>
                     {note.userName} - {formatDate(new Date(note.date))}
                   </p>
@@ -374,7 +379,7 @@ export const FichaPreviewReal = ({
                     {note.text}
                   </p>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         )}

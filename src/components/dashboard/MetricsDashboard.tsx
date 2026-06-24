@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Activity,
   AlertTriangle,
-  CheckCircle,
   Cpu,
   Database,
   HardDrive,
@@ -17,7 +16,6 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  Download,
   Bell,
   Clock,
   Wifi,
@@ -118,7 +116,7 @@ const MetricsDashboard: React.FC = () => {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   
   // WebSocket hook
-  const { isConnected, isConnecting, error: wsError, requestMetrics, requestAlerts } = useWebSocket()
+  const { isConnected, isConnecting, requestMetrics, requestAlerts } = useWebSocket()
 
   const fetchMetrics = async () => {
     try {
@@ -164,15 +162,6 @@ const MetricsDashboard: React.FC = () => {
   // Escutar atualizações de métricas via WebSocket
   useEffect(() => {
     if (isConnected) {
-      const handleMetricsUpdate = (data: any) => {
-        setSummary(data)
-        setLastUpdate(new Date())
-      }
-
-      const handleAlertsUpdate = (data: any) => {
-        setAlerts(data)
-      }
-
       // Adicionar listeners (será implementado no hook)
       // useWebSocket().on('metrics:update', handleMetricsUpdate)
       // useWebSocket().on('alerts:list', handleAlertsUpdate)

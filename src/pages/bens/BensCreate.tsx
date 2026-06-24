@@ -7,7 +7,6 @@ import { FEATURES } from '@/lib/features'
 import { useFormAutosave } from '@/hooks/useFormAutosave'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -27,22 +26,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
 import { formatCurrency } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-import { Loader2, Info } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { ImageUpload } from '@/components/bens/ImageUpload'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useActivityLog } from '@/contexts/ActivityLogContext'
-import { Patrimonio } from '@/types'
+import { AcquisitionForm, Patrimonio } from '@/types'
 import { useSectors } from '@/contexts/SectorContext'
 import { useLocais } from '@/contexts/LocalContext'
 import { useTiposBens } from '@/contexts/TiposBensContext'
 import { useAcquisitionForms } from '@/contexts/AcquisitionFormContext'
-import { SearchableSelect } from '@/components/ui/searchable-select'
 import { CurrencyInput } from '@/components/ui/currency-input'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { generatePatrimonialNumber } from '@/lib/asset-utils'
 import { patrimonioCreateSchema } from '@/lib/validations/patrimonioSchema'
 import { Label } from '@/components/ui/label'
@@ -222,7 +215,7 @@ const BensCreate = () => {
       const newPatrimonioData = {
         ...data,
         numero_patrimonio: generatedNumber,
-        data_aquisicao: new Date(data.data_aquisicao || data.dataAquisicao),
+        data_aquisicao: new Date(data.data_aquisicao),
         status: 'ativo',
         // Converter situacao_bem para maiúsculas (backend espera: OTIMO, BOM, REGULAR, RUIM, PESSIMO)
         situacao_bem: data.situacao_bem && data.situacao_bem.trim() !== '' ? data.situacao_bem.toUpperCase() : undefined,
@@ -230,9 +223,9 @@ const BensCreate = () => {
         documentos: data.documentos || [],
         municipalityId: user.municipalityId!,
         createdAt: new Date(),
-        createdBy: user.nome || user.email,
+        createdBy: user.name || user.email,
         updatedAt: new Date(),
-        updatedBy: user.nome || user.email,
+        updatedBy: user.name || user.email,
         // Adicionar os IDs necessários
         sectorId,
         localId,
@@ -252,8 +245,8 @@ const BensCreate = () => {
         new_value: newPatrimonio,
       })
       
-      const successMessage = (data.eh_kit || data.ehKit) && (data.quantidade_unidades || data.quantidadeUnidades) 
-        ? `Bem cadastrado com sucesso. ${data.quantidade_unidades || data.quantidadeUnidades} sub-patrimônios gerados automaticamente.`
+      const successMessage = data.eh_kit && data.quantidade_unidades
+        ? `Bem cadastrado com sucesso. ${data.quantidade_unidades} sub-patrimônios gerados automaticamente.`
         : 'Bem cadastrado com sucesso.'
         
       toast({
@@ -424,7 +417,7 @@ const BensCreate = () => {
                 />
               </div>
 
-              <BensAquisicaoFields control={form.control} activeAcquisitionForms={activeAcquisitionForms} />
+              <BensAquisicaoFields control={form.control} activeAcquisitionForms={activeAcquisitionForms as unknown as AcquisitionForm[]} />
 
               <BensLicitacaoFields control={form.control} />
 
@@ -564,48 +557,51 @@ const BensCreate = () => {
               </div>
 
               {/* Preview de Depreciação */}
-              {form.watch('valor_aquisicao') && form.watch('vida_util_anos') && (
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="text-sm font-medium text-blue-900 mb-3">
-                    Preview de Depreciação
-                  </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-blue-700">Taxa Anual:</span>
-                      <div className="font-medium text-blue-900">
-                        {form.watch('vida_util_anos') 
-                          ? `${(100 / form.watch('vida_util_anos')).toFixed(1)}%`
-                          : 'N/A'
-                        }
+              {(() => {
+                const watchedValor = form.watch('valor_aquisicao')
+                const watchedVidaUtil = form.watch('vida_util_anos')
+                const watchedResidual = form.watch('valor_residual')
+                if (!watchedValor || !watchedVidaUtil) return null
+                return (
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 className="text-sm font-medium text-blue-900 mb-3">
+                      Preview de Depreciação
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-blue-700">Taxa Anual:</span>
+                        <div className="font-medium text-blue-900">
+                          {`${(100 / watchedVidaUtil).toFixed(1)}%`}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <span className="text-blue-700">Depreciação Anual:</span>
-                      <div className="font-medium text-blue-900">
-                        {form.watch('valor_aquisicao') && form.watch('vida_util_anos') && form.watch('valor_residual')
-                          ? formatCurrency((form.watch('valor_aquisicao') - (form.watch('valor_residual') || 0)) / form.watch('vida_util_anos'))
-                          : 'N/A'
-                        }
+                      <div>
+                        <span className="text-blue-700">Depreciação Anual:</span>
+                        <div className="font-medium text-blue-900">
+                          {watchedResidual
+                            ? formatCurrency((watchedValor - watchedResidual) / watchedVidaUtil)
+                            : 'N/A'
+                          }
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <span className="text-blue-700">Depreciação Mensal:</span>
-                      <div className="font-medium text-blue-900">
-                        {form.watch('valor_aquisicao') && form.watch('vida_util_anos') && form.watch('valor_residual')
-                          ? formatCurrency(((form.watch('valor_aquisicao') - (form.watch('valor_residual') || 0)) / form.watch('vida_util_anos')) / 12)
-                          : 'N/A'
-                        }
+                      <div>
+                        <span className="text-blue-700">Depreciação Mensal:</span>
+                        <div className="font-medium text-blue-900">
+                          {watchedResidual
+                            ? formatCurrency(((watchedValor - watchedResidual) / watchedVidaUtil) / 12)
+                            : 'N/A'
+                          }
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <span className="text-blue-700">Valor Contábil:</span>
-                      <div className="font-medium text-green-600">
-                        {form.watch('valor_aquisicao') ? formatCurrency(form.watch('valor_aquisicao')) : 'N/A'}
+                      <div>
+                        <span className="text-blue-700">Valor Contábil:</span>
+                        <div className="font-medium text-green-600">
+                          {formatCurrency(watchedValor)}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )
+              })()}
             </CardContent>
           </Card>
 

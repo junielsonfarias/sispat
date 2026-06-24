@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Patrimonio } from '@/types'
 import {
   Card,
   CardContent,
@@ -48,6 +47,12 @@ interface PublicPatrimonio {
   marca?: string
   modelo?: string
   status: string
+  situacaoBem?: string
+  setorResponsavel?: string
+  localObjeto?: string
+  dataAquisicao?: string | Date
+  valorAquisicao?: number
+  fotos?: string[]
   setor?: string
   local?: string
   municipality: string
@@ -82,7 +87,7 @@ export default function PublicConsultation() {
 
   const municipality = useMemo(() => {
     if (!patrimonio) return null
-    return { id: '1', name: MUNICIPALITY_NAME }
+    return { id: '1', name: MUNICIPALITY_NAME, logoUrl: patrimonio.municipalityLogo }
   }, [patrimonio])
 
   if (isLoading) {
@@ -145,9 +150,9 @@ export default function PublicConsultation() {
 
         <Card className="animate-fade-in">
           <CardHeader>
-            <CardTitle>{patrimonio.descricao_bem || patrimonio.descricaoBem}</CardTitle>
+            <CardTitle>{patrimonio.descricaoBem}</CardTitle>
             <CardDescription>
-              Nº de Patrimônio: {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+              Nº de Patrimônio: {patrimonio.numeroPatrimonio}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-8 lg:grid-cols-5">
@@ -155,11 +160,11 @@ export default function PublicConsultation() {
               {patrimonio.fotos && patrimonio.fotos.length > 0 ? (
                 <Carousel className="w-full">
                   <CarouselContent>
-                    {patrimonio.fotos.map((fotoId, index) => (
+                    {patrimonio.fotos.map((fotoId: string, index: number) => (
                       <CarouselItem key={index}>
                         <img
                           src={getCloudImageUrl(fotoId)}
-                          alt={`${patrimonio.descricao_bem || patrimonio.descricaoBem} - Foto ${
+                          alt={`${patrimonio.descricaoBem} - Foto ${
                             index + 1
                           }`}
                           className="rounded-lg object-cover w-full aspect-video"
@@ -187,21 +192,21 @@ export default function PublicConsultation() {
               <DetailItem
                 label="Situação do Bem"
                 value={
-                  <Badge variant="secondary">{patrimonio.situacao_bem || patrimonio.situacaoBem}</Badge>
+                  <Badge variant="secondary">{patrimonio.situacaoBem}</Badge>
                 }
               />
               <DetailItem
                 label="Setor Responsável"
-                value={patrimonio.setor_responsavel || patrimonio.setorResponsavel}
+                value={patrimonio.setorResponsavel}
               />
-              <DetailItem label="Localização" value={patrimonio.local_objeto || patrimonio.localObjeto} />
+              <DetailItem label="Localização" value={patrimonio.localObjeto} />
               <DetailItem
                 label="Data de Aquisição"
-                value={formatDate(new Date(patrimonio.data_aquisicao || patrimonio.dataAquisicao))}
+                value={patrimonio.dataAquisicao ? formatDate(new Date(patrimonio.dataAquisicao)) : '—'}
               />
               <DetailItem
                 label="Valor de Aquisição"
-                value={formatCurrency(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)}
+                value={patrimonio.valorAquisicao != null ? formatCurrency(patrimonio.valorAquisicao) : '—'}
               />
             </div>
           </CardContent>

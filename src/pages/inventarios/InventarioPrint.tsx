@@ -22,7 +22,7 @@ import { Inventory } from '@/types'
 import { ArrowLeft, Printer, Download, CheckCircle, XCircle } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
-import { generateInventoryPDF, generatePDFFromElement, type InventoryPDFData } from '@/lib/pdf-utils'
+import { generateInventoryPDF, type InventoryPDFData } from '@/lib/pdf-utils'
 import { generatePatrimonioQRCode } from '@/lib/qr-code-utils'
 import { toast } from '@/hooks/use-toast'
 
@@ -30,7 +30,7 @@ export default function InventarioPrint() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { getInventoryById } = useInventory()
-  const { municipalityData } = useCustomization()
+  const { settings: municipalitySettings } = useCustomization()
   const [inventory, setInventory] = useState<Inventory | null>(null)
   const [qrByNumero, setQrByNumero] = useState<Record<string, string>>({})
 
@@ -52,13 +52,13 @@ export default function InventarioPrint() {
     let cancelled = false
 
     const ids = inventory.items
-      .map((i) => i.numero_patrimonio || i.numeroPatrimonio)
+      .map((i) => i.numero_patrimonio)
       .filter((n): n is string => Boolean(n))
 
     Promise.all(
       ids.map(async (numero) => {
         try {
-          const url = await generatePatrimonioQRCode(numero, 'patrimonio')
+          const url = await generatePatrimonioQRCode(numero, 'bem')
           return [numero, url] as const
         } catch {
           return [numero, ''] as const
@@ -100,8 +100,8 @@ export default function InventarioPrint() {
         foundCount: inventory.items.filter((i) => i.status === 'found').length,
         notFoundCount: inventory.items.filter((i) => i.status === 'not_found').length,
         items: inventory.items.map(item => ({
-          numero_patrimonio: item.numero_patrimonio || item.numeroPatrimonio,
-          descricao_bem: item.descricao_bem || item.descricaoBem,
+          numero_patrimonio: item.numero_patrimonio,
+          descricao_bem: item.descricao_bem,
           status: item.status
         }))
       }
@@ -113,7 +113,7 @@ export default function InventarioPrint() {
         format: 'a4',
         includeDate: true,
         includeLogo: true,
-        logoUrl: municipalityData?.logoUrl
+        logoUrl: municipalitySettings?.activeLogoUrl
       })
 
       toast({
@@ -142,11 +142,7 @@ export default function InventarioPrint() {
 
   const foundCount = inventory.items.filter((i) => i.status === 'found').length
   const notFoundCount = inventory.items.length - foundCount
-  const totalValue = inventory.items.reduce((sum, item) => {
-    // Assumindo que temos acesso ao valor do patrimônio
-    // Por enquanto, vamos usar um valor simulado
-    return sum + 1000 // Valor simulado
-  }, 0)
+  // totalValue reservado para uso futuro quando o inventário incluir valor dos bens
 
   return (
     <div className="flex-1 p-4 lg:p-6">
@@ -188,7 +184,7 @@ export default function InventarioPrint() {
           <div className="text-center mb-8 print:mb-6">
             <div className="flex items-center justify-center mb-4 print:mb-2">
               <img
-                src={municipalityData?.logoUrl || '/logo-government.svg'}
+                src={municipalitySettings?.activeLogoUrl || '/logo-government.svg'}
                 alt="Logo"
                 className="h-16 w-16 print:h-12 print:w-12"
               />
@@ -313,7 +309,7 @@ export default function InventarioPrint() {
                 </TableHeader>
                 <TableBody>
                   {inventory.items.map((item, index) => {
-                    const numero = (item.numero_patrimonio || item.numeroPatrimonio) ?? ''
+                    const numero = item.numero_patrimonio ?? ''
                     const qrUrl = qrByNumero[numero]
                     return (
                       <TableRow key={`${item.patrimonioId}-${index}`}>
@@ -332,7 +328,7 @@ export default function InventarioPrint() {
                           {numero}
                         </TableCell>
                         <TableCell className="print:text-xs">
-                          {item.descricao_bem || item.descricaoBem}
+                          {item.descricao_bem}
                         </TableCell>
                         <TableCell className="text-center print:text-xs">
                           <div className="flex items-center justify-center gap-1">

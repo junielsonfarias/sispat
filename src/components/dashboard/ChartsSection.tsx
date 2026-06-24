@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import {
   Bar,
   BarChart,
@@ -8,7 +8,6 @@ import {
   ComposedChart,
   Cell,
   CartesianGrid,
-  Legend,
   Tooltip,
   XAxis,
   YAxis,
@@ -32,10 +31,10 @@ interface Patrimonio {
 
 interface ChartsSectionProps {
   patrimonios: Patrimonio[]
-  imoveis: any[]
+  imoveis: unknown[]
 }
 
-export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
+export const ChartsSection = ({ patrimonios }: ChartsSectionProps) => {
   // Dados para gráficos
   const chartData = useMemo(() => {
     if (patrimonios.length === 0) return { tipoChart: [], statusChart: [], valorChart: [], setorChart: [] }
@@ -134,7 +133,7 @@ export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
                     className="text-xs sm:text-sm"
                   />
                   <YAxis tick={{ fontSize: 10 }} width={40} />
-                  <Tooltip content={<ChartTooltipContent />} />
+                  <Tooltip content={<ChartTooltipContent payload={[]} />} />
                   <Bar dataKey="quantidade" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -160,12 +159,12 @@ export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ status, quantidade }) => `${status}: ${quantidade}`}
+                    label={({ status, quantidade }: { status: string; quantidade: number }) => `${status}: ${quantidade}`}
                     outerRadius={70}
                     fill="#8884d8"
                     dataKey="quantidade"
                   >
-                    {chartData.statusChart.map((entry, index) => (
+                    {chartData.statusChart.map((_entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -196,7 +195,7 @@ export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
                     className="text-xs sm:text-sm"
                   />
                   <YAxis tick={{ fontSize: 10 }} width={50} />
-                  <Tooltip content={<ChartTooltipContent />} />
+                  <Tooltip content={<ChartTooltipContent payload={[]} />} />
                   <Bar dataKey="valor" fill="#10b981" radius={[8, 8, 0, 0]} />
                   <Line type="monotone" dataKey="valor" stroke="#f59e0b" strokeWidth={2} />
                 </ComposedChart>
@@ -237,7 +236,7 @@ export const ChartsSection = ({ patrimonios, imoveis }: ChartsSectionProps) => {
                     textAnchor="end"
                     className="text-xs sm:text-sm"
                   />
-                  <Tooltip content={<ChartTooltipContent />} />
+                  <Tooltip content={<ChartTooltipContent payload={[]} />} />
                   <Bar dataKey="quantidade" fill="#8b5cf6" radius={[0, 8, 8, 0]} />
                 </BarChart>
               </ResponsiveContainer>

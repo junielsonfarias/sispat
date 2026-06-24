@@ -5,7 +5,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card'
 import {
   Table,
@@ -27,13 +26,12 @@ import { Button } from '@/components/ui/button'
 import {
   ChartContainer,
   ChartTooltipContent,
-  ChartTooltip,
 } from '@/components/ui/chart'
 import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend } from '@/lib/recharts-compat'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
 import { formatCurrency } from '@/lib/utils'
-import { TrendingDown, TrendingUp, Hourglass, LayoutDashboard, ArrowLeft } from 'lucide-react'
+import { TrendingDown, TrendingUp, Hourglass, ArrowLeft } from 'lucide-react'
 
 const DepreciationDashboard = () => {
   const { patrimonios } = usePatrimonio()
@@ -50,7 +48,7 @@ const DepreciationDashboard = () => {
   const summary = useMemo(() => {
     return processedData.reduce(
       (acc, item) => {
-        acc.totalAcquisition += (item.valor_aquisicao || item.valorAquisicao || 0)
+        acc.totalAcquisition += (item.valor_aquisicao || 0)
         acc.totalAccumulatedDepreciation +=
           item.depreciationInfo.accumulatedDepreciation
         acc.totalBookValue += item.depreciationInfo.bookValue
@@ -71,7 +69,7 @@ const DepreciationDashboard = () => {
   const depreciationBySector = useMemo(() => {
     const bySector = processedData.reduce(
       (acc, item) => {
-        const sector = item.setor_responsavel || item.setorResponsavel
+        const sector = item.setor_responsavel
         if (!acc[sector]) {
           acc[sector] = { accumulated: 0, bookValue: 0 }
         }
@@ -198,7 +196,7 @@ const DepreciationDashboard = () => {
                   angle={0}
                   textAnchor="end"
                 />
-                <Tooltip content={<ChartTooltipContent />} />
+                <Tooltip content={<ChartTooltipContent payload={[]} />} />
                 <Legend />
                 <Bar
                   dataKey="accumulated"
@@ -237,10 +235,10 @@ const DepreciationDashboard = () => {
                         to={`/bens-cadastrados/ver/${item.id}`}
                         className="text-primary hover:underline"
                       >
-                        {item.numero_patrimonio || item.numeroPatrimonio}
+                        {item.numero_patrimonio}
                       </Link>
                     </TableCell>
-                    <TableCell>{item.descricao_bem || item.descricaoBem}</TableCell>
+                    <TableCell>{item.descricao_bem}</TableCell>
                     <TableCell>
                       {item.depreciationInfo.remainingLifeMonths} meses
                     </TableCell>

@@ -22,7 +22,6 @@ import { Loader2, ArrowLeft, RefreshCw } from 'lucide-react'
 import { ImageUpload } from '@/components/bens/ImageUpload'
 import { useImovel } from '@/hooks/useImovel'
 import { useImovelField } from '@/contexts/ImovelFieldContext'
-import { CurrencyInput } from '@/components/ui/currency-input'
 import { ImovelFieldConfig } from '@/types'
 import { Label } from '@/components/ui/label'
 import { useSectors } from '@/contexts/SectorContext'
@@ -670,10 +669,10 @@ export default function ImoveisCreate() {
                               {field.required && <span className="text-red-500 ml-1">*</span>}
                             </FormLabel>
                             <FormControl>
-                              {field.type === 'textarea' ? (
-                                <Textarea {...formField} placeholder={field.placeholder} />
+                              {field.type === 'TEXTAREA' ? (
+                                <Textarea {...formField} placeholder={(field as unknown as { placeholder?: string }).placeholder} />
                               ) : (
-                                <Input {...formField} placeholder={field.placeholder} />
+                                <Input {...formField} placeholder={(field as unknown as { placeholder?: string }).placeholder} />
                               )}
                             </FormControl>
                             <FormMessage />

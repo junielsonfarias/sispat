@@ -1,5 +1,24 @@
-import { Card } from '@/components/ui/card'
 import { Patrimonio, Imovel } from '@/types'
+
+interface SampleData {
+  numero_patrimonio: string
+  descricao_bem: string
+  tipo: string
+  marca: string
+  modelo: string
+  cor: string
+  numero_serie: string
+  data_aquisicao: string
+  valor_aquisicao: string
+  forma_aquisicao: string
+  setor_responsavel: string
+  local_objeto: string
+  status: string
+  situacao_bem: string
+  metodo_depreciacao: string
+  vida_util_anos: string
+  valor_residual: string
+}
 
 interface PreviewProps {
   config: any
@@ -11,33 +30,64 @@ export const FichaPreview = ({ config, type, sampleData }: PreviewProps) => {
   const { header, sections, signatures, styling } = config
 
   // ✅ CORREÇÃO: Usar dados de exemplo se não houver dados reais
-  const previewData = sampleData || {
-    numero_patrimonio: '202501000001',
-    descricao_bem: 'Notebook Dell Latitude 5420',
-    tipo: 'Equipamento de Informática',
-    marca: 'Dell',
-    modelo: 'Latitude 5420',
-    cor: 'Preto',
-    numero_serie: 'SN123456789',
-    data_aquisicao: '15/01/2024',
-    valor_aquisicao: 'R$ 4.500,00',
-    forma_aquisicao: 'Compra Direta',
-    setor_responsavel: 'Secretaria de Educação',
-    local_objeto: 'Sala 101',
-    status: 'Ativo',
-    situacao_bem: 'Ótimo',
-    metodo_depreciacao: 'Linear',
-    vida_util_anos: '5 anos',
-    valor_residual: 'R$ 450,00'
-  }
+  // Quando sampleData é Patrimonio, mapeia as propriedades para o tipo local.
+  // Quando sampleData é Imovel ou null/undefined, usa valores padrão.
+  const previewData: SampleData = ('descricao_bem' in (sampleData ?? {}))
+    ? (() => {
+        const p = sampleData as Patrimonio
+        return {
+          numero_patrimonio: p.numero_patrimonio,
+          descricao_bem: p.descricao_bem,
+          tipo: p.tipo,
+          marca: p.marca,
+          modelo: p.modelo,
+          cor: p.cor,
+          numero_serie: p.numero_serie,
+          data_aquisicao: p.data_aquisicao instanceof Date
+            ? p.data_aquisicao.toLocaleDateString('pt-BR')
+            : String(p.data_aquisicao),
+          valor_aquisicao: typeof p.valor_aquisicao === 'number'
+            ? p.valor_aquisicao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            : String(p.valor_aquisicao),
+          forma_aquisicao: p.forma_aquisicao,
+          setor_responsavel: p.setor_responsavel,
+          local_objeto: p.local_objeto,
+          status: p.status,
+          situacao_bem: p.situacao_bem,
+          metodo_depreciacao: p.metodo_depreciacao ?? 'Linear',
+          vida_util_anos: p.vida_util_anos != null ? `${p.vida_util_anos} anos` : '—',
+          valor_residual: p.valor_residual != null
+            ? p.valor_residual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            : '—',
+        }
+      })()
+    : {
+        numero_patrimonio: '202501000001',
+        descricao_bem: 'Notebook Dell Latitude 5420',
+        tipo: 'Equipamento de Informática',
+        marca: 'Dell',
+        modelo: 'Latitude 5420',
+        cor: 'Preto',
+        numero_serie: 'SN123456789',
+        data_aquisicao: '15/01/2024',
+        valor_aquisicao: 'R$ 4.500,00',
+        forma_aquisicao: 'Compra Direta',
+        setor_responsavel: 'Secretaria de Educação',
+        local_objeto: 'Sala 101',
+        status: 'Ativo',
+        situacao_bem: 'Ótimo',
+        metodo_depreciacao: 'Linear',
+        vida_util_anos: '5 anos',
+        valor_residual: 'R$ 450,00',
+      }
 
-  const logoSizeMap = {
+  const logoSizeMap: Record<'small' | 'medium' | 'large', string> = {
     small: 'h-12',
     medium: 'h-16',
     large: 'h-20'
   }
 
-  const photoSizeMap = {
+  const photoSizeMap: Record<'small' | 'medium' | 'large', string> = {
     small: 'w-24 h-24',
     medium: 'w-32 h-32',
     large: 'w-48 h-48'
@@ -56,7 +106,7 @@ export const FichaPreview = ({ config, type, sampleData }: PreviewProps) => {
       <div className="text-center mb-6 border-b-2 border-gray-800 pb-4">
         {header.showLogo && (
           <div className="flex justify-center mb-2">
-            <div className={`${logoSizeMap[header.logoSize]} w-auto bg-gray-200 rounded flex items-center justify-center px-4`}>
+            <div className={`${logoSizeMap[(header.logoSize as 'small' | 'medium' | 'large') ?? 'medium']} w-auto bg-gray-200 rounded flex items-center justify-center px-4`}>
               <span className="text-xs text-gray-500">Logo</span>
             </div>
           </div>
@@ -87,7 +137,7 @@ export const FichaPreview = ({ config, type, sampleData }: PreviewProps) => {
           <div className={sections.patrimonioInfo.layout === 'grid' ? 'grid grid-cols-2 gap-2' : 'space-y-2'}>
             {sections.patrimonioInfo.showPhoto && (
               <div className="col-span-2 flex justify-center mb-2">
-                <div className={`${photoSizeMap[sections.patrimonioInfo.photoSize]} bg-gray-200 rounded flex items-center justify-center`}>
+                <div className={`${photoSizeMap[(sections.patrimonioInfo.photoSize as 'small' | 'medium' | 'large') ?? 'medium']} bg-gray-200 rounded flex items-center justify-center`}>
                   <span className="text-xs text-gray-500">Foto</span>
                 </div>
               </div>
@@ -137,14 +187,14 @@ export const FichaPreview = ({ config, type, sampleData }: PreviewProps) => {
         <div className="mb-4">
           <h4 className="text-sm font-bold mb-2 border-b border-gray-400">INFORMAÇÕES DE AQUISIÇÃO</h4>
           <div className="grid grid-cols-2 gap-2">
-            {sections.acquisition.fields.map((field) => (
+            {sections.acquisition.fields.map((field: string) => (
               <div key={field}>
                 <span className="text-xs font-semibold">
                   {field === 'data_aquisicao' && 'Data de Aquisição:'}
                   {field === 'valor_aquisicao' && 'Valor de Aquisição:'}
                   {field === 'forma_aquisicao' && 'Forma de Aquisição:'}
                 </span>
-                <p className="text-xs">{previewData[field as keyof typeof previewData]}</p>
+                <p className="text-xs">{previewData[field as keyof SampleData]}</p>
               </div>
             ))}
           </div>
@@ -156,14 +206,14 @@ export const FichaPreview = ({ config, type, sampleData }: PreviewProps) => {
         <div className="mb-4">
           <h4 className="text-sm font-bold mb-2 border-b border-gray-400">LOCALIZAÇÃO E ESTADO</h4>
           <div className="grid grid-cols-2 gap-2">
-            {sections.location.fields.map((field) => (
+            {sections.location.fields.map((field: string) => (
               <div key={field}>
                 <span className="text-xs font-semibold">
                   {field === 'setor_responsavel' && 'Setor Responsável:'}
                   {field === 'local_objeto' && 'Local:'}
                   {field === 'status' && 'Status:'}
                 </span>
-                <p className="text-xs">{previewData[field as keyof typeof previewData]}</p>
+                <p className="text-xs">{previewData[field as keyof SampleData]}</p>
               </div>
             ))}
           </div>
@@ -175,14 +225,14 @@ export const FichaPreview = ({ config, type, sampleData }: PreviewProps) => {
         <div className="mb-4">
           <h4 className="text-sm font-bold mb-2 border-b border-gray-400">INFORMAÇÕES DE DEPRECIAÇÃO</h4>
           <div className="grid grid-cols-2 gap-2">
-            {sections.depreciation.fields.map((field) => (
+            {sections.depreciation.fields.map((field: string) => (
               <div key={field}>
                 <span className="text-xs font-semibold">
                   {field === 'metodo_depreciacao' && 'Método:'}
                   {field === 'vida_util_anos' && 'Vida Útil:'}
                   {field === 'valor_residual' && 'Valor Residual:'}
                 </span>
-                <p className="text-xs">{previewData[field as keyof typeof previewData]}</p>
+                <p className="text-xs">{previewData[field as keyof SampleData]}</p>
               </div>
             ))}
           </div>

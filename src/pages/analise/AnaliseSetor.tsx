@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ChartContainer,
   ChartTooltipContent,
-  ChartTooltip,
 } from '@/components/ui/chart'
 import {
   Breadcrumb,
@@ -21,6 +20,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Legend,
+  Tooltip,
 } from '@/lib/recharts-compat'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useSectors } from '@/contexts/SectorContext'
@@ -54,10 +54,10 @@ const AnaliseSetor = () => {
   const sectorStats = useMemo(() => {
     return selectedSectors.map((sectorName) => {
       const sectorPatrimonios = filteredPatrimonios.filter(
-        (p) => (p.setor_responsavel || p.setorResponsavel) === sectorName,
+        (p) => p.setor_responsavel === sectorName,
       )
       const totalValue = sectorPatrimonios.reduce(
-        (acc, p) => acc + (p.valor_aquisicao || p.valorAquisicao || 0),
+        (acc, p) => acc + (p.valor_aquisicao || 0),
         0,
       )
       return {
@@ -75,11 +75,11 @@ const AnaliseSetor = () => {
       'Diversidade de Tipos',
       'Conservação Média',
     ]
-    const data = subjects.map((subject) => ({ subject }))
+    const data: Array<{ subject: string } & Record<string, number | string>> = subjects.map((subject) => ({ subject }))
 
     sectorStats.forEach((stat) => {
       const sectorPatrimonios = patrimonios.filter(
-        (p) => (p.setor_responsavel || p.setorResponsavel) === stat.name,
+        (p) => p.setor_responsavel === stat.name,
       )
       const diversity = new Set(sectorPatrimonios.map((p) => p.tipo)).size
       const conservationMap = {
@@ -90,7 +90,7 @@ const AnaliseSetor = () => {
         PESSIMO: 1,
       }
       const totalConservation = sectorPatrimonios.reduce(
-        (acc, p) => acc + (conservationMap[p.situacao_bem || p.situacaoBem] || 0),
+        (acc, p) => acc + (conservationMap[p.situacao_bem] || 0),
         0,
       )
       const avgConservation =
@@ -165,7 +165,7 @@ const AnaliseSetor = () => {
               <PolarGrid />
               <PolarAngleAxis dataKey="subject" />
               <PolarRadiusAxis />
-              <ChartTooltip content={<ChartTooltipContent />} />
+              <Tooltip content={<ChartTooltipContent payload={[]} />} />
               <Legend />
               {selectedSectors.map((sectorName, index) => (
                 <Radar

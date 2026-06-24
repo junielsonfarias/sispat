@@ -1,4 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+
+type ApiError = { code?: string; response?: { status?: number } }
+const isApiError = (e: unknown): e is ApiError =>
+  typeof e === 'object' && e !== null
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -34,7 +38,7 @@ interface FichaTemplate {
 }
 
 export default function GerenciadorFichas() {
-  const { user } = useAuth()
+  const { user: _user } = useAuth()
   const location = useLocation()
   const [templates, setTemplates] = useState<FichaTemplate[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,9 +54,9 @@ export default function GerenciadorFichas() {
       logger.debug('[GerenciadorFichas] Templates definidos', { count: Array.isArray(response) ? response.length : 0 })
     } catch (error) {
       console.error('Erro ao carregar templates:', error)
-      
+
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
-      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+      if (isApiError(error) && (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.response?.status === 404)) {
         logger.debug('Backend não disponível - usando lista vazia de templates de ficha')
         setTemplates([])
       } else {
@@ -86,9 +90,9 @@ export default function GerenciadorFichas() {
       setTemplates((templates || []).filter(t => t.id !== id))
     } catch (error) {
       console.error('Erro ao excluir template:', error)
-      
+
       // ✅ CORREÇÃO: Se for erro de conexão, remover apenas localmente
-      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+      if (isApiError(error) && (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.response?.status === 404)) {
         logger.debug('Backend não disponível. Removendo template apenas localmente.')
         setTemplates((templates || []).filter(t => t.id !== id))
       }
@@ -101,9 +105,9 @@ export default function GerenciadorFichas() {
       loadTemplates() // Recarregar para atualizar os estados
     } catch (error) {
       console.error('Erro ao definir template padrão:', error)
-      
+
       // ✅ CORREÇÃO: Se for erro de conexão, atualizar apenas localmente
-      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+      if (isApiError(error) && (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.response?.status === 404)) {
         logger.debug('Backend não disponível. Definindo template padrão apenas localmente.')
         setTemplates(prev => prev?.map(t => ({
           ...t,
@@ -125,16 +129,20 @@ export default function GerenciadorFichas() {
       loadTemplates()
     } catch (error) {
       console.error('Erro ao duplicar template:', error)
-      
+
       // ✅ CORREÇÃO: Se for erro de conexão, adicionar apenas localmente
-      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+      if (isApiError(error) && (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.response?.status === 404)) {
         logger.debug('Backend não disponível. Adicionando template duplicado apenas localmente.')
         const localDuplicate = {
           id: `local-${Date.now()}`,
-          ...duplicateData,
+          name: `${template.name} (Cópia)`,
+          description: template.description,
+          type: template.type,
+          config: template.config,
           isDefault: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          isActive: template.isActive,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }
         setTemplates(prev => [...(prev || []), localDuplicate])
       }
