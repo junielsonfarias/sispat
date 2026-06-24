@@ -246,6 +246,43 @@ export const updatePatrimonioBodySchema = patrimonioBaseSchema
 export type UpdatePatrimonioBody = z.infer<typeof updatePatrimonioBodySchema>;
 
 // ---------------------------------------------------------------------------
+// Sub-rotas operacionais: POST /:id/notes e POST /:id/baixa
+// ---------------------------------------------------------------------------
+
+// Observação adicionada ao patrimônio. O controller lê apenas `text`.
+export const addNoteSchema = z.object({
+  text: z
+    .string()
+    .min(1, 'Texto da nota é obrigatório (1 a 2000 caracteres)')
+    .max(2000, 'Texto da nota é obrigatório (1 a 2000 caracteres)'),
+});
+export type AddNoteBody = z.infer<typeof addNoteSchema>;
+
+// Baixa de patrimônio. data_baixa/motivo_baixa ficam OPCIONAIS aqui de
+// propósito: o controller faz a checagem de obrigatoriedade e devolve a
+// mensagem específica ('Data e motivo da baixa são obrigatórios'). `observacoes`
+// é declarado porque o controller/service o lê (não estava no express-validator
+// antigo, e o zodValidate descartaria campos não declarados).
+export const registrarBaixaSchema = z.object({
+  data_baixa: z
+    .string()
+    .refine((val) => !val || !isNaN(Date.parse(val)), {
+      message: 'Data de baixa deve ser uma data válida',
+    })
+    .optional(),
+  motivo_baixa: z
+    .string()
+    .max(500, 'Motivo deve ter no máximo 500 caracteres')
+    .optional(),
+  documentos_baixa: z.array(z.string()).optional(),
+  observacoes: z
+    .string()
+    .max(1000, 'Observações devem ter no máximo 1000 caracteres')
+    .optional(),
+});
+export type RegistrarBaixaBody = z.infer<typeof registrarBaixaSchema>;
+
+// ---------------------------------------------------------------------------
 // Schemas de FRONTEND (formulários react-hook-form + zodResolver)
 // ---------------------------------------------------------------------------
 // O frontend é DELIBERADAMENTE mais estrito que o backend em dois campos

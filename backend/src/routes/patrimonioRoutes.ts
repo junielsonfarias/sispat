@@ -11,14 +11,15 @@ import {
   registrarBaixaPatrimonio,
 } from '../controllers/patrimonioController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors } from '../middlewares/validation';
 import { zodValidate } from '../middlewares/zodValidate';
 import {
   createPatrimonioBodySchema,
   updatePatrimonioBodySchema,
+  addNoteSchema,
+  registrarBaixaSchema,
+  paginationQuerySchema,
+  uuidParamSchema,
 } from '@sispat/shared';
-import { paginationQuerySchema, uuidParamSchema } from '@sispat/shared';
-import { param, body } from 'express-validator';
 
 const router = Router();
 
@@ -97,11 +98,7 @@ router.delete(
  */
 router.post(
   '/:id/notes',
-  [
-    param('id').isUUID().withMessage('ID deve ser um UUID válido'),
-    body('text').isString().isLength({ min: 1, max: 2000 }).withMessage('Texto da nota é obrigatório (1 a 2000 caracteres)'),
-  ],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: addNoteSchema }),
   addNote,
 );
 
@@ -112,13 +109,7 @@ router.post(
 router.post(
   '/:id/baixa',
   authorize('superuser', 'admin', 'supervisor', 'usuario'),
-  [
-    param('id').isUUID().withMessage('ID deve ser um UUID válido'),
-    body('data_baixa').optional().isISO8601().withMessage('Data de baixa deve ser uma data válida'),
-    body('motivo_baixa').optional().isString().isLength({ max: 500 }).withMessage('Motivo deve ter no máximo 500 caracteres'),
-    body('documentos_baixa').optional().isArray().withMessage('Documentos de baixa deve ser um array'),
-  ],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: registrarBaixaSchema }),
   registrarBaixaPatrimonio,
 );
 

@@ -31,6 +31,7 @@
 - **Arquivos:** `shared/src/schemas/{patrimonio,imovel}.ts`, `shared/src/index.ts`, `backend/src/routes/{patrimonio,imovel}Routes.ts`, `backend/src/middlewares/validation.ts`, `src/lib/validations/{patrimonio,imovel}Schema.ts`, `backend/src/__tests__/shared/patrimonioImovelSchemas.test.ts` (novo, 10 testes).
 - **Verificação:** `shared` build OK; backend `tsc` limpo + **470 testes Jest** (38→39 suites); frontend `tsc` no baseline (843 erros pré-existentes, **zero erro líquido novo** — confirmado por diff stash vs working tree).
 - **Lição:** ao trocar `express-validator` (valida e deixa passar) por `zodValidate` (valida e SUBSTITUI o body), todo campo lido pelo service precisa estar no schema OU sob `.passthrough()` — senão some silenciosamente. E refactor de validação não deve mudar regras de negócio: confira diferenças front/back e preserve cada lado.
+- **Complemento (mesma data):** rotas `POST /:id/notes` e `POST /:id/baixa` do patrimônio também migradas (`addNoteSchema`/`registrarBaixaSchema` em `@sispat/shared`). `patrimonioRoutes` deixou de importar `express-validator`. Detalhe preservado: `data_baixa`/`motivo_baixa` ficam OPCIONAIS no Zod porque o controller faz a checagem própria e retorna a mensagem específica 'Data e motivo da baixa são obrigatórios'; `observacoes` declarado no schema (o service lê, o express-validator antigo não validava). +3 testes (473 Jest no total).
 
 ## 2025
 

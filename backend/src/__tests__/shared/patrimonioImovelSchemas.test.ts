@@ -15,6 +15,8 @@ import {
   createPatrimonioBodySchema,
   updatePatrimonioBodySchema,
   patrimonioCreateSchema,
+  addNoteSchema,
+  registrarBaixaSchema,
   createImovelBodySchema,
   updateImovelBodySchema,
   imovelFrontendSchema,
@@ -99,6 +101,36 @@ describe('patrimonio — schema de formulário do frontend (regras estritas pres
     expect(r.success).toBe(false);
     const ok = patrimonioCreateSchema.safeParse({ ...base, quantidade_unidades: 2 });
     expect(ok.success).toBe(true);
+  });
+});
+
+describe('patrimonio — sub-rotas notes e baixa (Sprint 22)', () => {
+  it('addNote exige text de 1 a 2000 caracteres', () => {
+    expect(addNoteSchema.safeParse({ text: 'ok' }).success).toBe(true);
+    expect(addNoteSchema.safeParse({ text: '' }).success).toBe(false);
+    expect(addNoteSchema.safeParse({ text: 'x'.repeat(2001) }).success).toBe(false);
+  });
+
+  it('baixa: data_baixa/motivo_baixa são opcionais no schema (controller exige)', () => {
+    // o schema aceita vazio; a obrigatoriedade é checada no controller
+    expect(registrarBaixaSchema.safeParse({}).success).toBe(true);
+  });
+
+  it('baixa: valida data inválida e tamanho do motivo, e PRESERVA observacoes', () => {
+    expect(
+      registrarBaixaSchema.safeParse({ data_baixa: 'nao-e-data' }).success,
+    ).toBe(false);
+    expect(
+      registrarBaixaSchema.safeParse({ motivo_baixa: 'x'.repeat(501) }).success,
+    ).toBe(false);
+    const parsed = registrarBaixaSchema.parse({
+      data_baixa: '2024-02-01T00:00:00.000Z',
+      motivo_baixa: 'Obsoleto',
+      documentos_baixa: ['https://x/doc.pdf'],
+      observacoes: 'Sucateado',
+    });
+    expect(parsed.observacoes).toBe('Sucateado');
+    expect(parsed.documentos_baixa).toEqual(['https://x/doc.pdf']);
   });
 });
 
