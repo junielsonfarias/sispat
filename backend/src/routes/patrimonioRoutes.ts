@@ -11,7 +11,13 @@ import {
   registrarBaixaPatrimonio,
 } from '../controllers/patrimonioController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, patrimonioValidations, queryValidations } from '../middlewares/validation';
+import { handleValidationErrors } from '../middlewares/validation';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createPatrimonioBodySchema,
+  updatePatrimonioBodySchema,
+} from '@sispat/shared';
+import { paginationQuerySchema, uuidParamSchema } from '@sispat/shared';
 import { param, body } from 'express-validator';
 
 const router = Router();
@@ -22,13 +28,13 @@ router.use(authenticateToken);
  * @route GET /api/patrimonios
  * @desc Listar patrimônios com filtros
  */
-router.get('/', queryValidations.pagination, handleValidationErrors, listPatrimonios);
+router.get('/', zodValidate({ query: paginationQuerySchema }), listPatrimonios);
 
 /**
  * @route GET /api/patrimonios/sync
  * @desc Sincronizar patrimônios (retorna lista atualizada)
  */
-router.get('/sync', queryValidations.pagination, handleValidationErrors, listPatrimonios);
+router.get('/sync', zodValidate({ query: paginationQuerySchema }), listPatrimonios);
 
 /**
  * @route GET /api/patrimonios/gerar-numero
@@ -48,8 +54,7 @@ router.get('/numero/:numero', getByNumero);
  */
 router.get(
   '/:id',
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   getPatrimonio,
 );
 
@@ -60,8 +65,7 @@ router.get(
 router.post(
   '/',
   authorize('superuser', 'admin', 'supervisor', 'usuario'),
-  patrimonioValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createPatrimonioBodySchema }),
   createPatrimonio,
 );
 
@@ -72,8 +76,7 @@ router.post(
 router.put(
   '/:id',
   authorize('superuser', 'admin', 'supervisor', 'usuario'),
-  patrimonioValidations.update,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: updatePatrimonioBodySchema }),
   updatePatrimonio,
 );
 
@@ -84,8 +87,7 @@ router.put(
 router.delete(
   '/:id',
   authorize('superuser', 'admin', 'supervisor'),
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deletePatrimonio,
 );
 

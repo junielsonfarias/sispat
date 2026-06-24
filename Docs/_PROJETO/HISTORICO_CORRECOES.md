@@ -19,6 +19,19 @@
 
 ---
 
+## 2026
+
+### 2026-06-24 — Sprint 22: centralização Zod de patrimônio e imóvel
+- **Sintoma:** patrimônio e imóvel ainda validavam via `express-validator` no backend (`patrimonioValidations`/`imovelValidations` em `validation.ts`) e tinham schemas Zod locais redundantes no frontend (`src/lib/validations/{patrimonio,imovel}Schema.ts`) — regras duplicadas e passíveis de divergir.
+- **Correção:** criados `shared/src/schemas/patrimonio.ts` e `imovel.ts` em `@sispat/shared`. Rotas `patrimonioRoutes`/`imovelRoutes` passaram a usar `zodValidate({ body, params, query })` com `paginationQuerySchema`/`uuidParamSchema` do common. `patrimonioValidations`/`imovelValidations`/`queryValidations` removidos. Os arquivos de validação do frontend viraram reexports finos de `@sispat/shared` (nomes de export preservados → nenhum import de página alterado).
+- **Causa-raiz / armadilhas tratadas:**
+  1. **Perda de dados por stripping:** `zodValidate` faz `req.body = schema.parse(req.body)` e o Zod descarta chaves não declaradas. Os services leem campos que o schema "oficial" não lista (`sectorId`/`localId`/`tipoId`/`acquisitionFormId` no patrimônio; `sectorId`/`customFields`/`url_documentos` no imóvel). Solução: `.passthrough()` nos schemas de **body** do backend. Travado por teste.
+  2. **Imóvel não unificável:** nomes divergem entre front (`area_total`, `cep`, `cpf_responsavel`, `escritura_*`) e back (`area_terreno`, `setor`, `latitude`, `longitude`, `tipo_imovel`, `situacao`, `customFields`). Mantidos schemas separados no mesmo arquivo: `imovelFrontendSchema` (UI) + `createImovelBodySchema`/`updateImovelBodySchema` (API).
+  3. **Regressão de validação do frontend:** a primeira versão (subagente) afrouxou regras do front ao alinhar com o backend — `valor_aquisicao` 0.01→0, `quantidade_unidades` 2→1, imóvel `endereco` 5→1/`max` 200→300, áreas `positive()`→`min(0)`. Como migração Zod é refactor (neutro em comportamento), as regras estritas do front foram restauradas via override só no lado frontend (`patrimonioFrontendBaseSchema`), sem afetar o backend. `documentos_pdf` voltou a `z.array(z.any())` (era `z.unknown()`, que quebrava `<Input {...field}>` com `unknown[]`).
+- **Arquivos:** `shared/src/schemas/{patrimonio,imovel}.ts`, `shared/src/index.ts`, `backend/src/routes/{patrimonio,imovel}Routes.ts`, `backend/src/middlewares/validation.ts`, `src/lib/validations/{patrimonio,imovel}Schema.ts`, `backend/src/__tests__/shared/patrimonioImovelSchemas.test.ts` (novo, 10 testes).
+- **Verificação:** `shared` build OK; backend `tsc` limpo + **470 testes Jest** (38→39 suites); frontend `tsc` no baseline (843 erros pré-existentes, **zero erro líquido novo** — confirmado por diff stash vs working tree).
+- **Lição:** ao trocar `express-validator` (valida e deixa passar) por `zodValidate` (valida e SUBSTITUI o body), todo campo lido pelo service precisa estar no schema OU sob `.passthrough()` — senão some silenciosamente. E refactor de validação não deve mudar regras de negócio: confira diferenças front/back e preserve cada lado.
+
 ## 2025
 
 ### 2025-11-19 — Permissões, PM2 e Nginx no install.sh

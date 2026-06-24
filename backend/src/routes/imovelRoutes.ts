@@ -9,8 +9,12 @@ import {
   deleteImovel,
 } from '../controllers/imovelController';
 import { authenticateToken, authorize } from '../middlewares/auth';
-import { handleValidationErrors, imovelValidations, queryValidations } from '../middlewares/validation';
-import { param } from 'express-validator';
+import { zodValidate } from '../middlewares/zodValidate';
+import {
+  createImovelBodySchema,
+  updateImovelBodySchema,
+} from '@sispat/shared';
+import { paginationQuerySchema, uuidParamSchema } from '@sispat/shared';
 
 const router = Router();
 
@@ -24,7 +28,7 @@ router.use(authenticateToken);
  * @desc Listar imóveis com filtros
  * @access Private (All authenticated users)
  */
-router.get('/', queryValidations.pagination, handleValidationErrors, listImoveis);
+router.get('/', zodValidate({ query: paginationQuerySchema }), listImoveis);
 
 /**
  * @route GET /api/imoveis/gerar-numero
@@ -47,8 +51,7 @@ router.get('/numero/:numero', getByNumero);
  */
 router.get(
   '/:id',
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   getImovel,
 );
 
@@ -60,8 +63,7 @@ router.get(
 router.post(
   '/',
   authorize('superuser', 'admin', 'supervisor', 'usuario'),
-  imovelValidations.create,
-  handleValidationErrors,
+  zodValidate({ body: createImovelBodySchema }),
   createImovel,
 );
 
@@ -73,8 +75,7 @@ router.post(
 router.put(
   '/:id',
   authorize('superuser', 'admin', 'supervisor', 'usuario'),
-  imovelValidations.update,
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema, body: updateImovelBodySchema }),
   updateImovel,
 );
 
@@ -86,8 +87,7 @@ router.put(
 router.delete(
   '/:id',
   authorize('superuser', 'admin', 'supervisor'),
-  [param('id').isUUID().withMessage('ID deve ser um UUID válido')],
-  handleValidationErrors,
+  zodValidate({ params: uuidParamSchema }),
   deleteImovel,
 );
 
