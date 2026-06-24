@@ -21,6 +21,20 @@
 
 ## 2026
 
+### 2026-06-24 — Conformidade (2ª onda): follow-ups exigidos pela lei
+- **Contexto:** após os 5 gaps 🔴 críticos, os follow-ups maiores foram avaliados pelo `sispat-domain-expert` contra a Lei/Decreto (`Docs/analise/`), com veredito EXIGIDO / RECOMENDÁVEL / JÁ ATENDIDO por item — para não construir entidade que a lei não exige.
+- **Implementados (EXIGIDO/RECOMENDÁVEL):**
+  1. **Comissão obrigatória na incorporação da regularização (Art. 19 / Cap. XIII):** `regularizacaoService.incorporarRegularizacao` exige comissão designada, tipo `regularizacao` e ativa. A constatação ainda pode ficar em rascunho sem comissão.
+  2. **Comissão obrigatória na conclusão do desfazimento (Art. 14 Decreto / Art. 19, IV):** `desfazimentoService.concluirDesfazimento` exige comissão `desfazimento_desafetacao` ativa (laudo de classificação). **Desafetação** (Art. 22) mantém comissão OPCIONAL por decisão fundamentada — a base legal (lei/decreto/ato) é o elemento constitutivo; documentado no código.
+  3. **Alienação exige avaliação prévia (Art. 23 / Art. 14 Decreto):** `createDesfazimento` exige `valorAvaliacao` (>0) para modalidades de alienação; inutilização dispensa. A lei NÃO exige entidade "Alienação" separada — o desfazimento é o fluxo de alienação de móveis (Art. 5 VIII).
+  4. **origem_recurso + cláusulas de reversão (Art. 4 Decreto / Art. 13 §2):** campos opcionais em `Patrimonio` (migration `add_origem_recurso_reversao`); setáveis no create/update; form pede a reversão quando a origem implica repasse (convênio/emenda/transferência). Corrigido de passagem: `BensEdit` não enviava `tipo_posse` no payload de edição.
+  5. **Inventário cobre imóveis (Art. 16):** `InventoryItem.patrimonioId` nullable + `imovelId` (migration `inventario_cobre_imoveis`); `createInventario` inclui imóveis do setor no escopo `sector` (inventário anual); conferência casa por patrimônio OU imóvel; finalize não marca imóveis "extraviado"; frontend renderiza imóveis com badge.
+  6. **Termo de carga formalizado (Art. 14/34):** `termosService.emitirTermoCarga` gera número sequencial por município/ano (`TC-AAAA-NNNN`), persiste a emissão em `HistoricoEntry` (+ `ActivityLog`) e retorna o termo numerado. Rota `POST /termos/:patrimonioId/carga/emitir`; botão no frontend. Antes os termos eram só gerados read-only, sem registro de emissão — impossível comprovar a transferência de responsabilidade do Art. 34.
+- **JÁ ATENDIDO (não implementado):** **escrituração mensal da depreciação** — a lei (Art. 21 Lei / Art. 12 Decreto) exige o "reflexo mensal no Balanço Patrimonial", que é responsabilidade do SIAFIC; o SISPAT já cumpre seu papel (parâmetros no cadastro + cálculo on-the-fly em `depreciation.ts` para a conciliação). Persistir lançamentos mensais duplicaria o SIAFIC. Único resíduo opcional: validar/alertar bens sem `vida_util_anos`/`valor_residual` (cálculo retorna zero) — deixado como melhoria de cadastro, não bloqueante.
+- **Commits:** `23a8c16` (comissões regularização+desfazimento), `5d0f2eb` (origem/reversão), `afb26e8` (avaliação na alienação), `25429ed` (inventário imóveis), `8217b0d` (termo de carga).
+- **Verificação:** backend `tsc` limpo + **40 suites / 506 testes Jest**; frontend `tsc` limpo; 3 migrations aplicadas.
+- **Lição:** antes de construir features grandes de conformidade, pedir veredito EXIGIDO/RECOMENDÁVEL/JÁ ATENDIDO ao domínio com citação de artigo evita over-engineering — 2 dos 6 follow-ups (alienação como entidade, escrituração mensal) NÃO eram exigências da lei; o que parecia falta era escopo de outro sistema (SIAFIC) ou já coberto pelo fluxo existente (desfazimento).
+
 ### 2026-06-24 — Conformidade com a Lei de Gestão Patrimonial: enforcement das modalidades
 - **Contexto:** auditoria de fluxo de cada modalidade do patrimônio contra a Lei/Decreto de Gestão Patrimonial (docs em `Docs/analise/`). Diagnóstico: o sistema implementa TODAS as modalidades estruturalmente; as lacunas eram de **enforcement** (faltavam travas que impedissem operações fora da lei), não de modelagem. 5 gaps 🔴 críticos corrigidos com test-gating.
 - **Correções:**
