@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { api } from '@/services/api-adapter'
+import { isConnectionDownError } from '@/lib/api-error'
 import { useAuth } from '@/hooks/useAuth'
 import { TipoBem } from '@/types'
 
@@ -36,7 +37,7 @@ export const TiposBensProvider: React.FC<{ children: ReactNode }> = ({ children 
       setTiposBens(tiposData)
     } catch (err) {
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de erro
-      if (err?.code === 'ERR_NETWORK' || err?.code === 'ERR_CONNECTION_REFUSED') {
+      if (isConnectionDownError(err)) {
         setTiposBens([])
         setError(null)
       } else {

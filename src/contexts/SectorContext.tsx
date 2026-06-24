@@ -10,6 +10,7 @@ import {
 import { Sector } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
+import { isConnectionDownError } from '@/lib/api-error'
 import { api } from '@/services/api-adapter'
 import { logger } from '@/lib/logger'
 
@@ -49,7 +50,7 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
       logger.error('SectorContext: Erro ao buscar setores:', error)
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
-      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
+      if (isConnectionDownError(error)) {
         logger.debug('Backend não disponível - usando lista vazia de setores')
         setSectors([])
       } else {

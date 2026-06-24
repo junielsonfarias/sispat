@@ -10,6 +10,7 @@ import { Local } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
+import { isConnectionDownError } from '@/lib/api-error'
 import { logger } from '@/lib/logger'
 
 interface LocalContextType {
@@ -40,7 +41,7 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
       setLocais(locaisData)
     } catch (error) {
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
-      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
+      if (isConnectionDownError(error)) {
         logger.debug('Backend não disponível - usando lista vazia de locais')
         setLocais([])
       } else {

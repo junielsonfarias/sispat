@@ -34,6 +34,18 @@ const KIND_BY_STATUS: Record<number, ParsedApiError['kind']> = {
   429: 'rateLimit',
 }
 
+/**
+ * `true` quando o erro é de conexão recusada / rede fora (backend inacessível),
+ * cobrindo exatamente os códigos `ERR_NETWORK` e `ERR_CONNECTION_REFUSED` do axios.
+ * Não inclui timeout — use `extractApiError(e).kind === 'network'` se quiser o
+ * comportamento mais amplo. Tipa o `catch (e: unknown)` sem espalhar casts pelos
+ * contexts (vários faziam `e?.code === ...` em variável `unknown`).
+ */
+export const isConnectionDownError = (error: unknown): boolean => {
+  const code = (error as { code?: string } | null | undefined)?.code
+  return code === 'ERR_NETWORK' || code === 'ERR_CONNECTION_REFUSED'
+}
+
 export const extractApiError = (error: unknown): ParsedApiError => {
   // Network / timeout / sem resposta
   const err = error as {

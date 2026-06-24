@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { toast } from '@/hooks/use-toast'
 import { api } from '@/services/api-adapter'
+import { isConnectionDownError } from '@/lib/api-error'
 import { useAuth } from './AuthContext'
 import { useActivityLog } from './ActivityLogContext'
 import { MUNICIPALITY_ID } from '@/config/constants'
@@ -73,7 +74,7 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
       setAcquisitionForms(forms)
     } catch (error) {
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
-      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED') {
+      if (isConnectionDownError(error)) {
         setAcquisitionForms([])
       } else {
         toast({

@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { ManutencaoTask } from '@/types'
 import { generateId } from '@/lib/utils'
+import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
@@ -44,7 +45,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
       logger.error('Failed to load maintenance tasks:', error)
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
-      if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+      if (isConnectionDownError(error) || extractApiError(error).status === 404) {
         logger.debug('Backend não disponível - usando lista vazia de tarefas de manutenção')
         setAllTasks([])
         return
@@ -94,7 +95,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         logger.error('Erro ao criar tarefa de manutenção:', error)
         
         // ✅ CORREÇÃO: Se for erro de conexão, salvar apenas localmente
-        if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+        if (isConnectionDownError(error) || extractApiError(error).status === 404) {
           logger.debug('Backend não disponível. Salvando tarefa apenas localmente.')
           
           const localTask = {
@@ -144,7 +145,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         logger.error('Erro ao atualizar tarefa de manutenção:', error)
         
         // ✅ CORREÇÃO: Se for erro de conexão, atualizar apenas localmente
-        if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+        if (isConnectionDownError(error) || extractApiError(error).status === 404) {
           logger.debug('Backend não disponível. Atualizando tarefa apenas localmente.')
           
           setAllTasks(prev => prev.map(t =>
@@ -183,7 +184,7 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
         logger.error('Erro ao deletar tarefa de manutenção:', error)
         
         // ✅ CORREÇÃO: Se for erro de conexão, deletar apenas localmente
-        if (error?.code === 'ERR_NETWORK' || error?.code === 'ERR_CONNECTION_REFUSED' || error?.response?.status === 404) {
+        if (isConnectionDownError(error) || extractApiError(error).status === 404) {
           logger.debug('Backend não disponível. Deletando tarefa apenas localmente.')
           
           setAllTasks(prev => prev.filter(t => t.id !== taskId))

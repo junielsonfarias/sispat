@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { LabelTemplate } from '@/types'
 import { generateId } from '@/lib/utils'
+import { extractApiError } from '@/lib/api-error'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
@@ -224,7 +225,7 @@ export const LabelTemplateProvider = ({
         })
       } catch (error) {
         // ✅ CORREÇÃO: Se for erro 404, deletar apenas localmente
-        if (error?.response?.status === 404) {
+        if (extractApiError(error).status === 404) {
           // Remover apenas do estado local
           setAllTemplates(prev => prev.filter(t => t.id !== templateId))
           

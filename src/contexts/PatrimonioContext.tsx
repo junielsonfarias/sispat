@@ -10,6 +10,7 @@ import {
 import { Patrimonio } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/api-adapter'
+import { isConnectionDownError } from '@/lib/api-error'
 import { logger } from '@/lib/logger'
 
 interface PatrimonioContextType {
@@ -67,7 +68,7 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
       logger.error('PatrimonioContext: Erro ao carregar:', err)
       
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de erro
-      if (err?.code === 'ERR_NETWORK' || err?.code === 'ERR_CONNECTION_REFUSED') {
+      if (isConnectionDownError(err)) {
         logger.debug('Backend não disponível - usando lista vazia de patrimônios')
         setPatrimonios([])
         setError(null) // Não mostrar erro para o usuário
