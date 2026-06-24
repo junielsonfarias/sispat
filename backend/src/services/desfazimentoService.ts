@@ -104,7 +104,7 @@ export const getDesfazimentoById = async (id: string, actor: Actor) => {
   const d = await prisma.desfazimento.findUnique({
     where: { id },
     include: {
-      comissao: { select: { id: true, tipo: true, portariaNumero: true } },
+      comissao: { select: { id: true, tipo: true, status: true, portariaNumero: true } },
       patrimonio: { select: { id: true, numero_patrimonio: true, descricao_bem: true, status: true } },
     },
   });
@@ -226,6 +226,27 @@ export const concluirDesfazimento = async (id: string, actor: Actor) => {
   const existing = await getDesfazimentoById(id, actor);
   if (existing.status !== 'em_andamento') {
     throw new DesfazimentoValidationError('Este desfazimento não está em andamento');
+  }
+
+  // Art. 14 do Decreto / Art. 19, IV da Lei: o desfazimento se conclui mediante
+  // processo instruído com laudo de classificação da Comissão de Desfazimento e
+  // Desafetação. A comissão pode ser associada depois da abertura, mas a
+  // conclusão (que baixa o bem) exige a comissão correta e em exercício.
+  if (!existing.comissaoId || !existing.comissao) {
+    throw new DesfazimentoValidationError(
+      'A conclusão do desfazimento exige a Comissão de Desfazimento e Desafetação ' +
+        '(Art. 14 do Decreto / Art. 19, IV da Lei). Associe uma comissão antes de concluir.',
+    );
+  }
+  if (existing.comissao.tipo !== 'desfazimento_desafetacao') {
+    throw new DesfazimentoValidationError(
+      'A comissão vinculada deve ser do tipo "desfazimento_desafetacao" para concluir (Art. 19, IV).',
+    );
+  }
+  if (existing.comissao.status !== 'ativa') {
+    throw new DesfazimentoValidationError(
+      'A Comissão de Desfazimento e Desafetação vinculada não está ativa — designe/renove antes de concluir.',
+    );
   }
 
   const patrimonio = await loadPatrimonio(existing.patrimonioId, actor);

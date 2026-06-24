@@ -93,10 +93,13 @@ describe('createDesfazimento', () => {
 });
 
 describe('concluirDesfazimento', () => {
+  const comissaoOk = { id: 'c1', tipo: 'desfazimento_desafetacao', status: 'ativa', portariaNumero: '01' };
+
   it('baixa o patrimônio e marca concluído', async () => {
     mockPrisma.desfazimento.findUnique.mockResolvedValue({
       id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
       classificacao: 'irrecuperavel', modalidade: 'inutilizacao', justificativa: 'x',
+      comissaoId: 'c1', comissao: comissaoOk,
     });
     mockPrisma.patrimonio.findUnique.mockResolvedValue({
       id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
@@ -119,10 +122,45 @@ describe('concluirDesfazimento', () => {
   it('rejeita baixar bem emprestado', async () => {
     mockPrisma.desfazimento.findUnique.mockResolvedValue({
       id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
-      classificacao: 'ocioso', modalidade: 'doacao', justificativa: 'x',
+      classificacao: 'ocioso', modalidade: 'inutilizacao', justificativa: 'x',
+      comissaoId: 'c1', comissao: comissaoOk,
     });
     mockPrisma.patrimonio.findUnique.mockResolvedValue({
       id: 'p1', status: 'emprestado', numero_patrimonio: '0001', municipalityId: 'mun-1',
+    });
+    await expect(concluirDesfazimento('d1', actor)).rejects.toBeInstanceOf(
+      DesfazimentoValidationError,
+    );
+  });
+
+  it('rejeita concluir sem Comissão de Desfazimento e Desafetação (Art. 14 Decreto)', async () => {
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
+      classificacao: 'irrecuperavel', modalidade: 'inutilizacao', justificativa: 'x',
+      comissaoId: null, comissao: null,
+    });
+    await expect(concluirDesfazimento('d1', actor)).rejects.toBeInstanceOf(
+      DesfazimentoValidationError,
+    );
+    expect(mockPrisma.patrimonio.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejeita comissão de tipo errado na conclusão', async () => {
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
+      classificacao: 'irrecuperavel', modalidade: 'inutilizacao', justificativa: 'x',
+      comissaoId: 'c1', comissao: { ...comissaoOk, tipo: 'avaliacao' },
+    });
+    await expect(concluirDesfazimento('d1', actor)).rejects.toBeInstanceOf(
+      DesfazimentoValidationError,
+    );
+  });
+
+  it('rejeita comissão não ativa na conclusão', async () => {
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
+      classificacao: 'irrecuperavel', modalidade: 'inutilizacao', justificativa: 'x',
+      comissaoId: 'c1', comissao: { ...comissaoOk, status: 'encerrada' },
     });
     await expect(concluirDesfazimento('d1', actor)).rejects.toBeInstanceOf(
       DesfazimentoValidationError,
@@ -171,6 +209,7 @@ describe('trava de alienação sem desafetação (Art. 22/23)', () => {
     mockPrisma.desfazimento.findUnique.mockResolvedValue({
       id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
       classificacao: 'ocioso', modalidade: 'doacao', justificativa: 'x',
+      comissaoId: 'c1', comissao: { id: 'c1', tipo: 'desfazimento_desafetacao', status: 'ativa', portariaNumero: '01' },
     });
     mockPrisma.patrimonio.findUnique.mockResolvedValue({
       id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',

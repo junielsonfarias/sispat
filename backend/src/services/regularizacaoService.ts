@@ -71,7 +71,7 @@ export const getRegularizacaoById = async (id: string, actor: Actor) => {
   const r = await prisma.regularizacao.findUnique({
     where: { id },
     include: {
-      comissao: { select: { id: true, tipo: true, portariaNumero: true } },
+      comissao: { select: { id: true, tipo: true, status: true, portariaNumero: true } },
       patrimonio: { select: { id: true, numero_patrimonio: true, descricao_bem: true } },
     },
   });
@@ -203,6 +203,27 @@ export const incorporarRegularizacao = async (
   const reg = await getRegularizacaoById(id, actor);
   if (reg.status !== 'em_andamento') {
     throw new RegularizacaoValidationError('Esta regularização não está em andamento');
+  }
+
+  // A regularização do acervo é conduzida por uma Comissão de Regularização
+  // (Art. 19 / Cap. XIII): a incorporação só é válida com essa comissão designada
+  // e em exercício. A constatação pode ficar em rascunho sem comissão, mas não
+  // se incorpora ao patrimônio sem ela.
+  if (!reg.comissaoId || !reg.comissao) {
+    throw new RegularizacaoValidationError(
+      'Incorporação exige uma Comissão de Regularização designada (Art. 19). ' +
+        'Vincule a comissão à regularização antes de incorporar.',
+    );
+  }
+  if (reg.comissao.tipo !== 'regularizacao') {
+    throw new RegularizacaoValidationError(
+      'A comissão vinculada deve ser do tipo "regularizacao" para incorporar o bem (Art. 19).',
+    );
+  }
+  if (reg.comissao.status !== 'ativa') {
+    throw new RegularizacaoValidationError(
+      'A Comissão de Regularização vinculada não está ativa — designe/renove a comissão antes de incorporar.',
+    );
   }
 
   // Setor precisa ser do município.

@@ -75,6 +75,7 @@ describe('incorporarRegularizacao', () => {
     id: 'r1', status: 'em_andamento', municipalityId: 'mun-1',
     descricao: 'Mesa antiga', valorJusto: 300, dataConstatacao: new Date('2026-01-01'),
     estadoConservacao: 'BOM', observacoes: 'achada no almoxarifado', fotos: [],
+    comissaoId: 'c1', comissao: { id: 'c1', tipo: 'regularizacao', status: 'ativa', portariaNumero: '01' },
   };
   const incorpInput = {
     sectorId: 's1', setor_responsavel: 'Almoxarifado', local_objeto: 'Sala 1', tipo: 'Mobiliário',
@@ -126,6 +127,32 @@ describe('incorporarRegularizacao', () => {
 
   it('rejeita incorporar regularização já incorporada', async () => {
     mockPrisma.regularizacao.findUnique.mockResolvedValue({ ...reg, status: 'incorporado' });
+    await expect(incorporarRegularizacao('r1', incorpInput, actor)).rejects.toBeInstanceOf(
+      RegularizacaoValidationError,
+    );
+  });
+
+  it('rejeita incorporar sem comissão de regularização designada (Art. 19)', async () => {
+    mockPrisma.regularizacao.findUnique.mockResolvedValue({ ...reg, comissaoId: null, comissao: null });
+    await expect(incorporarRegularizacao('r1', incorpInput, actor)).rejects.toBeInstanceOf(
+      RegularizacaoValidationError,
+    );
+    expect(mockTx.patrimonio.create).not.toHaveBeenCalled();
+  });
+
+  it('rejeita comissão de tipo diferente de regularizacao', async () => {
+    mockPrisma.regularizacao.findUnique.mockResolvedValue({
+      ...reg, comissao: { id: 'c1', tipo: 'inventario', status: 'ativa', portariaNumero: '01' },
+    });
+    await expect(incorporarRegularizacao('r1', incorpInput, actor)).rejects.toBeInstanceOf(
+      RegularizacaoValidationError,
+    );
+  });
+
+  it('rejeita comissão de regularização não ativa', async () => {
+    mockPrisma.regularizacao.findUnique.mockResolvedValue({
+      ...reg, comissao: { id: 'c1', tipo: 'regularizacao', status: 'encerrada', portariaNumero: '01' },
+    });
     await expect(incorporarRegularizacao('r1', incorpInput, actor)).rejects.toBeInstanceOf(
       RegularizacaoValidationError,
     );

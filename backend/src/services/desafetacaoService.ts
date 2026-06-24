@@ -252,6 +252,12 @@ export const updateDesafetacao = async (id: string, input: UpdateDesafetacaoInpu
 };
 
 // Conclui a desafetação: bem -> dominical, histórico e auditoria. Atômico.
+//
+// NOTA (Art. 22 da Lei): a desafetação se dá por lei, decreto OU ato
+// administrativo competente — a base legal (baseLegalTipo/Numero/Data, exigida
+// no create) é o elemento constitutivo. A lei NÃO exige comissão para desafetar
+// (diferente do desfazimento, Art. 14 do Decreto). Por isso `comissaoId` aqui é
+// intencionalmente OPCIONAL — não adicionar trava de comissão.
 export const concluirDesafetacao = async (id: string, actor: Actor) => {
   const existing = await getDesafetacaoById(id, actor);
   if (existing.status !== 'em_andamento') {
