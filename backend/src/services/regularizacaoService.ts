@@ -8,7 +8,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { redisCache } from '../config/redis';
 import { logInfo } from '../config/logger';
-import { gerarNumeroPatrimonial } from './patrimonioService';
+import { gerarNumeroPatrimonial, proximoNumeroPatrimonialTx } from './patrimonioService';
 
 export interface Actor {
   userId: string;
@@ -315,6 +315,15 @@ export const incorporarRegularizacaoLote = async (input: IncorporarLoteInput, ac
     throw new RegularizacaoValidationError('Informe ao menos uma regularização para o lote');
   }
 
+  // Defesa em profundidade: a incorporação cria patrimônios com actor.municipalityId
+  // e gera números por município. Um superuser fora do contexto de um município
+  // criaria bens com tenant nulo / numeração ambígua.
+  if (actor.role === 'superuser' && !actor.municipalityId) {
+    throw new RegularizacaoValidationError(
+      'Superuser deve operar no contexto de um município para incorporar regularizações em lote',
+    );
+  }
+
   // Sem regularizações repetidas no lote.
   const ids = new Set<string>();
   for (const it of input.itens) {
@@ -361,19 +370,21 @@ export const incorporarRegularizacaoLote = async (input: IncorporarLoteInput, ac
     validados.push({ reg, numero: it.numero_patrimonio });
   }
 
-  // Numeração: gera o primeiro número e incrementa em memória para os itens sem
-  // número explícito (um $transaction aninhado por item não enxergaria os bens
-  // ainda não commitados, gerando colisão).
-  const primeiro = await gerarNumeroPatrimonial({ municipalityId: actor.municipalityId });
-  const prefixoSeq = primeiro.numero.slice(0, primeiro.numero.length - 6);
-  let seq = primeiro.sequencial;
-  const proximoNumeroAuto = (): string => {
-    const n = `${prefixoSeq}${String(seq).padStart(6, '0')}`;
-    seq += 1;
-    return n;
-  };
-
   const result = await prisma.$transaction(async (tx) => {
+    // Numeração DENTRO da transação: lê o último número com o mesmo `tx` que cria
+    // os patrimônios e incrementa em memória para os itens sem número explícito.
+    // Manter a leitura do último número e as criações na MESMA transação evita a
+    // race em que dois lotes concorrentes leem o mesmo "último número" e colidem
+    // no UNIQUE de numero_patrimonio.
+    const primeiro = await proximoNumeroPatrimonialTx(tx, { municipalityId: actor.municipalityId });
+    const prefixoSeq = primeiro.numero.slice(0, primeiro.numero.length - 6);
+    let seq = primeiro.sequencial;
+    const proximoNumeroAuto = (): string => {
+      const n = `${prefixoSeq}${String(seq).padStart(6, '0')}`;
+      seq += 1;
+      return n;
+    };
+
     const incorporados = [];
     for (const { reg, numero } of validados) {
       const numeroFinal = numero || proximoNumeroAuto();

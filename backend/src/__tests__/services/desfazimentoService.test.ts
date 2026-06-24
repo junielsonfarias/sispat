@@ -291,4 +291,49 @@ describe('createDesfazimentoLote — vários bens, mesma classificação/modalid
       createDesfazimentoLote({ ...loteBase, bens: [{ patrimonioId: 'p1' }, { patrimonioId: 'p1' }] }, actor),
     ).rejects.toBeInstanceOf(DesfazimentoValidationError);
   });
+
+  it('rejeita comissão de tipo errado já na abertura do lote (Art. 19, IV)', async () => {
+    // A comissão informada não é "desfazimento_desafetacao" — o lote deve falhar
+    // cedo, sem criar nenhum registro (mesma regra que a conclusão exige).
+    mockPrisma.comissao.findUnique.mockResolvedValue({
+      id: 'c1', municipalityId: 'mun-1', tipo: 'regularizacao', status: 'ativa',
+    });
+    await expect(
+      createDesfazimentoLote(
+        { ...loteBase, comissaoId: 'c1', bens: [{ patrimonioId: 'p1' }] },
+        actor,
+      ),
+    ).rejects.toBeInstanceOf(DesfazimentoValidationError);
+    expect(mockTx.desfazimento.create).not.toHaveBeenCalled();
+  });
+
+  it('rejeita comissão inativa já na abertura do lote (Art. 14 Decreto)', async () => {
+    mockPrisma.comissao.findUnique.mockResolvedValue({
+      id: 'c1', municipalityId: 'mun-1', tipo: 'desfazimento_desafetacao', status: 'encerrada',
+    });
+    await expect(
+      createDesfazimentoLote(
+        { ...loteBase, comissaoId: 'c1', bens: [{ patrimonioId: 'p1' }] },
+        actor,
+      ),
+    ).rejects.toBeInstanceOf(DesfazimentoValidationError);
+    expect(mockTx.desfazimento.create).not.toHaveBeenCalled();
+  });
+
+  it('aceita lote com comissão correta e ativa', async () => {
+    mockPrisma.comissao.findUnique.mockResolvedValue({
+      id: 'c1', municipalityId: 'mun-1', tipo: 'desfazimento_desafetacao', status: 'ativa',
+    });
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1', destinacao: 'uso_especial',
+    });
+    mockPrisma.desfazimento.findFirst.mockResolvedValue(null);
+    mockTx.desfazimento.create.mockImplementation((args) => Promise.resolve({ id: 'x', ...args.data }));
+    mockTx.activityLog.create.mockResolvedValue({});
+    const r = await createDesfazimentoLote(
+      { ...loteBase, comissaoId: 'c1', bens: [{ patrimonioId: 'p1' }] },
+      actor,
+    );
+    expect(r.total).toBe(1);
+  });
 });

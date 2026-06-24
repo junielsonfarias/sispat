@@ -695,6 +695,10 @@ function IncorporarLoteDialog({
       await api.post('/regularizacoes/incorporar-lote', {
         itens,
         sectorId,
+        // localId (local específico por UUID) é nulo por design no lote: a
+        // incorporação em massa vincula os bens ao SETOR e usa `local_objeto`
+        // (texto livre) como localização. Não há seletor de local específico
+        // aqui — quando for preciso, usar a incorporação individual.
         localId: null,
         setor_responsavel: setorResponsavel,
         local_objeto: localObjeto,

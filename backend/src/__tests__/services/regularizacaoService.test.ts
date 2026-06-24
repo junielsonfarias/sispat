@@ -15,8 +15,12 @@ const mockCache = { deletePattern: jest.fn() };
 jest.mock('../../config/redis', () => ({ redisCache: mockCache }));
 
 const mockGerarNumero = jest.fn();
+// O lote gera o primeiro número DENTRO da transação via proximoNumeroPatrimonialTx
+// (corrige a race de numeração). A incorporação individual ainda usa gerarNumeroPatrimonial.
+const mockProximoNumeroTx = jest.fn();
 jest.mock('../../services/patrimonioService', () => ({
   gerarNumeroPatrimonial: (...args: unknown[]) => mockGerarNumero(...args),
+  proximoNumeroPatrimonialTx: (...args: unknown[]) => mockProximoNumeroTx(...args),
 }));
 
 const mockTx = {
@@ -186,6 +190,7 @@ describe('incorporarRegularizacaoLote — várias regularizações de uma vez', 
   beforeEach(() => {
     mockPrisma.sector.findUnique.mockResolvedValue({ id: 's1', municipalityId: 'mun-1' });
     mockGerarNumero.mockResolvedValue({ numero: 'PAT202600000001', sequencial: 1 });
+    mockProximoNumeroTx.mockResolvedValue({ numero: 'PAT202600000001', sequencial: 1 });
     mockTx.historicoEntry.create.mockResolvedValue({});
     mockTx.regularizacao.update.mockResolvedValue({});
     mockTx.activityLog.create.mockResolvedValue({});
@@ -214,6 +219,24 @@ describe('incorporarRegularizacaoLote — várias regularizações de uma vez', 
       .mockResolvedValueOnce({ ...regBase('r2'), comissaoId: null, comissao: null });
     await expect(
       incorporarRegularizacaoLote({ ...loteInput, itens: [{ regularizacaoId: 'r1' }, { regularizacaoId: 'r2' }] }, actor),
+    ).rejects.toBeInstanceOf(RegularizacaoValidationError);
+    expect(mockTx.patrimonio.create).not.toHaveBeenCalled();
+  });
+
+  it('rejeita o lote inteiro se UMA regularização tem comissão de tipo errado (Art. 19)', async () => {
+    // r1 com comissão correta; r2 com comissão do tipo "desfazimento_desafetacao"
+    // (errado para regularização). O lote deve falhar atomicamente.
+    mockPrisma.regularizacao.findUnique
+      .mockResolvedValueOnce(regBase('r1'))
+      .mockResolvedValueOnce({
+        ...regBase('r2'),
+        comissao: { id: 'c2', tipo: 'desfazimento_desafetacao', status: 'ativa', portariaNumero: '02' },
+      });
+    await expect(
+      incorporarRegularizacaoLote(
+        { ...loteInput, itens: [{ regularizacaoId: 'r1' }, { regularizacaoId: 'r2' }] },
+        actor,
+      ),
     ).rejects.toBeInstanceOf(RegularizacaoValidationError);
     expect(mockTx.patrimonio.create).not.toHaveBeenCalled();
   });

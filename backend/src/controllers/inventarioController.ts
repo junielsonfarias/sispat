@@ -114,7 +114,7 @@ export const updateInventarioItem = async (req: Request, res: Response): Promise
     return;
   }
   try {
-    const updated = await svcUpdateItem(req.params.id, req.params.patrimonioId, req.body, actor);
+    const updated = await svcUpdateItem(req.params.id, req.params.bemId, req.body, actor);
     res.json(updated);
   } catch (error) {
     sendError(res, error, 'Erro ao conferir item do inventário');

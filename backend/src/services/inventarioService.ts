@@ -262,21 +262,28 @@ export const createInventario = async (input: CreateInventarioInput, actor: Acto
       },
     });
 
-    if (patrimoniosInScope.length > 0) {
-      await tx.inventoryItem.createMany({
-        data: patrimoniosInScope.map((p) => ({
-          inventoryId: created.id,
-          patrimonioId: p.id,
-          encontrado: false,
-        })),
-      });
+    // Art. 16: cada item do inventário representa EXATAMENTE um bem — ou um móvel
+    // (patrimonioId) ou um imóvel (imovelId), nunca ambos nem nenhum. O schema do
+    // banco deixa as duas FKs anuláveis (XOR validado aqui no service). Monta-se
+    // uma lista única e valida-se o XOR de cada item antes de persistir.
+    const itensData: { patrimonioId?: string; imovelId?: string }[] = [
+      ...patrimoniosInScope.map((p) => ({ patrimonioId: p.id })),
+      ...imoveisInScope.map((im) => ({ imovelId: im.id })),
+    ];
+    for (const it of itensData) {
+      if (!!it.patrimonioId === !!it.imovelId) {
+        throw new InventarioValidationError(
+          'Cada item de inventário deve referenciar exatamente um bem (patrimônio OU imóvel).',
+        );
+      }
     }
 
-    if (imoveisInScope.length > 0) {
+    if (itensData.length > 0) {
       await tx.inventoryItem.createMany({
-        data: imoveisInScope.map((im) => ({
+        data: itensData.map((it) => ({
           inventoryId: created.id,
-          imovelId: im.id,
+          patrimonioId: it.patrimonioId,
+          imovelId: it.imovelId,
           encontrado: false,
         })),
       });

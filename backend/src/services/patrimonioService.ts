@@ -383,6 +383,41 @@ export const gerarNumeroPatrimonial = async (params: {
   throw new Error('gerarNumeroPatrimonial: falha após retries');
 };
 
+// Variante que opera DENTRO de uma transação já aberta (recebe o `tx`). Use
+// quando a leitura do último número e a criação dos patrimônios precisam ser
+// atômicas com o resto da operação (ex.: incorporação em lote) — assim duas
+// requisições concorrentes não leem o mesmo "último número" e colidem no UNIQUE.
+// Diferente de gerarNumeroPatrimonial, NÃO abre uma transação própria e NÃO faz
+// retry (a atomicidade é garantida pela transação externa).
+export const proximoNumeroPatrimonialTx = async (
+  tx: Prisma.TransactionClient,
+  params: { municipalityId: string; prefix?: string; year?: string | number; sectorCode?: string },
+): Promise<{ numero: string; year: number; sectorCode: string; sequencial: number }> => {
+  const { municipalityId } = params;
+  const prefix = params.prefix ?? 'PAT';
+  const year = Number(params.year ?? new Date().getFullYear());
+  const sectorCode = params.sectorCode ?? '00';
+
+  const ultimo = await tx.patrimonio.findFirst({
+    where: {
+      municipalityId,
+      numero_patrimonio: { startsWith: `${prefix}${year}${sectorCode}` },
+    },
+    orderBy: { numero_patrimonio: 'desc' },
+    select: { numero_patrimonio: true },
+  });
+
+  let proximo = 1;
+  if (ultimo) {
+    const semPrefix = ultimo.numero_patrimonio.replace(`${prefix}${year}${sectorCode}`, '');
+    const parsed = parseInt(semPrefix, 10);
+    if (!Number.isNaN(parsed)) proximo = parsed + 1;
+  }
+
+  const numero = `${prefix}${year}${sectorCode}${String(proximo).padStart(6, '0')}`;
+  return { numero, year, sectorCode, sequencial: proximo };
+};
+
 // ===========================================================================
 // Mutations: create / update / delete / baixa / addNote
 // ===========================================================================

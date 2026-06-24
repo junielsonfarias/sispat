@@ -137,6 +137,29 @@ const validateComissao = async (comissaoId: string, actor: Actor) => {
   }
 };
 
+// Valida a comissão para um PROCESSO de desfazimento: além do tenant, exige o
+// tipo correto e status ativo (Art. 14 do Decreto / Art. 19, IV da Lei). Usada
+// na criação em lote para falhar cedo, e não só na conclusão.
+const validateComissaoParaDesfazimento = async (comissaoId: string, actor: Actor) => {
+  const c = await prisma.comissao.findUnique({
+    where: { id: comissaoId },
+    select: { id: true, municipalityId: true, tipo: true, status: true },
+  });
+  if (!c || (actor.role !== 'superuser' && c.municipalityId !== actor.municipalityId)) {
+    throw new DesfazimentoValidationError('Comissão inválida');
+  }
+  if (c.tipo !== 'desfazimento_desafetacao') {
+    throw new DesfazimentoValidationError(
+      'A comissão vinculada deve ser do tipo "desfazimento_desafetacao" (Art. 19, IV).',
+    );
+  }
+  if (c.status !== 'ativa') {
+    throw new DesfazimentoValidationError(
+      'A Comissão de Desfazimento e Desafetação vinculada não está ativa — designe/renove antes de prosseguir.',
+    );
+  }
+};
+
 export interface CreateDesfazimentoInput {
   patrimonioId: string;
   classificacao: string;
@@ -214,6 +237,14 @@ export const createDesfazimentoLote = async (input: CreateDesfazimentoLoteInput,
     throw new DesfazimentoValidationError('Informe ao menos um bem para o lote');
   }
 
+  // Defesa em profundidade: os novos registros gravam actor.municipalityId. Um
+  // superuser fora do contexto de um município geraria registros com tenant nulo.
+  if (actor.role === 'superuser' && !actor.municipalityId) {
+    throw new DesfazimentoValidationError(
+      'Superuser deve operar no contexto de um município para criar desfazimentos em lote',
+    );
+  }
+
   // Sem bens repetidos no lote.
   const ids = new Set<string>();
   for (const b of input.bens) {
@@ -223,7 +254,10 @@ export const createDesfazimentoLote = async (input: CreateDesfazimentoLoteInput,
     ids.add(b.patrimonioId);
   }
 
-  if (input.comissaoId) await validateComissao(input.comissaoId, actor);
+  // Se uma comissão é informada já na abertura do lote, ela deve ser do tipo e
+  // status que a conclusão exigirá (Art. 14 do Decreto / Art. 19, IV) — bloqueia
+  // guardar uma comissão que seria rejeitada na conclusão.
+  if (input.comissaoId) await validateComissaoParaDesfazimento(input.comissaoId, actor);
 
   // Valida CADA bem antes da transação (tenant, status, desafetação, avaliação, duplicata).
   const validados: { patrimonioId: string; valorAvaliacao: number | null }[] = [];

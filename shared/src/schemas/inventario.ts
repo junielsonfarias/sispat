@@ -108,9 +108,12 @@ export const updateInventarioItemSchema = z
   .strict();
 export type UpdateInventarioItemInput = z.infer<typeof updateInventarioItemSchema>;
 
-// Params da rota de conferência de item: /inventarios/:id/items/:patrimonioId
+// Params da rota de conferência de item: /inventarios/:id/items/:bemId
+// `bemId` é o id do bem conferido — pode ser um patrimônio (móvel) OU um imóvel
+// (Art. 16: o inventário cobre móveis e imóveis). O service resolve qual é via
+// OR: [{ patrimonioId }, { imovelId }].
 export const inventarioItemParamsSchema = z.object({
   id: z.string().uuid('ID do inventário inválido.'),
-  patrimonioId: z.string().uuid('ID do patrimônio inválido.'),
+  bemId: z.string().uuid('ID do bem inválido.'),
 });
 export type InventarioItemParams = z.infer<typeof inventarioItemParamsSchema>;

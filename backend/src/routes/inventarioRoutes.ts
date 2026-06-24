@@ -37,9 +37,10 @@ router.put(
   zodValidate({ params: uuidParamSchema, body: updateInventarioSchema }),
   updateInventario,
 );
-// Conferência de um item (marca encontrado/não encontrado e persiste)
+// Conferência de um item (marca encontrado/não encontrado e persiste). `bemId`
+// pode ser o id de um patrimônio (móvel) ou de um imóvel (Art. 16).
 router.patch(
-  '/:id/items/:patrimonioId',
+  '/:id/items/:bemId',
   authorize('superuser', 'admin', 'supervisor', 'usuario'),
   zodValidate({ params: inventarioItemParamsSchema, body: updateInventarioItemSchema }),
   updateInventarioItem,

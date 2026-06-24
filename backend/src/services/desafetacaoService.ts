@@ -229,6 +229,14 @@ export const createDesafetacaoLote = async (input: CreateDesafetacaoLoteInput, a
     throw new DesafetacaoValidationError('Informe ao menos um bem para o lote');
   }
 
+  // Defesa em profundidade: os novos registros gravam actor.municipalityId. Um
+  // superuser fora do contexto de um município geraria registros com tenant nulo.
+  if (actor.role === 'superuser' && !actor.municipalityId) {
+    throw new DesafetacaoValidationError(
+      'Superuser deve operar no contexto de um município para criar desafetações em lote',
+    );
+  }
+
   // Não permitir o mesmo bem repetido no lote.
   const chaves = new Set<string>();
   for (const b of input.bens) {
