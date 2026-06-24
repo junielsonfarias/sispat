@@ -21,11 +21,13 @@ Aplicação multi-tenant por `municipalityId` com 5 papéis: `superuser`, `admin
 ### Frontend (raiz)
 ```bash
 pnpm install
-pnpm run dev              # vite dev server
+pnpm run dev              # sobe BACKEND (:3000) + FRONTEND (:8080) juntos (concurrently)
+pnpm run dev:frontend     # só o vite dev server (:8080)
+pnpm run dev:backend      # só o backend (nodemon)
 pnpm run build            # build produção
 pnpm run lint             # eslint --cache
-pnpm run type-check       # tsc --noEmit
-pnpm test                 # vitest
+pnpm run type-check       # tsc --noEmit -p tsconfig.app.json (= 0 erros; manter)
+pnpm test                 # vitest (escopado a src/; backend é Jest separado)
 pnpm run test:e2e         # playwright
 ```
 
@@ -85,10 +87,11 @@ Quando executar tarefas substanciais:
 
 ## 5. Pontos de atenção (débitos conhecidos)
 
-> Atualizado 2026-06-23 após re-auditoria. **Resolvidos** (não são mais débitos): IDOR do `uploadController.deleteFile` (tem `isFileOwnedByMunicipality`); `$queryRaw` de `customizationController`/`auditLogController` (migrados p/ Prisma); `patrimonioController` (1320→361 linhas, lógica em `services/`); linter backend (`eslint src --ext .ts`); refresh token com rotação (`authService`); cobertura (36 suites Jest). Histórico em `HISTORICO_CORRECOES.md`.
+> Atualizado 2026-06-24 após re-auditoria. **Resolvidos** (não são mais débitos): IDOR do `uploadController.deleteFile`; `$queryRaw` de `customizationController`/`auditLogController` (migrados p/ Prisma); `patrimonioController` (1320→361 linhas, lógica em `services/`); linter backend; refresh token com rotação; **erros de TypeScript do frontend (768 → 0** em `tsc -p tsconfig.app.json`; recharts×React19 via `src/lib/recharts-compat.tsx`); **runner de testes estabilizado** (vitest escopado a `src/`); **comando único de dev** (`pnpm dev` sobe os dois); isolamento de tenant em `locaisController` (lookup por nome). Histórico em `HISTORICO_CORRECOES.md`.
 
 Em aberto (deixados por decisão de produto/risco — ver memória `security-hardening-2026-06-23`):
 - 🟡 `PUT /api/system-configuration` permite `admin` alterar config global da plataforma — restringir a `superuser` é hardening, mas afeta o toggle de busca pública (decisão de produto).
+- 🟡 PII em `logDebug`: o transport de arquivo do Winston não restringe nível, então `debug` persiste em prod — sempre `maskEmail`/`redactSensitive` em logs com email/CPF.
 
 Plano detalhado em `Docs/_PROJETO/PLANO_CORRECOES.md`.
 
