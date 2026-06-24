@@ -6,8 +6,10 @@
   "type": "module",
   "scripts": {
     "start": "pnpm run dev",
+    "predev": "cd backend && docker compose up -d",
     "dev": "concurrently -n backend,frontend -c blue,green \"npm --prefix backend run dev\" \"vite\"",
     "dev:frontend": "vite",
+    "predev:backend": "cd backend && docker compose up -d",
     "dev:backend": "npm --prefix backend run dev",
     "build": "vite build",
     "build:prod": "vite build --mode production",
