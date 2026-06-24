@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import {
+  resolvePublicMunicipalityId,
+  MunicipalityRequiredError,
+} from '../utils/public-tenant';
 
 /**
  * Campos atualizáveis na customização. Lista whitelist mantida explícita
@@ -76,18 +80,22 @@ export const getPublicCustomization = async (req: Request, res: Response): Promi
   try {
     logDebug('🌐 Buscando customização pública (sem autenticação)');
 
-    const municipality = await prisma.municipality.findFirst({ select: { id: true } });
+    // Determinístico por município (antes era findFirst sem ordenação, que em
+    // multi-tenant retornaria a customização de um município arbitrário).
+    const municipalityId = await resolvePublicMunicipalityId(
+      req.query.municipalityId as string | undefined,
+    );
 
-    if (!municipality) {
+    if (!municipalityId) {
       logWarn('❌ Nenhum município encontrado');
       res.status(404).json({ error: 'Município não encontrado' });
       return;
     }
 
     const customization =
-      (await prisma.customization.findUnique({ where: { municipalityId: municipality.id } })) ?? {
+      (await prisma.customization.findUnique({ where: { municipalityId } })) ?? {
         id: 'default',
-        municipalityId: municipality.id,
+        municipalityId,
         primaryColor: '#2563eb',
         backgroundColor: '#f1f5f9',
         welcomeTitle: 'Bem-vindo ao SISPAT',
@@ -97,6 +105,10 @@ export const getPublicCustomization = async (req: Request, res: Response): Promi
     logDebug('✅ Customização pública carregada');
     res.json({ customization });
   } catch (error) {
+    if (error instanceof MunicipalityRequiredError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     logError('❌ Erro ao buscar customização pública', error);
     res.status(500).json({ error: 'Erro ao buscar customização' });
   }

@@ -18,6 +18,10 @@ import {
   updatePatrimonio as svcUpdate,
 } from '../services/patrimonioService';
 import { logError, logInfo } from '../config/logger';
+import {
+  resolvePublicMunicipalityId,
+  MunicipalityRequiredError,
+} from '../utils/public-tenant';
 
 /**
  * Controllers de Patrimônio — finos, só orquestram HTTP.
@@ -43,11 +47,18 @@ const auditFromReq = (req: Request) => ({
  * Listar patrimônios públicos (sem autenticação)
  * GET /api/public/patrimonios
  */
-export const listPublicPatrimonios = async (_req: Request, res: Response): Promise<void> => {
+export const listPublicPatrimonios = async (req: Request, res: Response): Promise<void> => {
   try {
-    const patrimonios = await svcListPublic();
+    const municipalityId = await resolvePublicMunicipalityId(
+      req.query.municipalityId as string | undefined,
+    );
+    const patrimonios = await svcListPublic(municipalityId);
     res.json({ patrimonios });
   } catch (error) {
+    if (error instanceof MunicipalityRequiredError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     logError('Erro ao listar patrimônios públicos', error);
     res.status(500).json({ error: 'Erro ao listar patrimônios' });
   }
@@ -59,13 +70,20 @@ export const listPublicPatrimonios = async (_req: Request, res: Response): Promi
  */
 export const getPublicPatrimonioByNumero = async (req: Request, res: Response): Promise<void> => {
   try {
-    const patrimonio = await svcGetPublicByNumero(req.params.numero);
+    const municipalityId = await resolvePublicMunicipalityId(
+      req.query.municipalityId as string | undefined,
+    );
+    const patrimonio = await svcGetPublicByNumero(req.params.numero, municipalityId);
     if (!patrimonio) {
       res.status(404).json({ error: 'Patrimônio não encontrado' });
       return;
     }
     res.json({ patrimonio });
   } catch (error) {
+    if (error instanceof MunicipalityRequiredError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     logError('Erro ao buscar patrimônio público', error, { numero: req.params.numero });
     res.status(500).json({ error: 'Erro ao buscar patrimônio' });
   }

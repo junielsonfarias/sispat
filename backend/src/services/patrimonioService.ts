@@ -128,18 +128,30 @@ const ensureSectorAccess = async (
 // Operações de leitura
 // ===========================================================================
 
-export const listPublicPatrimonios = async () => {
+export const listPublicPatrimonios = async (municipalityId?: string | null) => {
+  const where: Prisma.PatrimonioWhereInput = { status: { in: PUBLIC_STATUS } };
+  if (municipalityId) where.municipalityId = municipalityId;
   const patrimonios = await prisma.patrimonio.findMany({
-    where: { status: { in: PUBLIC_STATUS } },
+    where,
     include: { sector: true, municipality: true },
     orderBy: { numero_patrimonio: 'asc' },
   });
   return patrimonios.map(normalizeOnRead);
 };
 
-export const getPublicPatrimonioByNumero = async (numero: string) => {
+export const getPublicPatrimonioByNumero = async (
+  numero: string,
+  municipalityId?: string | null,
+) => {
+  // numero_patrimonio é único POR município, então sem o filtro a busca é
+  // ambígua entre municípios. Com municipalityId resolvido, é determinística.
+  const where: Prisma.PatrimonioWhereInput = {
+    numero_patrimonio: numero,
+    status: { in: PUBLIC_STATUS },
+  };
+  if (municipalityId) where.municipalityId = municipalityId;
   const patrimonio = await prisma.patrimonio.findFirst({
-    where: { numero_patrimonio: numero, status: { in: PUBLIC_STATUS } },
+    where,
     include: {
       sector: true,
       municipality: true,

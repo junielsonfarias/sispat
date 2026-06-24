@@ -88,7 +88,6 @@ Quando executar tarefas substanciais:
 > Atualizado 2026-06-23 após re-auditoria. **Resolvidos** (não são mais débitos): IDOR do `uploadController.deleteFile` (tem `isFileOwnedByMunicipality`); `$queryRaw` de `customizationController`/`auditLogController` (migrados p/ Prisma); `patrimonioController` (1320→361 linhas, lógica em `services/`); linter backend (`eslint src --ext .ts`); refresh token com rotação (`authService`); cobertura (36 suites Jest). Histórico em `HISTORICO_CORRECOES.md`.
 
 Em aberto (deixados por decisão de produto/risco — ver memória `security-hardening-2026-06-23`):
-- 🟡 Rotas públicas (`listPublicDocuments`, `listPublicPatrimonios`, customization public) não filtram `municipalityId` — latente em deploy mono-município; corrigir exige schema (`municipalityId` em `DocumentoGeral`) ou contrato com `municipalitySlug`.
 - 🟡 `PUT /api/system-configuration` permite `admin` alterar config global da plataforma — restringir a `superuser` é hardening, mas afeta o toggle de busca pública (decisão de produto).
 
 Plano detalhado em `Docs/_PROJETO/PLANO_CORRECOES.md`.

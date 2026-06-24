@@ -5,6 +5,10 @@ import { AppError } from '../middlewares/errorHandler';
 import { logActivity } from '../utils/activityLogger';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 import { redisCache, CacheUtils } from '../config/redis';
+import {
+  resolvePublicMunicipalityId,
+  MunicipalityRequiredError,
+} from '../utils/public-tenant';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -461,10 +465,17 @@ export const listPublicDocuments = async (req: Request, res: Response): Promise<
     const { page = 1, limit = 10, search } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
+    // Isolamento multi-tenant: DocumentoGeral não tem municipalityId próprio,
+    // então escopamos via o município do usuário que fez o upload.
+    const municipalityId = await resolvePublicMunicipalityId(
+      req.query.municipalityId as string | undefined,
+    );
+
     const where: Prisma.DocumentoGeralWhereInput = {
-      isPublic: true
+      isPublic: true,
+      ...(municipalityId ? { uploadedBy: { municipalityId } } : {}),
     };
-    
+
     if (search) {
       where.OR = [
         { titulo: { contains: search as string, mode: 'insensitive' } },
@@ -509,6 +520,10 @@ export const listPublicDocuments = async (req: Request, res: Response): Promise<
       }
     });
   } catch (error) {
+    if (error instanceof MunicipalityRequiredError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     logError('Erro ao listar documentos públicos', error, { query: req.query });
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
