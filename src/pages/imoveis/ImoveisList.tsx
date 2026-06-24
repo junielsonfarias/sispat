@@ -101,8 +101,8 @@ export default function ImoveisList() {
     )
 
     filtered.sort((a, b) => {
-      const aValue = a[sorting.column]
-      const bValue = b[sorting.column]
+      const aValue = a[sorting.column] ?? ''
+      const bValue = b[sorting.column] ?? ''
       if (aValue < bValue) return sorting.direction === 'asc' ? -1 : 1
       if (aValue > bValue) return sorting.direction === 'asc' ? 1 : -1
       return 0
@@ -422,7 +422,7 @@ export default function ImoveisList() {
                           isActive={pagination.pageIndex === item}
                           onClick={(e) => {
                             e.preventDefault()
-                            setPagination((p) => ({ ...p, pageIndex: item }))
+                            setPagination((p) => ({ ...p, pageIndex: item as number }))
                           }}
                         >
                           {item}

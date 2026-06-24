@@ -167,6 +167,7 @@ export interface Patrimonio {
   documentos_pdf?: File[]
   transferencia_pendente?: boolean
   doado?: boolean
+  observacoes?: string
   createdAt: Date
   createdBy: string
   updatedAt?: Date
@@ -207,6 +208,8 @@ export interface Imovel {
   historico: HistoricoEntry[]
   municipalityId: string
   customFields: Record<string, any>
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export type ActivityLogAction =

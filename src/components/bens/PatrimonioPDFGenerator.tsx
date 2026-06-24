@@ -3,7 +3,6 @@ import { formatDate, formatCurrency, getCloudImageUrl } from '@/lib/utils'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { api } from '@/services/http-api'
-import { generatePatrimonioQRCode } from '@/lib/qr-code-utils'
 import { logger } from '@/lib/logger'
 
 interface PatrimonioPDFGeneratorProps {
@@ -149,7 +148,7 @@ export const generatePatrimonioPDF = async ({
       console.error('❌ [PDF Generator] Detalhes do erro:', {
         templateId,
         error: error instanceof Error ? error.message : 'Erro desconhecido',
-        response: error.response?.data || 'N/A'
+        response: error instanceof Error ? 'N/A' : 'N/A'
       })
     }
   } else {
@@ -329,7 +328,7 @@ export const generatePatrimonioPDF = async ({
           <!-- Dados de Atualização -->
           <div style="padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; text-align: center;">
             <p style="margin: 0; font-size: 10px; color: #6b7280; font-weight: 500; margin-bottom: 4px;">ÚLTIMA ATUALIZAÇÃO</p>
-            <p style="margin: 0; font-size: 12px; font-weight: 600; color: #000;">${formatDate(new Date(patrimonio.updatedAt))}</p>
+            <p style="margin: 0; font-size: 12px; font-weight: 600; color: #000;">${patrimonio.updatedAt ? formatDate(new Date(patrimonio.updatedAt)) : '-'}</p>
           </div>
         </div>
       </div>

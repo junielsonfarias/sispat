@@ -10,6 +10,7 @@ import { io, Socket } from 'socket.io-client'
 import { useAuth } from './useAuth'
 import { toast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
+import { SecureStorage } from '@/lib/storage-utils'
 
 export interface WebSocketEvents {
   // Métricas em tempo real
@@ -112,7 +113,7 @@ interface WebSocketHook {
 }
 
 export const useWebSocket = (): WebSocketHook => {
-  const { user, token } = useAuth()
+  const { user } = useAuth()
   const socketRef = useRef<Socket | null>(null)
   const [state, setState] = useState<WebSocketState>({
     isConnected: false,
@@ -123,6 +124,7 @@ export const useWebSocket = (): WebSocketHook => {
 
   // Conectar ao WebSocket
   const connect = useCallback(() => {
+    const token = SecureStorage.getItem<string>('sispat_token')
     if (!user || !token || socketRef.current?.connected) return
 
     setState(prev => ({ ...prev, isConnecting: true, error: null }))
@@ -194,18 +196,18 @@ export const useWebSocket = (): WebSocketHook => {
       })
 
       // Notificações de alertas
-      socket.on('alert:new', (data) => {
-        const severityColors = {
+      socket.on('alert:new', (data: WebSocketEvents['alert:new']) => {
+        const severityVariant: Record<'low' | 'medium' | 'high' | 'critical', 'default' | 'destructive'> = {
           low: 'default',
-          medium: 'warning',
+          medium: 'default',
           high: 'destructive',
           critical: 'destructive'
-        } as const
+        }
 
         toast({
           title: `Alerta: ${data.alertId}`,
           description: data.message,
-          variant: severityColors[data.severity]
+          variant: severityVariant[data.severity]
         })
       })
 
@@ -247,7 +249,7 @@ export const useWebSocket = (): WebSocketHook => {
         toast({
           title: 'Status de Transferência',
           description: `Transferência ${data.status}`,
-          variant: data.status === 'aprovada' ? 'default' : 'warning'
+          variant: data.status === 'aprovada' ? 'default' : 'destructive'
         })
       })
 
@@ -256,7 +258,7 @@ export const useWebSocket = (): WebSocketHook => {
         toast({
           title: 'Manutenção Programada',
           description: data.message,
-          variant: 'warning'
+          variant: 'default'
         })
       })
 
@@ -277,7 +279,7 @@ export const useWebSocket = (): WebSocketHook => {
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       }))
     }
-  }, [user, token])
+  }, [user])
 
   // Desconectar do WebSocket
   const disconnect = useCallback(() => {
@@ -295,7 +297,7 @@ export const useWebSocket = (): WebSocketHook => {
 
   // Conectar quando usuário estiver logado
   useEffect(() => {
-    if (user && token) {
+    if (user) {
       connect()
     } else {
       disconnect()
@@ -304,18 +306,18 @@ export const useWebSocket = (): WebSocketHook => {
     return () => {
       disconnect()
     }
-  }, [user, token, connect, disconnect])
+  }, [user, connect, disconnect])
 
   // Auto-reconexão
   useEffect(() => {
-    if (!state.isConnected && !state.isConnecting && user && token) {
+    if (!state.isConnected && !state.isConnecting && user) {
       const timer = setTimeout(() => {
         connect()
       }, 5000)
 
       return () => clearTimeout(timer)
     }
-  }, [state.isConnected, state.isConnecting, user, token, connect])
+  }, [state.isConnected, state.isConnecting, user, connect])
 
   // Emitir evento
   const emit = useCallback(<K extends keyof WebSocketEvents>(
@@ -334,7 +336,8 @@ export const useWebSocket = (): WebSocketHook => {
     callback: (data: WebSocketEvents[K]) => void
   ) => {
     if (socketRef.current) {
-      socketRef.current.on(event, callback)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      socketRef.current.on(event as string, callback as (...args: any[]) => void)
     }
   }, [])
 
@@ -345,9 +348,10 @@ export const useWebSocket = (): WebSocketHook => {
   ) => {
     if (socketRef.current) {
       if (callback) {
-        socketRef.current.off(event, callback)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        socketRef.current.off(event as string, callback as (...args: any[]) => void)
       } else {
-        socketRef.current.off(event)
+        socketRef.current.off(event as string)
       }
     }
   }, [])

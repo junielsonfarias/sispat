@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -10,7 +10,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardFooter,
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -37,7 +36,6 @@ import {
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -101,8 +99,8 @@ const Exportacao = () => {
       form.reset({
         fields: config.columns as string[],
         format: config.format,
-        dateFrom: config.filters.dateFrom,
-        dateTo: config.filters.dateTo,
+        dateFrom: config.filters.dateFrom as string | undefined,
+        dateTo: config.filters.dateTo as string | undefined,
       })
     }
   }

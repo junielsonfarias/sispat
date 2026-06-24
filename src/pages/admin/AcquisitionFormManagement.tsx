@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -30,7 +30,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { toast } from '@/hooks/use-toast'
 import { Plus, Edit, Trash2, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useAcquisitionForms } from '@/contexts/AcquisitionFormContext'
@@ -54,7 +53,6 @@ type AcquisitionFormValues = z.infer<typeof acquisitionFormSchema>
 const AcquisitionFormManagement = () => {
   const {
     acquisitionForms,
-    isLoading,
     addAcquisitionForm,
     updateAcquisitionForm,
     deleteAcquisitionForm,

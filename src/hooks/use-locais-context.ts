@@ -11,7 +11,6 @@ export interface Local {
   id: string
   name: string
   description?: string
-  sectorId: string
   municipalityId: string
   createdAt: Date
   updatedAt: Date
@@ -24,26 +23,25 @@ export interface Local {
 export function useLocaisQuery() {
   // Queries
   const { data: locais = [], isLoading, refetch } = useLocais()
-  
+
   // Mutations
   const createMutation = useCreateLocal()
   const updateMutation = useUpdateLocal()
   const deleteMutation = useDeleteLocal()
-  
-  // Filtrar por setor (client-side, mas dados vêm cacheados)
-  const getLocaisBySectorId = (sectorId: string) => {
-    return locais.filter((l) => l.sectorId === sectorId)
+
+  // Filtrar por nome (campo sectorId não existe na query — filtro client-side por name)
+  const getLocaisByName = (name: string) => {
+    return locais.filter((l) => l.name.toLowerCase().includes(name.toLowerCase()))
   }
-  
+
   // Funções com mesma interface do context
-  const addLocal = async (name: string, sectorId: string) => {
+  const addLocal = async (name: string) => {
     try {
       await createMutation.mutateAsync({
         name,
-        sectorId,
         municipalityId: 'municipality-1', // Single municipality
       })
-      
+
       toast({ description: 'Local criado com sucesso.' })
     } catch (error) {
       toast({
@@ -54,14 +52,14 @@ export function useLocaisQuery() {
       throw error
     }
   }
-  
-  const updateLocal = async (id: string, name: string, sectorId: string) => {
+
+  const updateLocal = async (id: string, name: string) => {
     try {
       await updateMutation.mutateAsync({
         id,
-        data: { name, sectorId },
+        name,
       })
-      
+
       toast({ description: 'Local atualizado com sucesso.' })
     } catch (error) {
       toast({
@@ -72,11 +70,11 @@ export function useLocaisQuery() {
       throw error
     }
   }
-  
+
   const deleteLocal = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id)
-      
+
       toast({ description: 'Local deletado com sucesso.' })
     } catch (error) {
       toast({
@@ -87,15 +85,14 @@ export function useLocaisQuery() {
       throw error
     }
   }
-  
+
   return {
     locais,
     isLoading,
-    getLocaisBySectorId,
+    getLocaisByName,
     addLocal,
     updateLocal,
     deleteLocal,
     refetch,
   }
 }
-

@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Form,
   FormControl,
@@ -22,12 +21,11 @@ import {
 import { ManutencaoTask } from '@/types'
 import { useManutencao } from '@/contexts/ManutencaoContext'
 import { useImovel } from '@/hooks/useImovel'
-import { useAuth } from '@/hooks/useAuth'
 import { DatePicker } from '@/components/ui/date-picker'
 
 const taskSchema = z.object({
   title: z.string().min(1, 'O título é obrigatório.'),
-  description: z.string().optional(),
+  description: z.string().optional().default(''),
   imovelId: z.string().min(1, 'O imóvel é obrigatório.'),
   priority: z.enum(['Baixa', 'Média', 'Alta']),
   status: z.enum(['A Fazer', 'Em Progresso', 'Concluída']),
@@ -48,7 +46,6 @@ export const ManutencaoTaskForm = ({
 }: ManutencaoTaskFormProps) => {
   const { addTask, updateTask } = useManutencao()
   const { imoveis } = useImovel()
-  const { users } = useAuth()
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),

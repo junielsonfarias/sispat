@@ -1,6 +1,5 @@
 // Header component - Enhanced with modern design based on image reference
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -17,14 +16,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MobileNavigation, BottomNavigation } from '@/components/MobileNavigation'
-import { useMobile } from '@/hooks/useMobile'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { User, LogOut, Settings, Shield, Building2, Sun, Moon } from 'lucide-react'
+import { User, LogOut, Settings, Shield, Sun, Moon } from 'lucide-react'
 
 export const Header = () => {
   const { user, logout } = useAuth()
-  const { theme, setTheme, actualTheme } = useTheme()
-  const { isMobile } = useMobile()
+  const { setTheme, actualTheme } = useTheme()
   
   // Fallback para quando o contexto não estiver disponível
   let settings
@@ -38,27 +35,7 @@ export const Header = () => {
     }
   }
   
-  const location = useLocation()
-
   if (!user) return null
-
-  // Função para obter o título da página baseado na rota
-  const getPageTitle = () => {
-    const path = location.pathname
-    
-    if (path.includes('/dashboard')) return 'Dashboard'
-    if (path.includes('/bens')) return 'Gestão de Patrimônio'
-    if (path.includes('/imoveis')) return 'Gestão de Imóveis'
-    if (path.includes('/relatorios')) return 'Relatórios'
-    if (path.includes('/ferramentas')) return 'Ferramentas'
-    if (path.includes('/configuracoes')) return 'Configurações'
-    if (path.includes('/admin')) return 'Administração'
-    if (path.includes('/superuser')) return 'Super Usuário'
-    if (path.includes('/profile')) return 'Perfil'
-    if (path === '/') return 'Dashboard'
-    
-    return 'Sistema de Patrimônio'
-  }
 
   const handleLogout = async () => {
     await logout()

@@ -12,14 +12,12 @@ import { useMobile } from '@/hooks/useMobile'
 import { cn } from '@/lib/utils'
 import {
   Menu,
-  X,
   Home,
   Archive,
   Building2,
   BarChart,
   Settings,
   Users,
-  Bell,
   Search,
   Plus,
   ChevronDown,
@@ -49,7 +47,7 @@ interface MobileNavGroup {
 
 const MobileNavigationOptimized: React.FC = () => {
   const { user } = useAuth()
-  const { isMobile, screenWidth } = useMobile()
+  const { isMobile } = useMobile()
   const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')

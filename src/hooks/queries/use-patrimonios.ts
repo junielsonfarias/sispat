@@ -121,7 +121,7 @@ export const useUpdatePatrimonio = () => {
       return { previousPatrimonio, previousList }
     },
     // Se erro, reverte
-    onError: (err, variables, context) => {
+    onError: (_err, variables, context) => {
       if (context?.previousPatrimonio) {
         queryClient.setQueryData(['patrimonio', variables.id], context.previousPatrimonio)
       }
@@ -132,7 +132,7 @@ export const useUpdatePatrimonio = () => {
       })
     },
     // Após sucesso ou erro, refetch para garantir consistência
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['patrimonio', variables.id] })
       queryClient.invalidateQueries({ queryKey: ['patrimonios'] })
     },

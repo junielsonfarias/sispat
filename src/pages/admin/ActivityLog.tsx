@@ -5,7 +5,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardFooter,
 } from '@/components/ui/card'
 import {
@@ -36,14 +35,11 @@ import { DatePickerWithRange } from '@/components/ui/date-picker'
 import { DateRange } from 'react-day-picker'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationPrevious,
-  PaginationLink,
-  PaginationEllipsis,
   PaginationNext,
 } from '@/components/ui/pagination'
 

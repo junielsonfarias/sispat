@@ -2,7 +2,6 @@ import { forwardRef } from 'react'
 import { Patrimonio } from '@/types'
 import { formatCurrency, formatDate, getCloudImageUrl } from '@/lib/utils'
 import { useCustomization } from '@/contexts/CustomizationContext'
-import { LazyImage } from '@/components/ui/lazy-image'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { logger } from '@/lib/logger'
 
@@ -20,19 +19,6 @@ export const BensPrintForm = forwardRef<HTMLDivElement, BensPrintFormProps>(
 
     const shouldPrint = (fieldId: keyof Patrimonio) =>
       fieldsToPrint.includes(fieldId)
-
-    const DetailRow = ({
-      label,
-      value,
-    }: {
-      label: string
-      value: React.ReactNode
-    }) => (
-      <div className="grid grid-cols-3 gap-2 py-1 border-b">
-        <dt className="font-semibold text-gray-600">{label}</dt>
-        <dd className="col-span-2 text-gray-800">{value}</dd>
-      </div>
-    )
 
     return (
       <>
@@ -185,7 +171,7 @@ export const BensPrintForm = forwardRef<HTMLDivElement, BensPrintFormProps>(
             <div className="p-3 bg-gray-50 border rounded">
               <div className="text-center">
                 <p className="text-xs font-medium text-gray-600 mb-1">ÚLTIMA ATUALIZAÇÃO</p>
-                <p className="text-sm font-semibold text-gray-800">{formatDate(new Date(patrimonio.updatedAt))}</p>
+                <p className="text-sm font-semibold text-gray-800">{patrimonio.updatedAt ? formatDate(new Date(patrimonio.updatedAt)) : '-'}</p>
               </div>
             </div>
           </div>

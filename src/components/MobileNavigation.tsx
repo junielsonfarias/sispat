@@ -6,11 +6,9 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import {
   Menu,
   X,
-  Home,
   Building,
   Archive,
   Settings,
@@ -19,22 +17,15 @@ import {
   Users,
   Palette,
   ShieldCheck,
-  Shield,
-  Database,
-  Lock,
-  Info,
-  RefreshCw,
   DatabaseBackup,
   LayoutDashboard,
   Building2,
   FileText,
-  Tag,
   Download,
   MapPin,
   ClipboardList,
   Plus,
   List,
-  Map,
   Wrench,
   FileJson,
   LayoutTemplate,

@@ -21,8 +21,7 @@ export const generatePatrimonioPDF = async ({
   const pageHeight = doc.internal.pageSize.getHeight() // 297mm
   const margin = 20 // Margem segura de 20mm
   const contentWidth = pageWidth - (margin * 2) // 170mm
-  const maxContentHeight = pageHeight - (margin * 2) // 257mm
-  
+
   let yPosition = margin
 
   // Função para verificar se deve imprimir um campo
@@ -34,106 +33,12 @@ export const generatePatrimonioPDF = async ({
     return (yPosition + requiredHeight) <= (pageHeight - margin - 30) // 30mm para rodapé
   }
 
-  // Função para adicionar nova página se necessário
-  const addPageIfNeeded = (requiredHeight: number) => {
-    if (!checkPageSpace(requiredHeight)) {
-      doc.addPage()
-      yPosition = margin
-      return true
-    }
-    return false
-  }
-
   // Função para adicionar texto com quebra de linha
   const addText = (text: string, x: number, y: number, options: any = {}) => {
     const maxWidth = options.maxWidth || contentWidth - (x - margin)
     const lines = doc.splitTextToSize(text, maxWidth)
     doc.text(lines, x, y)
     return y + (lines.length * (options.lineHeight || 4))
-  }
-
-  // Função para adicionar linha de informação otimizada
-  const addInfoLine = (label: string, value: string, y: number, isImportant = false) => {
-    const labelWidth = 45
-    const valueX = margin + labelWidth
-    const lineHeight = 4
-    const spacing = 2
-    
-    // Verificar se cabe na página
-    if (!checkPageSpace(lineHeight + spacing + 5)) {
-      doc.addPage()
-      yPosition = margin
-      y = yPosition
-    }
-    
-    // Background para linha importante
-    if (isImportant) {
-      doc.setFillColor(245, 245, 245)
-      doc.rect(margin - 1, y - 2, contentWidth + 2, lineHeight + 1, 'F')
-    }
-    
-    // Label em negrito
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    doc.text(label + ':', margin, y)
-    
-    // Valor
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
-    const maxValueWidth = contentWidth - labelWidth - 5
-    const valueLines = doc.splitTextToSize(value || 'Não informado', maxValueWidth)
-    doc.text(valueLines, valueX, y)
-    
-    return y + (valueLines.length * lineHeight) + spacing
-  }
-
-  // Função para adicionar foto do bem
-  const addPhoto = async (y: number) => {
-    if (!shouldPrint('fotos') || !patrimonio.fotos || patrimonio.fotos.length === 0) {
-      return y
-    }
-
-    try {
-      const photoUrl = patrimonio.fotos[0]
-      const photoResponse = await fetch(photoUrl)
-      const photoBlob = await photoResponse.blob()
-      const photoDataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.readAsDataURL(photoBlob)
-      })
-
-      // Dimensões da foto - ajustadas para não sobrepor
-      const photoWidth = 45
-      const photoHeight = 35
-      const photoX = pageWidth - margin - photoWidth - 5
-      
-      // Verificar se cabe na página
-      if (!checkPageSpace(photoHeight + 10)) {
-        doc.addPage()
-        yPosition = margin
-        y = yPosition
-      }
-
-      // Título da foto - posicionado acima
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(7)
-      doc.setTextColor(60, 60, 60)
-      doc.text('FOTO DO BEM', photoX, y - 2)
-
-      // Borda da foto com sombra sutil
-      doc.setDrawColor(180, 180, 180)
-      doc.setLineWidth(0.8)
-      doc.rect(photoX, y, photoWidth, photoHeight)
-
-      // Adicionar a foto
-      doc.addImage(photoDataUrl, 'JPEG', photoX + 1, y + 1, photoWidth - 2, photoHeight - 2)
-
-      return y + photoHeight + 10
-    } catch (error) {
-      console.warn('Erro ao carregar foto:', error)
-      return y
-    }
   }
 
   // Função para adicionar seção compacta

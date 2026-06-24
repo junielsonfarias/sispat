@@ -35,7 +35,7 @@ export const useSectorFilter = () => {
     }
 
     return patrimonios.filter((patrimonio) => {
-      const patrimonioSector = patrimonio.setor_responsavel || patrimonio.setorResponsavel
+      const patrimonioSector = patrimonio.setor_responsavel
       return userSectors.includes(patrimonioSector)
     })
   }
@@ -118,7 +118,7 @@ export const useSectorFilter = () => {
         const valor = typeof p.valor_aquisicao === 'number' ? p.valor_aquisicao : parseFloat(p.valor_aquisicao) || 0
         return acc + valor
       }, 0),
-      setores: [...new Set(filteredPatrimonios.map(p => p.setor_responsavel || p.setorResponsavel))].length
+      setores: [...new Set(filteredPatrimonios.map(p => p.setor_responsavel))].length
     }
 
     return stats
@@ -132,7 +132,7 @@ export const useSectorFilter = () => {
       return true
     }
 
-    const patrimonioSector = patrimonio.setor_responsavel || patrimonio.setorResponsavel
+    const patrimonioSector = patrimonio.setor_responsavel
     return userSectors.includes(patrimonioSector)
   }
 

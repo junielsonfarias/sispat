@@ -166,15 +166,17 @@ export const VersionProvider = ({ children }: { children: ReactNode }) => {
     if (isLatestVersion || isUpdating || !latestVersion) return
 
     setIsUpdating(true)
-    const toastId = toast.loading('Atualizando para a versão mais recente...', {
+    const { update } = toast({
+      title: 'Atualizando para a versão mais recente...',
       description: `Instalando versão ${latestVersion.version}. A página será recarregada.`,
     })
 
     setTimeout(() => {
       setCurrentVersion(latestVersion.version)
       setIsUpdating(false)
-      toast.success('Atualização concluída!', {
-        id: toastId,
+      update({
+        id: '',
+        title: 'Atualização concluída!',
         description: `Sistema atualizado para a versão ${latestVersion.version}.`,
       })
       setTimeout(() => {
@@ -188,7 +190,8 @@ export const VersionProvider = ({ children }: { children: ReactNode }) => {
       if (isUpdating) return
 
       setIsUpdating(true)
-      toast.loading(`Revertendo para a versão ${version}...`, {
+      toast({
+        title: `Revertendo para a versão ${version}...`,
         description: 'Esta ação recarregará a página.',
       })
 

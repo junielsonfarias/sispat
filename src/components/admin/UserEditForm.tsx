@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/searchable-select'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { useSectors } from '@/contexts/SectorContext'
-import { MUNICIPALITY_ID } from '@/config/municipality'
 
 const userEditSchema = z.object({
   name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
@@ -50,16 +49,21 @@ const roleOptions: SearchableSelectOption[] = [
 
 export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
-  const { user: currentUser, updateUser } = useAuth()
+  const { updateUser } = useAuth()
   const { sectors } = useSectors()
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+
+  const editableRole: UserEditFormValues['role'] =
+    user.role === 'supervisor' || user.role === 'usuario' || user.role === 'visualizador'
+      ? user.role
+      : 'supervisor'
 
   const form = useForm<UserEditFormValues>({
     resolver: zodResolver(userEditSchema),
     defaultValues: {
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: editableRole,
       sector: user.sector,
       avatarUrl: user.avatarUrl,
       responsibleSectors: user.responsibleSectors || [],
@@ -75,14 +79,18 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
   )
 
   useEffect(() => {
-      form.reset({
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        sector: user.sector,
-        avatarUrl: user.avatarUrl,
-        responsibleSectors: user.responsibleSectors || [],
-      })
+    const resetRole: UserEditFormValues['role'] =
+      user.role === 'supervisor' || user.role === 'usuario' || user.role === 'visualizador'
+        ? user.role
+        : 'supervisor'
+    form.reset({
+      name: user.name,
+      email: user.email,
+      role: resetRole,
+      sector: user.sector,
+      avatarUrl: user.avatarUrl,
+      responsibleSectors: user.responsibleSectors || [],
+    })
     setAvatarPreview(user.avatarUrl)
   }, [user, form])
 

@@ -345,7 +345,7 @@ export const generateImovelPDF = async ({
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 10px; color: #64748b;">
           <div>
             <p style="margin: 0; font-weight: 600;">CADASTRADO EM</p>
-            <p style="margin: 3px 0 0 0;">${formatDate(imovel.createdAt)}</p>
+            <p style="margin: 3px 0 0 0;">${imovel.createdAt ? formatDate(imovel.createdAt) : '-'}</p>
           </div>
           ${imovel.updatedAt ? `
           <div>

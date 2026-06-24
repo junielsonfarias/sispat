@@ -45,7 +45,7 @@ export const SimplePrintForm = ({ patrimonio, fieldsToPrint }: SimplePrintFormPr
         <div style={{ textAlign: 'right' }}>
           {shouldPrint('numero_patrimonio') && (
             <p style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 5px 0' }}>
-              Nº: {patrimonio.numero_patrimonio || patrimonio.numeroPatrimonio}
+              Nº: {patrimonio.numero_patrimonio}
             </p>
           )}
           <p style={{ margin: '0' }}>
@@ -70,7 +70,7 @@ export const SimplePrintForm = ({ patrimonio, fieldsToPrint }: SimplePrintFormPr
           {shouldPrint('descricao_bem') && (
             <>
               <div style={{ fontWeight: 'bold' }}>Descrição:</div>
-              <div>{patrimonio.descricao_bem || patrimonio.descricaoBem}</div>
+              <div>{patrimonio.descricao_bem}</div>
             </>
           )}
           {shouldPrint('tipo') && (
@@ -110,13 +110,13 @@ export const SimplePrintForm = ({ patrimonio, fieldsToPrint }: SimplePrintFormPr
           {shouldPrint('data_aquisicao') && (
             <>
               <div style={{ fontWeight: 'bold' }}>Data de Aquisição:</div>
-              <div>{formatDate(new Date(patrimonio.data_aquisicao || patrimonio.dataAquisicao))}</div>
+              <div>{formatDate(new Date(patrimonio.data_aquisicao))}</div>
             </>
           )}
           {shouldPrint('valor_aquisicao') && (
             <>
               <div style={{ fontWeight: 'bold' }}>Valor de Aquisição:</div>
-              <div>{formatCurrency(patrimonio.valor_aquisicao ?? patrimonio.valorAquisicao)}</div>
+              <div>{formatCurrency(patrimonio.valor_aquisicao)}</div>
             </>
           )}
         </div>

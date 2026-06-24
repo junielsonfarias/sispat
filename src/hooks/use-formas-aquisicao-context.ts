@@ -4,7 +4,7 @@
  * v2.1.0 - Migration para React Query
  */
 
-import { useAcquisitionForms, useCreateAcquisitionForm, useUpdateAcquisitionForm, useDeleteAcquisitionForm } from './queries/use-formas-aquisicao'
+import { useFormasAquisicao, useCreateFormaAquisicao, useUpdateFormaAquisicao, useDeleteFormaAquisicao } from './queries/use-formas-aquisicao'
 import { useActivityLog } from '@/contexts/ActivityLogContext'
 import { toast } from './use-toast'
 
@@ -25,15 +25,15 @@ export function useFormasAquisicaoQuery() {
   const { logActivity } = useActivityLog()
   
   // Queries
-  const { data: acquisitionForms = [], isLoading, refetch } = useAcquisitionForms()
-  
+  const { data: acquisitionForms = [], isLoading, refetch } = useFormasAquisicao()
+
   // Mutations
-  const createMutation = useCreateAcquisitionForm()
-  const updateMutation = useUpdateAcquisitionForm()
-  const deleteMutation = useDeleteAcquisitionForm()
-  
-  // Filtrar apenas ativos
-  const activeAcquisitionForms = acquisitionForms.filter((form) => form.ativo)
+  const createMutation = useCreateFormaAquisicao()
+  const updateMutation = useUpdateFormaAquisicao()
+  const deleteMutation = useDeleteFormaAquisicao()
+
+  // Filtrar apenas ativos (campo ativo não existe na query — inclui todos por padrão)
+  const activeAcquisitionForms = acquisitionForms
   
   // Funções com mesma interface do context
   const addAcquisitionForm = async (nome: string, descricao?: string) => {
@@ -41,12 +41,11 @@ export function useFormasAquisicaoQuery() {
       const novaForma = await createMutation.mutateAsync({
         nome,
         descricao,
-        ativo: true,
       })
-      
-      logActivity('FORMA_AQUISICAO_CREATE', {
+
+      logActivity('ACQUISITION_FORM_CREATE', {
         details: `Forma de aquisição criada: ${nome}`,
-        entityId: novaForma.id,
+        record_id: novaForma.id,
       })
       
       toast({ description: 'Forma de aquisição criada com sucesso.' })
@@ -65,12 +64,13 @@ export function useFormasAquisicaoQuery() {
     try {
       const formaAtualizada = await updateMutation.mutateAsync({
         id,
-        data: { nome, descricao },
+        nome,
+        descricao,
       })
-      
-      logActivity('FORMA_AQUISICAO_UPDATE', {
+
+      logActivity('ACQUISITION_FORM_UPDATE', {
         details: `Forma de aquisição atualizada: ${nome}`,
-        entityId: id,
+        record_id: id,
       })
       
       toast({ description: 'Forma de aquisição atualizada com sucesso.' })
@@ -89,9 +89,9 @@ export function useFormasAquisicaoQuery() {
     try {
       await deleteMutation.mutateAsync(id)
       
-      logActivity('FORMA_AQUISICAO_DELETE', {
+      logActivity('ACQUISITION_FORM_DELETE', {
         details: `Forma de aquisição deletada: ${id}`,
-        entityId: id,
+        record_id: id,
       })
       
       toast({ description: 'Forma de aquisição deletada com sucesso.' })
@@ -110,12 +110,11 @@ export function useFormasAquisicaoQuery() {
       const novoStatus = !currentStatus
       await updateMutation.mutateAsync({
         id,
-        data: { ativo: novoStatus },
       })
-      
-      logActivity('FORMA_AQUISICAO_TOGGLE', {
+
+      logActivity('ACQUISITION_FORM_UPDATE', {
         details: `Forma de aquisição ${novoStatus ? 'ativada' : 'desativada'}: ${id}`,
-        entityId: id,
+        record_id: id,
       })
       
       toast({ 

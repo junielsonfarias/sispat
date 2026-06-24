@@ -112,7 +112,7 @@ export const useUpdateImovel = () => {
 
       return { previousImovel }
     },
-    onError: (err, variables, context) => {
+    onError: (_err, variables, context) => {
       if (context?.previousImovel) {
         queryClient.setQueryData(['imovel', variables.id], context.previousImovel)
       }
@@ -122,7 +122,7 @@ export const useUpdateImovel = () => {
         variant: 'destructive',
       })
     },
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['imovel', variables.id] })
       queryClient.invalidateQueries({ queryKey: ['imoveis'] })
     },

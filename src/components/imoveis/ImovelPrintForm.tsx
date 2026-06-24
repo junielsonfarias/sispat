@@ -4,7 +4,6 @@ import { formatCurrency, formatDate, getCloudImageUrl } from '@/lib/utils'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { useImovelField } from '@/contexts/ImovelFieldContext'
-import { getImovelFields } from '@/lib/imovel-fields'
 
 interface ImovelPrintFormProps {
   imovel: Imovel
@@ -17,22 +16,7 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
     const { fields: customFieldConfigs } = useImovelField()
     const municipality = { name: MUNICIPALITY_NAME }
 
-    const allFields = getImovelFields(customFieldConfigs)
-
     const shouldPrint = (fieldId: string) => fieldsToPrint.includes(fieldId)
-
-    const DetailRow = ({
-      label,
-      value,
-    }: {
-      label: string
-      value: React.ReactNode
-    }) => (
-      <div className="grid grid-cols-3 gap-2 py-1 border-b">
-        <dt className="font-semibold text-gray-600">{label}</dt>
-        <dd className="col-span-2 text-gray-800">{value}</dd>
-      </div>
-    )
 
     return (
       <>
@@ -125,7 +109,7 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-4">
               <img
-                src={municipality?.logoUrl || settings.activeLogoUrl}
+                src={settings.activeLogoUrl}
                 alt="Logo"
                 className="h-24 w-auto"
               />
@@ -149,7 +133,7 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
           {/* Linha Separadora */}
           <div className="border-t border-gray-300 pt-2">
             <p className="text-base font-bold text-center">
-              {imovel.setor_responsavel ? `${imovel.setor_responsavel.toUpperCase()}` : 'SECRETARIA RESPONSÁVEL'}
+              {imovel.setor ? `${imovel.setor.toUpperCase()}` : 'SECRETARIA RESPONSÁVEL'}
             </p>
           </div>
         </header>
@@ -174,7 +158,7 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
             <div className="p-3 bg-gray-50 border rounded">
               <div className="text-center">
                 <p className="text-xs font-medium text-gray-600 mb-1">CADASTRADO EM</p>
-                <p className="text-sm font-semibold text-gray-800">{formatDate(new Date(imovel.createdAt))}</p>
+                <p className="text-sm font-semibold text-gray-800">{imovel.createdAt ? formatDate(new Date(imovel.createdAt)) : '-'}</p>
               </div>
             </div>
             
@@ -182,7 +166,7 @@ export const ImovelPrintForm = forwardRef<HTMLDivElement, ImovelPrintFormProps>(
             <div className="p-3 bg-gray-50 border rounded">
               <div className="text-center">
                 <p className="text-xs font-medium text-gray-600 mb-1">ÚLTIMA ATUALIZAÇÃO</p>
-                <p className="text-sm font-semibold text-gray-800">{formatDate(new Date(imovel.updatedAt))}</p>
+                <p className="text-sm font-semibold text-gray-800">{imovel.updatedAt ? formatDate(new Date(imovel.updatedAt)) : '-'}</p>
               </div>
             </div>
           </div>

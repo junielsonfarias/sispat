@@ -99,13 +99,6 @@ export default function PublicImovelDetalhe() {
       <div className="w-full max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            {municipality?.logoUrl && (
-              <img
-                src={municipality.logoUrl}
-                alt="Logo"
-                className="h-12 w-auto"
-              />
-            )}
             <div>
               <h1 className="text-2xl font-bold">
                 Consulta Pública de Patrimônio
@@ -123,7 +116,7 @@ export default function PublicImovelDetalhe() {
           <CardHeader>
             <CardTitle>{imovel.denominacao}</CardTitle>
             <CardDescription>
-              Nº de Patrimônio: {imovel.numero_patrimonio || imovel.numeroPatrimonio}
+              Nº de Patrimônio: {imovel.numero_patrimonio}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-8 lg:grid-cols-5">
@@ -157,11 +150,11 @@ export default function PublicImovelDetalhe() {
               <DetailItem label="Endereço" value={imovel.endereco} />
               <DetailItem
                 label="Data de Aquisição"
-                value={formatDate(new Date(imovel.data_aquisicao || imovel.dataAquisicao))}
+                value={formatDate(new Date(imovel.data_aquisicao))}
               />
               <DetailItem
                 label="Valor de Aquisição"
-                value={formatCurrency(imovel.valor_aquisicao ?? imovel.valorAquisicao)}
+                value={formatCurrency(imovel.valor_aquisicao)}
               />
               <DetailItem
                 label="Área do Terreno"
