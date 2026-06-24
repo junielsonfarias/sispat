@@ -3,24 +3,29 @@ import { formatCurrency, cn } from '../utils'
 
 describe('Utils', () => {
   describe('formatCurrency', () => {
+    // Intl.NumberFormat insere um espaço não-quebrável (U+00A0 ou U+202F) entre
+    // o símbolo e o número; normalizamos para um espaço comum para a comparação
+    // ser estável entre versões de ICU/Node.
+    const norm = (s: string) => s.replace(/\s/g, ' ')
+
     it('should format positive values correctly', () => {
-      expect(formatCurrency(1234.56)).toBe('R$ 1.234,56')
+      expect(norm(formatCurrency(1234.56))).toBe('R$ 1.234,56')
     })
 
     it('should format zero', () => {
-      expect(formatCurrency(0)).toBe('R$ 0,00')
+      expect(norm(formatCurrency(0))).toBe('R$ 0,00')
     })
 
     it('should format large values', () => {
-      expect(formatCurrency(1000000)).toBe('R$ 1.000.000,00')
+      expect(norm(formatCurrency(1000000))).toBe('R$ 1.000.000,00')
     })
 
     it('should format decimal values', () => {
-      expect(formatCurrency(99.99)).toBe('R$ 99,99')
+      expect(norm(formatCurrency(99.99))).toBe('R$ 99,99')
     })
 
     it('should handle small decimals', () => {
-      expect(formatCurrency(0.01)).toBe('R$ 0,01')
+      expect(norm(formatCurrency(0.01))).toBe('R$ 0,01')
     })
   })
 
