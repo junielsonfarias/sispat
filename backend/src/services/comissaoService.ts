@@ -244,6 +244,18 @@ export const removeMembro = async (comissaoId: string, membroId: string, actor: 
     select: { id: true },
   });
   if (!membro) throw new ComissaoNotFoundError('Membro não encontrado nesta comissão');
+
+  // Art. 19: comissão constituída precisa de no mínimo 3 membros. Não permite
+  // reduzir de 3 para 2. Durante a montagem (com <3) a remoção é liberada — a
+  // comissão ainda não está válida e é sinalizada pelo alerta de conformidade.
+  const total = await prisma.comissaoMembro.count({ where: { comissaoId } });
+  if (total === MIN_MEMBROS) {
+    throw new ComissaoValidationError(
+      `Não é possível remover: a comissão ficaria com menos de ${MIN_MEMBROS} membros ` +
+        `(Art. 19). Adicione outro membro antes de remover este.`,
+    );
+  }
+
   await prisma.comissaoMembro.delete({ where: { id: membro.id } });
 };
 

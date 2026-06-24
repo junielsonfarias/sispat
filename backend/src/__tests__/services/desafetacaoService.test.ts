@@ -45,6 +45,7 @@ import {
   DesafetacaoValidationError,
   createDesafetacao,
   concluirDesafetacao,
+  reclassificarDestinacao,
 } from '../../services/desafetacaoService';
 
 const actor: Actor = { userId: 'u1', role: 'admin', municipalityId: 'mun-1', email: 'a@x.gov' };
@@ -141,5 +142,15 @@ describe('desafetacaoService — concluirDesafetacao', () => {
     await expect(concluirDesafetacao('d1', actor)).rejects.toBeInstanceOf(
       DesafetacaoValidationError,
     );
+  });
+});
+
+describe('reclassificarDestinacao — não vira dominical direto (Art. 22)', () => {
+  it('rejeita reclassificar diretamente para dominical (deve passar pela desafetação)', async () => {
+    await expect(
+      reclassificarDestinacao('patrimonio', 'p1', 'dominical', actor),
+    ).rejects.toBeInstanceOf(DesafetacaoValidationError);
+    // a trava lança antes de qualquer query
+    expect(mockPrisma.patrimonio.findUnique).not.toHaveBeenCalled();
   });
 });

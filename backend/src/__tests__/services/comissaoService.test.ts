@@ -23,7 +23,7 @@ const mockPrisma = {
     update: jest.fn(),
     delete: jest.fn(),
   },
-  comissaoMembro: { create: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
+  comissaoMembro: { create: jest.fn(), findFirst: jest.fn(), delete: jest.fn(), count: jest.fn() },
   activityLog: { create: jest.fn() },
   $transaction: jest.fn((fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
 };
@@ -33,10 +33,12 @@ jest.mock('../../config/database', () => ({ prisma: mockPrisma }));
 import {
   Actor,
   ComissaoNotFoundError,
+  ComissaoValidationError,
   createComissao,
   getComissaoById,
   getAlertas,
   listComissoes,
+  removeMembro,
 } from '../../services/comissaoService';
 
 const actor: Actor = {
@@ -89,6 +91,33 @@ describe('comissaoService — createComissao', () => {
     const data = mockTx.comissao.create.mock.calls[0][0].data;
     expect(data.municipalityId).toBe('mun-1');
     expect(data.membros.create).toHaveLength(1);
+  });
+});
+
+describe('comissaoService — removeMembro (mín. 3, Art. 19)', () => {
+  beforeEach(() => {
+    mockPrisma.comissao.findUnique.mockResolvedValue({ id: 'c1', municipalityId: 'mun-1' });
+    mockPrisma.comissaoMembro.findFirst.mockResolvedValue({ id: 'm1' });
+  });
+
+  it('bloqueia remover quando a comissão tem exatamente 3 membros', async () => {
+    mockPrisma.comissaoMembro.count.mockResolvedValue(3);
+    await expect(removeMembro('c1', 'm1', actor)).rejects.toBeInstanceOf(ComissaoValidationError);
+    expect(mockPrisma.comissaoMembro.delete).not.toHaveBeenCalled();
+  });
+
+  it('permite remover quando há mais de 3 membros', async () => {
+    mockPrisma.comissaoMembro.count.mockResolvedValue(4);
+    mockPrisma.comissaoMembro.delete.mockResolvedValue({});
+    await removeMembro('c1', 'm1', actor);
+    expect(mockPrisma.comissaoMembro.delete).toHaveBeenCalledWith({ where: { id: 'm1' } });
+  });
+
+  it('permite remover durante a montagem (menos de 3 membros)', async () => {
+    mockPrisma.comissaoMembro.count.mockResolvedValue(2);
+    mockPrisma.comissaoMembro.delete.mockResolvedValue({});
+    await removeMembro('c1', 'm1', actor);
+    expect(mockPrisma.comissaoMembro.delete).toHaveBeenCalled();
   });
 });
 

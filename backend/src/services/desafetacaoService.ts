@@ -346,6 +346,16 @@ export const reclassificarDestinacao = async (
   destinacao: DestinacaoBem,
   actor: Actor,
 ) => {
+  // A passagem à categoria DOMINICAL é desafetação formal (Art. 22) e exige base
+  // legal (lei/decreto/ato) pelo processo de desafetação — não pela reclassificação
+  // direta, que só corrige a classificação do acervo (uso_comum/uso_especial/
+  // nao_classificado).
+  if (destinacao === 'dominical') {
+    throw new DesafetacaoValidationError(
+      'Tornar um bem dominical é uma desafetação formal (Art. 22): use o processo de ' +
+        'desafetação (com base legal lei/decreto/ato), não a reclassificação direta.',
+    );
+  }
   const bem = await loadBem(
     bemTipo === 'patrimonio' ? bemId : null,
     bemTipo === 'imovel' ? bemId : null,
