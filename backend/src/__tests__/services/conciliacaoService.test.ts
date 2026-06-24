@@ -1,6 +1,6 @@
 /**
- * Testes do conciliacaoService — cálculo do saldo físico, divergência/status e
- * bloqueio de duplicata por competência+categoria.
+ * Testes do conciliacaoService — saldo físico = valor contábil LÍQUIDO (custo -
+ * depreciação acumulada), divergência/status e bloqueio de duplicata.
  */
 
 jest.mock('../../config/logger', () => ({
@@ -11,7 +11,7 @@ jest.mock('../../config/logger', () => ({
 }));
 
 const mockPrisma = {
-  patrimonio: { aggregate: jest.fn() },
+  patrimonio: { findMany: jest.fn() },
   imovel: { aggregate: jest.fn() },
   conciliacao: {
     findFirst: jest.fn(),
@@ -38,24 +38,47 @@ const actor: Actor = { userId: 'u1', role: 'admin', municipalityId: 'mun-1', ema
 
 beforeEach(() => jest.clearAllMocks());
 
+// Helper: bem SEM depreciação (vida útil 0/nula) -> valor líquido = bruto.
+const bemBruto = (valor: number) => ({
+  valor_aquisicao: valor,
+  data_aquisicao: new Date('2020-01-01'),
+  vida_util_anos: null,
+  valor_residual: null,
+});
+
 describe('calcularSaldoFisico', () => {
-  it('bens_moveis soma valor_aquisicao excluindo baixados', async () => {
-    mockPrisma.patrimonio.aggregate.mockResolvedValue({ _sum: { valor_aquisicao: 1500 } });
+  it('bens_moveis soma o valor líquido, excluindo baixados', async () => {
+    mockPrisma.patrimonio.findMany.mockResolvedValue([bemBruto(1000), bemBruto(500)]);
     const v = await calcularSaldoFisico('bens_moveis', 'mun-1');
     expect(v).toBe(1500);
-    expect(mockPrisma.patrimonio.aggregate.mock.calls[0][0].where).toEqual({
+    expect(mockPrisma.patrimonio.findMany.mock.calls[0][0].where).toEqual({
       municipalityId: 'mun-1',
       status: { not: 'baixado' },
     });
   });
 
-  it('bens_imoveis soma valor_aquisicao do município', async () => {
+  it('DESCONTA a depreciação acumulada (valor contábil líquido)', async () => {
+    // bem de R$1200, vida 10 anos, residual 0, adquirido 12 meses antes da data-base
+    mockPrisma.patrimonio.findMany.mockResolvedValue([
+      {
+        valor_aquisicao: 1200,
+        data_aquisicao: new Date('2025-06-30'),
+        vida_util_anos: 10,
+        valor_residual: 0,
+      },
+    ]);
+    // mensal = 1200/120 = 10; 12 meses => acumulada 120 => líquido 1080
+    const v = await calcularSaldoFisico('bens_moveis', 'mun-1', new Date('2026-06-30'));
+    expect(v).toBe(1080);
+  });
+
+  it('bens_imoveis soma valor_aquisicao do município (sem depreciação no model)', async () => {
     mockPrisma.imovel.aggregate.mockResolvedValue({ _sum: { valor_aquisicao: 9000 } });
     expect(await calcularSaldoFisico('bens_imoveis', 'mun-1')).toBe(9000);
   });
 
   it('retorna 0 quando não há bens', async () => {
-    mockPrisma.patrimonio.aggregate.mockResolvedValue({ _sum: { valor_aquisicao: null } });
+    mockPrisma.patrimonio.findMany.mockResolvedValue([]);
     expect(await calcularSaldoFisico('bens_moveis', 'mun-1')).toBe(0);
   });
 });
@@ -63,7 +86,7 @@ describe('calcularSaldoFisico', () => {
 describe('createConciliacao', () => {
   it('marca divergente quando físico ≠ contábil', async () => {
     mockPrisma.conciliacao.findFirst.mockResolvedValue(null);
-    mockPrisma.patrimonio.aggregate.mockResolvedValue({ _sum: { valor_aquisicao: 1000 } });
+    mockPrisma.patrimonio.findMany.mockResolvedValue([bemBruto(1000)]);
     mockPrisma.conciliacao.create.mockImplementation((args: any) =>
       Promise.resolve({ id: 'c1', ...args.data }),
     );
@@ -84,7 +107,7 @@ describe('createConciliacao', () => {
 
   it('marca conciliada quando físico = contábil', async () => {
     mockPrisma.conciliacao.findFirst.mockResolvedValue(null);
-    mockPrisma.patrimonio.aggregate.mockResolvedValue({ _sum: { valor_aquisicao: 500 } });
+    mockPrisma.patrimonio.findMany.mockResolvedValue([bemBruto(500)]);
     mockPrisma.conciliacao.create.mockImplementation((args: any) =>
       Promise.resolve({ id: 'c2', ...args.data }),
     );

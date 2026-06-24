@@ -9,6 +9,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { logInfo } from '../config/logger';
+import { valorContabilLiquido } from '../utils/depreciation';
 
 export interface Actor {
   userId: string;
@@ -35,18 +36,27 @@ type Categoria = 'bens_moveis' | 'bens_imoveis';
 
 const TOLERANCIA = 0.01;
 
-// Saldo físico = custo histórico do acervo (soma de valor_aquisicao). Bens
-// móveis excluem os baixados (já saíram do ativo).
+// Saldo físico = valor contábil LÍQUIDO do acervo na data de referência
+// (custo - depreciação acumulada, piso no residual), para casar com o saldo do
+// SIAFIC. Bens móveis excluem os baixados (já saíram do ativo). Imóveis não têm
+// campos de depreciação no model, então entram pelo valor de aquisição (bruto).
 export const calcularSaldoFisico = async (
   categoria: Categoria,
   municipalityId: string,
+  ref: Date = new Date(),
 ): Promise<number> => {
   if (categoria === 'bens_moveis') {
-    const agg = await prisma.patrimonio.aggregate({
-      _sum: { valor_aquisicao: true },
+    const bens = await prisma.patrimonio.findMany({
       where: { municipalityId, status: { not: 'baixado' } },
+      select: {
+        valor_aquisicao: true,
+        data_aquisicao: true,
+        vida_util_anos: true,
+        valor_residual: true,
+      },
     });
-    return agg._sum.valor_aquisicao ?? 0;
+    const total = bens.reduce((acc, b) => acc + valorContabilLiquido(b, ref), 0);
+    return Number(total.toFixed(2));
   }
   const agg = await prisma.imovel.aggregate({
     _sum: { valor_aquisicao: true },
@@ -120,7 +130,12 @@ export const createConciliacao = async (input: CreateConciliacaoInput, actor: Ac
     );
   }
 
-  const valorFisico = await calcularSaldoFisico(input.categoria, municipalityId);
+  // Depreciação calculada na data-base da conciliação (mesma referência do saldo contábil).
+  const valorFisico = await calcularSaldoFisico(
+    input.categoria,
+    municipalityId,
+    new Date(input.dataBase),
+  );
   const divergencia = Number((valorFisico - input.valorContabil).toFixed(2));
 
   const created = await prisma.conciliacao.create({
@@ -158,6 +173,7 @@ export const recalcularConciliacao = async (id: string, actor: Actor) => {
   const valorFisico = await calcularSaldoFisico(
     existing.categoria as Categoria,
     existing.municipalityId,
+    new Date(existing.dataBase),
   );
   const divergencia = Number((valorFisico - existing.valorContabil).toFixed(2));
 
