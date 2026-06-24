@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -26,6 +26,9 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -53,12 +56,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Gavel, PlusCircle, Trash2, CheckCircle, XCircle, RefreshCw, Info } from 'lucide-react'
+import { Gavel, PlusCircle, Trash2, CheckCircle, XCircle, RefreshCw, Info, ListChecks } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
 import { formatDate } from '@/lib/utils'
 import { logger } from '@/lib/logger'
+import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { useImovel } from '@/contexts/ImovelContext'
 import {
   createDesafetacaoSchema,
   type CreateDesafetacaoInput,
@@ -115,6 +120,15 @@ interface DesafetacoesResponse {
   pagination: PaginationMeta
 }
 
+// Tipo interno para o seletor de bens do lote.
+// Patrimônios e imóveis são combinados numa lista única.
+interface BemSelecionavel {
+  id: string
+  tipo: 'patrimonio' | 'imovel'
+  numero: string
+  descricao: string
+}
+
 // ---- Labels pt-BR ----
 
 const BASE_LEGAL_LABEL: Record<BaseLegalTipo, string> = {
@@ -146,6 +160,381 @@ function bemLabel(d: Desafetacao): string {
   if (d.patrimonio) return `${d.patrimonio.numero_patrimonio} — ${d.patrimonio.descricao_bem}`
   if (d.imovel) return `${d.imovel.numero_patrimonio} — ${d.imovel.denominacao}`
   return '(bem não identificado)'
+}
+
+// ---- Dialog de desafetação em lote ----
+
+interface LoteDialogProps {
+  open: boolean
+  comissoes: Comissao[]
+  onClose: () => void
+  onSuccess: () => void
+}
+
+function DesafetacaoLoteDialog({ open, comissoes, onClose, onSuccess }: LoteDialogProps) {
+  const { patrimonios } = usePatrimonio()
+  const { imoveis } = useImovel()
+
+  // Campos do formulário de lote
+  const [comissaoId, setComissaoId] = useState('')
+  const [baseLegalTipo, setBaseLegalTipo] = useState<BaseLegalTipo>('lei')
+  const [baseLegalNumero, setBaseLegalNumero] = useState('')
+  const [baseLegalData, setBaseLegalData] = useState('')
+  const [justificativa, setJustificativa] = useState('')
+  const [observacoes, setObservacoes] = useState('')
+
+  // Seleção de bens e busca
+  const [busca, setBusca] = useState('')
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+
+  const [submitting, setSubmitting] = useState(false)
+  const [erros, setErros] = useState<Partial<Record<string, string>>>({})
+
+  // Lista combinada de bens desafetáveis (destinacao != dominical e != nao_classificado)
+  const bensList = useMemo<BemSelecionavel[]>(() => {
+    const pList = patrimonios
+      .filter((p) => {
+        const dest = (p as unknown as { destinacao?: string }).destinacao
+        return dest !== 'dominical' && dest !== 'nao_classificado'
+      })
+      .map<BemSelecionavel>((p) => ({
+        id: p.id,
+        tipo: 'patrimonio',
+        numero: p.numero_patrimonio,
+        descricao: p.descricao_bem,
+      }))
+
+    const iList = imoveis
+      .filter((i) => {
+        const dest = (i as unknown as { destinacao?: string }).destinacao
+        return dest !== 'dominical' && dest !== 'nao_classificado'
+      })
+      .map<BemSelecionavel>((i) => ({
+        id: i.id,
+        tipo: 'imovel',
+        numero: i.numero_patrimonio,
+        descricao: i.denominacao,
+      }))
+
+    return [...pList, ...iList]
+  }, [patrimonios, imoveis])
+
+  const bensFiltrados = useMemo(() => {
+    if (!busca.trim()) return bensList
+    const termo = busca.trim().toLowerCase()
+    return bensList.filter(
+      (b) =>
+        b.numero.toLowerCase().includes(termo) ||
+        b.descricao.toLowerCase().includes(termo),
+    )
+  }, [bensList, busca])
+
+  // Limpar estado ao fechar/abrir
+  useEffect(() => {
+    if (!open) {
+      setComissaoId('')
+      setBaseLegalTipo('lei')
+      setBaseLegalNumero('')
+      setBaseLegalData('')
+      setJustificativa('')
+      setObservacoes('')
+      setBusca('')
+      setSelecionados(new Set())
+      setErros({})
+    }
+  }, [open])
+
+  const toggleBem = useCallback((id: string) => {
+    setSelecionados((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleTodos = useCallback(() => {
+    setSelecionados((prev) => {
+      if (bensFiltrados.every((b) => prev.has(b.id))) {
+        // Desmarcar todos os visíveis
+        const next = new Set(prev)
+        bensFiltrados.forEach((b) => next.delete(b.id))
+        return next
+      }
+      // Marcar todos os visíveis
+      const next = new Set(prev)
+      bensFiltrados.forEach((b) => next.add(b.id))
+      return next
+    })
+  }, [bensFiltrados])
+
+  const validar = useCallback((): boolean => {
+    const novosErros: Record<string, string> = {}
+    if (selecionados.size === 0) novosErros.bens = 'Selecione ao menos um bem.'
+    if (!baseLegalNumero.trim()) novosErros.baseLegalNumero = 'Número do ato é obrigatório.'
+    if (!baseLegalData) novosErros.baseLegalData = 'Data do ato é obrigatória.'
+    if (justificativa.trim().length < 10) novosErros.justificativa = 'Justificativa muito curta (mínimo 10 caracteres).'
+    setErros(novosErros)
+    return Object.keys(novosErros).length === 0
+  }, [selecionados, baseLegalNumero, baseLegalData, justificativa])
+
+  const handleSubmit = useCallback(async () => {
+    if (!validar()) return
+
+    const bensSelecionados = bensList.filter((b) => selecionados.has(b.id))
+    const payload = {
+      bens: bensSelecionados.map((b) =>
+        b.tipo === 'imovel' ? { imovelId: b.id } : { patrimonioId: b.id },
+      ),
+      comissaoId: comissaoId || null,
+      baseLegalTipo,
+      baseLegalNumero: baseLegalNumero.trim(),
+      baseLegalData: new Date(baseLegalData).toISOString(),
+      justificativa: justificativa.trim(),
+      observacoes: observacoes.trim() || null,
+    }
+
+    setSubmitting(true)
+    try {
+      await api.post('/desafetacoes/lote', payload)
+      toast({ title: `${bensSelecionados.length} desafetação(ões) criada(s) com sucesso.` })
+      onSuccess()
+      onClose()
+    } catch (err) {
+      logger.error('[DesafetacaoLoteDialog] Erro ao criar lote', err)
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao registrar lote de desafetações',
+        description: (err as Error)?.message,
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }, [
+    validar,
+    bensList,
+    selecionados,
+    comissaoId,
+    baseLegalTipo,
+    baseLegalNumero,
+    baseLegalData,
+    justificativa,
+    observacoes,
+    onSuccess,
+    onClose,
+  ])
+
+  const todosFiltradosMarcados =
+    bensFiltrados.length > 0 && bensFiltrados.every((b) => selecionados.has(b.id))
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Desafetar em Lote</DialogTitle>
+          <DialogDescription>
+            Aplique um único ato legal a vários bens. O backend processa o lote
+            de forma atômica — se qualquer bem for inválido, nenhum é registrado.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-2">
+          {/* Seleção de bens */}
+          <div className="space-y-2">
+            <Label className="font-medium">
+              Bens desafetáveis{' '}
+              {selecionados.size > 0 && (
+                <span className="ml-1 text-primary font-semibold">
+                  ({selecionados.size} selecionado{selecionados.size > 1 ? 's' : ''})
+                </span>
+              )}
+            </Label>
+            <Input
+              placeholder="Buscar por número ou descrição..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              aria-label="Buscar bens"
+            />
+            {erros.bens && (
+              <p className="text-sm text-destructive">{erros.bens}</p>
+            )}
+            <div className="border rounded-md overflow-y-auto max-h-52">
+              {bensFiltrados.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground text-center">
+                  {bensList.length === 0
+                    ? 'Nenhum bem disponível para desafetação (todos já são dominicais ou não classificados).'
+                    : 'Nenhum bem encontrado para o termo buscado.'}
+                </p>
+              ) : (
+                <div>
+                  {/* Linha de "marcar todos" */}
+                  <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/40">
+                    <Checkbox
+                      id="lote-select-all"
+                      checked={todosFiltradosMarcados}
+                      onCheckedChange={toggleTodos}
+                      aria-label="Selecionar todos os bens visíveis"
+                    />
+                    <label
+                      htmlFor="lote-select-all"
+                      className="text-xs font-medium cursor-pointer select-none"
+                    >
+                      {todosFiltradosMarcados ? 'Desmarcar todos' : 'Selecionar todos'}{' '}
+                      ({bensFiltrados.length})
+                    </label>
+                  </div>
+                  {bensFiltrados.map((b) => (
+                    <div
+                      key={b.id}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 border-b last:border-b-0"
+                    >
+                      <Checkbox
+                        id={`lote-bem-${b.id}`}
+                        checked={selecionados.has(b.id)}
+                        onCheckedChange={() => toggleBem(b.id)}
+                        aria-label={`Selecionar ${b.numero} — ${b.descricao}`}
+                      />
+                      <label
+                        htmlFor={`lote-bem-${b.id}`}
+                        className="text-sm cursor-pointer select-none flex-1 leading-tight"
+                      >
+                        <span className="font-medium">{b.numero}</span>
+                        {' — '}
+                        <span className="text-muted-foreground">{b.descricao}</span>
+                        <Badge variant="outline" className="ml-2 text-xs py-0">
+                          {b.tipo === 'imovel' ? 'Imóvel' : 'Patrimônio'}
+                        </Badge>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Comissão responsável */}
+          <div className="space-y-1">
+            <Label htmlFor="lote-comissao">Comissão Responsável (opcional)</Label>
+            <Select
+              value={comissaoId || 'none'}
+              onValueChange={(v) => setComissaoId(v === 'none' ? '' : v)}
+            >
+              <SelectTrigger id="lote-comissao" aria-label="Comissão responsável">
+                <SelectValue placeholder="Selecionar comissão..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem comissão</SelectItem>
+                {comissoes.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    Portaria {c.portariaNumero}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Base legal */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="lote-tipo">Tipo do Ato Legal</Label>
+              <Select
+                value={baseLegalTipo}
+                onValueChange={(v) => setBaseLegalTipo(v as BaseLegalTipo)}
+              >
+                <SelectTrigger id="lote-tipo" aria-label="Tipo do ato legal">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(BASE_LEGAL_LABEL) as BaseLegalTipo[]).map((t) => (
+                    <SelectItem key={t} value={t}>{BASE_LEGAL_LABEL[t]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="lote-numero">Número do Ato</Label>
+              <Input
+                id="lote-numero"
+                placeholder="Ex.: 123/2025"
+                value={baseLegalNumero}
+                onChange={(e) => setBaseLegalNumero(e.target.value)}
+                aria-describedby={erros.baseLegalNumero ? 'lote-numero-erro' : undefined}
+              />
+              {erros.baseLegalNumero && (
+                <p id="lote-numero-erro" className="text-sm text-destructive">
+                  {erros.baseLegalNumero}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="lote-data">Data do Ato</Label>
+              <Input
+                id="lote-data"
+                type="date"
+                value={baseLegalData}
+                onChange={(e) => setBaseLegalData(e.target.value)}
+                aria-describedby={erros.baseLegalData ? 'lote-data-erro' : undefined}
+              />
+              {erros.baseLegalData && (
+                <p id="lote-data-erro" className="text-sm text-destructive">
+                  {erros.baseLegalData}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Justificativa */}
+          <div className="space-y-1">
+            <Label htmlFor="lote-justificativa">Justificativa</Label>
+            <Textarea
+              id="lote-justificativa"
+              rows={4}
+              placeholder="Descreva a justificativa legal e fática para a desafetação do lote (mínimo 10 caracteres)..."
+              value={justificativa}
+              onChange={(e) => setJustificativa(e.target.value)}
+              aria-describedby={erros.justificativa ? 'lote-justificativa-erro' : undefined}
+              className="resize-none"
+            />
+            {erros.justificativa && (
+              <p id="lote-justificativa-erro" className="text-sm text-destructive">
+                {erros.justificativa}
+              </p>
+            )}
+          </div>
+
+          {/* Observações */}
+          <div className="space-y-1">
+            <Label htmlFor="lote-obs">Observações (opcional)</Label>
+            <Textarea
+              id="lote-obs"
+              rows={2}
+              placeholder="Observações adicionais sobre o lote"
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              className="resize-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={submitting || selecionados.size === 0}
+            >
+              {submitting
+                ? 'Registrando...'
+                : `Registrar Lote${selecionados.size > 0 ? ` (${selecionados.size})` : ''}`}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 // ---- Formulário de criação ----
@@ -408,6 +797,7 @@ export default function DesafetacaoList() {
   const [error, setError] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [showCreate, setShowCreate] = useState(false)
+  const [showLote, setShowLote] = useState(false)
 
   // Ação em progresso: { id, tipo }
   const [actionInProgress, setActionInProgress] = useState<{ id: string; tipo: 'concluir' | 'cancelar' | 'delete' } | null>(null)
@@ -500,10 +890,16 @@ export default function DesafetacaoList() {
           <h1 className="text-2xl font-bold">Desafetação de Bens</h1>
         </div>
         {canWrite && (
-          <Button onClick={() => setShowCreate(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nova Desafetação
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowLote(true)}>
+              <ListChecks className="mr-2 h-4 w-4" />
+              Desafetar em Lote
+            </Button>
+            <Button onClick={() => setShowCreate(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nova Desafetação
+            </Button>
+          </div>
         )}
       </div>
 
@@ -728,6 +1124,14 @@ export default function DesafetacaoList() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: lote */}
+      <DesafetacaoLoteDialog
+        open={showLote}
+        comissoes={comissoes}
+        onClose={() => setShowLote(false)}
+        onSuccess={() => void fetchDesafetacoes()}
+      />
     </div>
   )
 }

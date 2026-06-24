@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import {
   Table,
@@ -27,6 +28,9 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -64,6 +68,7 @@ import {
   Info,
   FileText,
   AlertTriangle,
+  Layers,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePatrimonio } from '@/contexts/PatrimonioContext'
@@ -502,6 +507,453 @@ function CreateDesfazimentoForm({ onSuccess, onClose }: CreateFormProps) {
   )
 }
 
+// ---- Lote de Desfazimento ----
+
+const MODALIDADES_ALIENACAO: ModalidadeDesfazimento[] = [
+  'doacao',
+  'leilao',
+  'permuta',
+  'transferencia',
+  'cessao',
+]
+
+interface LotePayload {
+  bens: { patrimonioId: string; valorAvaliacao: number | null }[]
+  classificacao: ClassificacaoInservivel
+  modalidade: ModalidadeDesfazimento
+  justificativa: string
+  laudo: string | null
+  comissaoId: string | null
+  observacoes: string | null
+}
+
+interface LoteDesfazimentoDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  comissoes: ComissaoItem[]
+  loadingComissoes: boolean
+  onSuccess: () => void
+}
+
+function LoteDesfazimentoDialog({
+  open,
+  onOpenChange,
+  comissoes,
+  loadingComissoes,
+  onSuccess,
+}: LoteDesfazimentoDialogProps) {
+  const { patrimonios } = usePatrimonio()
+
+  const patrimoniosDisponiveis = patrimonios.filter((p) => p.status !== 'baixado')
+
+  // Campos compartilhados
+  const [classificacao, setClassificacao] = useState<ClassificacaoInservivel>('ocioso')
+  const [modalidade, setModalidade] = useState<ModalidadeDesfazimento>('doacao')
+  const [justificativa, setJustificativa] = useState('')
+  const [laudo, setLaudo] = useState('')
+  const [comissaoId, setComissaoId] = useState('__none__')
+  const [observacoes, setObservacoes] = useState('')
+
+  // Seleção de bens
+  const [searchLote, setSearchLote] = useState('')
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+  // Valores de avaliação por bem (só usados quando modalidade é alienação)
+  const [valoresAvaliacao, setValoresAvaliacao] = useState<Record<string, string>>({})
+
+  const [submitting, setSubmitting] = useState(false)
+
+  const ehAlienacao = MODALIDADES_ALIENACAO.includes(modalidade)
+
+  const patrimoniosFiltradosLote = patrimoniosDisponiveis.filter((p) => {
+    if (!searchLote) return true
+    const q = searchLote.toLowerCase()
+    return (
+      p.numero_patrimonio.toLowerCase().includes(q) ||
+      p.descricao_bem.toLowerCase().includes(q)
+    )
+  })
+
+  const toggleSelecionado = (id: string) => {
+    setSelecionados((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleTodos = () => {
+    const idsFiltrados = patrimoniosFiltradosLote.map((p) => p.id)
+    const todosSelecionados = idsFiltrados.every((id) => selecionados.has(id))
+    setSelecionados((prev) => {
+      const next = new Set(prev)
+      if (todosSelecionados) {
+        idsFiltrados.forEach((id) => next.delete(id))
+      } else {
+        idsFiltrados.forEach((id) => next.add(id))
+      }
+      return next
+    })
+  }
+
+  const handleClose = () => {
+    if (submitting) return
+    onOpenChange(false)
+  }
+
+  // Limpa o estado ao fechar o dialog
+  useEffect(() => {
+    if (!open) {
+      setClassificacao('ocioso')
+      setModalidade('doacao')
+      setJustificativa('')
+      setLaudo('')
+      setComissaoId('__none__')
+      setObservacoes('')
+      setSearchLote('')
+      setSelecionados(new Set())
+      setValoresAvaliacao({})
+    }
+  }, [open])
+
+  const handleSubmitLote = async () => {
+    if (selecionados.size === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Selecione ao menos um bem.',
+      })
+      return
+    }
+    if (justificativa.trim().length < 10) {
+      toast({
+        variant: 'destructive',
+        title: 'Justificativa inválida',
+        description: 'A justificativa deve ter ao menos 10 caracteres.',
+      })
+      return
+    }
+    if (ehAlienacao) {
+      const bensSemValor = Array.from(selecionados).filter((id) => {
+        const v = valoresAvaliacao[id]
+        return !v || isNaN(parseFloat(v)) || parseFloat(v) <= 0
+      })
+      if (bensSemValor.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Valor de avaliação obrigatório',
+          description: `${bensSemValor.length} bem(ns) sem valor de avaliação válido (Art. 23). Informe um valor > 0 para cada bem selecionado.`,
+        })
+        return
+      }
+    }
+
+    setSubmitting(true)
+    const payload: LotePayload = {
+      bens: Array.from(selecionados).map((id) => ({
+        patrimonioId: id,
+        valorAvaliacao: ehAlienacao
+          ? parseFloat(valoresAvaliacao[id] ?? '0') || null
+          : null,
+      })),
+      classificacao,
+      modalidade,
+      justificativa: justificativa.trim(),
+      laudo: laudo.trim() || null,
+      comissaoId: comissaoId === '__none__' ? null : comissaoId,
+      observacoes: observacoes.trim() || null,
+    }
+
+    try {
+      await api.post('/desfazimentos/lote', payload)
+      toast({
+        title: 'Desfazimento em lote registrado.',
+        description: `${selecionados.size} bem(ns) submetidos ao processo de desfazimento.`,
+      })
+      onOpenChange(false)
+      onSuccess()
+    } catch (err) {
+      logger.error('[DesfazimentoList] Erro ao registrar lote', err)
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao registrar lote',
+        description: (err as Error)?.message,
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const idsFiltrados = patrimoniosFiltradosLote.map((p) => p.id)
+  const todosFiltradosSelecionados =
+    idsFiltrados.length > 0 && idsFiltrados.every((id) => selecionados.has(id))
+  const algunsFiltradosSelecionados =
+    idsFiltrados.some((id) => selecionados.has(id)) && !todosFiltradosSelecionados
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            Desfazimento em Lote
+          </DialogTitle>
+          <DialogDescription>
+            Selecione múltiplos bens e configure os campos compartilhados do processo de
+            desfazimento. O backend processará todos de forma atômica.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          {/* Aviso legal */}
+          <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800">
+            <Info className="h-3 w-3 inline mr-1" />
+            Para modalidades de <strong>alienação</strong>, cada bem deve ter seu{' '}
+            <strong>valor de avaliação</strong> preenchido (Art. 23). O processo é
+            atômico — se qualquer bem falhar, nenhum será registrado.
+          </div>
+
+          {/* Seleção de bens */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">
+                Bens Patrimoniais *{' '}
+                <span className="text-muted-foreground font-normal">
+                  ({selecionados.size} selecionado{selecionados.size !== 1 ? 's' : ''})
+                </span>
+              </Label>
+            </div>
+            <Input
+              placeholder="Buscar por número ou descrição..."
+              value={searchLote}
+              onChange={(e) => setSearchLote(e.target.value)}
+              aria-label="Buscar patrimônio para lote"
+            />
+            <div className="border rounded-md overflow-hidden">
+              {/* Cabeçalho da lista com "Selecionar todos" */}
+              <div className="flex items-center gap-3 px-3 py-2 bg-muted/40 border-b text-xs text-muted-foreground">
+                <Checkbox
+                  id="lote-select-all"
+                  checked={
+                    todosFiltradosSelecionados
+                      ? true
+                      : algunsFiltradosSelecionados
+                        ? 'indeterminate'
+                        : false
+                  }
+                  onCheckedChange={toggleTodos}
+                  aria-label="Selecionar todos os bens filtrados"
+                  disabled={patrimoniosFiltradosLote.length === 0}
+                />
+                <label htmlFor="lote-select-all" className="cursor-pointer select-none">
+                  {patrimoniosFiltradosLote.length === 0
+                    ? 'Nenhum bem disponível'
+                    : `Selecionar todos os ${patrimoniosFiltradosLote.length} bens listados`}
+                </label>
+                {ehAlienacao && selecionados.size > 0 && (
+                  <span className="ml-auto text-amber-700 dark:text-amber-400">
+                    Informe o valor de avaliação por bem
+                  </span>
+                )}
+              </div>
+
+              {/* Lista de bens */}
+              <div className="max-h-56 overflow-y-auto divide-y">
+                {patrimoniosFiltradosLote.length === 0 ? (
+                  <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                    {searchLote ? 'Nenhum resultado para a busca.' : 'Nenhum bem disponível.'}
+                  </div>
+                ) : (
+                  patrimoniosFiltradosLote.map((p) => {
+                    const isSel = selecionados.has(p.id)
+                    return (
+                      <div
+                        key={p.id}
+                        className={`flex items-start gap-3 px-3 py-2 ${isSel ? 'bg-primary/5' : ''}`}
+                      >
+                        <Checkbox
+                          id={`lote-bem-${p.id}`}
+                          checked={isSel}
+                          onCheckedChange={() => toggleSelecionado(p.id)}
+                          aria-label={`Selecionar ${p.numero_patrimonio}`}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <label
+                            htmlFor={`lote-bem-${p.id}`}
+                            className="cursor-pointer text-sm font-medium leading-none"
+                          >
+                            {p.numero_patrimonio}
+                          </label>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {p.descricao_bem}
+                          </p>
+                        </div>
+                        {/* Valor de avaliação individual — só quando alienação e selecionado */}
+                        {ehAlienacao && isSel && (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Label
+                              htmlFor={`lote-valor-${p.id}`}
+                              className="text-xs text-nowrap"
+                            >
+                              Valor (R$)
+                            </Label>
+                            <Input
+                              id={`lote-valor-${p.id}`}
+                              type="number"
+                              min={0.01}
+                              step="0.01"
+                              placeholder="0,00"
+                              className="w-28 h-7 text-xs"
+                              value={valoresAvaliacao[p.id] ?? ''}
+                              onChange={(e) =>
+                                setValoresAvaliacao((prev) => ({
+                                  ...prev,
+                                  [p.id]: e.target.value,
+                                }))
+                              }
+                              aria-label={`Valor de avaliação de ${p.numero_patrimonio}`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Campos compartilhados */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="lote-classificacao">Classificação *</Label>
+              <Select
+                value={classificacao}
+                onValueChange={(v) => setClassificacao(v as ClassificacaoInservivel)}
+              >
+                <SelectTrigger id="lote-classificacao">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(CLASSIFICACAO_LABEL) as ClassificacaoInservivel[]).map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {CLASSIFICACAO_LABEL[c]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="lote-modalidade">Modalidade *</Label>
+              <Select
+                value={modalidade}
+                onValueChange={(v) => setModalidade(v as ModalidadeDesfazimento)}
+              >
+                <SelectTrigger id="lote-modalidade">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(MODALIDADE_LABEL) as ModalidadeDesfazimento[]).map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {MODALIDADE_LABEL[m]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="lote-comissao">Comissão Responsável (opcional)</Label>
+              <Select
+                value={comissaoId}
+                onValueChange={setComissaoId}
+                disabled={loadingComissoes}
+              >
+                <SelectTrigger id="lote-comissao">
+                  <SelectValue
+                    placeholder={loadingComissoes ? 'Carregando...' : 'Sem comissão'}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem comissão</SelectItem>
+                  {comissoes.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.tipo} — Portaria {c.portariaNumero}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="lote-laudo">Laudo Técnico (opcional)</Label>
+              <Input
+                id="lote-laudo"
+                placeholder="Número ou referência do laudo técnico"
+                value={laudo}
+                onChange={(e) => setLaudo(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="lote-justificativa">
+              Justificativa *
+              <span className="ml-1 text-xs text-muted-foreground font-normal">
+                (mín. 10 caracteres)
+              </span>
+            </Label>
+            <Textarea
+              id="lote-justificativa"
+              rows={3}
+              placeholder="Descreva os motivos que tornam os bens inservíveis..."
+              value={justificativa}
+              onChange={(e) => setJustificativa(e.target.value)}
+              className="resize-none"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="lote-observacoes">Observações (opcional)</Label>
+            <Textarea
+              id="lote-observacoes"
+              rows={2}
+              placeholder="Observações adicionais sobre o lote"
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              className="resize-none"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            disabled={submitting}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            onClick={() => void handleSubmitLote()}
+            disabled={submitting || selecionados.size === 0}
+          >
+            {submitting
+              ? 'Registrando...'
+              : `Registrar Lote (${selecionados.size} bem${selecionados.size !== 1 ? 'ns' : ''})`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ---- Página principal ----
 
 type DialogMode = 'none' | 'criar'
@@ -523,10 +975,26 @@ export default function DesfazimentoList() {
   const [filterClassificacao, setFilterClassificacao] = useState<string>('')
 
   const [dialogMode, setDialogMode] = useState<DialogMode>('none')
+  const [loteOpen, setLoteOpen] = useState(false)
   const [actionInProgress, setActionInProgress] = useState<{
     id: string
     tipo: 'concluir' | 'cancelar' | 'delete'
   } | null>(null)
+
+  // Comissões ativas partilhadas pelo dialog de lote (o CreateDesfazimentoForm busca as suas próprias)
+  const [comissoesLote, setComissoesLote] = useState<ComissaoItem[]>([])
+  const [loadingComissoesLote, setLoadingComissoesLote] = useState(false)
+
+  useEffect(() => {
+    setLoadingComissoesLote(true)
+    api
+      .get<ComissoesResponse>('/comissoes?status=ativa&limit=100')
+      .then((data) => setComissoesLote(data.comissoes ?? []))
+      .catch((err) => {
+        logger.warn('[DesfazimentoList] Erro ao buscar comissões para lote', err)
+      })
+      .finally(() => setLoadingComissoesLote(false))
+  }, [])
 
   const fetchingRef = useRef(false)
 
@@ -641,10 +1109,16 @@ export default function DesfazimentoList() {
           <h1 className="text-2xl font-bold">Desfazimento de Inservíveis</h1>
         </div>
         {canWrite && (
-          <Button onClick={openCriar}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Novo Desfazimento
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setLoteOpen(true)}>
+              <Layers className="mr-2 h-4 w-4" />
+              Desfazer em Lote
+            </Button>
+            <Button onClick={openCriar}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Novo Desfazimento
+            </Button>
+          </div>
         )}
       </div>
 
@@ -952,6 +1426,18 @@ export default function DesfazimentoList() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: desfazimento em lote */}
+      <LoteDesfazimentoDialog
+        open={loteOpen}
+        onOpenChange={setLoteOpen}
+        comissoes={comissoesLote}
+        loadingComissoes={loadingComissoesLote}
+        onSuccess={() => {
+          fetchingRef.current = false
+          void fetchDesfazimentos()
+        }}
+      />
     </div>
   )
 }

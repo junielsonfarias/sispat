@@ -61,9 +61,12 @@ import {
   CheckCheck,
   XCircle,
   Info,
+  Layers,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useSectors } from '@/contexts/SectorContext'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
@@ -613,9 +616,254 @@ function IncorporarForm({ regularizacao, onSuccess, onClose }: IncorporarFormPro
   )
 }
 
+// ---- Dialog de incorporação em lote ----
+
+interface IncorporarLoteDialogProps {
+  open: boolean
+  onClose: () => void
+  onSuccess: () => void
+  regularizacoesEmAndamento: Regularizacao[]
+}
+
+function IncorporarLoteDialog({
+  open,
+  onClose,
+  onSuccess,
+  regularizacoesEmAndamento,
+}: IncorporarLoteDialogProps) {
+  const { sectors } = useSectors()
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [sectorId, setSectorId] = useState('')
+  const [setorResponsavel, setSetorResponsavel] = useState('')
+  const [localObjeto, setLocalObjeto] = useState('')
+  const [tipo, setTipo] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  // Quando o dialog abre, limpa o estado anterior
+  useEffect(() => {
+    if (open) {
+      setSelectedIds(new Set())
+      setSectorId('')
+      setSetorResponsavel('')
+      setLocalObjeto('')
+      setTipo('')
+    }
+  }, [open])
+
+  const toggleItem = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }, [])
+
+  const toggleAll = useCallback(() => {
+    setSelectedIds((prev) =>
+      prev.size === regularizacoesEmAndamento.length
+        ? new Set()
+        : new Set(regularizacoesEmAndamento.map((r) => r.id)),
+    )
+  }, [regularizacoesEmAndamento])
+
+  const handleSectorChange = useCallback(
+    (value: string) => {
+      setSectorId(value)
+      const found = sectors.find((s) => s.id === value)
+      setSetorResponsavel(found?.name ?? '')
+    },
+    [sectors],
+  )
+
+  const canSubmit =
+    selectedIds.size > 0 &&
+    sectorId.trim() !== '' &&
+    localObjeto.trim() !== '' &&
+    tipo.trim() !== ''
+
+  const handleSubmit = useCallback(async () => {
+    if (!canSubmit) return
+    setSubmitting(true)
+    try {
+      const itens = Array.from(selectedIds).map((regularizacaoId) => ({
+        regularizacaoId,
+      }))
+      await api.post('/regularizacoes/incorporar-lote', {
+        itens,
+        sectorId,
+        localId: null,
+        setor_responsavel: setorResponsavel,
+        local_objeto: localObjeto,
+        tipo,
+      })
+      toast({
+        title: `${selectedIds.size} ${selectedIds.size === 1 ? 'bem incorporado' : 'bens incorporados'} ao patrimônio com sucesso.`,
+      })
+      onSuccess()
+      onClose()
+    } catch (err) {
+      logger.error('[RegularizacaoList] Erro ao incorporar lote', err)
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao incorporar lote',
+        description: (err as Error)?.message,
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }, [canSubmit, selectedIds, sectorId, setorResponsavel, localObjeto, tipo, onSuccess, onClose])
+
+  const allSelected =
+    regularizacoesEmAndamento.length > 0 &&
+    selectedIds.size === regularizacoesEmAndamento.length
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Incorporar em Lote</DialogTitle>
+          <DialogDescription>
+            Selecione as regularizações em andamento e defina os dados comuns para incorporação
+            ao patrimônio. O backend rejeitará o lote caso algum item não possua comissão
+            de regularização ativa vinculada.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5">
+          {/* Aviso */}
+          <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800">
+            <Info className="h-3 w-3 inline mr-1" />
+            Esta operação é atômica: todos os bens selecionados são incorporados de uma só
+            vez ou nenhum é incorporado em caso de erro.
+          </div>
+
+          {/* Lista de seleção */}
+          {regularizacoesEmAndamento.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Não há regularizações em andamento disponíveis para incorporação em lote.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">
+                  Regularizações em andamento
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  {selectedIds.size} de {regularizacoesEmAndamento.length} selecionada
+                  {regularizacoesEmAndamento.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {/* Cabeçalho com "Selecionar tudo" */}
+              <div className="flex items-center gap-2 pb-1 border-b">
+                <Checkbox
+                  id="lote-select-all"
+                  checked={allSelected}
+                  onCheckedChange={toggleAll}
+                  aria-label="Selecionar todas as regularizações em andamento"
+                />
+                <Label htmlFor="lote-select-all" className="text-xs font-medium cursor-pointer">
+                  Selecionar todas ({regularizacoesEmAndamento.length})
+                </Label>
+              </div>
+
+              <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                {regularizacoesEmAndamento.map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex items-start gap-2 rounded-md p-2 hover:bg-muted/50 transition-colors"
+                  >
+                    <Checkbox
+                      id={`lote-item-${r.id}`}
+                      checked={selectedIds.has(r.id)}
+                      onCheckedChange={() => toggleItem(r.id)}
+                      aria-label={`Selecionar: ${r.descricao}`}
+                      className="mt-0.5"
+                    />
+                    <Label
+                      htmlFor={`lote-item-${r.id}`}
+                      className="cursor-pointer flex-1 space-y-0.5"
+                    >
+                      <span className="text-sm font-medium block">{r.descricao}</span>
+                      <span className="text-xs text-muted-foreground block">
+                        {formatBRL(r.valorJusto)}
+                        {r.comissao
+                          ? ` — Comissão: ${r.comissao.tipo} (Portaria ${r.comissao.portariaNumero})`
+                          : ' — Sem comissão vinculada'}
+                      </span>
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Campos compartilhados */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="lote-sectorId">Setor *</Label>
+              <Select value={sectorId} onValueChange={handleSectorChange}>
+                <SelectTrigger id="lote-sectorId" aria-label="Selecione o setor">
+                  <SelectValue placeholder="Selecione o setor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sectors.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="lote-tipo">Tipo / categoria do bem *</Label>
+              <Input
+                id="lote-tipo"
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value)}
+                placeholder="Ex.: Mobiliário, Equipamento..."
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label htmlFor="lote-local">Local do objeto *</Label>
+              <Input
+                id="lote-local"
+                value={localObjeto}
+                onChange={(e) => setLocalObjeto(e.target.value)}
+                placeholder="Ex.: Sala 02, Depósito..."
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={!canSubmit || submitting}
+              onClick={() => void handleSubmit()}
+            >
+              {submitting
+                ? 'Incorporando...'
+                : `Incorporar ${selectedIds.size > 0 ? selectedIds.size : ''} bem${selectedIds.size !== 1 ? 'ns' : ''}`}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ---- Página principal ----
 
-type DialogMode = 'none' | 'criar' | 'incorporar'
+type DialogMode = 'none' | 'criar' | 'incorporar' | 'lote'
 
 export default function RegularizacaoList() {
   const { user } = useAuth()
@@ -716,10 +964,19 @@ export default function RegularizacaoList() {
     setDialogMode('incorporar')
   }
 
+  const openLote = () => {
+    setSelectedItem(null)
+    setDialogMode('lote')
+  }
+
   const closeDialog = () => {
     setDialogMode('none')
     setSelectedItem(null)
   }
+
+  const regularizacoesEmAndamento = regularizacoes.filter(
+    (r) => r.status === 'em_andamento',
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -730,10 +987,18 @@ export default function RegularizacaoList() {
           <h1 className="text-2xl font-bold">Regularização de Bens</h1>
         </div>
         {canWrite && (
-          <Button onClick={openCriar}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nova Constatação
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            {regularizacoesEmAndamento.length > 0 && (
+              <Button variant="outline" onClick={openLote}>
+                <Layers className="mr-2 h-4 w-4" />
+                Incorporar em lote
+              </Button>
+            )}
+            <Button onClick={openCriar}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nova Constatação
+            </Button>
+          </div>
         )}
       </div>
 
@@ -994,6 +1259,19 @@ export default function RegularizacaoList() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: incorporar em lote */}
+      {dialogMode === 'lote' && (
+        <IncorporarLoteDialog
+          open={true}
+          onClose={closeDialog}
+          onSuccess={() => {
+            fetchingRef.current = false
+            void fetchRegularizacoes()
+          }}
+          regularizacoesEmAndamento={regularizacoesEmAndamento}
+        />
+      )}
     </div>
   )
 }
