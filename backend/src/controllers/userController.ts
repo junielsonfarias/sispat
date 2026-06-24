@@ -223,7 +223,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         action: 'CREATE_USER',
         entityType: 'USER',
         entityId: newUser.id,
-        details: `Usuário criado: ${newUser.name} (${newUser.email})`,
+        details: `Usuário criado: ${newUser.name} (${maskEmail(newUser.email)})`,
         ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
         userAgent: req.get('user-agent') || 'unknown',
       },

@@ -46,6 +46,9 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
         const sectors = await prisma.sector.findMany({
           where: {
             name: { in: responsibleSectors },
+            // Isolamento de tenant: setores com nome igual em outros municípios
+            // não devem entrar na resolução (evita vazar locais cross-tenant).
+            municipalityId: req.user?.municipalityId,
           },
           select: { id: true },
         });
@@ -204,6 +207,18 @@ export const updateLocal = async (req: Request, res: Response): Promise<void> =>
     if (!local) {
       res.status(404).json({ error: 'Local não encontrado' });
       return;
+    }
+
+    // Se o setor está sendo alterado, garante que pertence ao município do
+    // usuário (evita reatribuir o local a um setor de outro tenant via body).
+    if (sectorId) {
+      const sector = await prisma.sector.findFirst({
+        where: { id: sectorId, ...(isSuperuser ? {} : { municipalityId }) },
+      });
+      if (!sector) {
+        res.status(404).json({ error: 'Setor não encontrado' });
+        return;
+      }
     }
 
     const updated = await prisma.local.update({

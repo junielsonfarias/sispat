@@ -210,7 +210,7 @@ export const testEmailConfig = async (req: Request, res: Response): Promise<void
         'TEST_EMAIL_CONFIG',
         'EmailConfig',
         'test',
-        `Email de teste enviado para ${email}`
+        `Email de teste enviado para ${maskEmail(email)}`
       );
     } catch (logError) {
       logWarn('⚠️ Erro ao registrar atividade', logError);
