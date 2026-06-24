@@ -21,6 +21,19 @@
 
 ## 2026
 
+### 2026-06-24 — Modo LOTE: desafetação, desfazimento e incorporação (Art. 22/24)
+- **Pedido:** para o acervo antigo, permitir os atos em lote (1 processo/parecer/decreto para N bens) e dar agilidade. Fundamentado em análise legal pelo `sispat-domain-expert`: **PERMITE LOTE COM RESSALVAS** — a lei usa o singular por redação, mas a prática consolidada é um único decreto/parecer relacionando N bens (Anexo); a ressalva é manter a **rastreabilidade por bem** (cada bem é um registro próprio compartilhando o mesmo nº/data de base legal).
+- **Implementação — Opção A (endpoints transacionais, tudo-ou-nada):**
+  - `desafetacaoService.createDesafetacaoLote` → `POST /desafetacoes/lote`: N bens (patrimônio/imóvel) compartilham a MESMA base legal e comissão.
+  - `desfazimentoService.createDesfazimentoLote` → `POST /desfazimentos/lote`: N bens, mesma classificação/modalidade; `valorAvaliacao` é **por bem** (alienação exige avaliação individual, Art. 23).
+  - `regularizacaoService.incorporarRegularizacaoLote` → `POST /regularizacoes/incorporar-lote`: incorpora N regularizações ao mesmo setor/local/tipo. **Pegadinha de numeração:** chamar `gerarNumeroPatrimonial` em loop colide (transação aninhada não enxerga linhas não commitadas da transação externa) — solução: gerar o 1º número e **incrementar o sequencial em memória** (`prefixoSeq + padStart(seq)`), itens com número explícito usam o seu.
+  - **Padrão comum:** valida TODOS os bens antes da transação (tenant, destinação, comissão, avaliação, duplicata em andamento) + dedup do lote; depois cria tudo numa única `$transaction`. Rota `/lote` declarada antes de `/:id` onde necessário.
+  - Schemas zod (`createDesafetacaoLoteSchema`, `createDesfazimentoLoteSchema`, `incorporarRegularizacaoLoteSchema`) em `@sispat/shared`, com `max(200)` bens por lote.
+- **Frontend:** botão "em lote" + dialog de seleção múltipla (checkboxes + busca + contador) nas 3 telas (`DesafetacaoList`, `DesfazimentoList`, `RegularizacaoList`); desfazimento mostra valor de avaliação por bem quando a modalidade é alienação. Implementado por 3 `frontend-expert` em paralelo (arquivos disjuntos), cada um verificando `tsc`.
+- **Commits:** `846e2f5` (backend), `099608b` (frontend).
+- **Verificação:** backend `tsc` + **40 suites / 522 testes Jest** (12 novos de lote); frontend `tsc` limpo; `vite build` OK.
+- **Lição:** geração de número sequencial em lote não pode reusar a função single em loop (cada chamada lê o mesmo "último número" pré-commit) — gere a base uma vez e incremente em memória dentro da transação. E delegar UI repetitiva a subagents paralelos funciona com arquivos disjuntos, mas o `tsc` de um agente pode ver erros transitórios dos outros — rode um `tsc` limpo no fim.
+
 ### 2026-06-24 — Conformidade (2ª onda): follow-ups exigidos pela lei
 - **Contexto:** após os 5 gaps 🔴 críticos, os follow-ups maiores foram avaliados pelo `sispat-domain-expert` contra a Lei/Decreto (`Docs/analise/`), com veredito EXIGIDO / RECOMENDÁVEL / JÁ ATENDIDO por item — para não construir entidade que a lei não exige.
 - **Implementados (EXIGIDO/RECOMENDÁVEL):**
