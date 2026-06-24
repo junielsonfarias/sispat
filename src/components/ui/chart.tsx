@@ -104,12 +104,24 @@ const ChartTooltip = RechartsPrimitive.Tooltip
 
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
-    React.ComponentProps<'div'> & {
+  React.ComponentProps<'div'> & {
+      // Props derivadas do recharts Tooltip — `ComponentProps<typeof Tooltip>`
+      // quebra com recharts 2.x + React 19, então tipamos manualmente.
+      active?: boolean
       payload: any[]
+      label?: string
+      labelFormatter?: (label: unknown, payload: unknown[]) => React.ReactNode
+      labelClassName?: string
+      formatter?: (
+        value: unknown,
+        name: unknown,
+        item: unknown,
+        index: number,
+        payload: unknown,
+      ) => React.ReactNode
+      color?: string
       hideLabel?: boolean
       hideIndicator?: boolean
-      label?: string
       indicator?: 'line' | 'dot' | 'dashed'
       nameKey?: string
       labelKey?: string
@@ -264,7 +276,8 @@ const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<'div'> &
     Pick<RechartsPrimitive.LegendProps, 'verticalAlign'> & {
-      payload?: RechartsPrimitive.LegendPayload[]
+      // recharts 2.15 não exporta mais `LegendPayload` no namespace público.
+      payload?: Array<{ value?: string | number; dataKey?: string | number; color?: string }>
       hideIcon?: boolean
       nameKey?: string
     }

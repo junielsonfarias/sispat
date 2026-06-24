@@ -303,7 +303,11 @@ const patrimonioFrontendBaseSchema = patrimonioBaseSchema.extend({
     .optional(),
 });
 
-export const patrimonioCreateSchema = patrimonioFrontendBaseSchema;
+// numero_patrimonio é gerado automaticamente no create; fica opcional no form
+// só para o campo (desabilitado) que exibe o número gerado existir no schema.
+export const patrimonioCreateSchema = patrimonioFrontendBaseSchema.extend({
+  numero_patrimonio: z.string().optional(),
+});
 export type PatrimonioCreateFormData = z.infer<typeof patrimonioCreateSchema>;
 
 export const patrimonioEditSchema = patrimonioFrontendBaseSchema
