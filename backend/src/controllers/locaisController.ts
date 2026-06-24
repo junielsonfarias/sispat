@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import { maskEmail } from '../utils/mask';
 
 /**
  * @desc    Obter todos os locais
@@ -14,7 +15,7 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
     const userRole = req.user?.role;
     const userEmail = req.user?.email;
 
-    logDebug('🔍 GET /api/locais', { role: userRole, email: userEmail, sectorId });
+    logDebug('🔍 GET /api/locais', { role: userRole, email: maskEmail(userEmail), sectorId });
 
     const where: Prisma.LocalWhereInput = {};
 

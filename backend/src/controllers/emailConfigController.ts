@@ -162,7 +162,7 @@ export const testEmailConfig = async (req: Request, res: Response): Promise<void
   try {
     const userId = req.user?.userId;
 
-    logDebug('🧪 Testando configuração de email', { email });
+    logDebug('🧪 Testando configuração de email', { email: maskEmail(email) });
 
     if (!email || !email.includes('@')) {
       res.status(400).json({ error: 'Email de teste é obrigatório e deve ser válido' });

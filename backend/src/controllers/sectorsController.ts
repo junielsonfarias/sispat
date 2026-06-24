@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
+import { maskEmail } from '../utils/mask';
 
 /**
  * @desc    Obter todos os setores
@@ -13,7 +14,7 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
     const userRole = req.user?.role;
     const userEmail = req.user?.email;
 
-    logDebug('🔍 GET /api/sectors', { role: userRole, email: userEmail });
+    logDebug('🔍 GET /api/sectors', { role: userRole, email: maskEmail(userEmail) });
 
     const where: Prisma.SectorWhereInput = {};
 

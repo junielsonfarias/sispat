@@ -516,8 +516,10 @@ export const gerarNumeroImovel = async (sectorId: string, municipalityId: string
     throw new ImovelValidationError('ID do setor é obrigatório');
   }
 
-  const sector = await prisma.sector.findUnique({
-    where: { id: sectorId },
+  // Isolamento de tenant: o setor deve pertencer ao município (sectorId vem da
+  // query string). Setor de outro município → "não encontrado" (404 no controller).
+  const sector = await prisma.sector.findFirst({
+    where: { id: sectorId, municipalityId },
     select: { codigo: true },
   });
 
