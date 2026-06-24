@@ -20,7 +20,6 @@ import {
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -46,7 +45,7 @@ const LabelTemplateEditor = () => {
   const [zoom, setZoom] = useState(1)
   const [saving, setSaving] = useState(false)
   // Dados de exemplo para preview (substituído por dados reais)
-  const mockPatrimonio = {
+  const mockAsset = {
     id: 'example',
     numero_patrimonio: '20240200001',
     descricao_bem: 'Exemplo de Bem',
@@ -62,17 +61,20 @@ const LabelTemplateEditor = () => {
     forma_aquisicao: 'Compra Direta',
     setor_responsavel: 'Secretaria de Educação',
     local_objeto: 'Sala 101',
-    status: 'ativo',
-    situacao_bem: 'OTIMO',
-    fotos: [],
-    documentos: [],
+    status: 'ativo' as const,
+    situacao_bem: 'OTIMO' as const,
+    fotos: [] as string[],
+    documentos: [] as string[],
     historico_movimentacao: [],
     entityName: 'Prefeitura de São Sebastião da Boa Vista',
     notes: [],
     municipalityId: '1',
-    metodo_depreciacao: 'Linear',
+    metodo_depreciacao: 'Linear' as const,
     vida_util_anos: 5,
     valor_residual: 450,
+    createdAt: new Date('2024-01-15'),
+    createdBy: 'system',
+    assetType: 'bem' as const,
   }
 
   useEffect(() => {
@@ -257,7 +259,7 @@ const LabelTemplateEditor = () => {
             >
               <div style={{ transform: `scale(${zoom})` }}>
                 <LabelPreview
-                  patrimonio={mockPatrimonio}
+                  asset={mockAsset}
                   template={template}
                   onElementClick={setSelectedElement}
                   selectedElementId={selectedElement?.id}

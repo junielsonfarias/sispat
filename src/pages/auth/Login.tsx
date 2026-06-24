@@ -28,10 +28,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import {
-  useCustomization,
-  CustomizationSettings,
-} from '@/contexts/CustomizationContext'
+import { useCustomization } from '@/contexts/CustomizationContext'
 import { Toaster } from '@/components/ui/toaster'
 import { useVersion } from '@/contexts/VersionContext'
 import {

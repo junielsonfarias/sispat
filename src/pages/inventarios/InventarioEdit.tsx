@@ -31,14 +31,13 @@ import { toast } from '@/hooks/use-toast'
 import { useInventory } from '@/contexts/InventoryContext'
 import { useSectors } from '@/contexts/SectorContext'
 import { useLocais } from '@/contexts/LocalContext'
-import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import { Inventory } from '@/types'
 
 const inventoryEditSchema = z.object({
   name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
   sectorName: z.string().min(1, 'Setor é obrigatório'),
-  scope: z.enum(['sector', 'location'], {
+  scope: z.enum(['sector', 'location', 'specific_location'], {
     required_error: 'Escopo é obrigatório',
   }),
   locationType: z.string().optional(),
@@ -49,7 +48,6 @@ type InventoryEditFormValues = z.infer<typeof inventoryEditSchema>
 export default function InventarioEdit() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { getInventoryById, updateInventory } = useInventory()
   const { sectors } = useSectors()
   const { getLocaisBySectorId } = useLocais()

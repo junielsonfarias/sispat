@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Form,
   FormControl,
@@ -140,7 +139,7 @@ export default function EmailConfig() {
     try {
       setIsLoading(true)
       
-      const response = await api.put('/email-config', data)
+      await api.put('/email-config', data)
       
       toast({
         title: 'Sucesso',

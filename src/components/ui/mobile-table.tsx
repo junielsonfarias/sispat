@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChevronLeft, ChevronRight, Search, Filter, MoreVertical } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, MoreVertical } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +45,7 @@ export function MobileTable<T extends Record<string, any>>({
   searchFields = [],
   onSearch,
   onSort,
-  onFilter,
+  onFilter: _onFilter,
   loading = false,
   emptyMessage = 'Nenhum item encontrado',
   className

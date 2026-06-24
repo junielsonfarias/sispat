@@ -5,7 +5,6 @@ import {
   useContext,
   useCallback,
   useEffect,
-  useMemo,
 } from 'react'
 import { NumberingPattern } from '@/types'
 import { useAuth } from './AuthContext'

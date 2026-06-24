@@ -38,7 +38,7 @@ export function VirtualizedList<T>({
       overscanCount={overscanCount}
       className={className}
     >
-      {({ index, style, data }) => renderItem({ index, style, item: data[index] })}
+      {({ index, style, data }: { index: number; style: React.CSSProperties; data: T[] }) => renderItem({ index, style, item: data[index] })}
     </List>
   )
 }
@@ -63,7 +63,7 @@ export function VirtualizedTable<T>({
   columns,
   className,
 }: VirtualizedTableProps<T>) {
-  const renderItem = ({ index, style, item }: { index: number; style: React.CSSProperties; item: T }) => (
+  const renderItem = ({ index: _index, style, item }: { index: number; style: React.CSSProperties; item: T }) => (
     <div style={style} className="flex border-b border-border">
       {columns.map((column) => (
         <div

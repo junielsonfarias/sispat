@@ -37,11 +37,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { useAuth } from '@/hooks/useAuth'
-
 export default function SectorManagement() {
   const { sectors, addSector, updateSector, deleteSector } = useSectors()
-  const { user } = useAuth()
   const [isDialogOpen, setDialogOpen] = useState(false)
   const [editingSector, setEditingSector] = useState<Sector | undefined>()
 

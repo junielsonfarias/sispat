@@ -190,5 +190,5 @@ export const MobileCardSkeleton = ({ count = 3 }: MobileCardSkeletonProps) => {
   )
 }
 
-export { MobileCardProps, MobileCardFieldProps, MobileCardListProps }
+export type { MobileCardProps, MobileCardFieldProps, MobileCardListProps }
 

@@ -4,7 +4,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card'
 import {
   Table,
@@ -77,7 +76,7 @@ export default function TransferenciaReports() {
       new Date().toISOString().split('T')[0]
     }`
 
-    if (batchConfig.enabled && exportFormat) {
+    if (batchConfig.enabled && (exportFormat === 'csv' || exportFormat === 'xlsx')) {
       exportInBatches(
         filteredData as any,
         columnsWithLabels,

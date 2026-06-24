@@ -282,7 +282,7 @@ export default function PublicBemDetalhes() {
                       {/* Thumbnails */}
                       {fotos.length > 1 && (
                         <div className="grid grid-cols-5 gap-2">
-                          {fotos.map((foto, index) => (
+                          {fotos.map((foto: string, index: number) => (
                             <button
                               key={index}
                               onClick={() => setCurrentImageIndex(index)}

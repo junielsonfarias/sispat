@@ -99,7 +99,7 @@ export const ImageUpload = ({
     processFiles([file])
   }
 
-  const handleRemoveImage = async (fileToRemove: { id: string }) => {
+  const handleRemoveImage = async (fileToRemove: { id: string; file_url: string }) => {
     try {
       await deleteFile(fileToRemove.id, fileToRemove.file_url)
       onChange((files || []).filter((f: { id: string }) => f.id !== fileToRemove.id))

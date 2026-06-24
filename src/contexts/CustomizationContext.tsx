@@ -36,13 +36,13 @@ export interface CustomizationSettings {
   departamentoResponsavel: string
 }
 
-interface CustomizationContextType {
+export interface CustomizationContextType {
   settings: CustomizationSettings
   saveSettings: (settings: CustomizationSettings) => void
   resetSettings: () => void
 }
 
-const CustomizationContext = createContext<CustomizationContextType | null>(
+export const CustomizationContext = createContext<CustomizationContextType | null>(
   null,
 )
 
@@ -78,7 +78,7 @@ export const CustomizationProvider = ({
   children: ReactNode
 }) => {
   const [settings, setSettings] = useState<CustomizationSettings>(defaultSettings)
-  const [isLoading, setIsLoading] = useState(false)
+  const [_isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const fetchSettings = async () => {

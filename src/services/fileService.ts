@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { generateId } from '@/lib/utils'
 import { logger } from '@/lib/logger'
 
 // ✅ Usar URL do backend configurada ou fallback para localhost
@@ -105,7 +104,7 @@ export const uploadMultipleFiles = async (
   }
 }
 
-export const getFilesForAsset = async (assetId: string) => {
+export const getFilesForAsset = async (_assetId: string) => {
   return []
 }
 

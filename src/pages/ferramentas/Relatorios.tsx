@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -51,10 +50,10 @@ const Relatorios = () => {
       // Codificar filtros como query params
       const params = new URLSearchParams()
       
-      if (filters.status && filters.status !== 'todos') {
+      if (filters.status && (filters.status as string) !== 'todos') {
         params.append('status', filters.status)
       }
-      if (filters.situacao_bem && filters.situacao_bem !== 'todos') {
+      if (filters.situacao_bem && (filters.situacao_bem as string) !== 'todos') {
         params.append('situacao_bem', filters.situacao_bem)
       }
       if (filters.setor && filters.setor !== 'todos') {

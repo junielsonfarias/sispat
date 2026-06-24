@@ -63,7 +63,7 @@ export const ImovelProvider = ({ children }: { children: ReactNode }) => {
   )
 
   const addImovel = useCallback(
-    async (data: Omit<Imovel, 'id' | 'historico'>, user: User) => {
+    async (data: Omit<Imovel, 'id' | 'historico'>, _user: User) => {
       logger.debug('ImovelContext: Criando imóvel', { data })
 
       // Enviar dados diretamente, não dentro de objeto { data, user }
@@ -81,7 +81,7 @@ export const ImovelProvider = ({ children }: { children: ReactNode }) => {
   )
 
   const updateImovel = useCallback(
-    async (id: string, data: Partial<Imovel>, user: User) => {
+    async (id: string, data: Partial<Imovel>, _user: User) => {
       logger.debug('ImovelContext: Atualizando imóvel', { id, data })
 
       // Enviar dados diretamente

@@ -12,10 +12,10 @@ export const RecentActivityWidget = () => {
         recentLogs.map((log) => (
           <div key={log.id} className="flex items-center">
             <Avatar className="h-9 w-9">
-              <AvatarFallback>{log.userName.charAt(0)}</AvatarFallback>
+              <AvatarFallback>{log.user_name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="ml-4 space-y-1">
-              <p className="text-sm font-medium leading-none">{log.userName}</p>
+              <p className="text-sm font-medium leading-none">{log.user_name}</p>
               <p className="text-sm text-muted-foreground">{log.details}</p>
             </div>
             <div className="ml-auto font-medium text-sm text-muted-foreground">

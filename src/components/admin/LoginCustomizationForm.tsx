@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Card,
   CardContent,
@@ -20,7 +20,7 @@ import { Save, Undo } from 'lucide-react'
 import { LoginPreview } from '@/components/admin/LoginPreview'
 
 const LoginCustomizationForm = () => {
-  const { user } = useAuth()
+  useAuth()
   const { settings, saveSettings, resetSettings } = useCustomization()
   const [localSettings, setLocalSettings] = useState<CustomizationSettings>(
     settings,

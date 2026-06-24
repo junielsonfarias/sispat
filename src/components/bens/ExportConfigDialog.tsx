@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { patrimonioFields } from '@/lib/report-utils'
-import { Patrimonio, ExcelCsvTemplate } from '@/types'
+import { Patrimonio } from '@/types'
 import { useExcelCsvTemplates } from '@/contexts/ExcelCsvTemplateContext'
 import {
   SearchableSelect,
@@ -94,7 +94,7 @@ export const ExportConfigDialog = ({
             <Label>Modelo de Exportação</Label>
             <SearchableSelect
               options={templateOptions}
-              value={selectedTemplateId}
+              value={selectedTemplateId ?? undefined}
               onChange={setSelectedTemplateId}
               placeholder="Usar seleção manual"
               isClearable

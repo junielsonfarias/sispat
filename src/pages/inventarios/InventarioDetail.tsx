@@ -151,8 +151,8 @@ export default function InventarioDetail() {
             <TableBody>
               {inventory.items.map((item) => (
                 <TableRow key={item.patrimonioId}>
-                  <TableCell>{item.numero_patrimonio || item.numeroPatrimonio}</TableCell>
-                  <TableCell>{item.descricao_bem || item.descricaoBem}</TableCell>
+                  <TableCell>{item.numero_patrimonio}</TableCell>
+                  <TableCell>{item.descricao_bem}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex justify-center gap-2">
                       <Button

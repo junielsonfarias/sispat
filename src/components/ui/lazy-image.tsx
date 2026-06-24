@@ -138,7 +138,7 @@ export const LazyBackgroundImage: React.FC<LazyBackgroundImageProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [isInView, setIsInView] = useState(false)
-  const [hasError, setHasError] = useState(false)
+  const [_hasError, setHasError] = useState(false)
   const [imageSrc, setImageSrc] = useState<string>('')
   const containerRef = useRef<HTMLDivElement>(null)
 

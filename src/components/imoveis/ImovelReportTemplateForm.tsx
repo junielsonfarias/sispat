@@ -71,7 +71,7 @@ export const ImovelReportTemplateForm = ({
         <Controller
           name="fields"
           control={form.control}
-          render={({ field }) => (
+          render={({ field: _field }) => (
             <FormItem>
               <FormLabel>Campos do Relatório</FormLabel>
               <ScrollArea className="h-60 w-full rounded-md border">

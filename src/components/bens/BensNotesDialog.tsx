@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Note, Patrimonio } from '@/types'
-import { formatRelativeDate, generateId } from '@/lib/utils'
+import { formatRelativeDate } from '@/lib/utils'
 import { Loader2, Send } from 'lucide-react'
 import { logger } from '@/lib/logger'
 import { toast } from '@/hooks/use-toast'

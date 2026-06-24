@@ -52,7 +52,7 @@ const roleOptions: SearchableSelectOption[] = [
 
 export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
-  const { user: currentUser, addUser } = useAuth()
+  const { addUser } = useAuth()
   const { sectors } = useSectors()
 
   const form = useForm<UserCreateFormValues>({

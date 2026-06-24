@@ -4,7 +4,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card'
 import {
   Table,
@@ -22,7 +21,7 @@ import {
 } from '@/components/ui/accordion'
 import { useAuth } from '@/hooks/useAuth'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
-import { User, Patrimonio } from '@/types'
+import { Patrimonio } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -42,7 +41,7 @@ interface AssetWithCreator extends Patrimonio {
 export default function AssetsByUser() {
   const { users } = useAuth()
   const { patrimonios } = usePatrimonio()
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined)
 
   const userOptions: SearchableSelectOption[] = users.map((u) => ({
     value: u.id,

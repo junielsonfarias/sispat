@@ -120,7 +120,7 @@ export const LOCAL_IMAGES = {
 /**
  * Gera URL de avatar baseada em gênero e seed
  */
-export const generateAvatarUrl = (gender: 'male' | 'female' | 'default' = 'default', seed?: string): string => {
+export const generateAvatarUrl = (gender: 'male' | 'female' | 'default' = 'default', _seed?: string): string => {
   // Sempre usar imagens locais, independente do seed
   switch (gender) {
     case 'male':
@@ -135,7 +135,7 @@ export const generateAvatarUrl = (gender: 'male' | 'female' | 'default' = 'defau
 /**
  * Gera URL de placeholder para imagens
  */
-export const generatePlaceholderUrl = (category: string, width = 400, height = 300): string => {
+export const generatePlaceholderUrl = (_category: string, _width = 400, _height = 300): string => {
   // Sempre usar imagens locais
   return LOCAL_IMAGES.PLACEHOLDER_IMAGE
 }
@@ -187,7 +187,7 @@ export const isExternalUrl = (url: string): boolean => {
 /**
  * Gera URL de imagem de patrimônio baseada no tipo
  */
-export const generatePatrimonioImageUrl = (tipo: string, seed?: string): string => {
+export const generatePatrimonioImageUrl = (tipo: string, _seed?: string): string => {
   const category = tipo.toLowerCase()
   
   // Sempre usar imagens locais baseadas no tipo

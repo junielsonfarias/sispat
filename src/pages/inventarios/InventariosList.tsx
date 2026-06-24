@@ -32,10 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import {
-  SearchableSelect,
-  SearchableSelectOption,
-} from '@/components/ui/searchable-select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 
 export default function InventariosList() {
   const { inventories, deleteInventory } = useInventory()
@@ -43,7 +40,7 @@ export default function InventariosList() {
   // Criar inventário: gestão e operação (visualizador é read-only). Backend reforça.
   const canCreate =
     user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'usuario'
-  const [locationFilter, setLocationFilter] = useState<string | null>(null)
+  const [locationFilter, setLocationFilter] = useState<string | undefined>(undefined)
 
   const locationOptions = useMemo(() => {
     const locations = new Set(

@@ -129,7 +129,7 @@ export const AssetTransferForm = ({
         />
         <div>
           <Label>Documentos Anexos</Label>
-          <ImageUpload name="documentosAnexos" control={form.control} />
+          <ImageUpload name="documentosAnexos" control={form.control} assetId={asset.id} />
         </div>
         <div className="flex justify-end">
           <Button type="submit">Solicitar</Button>

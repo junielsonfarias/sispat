@@ -21,7 +21,7 @@ export const StatsCardsWidget = () => {
 
     const totalValue = patrimonios.reduce(
       (acc, p) => {
-        const valor = p.valor_aquisicao || p.valorAquisicao || 0
+        const valor = p.valor_aquisicao || 0
         const numValor = typeof valor === 'number' ? valor : parseFloat(valor) || 0
         return acc + numValor
       },

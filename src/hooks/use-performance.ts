@@ -21,7 +21,7 @@ export function useStableArray<T>(array: T[], dependencies: React.DependencyList
  * Compara valores profundamente
  */
 export function useDeepMemo<T>(factory: () => T, deps: React.DependencyList): T {
-  const ref = useRef<{ deps: React.DependencyList; value: T }>()
+  const ref = useRef<{ deps: React.DependencyList; value: T } | undefined>(undefined)
   
   if (!ref.current || !deepEqual(ref.current.deps, deps)) {
     ref.current = { deps, value: factory() }

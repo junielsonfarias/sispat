@@ -39,13 +39,13 @@ const AnaliseTemporal = () => {
     const events = filteredPatrimonios.flatMap((p) => {
       // ✅ CORREÇÃO: Verificar se historico_movimentacao existe e é array
       if (!p.historico_movimentacao || !Array.isArray(p.historico_movimentacao)) {
-        console.warn('⚠️ [AnaliseTemporal] historico_movimentacao não está disponível para patrimônio:', p.numero_patrimonio || p.numeroPatrimonio)
+        console.warn('⚠️ [AnaliseTemporal] historico_movimentacao não está disponível para patrimônio:', p.numero_patrimonio)
         return [] // Retorna array vazio se não há histórico
       }
 
       return p.historico_movimentacao.map((h) => ({
         ...h,
-        patrimonio: p.numero_patrimonio || p.numeroPatrimonio,
+        patrimonio: p.numero_patrimonio,
       }))
     })
 

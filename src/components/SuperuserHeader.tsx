@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { LogOut, UserCircle, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,7 +22,6 @@ import { SuperuserPasswordChangeForm } from '@/components/superuser/SuperuserPas
 
 export const SuperuserHeader = () => {
   const { user, logout } = useAuth()
-  const navigate = useNavigate()
   const [isPasswordDialogOpen, setPasswordDialogOpen] = useState(false)
 
   const handleLogout = () => {

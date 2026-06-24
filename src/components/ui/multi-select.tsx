@@ -103,7 +103,7 @@ export function MultiSelect({
                   return (
                     <CommandItem
                       key={option.value}
-                      onMouseDown={(e) => {
+                      onMouseDown={(e: React.MouseEvent) => {
                         e.preventDefault()
                         e.stopPropagation()
                       }}

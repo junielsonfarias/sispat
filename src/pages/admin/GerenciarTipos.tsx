@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Plus, Edit, Trash2, Power, PowerOff, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,7 +34,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useTiposBens } from '@/contexts/TiposBensContext'
 import { useToast } from '@/hooks/use-toast'
-import { TipoBem } from '@/contexts/TiposBensContext'
+import { TipoBem } from '@/types'
 
 const GerenciarTipos = () => {
   const { tiposBens, isLoading, createTipoBem, updateTipoBem, deleteTipoBem, toggleTipoBemStatus } = useTiposBens()

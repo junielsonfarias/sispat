@@ -27,7 +27,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { SubPatrimonio, SubPatrimonioStatus } from '@/types'
+import { SubPatrimonio } from '@/types'
 
 const subPatrimonioSchema = z.object({
   localizacao_especifica: z.string().optional(),

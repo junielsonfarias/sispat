@@ -13,12 +13,10 @@ import {
   useCustomization,
   CustomizationSettings,
 } from '@/contexts/CustomizationContext'
-import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import { UploadCloud, X, Trash2 } from 'lucide-react'
 
 const LogoManagement = () => {
-  const { user } = useAuth()
   const { settings, saveSettings } = useCustomization()
   const [localSettings, setLocalSettings] = useState<CustomizationSettings>(
     settings,

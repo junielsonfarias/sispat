@@ -17,11 +17,11 @@ interface SubPatrimoniosManagerProps {
   quantidadeUnidades?: number
 }
 
-export function SubPatrimoniosManagerRefactored({ 
-  patrimonioId, 
-  patrimonioNumero, 
-  isKit, 
-  quantidadeUnidades = 0 
+export function SubPatrimoniosManagerRefactored({
+  patrimonioId,
+  patrimonioNumero,
+  isKit,
+  quantidadeUnidades: _quantidadeUnidades = 0
 }: SubPatrimoniosManagerProps) {
   const [subPatrimonios, setSubPatrimonios] = useState<SubPatrimonio[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)

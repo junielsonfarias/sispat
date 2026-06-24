@@ -26,11 +26,8 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react'
 import { useExcelCsvTemplates } from '@/contexts/ExcelCsvTemplateContext'
 import { ExcelCsvTemplate } from '@/types'
 import { ExcelCsvTemplateForm } from '@/components/superuser/ExcelCsvTemplateForm'
-import { useAuth } from '@/hooks/useAuth'
-
 export default function ExcelCsvTemplateManagement() {
   const { templates, saveTemplate, deleteTemplate } = useExcelCsvTemplates()
-  const { user } = useAuth()
   const [isFormOpen, setFormOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<
     ExcelCsvTemplate | undefined

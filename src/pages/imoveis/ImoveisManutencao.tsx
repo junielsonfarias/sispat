@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
 
 export default function ImoveisManutencao() {
-  const { tasks, deleteTask } = useManutencao()
+  const { tasks } = useManutencao()
   const [isFormOpen, setFormOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<ManutencaoTask | undefined>()
 

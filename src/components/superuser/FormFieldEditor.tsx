@@ -1,4 +1,4 @@
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { FormFieldConfig, FormFieldType } from '@/types'
+import { FormFieldConfig } from '@/types'
 import { Textarea } from '@/components/ui/textarea'
 
 const fieldSchema = z.object({

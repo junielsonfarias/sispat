@@ -103,7 +103,7 @@ export const SectorLocalForm = ({
               <FormControl>
                 <SearchableSelect
                   options={sectorOptions}
-                  value={field.value}
+                  value={field.value ?? undefined}
                   onChange={field.onChange}
                   placeholder={
                     type === 'sector'

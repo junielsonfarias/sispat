@@ -1,5 +1,3 @@
-import { generateId } from '@/lib/utils'
-
 const resizeImage = (
   file: File,
   maxWidth: number,

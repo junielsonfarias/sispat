@@ -135,7 +135,7 @@ const ThemeManagement = () => {
         </Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {themes && themes.length > 0 ? themes.map((theme) => (
+        {themes && themes.length > 0 ? themes.map((theme: Theme) => (
           <Card key={theme.id}>
             <CardHeader>
               <CardTitle>{theme.name}</CardTitle>

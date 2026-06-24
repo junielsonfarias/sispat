@@ -45,7 +45,7 @@ export default function GeneralDocuments() {
 
     setIsUploading(true)
     for (const file of Array.from(files)) {
-      await addDocument(file, { id: user.id, name: user.name })
+      await addDocument(file, { titulo: file.name, tipo: 'geral' })
     }
     setIsUploading(false)
   }

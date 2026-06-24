@@ -41,7 +41,7 @@ const SyncClient = () => {
   const [autoSync, setAutoSync] = useState(true)
   const [syncInterval, setSyncInterval] = useState('30')
   const [lastSync, setLastSync] = useState(new Date())
-  const [isConnected, setIsConnected] = useState(true)
+  const [isConnected, _setIsConnected] = useState(true)
 
   const handleManualSync = () => {
     startSync()

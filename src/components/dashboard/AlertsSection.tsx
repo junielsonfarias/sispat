@@ -1,4 +1,3 @@
-import React from 'react'
 import { AlertTriangle, Clock, Wrench, Package } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -24,9 +23,6 @@ interface AlertsSectionProps {
 }
 
 export const AlertsSection = ({ patrimonios, stats }: AlertsSectionProps) => {
-  // Patrimônios em manutenção
-  const patrimoniosManutencao = patrimonios.filter(p => p.status === 'manutencao')
-  
   // Patrimônios próximos da baixa (mais de 10 anos)
   const patrimoniosAntigos = patrimonios.filter(p => {
     const dataAquisicao = p.data_aquisicao || p.dataAquisicao

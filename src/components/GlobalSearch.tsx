@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CommandDialog,
@@ -26,7 +25,7 @@ export const GlobalSearch = () => {
   }
 
   return (
-    <CommandDialog open={isOpen} onOpenChange={closeSearch} className="no-print">
+    <CommandDialog open={isOpen} onOpenChange={closeSearch}>
       <CommandInput placeholder="Pesquisar em todo o sistema..." />
       <CommandList>
         <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>

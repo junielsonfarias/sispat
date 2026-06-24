@@ -162,7 +162,7 @@ export const ReportComponentProperties = ({
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const newLines = (component.props?.customLines || []).filter((_, i) => i !== index)
+                      const newLines = (component.props?.customLines || []).filter((_: string, i: number) => i !== index)
                       handlePropChange('customLines', newLines)
                     }}
                   >

@@ -48,7 +48,6 @@ import {
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { Patrimonio, Imovel } from '@/types'
 import { useDebounce } from '@/hooks/use-debounce'

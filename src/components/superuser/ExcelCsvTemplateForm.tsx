@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ExcelCsvTemplate, ConditionalFormattingRule } from '@/types'
+import { ExcelCsvTemplate, Patrimonio } from '@/types'
 import { patrimonioFields } from '@/lib/report-utils'
 import { Trash2, PlusCircle } from 'lucide-react'
 import { generateId } from '@/lib/utils'
@@ -84,11 +84,11 @@ export const ExcelCsvTemplateForm = ({
       ...data,
       columns: data.columns.map((c) => ({
         ...c,
-        key: c.key as keyof any,
+        key: c.key as keyof Patrimonio,
       })),
       conditionalFormatting: data.conditionalFormatting?.map((r) => ({
         ...r,
-        column: r.column as keyof any,
+        column: r.column as keyof Patrimonio,
       })),
     })
   }

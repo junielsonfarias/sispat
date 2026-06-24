@@ -7,7 +7,7 @@ import {
   useContext,
   useMemo,
 } from 'react'
-import { ReportTemplate, ReportComponent, Patrimonio } from '@/types'
+import { ReportTemplate, Patrimonio } from '@/types'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
@@ -23,70 +23,6 @@ interface ReportTemplateContextType {
 const ReportTemplateContext = createContext<ReportTemplateContextType | null>(
   null,
 )
-
-const tabularLayout: ReportComponent[] = [
-  {
-    id: 'header',
-    type: 'HEADER',
-    x: 0,
-    y: 0,
-    w: 12,
-    h: 1,
-    styles: { paddingBottom: 16, borderBottomWidth: 2, borderStyle: 'solid' },
-  },
-  {
-    id: 'table',
-    type: 'TABLE',
-    x: 0,
-    y: 1,
-    w: 12,
-    h: 10,
-    styles: { fontSize: 10 },
-  },
-  {
-    id: 'footer',
-    type: 'FOOTER',
-    x: 0,
-    y: 11,
-    w: 12,
-    h: 1,
-    styles: {
-      paddingTop: 16,
-      fontSize: 8,
-      textAlign: 'center',
-      borderTopWidth: 1,
-      borderStyle: 'solid',
-    },
-  },
-]
-
-const summaryLayout: ReportComponent[] = [
-  { id: 'header', type: 'HEADER', x: 0, y: 0, w: 12, h: 1 },
-  {
-    id: 'summary_text',
-    type: 'TEXT',
-    x: 0,
-    y: 1,
-    w: 6,
-    h: 4,
-    props: {
-      content:
-        'Este relatório apresenta um resumo dos bens patrimoniais, destacando a distribuição por tipo e status. A tabela a seguir detalha cada item individualmente.',
-    },
-    styles: { padding: 12, backgroundColor: '#f9fafb', fontSize: 12 },
-  },
-  { id: 'summary_chart', type: 'CHART', x: 6, y: 1, w: 6, h: 4 },
-  { id: 'details_table', type: 'TABLE', x: 0, y: 5, w: 12, h: 6 },
-  {
-    id: 'footer',
-    type: 'FOOTER',
-    x: 0,
-    y: 11,
-    w: 12,
-    h: 1,
-    styles: { paddingTop: 16, fontSize: 8, textAlign: 'center' },
-  },
-]
 
 export const ReportTemplateProvider = ({
   children,

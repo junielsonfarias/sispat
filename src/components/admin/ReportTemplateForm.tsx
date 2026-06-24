@@ -12,7 +12,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { ReportTemplate } from '@/types'
+import { Patrimonio, ReportTemplate } from '@/types'
 import { patrimonioFields } from '@/lib/report-utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
@@ -45,9 +45,11 @@ export const ReportTemplateForm = ({
   const onSubmit = (data: ReportTemplateFormValues) => {
     const newTemplate: ReportTemplate = {
       id: template?.id || '',
+      municipalityId: template?.municipalityId || '',
       name: data.name,
-      fields: data.fields as (keyof ReportTemplate['fields'])[],
+      fields: data.fields as (keyof Patrimonio)[],
       filters: template?.filters || {},
+      layout: template?.layout || [],
     }
     onSave(newTemplate)
   }
@@ -74,7 +76,7 @@ export const ReportTemplateForm = ({
         <Controller
           name="fields"
           control={form.control}
-          render={({ field }) => (
+          render={({ field: _field }) => (
             <FormItem>
               <FormLabel>Campos do Relatório</FormLabel>
               <ScrollArea className="h-60 w-full rounded-md border">

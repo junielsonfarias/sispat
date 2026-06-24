@@ -43,7 +43,7 @@ export const SearchableSelect = ({
   emptyMessage = 'Nenhum resultado encontrado.',
   isLoading = false,
   disabled = false,
-  isClearable = false,
+  isClearable: _isClearable = false,
 }: SearchableSelectProps) => {
   const [open, setOpen] = React.useState(false)
 

@@ -21,7 +21,7 @@ import { isCircularDependency } from '@/lib/sector-utils'
 import { toast } from '@/hooks/use-toast'
 import { MaskedInput } from '@/components/ui/masked-input'
 
-const cnpjValidator = (cnpj: string) => {
+const cnpjValidator = (cnpj: string | undefined) => {
   if (!cnpj) return true
   cnpj = cnpj.replace(/[^\d]+/g, '')
   if (cnpj.length !== 14 || !!cnpj.match(/(\d)\1{13}/)) return false
@@ -190,7 +190,7 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
               <FormControl>
                 <SearchableSelect
                   options={sectorOptions}
-                  value={field.value}
+                  value={field.value ?? undefined}
                   onChange={field.onChange}
                   placeholder="Nenhum (Setor Raiz)"
                   isClearable

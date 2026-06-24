@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select'
 import { ReportFilters } from '@/types'
 import { DatePickerWithRange } from '@/components/ui/date-picker'
+import { type DateRange } from 'react-day-picker'
 import { useSectors } from '@/contexts/SectorContext'
 import { useTiposBens } from '@/contexts/TiposBensContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -211,7 +212,7 @@ export const ReportFilterDialog = ({
               <FormItem>
                 <FormLabel>Período de Aquisição</FormLabel>
                 <DatePickerWithRange
-                  date={field.value}
+                  date={field.value as DateRange | undefined}
                   onDateChange={field.onChange}
                 />
                 <FormDescription className="text-xs">

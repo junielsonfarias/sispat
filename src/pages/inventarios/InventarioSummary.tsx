@@ -98,8 +98,8 @@ export default function InventarioSummary() {
               <TableBody>
                 {newlyMissing.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>{item.numero_patrimonio || item.numeroPatrimonio}</TableCell>
-                    <TableCell>{item.descricao_bem || item.descricaoBem}</TableCell>
+                    <TableCell>{item.numero_patrimonio}</TableCell>
+                    <TableCell>{item.descricao_bem}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{item.status}</Badge>
                     </TableCell>

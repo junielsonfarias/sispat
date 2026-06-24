@@ -233,7 +233,7 @@ export const generateInventoryPDF = async (
 
     // Itens da tabela
     pdf.setFont('helvetica', 'normal')
-    data.items.forEach((item, index) => {
+    data.items.forEach((item) => {
       // Verificar se precisa de nova página
       if (yPosition > pdfHeight - 30) {
         pdf.addPage()

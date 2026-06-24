@@ -202,7 +202,6 @@ export const PDFConfigDialog = ({
   }
 
   const allSelected = selectedSections.length === availableSections.length
-  const someSelected = selectedSections.length > 0 && !allSelected
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

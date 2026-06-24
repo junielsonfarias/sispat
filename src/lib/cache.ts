@@ -20,8 +20,10 @@ class MemoryCache {
   set<T>(key: string, value: T, ttl: number = this.defaultTTL): void {
     // Remove item mais antigo se cache estiver cheio
     if (this.cache.size >= this.maxSize) {
-      const oldestKey = this.cache.keys().next().value
-      this.cache.delete(oldestKey)
+      const oldestKey = this.cache.keys().next().value as string | undefined
+      if (oldestKey !== undefined) {
+        this.cache.delete(oldestKey)
+      }
     }
 
     this.cache.set(key, {
@@ -154,7 +156,7 @@ export const cacheUtils = {
   /**
    * Invalida cache por padrão
    */
-  invalidatePattern: (pattern: string) => {
+  invalidatePattern: (_pattern: string) => {
     // Em uma implementação mais complexa, usaria regex ou prefix matching
     cache.clear() // Por simplicidade, limpa tudo
   },

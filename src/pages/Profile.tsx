@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, useMemo } from 'react'
+import { useState, ChangeEvent } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,7 +34,7 @@ const Profile = () => {
     })
     if (!ok) return
     setIsLoggingOutAll(true)
-    logout({ allDevices: true })
+    ;(logout as (options?: { sessionExpired?: boolean; allDevices?: boolean }) => void)({ allDevices: true })
   }
   const [isEditorOpen, setEditorOpen] = useState(false)
   const [imageToEdit, setImageToEdit] = useState<string | null>(null)

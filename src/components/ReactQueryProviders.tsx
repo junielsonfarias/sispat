@@ -10,6 +10,6 @@ import { queryClient } from '@/lib/query-client'
 export const ReactQueryProviders = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={queryClient}>
     {children}
-    <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+    <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
   </QueryClientProvider>
 )

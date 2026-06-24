@@ -37,8 +37,8 @@ export const ImageEditor = ({
     img.src = imageSrc
     img.onload = () => {
       const canvasSize = 300
-      canvas.width = canvasSize
-      canvas.height = canvasSize
+      canvas!.width = canvasSize
+      canvas!.height = canvasSize
 
       ctx.clearRect(0, 0, canvasSize, canvasSize)
       ctx.save()
@@ -51,8 +51,6 @@ export const ImageEditor = ({
       const ratio = Math.max(hRatio, vRatio)
       const newWidth = img.width * ratio
       const newHeight = img.height * ratio
-      const x = (canvasSize - newWidth) / 2
-      const y = (canvasSize - newHeight) / 2
 
       ctx.drawImage(img, -newWidth / 2, -newHeight / 2, newWidth, newHeight)
       ctx.restore()
