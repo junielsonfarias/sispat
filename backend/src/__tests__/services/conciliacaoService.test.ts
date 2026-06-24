@@ -11,7 +11,7 @@ jest.mock('../../config/logger', () => ({
 }));
 
 const mockPrisma = {
-  patrimonio: { findMany: jest.fn() },
+  patrimonio: { findMany: jest.fn(), count: jest.fn(), aggregate: jest.fn() },
   imovel: { aggregate: jest.fn() },
   conciliacao: {
     findFirst: jest.fn(),
@@ -32,6 +32,7 @@ import {
   ConciliacaoValidationError,
   createConciliacao,
   calcularSaldoFisico,
+  bensSemParametrosDepreciacao,
 } from '../../services/conciliacaoService';
 
 const actor: Actor = { userId: 'u1', role: 'admin', municipalityId: 'mun-1', email: 'a@x.gov' };
@@ -141,5 +142,37 @@ describe('createConciliacao', () => {
         actor,
       ),
     ).rejects.toBeInstanceOf(ConciliacaoValidationError);
+  });
+});
+
+describe('bensSemParametrosDepreciacao (alerta de cadastro)', () => {
+  it('conta e lista bens móveis próprios ativos com valor>0 e sem vida útil', async () => {
+    mockPrisma.patrimonio.count.mockResolvedValue(2);
+    mockPrisma.patrimonio.aggregate.mockResolvedValue({ _sum: { valor_aquisicao: 5000 } });
+    mockPrisma.patrimonio.findMany.mockResolvedValue([
+      { id: 'p1', numero_patrimonio: '0001', descricao_bem: 'Servidor', valor_aquisicao: 4000, setor_responsavel: 'TI' },
+    ]);
+
+    const r = await bensSemParametrosDepreciacao(actor);
+
+    expect(r.total).toBe(2);
+    expect(r.valorBruto).toBe(5000);
+    expect(r.amostra).toHaveLength(1);
+    // filtro: móveis próprios, não baixados, valor>0, sem vida útil
+    const where = mockPrisma.patrimonio.count.mock.calls[0][0].where;
+    expect(where.municipalityId).toBe('mun-1');
+    expect(where.status).toEqual({ not: 'baixado' });
+    expect(where.tipo_posse).toBe('proprio');
+    expect(where.valor_aquisicao).toEqual({ gt: 0 });
+    expect(where.OR).toEqual([{ vida_util_anos: null }, { vida_util_anos: { lte: 0 } }]);
+  });
+
+  it('retorna zero quando todos os bens têm parâmetros', async () => {
+    mockPrisma.patrimonio.count.mockResolvedValue(0);
+    mockPrisma.patrimonio.aggregate.mockResolvedValue({ _sum: { valor_aquisicao: null } });
+    mockPrisma.patrimonio.findMany.mockResolvedValue([]);
+    const r = await bensSemParametrosDepreciacao(actor);
+    expect(r.total).toBe(0);
+    expect(r.valorBruto).toBe(0);
   });
 });

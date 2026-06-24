@@ -13,6 +13,7 @@ import {
   getConciliacaoById as svcGetById,
   listConciliacoes as svcList,
   recalcularConciliacao as svcRecalcular,
+  bensSemParametrosDepreciacao as svcBensSemDepreciacao,
 } from '../services/conciliacaoService';
 
 const buildActor = (req: Request): Actor | null => {
@@ -48,6 +49,19 @@ export const getConciliacoes = async (req: Request, res: Response): Promise<void
     res.json(await svcList(req.query as Record<string, string>, actor));
   } catch (error) {
     sendError(res, error, 'Erro ao listar conciliações');
+  }
+};
+
+export const getAlertaDepreciacao = async (req: Request, res: Response): Promise<void> => {
+  const actor = buildActor(req);
+  if (!actor) {
+    res.status(401).json({ error: 'Não autenticado' });
+    return;
+  }
+  try {
+    res.json(await svcBensSemDepreciacao(actor));
+  } catch (error) {
+    sendError(res, error, 'Erro ao apurar bens sem parâmetros de depreciação');
   }
 };
 

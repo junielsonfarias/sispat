@@ -130,6 +130,20 @@ interface ConciliacoesResponse {
   pagination: PaginationMeta
 }
 
+interface BemSemDepreciacao {
+  id: string
+  numero_patrimonio: string
+  descricao_bem: string
+  valor_aquisicao: number
+  setor_responsavel: string
+}
+
+interface AlertaDepreciacao {
+  total: number
+  valorBruto: number
+  amostra: BemSemDepreciacao[]
+}
+
 // ---- Labels pt-BR ----
 
 const CATEGORIA_LABEL: Record<CategoriaConciliacao, string> = {
@@ -562,7 +576,25 @@ function ConciliacaoSection({ canWrite }: ConciliacaoSectionProps) {
 
   const [dialogOpen, setDialogOpen] = useState(false)
 
+  // Alerta de qualidade: bens móveis sem parâmetros de depreciação (entram pelo
+  // custo bruto na conciliação e geram divergência inexplicada com o SIAFIC).
+  const [alertaDepreciacao, setAlertaDepreciacao] = useState<AlertaDepreciacao | null>(null)
+  const [mostrarBensDepreciacao, setMostrarBensDepreciacao] = useState(false)
+
   const fetchRef = useRef(false)
+
+  const fetchAlertaDepreciacao = useCallback(async () => {
+    try {
+      const data = await api.get<AlertaDepreciacao>('/conciliacoes/alertas/depreciacao')
+      setAlertaDepreciacao(data)
+    } catch (err) {
+      logger.error('[Conformidade] Erro ao carregar alerta de depreciação', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchAlertaDepreciacao()
+  }, [fetchAlertaDepreciacao])
 
   const fetchConciliacoes = useCallback(async () => {
     if (fetchRef.current) return
@@ -664,6 +696,52 @@ function ConciliacaoSection({ canWrite }: ConciliacaoSectionProps) {
           </Button>
         )}
       </div>
+
+      {/* Alerta: bens sem parâmetros de depreciação (qualidade de cadastro) */}
+      {alertaDepreciacao && alertaDepreciacao.total > 0 && (
+        <div className="rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm dark:border-yellow-700 dark:bg-yellow-950/40">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-yellow-600" />
+            <div className="flex-1">
+              <p className="font-medium text-yellow-800 dark:text-yellow-300">
+                {alertaDepreciacao.total} bem(ns) móvel(eis) sem parâmetros de depreciação
+                {' '}({formatBRL(alertaDepreciacao.valorBruto)} em valor de aquisição)
+              </p>
+              <p className="text-yellow-700 dark:text-yellow-400/90 mt-0.5">
+                Bens sem vida útil definida não depreciam e entram pelo custo bruto no saldo físico,
+                gerando divergência com o SIAFIC (Art. 21 Lei / Art. 12 Decreto). Defina método, vida
+                útil e valor residual no cadastro desses bens.
+              </p>
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 mt-1 text-yellow-800 dark:text-yellow-300"
+                onClick={() => setMostrarBensDepreciacao((v) => !v)}
+              >
+                {mostrarBensDepreciacao ? 'Ocultar bens' : 'Ver bens'}
+              </Button>
+              {mostrarBensDepreciacao && (
+                <ul className="mt-2 space-y-1 max-h-56 overflow-y-auto">
+                  {alertaDepreciacao.amostra.map((b) => (
+                    <li key={b.id} className="flex justify-between gap-3 text-xs text-yellow-800 dark:text-yellow-300/90">
+                      <span className="truncate">
+                        <strong>{b.numero_patrimonio}</strong> — {b.descricao_bem}
+                        <span className="text-yellow-700/70"> ({b.setor_responsavel})</span>
+                      </span>
+                      <span className="flex-shrink-0">{formatBRL(b.valor_aquisicao)}</span>
+                    </li>
+                  ))}
+                  {alertaDepreciacao.total > alertaDepreciacao.amostra.length && (
+                    <li className="text-xs text-yellow-700/80 italic">
+                      … e mais {alertaDepreciacao.total - alertaDepreciacao.amostra.length} bem(ns).
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabela */}
       <Card>

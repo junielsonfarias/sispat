@@ -5,6 +5,7 @@ import {
   createConciliacao,
   recalcularConciliacao,
   deleteConciliacao,
+  getAlertaDepreciacao,
 } from '../controllers/conciliacaoController';
 import { authenticateToken, authorize } from '../middlewares/auth';
 import { zodValidate } from '../middlewares/zodValidate';
@@ -16,6 +17,13 @@ router.use(authenticateToken);
 
 // Conciliação contábil é governança/contabilidade do município.
 router.get('/', authorize('superuser', 'admin', 'supervisor'), getConciliacoes);
+// Alerta de bens sem parâmetros de depreciação (qualidade de cadastro).
+// Antes de '/:id' para não ser capturado como id.
+router.get(
+  '/alertas/depreciacao',
+  authorize('superuser', 'admin', 'supervisor'),
+  getAlertaDepreciacao,
+);
 router.get(
   '/:id',
   authorize('superuser', 'admin', 'supervisor'),

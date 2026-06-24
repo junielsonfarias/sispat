@@ -70,6 +70,44 @@ export const calcularSaldoFisico = async (
 const statusFor = (divergencia: number): 'conciliada' | 'divergente' =>
   Math.abs(divergencia) < TOLERANCIA ? 'conciliada' : 'divergente';
 
+// Alerta de qualidade de cadastro (Art. 21 Lei / Art. 12 Decreto): bens móveis
+// próprios e ativos, com valor relevante, mas SEM vida útil definida não
+// depreciam (entram pelo custo bruto no saldo físico) — causa divergência
+// inexplicada com o SIAFIC. Sinaliza para o setor completar os parâmetros.
+const WHERE_SEM_DEPRECIACAO = (municipalityId: string): Prisma.PatrimonioWhereInput => ({
+  municipalityId,
+  status: { not: 'baixado' },
+  tipo_posse: 'proprio',
+  valor_aquisicao: { gt: 0 },
+  OR: [{ vida_util_anos: null }, { vida_util_anos: { lte: 0 } }],
+});
+
+export const bensSemParametrosDepreciacao = async (actor: Actor) => {
+  if (actor.role === 'superuser' && !actor.municipalityId) {
+    throw new ConciliacaoValidationError('Superuser deve operar no contexto de um município');
+  }
+  const where = WHERE_SEM_DEPRECIACAO(actor.municipalityId);
+
+  const [total, valorAgg, amostra] = await Promise.all([
+    prisma.patrimonio.count({ where }),
+    prisma.patrimonio.aggregate({ _sum: { valor_aquisicao: true }, where }),
+    prisma.patrimonio.findMany({
+      where,
+      take: 100,
+      orderBy: { valor_aquisicao: 'desc' },
+      select: {
+        id: true,
+        numero_patrimonio: true,
+        descricao_bem: true,
+        valor_aquisicao: true,
+        setor_responsavel: true,
+      },
+    }),
+  ]);
+
+  return { total, valorBruto: valorAgg._sum.valor_aquisicao ?? 0, amostra };
+};
+
 interface ListQuery {
   page?: string;
   limit?: string;
