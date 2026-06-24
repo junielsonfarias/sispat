@@ -44,6 +44,7 @@ import {
   createDesfazimento,
   createDesfazimentoLote,
   concluirDesfazimento,
+  updateDesfazimento,
 } from '../../services/desfazimentoService';
 
 const actor: Actor = { userId: 'u1', role: 'admin', municipalityId: 'mun-1', email: 'a@x.gov' };
@@ -335,5 +336,46 @@ describe('createDesfazimentoLote — vários bens, mesma classificação/modalid
       actor,
     );
     expect(r.total).toBe(1);
+  });
+});
+
+describe('travas de alienação reexigidas em update/conclusão (Art. 23)', () => {
+  const comissaoOk = { id: 'c1', tipo: 'desfazimento_desafetacao', status: 'ativa', portariaNumero: '01' };
+
+  it('CONCLUIR rejeita alienação sem avaliação mesmo que tenha passado pela abertura como inutilização', async () => {
+    // bem dominical (desafetado), comissão ok, MAS modalidade leilão sem valorAvaliacao
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
+      classificacao: 'ocioso', modalidade: 'leilao', justificativa: 'x', valorAvaliacao: null,
+      comissaoId: 'c1', comissao: comissaoOk,
+    });
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1', destinacao: 'dominical',
+    });
+    await expect(concluirDesfazimento('d1', actor)).rejects.toThrow(/avaliação prévia/i);
+  });
+
+  it('UPDATE rejeita trocar para leilão zerando a avaliação', async () => {
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
+      classificacao: 'ocioso', modalidade: 'inutilizacao', justificativa: 'x', valorAvaliacao: null,
+      comissaoId: null, comissao: null,
+      patrimonio: { id: 'p1', numero_patrimonio: '0001', descricao_bem: 'x', status: 'ativo' },
+    });
+    await expect(
+      updateDesfazimento('d1', { modalidade: 'leilao' }, actor),
+    ).rejects.toThrow(/avaliação prévia/i);
+  });
+
+  it('UPDATE permite trocar para leilão informando a avaliação', async () => {
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
+      classificacao: 'ocioso', modalidade: 'inutilizacao', justificativa: 'x', valorAvaliacao: null,
+      comissaoId: null, comissao: null,
+      patrimonio: { id: 'p1', numero_patrimonio: '0001', descricao_bem: 'x', status: 'ativo' },
+    });
+    mockPrisma.desfazimento.update.mockResolvedValue({ id: 'd1', modalidade: 'leilao' });
+    await updateDesfazimento('d1', { modalidade: 'leilao', valorAvaliacao: 500 }, actor);
+    expect(mockPrisma.desfazimento.update).toHaveBeenCalled();
   });
 });

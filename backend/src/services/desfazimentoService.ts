@@ -337,6 +337,17 @@ export const updateDesfazimento = async (
   }
   if (input.comissaoId) await validateComissao(input.comissaoId, actor);
 
+  // Art. 23: ao mudar modalidade/avaliação, revalida a exigência de avaliação
+  // prévia (senão dava para abrir como inutilização e trocar p/ leilão zerando o
+  // valor). A desafetação prévia é reexigida na conclusão (com a destinação atual
+  // do bem). Usa o valor efetivo (novo se informado, senão o existente).
+  if (input.modalidade !== undefined || input.valorAvaliacao !== undefined) {
+    const modalidade = input.modalidade ?? existing.modalidade;
+    const valorAvaliacao =
+      input.valorAvaliacao !== undefined ? input.valorAvaliacao : existing.valorAvaliacao;
+    assertAvaliacaoParaAlienacao(modalidade, valorAvaliacao);
+  }
+
   const data: Prisma.DesfazimentoUpdateInput = {};
   if (input.classificacao !== undefined)
     data.classificacao = input.classificacao as Prisma.DesfazimentoUpdateInput['classificacao'];
@@ -389,8 +400,11 @@ export const concluirDesfazimento = async (id: string, actor: Actor) => {
       `Não é possível baixar um bem com status "${patrimonio.status}"`,
     );
   }
-  // Art. 22/23: revalida no momento da alienação (a modalidade pode ter mudado).
+  // Art. 22/23: revalida no momento da alienação (a modalidade pode ter mudado
+  // via update). Tanto a desafetação prévia quanto a avaliação prévia são
+  // reexigidas aqui — este é o ato terminal (baixa), o ponto sem retorno.
   assertDesafetadoParaAlienacao(existing.modalidade, patrimonio.destinacao);
+  assertAvaliacaoParaAlienacao(existing.modalidade, existing.valorAvaliacao);
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.patrimonio.update({
