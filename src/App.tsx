@@ -32,6 +32,9 @@ const BensEdit = lazy(() => import('@/pages/bens/BensEdit'))
 const BensView = lazy(() => import('@/pages/bens/BensView'))
 const Emprestimos = lazy(() => import('@/pages/bens/Emprestimos'))
 const Transferencias = lazy(() => import('@/pages/bens/Transferencias'))
+const ImportarRelatorio = lazy(
+  () => import('@/pages/bens/ImportarRelatorio'),
+)
 const InventariosList = lazy(
   () => import('@/pages/inventarios/InventariosList'),
 )
@@ -302,6 +305,14 @@ function App() {
               <Route path="/bens-cadastrados/ver/:id" element={<BensView />} />
               <Route path="/bens/emprestimos" element={<Emprestimos />} />
               <Route path="/bens/transferencias" element={<Transferencias />} />
+              <Route
+                path="/bens/importar"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'superuser']}>
+                    <ImportarRelatorio />
+                  </ProtectedRoute>
+                }
+              />
 
               <Route path="/inventarios" element={<InventariosList />} />
               <Route

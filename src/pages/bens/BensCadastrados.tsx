@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { format } from 'date-fns'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode, Printer, ChevronLeft, ChevronRight, Filter, X } from 'lucide-react'
+import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode, Printer, ChevronLeft, ChevronRight, Filter, X, FileUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -628,6 +628,18 @@ const BensCadastrados = () => {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+              )}
+              {(user?.role === 'admin' || user?.role === 'superuser') && (
+                <Button
+                  asChild
+                  variant="outline"
+                  className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px]"
+                >
+                  <Link to="/bens/importar">
+                    <FileUp className="mr-2 h-4 w-4" />
+                    Importar relatório
+                  </Link>
+                </Button>
               )}
               {canCreate && (
                 <>
