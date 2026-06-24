@@ -12,6 +12,7 @@ jest.mock('../../config/logger', () => ({
 
 const mockTx = {
   comissao: { create: jest.fn() },
+  comissaoMembro: { count: jest.fn(), delete: jest.fn() },
   activityLog: { create: jest.fn() },
 };
 
@@ -101,23 +102,33 @@ describe('comissaoService — removeMembro (mín. 3, Art. 19)', () => {
   });
 
   it('bloqueia remover quando a comissão tem exatamente 3 membros', async () => {
-    mockPrisma.comissaoMembro.count.mockResolvedValue(3);
+    mockTx.comissaoMembro.count.mockResolvedValue(3);
     await expect(removeMembro('c1', 'm1', actor)).rejects.toBeInstanceOf(ComissaoValidationError);
-    expect(mockPrisma.comissaoMembro.delete).not.toHaveBeenCalled();
+    expect(mockTx.comissaoMembro.delete).not.toHaveBeenCalled();
   });
 
   it('permite remover quando há mais de 3 membros', async () => {
-    mockPrisma.comissaoMembro.count.mockResolvedValue(4);
-    mockPrisma.comissaoMembro.delete.mockResolvedValue({});
+    mockTx.comissaoMembro.count.mockResolvedValue(4);
+    mockTx.comissaoMembro.delete.mockResolvedValue({});
     await removeMembro('c1', 'm1', actor);
-    expect(mockPrisma.comissaoMembro.delete).toHaveBeenCalledWith({ where: { id: 'm1' } });
+    expect(mockTx.comissaoMembro.delete).toHaveBeenCalledWith({ where: { id: 'm1' } });
   });
 
   it('permite remover durante a montagem (menos de 3 membros)', async () => {
-    mockPrisma.comissaoMembro.count.mockResolvedValue(2);
-    mockPrisma.comissaoMembro.delete.mockResolvedValue({});
+    mockTx.comissaoMembro.count.mockResolvedValue(2);
+    mockTx.comissaoMembro.delete.mockResolvedValue({});
     await removeMembro('c1', 'm1', actor);
-    expect(mockPrisma.comissaoMembro.delete).toHaveBeenCalled();
+    expect(mockTx.comissaoMembro.delete).toHaveBeenCalled();
+  });
+
+  it('usa transação serializable (count+delete atômicos contra a race)', async () => {
+    mockTx.comissaoMembro.count.mockResolvedValue(4);
+    mockTx.comissaoMembro.delete.mockResolvedValue({});
+    await removeMembro('c1', 'm1', actor);
+    const opts = (mockPrisma.$transaction.mock.calls[0] as unknown[])[1] as {
+      isolationLevel?: string;
+    };
+    expect(opts.isolationLevel).toBe('Serializable');
   });
 });
 

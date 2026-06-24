@@ -248,15 +248,24 @@ export const removeMembro = async (comissaoId: string, membroId: string, actor: 
   // Art. 19: comissão constituída precisa de no mínimo 3 membros. Não permite
   // reduzir de 3 para 2. Durante a montagem (com <3) a remoção é liberada — a
   // comissão ainda não está válida e é sinalizada pelo alerta de conformidade.
-  const total = await prisma.comissaoMembro.count({ where: { comissaoId } });
-  if (total === MIN_MEMBROS) {
-    throw new ComissaoValidationError(
-      `Não é possível remover: a comissão ficaria com menos de ${MIN_MEMBROS} membros ` +
-        `(Art. 19). Adicione outro membro antes de remover este.`,
-    );
-  }
-
-  await prisma.comissaoMembro.delete({ where: { id: membro.id } });
+  //
+  // A contagem e a exclusão correm numa transação SERIALIZABLE: duas remoções
+  // concorrentes de membros distintos da MESMA comissão (que ambas veriam total=3)
+  // entram em conflito de serialização no Postgres (SSI) e uma é abortada — sem
+  // isso, a janela entre count e delete permitiria furar o quórum.
+  await prisma.$transaction(
+    async (tx) => {
+      const total = await tx.comissaoMembro.count({ where: { comissaoId } });
+      if (total === MIN_MEMBROS) {
+        throw new ComissaoValidationError(
+          `Não é possível remover: a comissão ficaria com menos de ${MIN_MEMBROS} membros ` +
+            `(Art. 19). Adicione outro membro antes de remover este.`,
+        );
+      }
+      await tx.comissaoMembro.delete({ where: { id: membro.id } });
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
 };
 
 // ===========================================================================
