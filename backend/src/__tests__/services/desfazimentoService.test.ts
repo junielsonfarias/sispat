@@ -45,6 +45,7 @@ import {
   createDesfazimentoLote,
   concluirDesfazimento,
   updateDesfazimento,
+  cancelarDesfazimento,
 } from '../../services/desfazimentoService';
 
 const actor: Actor = { userId: 'u1', role: 'admin', municipalityId: 'mun-1', email: 'a@x.gov' };
@@ -377,5 +378,20 @@ describe('travas de alienação reexigidas em update/conclusão (Art. 23)', () =
     mockPrisma.desfazimento.update.mockResolvedValue({ id: 'd1', modalidade: 'leilao' });
     await updateDesfazimento('d1', { modalidade: 'leilao', valorAvaliacao: 500 }, actor);
     expect(mockPrisma.desfazimento.update).toHaveBeenCalled();
+  });
+});
+
+describe('cancelarDesfazimento — auditoria', () => {
+  it('grava ActivityLog ao cancelar (CANCEL_DESFAZIMENTO)', async () => {
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1',
+      patrimonio: { id: 'p1', numero_patrimonio: '0001', descricao_bem: 'x', status: 'ativo' },
+    });
+    mockPrisma.desfazimento.update.mockResolvedValue({ id: 'd1', status: 'cancelado' });
+    mockPrisma.activityLog.create.mockResolvedValue({});
+    await cancelarDesfazimento('d1', actor);
+    expect(mockPrisma.activityLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ action: 'CANCEL_DESFAZIMENTO', entityId: 'd1' }) }),
+    );
   });
 });

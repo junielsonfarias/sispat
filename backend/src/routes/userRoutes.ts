@@ -19,8 +19,11 @@ const router = Router();
 
 router.use(authenticateToken);
 
+// Listar usuários do município é função de gestão — restrito a gestores
+// (alinha com as rotas de escrita de usuário). usuario/visualizador não acessam.
 router.get(
   '/',
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ query: paginationQuerySchema }),
   getUsers,
 );

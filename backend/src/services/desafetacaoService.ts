@@ -443,7 +443,21 @@ export const cancelarDesafetacao = async (id: string, actor: Actor) => {
   if (existing.status !== 'em_andamento') {
     throw new DesafetacaoValidationError('Apenas desafetações em andamento podem ser canceladas');
   }
-  return prisma.desafetacao.update({ where: { id }, data: { status: 'cancelada' } });
+  const cancelada = await prisma.desafetacao.update({
+    where: { id },
+    data: { status: 'cancelada' },
+  });
+  const bem = existing.patrimonio ?? existing.imovel;
+  await prisma.activityLog.create({
+    data: {
+      userId: actor.userId,
+      action: 'CANCEL_DESAFETACAO',
+      entityType: 'Desafetacao',
+      entityId: id,
+      details: `Desafetação cancelada${bem ? ` — bem ${bem.numero_patrimonio}` : ''}`,
+    },
+  });
+  return cancelada;
 };
 
 export const deleteDesafetacao = async (id: string, actor: Actor) => {

@@ -454,7 +454,20 @@ export const cancelarDesfazimento = async (id: string, actor: Actor) => {
   if (existing.status !== 'em_andamento') {
     throw new DesfazimentoValidationError('Apenas desfazimentos em andamento podem ser cancelados');
   }
-  return prisma.desfazimento.update({ where: { id }, data: { status: 'cancelado' } });
+  const cancelado = await prisma.desfazimento.update({
+    where: { id },
+    data: { status: 'cancelado' },
+  });
+  await prisma.activityLog.create({
+    data: {
+      userId: actor.userId,
+      action: 'CANCEL_DESFAZIMENTO',
+      entityType: 'Desfazimento',
+      entityId: id,
+      details: `Desfazimento cancelado${existing.patrimonio ? ` — bem ${existing.patrimonio.numero_patrimonio}` : ''}`,
+    },
+  });
+  return cancelado;
 };
 
 export const deleteDesfazimento = async (id: string, actor: Actor) => {

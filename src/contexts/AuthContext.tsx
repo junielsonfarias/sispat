@@ -94,13 +94,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(loggedInUser)
 
           try {
-            // Tentar buscar dados atualizados do usuário
+            // Sempre atualiza o próprio perfil. A lista completa de usuários é
+            // função de gestão (backend restringe a superuser/admin/supervisor),
+            // então só a busca para esses papéis — evita um 403 desnecessário.
+            const podeListarUsuarios = ['superuser', 'admin', 'supervisor'].includes(
+              loggedInUser.role,
+            )
             const [profile, allUsers] = await Promise.all([
               api.get<User>(`/users/${loggedInUser.id}`),
-              api.get<User[]>('/users'),
+              podeListarUsuarios ? api.get<User[]>('/users') : Promise.resolve(null),
             ])
             setUser(profile)
-            setUsers(allUsers)
+            setUsers(allUsers ?? [profile])
           } catch (apiError) {
             // Se a API falhar, manter o usuário do localStorage
             logger.warn('Erro ao buscar dados atualizados do usuário:', { error: apiError })

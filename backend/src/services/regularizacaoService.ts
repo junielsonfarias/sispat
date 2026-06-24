@@ -454,7 +454,20 @@ export const cancelarRegularizacao = async (id: string, actor: Actor) => {
   if (existing.status !== 'em_andamento') {
     throw new RegularizacaoValidationError('Apenas regularizações em andamento podem ser canceladas');
   }
-  return prisma.regularizacao.update({ where: { id }, data: { status: 'cancelado' } });
+  const cancelada = await prisma.regularizacao.update({
+    where: { id },
+    data: { status: 'cancelado' },
+  });
+  await prisma.activityLog.create({
+    data: {
+      userId: actor.userId,
+      action: 'CANCEL_REGULARIZACAO',
+      entityType: 'Regularizacao',
+      entityId: id,
+      details: `Regularização cancelada — ${existing.descricao}`,
+    },
+  });
+  return cancelada;
 };
 
 export const deleteRegularizacao = async (id: string, actor: Actor) => {
