@@ -129,3 +129,53 @@ describe('concluirDesfazimento', () => {
     );
   });
 });
+
+describe('trava de alienação sem desafetação (Art. 22/23)', () => {
+  it('rejeita INICIAR desfazimento por leilão de bem de uso_especial', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
+      destinacao: 'uso_especial',
+    });
+    await expect(
+      createDesfazimento({ ...baseInput, classificacao: 'ocioso', modalidade: 'leilao' }, actor),
+    ).rejects.toThrow(/desafeta/i);
+  });
+
+  it('permite INICIAR desfazimento por leilão de bem dominical', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
+      destinacao: 'dominical',
+    });
+    mockPrisma.desfazimento.findFirst.mockResolvedValue(null);
+    mockPrisma.desfazimento.create.mockResolvedValue({ id: 'd2', classificacao: 'ocioso', modalidade: 'leilao' });
+    mockPrisma.activityLog.create.mockResolvedValue({});
+    const r = await createDesfazimento(
+      { ...baseInput, classificacao: 'ocioso', modalidade: 'leilao' }, actor,
+    );
+    expect(r.id).toBe('d2');
+  });
+
+  it('permite INUTILIZAÇÃO de bem não-dominical (não é alienação)', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
+      destinacao: 'uso_especial',
+    });
+    mockPrisma.desfazimento.findFirst.mockResolvedValue(null);
+    mockPrisma.desfazimento.create.mockResolvedValue({ id: 'd3', classificacao: 'irrecuperavel', modalidade: 'inutilizacao' });
+    mockPrisma.activityLog.create.mockResolvedValue({});
+    const r = await createDesfazimento(baseInput, actor); // modalidade inutilizacao
+    expect(r.id).toBe('d3');
+  });
+
+  it('rejeita CONCLUIR desfazimento por doação de bem não desafetado', async () => {
+    mockPrisma.desfazimento.findUnique.mockResolvedValue({
+      id: 'd1', status: 'em_andamento', municipalityId: 'mun-1', patrimonioId: 'p1',
+      classificacao: 'ocioso', modalidade: 'doacao', justificativa: 'x',
+    });
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1', status: 'ativo', numero_patrimonio: '0001', municipalityId: 'mun-1',
+      destinacao: 'uso_especial',
+    });
+    await expect(concluirDesfazimento('d1', actor)).rejects.toThrow(/desafeta/i);
+  });
+});

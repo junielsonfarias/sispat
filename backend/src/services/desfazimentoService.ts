@@ -32,10 +32,33 @@ export class DesfazimentoValidationError extends Error {
 // Estados em que o bem não pode entrar em desfazimento / ser baixado.
 const STATUS_BLOQUEADO = ['baixado', 'emprestado', 'em_transferencia'];
 
+// Modalidades de desfazimento que TRANSFEREM A PROPRIEDADE (alienação). Exigem
+// que o bem seja dominical — bens de uso comum/especial são inalienáveis sem
+// desafetação prévia (Lei art. 6 §1, 22 e 23). Inutilização (destruição de bem
+// irrecuperável) NÃO é alienação e dispensa desafetação.
+const MODALIDADES_ALIENACAO = ['doacao', 'leilao', 'permuta', 'cessao', 'transferencia'];
+
+const assertDesafetadoParaAlienacao = (modalidade: string, destinacao: string) => {
+  if (MODALIDADES_ALIENACAO.includes(modalidade) && destinacao !== 'dominical') {
+    const origem =
+      destinacao === 'nao_classificado' ? 'destinação não classificada' : 'uso comum/especial';
+    throw new DesfazimentoValidationError(
+      `Bem de ${origem} não pode ser alienado por ${modalidade} sem desafetação prévia (Art. 22 e 23). ` +
+        `Realize a desafetação do bem (torná-lo dominical) antes de prosseguir.`,
+    );
+  }
+};
+
 const loadPatrimonio = async (patrimonioId: string, actor: Actor) => {
   const p = await prisma.patrimonio.findUnique({
     where: { id: patrimonioId },
-    select: { id: true, status: true, numero_patrimonio: true, municipalityId: true },
+    select: {
+      id: true,
+      status: true,
+      numero_patrimonio: true,
+      municipalityId: true,
+      destinacao: true,
+    },
   });
   if (!p || (actor.role !== 'superuser' && p.municipalityId !== actor.municipalityId)) {
     throw new DesfazimentoNotFoundError('Patrimônio não encontrado');
@@ -118,6 +141,8 @@ export const createDesfazimento = async (input: CreateDesfazimentoInput, actor: 
   if (patrimonio.status === 'baixado') {
     throw new DesfazimentoValidationError('Patrimônio já está baixado');
   }
+  // Art. 22/23: alienar exige bem dominical (desafetação prévia).
+  assertDesafetadoParaAlienacao(input.modalidade, patrimonio.destinacao);
   if (input.comissaoId) await validateComissao(input.comissaoId, actor);
 
   const emAndamento = await prisma.desfazimento.findFirst({
@@ -209,6 +234,8 @@ export const concluirDesfazimento = async (id: string, actor: Actor) => {
       `Não é possível baixar um bem com status "${patrimonio.status}"`,
     );
   }
+  // Art. 22/23: revalida no momento da alienação (a modalidade pode ter mudado).
+  assertDesafetadoParaAlienacao(existing.modalidade, patrimonio.destinacao);
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.patrimonio.update({
