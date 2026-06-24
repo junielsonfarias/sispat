@@ -108,6 +108,16 @@ export const listInventarios = async (query: ListInventariosQuery, actor: Actor)
                   local: { select: { id: true, name: true } },
                 },
               },
+              imovel: {
+                select: {
+                  id: true,
+                  numero_patrimonio: true,
+                  denominacao: true,
+                  endereco: true,
+                  setor: true,
+                  situacao: true,
+                },
+              },
             },
             take: 10,
           },
@@ -156,6 +166,16 @@ export const getInventarioById = async (id: string, actor: Actor) => {
               tipoBem: { select: { id: true, nome: true, descricao: true } },
               sector: { select: { id: true, name: true, codigo: true } },
               local: { select: { id: true, name: true } },
+            },
+          },
+          imovel: {
+            select: {
+              id: true,
+              numero_patrimonio: true,
+              denominacao: true,
+              endereco: true,
+              setor: true,
+              situacao: true,
             },
           },
         },
@@ -210,6 +230,18 @@ export const createInventario = async (input: CreateInventarioInput, actor: Acto
     select: { id: true, numero_patrimonio: true, descricao_bem: true },
   });
 
+  // Art. 16: o inventário cobre também os bens IMÓVEIS. Imóveis são bens de nível
+  // de setor (não têm sub-localização como os móveis), então entram no inventário
+  // do setor (escopo 'sector' — usado pelo inventário anual). Conferências por
+  // localização específica de móveis não arrastam os imóveis do setor.
+  const imoveisInScope =
+    scope === 'sector'
+      ? await prisma.imovel.findMany({
+          where: { municipalityId: actor.municipalityId, setor: input.setor },
+          select: { id: true, numero_patrimonio: true, denominacao: true },
+        })
+      : [];
+
   const inventario = await prisma.$transaction(async (tx) => {
     const created = await tx.inventory.create({
       data: {
@@ -235,6 +267,16 @@ export const createInventario = async (input: CreateInventarioInput, actor: Acto
         data: patrimoniosInScope.map((p) => ({
           inventoryId: created.id,
           patrimonioId: p.id,
+          encontrado: false,
+        })),
+      });
+    }
+
+    if (imoveisInScope.length > 0) {
+      await tx.inventoryItem.createMany({
+        data: imoveisInScope.map((im) => ({
+          inventoryId: created.id,
+          imovelId: im.id,
           encontrado: false,
         })),
       });
@@ -266,6 +308,16 @@ export const createInventario = async (input: CreateInventarioInput, actor: Acto
                 tipoBem: { select: { id: true, nome: true } },
                 sector: { select: { id: true, name: true, codigo: true } },
                 local: { select: { id: true, name: true } },
+              },
+            },
+            imovel: {
+              select: {
+                id: true,
+                numero_patrimonio: true,
+                denominacao: true,
+                endereco: true,
+                setor: true,
+                situacao: true,
               },
             },
           },
@@ -396,7 +448,8 @@ export interface UpdateInventarioItemInput {
 
 export const updateInventarioItem = async (
   inventarioId: string,
-  patrimonioId: string,
+  // id do bem conferido — pode ser um patrimônio (móvel) ou um imóvel.
+  bemId: string,
   input: UpdateInventarioItemInput,
   actor: Actor,
 ) => {
@@ -408,8 +461,9 @@ export const updateInventarioItem = async (
     );
   }
 
+  // Art. 16: o item pode ser móvel (patrimonioId) ou imóvel (imovelId).
   const item = await prisma.inventoryItem.findFirst({
-    where: { inventoryId: inventarioId, patrimonioId },
+    where: { inventoryId: inventarioId, OR: [{ patrimonioId: bemId }, { imovelId: bemId }] },
     select: { id: true },
   });
   if (!item) throw new InventarioNotFoundError('Item não encontrado neste inventário');
@@ -426,13 +480,16 @@ export const updateInventarioItem = async (
       patrimonio: {
         select: { id: true, numero_patrimonio: true, descricao_bem: true, status: true },
       },
+      imovel: {
+        select: { id: true, numero_patrimonio: true, denominacao: true, situacao: true },
+      },
     },
   });
 
   await redisCache.deletePattern('inventarios:*');
   logDebug('✅ Item de inventário conferido', {
     inventarioId,
-    patrimonioId,
+    bemId,
     encontrado: input.encontrado,
   });
 
@@ -498,6 +555,9 @@ export const finalizeInventario = async (id: string, actor: Actor) => {
                 descricao_bem: true,
                 status: true,
               },
+            },
+            imovel: {
+              select: { id: true, numero_patrimonio: true, denominacao: true, situacao: true },
             },
           },
         },

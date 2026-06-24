@@ -394,10 +394,13 @@ export interface Sector {
 export type InventoryItemStatus = 'found' | 'not_found'
 
 export interface InventoryItem {
+  // id do bem conferido — patrimônio (móvel) ou imóvel (Art. 16). A conferência
+  // no backend casa por patrimonioId OU imovelId, então um campo serve aos dois.
   patrimonioId: string
   numero_patrimonio: string
   descricao_bem: string
   status: InventoryItemStatus
+  isImovel?: boolean
 }
 
 export type InventoryStatus = 'in_progress' | 'completed'

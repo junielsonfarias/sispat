@@ -61,6 +61,9 @@ const mockPrisma = {
   patrimonio: {
     findMany: jest.fn(),
   },
+  imovel: {
+    findMany: jest.fn(),
+  },
   activityLog: {
     create: jest.fn(),
   },
@@ -95,6 +98,8 @@ beforeEach(() => {
   mockCache.get.mockResolvedValue(null);
   mockCache.set.mockResolvedValue(undefined);
   mockCache.deletePattern.mockResolvedValue(undefined);
+  // Por padrão não há imóveis no escopo; testes específicos sobrescrevem.
+  mockPrisma.imovel.findMany.mockResolvedValue([]);
 });
 
 describe('inventarioService — listInventarios', () => {
@@ -259,6 +264,37 @@ describe('inventarioService — createInventario', () => {
     });
     expect(result!.id).toBe('inv-1');
     expect(mockCache.deletePattern).toHaveBeenCalledWith('inventarios:*');
+  });
+
+  it('inclui imóveis do setor no inventário (Art. 16)', async () => {
+    mockPrisma.patrimonio.findMany.mockResolvedValue([]);
+    mockPrisma.imovel.findMany.mockResolvedValue([
+      { id: 'im1', numero_patrimonio: 'IM-001', denominacao: 'Escola' },
+    ]);
+    mockTx.inventory.create.mockResolvedValue({ id: 'inv-2', title: 'Anual' });
+    mockTx.inventoryItem.createMany.mockResolvedValue({ count: 1 });
+    mockTx.activityLog.create.mockResolvedValue({});
+    mockTx.inventory.findUnique.mockResolvedValue({ id: 'inv-2', title: 'Anual', items: [{ id: 'i1' }] });
+
+    await createInventario({ title: 'Anual', setor: 'TI', scope: 'sector', tipo: 'anual' }, baseActor);
+
+    expect(mockPrisma.imovel.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { municipalityId: 'mun-1', setor: 'TI' } }),
+    );
+    expect(mockTx.inventoryItem.createMany).toHaveBeenCalledWith({
+      data: [{ inventoryId: 'inv-2', imovelId: 'im1', encontrado: false }],
+    });
+  });
+
+  it('escopo location NÃO inclui imóveis (só setor-wide)', async () => {
+    mockPrisma.patrimonio.findMany.mockResolvedValue([]);
+    mockTx.inventory.create.mockResolvedValue({ id: 'inv-3', title: 'Loc' });
+    mockTx.activityLog.create.mockResolvedValue({});
+    mockTx.inventory.findUnique.mockResolvedValue({ id: 'inv-3', items: [] });
+
+    await createInventario({ title: 'Loc', setor: 'TI', scope: 'location', local: 'Sala 1' }, baseActor);
+
+    expect(mockPrisma.imovel.findMany).not.toHaveBeenCalled();
   });
 
   it('escopo location adiciona filtro local_objeto (case-insensitive)', async () => {

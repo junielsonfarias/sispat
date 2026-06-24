@@ -409,6 +409,7 @@ model Imovel {
   sector            Sector           @relation(fields: [sectorId], references: [id])
   manutencoes       ManutencaoTask[]
   desafetacoes      Desafetacao[]
+  inventoryItems    InventoryItem[]
 
   @@index([numero_patrimonio])
   @@index([municipalityId])
@@ -580,18 +581,23 @@ model Regularizacao {
 }
 
 model InventoryItem {
-  id            String     @id @default(uuid())
+  id            String      @id @default(uuid())
   inventoryId   String
-  patrimonioId  String
-  encontrado    Boolean    @default(false)
+  // Art. 16: o inventário cobre bens MÓVEIS e IMÓVEIS. Cada item referencia
+  // exatamente um dos dois (patrimonioId XOR imovelId — validado no service).
+  patrimonioId  String?
+  imovelId      String?
+  encontrado    Boolean     @default(false)
   observacoes   String?
   verificadoEm  DateTime?
   verificadoPor String?
-  inventory     Inventory  @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  patrimonio    Patrimonio @relation(fields: [patrimonioId], references: [id])
+  inventory     Inventory   @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  patrimonio    Patrimonio? @relation(fields: [patrimonioId], references: [id])
+  imovel        Imovel?     @relation(fields: [imovelId], references: [id])
 
   @@index([inventoryId])
   @@index([patrimonioId])
+  @@index([imovelId])
   @@map("inventory_items")
 }
 

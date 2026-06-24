@@ -151,7 +151,14 @@ export default function InventarioDetail() {
             <TableBody>
               {inventory.items.map((item) => (
                 <TableRow key={item.patrimonioId}>
-                  <TableCell>{item.numero_patrimonio}</TableCell>
+                  <TableCell>
+                    {item.numero_patrimonio}
+                    {item.isImovel && (
+                      <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                        Imóvel
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>{item.descricao_bem}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex justify-center gap-2">

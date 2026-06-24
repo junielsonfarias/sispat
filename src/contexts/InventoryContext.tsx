@@ -80,10 +80,14 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         createdAt: inv.dataInicio ? new Date(inv.dataInicio) : inv.createdAt ? new Date(inv.createdAt) : new Date(),
         finalizedAt: inv.dataFim ? new Date(inv.dataFim) : inv.finalizedAt ? new Date(inv.finalizedAt) : undefined,
         items: (inv.items || []).map((item: any) => ({
-          patrimonioId: item.patrimonioId,
-          numero_patrimonio: item.patrimonio?.numero_patrimonio || item.numero_patrimonio || '',
-          descricao_bem: item.patrimonio?.descricao_bem || item.descricao_bem || '',
+          // Móvel (patrimonioId) ou imóvel (imovelId) — Art. 16.
+          patrimonioId: item.patrimonioId || item.imovelId,
+          numero_patrimonio:
+            item.patrimonio?.numero_patrimonio || item.imovel?.numero_patrimonio || item.numero_patrimonio || '',
+          descricao_bem:
+            item.patrimonio?.descricao_bem || item.imovel?.denominacao || item.descricao_bem || '',
           status: item.encontrado !== undefined ? (item.encontrado ? 'found' : 'not_found') : item.status,
+          isImovel: !!item.imovelId,
         })),
         scope: inv.scope || 'sector',
         locationType: inv.local || inv.locationType,
@@ -166,10 +170,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         // ✅ CORREÇÃO: Mapear items do backend para o formato do frontend
         // O backend retorna items com a estrutura InventoryItem do Prisma
         const mappedItems: InventoryItem[] = (newInventory.items || []).map((item: any) => ({
-          patrimonioId: item.patrimonioId,
-          numero_patrimonio: item.patrimonio?.numero_patrimonio || '',
-          descricao_bem: item.patrimonio?.descricao_bem || '',
+          patrimonioId: item.patrimonioId || item.imovelId,
+          numero_patrimonio: item.patrimonio?.numero_patrimonio || item.imovel?.numero_patrimonio || '',
+          descricao_bem: item.patrimonio?.descricao_bem || item.imovel?.denominacao || '',
           status: item.encontrado ? 'found' : 'not_found',
+          isImovel: !!item.imovelId,
         }))
         
         const inventoryData: Inventory = {
