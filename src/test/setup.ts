@@ -1,5 +1,12 @@
-import { expect, afterEach, vi } from 'vitest'
+import { afterEach, expect, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
+// Estende `expect` com os matchers de DOM (toBeInTheDocument, toHaveClass, ...).
+// Importamos de `/matchers` (não `/vitest`) porque o subpath `/vitest` importa
+// 'vitest' e não resolve sob o node_modules estrito do pnpm. A augmentação de
+// tipos fica em `src/test/vitest.d.ts`.
+import * as jestDomMatchers from '@testing-library/jest-dom/matchers'
+
+expect.extend(jestDomMatchers)
 
 // Cleanup após cada teste
 afterEach(() => {
