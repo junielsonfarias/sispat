@@ -142,7 +142,7 @@ const config: Config = {
   plugins: [
     require('tailwindcss-animate'),
     // Plugin para utilitários responsivos customizados
-    function({ addUtilities, theme }: any) {
+    function({ addUtilities }: any) {
       const newUtilities = {
         // Visibilidade responsiva
         '.mobile-only': {
@@ -159,30 +159,6 @@ const config: Config = {
         },
         '.tablet-desktop': {
           '@apply hidden md:block': {},
-        },
-        
-        // Botões responsivos
-        '.btn-responsive': {
-          '@apply inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed': {},
-          'min-height': theme('spacing.touch'),
-          'min-width': theme('spacing.touch'),
-          'padding': '12px 20px',
-          'font-size': '16px',
-          'border-radius': '8px',
-          '@media (min-width: 768px)': {
-            'min-height': theme('spacing.touch-sm'),
-            'min-width': theme('spacing.touch-sm'),
-            'padding': '10px 24px',
-            'font-size': '15px',
-            'border-radius': '6px',
-          },
-          '@media (min-width: 1024px)': {
-            'min-height': theme('spacing.touch-md'),
-            'min-width': theme('spacing.touch-md'),
-            'padding': '8px 20px',
-            'font-size': '14px',
-            'border-radius': '4px',
-          },
         },
         
         // Container responsivo
