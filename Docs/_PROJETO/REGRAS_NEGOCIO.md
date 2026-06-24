@@ -11,7 +11,13 @@ Sistema usado por prefeituras para controlar bens móveis e imóveis, com invent
 - Cada `Municipality` é um tenant isolado.
 - Usuário pertence a UM município (exceto `superuser` que vê todos).
 - **Toda query de dados precisa filtrar `municipalityId`.** Já existe middleware `checkMunicipality` mas a regra deve ser também aplicada na camada de query.
-- `superuser` é o operador da plataforma (não pertence a município específico).
+- `superuser` é o operador da plataforma (não pertence a município específico). O bypass é sempre explícito no `where`: `...(actor.role === 'superuser' ? {} : { municipalityId: actor.municipalityId })`.
+- **Lookup por campo HUMANO exige `municipalityId` no MESMO `where`.** Resolver/buscar uma entidade por um campo legível (`name`/`nome`, `codigo`, `numero_patrimonio`, `setor`, etc. — qualquer coisa que NÃO seja o `id` UUID) sem filtro de município pode casar registros homônimos de outro tenant. Isso vale inclusive para:
+  - Resolução de nomes em IDs (ex.: `responsibleSectors` → `prisma.sector.findMany({ where: { name: { in: nomes }, municipalityId } })`).
+  - Checagens de unicidade no create (ex.: "já existe TipoBem com este `nome`?" deve ser por município).
+  - Busca por número (ex.: `getByNumero` filtra `numero_patrimonio` + `municipalityId`).
+  - Confiar no filtro de `municipalityId` da query PRINCIPAL como única defesa é frágil: o sub-lookup também deve filtrar (defesa em profundidade). Ver `HISTORICO_CORRECOES.md` 2026-06-24 (`locaisController`).
+- **Nunca confiar em `municipalityId`/`sectorId`/ids vindos do `req.body`.** Derive sempre do token (`req.user.municipalityId`); se o body trouxer um id de relação (ex.: `sectorId` no update), valide que ele pertence ao município antes de gravar (evita reatribuição cross-tenant).
 
 ## 2. Papéis (RBAC)
 
