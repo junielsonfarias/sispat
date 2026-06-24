@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-} from 'recharts'
+} from '@/lib/recharts-compat'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 

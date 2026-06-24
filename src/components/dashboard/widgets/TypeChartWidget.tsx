@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Pie, PieChart, Cell, Tooltip, Legend } from 'recharts'
+import { Pie, PieChart, Cell, Tooltip, Legend } from '@/lib/recharts-compat'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 

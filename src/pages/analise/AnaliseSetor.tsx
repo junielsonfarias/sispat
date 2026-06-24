@@ -21,7 +21,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Legend,
-} from 'recharts'
+} from '@/lib/recharts-compat'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useSectors } from '@/contexts/SectorContext'
 import { useSectorFilter } from '@/hooks/useSectorFilter'

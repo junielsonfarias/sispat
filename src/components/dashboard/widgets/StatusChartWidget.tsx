@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Bar, BarChart, Cell, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, Cell, Tooltip, XAxis, YAxis } from '@/lib/recharts-compat'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { Patrimonio } from '@/types'

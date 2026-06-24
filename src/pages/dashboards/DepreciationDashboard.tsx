@@ -29,7 +29,7 @@ import {
   ChartTooltipContent,
   ChartTooltip,
 } from '@/components/ui/chart'
-import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend } from 'recharts'
+import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend } from '@/lib/recharts-compat'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
 import { formatCurrency } from '@/lib/utils'

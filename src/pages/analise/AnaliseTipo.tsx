@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
   Legend,
-} from 'recharts'
+} from '@/lib/recharts-compat'
 import {
   Table,
   TableBody,
