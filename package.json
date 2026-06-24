@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "pnpm run dev",
-    "dev": "vite",
-    "dev:all": "concurrently -n backend,frontend -c blue,green \"npm --prefix backend run dev\" \"vite\"",
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm --prefix backend run dev\" \"vite\"",
+    "dev:frontend": "vite",
+    "dev:backend": "npm --prefix backend run dev",
     "build": "vite build",
     "build:prod": "vite build --mode production",
     "build:dev": "vite build --mode development",

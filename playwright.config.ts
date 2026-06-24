@@ -39,7 +39,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'pnpm dev',
+    // só o frontend — o e2e mira a UI em :8080 (não usa o `dev` que sobe os dois)
+    command: 'pnpm dev:frontend',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
