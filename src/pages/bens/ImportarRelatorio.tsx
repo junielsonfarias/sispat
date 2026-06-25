@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CurrencyInput } from '@/components/ui/currency-input'
 import { Label } from '@/components/ui/label'
 import {
   Card,
@@ -692,16 +693,16 @@ const ImportarRelatorio = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[240px]">
+                        <TableHead className="min-w-[400px]">
                           Descrição
                         </TableHead>
                         <TableHead className="min-w-[84px] text-center">Qtd</TableHead>
-                        <TableHead className="min-w-[120px] text-right">
+                        <TableHead className="min-w-[150px] text-right">
                           Vl. Unitário
                         </TableHead>
-                        <TableHead className="min-w-[200px]">Tipo</TableHead>
-                        <TableHead className="min-w-[185px]">Forma Aquisição</TableHead>
-                        <TableHead className="min-w-[180px]">Origem Recurso</TableHead>
+                        <TableHead className="min-w-[230px]">Tipo</TableHead>
+                        <TableHead className="min-w-[210px]">Forma Aquisição</TableHead>
+                        <TableHead className="min-w-[200px]">Origem Recurso</TableHead>
                         <TableHead className="min-w-[150px] text-center">UG / Setor</TableHead>
                         <TableHead className="w-16 text-center">Info</TableHead>
                       </TableRow>
@@ -744,21 +745,14 @@ const ImportarRelatorio = () => {
                                 aria-label={`Quantidade do item ${idx + 1}`}
                               />
                             </TableCell>
-                            {/* Valor unitário */}
+                            {/* Valor unitário (formatado em R$) */}
                             <TableCell>
-                              <Input
-                                type="number"
-                                min={0}
-                                step={0.01}
+                              <CurrencyInput
                                 value={ed.valorUnitario}
-                                onChange={(e) =>
-                                  atualizarEdicao(
-                                    idx,
-                                    'valorUnitario',
-                                    parseFloat(e.target.value) || 0,
-                                  )
+                                onChange={(v) =>
+                                  atualizarEdicao(idx, 'valorUnitario', v)
                                 }
-                                className="h-8 text-xs text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="h-8 text-xs text-right"
                                 aria-label={`Valor unitário do item ${idx + 1}`}
                               />
                             </TableCell>
