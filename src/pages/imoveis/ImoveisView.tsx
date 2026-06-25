@@ -178,20 +178,13 @@ export default function ImoveisView() {
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate('/imoveis')}
+                aria-label="Voltar para imóveis"
                 className="shrink-0"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div>
-                <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
-                  {imovel.denominacao}
-                </h1>
-                <p className="text-base lg:text-lg text-gray-600">
-                  Imóvel #{imovel.numero_patrimonio}
-                </p>
-              </div>
             </div>
-          
+
             <div className="flex gap-2 flex-wrap">
               {canEdit && (
                 <Button
