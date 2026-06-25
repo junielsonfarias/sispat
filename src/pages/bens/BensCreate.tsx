@@ -38,6 +38,7 @@ import { useTiposBens } from '@/contexts/TiposBensContext'
 import { useAcquisitionForms } from '@/contexts/AcquisitionFormContext'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { generatePatrimonialNumber } from '@/lib/asset-utils'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { patrimonioCreateSchema } from '@/lib/validations/patrimonioSchema'
 import { Label } from '@/components/ui/label'
 import { logger } from '@/lib/logger'
@@ -53,7 +54,11 @@ type PatrimonioFormValues = z.infer<typeof patrimonioCreateSchema>
 const BensCreate = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { patrimonios, addPatrimonio } = usePatrimonio()
+  const { addPatrimonio } = usePatrimonio()
+  // Conjunto completo (sob demanda) para gerar o próximo número patrimonial a
+  // partir do estado REAL — o contexto não carrega mais todos os bens no login,
+  // então usar o array do contexto geraria sempre ...000001 (colisão de número).
+  const { data: patrimonios = [] } = useAllPatrimonios()
   const { logActivity } = useActivityLog()
   const { sectors } = useSectors()
   const { getLocaisBySectorId } = useLocais()

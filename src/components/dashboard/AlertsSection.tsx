@@ -4,35 +4,18 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
-interface Patrimonio {
-  id: string
-  numero_patrimonio: string
-  descricao_bem: string
-  status: string
-  data_aquisicao?: string
-  dataAquisicao?: string
-}
-
 interface AlertsSectionProps {
-  patrimonios: Patrimonio[]
   stats: {
     maintenanceCount: number
     baixadosLastMonth: number
     totalCount: number
+    antigosCount: number
   }
 }
 
-export const AlertsSection = ({ patrimonios, stats }: AlertsSectionProps) => {
-  // Patrimônios próximos da baixa (mais de 10 anos)
-  const patrimoniosAntigos = patrimonios.filter(p => {
-    const dataAquisicao = p.data_aquisicao || p.dataAquisicao
-    if (!dataAquisicao) return false
-    
-    const data = new Date(dataAquisicao)
-    const anos = (new Date().getTime() - data.getTime()) / (1000 * 60 * 60 * 24 * 365)
-    return anos >= 10 && p.status === 'ativo'
-  })
-
+export const AlertsSection = ({ stats }: AlertsSectionProps) => {
+  // Bens antigos (>10 anos) agora vêm agregados do backend (stats.antigosCount),
+  // em vez de filtrar o array completo de patrimônios no cliente.
   const alerts = [
     {
       type: 'warning',
@@ -48,8 +31,8 @@ export const AlertsSection = ({ patrimonios, stats }: AlertsSectionProps) => {
       type: 'info',
       icon: Clock,
       title: 'Bens Antigos',
-      count: patrimoniosAntigos.length,
-      description: `${patrimoniosAntigos.length} patrimônios com mais de 10 anos`,
+      count: stats.antigosCount,
+      description: `${stats.antigosCount} patrimônios com mais de 10 anos`,
       action: 'Revisar',
       href: '/relatorios?filter=antigos',
       variant: 'outline' as const,

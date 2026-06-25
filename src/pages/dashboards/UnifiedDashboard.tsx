@@ -5,9 +5,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useQuery } from '@tanstack/react-query'
 import { useImovel } from '@/hooks/useImovel'
 import { usePatrimonioStats } from '@/hooks/queries/use-patrimonio-stats'
+import { api } from '@/services/api-adapter'
+import type { Patrimonio } from '@/types'
 import { ErrorBoundary } from '@/components/ErrorBoundaries/ErrorBoundary'
 import { StatsCards } from '@/components/dashboard/StatsCards'
 import { ChartsSection } from '@/components/dashboard/ChartsSection'
@@ -20,13 +22,21 @@ const STATS_FALLBACK = {
   activePercentage: 0,
   maintenanceCount: 0,
   baixadosLastMonth: 0,
+  antigosCount: 0,
   setoresCount: 0,
 }
 
 const UnifiedDashboard = () => {
-  const { patrimonios } = usePatrimonio()
   const { imoveis } = useImovel()
   const { data: statsData } = usePatrimonioStats()
+  // Apenas os bens recentes (consulta barata, paginada) para o painel "Recentes" —
+  // não carrega todos os bens no dashboard.
+  const { data: recentesResp } = useQuery({
+    queryKey: ['patrimonios-recentes', 5],
+    queryFn: () => api.get<{ patrimonios: Patrimonio[] }>('/patrimonios?limit=5'),
+    staleTime: 60 * 1000,
+  })
+  const patrimonios = recentesResp?.patrimonios ?? []
 
   // Estatísticas provenientes do endpoint agregado (valores corretos, sem limite de página)
   const stats = statsData
@@ -36,6 +46,7 @@ const UnifiedDashboard = () => {
         activePercentage: statsData.activePercentage,
         maintenanceCount: statsData.maintenanceCount,
         baixadosLastMonth: statsData.baixadosLastMonth,
+        antigosCount: statsData.antigosCount,
         setoresCount: statsData.setoresCount,
       }
     : STATS_FALLBACK
@@ -205,7 +216,7 @@ const UnifiedDashboard = () => {
             <div className="relative">
               <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-2">
                 <ErrorBoundary type="list">
-                  <AlertsSection patrimonios={dashboardData} stats={stats} />
+                  <AlertsSection stats={stats} />
                 </ErrorBoundary>
 
                 <ErrorBoundary type="list">

@@ -29,6 +29,7 @@ import { useActivityLog } from '@/contexts/ActivityLogContext'
 import { useSectors } from '@/contexts/SectorContext'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { generatePatrimonialNumber } from '@/lib/asset-utils'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { Patrimonio } from '@/types'
 
 const bulkPatrimonioSchema = z.object({
@@ -61,7 +62,9 @@ type BulkPatrimonioFormValues = z.infer<typeof bulkPatrimonioSchema>
 const BensBulkCreate = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { patrimonios, addPatrimonio } = usePatrimonio()
+  const { addPatrimonio } = usePatrimonio()
+  // Conjunto completo (sob demanda) para gerar números a partir do estado REAL.
+  const { data: patrimoniosAll = [] } = useAllPatrimonios()
   const { logActivity } = useActivityLog()
   const { sectors } = useSectors()
   const [isLoading, setIsLoading] = useState(false)
@@ -130,14 +133,20 @@ const BensBulkCreate = () => {
     
     try {
       const createdPatrimonios: Patrimonio[] = []
-      
+      // Cópia de trabalho: acumula os números já gerados neste lote para que
+      // generatePatrimonialNumber incremente a cada item (o estado do React não
+      // atualiza dentro do loop).
+      const working: Patrimonio[] = [...patrimoniosAll]
+
       for (const item of data.patrimonio_items) {
-        // Gerar número de patrimônio para cada item
+        // Gerar número de patrimônio para cada item (a partir do estado real +
+        // os já gerados neste lote)
         const patrimonioNumber = generatePatrimonialNumber(
           selectedSector.id,
           sectors,
-          patrimonios
+          working
         )
+        working.push({ numero_patrimonio: patrimonioNumber } as Patrimonio)
 
         const newPatrimonioData = {
           ...item,

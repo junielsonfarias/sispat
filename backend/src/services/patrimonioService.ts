@@ -293,6 +293,7 @@ export interface PatrimonioStats {
   maintenanceCount: number;
   baixadosCount: number;
   baixadosLastMonth: number;
+  antigosCount: number; // bens ativos com mais de 10 anos (alerta do dashboard)
   setoresCount: number;
   porStatus: { status: string; quantidade: number }[];
   porTipo: { tipo: string; quantidade: number; valor: number }[];
@@ -321,6 +322,8 @@ export const getPatrimonioStats = async (actor: Actor): Promise<PatrimonioStats>
 
   const umMesAtras = new Date();
   umMesAtras.setMonth(umMesAtras.getMonth() - 1);
+  const dezAnosAtras = new Date();
+  dezAnosAtras.setFullYear(dezAnosAtras.getFullYear() - 10);
 
   const porStatusMap = new Map<string, number>();
   const porTipoMap = new Map<string, { quantidade: number; valor: number }>();
@@ -333,6 +336,7 @@ export const getPatrimonioStats = async (actor: Actor): Promise<PatrimonioStats>
   let maintenanceCount = 0;
   let baixadosCount = 0;
   let baixadosLastMonth = 0;
+  let antigosCount = 0;
 
   for (const r of rows) {
     const status = r.status ?? 'ativo';
@@ -353,6 +357,8 @@ export const getPatrimonioStats = async (actor: Actor): Promise<PatrimonioStats>
     if (status === 'baixado') baixadosCount += 1;
     if (status !== 'baixado') totalValue += valor;
     if (r.data_baixa && new Date(r.data_baixa) >= umMesAtras) baixadosLastMonth += 1;
+    if (status === 'ativo' && r.data_aquisicao && new Date(r.data_aquisicao) <= dezAnosAtras)
+      antigosCount += 1;
 
     if (r.data_aquisicao) {
       const d = new Date(r.data_aquisicao);
@@ -367,6 +373,7 @@ export const getPatrimonioStats = async (actor: Actor): Promise<PatrimonioStats>
     totalValue,
     activePercentage: totalCount > 0 ? Math.round((ativosCount / totalCount) * 100) : 0,
     ativosCount,
+    antigosCount,
     maintenanceCount,
     baixadosCount,
     baixadosLastMonth,

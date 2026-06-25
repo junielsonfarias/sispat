@@ -712,6 +712,11 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
     });
 
     return registros;
+  }, {
+    // Lote pode ter até MAX_UNIDADES (2000) bens, cada um com create + histórico.
+    // O default de 5s da transação interativa do Prisma estouraria (P2028).
+    maxWait: 15000,
+    timeout: 120000,
   });
 
   await redisCache.deletePattern('patrimonios:*');

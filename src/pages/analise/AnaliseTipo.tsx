@@ -75,11 +75,14 @@ const AnaliseTipo = () => {
     )
     return months.map((month) => {
       const monthStr = format(month, 'MMM/yy')
-      const acquisitionsInMonth = filteredPatrimonios.filter(
-        (p) =>
-          format(new Date(p.data_aquisicao), 'yyyy-MM') ===
-          format(month, 'yyyy-MM'),
-      )
+      const monthKey = format(month, 'yyyy-MM')
+      const acquisitionsInMonth = filteredPatrimonios.filter((p) => {
+        if (!p.data_aquisicao) return false
+        const d = new Date(p.data_aquisicao)
+        // Evita RangeError do date-fns com datas inválidas vindas do backend.
+        if (Number.isNaN(d.getTime())) return false
+        return format(d, 'yyyy-MM') === monthKey
+      })
       const acquisitionsByType = acquisitionsInMonth.reduce(
         (acc, p) => {
           acc[p.tipo] = (acc[p.tipo] || 0) + 1

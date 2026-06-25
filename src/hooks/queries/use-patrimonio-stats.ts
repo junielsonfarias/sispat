@@ -9,6 +9,7 @@ export interface PatrimonioStats {
   maintenanceCount: number
   baixadosCount: number
   baixadosLastMonth: number
+  antigosCount: number
   setoresCount: number
   porStatus: { status: string; quantidade: number }[]
   porTipo: { tipo: string; quantidade: number; valor: number }[]
