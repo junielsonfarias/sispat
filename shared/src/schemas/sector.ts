@@ -34,6 +34,13 @@ const descriptionSchema = z
   .max(500, 'Descrição deve ter no máximo 500 caracteres.')
   .optional();
 
+// Fundos de recurso da secretaria (ex.: FUNDEB, VAAT, SUS). Lista de rótulos
+// curtos usada na importação para classificar/auto-preencher o fundo do bem.
+const fundosSchema = z
+  .array(z.string().trim().min(1).max(50))
+  .max(30, 'No máximo 30 fundos por setor.')
+  .optional();
+
 export const createSectorSchema = z.object({
   name: nameSchema,
   codigo: codigoSchema.optional(),
@@ -43,6 +50,7 @@ export const createSectorSchema = z.object({
   cnpj: z.string().max(20).optional(),
   responsavel: z.string().max(100).optional(),
   parentId: z.string().uuid().optional().nullable(),
+  fundos: fundosSchema,
 });
 export type CreateSectorInput = z.infer<typeof createSectorSchema>;
 
@@ -56,6 +64,7 @@ export const updateSectorSchema = z
     cnpj: z.string().max(20).optional().nullable(),
     responsavel: z.string().max(100).optional().nullable(),
     parentId: z.string().uuid().optional().nullable(),
+    fundos: fundosSchema,
   })
   .strict();
 export type UpdateSectorInput = z.infer<typeof updateSectorSchema>;

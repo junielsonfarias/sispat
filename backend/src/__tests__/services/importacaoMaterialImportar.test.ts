@@ -21,6 +21,8 @@ jest.mock('../../services/patrimonioService', () => ({
 const mockTx = {
   patrimonio: { create: jest.fn() },
   activityLog: { create: jest.fn() },
+  historicoEntry: { create: jest.fn() },
+  local: { findFirst: jest.fn(), create: jest.fn() },
 };
 const mockPrisma = {
   sector: { findUnique: jest.fn() },
@@ -66,6 +68,12 @@ beforeEach(() => {
     Promise.resolve({ id: `p-${args.data.numero_patrimonio}`, numero_patrimonio: args.data.numero_patrimonio }),
   );
   mockTx.activityLog.create.mockResolvedValue({});
+  mockTx.historicoEntry.create.mockResolvedValue({});
+  // Por padrão o setor ainda não tem Almoxarifado: força o find-or-create.
+  mockTx.local.findFirst.mockResolvedValue(null);
+  mockTx.local.create.mockImplementation((args: any) =>
+    Promise.resolve({ id: `loc-${args.data.sectorId}` }),
+  );
 });
 
 describe('importarPatrimonios', () => {
@@ -156,5 +164,59 @@ describe('importarPatrimonios', () => {
     await expect(
       importarPatrimonios([baseItem({ origemRecurso: 'invalida' as any })], actor),
     ).rejects.toBeInstanceOf(ImportacaoValidationError);
+  });
+
+  it('registra um evento de histórico IMPORTAÇÃO por unidade', async () => {
+    await importarPatrimonios([baseItem({ quantidade: 3 })], actor);
+    expect(mockTx.historicoEntry.create).toHaveBeenCalledTimes(3);
+    const d = mockTx.historicoEntry.create.mock.calls[0][0].data;
+    expect(d.action).toBe('IMPORTAÇÃO');
+    expect(d.patrimonioId).toBeDefined();
+    expect(d.details).toContain('importado');
+  });
+
+  it('grava o fundo do recurso quando informado', async () => {
+    await importarPatrimonios([baseItem({ quantidade: 1, fundoRecurso: 'FUNDEB' })], actor);
+    expect(mockTx.patrimonio.create.mock.calls[0][0].data.fundo_recurso).toBe('FUNDEB');
+  });
+
+  it('normaliza fundo vazio/só-espaços para null', async () => {
+    await importarPatrimonios([baseItem({ quantidade: 1, fundoRecurso: '   ' })], actor);
+    expect(mockTx.patrimonio.create.mock.calls[0][0].data.fundo_recurso).toBeNull();
+  });
+
+  it('cria o Almoxarifado do setor quando não existe e tomba os bens nele', async () => {
+    await importarPatrimonios([baseItem({ quantidade: 1 })], actor);
+    // find-or-create: procurou e criou o Almoxarifado do setor s1
+    expect(mockTx.local.findFirst).toHaveBeenCalledTimes(1);
+    expect(mockTx.local.create).toHaveBeenCalledTimes(1);
+    expect(mockTx.local.create.mock.calls[0][0].data).toMatchObject({
+      name: 'Almoxarifado',
+      sectorId: 's1',
+      municipalityId: 'mun-1',
+    });
+    const d = mockTx.patrimonio.create.mock.calls[0][0].data;
+    expect(d.localId).toBe('loc-s1');
+    expect(d.local_objeto).toBe('Almoxarifado');
+  });
+
+  it('reutiliza o Almoxarifado existente do setor (não duplica)', async () => {
+    mockTx.local.findFirst.mockResolvedValue({ id: 'loc-existente' });
+    await importarPatrimonios([baseItem({ quantidade: 2 })], actor);
+    expect(mockTx.local.create).not.toHaveBeenCalled();
+    expect(mockTx.patrimonio.create.mock.calls[0][0].data.localId).toBe('loc-existente');
+  });
+
+  it('resolve o Almoxarifado uma vez por setor distinto', async () => {
+    mockPrisma.sector.findUnique.mockImplementation((args: any) =>
+      Promise.resolve({ id: args.where.id, name: args.where.id, municipalityId: 'mun-1' }),
+    );
+    await importarPatrimonios(
+      [baseItem({ sectorId: 's1', quantidade: 1 }), baseItem({ sectorId: 's2', quantidade: 1 })],
+      actor,
+    );
+    // 2 setores distintos → 2 resoluções de almoxarifado
+    expect(mockTx.local.findFirst).toHaveBeenCalledTimes(2);
+    expect(mockTx.local.create).toHaveBeenCalledTimes(2);
   });
 });

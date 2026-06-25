@@ -10,6 +10,7 @@ import {
   tipoDoSubelemento,
   formaDoEmpenho,
   origemDaFonte,
+  fundoDaFonte,
 } from '../../services/importacaoMaterialService';
 
 // Fixture que imita o layout de largura fixa extraído do PDF.
@@ -136,6 +137,13 @@ describe('parseRelatorioLiquidacao', () => {
     expect(saude.fontes).toHaveLength(2);
     expect(saude.origemRecursoSugerida).toBeNull(); // imposto (proprio) + SUS (transferencia)
   });
+
+  it('sugere o fundo por UG: único fundo nomeado → sugere; sem fundo → null', () => {
+    const pref = r.ugs.find((u) => u.nome.startsWith('Prefeitura'))!;
+    expect(pref.fundoSugerido).toBeNull(); // só recursos próprios, sem fundo nomeado
+    const saude = r.ugs.find((u) => u.nome.startsWith('Fundo Municipal de Saúde'))!;
+    expect(saude.fundoSugerido).toBe('SUS'); // imposto (sem fundo) + SUS → único fundo
+  });
 });
 
 describe('mapas de derivação', () => {
@@ -159,5 +167,70 @@ describe('mapas de derivação', () => {
     expect(origemDaFonte('Recurso de convênio federal')).toBe('convenio');
     expect(origemDaFonte('Emenda parlamentar individual')).toBe('emenda');
     expect(origemDaFonte('Fonte desconhecida xyz')).toBeNull();
+  });
+
+  it('fonte → fundo (nome específico)', () => {
+    expect(fundoDaFonte('Transf. do FUNDEB - Comple. União')).toBe('FUNDEB');
+    expect(fundoDaFonte('FUNDEB VAAT - complementação')).toBe('VAAT'); // mais específico primeiro
+    expect(fundoDaFonte('FUNDEB VAAF da União')).toBe('VAAF');
+    expect(fundoDaFonte('Transferência SUS-Bloco de estruturação')).toBe('SUS');
+    expect(fundoDaFonte('Cota do Salário-Educação')).toBe('Salário-Educação');
+    expect(fundoDaFonte('Recursos não vinculados de impostos')).toBeNull();
+  });
+});
+
+// Regressão: descrição que QUEBRA entre páginas não pode trazer o ruído de topo
+// de página (separadores "----" e cabeçalho "DOTAÇÃO ... VALOR(R$)") no meio.
+// Caso real: PAT202600000477.
+const RELATORIO_QUEBRA_PAGINA = `Pará                                    MOVIMENTOS DE LIQUIDAÇÃO
+Governo Municipal de Teste       Exercício de 2026     Página : 0001
+Prefeitura Municipal de Teste
+Classif. Econômica 4.4.90.52.00                       Discriminado por: item
+----------------------------------------------------------------------------------------
+                   DOTAÇÃO              EMPENHO    NOTA FISCAL            LIQUIDAÇÃO   VALOR(R$)
+----------------------------------------------------------------------------------------
+
+02 08.
+ 15 122 0010 2.030 Manutenção
+      4.4.90.52.00 Equipamentos e material permanente
+      4.4.90.52.99 Outros materiais permanentes
+ 10/04/2026  SOM E LUZ LTDA
+             LC 9.2026-003               09040002   mercadoria Nº 360 série 1 de 10/04/2026   10040013   450,00
+                       quantidade  unidade especificação                 valor unitário   valor total
+                           1,0000  UNIDAD  Caixa Ativa, Tourcab 1800 Dsp 15 1800w
+
+Pará                                    MOVIMENTOS DE LIQUIDAÇÃO
+Governo Municipal de Teste       Exercício de 2026     Página : 0002
+Prefeitura Municipal de Teste
+Classif. Econômica 4.4.90.52.00                       Discriminado por: item
+----------------------------------------------------------------------------------------
+                   DOTAÇÃO              EMPENHO    NOTA FISCAL            LIQUIDAÇÃO   VALOR(R$)
+----------------------------------------------------------------------------------------
+
+450wrms, Cor Preto.   450,00   450,00
+                                                       TOTAL SUBELEMENTO (4.4.90.52.99).......   450,00
+----------------------------------------------------------------------------------------
+TOTAL GERAL DE LIQUIDAÇÃO DA UG (PREFEITURA MUNICIPAL DE TESTE) POR FONTE DE RECURSOS
+                       15000000  -Recursos não vinculados de impostos..........   450,00
+----------------------------------------------------------------------------------------
+`;
+
+describe('descrição que quebra entre páginas', () => {
+  const r = parseRelatorioLiquidacao(RELATORIO_QUEBRA_PAGINA);
+
+  it('junta as partes sem o ruído de topo de página', () => {
+    expect(r.itens).toHaveLength(1);
+    const item = r.itens[0];
+    expect(item.descricao).toBe('Caixa Ativa, Tourcab 1800 Dsp 15 1800w 450wrms, Cor Preto.');
+    expect(item.valorUnitario).toBe(450);
+    expect(item.quantidade).toBe(1);
+  });
+
+  it('a descrição não contém separadores nem o cabeçalho da tabela', () => {
+    const d = r.itens[0].descricao;
+    expect(d).not.toContain('----');
+    expect(d).not.toContain('DOTAÇÃO');
+    expect(d).not.toContain('VALOR(R$)');
+    expect(d).not.toContain('EMPENHO');
   });
 });

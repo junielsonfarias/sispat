@@ -7,6 +7,8 @@ interface Sector {
   name: string
   codigo: string
   description?: string
+  // Fundos de recurso da secretaria (FUNDEB, VAAT, SUS...) p/ a importação.
+  fundos?: string[]
   municipalityId: string
   createdAt: Date
   updatedAt: Date

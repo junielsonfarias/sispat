@@ -86,6 +86,7 @@ export interface UgImportada {
   nome: string;
   fontes: FonteRecurso[];
   origemRecursoSugerida: string | null; // só sugere se a UG tem fonte única
+  fundoSugerido: string | null; // nome do fundo (FUNDEB, VAAT, SUS...) se único
 }
 
 export interface RelatorioParseado {
@@ -148,6 +149,28 @@ export const origemDaFonte = (descricao: string): string | null => {
     d.includes('transf')
   )
     return 'transferencia_ente';
+  return null;
+};
+
+// Fundos/fontes específicas reconhecidos na descrição da fonte. Mais específicos
+// primeiro (VAAT/VAAF antes de FUNDEB) para que "FUNDEB VAAT" caia no rótulo certo.
+// Os rótulos batem com o que a secretaria cadastra em `fundos` para cruzamento.
+const FUNDOS_CONHECIDOS: { rx: RegExp; nome: string }[] = [
+  { rx: /vaat/i, nome: 'VAAT' },
+  { rx: /vaaf/i, nome: 'VAAF' },
+  { rx: /fundeb/i, nome: 'FUNDEB' },
+  { rx: /sal[áa]rio[\s-]?educa/i, nome: 'Salário-Educação' },
+  { rx: /\bsus\b/i, nome: 'SUS' },
+  { rx: /\bpnae\b|alimenta[çc][ãa]o\s+escolar/i, nome: 'PNAE' },
+  { rx: /\bpnate\b|transporte\s+escolar/i, nome: 'PNATE' },
+];
+
+// Extrai o nome do fundo/fonte específica da descrição da fonte. Retorna null
+// quando não reconhece (ex.: recursos próprios não têm fundo nomeado).
+export const fundoDaFonte = (descricao: string): string | null => {
+  for (const f of FUNDOS_CONHECIDOS) {
+    if (f.rx.test(descricao)) return f.nome;
+  }
   return null;
 };
 
@@ -255,7 +278,7 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
   const ensureUg = (nome: string): UgImportada => {
     let ug = ugsMap.get(nome);
     if (!ug) {
-      ug = { nome, fontes: [], origemRecursoSugerida: null };
+      ug = { nome, fontes: [], origemRecursoSugerida: null, fundoSugerido: null };
       ugsMap.set(nome, ug);
     }
     return ug;
@@ -388,7 +411,12 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
           break;
         }
         i++;
-        if (!pt) continue; // pula linha em branco (quebra de página) sem encerrar
+        // Pula ruído de topo de página que aparece quando a descrição quebra de
+        // uma página para a outra (linha em branco, separador "----", cabeçalho
+        // "DOTAÇÃO ... VALOR(R$)", sub-cabeçalho "quantidade ... especificação")
+        // — sem encerrar o item e sem poluir a descrição. (TOTAL/SUB-TOTAL/UG já
+        // encerram acima, então não chegam aqui.)
+        if (!pt || ehLinhaRuido(prox) || ehRuidoPagina(prox)) continue;
         resto = `${resto.trim()} ${pt}`;
         guard++;
       }
@@ -457,6 +485,11 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
     const origens = ug.fontes.map((f) => origemDaFonte(f.descricao)).filter((o): o is string => !!o);
     const unicas = Array.from(new Set(origens));
     ug.origemRecursoSugerida = unicas.length === 1 ? unicas[0] : null;
+
+    // Fundo: sugere só quando há um único fundo nomeado nas fontes da UG.
+    const fundos = ug.fontes.map((f) => fundoDaFonte(f.descricao)).filter((f): f is string => !!f);
+    const fundosUnicos = Array.from(new Set(fundos));
+    ug.fundoSugerido = fundosUnicos.length === 1 ? fundosUnicos[0] : null;
   }
 
   return {
@@ -475,6 +508,11 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
 const VALID_ORIGEM = new Set(['proprio', 'convenio', 'emenda', 'transferencia_ente', 'outro']);
 const MAX_UNIDADES = 2000; // trava de segurança para um import único
 
+// Local padrão de entrada dos bens importados. Os bens são tombados no
+// almoxarifado da secretaria; o usuário da secretaria depois distribui para os
+// locais reais (escola, prédio, etc.). Um Almoxarifado por setor.
+export const ALMOXARIFADO_LOCAL_NOME = 'Almoxarifado';
+
 export interface ItemConfirmado {
   descricao: string;
   quantidade: number;
@@ -487,6 +525,7 @@ export interface ItemConfirmado {
   tipo: string;
   formaAquisicao: string;
   origemRecurso?: string | null;
+  fundoRecurso?: string | null;
   numeroLicitacao?: string | null;
   anoLicitacao?: number | null;
   observacoes?: string | null;
@@ -560,6 +599,34 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
       return n;
     };
 
+    // Resolve (find-or-create) o Almoxarifado de cada setor envolvido. Os bens
+    // entram aqui e a secretaria distribui depois para os locais reais.
+    const almoxBySetor = new Map<string, string>(); // sectorId -> localId
+    for (const sectorId of new Set(itens.map((it) => it.sectorId))) {
+      const existente = await tx.local.findFirst({
+        where: {
+          sectorId,
+          municipalityId: actor.municipalityId,
+          name: { equals: ALMOXARIFADO_LOCAL_NOME, mode: 'insensitive' },
+        },
+        select: { id: true },
+      });
+      if (existente) {
+        almoxBySetor.set(sectorId, existente.id);
+      } else {
+        const novo = await tx.local.create({
+          data: {
+            name: ALMOXARIFADO_LOCAL_NOME,
+            description: 'Local de entrada dos bens importados (aguardando distribuição)',
+            sectorId,
+            municipalityId: actor.municipalityId!,
+          },
+          select: { id: true },
+        });
+        almoxBySetor.set(sectorId, novo.id);
+      }
+    }
+
     const registros: { id: string; numero_patrimonio: string }[] = [];
     for (const it of itens) {
       const setorNome = setoresCache.get(it.sectorId) ?? it.setorNome;
@@ -590,13 +657,16 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
             numero_licitacao: it.numeroLicitacao ?? null,
             ano_licitacao: it.anoLicitacao ?? null,
             setor_responsavel: setorNome,
-            local_objeto: it.localObjeto?.trim() || 'A definir',
+            // Tombado no almoxarifado da secretaria; a secretaria distribui depois.
+            local_objeto: it.localObjeto?.trim() || ALMOXARIFADO_LOCAL_NOME,
+            localId: almoxBySetor.get(it.sectorId) ?? null,
             status: 'ativo',
             situacao_bem: 'OTIMO', // bens novos
             destinacao: 'uso_especial',
             destinacaoRevisada: true,
             tipo_posse: 'proprio',
             origem_recurso: it.origemRecurso ?? null,
+            fundo_recurso: it.fundoRecurso?.trim() || null,
             fornecedor: it.fornecedor ?? null,
             numero_empenho: it.numeroEmpenho ?? null,
             numero_liquidacao: it.numeroLiquidacao ?? null,
@@ -609,6 +679,23 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
             createdBy: actor.userId,
           },
           select: { id: true, numero_patrimonio: true },
+        });
+        // Registra o evento de criação por bem (aparece na aba de histórico do
+        // BensView e na Análise Temporal desde o início).
+        await tx.historicoEntry.create({
+          data: {
+            patrimonioId: p.id,
+            date: new Date(),
+            action: 'IMPORTAÇÃO',
+            details: [
+              'Bem importado do relatório de liquidação SIAFIC',
+              it.numeroNotaFiscal ? `NF ${it.numeroNotaFiscal}` : '',
+              it.numeroLiquidacao ? `Liquidação ${it.numeroLiquidacao}` : '',
+            ]
+              .filter(Boolean)
+              .join(' — '),
+            user: actor.userId,
+          },
         });
         registros.push(p);
       }

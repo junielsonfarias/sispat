@@ -1,11 +1,15 @@
+import { useState, useRef, KeyboardEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,6 +24,9 @@ import { Sector } from '@/types'
 import { isCircularDependency } from '@/lib/sector-utils'
 import { toast } from '@/hooks/use-toast'
 import { MaskedInput } from '@/components/ui/masked-input'
+
+const FUNDOS_MAX = 30
+const FUNDO_MAX_LEN = 50
 
 const cnpjValidator = (cnpj: string | undefined) => {
   if (!cnpj) return true
@@ -66,6 +73,11 @@ interface SectorFormProps {
 export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
   const { sectors } = useSectors()
 
+  // Estado local dos fundos (gerenciado fora do react-hook-form pois é lista dinâmica)
+  const [fundos, setFundos] = useState<string[]>(data?.fundos ?? [])
+  const [fundoInput, setFundoInput] = useState('')
+  const fundoInputRef = useRef<HTMLInputElement>(null)
+
   const sectorOptions: SearchableSelectOption[] = sectors
     .filter((s) => s.id !== data?.id)
     .map((s) => ({
@@ -86,6 +98,54 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
     },
   })
 
+  // Adiciona um fundo à lista (com trim, dedup e limite)
+  const adicionarFundo = () => {
+    const valor = fundoInput.trim().toUpperCase()
+    if (!valor) return
+    if (valor.length > FUNDO_MAX_LEN) {
+      toast({
+        variant: 'destructive',
+        title: 'Fundo muito longo',
+        description: `O nome do fundo deve ter no máximo ${FUNDO_MAX_LEN} caracteres.`,
+      })
+      return
+    }
+    if (fundos.includes(valor)) {
+      toast({
+        variant: 'destructive',
+        title: 'Fundo duplicado',
+        description: `"${valor}" já está na lista.`,
+      })
+      return
+    }
+    if (fundos.length >= FUNDOS_MAX) {
+      toast({
+        variant: 'destructive',
+        title: 'Limite atingido',
+        description: `Máximo de ${FUNDOS_MAX} fundos por setor.`,
+      })
+      return
+    }
+    setFundos((prev) => [...prev, valor])
+    setFundoInput('')
+    fundoInputRef.current?.focus()
+  }
+
+  const removerFundo = (fundo: string) => {
+    setFundos((prev) => prev.filter((f) => f !== fundo))
+  }
+
+  const handleFundoKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      adicionarFundo()
+    }
+    // Backspace no input vazio remove o último fundo
+    if (e.key === 'Backspace' && fundoInput === '' && fundos.length > 0) {
+      setFundos((prev) => prev.slice(0, -1))
+    }
+  }
+
   const handleSubmit = (values: FormValues) => {
     if (data && isCircularDependency(data.id, values.parentId, sectors)) {
       toast({
@@ -95,7 +155,7 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
       })
       return
     }
-    onSave(values)
+    onSave({ ...values, fundos })
   }
 
   return (
@@ -200,6 +260,80 @@ export const SectorForm = ({ data, onSave, onClose }: SectorFormProps) => {
             </FormItem>
           )}
         />
+
+        {/* Campo de Fundos de Recurso (tags/chips) */}
+        <div className="space-y-2">
+          <FormLabel htmlFor="fundo-input">Fundos de Recurso</FormLabel>
+
+          {/* Área de chips + input inline */}
+          <div
+            className="flex flex-wrap gap-1.5 min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+            role="group"
+            aria-label="Fundos de recurso do setor"
+            onClick={() => fundoInputRef.current?.focus()}
+          >
+            {fundos.map((fundo) => (
+              <Badge
+                key={fundo}
+                variant="secondary"
+                className="flex items-center gap-1 pr-1 text-xs"
+              >
+                {fundo}
+                <button
+                  type="button"
+                  aria-label={`Remover fundo ${fundo}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removerFundo(fundo)
+                  }}
+                  className="ml-0.5 rounded-full hover:bg-muted-foreground/20 focus:outline-none focus:ring-1 focus:ring-ring p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            <input
+              id="fundo-input"
+              ref={fundoInputRef}
+              type="text"
+              value={fundoInput}
+              onChange={(e) => setFundoInput(e.target.value.toUpperCase())}
+              onKeyDown={handleFundoKeyDown}
+              placeholder={fundos.length === 0 ? 'Digite e pressione Enter...' : ''}
+              aria-label="Adicionar fundo de recurso"
+              className="flex-1 min-w-24 bg-transparent outline-none placeholder:text-muted-foreground"
+              maxLength={FUNDO_MAX_LEN}
+              disabled={fundos.length >= FUNDOS_MAX}
+            />
+          </div>
+
+          {/* Botão auxiliar de adição */}
+          {fundoInput.trim().length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={adicionarFundo}
+              className="h-7 px-2 text-xs"
+            >
+              Adicionar "{fundoInput.trim().toUpperCase()}"
+            </Button>
+          )}
+
+          <FormDescription>
+            Exemplos: FUNDEB, VAAT, VAAF, Salário-Educação, SUS, PNAE, PNATE.
+            Pressione <kbd className="rounded border px-1 text-xs">Enter</kbd> para adicionar cada fundo.
+            Máximo de {FUNDOS_MAX} itens.
+          </FormDescription>
+
+          {/* Contagem */}
+          {fundos.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {fundos.length} de {FUNDOS_MAX} fundo{fundos.length !== 1 ? 's' : ''} adicionado{fundos.length !== 1 ? 's' : ''}.
+            </p>
+          )}
+        </div>
+
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar

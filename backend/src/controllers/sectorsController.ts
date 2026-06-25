@@ -4,6 +4,17 @@ import { prisma } from '../index';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 import { maskEmail } from '../utils/mask';
 
+// Normaliza a lista de fundos do setor: aceita array de strings, remove vazios e
+// duplicatas, aparando espaços. Retorna [] se a entrada não for um array.
+const sanitizeFundos = (input: unknown): string[] => {
+  if (!Array.isArray(input)) return [];
+  const limpos = input
+    .filter((f): f is string => typeof f === 'string')
+    .map((f) => f.trim())
+    .filter(Boolean);
+  return Array.from(new Set(limpos));
+};
+
 /**
  * @desc    Obter todos os setores
  * @route   GET /api/sectors
@@ -118,7 +129,8 @@ export const getSectorById = async (req: Request, res: Response): Promise<void> 
 export const createSector = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.userId;
-    const { name, sigla, codigo, description, endereco, cnpj, responsavel, parentId } = req.body;
+    const { name, sigla, codigo, description, endereco, cnpj, responsavel, parentId, fundos } =
+      req.body;
 
     logDebug('➕ Criando setor', {
       dadosRecebidos: { name, sigla, codigo, description, endereco, cnpj, responsavel, parentId },
@@ -154,6 +166,7 @@ export const createSector = async (req: Request, res: Response): Promise<void> =
         cnpj,
         responsavel,
         parentId,
+        fundos: sanitizeFundos(fundos),
         municipalityId: req.user?.municipalityId || '',
       },
     });
@@ -187,7 +200,8 @@ export const updateSector = async (req: Request, res: Response): Promise<void> =
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
-    const { name, sigla, codigo, description, endereco, cnpj, responsavel, parentId } = req.body;
+    const { name, sigla, codigo, description, endereco, cnpj, responsavel, parentId, fundos } =
+      req.body;
 
     logDebug('🔄 Atualizando setor', {
       id,
@@ -220,6 +234,7 @@ export const updateSector = async (req: Request, res: Response): Promise<void> =
     if (cnpj !== undefined) updateData.cnpj = cnpj;
     if (responsavel !== undefined) updateData.responsavel = responsavel;
     if (parentId !== undefined) updateData.parentId = parentId;
+    if (fundos !== undefined) updateData.fundos = sanitizeFundos(fundos);
 
     logDebug('📝 Dados a atualizar', { updateData });
 

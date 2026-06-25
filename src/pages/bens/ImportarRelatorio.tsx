@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Label } from '@/components/ui/label'
 import {
@@ -60,6 +61,7 @@ interface UgImportada {
   nome: string
   fontes: FonteRecurso[]
   origemRecursoSugerida: string | null
+  fundoSugerido: string | null
 }
 
 interface ItemImportado {
@@ -108,6 +110,7 @@ interface ItemConfirmado {
   tipo: string
   formaAquisicao: string
   origemRecurso?: string | null
+  fundoRecurso?: string | null
   numeroLicitacao?: string | null
   anoLicitacao?: number | null
   observacoes?: string | null
@@ -130,6 +133,12 @@ interface ItemEditado {
   tipo: string
   formaAquisicao: string
   origemRecurso: string
+  // Nome do fundo/fonte específica (FUNDEB, VAAT, SUS...) — só relevante quando a
+  // origem é transferência entre entes.
+  fundoRecurso: string
+  // true quando a UG não permitiu inferir a origem com segurança (fontes mistas
+  // ou não reconhecidas) e caiu no padrão "proprio" — operador deve revisar.
+  origemRevisar: boolean
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -167,6 +176,17 @@ const ORIGENS_RECURSO: { value: string; label: string }[] = [
   { value: 'emenda', label: 'Emenda Parlamentar' },
   { value: 'transferencia_ente', label: 'Transferência entre Entes' },
   { value: 'outro', label: 'Outro' },
+]
+
+// Fundos comuns sugeridos no datalist quando o setor não tem fundos cadastrados.
+const FUNDOS_SUGERIDOS = [
+  'FUNDEB',
+  'VAAT',
+  'VAAF',
+  'Salário-Educação',
+  'SUS',
+  'PNAE',
+  'PNATE',
 ]
 
 const formatCurrency = (value: number) =>
@@ -271,13 +291,16 @@ const ImportarRelatorio = () => {
       // Inicializa edições com valores sugeridos
       const eds: ItemEditado[] = parsed.itens.map((item) => {
         const ugInfo = parsed.ugs.find((u) => u.nome === item.ug)
+        const sugerida = ugInfo?.origemRecursoSugerida ?? null
         return {
           descricao: item.descricao,
           quantidade: item.quantidade,
           valorUnitario: item.valorUnitario,
           tipo: item.tipoSugerido,
           formaAquisicao: item.formaAquisicaoSugerida,
-          origemRecurso: ugInfo?.origemRecursoSugerida ?? 'proprio',
+          origemRecurso: sugerida ?? 'proprio',
+          fundoRecurso: ugInfo?.fundoSugerido ?? '',
+          origemRevisar: sugerida === null,
         }
       })
 
@@ -330,6 +353,11 @@ const ImportarRelatorio = () => {
         tipo: ed.tipo,
         formaAquisicao: ed.formaAquisicao,
         origemRecurso: ed.origemRecurso || null,
+        // O fundo só faz sentido para transferência entre entes.
+        fundoRecurso:
+          ed.origemRecurso === 'transferencia_ente'
+            ? ed.fundoRecurso.trim() || null
+            : null,
         numeroLicitacao: item.numeroLicitacao || null,
         anoLicitacao: item.anoLicitacao ?? null,
         observacoes: item.observacoes || null,
@@ -403,7 +431,11 @@ const ImportarRelatorio = () => {
 
   return (
     <div className="flex-1 p-3 sm:p-4 lg:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div
+        className={`${
+          etapa === 'mapeamento' ? 'max-w-[1600px]' : 'max-w-5xl'
+        } mx-auto space-y-6`}
+      >
         {/* Cabeçalho */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
@@ -549,6 +581,21 @@ const ImportarRelatorio = () => {
               </Badge>
             </div>
 
+            {/* Aviso do fluxo de almoxarifado */}
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="pt-4">
+                <div className="flex gap-3">
+                  <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-800">
+                    Todos os bens serão tombados automaticamente no{' '}
+                    <strong>Almoxarifado</strong> do setor de destino. Depois, o
+                    usuário da secretaria complementa as informações e distribui
+                    cada bem para o local correto (escola, prédio, etc.).
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Avisos do parser */}
             {relatorio.avisos.length > 0 && (
               <Card className="border-yellow-200 bg-yellow-50">
@@ -689,22 +736,25 @@ const ImportarRelatorio = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
+                <div>
+                  <Table
+                    className="w-full table-fixed"
+                    containerClassName="max-h-[65vh]"
+                  >
+                    <TableHeader className="sticky top-0 z-20 [&_th]:bg-gray-100 [&_th]:shadow-[inset_0_-1px_0_rgb(229,231,235)]">
                       <TableRow>
-                        <TableHead className="min-w-[400px]">
-                          Descrição
-                        </TableHead>
-                        <TableHead className="min-w-[84px] text-center">Qtd</TableHead>
-                        <TableHead className="min-w-[150px] text-right">
+                        <TableHead className="w-[26%]">Descrição</TableHead>
+                        <TableHead className="w-[7%] text-center">Qtd</TableHead>
+                        <TableHead className="w-[11%] text-right">
                           Vl. Unitário
                         </TableHead>
-                        <TableHead className="min-w-[230px]">Tipo</TableHead>
-                        <TableHead className="min-w-[210px]">Forma Aquisição</TableHead>
-                        <TableHead className="min-w-[200px]">Origem Recurso</TableHead>
-                        <TableHead className="min-w-[150px] text-center">UG / Setor</TableHead>
-                        <TableHead className="w-16 text-center">Info</TableHead>
+                        <TableHead className="w-[14%]">Tipo</TableHead>
+                        <TableHead className="w-[13%]">Forma Aquisição</TableHead>
+                        <TableHead className="w-[14%]">Origem Recurso</TableHead>
+                        <TableHead className="w-[9%] text-center">
+                          UG / Setor
+                        </TableHead>
+                        <TableHead className="w-[6%] text-center">Info</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -713,9 +763,9 @@ const ImportarRelatorio = () => {
                         if (!ed) return null
                         return (
                           <TableRow key={idx}>
-                            {/* Descrição */}
-                            <TableCell>
-                              <Input
+                            {/* Descrição (até 2 linhas, com quebra automática) */}
+                            <TableCell className="align-top">
+                              <Textarea
                                 value={ed.descricao}
                                 onChange={(e) =>
                                   atualizarEdicao(
@@ -724,12 +774,13 @@ const ImportarRelatorio = () => {
                                     e.target.value,
                                   )
                                 }
-                                className="h-8 text-xs"
+                                rows={2}
+                                className="min-h-[3.5rem] text-xs leading-snug resize-none py-1.5 break-words"
                                 aria-label={`Descrição do item ${idx + 1}`}
                               />
                             </TableCell>
                             {/* Quantidade */}
-                            <TableCell>
+                            <TableCell className="align-top">
                               <Input
                                 type="number"
                                 min={1}
@@ -746,30 +797,31 @@ const ImportarRelatorio = () => {
                               />
                             </TableCell>
                             {/* Valor unitário (formatado em R$) */}
-                            <TableCell>
+                            <TableCell className="align-top">
                               <CurrencyInput
                                 value={ed.valorUnitario}
                                 onChange={(v) =>
                                   atualizarEdicao(idx, 'valorUnitario', v)
                                 }
-                                className="h-8 text-xs text-right"
+                                className="h-8 text-xs text-right px-2"
                                 aria-label={`Valor unitário do item ${idx + 1}`}
                               />
                             </TableCell>
-                            {/* Tipo */}
-                            <TableCell>
-                              <Input
+                            {/* Tipo (com quebra de linha) */}
+                            <TableCell className="align-top">
+                              <Textarea
                                 value={ed.tipo}
                                 onChange={(e) =>
                                   atualizarEdicao(idx, 'tipo', e.target.value)
                                 }
-                                className="h-8 text-xs"
+                                rows={2}
+                                className="min-h-[3.5rem] text-xs leading-snug resize-none py-1.5 break-words"
                                 aria-label={`Tipo do item ${idx + 1}`}
                               />
                             </TableCell>
-                            {/* Forma de aquisição */}
-                            <TableCell>
-                              <Input
+                            {/* Forma de aquisição (com quebra de linha) */}
+                            <TableCell className="align-top">
+                              <Textarea
                                 value={ed.formaAquisicao}
                                 onChange={(e) =>
                                   atualizarEdicao(
@@ -778,20 +830,34 @@ const ImportarRelatorio = () => {
                                     e.target.value,
                                   )
                                 }
-                                className="h-8 text-xs"
+                                rows={2}
+                                className="min-h-[3.5rem] text-xs leading-snug resize-none py-1.5 break-words"
                                 aria-label={`Forma de aquisição do item ${idx + 1}`}
                               />
                             </TableCell>
                             {/* Origem do recurso */}
-                            <TableCell>
+                            <TableCell className="align-top">
                               <Select
                                 value={ed.origemRecurso}
-                                onValueChange={(val) =>
-                                  atualizarEdicao(idx, 'origemRecurso', val)
-                                }
+                                onValueChange={(val) => {
+                                  // Editar a origem conta como revisão: limpa o alerta.
+                                  setEdicoes((prev) => {
+                                    const copia = [...prev]
+                                    copia[idx] = {
+                                      ...copia[idx],
+                                      origemRecurso: val,
+                                      origemRevisar: false,
+                                    }
+                                    return copia
+                                  })
+                                }}
                               >
                                 <SelectTrigger
-                                  className="h-8 text-xs"
+                                  className={`h-auto min-h-[3.5rem] text-xs text-left items-start py-1.5 [&>span]:line-clamp-2 [&>span]:whitespace-normal ${
+                                    ed.origemRevisar
+                                      ? 'border-amber-400 bg-amber-50 text-amber-900 focus:ring-amber-400'
+                                      : ''
+                                  }`}
                                   aria-label={`Origem recurso do item ${idx + 1}`}
                                 >
                                   <SelectValue />
@@ -804,6 +870,43 @@ const ImportarRelatorio = () => {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              {ed.origemRevisar && (
+                                <p className="mt-1 flex items-center gap-1 text-[10px] font-medium text-amber-600">
+                                  <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                                  Origem presumida — revise
+                                </p>
+                              )}
+                              {/* Fundo: só p/ transferência entre entes */}
+                              {ed.origemRecurso === 'transferencia_ente' && (
+                                <>
+                                  <Input
+                                    list={`fundos-${idx}`}
+                                    value={ed.fundoRecurso}
+                                    onChange={(e) =>
+                                      atualizarEdicao(
+                                        idx,
+                                        'fundoRecurso',
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="Fundo (ex.: FUNDEB)"
+                                    className="mt-1 h-7 text-xs"
+                                    aria-label={`Fundo do recurso do item ${idx + 1}`}
+                                  />
+                                  <datalist id={`fundos-${idx}`}>
+                                    {Array.from(
+                                      new Set([
+                                        ...(sectors.find(
+                                          (s) => s.id === mapaSetor[item.ug],
+                                        )?.fundos ?? []),
+                                        ...FUNDOS_SUGERIDOS,
+                                      ]),
+                                    ).map((f) => (
+                                      <option key={f} value={f} />
+                                    ))}
+                                  </datalist>
+                                </>
+                              )}
                             </TableCell>
                             {/* UG (read-only) */}
                             <TableCell className="text-center">

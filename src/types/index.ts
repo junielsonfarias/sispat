@@ -391,6 +391,8 @@ export interface Sector {
   responsavel?: string
   parentId: string | null
   municipalityId: string
+  /** Fundos de recurso da secretaria (ex.: FUNDEB, VAAT, SUS) usados na importação de bens. */
+  fundos?: string[]
 }
 
 export type InventoryItemStatus = 'found' | 'not_found'

@@ -222,6 +222,10 @@ model Sector {
   endereco       String?
   cnpj           String?
   responsavel    String?
+  // Fundos de recurso de onde os bens da secretaria podem vir (ex.: FUNDEB,
+  // VAAT, SUS, Salário-Educação). Usado na importação para validar/auto-preencher
+  // o fundo do recurso ao classificar a origem como transferência entre entes.
+  fundos         String[]     @default([])
   parentId       String?
   municipalityId String
   createdAt      DateTime     @default(now())
@@ -306,6 +310,9 @@ model Patrimonio {
   // Lei): "quando for o caso" — bens de convênio/emenda/repasse ou doações com
   // encargo registram a fonte do recurso e as condições de reversão do instrumento.
   origem_recurso     String?
+  // Nome do fundo/fonte específica do recurso (ex.: FUNDEB, VAAT, SUS,
+  // Salário-Educação). Detalha a origem quando ela é transferência entre entes.
+  fundo_recurso      String?
   clausulas_reversao String?
   // Rastreabilidade contábil (importação do relatório de liquidação SIAFIC).
   fornecedor         String?
