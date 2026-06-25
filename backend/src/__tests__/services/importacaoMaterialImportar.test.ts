@@ -13,9 +13,11 @@ jest.mock('../../config/logger', () => ({
 const mockCache = { deletePattern: jest.fn() };
 jest.mock('../../config/redis', () => ({ redisCache: mockCache }));
 
-const mockProximoNumeroTx = jest.fn();
-jest.mock('../../services/patrimonioService', () => ({
-  proximoNumeroPatrimonialTx: (...args: unknown[]) => mockProximoNumeroTx(...args),
+const mockProximoConfigurado = jest.fn();
+jest.mock('../../services/numberingService', () => ({
+  proximoNumeroConfiguradoTx: (...args: unknown[]) => mockProximoConfigurado(...args),
+  formatNumero: (prefix: string, seqLen: number, seq: number) =>
+    `${prefix}${String(seq).padStart(seqLen, '0')}`,
 }));
 
 const mockTx = {
@@ -62,8 +64,11 @@ const baseItem = (over: Partial<ItemConfirmado> = {}): ItemConfirmado => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockCache.deletePattern.mockResolvedValue(undefined);
-  mockPrisma.sector.findUnique.mockResolvedValue({ id: 's1', name: 'Saúde', municipalityId: 'mun-1' });
-  mockProximoNumeroTx.mockResolvedValue({ numero: 'PAT202600000005', sequencial: 5 });
+  mockPrisma.sector.findUnique.mockResolvedValue({ id: 's1', name: 'Saúde', codigo: 'SAUDE', municipalityId: 'mun-1' });
+  // Numeração no formato do sistema (por setor): prefixo {ano}{codigoSetor}, seq de 6.
+  mockProximoConfigurado.mockImplementation((_tx: unknown, p: { sectorCode: string }) =>
+    Promise.resolve({ prefix: `2026${p.sectorCode}`, seqLen: 6, sequencial: 5 }),
+  );
   mockTx.patrimonio.create.mockImplementation((args: any) =>
     Promise.resolve({ id: `p-${args.data.numero_patrimonio}`, numero_patrimonio: args.data.numero_patrimonio }),
   );
@@ -83,7 +88,8 @@ describe('importarPatrimonios', () => {
     expect(r.linhas).toBe(1);
     expect(mockTx.patrimonio.create).toHaveBeenCalledTimes(3);
     const numeros = mockTx.patrimonio.create.mock.calls.map((c: any) => c[0].data.numero_patrimonio);
-    expect(numeros).toEqual(['PAT202600000005', 'PAT202600000006', 'PAT202600000007']);
+    // Formato do sistema (sem 'PAT'): {ano}{codigoSetor}{seq}.
+    expect(numeros).toEqual(['2026SAUDE000005', '2026SAUDE000006', '2026SAUDE000007']);
   });
 
   it('grava os campos contábeis e defaults de bem novo', async () => {
@@ -209,7 +215,7 @@ describe('importarPatrimonios', () => {
 
   it('resolve o Almoxarifado uma vez por setor distinto', async () => {
     mockPrisma.sector.findUnique.mockImplementation((args: any) =>
-      Promise.resolve({ id: args.where.id, name: args.where.id, municipalityId: 'mun-1' }),
+      Promise.resolve({ id: args.where.id, name: args.where.id, codigo: args.where.id, municipalityId: 'mun-1' }),
     );
     await importarPatrimonios(
       [baseItem({ sectorId: 's1', quantidade: 1 }), baseItem({ sectorId: 's2', quantidade: 1 })],

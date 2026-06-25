@@ -19,7 +19,7 @@ import pdfParse from 'pdf-parse';
 import { prisma } from '../config/database';
 import { redisCache } from '../config/redis';
 import { logInfo } from '../config/logger';
-import { proximoNumeroPatrimonialTx } from './patrimonioService';
+import { proximoNumeroConfiguradoTx, formatNumero } from './numberingService';
 import { ALMOXARIFADO_LOCAL_NOME } from '../constants/almoxarifado';
 
 export interface Actor {
@@ -557,7 +557,7 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
   }
 
   // Valida cada item e que o setor pertence ao município.
-  const setoresCache = new Map<string, string>(); // sectorId -> name
+  const setoresCache = new Map<string, { name: string; codigo: string }>(); // sectorId -> {name, codigo}
   for (const it of itens) {
     if (!it.descricao?.trim()) throw new ImportacaoValidationError('Item sem descrição');
     if (!it.sectorId) throw new ImportacaoValidationError(`Item "${it.descricao}" sem setor`);
@@ -576,25 +576,34 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
     if (!setoresCache.has(it.sectorId)) {
       const setor = await prisma.sector.findUnique({
         where: { id: it.sectorId },
-        select: { id: true, name: true, municipalityId: true },
+        select: { id: true, name: true, codigo: true, municipalityId: true },
       });
       if (!setor || (actor.role !== 'superuser' && setor.municipalityId !== actor.municipalityId)) {
         throw new ImportacaoValidationError(`Setor inválido em "${it.descricao}"`);
       }
-      setoresCache.set(it.sectorId, setor.name);
+      setoresCache.set(it.sectorId, { name: setor.name, codigo: setor.codigo });
     }
   }
 
   const criados = await prisma.$transaction(async (tx) => {
-    // Numeração: gera o primeiro número e incrementa em memória (todos os bens
-    // do município compartilham a sequência PAT{ano}{00}NNNNNN).
-    const primeiro = await proximoNumeroPatrimonialTx(tx, { municipalityId: actor.municipalityId });
-    const prefixoSeq = primeiro.numero.slice(0, primeiro.numero.length - 6);
-    let seq = primeiro.sequencial;
-    const proximoNumero = (): string => {
-      const n = `${prefixoSeq}${String(seq).padStart(6, '0')}`;
-      seq += 1;
-      return n;
+    // Numeração POR SETOR, no formato CONFIGURADO no sistema (NumberingPattern);
+    // sem padrão configurado, usa o mesmo formato do cadastro manual
+    // ({ano}{codigoSetor}{seq}) — NÃO mais o fixo "PAT...". O sequencial inicial
+    // de cada setor vem do maior número existente e é incrementado em memória.
+    const numeracaoBySetor = new Map<string, { prefix: string; seqLen: number; seq: number }>();
+    for (const sectorId of new Set(itens.map((it) => it.sectorId))) {
+      const codigo = setoresCache.get(sectorId)?.codigo ?? '';
+      const { prefix, seqLen, sequencial } = await proximoNumeroConfiguradoTx(tx, {
+        municipalityId: actor.municipalityId,
+        sectorCode: codigo,
+      });
+      numeracaoBySetor.set(sectorId, { prefix, seqLen, seq: sequencial });
+    }
+    const proximoNumero = (sectorId: string): string => {
+      const n = numeracaoBySetor.get(sectorId)!;
+      const numero = formatNumero(n.prefix, n.seqLen, n.seq);
+      n.seq += 1;
+      return numero;
     };
 
     // Resolve (find-or-create) o Almoxarifado de cada setor envolvido. Os bens
@@ -627,7 +636,7 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
 
     const registros: { id: string; numero_patrimonio: string }[] = [];
     for (const it of itens) {
-      const setorNome = setoresCache.get(it.sectorId) ?? it.setorNome;
+      const setorNome = setoresCache.get(it.sectorId)?.name ?? it.setorNome;
       // Usa a trilha contábil completa montada no parse; cai num texto mínimo se
       // o item vier sem ela (ex.: cadastro manual reaproveitando a função).
       const obs =
@@ -642,7 +651,7 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
       for (let u = 0; u < it.quantidade; u++) {
         const p = await tx.patrimonio.create({
           data: {
-            numero_patrimonio: proximoNumero(),
+            numero_patrimonio: proximoNumero(it.sectorId),
             descricao_bem: it.descricao.trim(),
             tipo: it.tipo || 'Não especificado',
             data_aquisicao: new Date(it.dataAquisicao),
