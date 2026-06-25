@@ -8,7 +8,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { redisCache } from '../config/redis';
 import { logInfo } from '../config/logger';
-import { gerarNumeroPatrimonial, proximoNumeroPatrimonialTx } from './patrimonioService';
+import { proximoNumeroConfiguradoTx, formatNumero } from './numberingService';
 
 export interface Actor {
   userId: string;
@@ -229,19 +229,25 @@ export const incorporarRegularizacao = async (
   // Setor precisa ser do município.
   const setor = await prisma.sector.findUnique({
     where: { id: input.sectorId },
-    select: { id: true, municipalityId: true },
+    select: { id: true, codigo: true, municipalityId: true },
   });
   if (!setor || (actor.role !== 'superuser' && setor.municipalityId !== actor.municipalityId)) {
     throw new RegularizacaoValidationError('Setor inválido');
   }
 
-  const numero =
-    input.numero_patrimonio ||
-    (await gerarNumeroPatrimonial({ municipalityId: actor.municipalityId })).numero;
-
   const obs = [ANOTACAO, reg.observacoes].filter(Boolean).join(' | ');
 
   const result = await prisma.$transaction(async (tx) => {
+    // Numeração no formato CONFIGURADO do sistema (sem "PAT"), por setor.
+    let numero = input.numero_patrimonio;
+    if (!numero) {
+      const n = await proximoNumeroConfiguradoTx(tx, {
+        municipalityId: actor.municipalityId,
+        sectorCode: setor.codigo,
+      });
+      numero = formatNumero(n.prefix, n.seqLen, n.sequencial);
+    }
+
     const patrimonio = await tx.patrimonio.create({
       data: {
         numero_patrimonio: numero,
@@ -336,7 +342,7 @@ export const incorporarRegularizacaoLote = async (input: IncorporarLoteInput, ac
   // Setor (um só para o lote) deve ser do município.
   const setor = await prisma.sector.findUnique({
     where: { id: input.sectorId },
-    select: { id: true, municipalityId: true },
+    select: { id: true, codigo: true, municipalityId: true },
   });
   if (!setor || (actor.role !== 'superuser' && setor.municipalityId !== actor.municipalityId)) {
     throw new RegularizacaoValidationError('Setor inválido');
@@ -376,11 +382,14 @@ export const incorporarRegularizacaoLote = async (input: IncorporarLoteInput, ac
     // Manter a leitura do último número e as criações na MESMA transação evita a
     // race em que dois lotes concorrentes leem o mesmo "último número" e colidem
     // no UNIQUE de numero_patrimonio.
-    const primeiro = await proximoNumeroPatrimonialTx(tx, { municipalityId: actor.municipalityId });
-    const prefixoSeq = primeiro.numero.slice(0, primeiro.numero.length - 6);
-    let seq = primeiro.sequencial;
+    // Numeração no formato CONFIGURADO do sistema (sem "PAT"), pelo setor do lote.
+    const base = await proximoNumeroConfiguradoTx(tx, {
+      municipalityId: actor.municipalityId,
+      sectorCode: setor.codigo,
+    });
+    let seq = base.sequencial;
     const proximoNumeroAuto = (): string => {
-      const n = `${prefixoSeq}${String(seq).padStart(6, '0')}`;
+      const n = formatNumero(base.prefix, base.seqLen, seq);
       seq += 1;
       return n;
     };

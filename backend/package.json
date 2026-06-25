@@ -28,6 +28,8 @@
     "cleanup:descricoes:apply": "ts-node --transpile-only scripts/limpar-descricoes-importadas.ts --apply",
     "backfill:historico-importacao": "ts-node --transpile-only scripts/backfill-historico-importacao.ts",
     "backfill:historico-importacao:apply": "ts-node --transpile-only scripts/backfill-historico-importacao.ts --apply",
+    "renumerar:importados": "ts-node --transpile-only scripts/renumerar-importados.ts",
+    "renumerar:importados:apply": "ts-node --transpile-only scripts/renumerar-importados.ts --apply",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage --maxWorkers=2",

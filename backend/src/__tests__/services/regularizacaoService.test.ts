@@ -14,13 +14,13 @@ jest.mock('../../config/logger', () => ({
 const mockCache = { deletePattern: jest.fn() };
 jest.mock('../../config/redis', () => ({ redisCache: mockCache }));
 
-const mockGerarNumero = jest.fn();
-// O lote gera o primeiro número DENTRO da transação via proximoNumeroPatrimonialTx
-// (corrige a race de numeração). A incorporação individual ainda usa gerarNumeroPatrimonial.
-const mockProximoNumeroTx = jest.fn();
-jest.mock('../../services/patrimonioService', () => ({
-  gerarNumeroPatrimonial: (...args: unknown[]) => mockGerarNumero(...args),
-  proximoNumeroPatrimonialTx: (...args: unknown[]) => mockProximoNumeroTx(...args),
+// Numeração (individual e lote) usa o numberingService DENTRO da transação,
+// no formato configurado do sistema (sem "PAT"), por setor.
+const mockProximoConfigurado = jest.fn();
+jest.mock('../../services/numberingService', () => ({
+  proximoNumeroConfiguradoTx: (...args: unknown[]) => mockProximoConfigurado(...args),
+  formatNumero: (prefix: string, seqLen: number, seq: number) =>
+    `${prefix}${String(seq).padStart(seqLen, '0')}`,
 }));
 
 const mockTx = {
@@ -88,9 +88,9 @@ describe('incorporarRegularizacao', () => {
 
   it('gera número, cria patrimônio com anotação e marca incorporado', async () => {
     mockPrisma.regularizacao.findUnique.mockResolvedValue(reg);
-    mockPrisma.sector.findUnique.mockResolvedValue({ id: 's1', municipalityId: 'mun-1' });
-    mockGerarNumero.mockResolvedValue({ numero: 'PAT2026000001' });
-    mockTx.patrimonio.create.mockResolvedValue({ id: 'p1', numero_patrimonio: 'PAT2026000001' });
+    mockPrisma.sector.findUnique.mockResolvedValue({ id: 's1', codigo: '02', municipalityId: 'mun-1' });
+    mockProximoConfigurado.mockResolvedValue({ prefix: '202602', seqLen: 6, sequencial: 1 });
+    mockTx.patrimonio.create.mockResolvedValue({ id: 'p1', numero_patrimonio: '202602000001' });
     mockTx.historicoEntry.create.mockResolvedValue({});
     mockTx.regularizacao.update.mockResolvedValue({ id: 'r1', status: 'incorporado' });
     mockTx.activityLog.create.mockResolvedValue({});
@@ -98,7 +98,7 @@ describe('incorporarRegularizacao', () => {
     const r = await incorporarRegularizacao('r1', incorpInput, actor);
 
     const pdata = mockTx.patrimonio.create.mock.calls[0][0].data;
-    expect(pdata.numero_patrimonio).toBe('PAT2026000001');
+    expect(pdata.numero_patrimonio).toBe('202602000001');
     expect(pdata.valor_aquisicao).toBe(300);
     expect(pdata.forma_aquisicao).toBe('Regularização');
     expect(pdata.observacoes).toContain('regularização — bem pré-existente');
@@ -118,7 +118,7 @@ describe('incorporarRegularizacao', () => {
     mockTx.activityLog.create.mockResolvedValue({});
 
     await incorporarRegularizacao('r1', { ...incorpInput, numero_patrimonio: 'MANUAL-1' }, actor);
-    expect(mockGerarNumero).not.toHaveBeenCalled();
+    expect(mockProximoConfigurado).not.toHaveBeenCalled();
     expect(mockTx.patrimonio.create.mock.calls[0][0].data.numero_patrimonio).toBe('MANUAL-1');
   });
 
@@ -188,9 +188,8 @@ describe('incorporarRegularizacaoLote — várias regularizações de uma vez', 
   };
 
   beforeEach(() => {
-    mockPrisma.sector.findUnique.mockResolvedValue({ id: 's1', municipalityId: 'mun-1' });
-    mockGerarNumero.mockResolvedValue({ numero: 'PAT202600000001', sequencial: 1 });
-    mockProximoNumeroTx.mockResolvedValue({ numero: 'PAT202600000001', sequencial: 1 });
+    mockPrisma.sector.findUnique.mockResolvedValue({ id: 's1', codigo: '02', municipalityId: 'mun-1' });
+    mockProximoConfigurado.mockResolvedValue({ prefix: '202602', seqLen: 6, sequencial: 1 });
     mockTx.historicoEntry.create.mockResolvedValue({});
     mockTx.regularizacao.update.mockResolvedValue({});
     mockTx.activityLog.create.mockResolvedValue({});
@@ -209,7 +208,7 @@ describe('incorporarRegularizacaoLote — várias regularizações de uma vez', 
 
     expect(r.total).toBe(2);
     const numeros = mockTx.patrimonio.create.mock.calls.map((c) => c[0].data.numero_patrimonio);
-    expect(numeros).toEqual(['PAT202600000001', 'PAT202600000002']);
+    expect(numeros).toEqual(['202602000001', '202602000002']);
     expect(mockCache.deletePattern).toHaveBeenCalledWith('patrimonios:*');
   });
 
