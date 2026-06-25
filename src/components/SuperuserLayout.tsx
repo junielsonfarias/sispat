@@ -16,6 +16,7 @@ import {
   GitBranch,
   Shield,
   Mail,
+  Boxes,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { VersionChecker } from '@/components/VersionChecker'
@@ -57,6 +58,11 @@ const navItems = [
     to: '/superuser/public-search',
     label: 'Consulta Pública',
     icon: Search,
+  },
+  {
+    to: '/superuser/assets-by-user',
+    label: 'Bens por Usuário',
+    icon: Boxes,
   },
   {
     to: '/superuser/system-information',

@@ -209,6 +209,7 @@ const navLinks: Record<UserRole, NavItem[]> = {
       children: [
         { to: '/bens-cadastrados', icon: List, label: 'Bens Cadastrados' },
         { to: '/bens-cadastrados/novo', icon: Plus, label: 'Novo Cadastro' },
+        { to: '/bens-cadastrados/novo-lote', icon: Plus, label: 'Cadastro em Lote' },
         { to: '/inventarios', icon: ClipboardList, label: 'Inventários' },
         { to: '/locais', icon: MapPin, label: 'Locais' },
         { to: '/desafetacoes', icon: Gavel, label: 'Desafetação' },

@@ -263,6 +263,7 @@ import regularizacaoRoutes from './routes/regularizacaoRoutes';
 import desfazimentoRoutes from './routes/desfazimentoRoutes';
 import termosRoutes from './routes/termosRoutes';
 import subPatrimonioRoutes from './routes/subPatrimonioRoutes';
+import municipalityRoutes from './routes/municipalityRoutes';
 
 logInfo('✅ Rotas carregadas');
 
@@ -304,6 +305,7 @@ app.use('/api/ficha-templates', fichaTemplatesRoutes);
 app.use('/api/label-templates', labelTemplateRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/system-configuration', systemConfigRoutes);
+app.use('/api/municipalities', municipalityRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/comissoes', comissaoRoutes);
 app.use('/api/desafetacoes', desafetacaoRoutes);

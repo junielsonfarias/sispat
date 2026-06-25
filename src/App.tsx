@@ -148,6 +148,12 @@ const AssetsByUser = lazy(() => import('@/pages/superuser/AssetsByUser'))
 const PermissionManagement = lazy(
   () => import('@/pages/superuser/PermissionManagement'),
 )
+const MunicipalityManagement = lazy(
+  () => import('@/pages/superuser/MunicipalityManagement'),
+)
+const PublicSearchConfig = lazy(
+  () => import('@/pages/superuser/PublicSearchConfig'),
+)
 const EmailConfig = lazy(() => import('@/pages/configuracoes/EmailConfig'))
 
 
@@ -230,6 +236,14 @@ function App() {
               <Route
                 path="/superuser/permissions"
                 element={<PermissionManagement />}
+              />
+              <Route
+                path="/superuser/municipalities"
+                element={<MunicipalityManagement />}
+              />
+              <Route
+                path="/superuser/public-search"
+                element={<PublicSearchConfig />}
               />
               <Route
                 path="/superuser/email-config"
