@@ -7,12 +7,15 @@ import {
   useEffect,
   useMemo,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Inventory, InventoryItem, Patrimonio } from '@/types'
 import { toast } from '@/hooks/use-toast'
-import { usePatrimonio } from './PatrimonioContext'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
 import { logger } from '@/lib/logger'
+import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
+
+const PATRIMONIO_STATS_KEY = ['patrimonio-stats']
 
 interface InventoryContextType {
   inventories: Inventory[]
@@ -44,7 +47,7 @@ const InventoryContext = createContext<InventoryContextType | null>(null)
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const [allInventories, setAllInventories] = useState<Inventory[]>([])
-  const { patrimonios, setPatrimonios } = usePatrimonio()
+  const queryClient = useQueryClient()
   const { user } = useAuth()
 
   const fetchInventories = useCallback(async () => {
@@ -269,26 +272,38 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       // de forma atômica (transação) — é a fonte da verdade.
       const result = await api.post<{
         inventario: unknown
-        extraviados: { id: string; numero_patrimonio: string }[]
+        extraviados: {
+          id: string
+          numero_patrimonio: string
+          descricao_bem?: string
+          statusAnterior?: string
+        }[]
       }>(`/inventarios/${inventoryId}/finalizar`)
 
-      const extraviadoIds = new Set((result.extraviados || []).map((e) => e.id))
+      const extraviados = result.extraviados || []
 
-      // Ressincroniza o estado local de patrimônios (sem nova chamada de API),
-      // para que dashboard/listas reflitam os bens extraviados imediatamente.
-      const newlyMissing = patrimonios.filter((p) => extraviadoIds.has(p.id))
-      if (extraviadoIds.size > 0) {
-        setPatrimonios(
-          patrimonios.map((p) =>
-            extraviadoIds.has(p.id) ? { ...p, status: 'extraviado' } : p,
-          ),
-        )
+      // Monta a lista de extraviados a partir da RESPOSTA do backend (fonte da
+      // verdade) — o contexto não mantém mais todos os bens em memória.
+      const newlyMissing = extraviados.map(
+        (e) =>
+          ({
+            id: e.id,
+            numero_patrimonio: e.numero_patrimonio,
+            descricao_bem: e.descricao_bem ?? '',
+            status: e.statusAnterior ?? 'ativo',
+          }) as Patrimonio,
+      )
+
+      if (extraviados.length > 0) {
+        // Invalidar caches React Query para telas sob demanda refletirem os bens extraviados
+        void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ALL_KEY })
+        void queryClient.invalidateQueries({ queryKey: PATRIMONIO_STATS_KEY })
       }
 
       await fetchInventories()
       return newlyMissing
     },
-    [patrimonios, setPatrimonios, fetchInventories],
+    [queryClient, fetchInventories],
   )
 
   const deleteInventory = useCallback(

@@ -517,10 +517,21 @@ export const finalizeInventario = async (id: string, actor: Actor) => {
   const result = await prisma.$transaction(async (tx) => {
     const items = await tx.inventoryItem.findMany({
       where: { inventoryId: id },
-      include: { patrimonio: { select: { id: true, status: true, numero_patrimonio: true } } },
+      include: {
+        patrimonio: {
+          select: { id: true, status: true, numero_patrimonio: true, descricao_bem: true },
+        },
+      },
     });
 
-    const extraviados: { id: string; numero_patrimonio: string }[] = [];
+    // descricao_bem + statusAnterior para a tela de resumo do inventário (o
+    // frontend não tem mais o array completo de bens em memória).
+    const extraviados: {
+      id: string;
+      numero_patrimonio: string;
+      descricao_bem: string;
+      statusAnterior: string;
+    }[] = [];
 
     for (const item of items) {
       if (
@@ -545,6 +556,8 @@ export const finalizeInventario = async (id: string, actor: Actor) => {
         extraviados.push({
           id: item.patrimonio.id,
           numero_patrimonio: item.patrimonio.numero_patrimonio,
+          descricao_bem: item.patrimonio.descricao_bem,
+          statusAnterior: item.patrimonio.status,
         });
       }
     }

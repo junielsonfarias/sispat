@@ -24,11 +24,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { Patrimonio } from '@/types'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type SortConfig = {
   column: keyof Patrimonio | 'bookValue'
@@ -36,7 +37,7 @@ type SortConfig = {
 }
 
 const Depreciacao = () => {
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [], isLoading } = useAllPatrimonios()
   const [sorting, setSorting] = useState<SortConfig>({
     column: 'numero_patrimonio',
     direction: 'asc',
@@ -94,6 +95,16 @@ const Depreciacao = () => {
         {label}
         <Icon className="ml-2 h-4 w-4" />
       </Button>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-96" />
+      </div>
     )
   }
 

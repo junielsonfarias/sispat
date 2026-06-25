@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar } from '@/components/ui/calendar'
@@ -11,58 +11,22 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useHistoricoRecente } from '@/hooks/queries/use-historico-recente'
 import { formatDate } from '@/lib/utils'
 import { useSectorFilter } from '@/hooks/useSectorFilter'
-import { logger } from '@/lib/logger'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const AnaliseTemporal = () => {
-  const { patrimonios } = usePatrimonio()
-  const { filterPatrimonios, accessInfo } = useSectorFilter()
+  // Linha do tempo vem agregada do backend (ordenada, limitada e já filtrada por
+  // tenant + permissão de setor) — não carrega mais todos os bens.
+  const { data: timelineEvents = [], isLoading } = useHistoricoRecente(20)
+  const { accessInfo } = useSectorFilter()
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
 
-  const timelineEvents = useMemo(() => {
-    // ✅ CORREÇÃO: Verificar se patrimonios existe e é array
-    if (!patrimonios || !Array.isArray(patrimonios)) {
-      console.warn('⚠️ [AnaliseTemporal] patrimonios não está disponível ou não é array:', patrimonios)
-      return []
-    }
-
-    // ✅ CORREÇÃO: Filtrar patrimônios por setor do usuário
-    const filteredPatrimonios = filterPatrimonios(patrimonios)
-    logger.debug('[AnaliseTemporal] Patrimônios filtrados', {
-      total: patrimonios.length,
-      filtrados: filteredPatrimonios.length,
-      accessInfo
-    })
-
-    const events = filteredPatrimonios.flatMap((p) => {
-      // ✅ CORREÇÃO: Verificar se historico_movimentacao existe e é array
-      if (!p.historico_movimentacao || !Array.isArray(p.historico_movimentacao)) {
-        console.warn('⚠️ [AnaliseTemporal] historico_movimentacao não está disponível para patrimônio:', p.numero_patrimonio)
-        return [] // Retorna array vazio se não há histórico
-      }
-
-      return p.historico_movimentacao.map((h) => ({
-        ...h,
-        patrimonio: p.numero_patrimonio,
-      }))
-    })
-
-    logger.debug('[AnaliseTemporal] Eventos encontrados', { count: events.length })
-
-    return events
-      .filter((event) => event && event.date) // ✅ Filtrar eventos válidos
-      .sort((a, b) => {
-        const dateA = new Date(a.date)
-        const dateB = new Date(b.date)
-        return dateB.getTime() - dateA.getTime()
-      })
-      .slice(0, 20)
-  }, [patrimonios, filterPatrimonios, accessInfo])
-
   const getEventIcon = (action: string) => {
-    if (action.toLowerCase().includes('criação'))
+    if (action.toLowerCase().includes('importação'))
+      return { icon: Plus, color: 'bg-emerald-500' }
+    if (action.toLowerCase().includes('criação') || action.toLowerCase().includes('cadastro'))
       return { icon: Plus, color: 'bg-blue-500' }
     if (action.toLowerCase().includes('baixa'))
       return { icon: Minus, color: 'bg-red-500' }
@@ -71,6 +35,19 @@ const AnaliseTemporal = () => {
     if (action.toLowerCase().includes('manutenção'))
       return { icon: Wrench, color: 'bg-purple-500' }
     return { icon: Plus, color: 'bg-gray-500' }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-6 w-64" />
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Skeleton className="lg:col-span-2 h-96" />
+          <Skeleton className="h-96" />
+        </div>
+      </div>
+    )
   }
 
   return (

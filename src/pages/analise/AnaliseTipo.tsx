@@ -27,13 +27,14 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { useSectors } from '@/contexts/SectorContext'
 import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { format, subMonths } from 'date-fns'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const AnaliseTipo = () => {
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [], isLoading } = useAllPatrimonios()
   const { sectors } = useSectors()
   const { filterPatrimonios, accessInfo } = useSectorFilter()
 
@@ -89,6 +90,19 @@ const AnaliseTipo = () => {
       return { month: monthStr, ...acquisitionsByType }
     })
   }, [filteredPatrimonios])
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-6 w-64" />
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { useSync } from '@/hooks/useSync'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -24,7 +24,7 @@ const getStatusColor = (status: string) => {
 }
 
 const BensCadastradosSimplificado = () => {
-  const { patrimonios, isLoading } = usePatrimonio()
+  const { data: patrimonios = [], isLoading } = useAllPatrimonios()
   const { isSyncing, startSync } = useSync()
   const { user: _user } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')

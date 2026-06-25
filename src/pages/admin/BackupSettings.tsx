@@ -19,6 +19,8 @@ import {
 import { Download, Upload, History, Loader2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { api } from '@/services/api-adapter'
+import type { Patrimonio } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import { useSectors } from '@/contexts/SectorContext'
 import { useLocais } from '@/contexts/LocalContext'
@@ -48,15 +50,19 @@ export default function BackupSettings() {
   const [backupHistory, setBackupHistory] = useState<BackupHistory[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { patrimonios, setPatrimonios } = usePatrimonio()
+  const { setPatrimonios } = usePatrimonio()
   const { user, users } = useAuth()
   const { sectors, setSectors } = useSectors()
   const { locais, setLocais } = useLocais()
 
-  const createBackup = () => {
+  const createBackup = async () => {
     if (!user) return
     setIsBackingUp(true)
     try {
+      // Busca o conjunto COMPLETO sob demanda (o contexto não carrega mais tudo
+      // no login). Sem isto, o backup sairia vazio.
+      const resp = await api.get<{ patrimonios: Patrimonio[] }>('/patrimonios?all=true')
+      const patrimonios = Array.isArray(resp) ? resp : (resp.patrimonios ?? [])
       const backupData = {
         patrimonios,
         users,

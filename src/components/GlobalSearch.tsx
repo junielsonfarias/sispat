@@ -8,7 +8,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { useSearch } from '@/contexts/SearchContext'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { useAuth } from '@/hooks/useAuth'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { File, User, Building } from 'lucide-react'
@@ -16,7 +16,9 @@ import { File, User, Building } from 'lucide-react'
 export const GlobalSearch = () => {
   const { isOpen, closeSearch } = useSearch()
   const navigate = useNavigate()
-  const { patrimonios } = usePatrimonio()
+  // Só carrega o conjunto completo quando a busca está ABERTA — este componente
+  // fica sempre montado no layout; sem o gate, dispararia o load a cada sessão.
+  const { data: patrimonios = [] } = useAllPatrimonios({ enabled: isOpen })
   const { users } = useAuth()
 
   const runCommand = (command: () => unknown) => {

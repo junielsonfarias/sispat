@@ -22,14 +22,15 @@ import {
   Legend,
   Tooltip,
 } from '@/lib/recharts-compat'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { useSectors } from '@/contexts/SectorContext'
 import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { formatCurrency } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const AnaliseSetor = () => {
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [], isLoading } = useAllPatrimonios()
   const { sectors } = useSectors()
   const { filterPatrimonios, accessInfo, userSectors } = useSectorFilter()
   // ✅ CORREÇÃO: Inicializar com setores do usuário se não pode ver todos os dados
@@ -106,6 +107,22 @@ const AnaliseSetor = () => {
 
     return data
   }, [sectorStats, patrimonios])
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-6 w-64" />
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-9 w-96" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32" />)}
+        </div>
+        <Skeleton className="h-[450px]" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">

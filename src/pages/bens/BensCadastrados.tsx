@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { format } from 'date-fns'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode, Printer, ChevronLeft, ChevronRight, Filter, X, FileUp } from 'lucide-react'
+import { Plus, Search, Eye, Edit, Trash, RefreshCw, Loader2, QrCode, Printer, ChevronLeft, ChevronRight, Filter, X, FileUp, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -34,6 +34,7 @@ import {
 import { Patrimonio } from '@/types'
 import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { LabelPrintDialog } from '@/components/bens/LabelPrintDialog'
+import { DistribuirDialog } from '@/components/bens/DistribuirDialog'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useConfirm, ConfirmOptions } from '@/hooks/useConfirm'
@@ -91,7 +92,8 @@ const renderTable = (
   handleShowQrCode: (patrimonio: Patrimonio) => void,
   canUpdate: boolean,
   canDelete: boolean,
-  confirm: (opts: ConfirmOptions) => Promise<boolean>
+  confirm: (opts: ConfirmOptions) => Promise<boolean>,
+  onDistribuir: (patrimonioId: string) => void
 ) => {
   if (!Array.isArray(filteredData)) {
     return (
@@ -245,6 +247,26 @@ const renderTable = (
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    {canUpdate && patrimonio.local_objeto?.trim().toLowerCase() === 'almoxarifado' && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onDistribuir(patrimonio.id)}
+                            aria-label={`Distribuir patrimônio ${patrimonio.numero_patrimonio} para local final`}
+                            className="touch-target min-h-[40px] min-w-[40px] text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 hover:scale-110"
+                          >
+                            <MapPin className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Distribuir para local final</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    )}
                     {canUpdate && (
                     <TooltipProvider>
                       <Tooltip>
@@ -368,7 +390,13 @@ const BensCadastrados = () => {
     tipo: '',
     dataAquisicaoInicio: '',
     dataAquisicaoFim: '',
+    aguardandoDistribuicao: false,
   })
+
+  // Estado do diálogo de distribuição
+  const [distribuirDialogOpen, setDistribuirDialogOpen] = useState(false)
+  // IDs para distribuição: pode vir de uma ação individual (1 id) ou da seleção em lote
+  const [distribuirIds, setDistribuirIds] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const [qrCodeAsset, setQrCodeAsset] = useState<Patrimonio | null>(null)
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
@@ -423,6 +451,9 @@ const BensCadastrados = () => {
       }
       if (filters.dataAquisicaoFim) {
         params.append('dataAquisicaoFim', filters.dataAquisicaoFim)
+      }
+      if (filters.aguardandoDistribuicao) {
+        params.append('aguardandoDistribuicao', 'true')
       }
 
       const response = await api.get<{
@@ -497,6 +528,7 @@ const BensCadastrados = () => {
     if (filters.sectorId) count++
     if (filters.tipo) count++
     if (filters.dataAquisicaoInicio || filters.dataAquisicaoFim) count++
+    if (filters.aguardandoDistribuicao) count++
     return count
   }, [filters])
 
@@ -509,6 +541,7 @@ const BensCadastrados = () => {
       tipo: '',
       dataAquisicaoInicio: '',
       dataAquisicaoFim: '',
+      aguardandoDistribuicao: false,
     })
     setCurrentPage(1)
   }, [])
@@ -567,6 +600,25 @@ const BensCadastrados = () => {
     setSelectedTemplate(template)
   }
 
+  // Abre o diálogo de distribuição para um único bem (ação de linha)
+  const handleDistribuirSingle = (patrimonioId: string) => {
+    setDistribuirIds([patrimonioId])
+    setDistribuirDialogOpen(true)
+  }
+
+  // Abre o diálogo de distribuição para os bens selecionados em lote
+  const handleDistribuirLote = () => {
+    setDistribuirIds(selectedAssets)
+    setDistribuirDialogOpen(true)
+  }
+
+  // Callback de sucesso: fecha diálogo, limpa seleção, refaz o fetch
+  const handleDistribuirSuccess = () => {
+    setSelectedAssets([])
+    setDistribuirIds([])
+    fetchPatrimonios()
+  }
+
 
   return (
     <div className="flex-1 p-3 sm:p-4 lg:p-6">
@@ -609,11 +661,31 @@ const BensCadastrados = () => {
                   </Tooltip>
                 </TooltipProvider>
               )}
+              {selectedAssets.length > 0 && canUpdate && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleDistribuirLote}
+                        variant="outline"
+                        className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px] transition-all duration-200 hover:scale-105 border-blue-300 text-blue-700 hover:bg-blue-50"
+                        aria-label={`Distribuir ${selectedAssets.length} patrimônio(s) selecionado(s) para local final`}
+                      >
+                        <MapPin className="mr-2 h-4 w-4" />
+                        Distribuir ({selectedAssets.length})
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Distribuir bens do Almoxarifado para o local final</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               {selectedAssets.length > 0 && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button 
+                      <Button
                         onClick={() => setIsBulkPrintDialogOpen(true)}
                         variant="default"
                         className="touch-target min-h-[48px] sm:min-h-[44px] lg:min-h-[40px] transition-all duration-200 hover:scale-105"
@@ -842,6 +914,30 @@ const BensCadastrados = () => {
                 </div>
               </div>
 
+              {/* Filtro: Aguardando Distribuição */}
+              <div className="mt-4 pt-3 border-t">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="filtro-aguardando-distribuicao"
+                    checked={filters.aguardandoDistribuicao}
+                    onCheckedChange={(checked) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        aguardandoDistribuicao: checked === true,
+                      }))
+                    }
+                    aria-label="Mostrar apenas bens aguardando distribuição (no Almoxarifado)"
+                  />
+                  <label
+                    htmlFor="filtro-aguardando-distribuicao"
+                    className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+                  >
+                    Aguardando distribuição
+                  </label>
+                  <span className="text-xs text-gray-500">(bens no Almoxarifado)</span>
+                </div>
+              </div>
+
               {/* Filtros Ativos */}
               {activeFiltersCount > 0 && (
                 <div className="mt-4 pt-4 border-t">
@@ -892,6 +988,15 @@ const BensCadastrados = () => {
                         />
                       </Badge>
                     )}
+                    {filters.aguardandoDistribuicao && (
+                      <Badge variant="secondary" className="gap-1 bg-blue-100 text-blue-800 border-blue-200 border">
+                        Aguardando distribuição
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => setFilters((prev) => ({ ...prev, aguardandoDistribuicao: false }))}
+                        />
+                      </Badge>
+                    )}
                   </div>
                 </div>
               )}
@@ -939,7 +1044,8 @@ const BensCadastrados = () => {
               handleShowQrCode,
               canUpdate,
               canDelete,
-              confirm
+              confirm,
+              handleDistribuirSingle
             )}
 
             {/* Mobile Cards */}
@@ -1067,6 +1173,18 @@ const BensCadastrados = () => {
                               Ver
                             </Link>
                           </Button>
+                          {canUpdate && patrimonio.local_objeto?.trim().toLowerCase() === 'almoxarifado' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDistribuirSingle(patrimonio.id)}
+                            aria-label={`Distribuir patrimônio ${patrimonio.numero_patrimonio} para local final`}
+                            className="h-8 px-3 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <MapPin className="h-3 w-3 mr-1" />
+                            Distribuir
+                          </Button>
+                          )}
                           {canUpdate && (
                           <Button
                             variant="ghost"
@@ -1503,6 +1621,15 @@ const BensCadastrados = () => {
             defaultTemplate={labelTemplates.find((t: any) => t.isDefault) || labelTemplates[0]}
           />
         )}
+
+        {/* Dialog de Distribuição (individual ou lote) */}
+        <DistribuirDialog
+          open={distribuirDialogOpen}
+          onOpenChange={setDistribuirDialogOpen}
+          selectedIds={distribuirIds}
+          patrimoniosVisiveis={filteredData}
+          onSuccess={handleDistribuirSuccess}
+        />
       </div>
     </div>
   )

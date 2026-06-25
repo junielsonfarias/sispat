@@ -48,11 +48,22 @@ export interface ListQuery {
   ano_licitacao?: string;
   dataAquisicaoInicio?: string;
   dataAquisicaoFim?: string;
+  // 'true' filtra bens que ainda estão no Almoxarifado do setor (aguardando a
+  // secretaria distribuir para o local final).
+  aguardandoDistribuicao?: string;
+  // 'true' retorna o conjunto COMPLETO (sem paginação) — usado pelo contexto do
+  // frontend que alimenta telas de análise/agregação. Limitado por MAX_ALL.
+  all?: string;
   page?: string;
   limit?: string;
   orderBy?: string;
   orderDirection?: 'asc' | 'desc';
 }
+
+// Nome do Local de entrada dos bens importados (espelha
+// ALMOXARIFADO_LOCAL_NOME de importacaoMaterialService). Um bem está
+// "aguardando distribuição" enquanto seu local for o Almoxarifado.
+export const ALMOXARIFADO_LOCAL_NOME = 'Almoxarifado';
 
 // Status que aparecem na vista pública (sem autenticação). Os valores anteriores
 // (em_manutencao/cedido/em_uso) eram legados e não existiam em DB — após a
@@ -199,6 +210,13 @@ const buildListWhere = async (
     where.data_aquisicao = range;
   }
 
+  // Bens ainda no Almoxarifado (aguardando a secretaria distribuir).
+  if (query.aguardandoDistribuicao === 'true') {
+    where.local = {
+      is: { name: { equals: ALMOXARIFADO_LOCAL_NOME, mode: 'insensitive' } },
+    };
+  }
+
   if (actor) {
     const permissionFilters = await QueryOptimizer.applyPermissionFilters(actor, 'patrimonio');
     Object.assign(where, permissionFilters);
@@ -207,8 +225,15 @@ const buildListWhere = async (
   return where;
 };
 
+// Teto de segurança para a busca "completa" (?all=true) — evita carregar um
+// volume absurdo de uma vez. Bate com a realidade de patrimônio municipal.
+const MAX_ALL = 100_000;
+
 export const listPatrimonios = async (query: ListQuery, actor: Actor) => {
-  const pagination = QueryOptimizer.applyPagination(query.page ?? '1', query.limit ?? '50');
+  const fetchAll = query.all === 'true';
+  const pagination = fetchAll
+    ? { skip: 0, take: MAX_ALL, page: 1, limit: MAX_ALL }
+    : QueryOptimizer.applyPagination(query.page ?? '1', query.limit ?? '50');
   const ordering = QueryOptimizer.applyOrdering(
     query.orderBy ?? 'createdAt',
     query.orderDirection ?? 'desc',
@@ -219,19 +244,29 @@ export const listPatrimonios = async (query: ListQuery, actor: Actor) => {
   let result = await redisCache.get<{ patrimonios: unknown[]; total: number }>(cacheKey);
 
   if (!result) {
-    result = await executeOptimizedQuery(cacheKey, async () => {
-      const [patrimonios, total] = await Promise.all([
-        prisma.patrimonio.findMany({
-          where,
-          skip: pagination.skip,
-          take: pagination.take,
-          orderBy: ordering,
-          include: STATIC_INCLUDE,
-        }),
-        prisma.patrimonio.count({ where }),
-      ]);
-      return { patrimonios, total };
-    });
+    // useCache=false: NÃO usar o cache em memória do executeOptimizedQuery aqui.
+    // O Redis (redisCache) já é a camada de cache desta listagem e é invalidado
+    // em toda escrita (create/update/delete/baixa/importação via
+    // CacheUtils.invalidatePatrimonios / deletePattern). O cache em memória, ao
+    // contrário, NÃO é invalidado em escritas e "sombreava" o Redis — fazia bens
+    // recém-criados/importados sumirem da lista por até 5 min.
+    result = await executeOptimizedQuery(
+      cacheKey,
+      async () => {
+        const [patrimonios, total] = await Promise.all([
+          prisma.patrimonio.findMany({
+            where,
+            skip: pagination.skip,
+            take: pagination.take,
+            orderBy: ordering,
+            include: STATIC_INCLUDE,
+          }),
+          prisma.patrimonio.count({ where }),
+        ]);
+        return { patrimonios, total };
+      },
+      false,
+    );
     await redisCache.set(cacheKey, result, 300);
   }
 
@@ -245,6 +280,186 @@ export const listPatrimonios = async (query: ListQuery, actor: Actor) => {
       pages: Math.ceil(total / pagination.limit),
     },
   };
+};
+
+// Estatísticas agregadas para o dashboard. Calculadas no banco (sem o limite de
+// paginação da listagem) — corrige o dashboard que antes contava só a 1ª página
+// (50) dos patrimônios carregados no contexto do frontend.
+export interface PatrimonioStats {
+  totalCount: number;
+  totalValue: number; // soma do valor_aquisicao dos bens NÃO baixados
+  activePercentage: number; // % de bens com status 'ativo' sobre o total
+  ativosCount: number;
+  maintenanceCount: number;
+  baixadosCount: number;
+  baixadosLastMonth: number;
+  setoresCount: number;
+  porStatus: { status: string; quantidade: number }[];
+  porTipo: { tipo: string; quantidade: number; valor: number }[];
+  porSetor: { setor: string; quantidade: number }[];
+  porMes: { mes: string; valor: number }[]; // 'YYYY-MM' → soma do valor adquirido
+}
+
+export const getPatrimonioStats = async (actor: Actor): Promise<PatrimonioStats> => {
+  // Mesmo escopo de tenant + permissão da listagem.
+  const where: Record<string, unknown> = { municipalityId: actor.municipalityId };
+  const permissionFilters = await QueryOptimizer.applyPermissionFilters(actor, 'patrimonio');
+  Object.assign(where, permissionFilters);
+
+  // Colunas mínimas, sem paginação — agrega em memória no servidor.
+  const rows = await prisma.patrimonio.findMany({
+    where,
+    select: {
+      status: true,
+      tipo: true,
+      setor_responsavel: true,
+      valor_aquisicao: true,
+      data_aquisicao: true,
+      data_baixa: true,
+    },
+  });
+
+  const umMesAtras = new Date();
+  umMesAtras.setMonth(umMesAtras.getMonth() - 1);
+
+  const porStatusMap = new Map<string, number>();
+  const porTipoMap = new Map<string, { quantidade: number; valor: number }>();
+  const porSetorMap = new Map<string, number>();
+  const porMesMap = new Map<string, number>();
+  const setores = new Set<string>();
+
+  let totalValue = 0;
+  let ativosCount = 0;
+  let maintenanceCount = 0;
+  let baixadosCount = 0;
+  let baixadosLastMonth = 0;
+
+  for (const r of rows) {
+    const status = r.status ?? 'ativo';
+    const tipo = r.tipo || 'Não especificado';
+    const setor = r.setor_responsavel || 'Sem Setor';
+    const valor = typeof r.valor_aquisicao === 'number' ? r.valor_aquisicao : 0;
+
+    porStatusMap.set(status, (porStatusMap.get(status) ?? 0) + 1);
+    const t = porTipoMap.get(tipo) ?? { quantidade: 0, valor: 0 };
+    t.quantidade += 1;
+    t.valor += valor;
+    porTipoMap.set(tipo, t);
+    porSetorMap.set(setor, (porSetorMap.get(setor) ?? 0) + 1);
+    setores.add(setor);
+
+    if (status === 'ativo') ativosCount += 1;
+    if (status === 'manutencao') maintenanceCount += 1;
+    if (status === 'baixado') baixadosCount += 1;
+    if (status !== 'baixado') totalValue += valor;
+    if (r.data_baixa && new Date(r.data_baixa) >= umMesAtras) baixadosLastMonth += 1;
+
+    if (r.data_aquisicao) {
+      const d = new Date(r.data_aquisicao);
+      const mes = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      porMesMap.set(mes, (porMesMap.get(mes) ?? 0) + valor);
+    }
+  }
+
+  const totalCount = rows.length;
+  return {
+    totalCount,
+    totalValue,
+    activePercentage: totalCount > 0 ? Math.round((ativosCount / totalCount) * 100) : 0,
+    ativosCount,
+    maintenanceCount,
+    baixadosCount,
+    baixadosLastMonth,
+    setoresCount: setores.size,
+    porStatus: Array.from(porStatusMap, ([status, quantidade]) => ({ status, quantidade })),
+    porTipo: Array.from(porTipoMap, ([tipo, v]) => ({ tipo, quantidade: v.quantidade, valor: v.valor }))
+      .sort((a, b) => b.quantidade - a.quantidade),
+    porSetor: Array.from(porSetorMap, ([setor, quantidade]) => ({ setor, quantidade }))
+      .sort((a, b) => b.quantidade - a.quantidade),
+    porMes: Array.from(porMesMap, ([mes, valor]) => ({ mes, valor })).sort((a, b) =>
+      a.mes.localeCompare(b.mes),
+    ),
+  };
+};
+
+// Conjunto COMPLETO de bens (sem paginação) com projeção mínima para telas que
+// agregam/calculam por bem no cliente (depreciação, análises, etc.). Corrige o
+// teto de 50 do PatrimonioContext nessas telas. Tenant + permissão de setor —
+// vale para todos os papéis. Trava de segurança em MAX_ANALYTICS.
+const MAX_ANALYTICS = 100_000;
+
+export const listPatrimoniosAnalytics = async (actor: Actor) => {
+  const where: Record<string, unknown> = { municipalityId: actor.municipalityId };
+  const permissionFilters = await QueryOptimizer.applyPermissionFilters(actor, 'patrimonio');
+  Object.assign(where, permissionFilters);
+
+  const patrimonios = await prisma.patrimonio.findMany({
+    where,
+    take: MAX_ANALYTICS,
+    orderBy: { numero_patrimonio: 'asc' },
+    select: {
+      id: true,
+      numero_patrimonio: true,
+      descricao_bem: true,
+      tipo: true,
+      status: true,
+      situacao_bem: true,
+      setor_responsavel: true,
+      sectorId: true,
+      valor_aquisicao: true,
+      data_aquisicao: true,
+      data_baixa: true,
+      vida_util_anos: true,
+      valor_residual: true,
+      metodo_depreciacao: true,
+      createdAt: true,
+    },
+  });
+
+  if (patrimonios.length >= MAX_ANALYTICS) {
+    logWarn('listPatrimoniosAnalytics atingiu o teto de registros', {
+      max: MAX_ANALYTICS,
+      municipalityId: actor.municipalityId,
+    });
+  }
+
+  return { patrimonios, total: patrimonios.length };
+};
+
+// Eventos de histórico mais recentes (para a Análise Temporal). Evita carregar
+// todos os bens com seus históricos só para montar uma linha do tempo. Aplica
+// tenant + permissão de setor (via relação patrimonio).
+export const getHistoricoRecente = async (actor: Actor, limit = 20) => {
+  const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+  const permissionFilters = await QueryOptimizer.applyPermissionFilters(actor, 'patrimonio');
+
+  const entries = await prisma.historicoEntry.findMany({
+    where: {
+      patrimonioId: { not: null },
+      patrimonio: { municipalityId: actor.municipalityId, ...permissionFilters },
+    },
+    orderBy: { date: 'desc' },
+    take,
+    select: {
+      id: true,
+      date: true,
+      action: true,
+      details: true,
+      user: true,
+      patrimonio: { select: { id: true, numero_patrimonio: true, setor_responsavel: true } },
+    },
+  });
+
+  return entries.map((e) => ({
+    id: e.id,
+    date: e.date,
+    action: e.action,
+    details: e.details,
+    user: e.user,
+    patrimonioId: e.patrimonio?.id ?? null,
+    patrimonio: e.patrimonio?.numero_patrimonio ?? '',
+    setor_responsavel: e.patrimonio?.setor_responsavel ?? '',
+  }));
 };
 
 /** Resultado tipado para getById: ok | not-found | forbidden */
@@ -827,6 +1042,136 @@ export const updatePatrimonio = async (
   await CacheUtils.invalidatePatrimonios();
   await redisCache.delete(`patrimonio:${patrimonio.id}`);
   return patrimonio;
+};
+
+export interface DistribuirInput {
+  ids: string[];
+  localId: string;
+}
+
+// Distribui bens do Almoxarifado para um Local final do MESMO setor. Reaproveita
+// as regras de tenant/permissão; grava localId + local_objeto e registra no
+// histórico. Atômico (ou move todos, ou nenhum). Pensado para LOTE (as N
+// unidades idênticas de uma importação distribuídas de uma vez).
+export const distribuirPatrimonios = async (
+  input: DistribuirInput,
+  actor: Actor,
+  audit: AuditContext = {},
+): Promise<{ total: number }> => {
+  const ids = Array.from(new Set((input.ids ?? []).filter(Boolean)));
+  if (ids.length === 0) {
+    throw new PatrimonioConflictError('Selecione ao menos um bem para distribuir.');
+  }
+  if (!input.localId) {
+    throw new PatrimonioConflictError('Informe o local de destino.');
+  }
+
+  // Local de destino precisa existir e ser do mesmo município do ator.
+  const destino = await prisma.local.findUnique({
+    where: { id: input.localId },
+    select: { id: true, name: true, sectorId: true, municipalityId: true },
+  });
+  if (
+    !destino ||
+    (actor.role !== 'superuser' && destino.municipalityId !== actor.municipalityId)
+  ) {
+    throw new PatrimonioNotFoundError();
+  }
+  // Não faz sentido "distribuir" para o próprio Almoxarifado.
+  if (destino.name.trim().toLowerCase() === ALMOXARIFADO_LOCAL_NOME.toLowerCase()) {
+    throw new PatrimonioConflictError(
+      'O destino não pode ser o próprio Almoxarifado. Escolha o local final (escola, prédio, etc.).',
+    );
+  }
+
+  const bens = await prisma.patrimonio.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      numero_patrimonio: true,
+      municipalityId: true,
+      sectorId: true,
+      status: true,
+      local: { select: { name: true } },
+    },
+  });
+  if (bens.length !== ids.length) {
+    throw new PatrimonioNotFoundError();
+  }
+
+  // Valida cada bem: tenant, setor (permissão) e que pertence ao mesmo setor do
+  // local de destino (não se distribui para local de outra secretaria).
+  for (const bem of bens) {
+    if (actor.role !== 'superuser' && bem.municipalityId !== actor.municipalityId) {
+      throw new PatrimonioNotFoundError();
+    }
+    if (bem.status === 'baixado' || bem.status === 'em_transferencia' || bem.status === 'emprestado') {
+      throw new PatrimonioConflictError(
+        `Bem ${bem.numero_patrimonio} está em um estado que impede a distribuição (${bem.status}).`,
+      );
+    }
+    if (bem.sectorId !== destino.sectorId) {
+      throw new PatrimonioConflictError(
+        `O local de destino é de outro setor. O bem ${bem.numero_patrimonio} só pode ser distribuído para um local do seu próprio setor.`,
+      );
+    }
+    const { allowed, sectorName } = await ensureSectorAccess(actor, bem.sectorId);
+    if (!allowed) {
+      throw new PatrimonioForbiddenError(
+        sectorName
+          ? `Usuário não tem permissão para distribuir bens do setor ${sectorName}`
+          : 'Acesso negado',
+      );
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const bem of bens) {
+      await tx.patrimonio.update({
+        where: { id: bem.id },
+        data: {
+          localId: destino.id,
+          local_objeto: destino.name,
+          updatedBy: actor.userId,
+        },
+      });
+      try {
+        await tx.historicoEntry.create({
+          data: {
+            patrimonioId: bem.id,
+            date: new Date(),
+            action: 'DISTRIBUIÇÃO',
+            details: `Distribuído de ${bem.local?.name ?? ALMOXARIFADO_LOCAL_NOME} para ${destino.name}`,
+            user: actor.userId,
+          },
+        });
+      } catch (err) {
+        logError('Erro ao criar histórico de distribuição', err);
+      }
+    }
+
+    try {
+      await tx.activityLog.create({
+        data: {
+          userId: actor.userId,
+          action: 'DISTRIBUIR_PATRIMONIOS',
+          entityType: 'PATRIMONIO',
+          entityId: bens[0].id,
+          details: `Distribuídos ${bens.length} bem(ns) para ${destino.name}`,
+          ipAddress: audit.ipAddress ?? 'unknown',
+          userAgent: audit.userAgent ?? 'unknown',
+        },
+      });
+    } catch (err) {
+      logError('Erro ao criar log de atividade na distribuição', err);
+    }
+  });
+
+  await CacheUtils.invalidatePatrimonios();
+  for (const bem of bens) {
+    await redisCache.delete(`patrimonio:${bem.id}`);
+  }
+  return { total: bens.length };
 };
 
 export const deletePatrimonio = async (

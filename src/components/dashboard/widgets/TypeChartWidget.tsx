@@ -1,39 +1,49 @@
 import { useMemo } from 'react'
 import { Pie, PieChart, Cell, Tooltip, Legend } from '@/lib/recharts-compat'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { Skeleton } from '@/components/ui/skeleton'
+import { usePatrimonioStats } from '@/hooks/queries/use-patrimonio-stats'
+
+const CHART_COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+]
 
 export const TypeChartWidget = () => {
-  const { patrimonios } = usePatrimonio()
+  const { data: stats, isLoading, isError } = usePatrimonioStats()
 
   const typeChartData = useMemo(() => {
-    // Validação de dados
-    if (!patrimonios || patrimonios.length === 0) {
-      return []
-    }
+    if (!stats || stats.porTipo.length === 0) return []
 
-    const typeDistribution = patrimonios.reduce(
-      (acc, p) => {
-        acc[p.tipo] = (acc[p.tipo] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    )
-    
-    const chartColors = [
-      'hsl(var(--chart-1))',
-      'hsl(var(--chart-2))',
-      'hsl(var(--chart-3))',
-      'hsl(var(--chart-4))',
-      'hsl(var(--chart-5))',
-    ]
-    
-    return Object.entries(typeDistribution).map(([name, value], index) => ({
-      name,
-      value,
-      fill: chartColors[index % chartColors.length],
+    return stats.porTipo.map(({ tipo, quantidade }, index) => ({
+      name: tipo,
+      value: quantidade,
+      fill: CHART_COLORS[index % CHART_COLORS.length],
     }))
-  }, [patrimonios])
+  }, [stats])
+
+  if (isLoading) {
+    return <Skeleton className="h-[300px] w-full" />
+  }
+
+  if (isError) {
+    return (
+      <div className="h-[300px] w-full flex items-center justify-center text-sm text-muted-foreground">
+        Não foi possível carregar o gráfico por tipo.
+      </div>
+    )
+  }
+
+  if (typeChartData.length === 0) {
+    return (
+      <div className="h-[300px] w-full flex items-center justify-center text-sm text-muted-foreground">
+        Nenhum dado de tipo disponível.
+      </div>
+    )
+  }
 
   return (
     <ChartContainer config={{}} className="h-[300px] w-full">

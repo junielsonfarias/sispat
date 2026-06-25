@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -20,7 +21,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { useAuth } from '@/hooks/useAuth'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { Patrimonio } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -40,10 +41,10 @@ interface AssetWithCreator extends Patrimonio {
 
 export default function AssetsByUser() {
   const { users } = useAuth()
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [], isLoading } = useAllPatrimonios()
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined)
 
-  const userOptions: SearchableSelectOption[] = users.map((u) => ({
+  const userOptions: SearchableSelectOption[] = (users ?? []).map((u) => ({
     value: u.id,
     label: u.name,
   }))
@@ -51,15 +52,15 @@ export default function AssetsByUser() {
   const assetsWithCreators = useMemo(() => {
     return patrimonios
       .map((p) => {
-        const creationEvent = p.historico_movimentacao.find(
-          (h) => h.action === 'Criação',
-        )
-        const creatorUser = users.find((u) => u.name === creationEvent?.user)
+        // Agrupa pelo criador do bem (createdBy é sempre preenchido). O histórico
+        // vem do backend como `historico` (relação) e nem sempre traz o evento de
+        // criação — por isso não dependemos dele aqui.
+        const creatorUser = (users ?? []).find((u) => u.id === p.createdBy)
         return {
           ...p,
           creator: {
-            id: creatorUser?.id || 'unknown',
-            name: creationEvent?.user || 'Desconhecido',
+            id: creatorUser?.id || p.createdBy || 'unknown',
+            name: creatorUser?.name || 'Desconhecido',
           },
         }
       })
@@ -93,6 +94,15 @@ export default function AssetsByUser() {
     if (!selectedUserId) return groupedAssets
     return groupedAssets.filter((group) => group.user.id === selectedUserId)
   }, [groupedAssets, selectedUserId])
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-8 w-72" />
+        <Skeleton className="h-96" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">

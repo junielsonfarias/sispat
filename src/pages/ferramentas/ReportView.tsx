@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { useReportTemplates } from '@/contexts/ReportTemplateContext'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Patrimonio, ReportTemplate, ReportComponent } from '@/types'
@@ -49,7 +49,7 @@ const ReportView = () => {
   const { templateId } = useParams<{ templateId: string }>()
   const [searchParams] = useSearchParams()
   const { getTemplateById } = useReportTemplates()
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [] } = useAllPatrimonios()
   const { settings } = useCustomization()
   const [template, setTemplate] = useState<ReportTemplate | null | undefined>(
     undefined,

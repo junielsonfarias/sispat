@@ -8,7 +8,11 @@ import {
   addNote as svcAddNote,
   createPatrimonio as svcCreate,
   deletePatrimonio as svcDelete,
+  distribuirPatrimonios as svcDistribuir,
   gerarNumeroPatrimonial as svcGerarNumero,
+  getPatrimonioStats as svcStats,
+  getHistoricoRecente as svcHistoricoRecente,
+  listPatrimoniosAnalytics as svcAnalytics,
   getByNumero as svcGetByNumero,
   getPatrimonioById as svcGetById,
   getPublicPatrimonioByNumero as svcGetPublicByNumero,
@@ -255,6 +259,97 @@ export const updatePatrimonio = async (req: Request, res: Response): Promise<voi
       error: 'Erro ao atualizar patrimônio',
       details: error instanceof Error ? error.message : String(error),
     });
+  }
+};
+
+/**
+ * Estatísticas agregadas para o dashboard
+ * GET /api/patrimonios/stats
+ */
+export const getPatrimonioStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const actor = asActor(req);
+    if (!actor) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+    const stats = await svcStats(actor);
+    res.json(stats);
+  } catch (error) {
+    logError('Erro ao calcular estatísticas de patrimônio', error, { userId: req.user?.userId });
+    res.status(500).json({ error: 'Erro ao calcular estatísticas' });
+  }
+};
+
+/**
+ * Histórico recente (linha do tempo) para a Análise Temporal
+ * GET /api/patrimonios/historico-recente?limit=20
+ */
+export const getHistoricoRecente = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const actor = asActor(req);
+    if (!actor) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+    const limit = req.query.limit ? Number(req.query.limit) : 20;
+    const eventos = await svcHistoricoRecente(actor, limit);
+    res.json({ eventos });
+  } catch (error) {
+    logError('Erro ao buscar histórico recente', error, { userId: req.user?.userId });
+    res.status(500).json({ error: 'Erro ao buscar histórico recente' });
+  }
+};
+
+/**
+ * Conjunto completo de bens (projeção mínima) para telas de análise/depreciação
+ * GET /api/patrimonios/analytics
+ */
+export const listPatrimoniosAnalytics = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const actor = asActor(req);
+    if (!actor) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+    const result = await svcAnalytics(actor);
+    res.json(result);
+  } catch (error) {
+    logError('Erro ao listar bens para análise', error, { userId: req.user?.userId });
+    res.status(500).json({ error: 'Erro ao listar bens para análise' });
+  }
+};
+
+/**
+ * Distribuir bens do Almoxarifado para um local final (lote)
+ * POST /api/patrimonios/distribuir
+ */
+export const distribuirPatrimonios = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const actor = asActor(req);
+    if (!actor) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
+    const { ids, localId } = req.body ?? {};
+    const resultado = await svcDistribuir({ ids, localId }, actor, auditFromReq(req));
+    res.json({ message: `${resultado.total} bem(ns) distribuído(s) com sucesso`, ...resultado });
+  } catch (error) {
+    if (error instanceof PatrimonioNotFoundError) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+    if (error instanceof PatrimonioForbiddenError) {
+      res.status(403).json({ error: error.message });
+      return;
+    }
+    if (error instanceof PatrimonioConflictError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    logError('Erro ao distribuir patrimônios', error, { userId: req.user?.userId });
+    res.status(500).json({ error: 'Erro ao distribuir patrimônios' });
   }
 };
 

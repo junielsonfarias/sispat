@@ -71,7 +71,7 @@ import {
   Layers,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
 import { formatDate } from '@/lib/utils'
@@ -193,7 +193,7 @@ interface CreateFormProps {
 }
 
 function CreateDesfazimentoForm({ onSuccess, onClose }: CreateFormProps) {
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [] } = useAllPatrimonios()
   const [submitting, setSubmitting] = useState(false)
   const [comissoes, setComissoes] = useState<ComissaoItem[]>([])
   const [loadingComissoes, setLoadingComissoes] = useState(false)
@@ -542,7 +542,7 @@ function LoteDesfazimentoDialog({
   loadingComissoes,
   onSuccess,
 }: LoteDesfazimentoDialogProps) {
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [] } = useAllPatrimonios()
 
   const patrimoniosDisponiveis = patrimonios.filter((p) => p.status !== 'baixado')
 

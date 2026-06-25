@@ -488,10 +488,10 @@ describe('inventarioService — finalizeInventario', () => {
       status: 'em_andamento',
     });
     mockTx.inventoryItem.findMany.mockResolvedValueOnce([
-      { encontrado: true, patrimonio: { id: 'p1', status: 'ativo', numero_patrimonio: '0001' } },
-      { encontrado: false, patrimonio: { id: 'p2', status: 'ativo', numero_patrimonio: '0002' } },
+      { encontrado: true, patrimonio: { id: 'p1', status: 'ativo', numero_patrimonio: '0001', descricao_bem: 'Bem 1' } },
+      { encontrado: false, patrimonio: { id: 'p2', status: 'ativo', numero_patrimonio: '0002', descricao_bem: 'Bem 2' } },
       // já baixado: não deve virar extraviado
-      { encontrado: false, patrimonio: { id: 'p3', status: 'baixado', numero_patrimonio: '0003' } },
+      { encontrado: false, patrimonio: { id: 'p3', status: 'baixado', numero_patrimonio: '0003', descricao_bem: 'Bem 3' } },
     ]);
     mockTx.patrimonio.update.mockResolvedValue({});
     mockTx.historicoEntry.create.mockResolvedValue({});
@@ -512,7 +512,9 @@ describe('inventarioService — finalizeInventario', () => {
         data: expect.objectContaining({ status: 'concluido' }),
       }),
     );
-    expect(result.extraviados).toEqual([{ id: 'p2', numero_patrimonio: '0002' }]);
+    expect(result.extraviados).toEqual([
+      { id: 'p2', numero_patrimonio: '0002', descricao_bem: 'Bem 2', statusAnterior: 'ativo' },
+    ]);
     expect(mockCache.deletePattern).toHaveBeenCalledWith('inventarios:*');
     expect(mockCache.deletePattern).toHaveBeenCalledWith('patrimonios:*');
   });

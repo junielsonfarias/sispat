@@ -62,7 +62,7 @@ import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
 import { formatDate } from '@/lib/utils'
 import { logger } from '@/lib/logger'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { useImovel } from '@/contexts/ImovelContext'
 import {
   createDesafetacaoSchema,
@@ -172,7 +172,7 @@ interface LoteDialogProps {
 }
 
 function DesafetacaoLoteDialog({ open, comissoes, onClose, onSuccess }: LoteDialogProps) {
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [] } = useAllPatrimonios()
   const { imoveis } = useImovel()
 
   // Campos do formulário de lote

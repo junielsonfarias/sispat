@@ -19,7 +19,7 @@ import {
   Breadcrumb,
   BreadcrumbList,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { calculateDepreciation } from '@/lib/depreciation-utils'
 import { formatCurrency } from '@/lib/utils'
 import { useSectors } from '@/contexts/SectorContext'
@@ -37,7 +37,7 @@ import { exportInBatches, getColumnsWithLabels, exportToPdf, exportToXlsx, expor
 import { toast } from '@/hooks/use-toast'
 
 const RelatoriosDepreciacao = () => {
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [] } = useAllPatrimonios()
   const { sectors } = useSectors()
   const { user } = useAuth()
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
@@ -132,7 +132,7 @@ const RelatoriosDepreciacao = () => {
             toast({ description: 'Formato de exportação não suportado.' })
         }
       } catch (error) {
-        console.error('Erro na exportação:', error)
+        if (import.meta.env.DEV) console.error('Erro na exportação:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',

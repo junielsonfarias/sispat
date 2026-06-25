@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -80,7 +80,7 @@ const Exportacao = () => {
     label: c.name,
   }))
 
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [] } = useAllPatrimonios()
 
   const form = useForm<ExportFormValues>({
     resolver: zodResolver(exportSchema),

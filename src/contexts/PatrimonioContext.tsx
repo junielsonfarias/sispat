@@ -4,14 +4,19 @@ import {
   ReactNode,
   useContext,
   useCallback,
-  useEffect,
   useMemo,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Patrimonio } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/api-adapter'
 import { isConnectionDownError } from '@/lib/api-error'
 import { logger } from '@/lib/logger'
+import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
+
+// Chaves adicionais invalidadas após mutações
+const PATRIMONIO_STATS_KEY = ['patrimonio-stats']
+const PATRIMONIOS_ANALYTICS_KEY = ['patrimonios-analytics']
 
 interface PatrimonioContextType {
   patrimonios: Patrimonio[]
@@ -32,15 +37,17 @@ interface PatrimonioContextType {
   deletePatrimonio: (patrimonioId: string) => Promise<void>
   getPatrimonioById: (patrimonioId: string) => Patrimonio | undefined
   fetchPatrimonioById: (patrimonioId: string) => Promise<{ patrimonio: Patrimonio }>
+  fetchPatrimonios: () => Promise<void>
 }
 
 const PatrimonioContext = createContext<PatrimonioContextType | null>(null)
 
 export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
   const [patrimonios, setPatrimonios] = useState<Patrimonio[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
   const fetchPatrimonios = useCallback(async () => {
     if (!user) return
@@ -48,7 +55,12 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     setError(null)
     try {
       logger.debug('PatrimonioContext: Buscando patrimônios...')
-      const response = await api.get<{ patrimonios: Patrimonio[]; pagination: any }>('/patrimonios')
+      // ?all=true → conjunto COMPLETO (sem o teto de 50 da paginação). As telas
+      // de análise/agregação/relatório que leem este array precisam de todos os
+      // bens, não só da 1ª página. O backend aplica tenant + permissão de setor.
+      const response = await api.get<{ patrimonios: Patrimonio[]; pagination: any }>(
+        '/patrimonios?all=true',
+      )
       logger.debug('PatrimonioContext: Resposta da API', {
         response,
         tipo: typeof response,
@@ -80,11 +92,9 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user])
 
-  useEffect(() => {
-    if (user) {
-      fetchPatrimonios()
-    }
-  }, [user, fetchPatrimonios])
+  // NOTA: o fetch automático ao login foi REMOVIDO intencionalmente.
+  // As telas de análise/listagem/export usam useAllPatrimonios() (React Query, sob demanda).
+  // fetchPatrimonios() permanece exportado para uso manual (SyncContext, etc.).
 
   const addPatrimonio = async (
     patrimonioData: Omit<
@@ -102,8 +112,12 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     )
     // Extrair o patrimônio da resposta
     const newPatrimonio = response.patrimonio
-    // Adicionar o novo patrimônio à lista local
+    // Adicionar o novo patrimônio à lista local (atualização otimista do contexto legado)
     setPatrimonios((prev) => Array.isArray(prev) ? [...prev, newPatrimonio] : [newPatrimonio])
+    // Invalidar caches React Query para que telas sob demanda reflitam a mudança
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ALL_KEY })
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIO_STATS_KEY })
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ANALYTICS_KEY })
     return newPatrimonio
   }
 
@@ -141,11 +155,19 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     setPatrimonios((prev) =>
       Array.isArray(prev) ? prev.map((p) => (p.id === updatedPatrimonio.id ? updatedPatrimonio : p)) : [updatedPatrimonio]
     )
+    // Invalidar caches React Query para que telas sob demanda reflitam a mudança
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ALL_KEY })
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIO_STATS_KEY })
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ANALYTICS_KEY })
   }
 
   const deletePatrimonio = async (patrimonioId: string) => {
     await api.delete(`/patrimonios/${patrimonioId}`)
     setPatrimonios((prev) => Array.isArray(prev) ? prev.filter((p) => p.id !== patrimonioId) : [])
+    // Invalidar caches React Query para que telas sob demanda reflitam a mudança
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ALL_KEY })
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIO_STATS_KEY })
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ANALYTICS_KEY })
   }
 
   const getPatrimonioById = useCallback(
@@ -161,7 +183,16 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
     async (patrimonioId: string): Promise<{ patrimonio: Patrimonio }> => {
       try {
         const response = await api.get<{ patrimonio: Patrimonio }>(`/patrimonios/${patrimonioId}`)
-        return response
+        // O backend devolve o histórico no campo `historico`; o frontend lê
+        // `historico_movimentacao`. Normaliza para a aba de histórico do BensView
+        // (e telas de detalhe) exibir corretamente.
+        const p = response.patrimonio as Patrimonio & { historico?: Patrimonio['historico_movimentacao'] }
+        return {
+          patrimonio: {
+            ...p,
+            historico_movimentacao: p.historico_movimentacao ?? p.historico ?? [],
+          },
+        }
       } catch (error) {
         logger.error('Erro ao buscar patrimônio por ID:', error)
         throw error
@@ -183,6 +214,7 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
       deletePatrimonio,
       getPatrimonioById,
       fetchPatrimonioById,
+      fetchPatrimonios,
     }),
     [
       patrimonios,
@@ -193,6 +225,7 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
       deletePatrimonio,
       getPatrimonioById,
       fetchPatrimonioById,
+      fetchPatrimonios,
     ],
   )
 

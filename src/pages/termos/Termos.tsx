@@ -18,7 +18,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ScrollText, Printer, RefreshCw, Info, Search } from 'lucide-react'
-import { usePatrimonio } from '@/contexts/PatrimonioContext'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
 import { formatDate } from '@/lib/utils'
@@ -231,7 +231,7 @@ function TermoDocumento({ termo }: TermoDocumentoProps) {
 
 export default function Termos() {
   const [searchParams] = useSearchParams()
-  const { patrimonios, isLoading: loadingPatrimonios } = usePatrimonio()
+  const { data: patrimonios = [], isLoading: loadingPatrimonios } = useAllPatrimonios()
 
   // Pré-selecionar via query string (usado pelo DesfazimentoList)
   const [selectedPatrimonioId, setSelectedPatrimonioId] = useState<string>(

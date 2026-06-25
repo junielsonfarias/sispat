@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import {
   listPatrimonios,
   getPatrimonio,
@@ -7,6 +8,10 @@ import {
   createPatrimonio,
   updatePatrimonio,
   deletePatrimonio,
+  distribuirPatrimonios,
+  getPatrimonioStats,
+  getHistoricoRecente,
+  listPatrimoniosAnalytics,
   addNote,
   registrarBaixaPatrimonio,
 } from '../controllers/patrimonioController';
@@ -20,6 +25,12 @@ import {
   paginationQuerySchema,
   uuidParamSchema,
 } from '@sispat/shared';
+
+// Distribuição em lote: lista de IDs de bens + local de destino.
+const distribuirBodySchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, 'Selecione ao menos um bem.').max(2000),
+  localId: z.string().uuid('Local de destino inválido.'),
+});
 
 const router = Router();
 
@@ -36,6 +47,24 @@ router.get('/', zodValidate({ query: paginationQuerySchema }), listPatrimonios);
  * @desc Sincronizar patrimônios (retorna lista atualizada)
  */
 router.get('/sync', zodValidate({ query: paginationQuerySchema }), listPatrimonios);
+
+/**
+ * @route GET /api/patrimonios/stats
+ * @desc Estatísticas agregadas para o dashboard (DEVE VIR ANTES DE /:id)
+ */
+router.get('/stats', getPatrimonioStats);
+
+/**
+ * @route GET /api/patrimonios/analytics
+ * @desc Conjunto completo (projeção mínima) p/ telas de análise (DEVE VIR ANTES DE /:id)
+ */
+router.get('/analytics', listPatrimoniosAnalytics);
+
+/**
+ * @route GET /api/patrimonios/historico-recente
+ * @desc Linha do tempo de eventos recentes (DEVE VIR ANTES DE /:id)
+ */
+router.get('/historico-recente', getHistoricoRecente);
 
 /**
  * @route GET /api/patrimonios/gerar-numero
@@ -57,6 +86,17 @@ router.get(
   '/:id',
   zodValidate({ params: uuidParamSchema }),
   getPatrimonio,
+);
+
+/**
+ * @route POST /api/patrimonios/distribuir
+ * @desc Distribuir bens do Almoxarifado para um local final (lote)
+ */
+router.post(
+  '/distribuir',
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
+  zodValidate({ body: distribuirBodySchema }),
+  distribuirPatrimonios,
 );
 
 /**

@@ -27,7 +27,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { Patrimonio, Imovel } from '@/types'
 import { useDebounce } from '@/hooks/use-debounce'
 import { LabelPreview } from '@/components/LabelPreview'
@@ -46,7 +46,7 @@ import { Label } from '@/components/ui/label'
 type Asset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
 
 const GerarEtiquetas = () => {
-  const { patrimonios } = usePatrimonio()
+  const { data: patrimonios = [] } = useAllPatrimonios()
   const { imoveis } = useImovel()
   const { templates } = useLabelTemplates()
   const { user } = useAuth()

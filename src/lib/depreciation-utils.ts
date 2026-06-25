@@ -1,4 +1,3 @@
-import { Patrimonio } from '@/types'
 import { differenceInMonths } from 'date-fns'
 
 export interface DepreciationInfo {
@@ -14,8 +13,20 @@ export interface DepreciationInfo {
   lastDepreciationDate: Date
 }
 
+/**
+ * Campos mínimos necessários para calcular a depreciação.
+ * Qualquer objeto que contenha esses campos é compatível (ex.: Patrimonio,
+ * PatrimonioAnalytics), sem exigir o tipo completo.
+ */
+export interface DepreciationInput {
+  valor_aquisicao: number
+  data_aquisicao: Date | string
+  vida_util_anos?: number
+  valor_residual?: number
+}
+
 export const calculateDepreciation = (
-  patrimonio: Patrimonio,
+  patrimonio: DepreciationInput,
 ): DepreciationInfo => {
   const {
     valor_aquisicao,

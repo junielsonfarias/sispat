@@ -6,6 +6,7 @@ import {
   useCallback,
   useRef,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast, useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useActivityLog } from './ActivityLogContext'
@@ -13,6 +14,9 @@ import { usePatrimonio } from './PatrimonioContext'
 import { api } from '@/services/api-adapter'
 import { Patrimonio } from '@/types'
 import { logger } from '@/lib/logger'
+import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
+
+const PATRIMONIO_STATS_KEY = ['patrimonio-stats']
 
 interface SyncContextType {
   isSyncing: boolean
@@ -29,6 +33,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth()
   const { logActivity } = useActivityLog()
   const { setPatrimonios } = usePatrimonio()
+  const queryClient = useQueryClient()
   const { dismiss } = useToast()
   const syncProcessRef = useRef<NodeJS.Timeout | null>(null)
   const toastIdRef = useRef<string | null>(null)
@@ -86,6 +91,9 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       if (Array.isArray(updatedPatrimonios)) {
         setPatrimonios(updatedPatrimonios)
         setLastSync(new Date())
+        // Invalidar caches React Query para telas sob demanda refletirem a sincronização
+        void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ALL_KEY })
+        void queryClient.invalidateQueries({ queryKey: PATRIMONIO_STATS_KEY })
       }
       
       toast({
@@ -118,7 +126,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsSyncing(false)
     }
-  }, [isSyncing, user, logActivity, setPatrimonios, dismiss])
+  }, [isSyncing, user, logActivity, setPatrimonios, queryClient, dismiss])
 
   return (
     <SyncContext.Provider

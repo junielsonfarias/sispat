@@ -1,54 +1,54 @@
 import { useMemo } from 'react'
 import { Bar, BarChart, Cell, Tooltip, XAxis, YAxis } from '@/lib/recharts-compat'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
-import { Patrimonio } from '@/types'
+import { Skeleton } from '@/components/ui/skeleton'
+import { usePatrimonioStats } from '@/hooks/queries/use-patrimonio-stats'
+
+const STATUS_CONFIG: Record<string, { label: string; fill: string }> = {
+  ativo:      { label: 'Ativo',       fill: 'hsl(var(--chart-2))' },
+  manutencao: { label: 'Manutenção',  fill: 'hsl(var(--chart-3))' },
+  inativo:    { label: 'Inativo',     fill: 'hsl(var(--muted))'   },
+  baixado:    { label: 'Baixado',     fill: 'hsl(var(--chart-4))' },
+}
+
+/** Garante que todos os status aparecem no gráfico, mesmo com quantidade 0. */
+const DEFAULT_STATUSES = ['ativo', 'manutencao', 'inativo', 'baixado']
 
 export const StatusChartWidget = () => {
-  const { patrimonios } = usePatrimonio()
+  const { data: stats, isLoading, isError } = usePatrimonioStats()
 
   const statusChartData = useMemo(() => {
-    // Validação de dados
-    if (!patrimonios || patrimonios.length === 0) {
-      return [
-        { name: 'Ativo', value: 0, fill: 'hsl(var(--chart-2))' },
-        { name: 'Manutenção', value: 0, fill: 'hsl(var(--chart-3))' },
-        { name: 'Inativo', value: 0, fill: 'hsl(var(--muted))' },
-        { name: 'Baixado', value: 0, fill: 'hsl(var(--chart-4))' },
-      ]
+    if (!stats) {
+      return DEFAULT_STATUSES.map((s) => ({
+        name: STATUS_CONFIG[s]?.label ?? s,
+        value: 0,
+        fill: STATUS_CONFIG[s]?.fill ?? 'hsl(var(--muted))',
+      }))
     }
 
-    const statusCounts = patrimonios.reduce(
-      (acc, p) => {
-        acc[p.status] = (acc[p.status] || 0) + 1
-        return acc
-      },
-      {} as Record<Patrimonio['status'], number>,
+    // Índice rápido por status vindo do backend
+    const countByStatus = Object.fromEntries(
+      stats.porStatus.map(({ status, quantidade }) => [status, quantidade]),
     )
-    
-    return [
-      {
-        name: 'Ativo',
-        value: statusCounts.ativo || 0,
-        fill: 'hsl(var(--chart-2))',
-      },
-      {
-        name: 'Manutenção',
-        value: statusCounts.manutencao || 0,
-        fill: 'hsl(var(--chart-3))',
-      },
-      {
-        name: 'Inativo',
-        value: statusCounts.inativo || 0,
-        fill: 'hsl(var(--muted))',
-      },
-      {
-        name: 'Baixado',
-        value: statusCounts.baixado || 0,
-        fill: 'hsl(var(--chart-4))',
-      },
-    ]
-  }, [patrimonios])
+
+    return DEFAULT_STATUSES.map((s) => ({
+      name: STATUS_CONFIG[s]?.label ?? s,
+      value: countByStatus[s] ?? 0,
+      fill: STATUS_CONFIG[s]?.fill ?? 'hsl(var(--muted))',
+    }))
+  }, [stats])
+
+  if (isLoading) {
+    return <Skeleton className="h-[300px] w-full" />
+  }
+
+  if (isError) {
+    return (
+      <div className="h-[300px] w-full flex items-center justify-center text-sm text-muted-foreground">
+        Não foi possível carregar o gráfico de status.
+      </div>
+    )
+  }
 
   return (
     <ChartContainer config={{}} className="h-[300px] w-full">

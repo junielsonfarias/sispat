@@ -11,6 +11,7 @@ import {
   Transferencia,
   TransferenciaStatus,
 } from '@/types'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { usePatrimonio } from './PatrimonioContext'
@@ -18,6 +19,7 @@ import { useNotifications } from './NotificationContext'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { unwrapList } from '@/services/api-helpers'
+import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
 
 interface TransferContextType {
   transferencias: Transferencia[]
@@ -43,6 +45,13 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth()
   const { updatePatrimonio, getPatrimonioById } = usePatrimonio()
   const { addNotification } = useNotifications()
+  const queryClient = useQueryClient()
+
+  // Após mover/alterar bens via transferência, atualiza as telas sob demanda.
+  const invalidatePatrimonios = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ALL_KEY })
+    void queryClient.invalidateQueries({ queryKey: ['patrimonio-stats'] })
+  }, [queryClient])
 
   // Buscar transferências da API
   const fetchTransferencias = useCallback(async () => {
@@ -106,6 +115,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
         }
 
         setAllTransferencias(prev => [...prev, newTransferencia])
+        invalidatePatrimonios()
 
         const patrimonio = getPatrimonioById(data.patrimonioId)
         if (patrimonio) {
@@ -131,7 +141,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
         throw error
       }
     },
-    [getPatrimonioById, addNotification]
+    [getPatrimonioById, addNotification, invalidatePatrimonios]
   )
 
   const updateTransferenciaStatus = useCallback(
@@ -175,6 +185,9 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
               local_objeto: transferencia.localDestino ?? patrimonio.local_objeto,
             })
           }
+          // O backend já moveu o bem; garante que as telas sob demanda reflitam,
+          // mesmo quando o patrimônio não está no cache local do contexto.
+          invalidatePatrimonios()
         }
 
         addNotification({
@@ -198,15 +211,16 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
         throw error
       }
     },
-    [allTransferencias, updatePatrimonio, getPatrimonioById, addNotification]
+    [allTransferencias, updatePatrimonio, getPatrimonioById, addNotification, invalidatePatrimonios]
   )
 
   const deleteTransferencia = useCallback(
     async (id: string) => {
       try {
         await api.delete(`/transfers/${id}`)
-        
+
         setAllTransferencias(prev => prev.filter(t => t.id !== id))
+        invalidatePatrimonios()
 
         toast({
           title: 'Sucesso',
@@ -222,7 +236,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
         throw error
       }
     },
-    []
+    [invalidatePatrimonios]
   )
 
   const value: TransferContextType = {
