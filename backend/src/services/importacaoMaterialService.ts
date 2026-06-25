@@ -16,6 +16,7 @@
  */
 
 import pdfParse from 'pdf-parse';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { redisCache } from '../config/redis';
 import { logInfo } from '../config/logger';
@@ -585,7 +586,9 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
     }
   }
 
-  const criados = await prisma.$transaction(async (tx) => {
+  let criados: { id: string; numero_patrimonio: string }[];
+  try {
+  criados = await prisma.$transaction(async (tx) => {
     // Numeração POR SETOR, no formato CONFIGURADO no sistema (NumberingPattern);
     // sem padrão configurado, usa o mesmo formato do cadastro manual
     // ({ano}{codigoSetor}{seq}) — NÃO mais o fixo "PAT...". O sequencial inicial
@@ -725,6 +728,17 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
     maxWait: 15000,
     timeout: 120000,
   });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2002'
+    ) {
+      throw new ImportacaoValidationError(
+        'Conflito de numeração — tente novamente',
+      );
+    }
+    throw err;
+  }
 
   await redisCache.deletePattern('patrimonios:*');
   logInfo('✅ Importação de patrimônios concluída', { total: criados.length });

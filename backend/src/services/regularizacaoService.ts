@@ -237,7 +237,9 @@ export const incorporarRegularizacao = async (
 
   const obs = [ANOTACAO, reg.observacoes].filter(Boolean).join(' | ');
 
-  const result = await prisma.$transaction(async (tx) => {
+  let result: { regularizacao: Awaited<ReturnType<typeof prisma.regularizacao.update>>; patrimonio: Awaited<ReturnType<typeof prisma.patrimonio.create>> };
+  try {
+    result = await prisma.$transaction(async (tx) => {
     // Numeração no formato CONFIGURADO do sistema (sem "PAT"), por setor.
     let numero = input.numero_patrimonio;
     if (!numero) {
@@ -298,6 +300,17 @@ export const incorporarRegularizacao = async (
 
     return { regularizacao: updatedReg, patrimonio };
   });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2002'
+    ) {
+      throw new RegularizacaoValidationError(
+        'Conflito de numeração — tente novamente',
+      );
+    }
+    throw err;
+  }
 
   await redisCache.deletePattern('patrimonios:*');
   logInfo('✅ Regularização incorporada', { id, patrimonioId: result.patrimonio.id });
@@ -376,7 +389,9 @@ export const incorporarRegularizacaoLote = async (input: IncorporarLoteInput, ac
     validados.push({ reg, numero: it.numero_patrimonio });
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  let result: { regularizacaoId: string; patrimonio: Awaited<ReturnType<typeof prisma.patrimonio.create>> }[];
+  try {
+    result = await prisma.$transaction(async (tx) => {
     // Numeração DENTRO da transação: lê o último número com o mesmo `tx` que cria
     // os patrimônios e incrementa em memória para os itens sem número explícito.
     // Manter a leitura do último número e as criações na MESMA transação evita a
@@ -452,6 +467,17 @@ export const incorporarRegularizacaoLote = async (input: IncorporarLoteInput, ac
 
     return incorporados;
   });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2002'
+    ) {
+      throw new RegularizacaoValidationError(
+        'Conflito de numeração — tente novamente',
+      );
+    }
+    throw err;
+  }
 
   await redisCache.deletePattern('patrimonios:*');
   logInfo('✅ Regularização incorporada em lote', { total: result.length });

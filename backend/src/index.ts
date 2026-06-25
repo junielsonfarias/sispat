@@ -91,8 +91,29 @@ app.use(helmet({
 }));
 
 // CORS
+// Aceita lista de origens de CORS_ORIGIN (separadas por vírgula), com fallback
+// para FRONTEND_URL e depois http://localhost:8080.
+// O CSP (acima) continua usando FRONTEND_URL para o connectSrc — comportamento
+// mantido por estar em contexto diferente (security header, não CORS).
+const rawCorsOrigins =
+  process.env.CORS_ORIGIN ||
+  process.env.FRONTEND_URL ||
+  'http://localhost:8080';
+const allowedOrigins = rawCorsOrigins
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+const corsOriginFn = (
+  origin: string | undefined,
+  callback: (err: Error | null, allow?: boolean) => void,
+) => {
+  // Requisições sem Origin (ex.: curl, Postman, SSR server-side) são permitidas.
+  if (!origin) return callback(null, true);
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+  callback(new Error(`Origem não autorizada pelo CORS: ${origin}`));
+};
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:8080',
+  origin: corsOriginFn,
   credentials: true,
   optionsSuccessStatus: 200,
 };

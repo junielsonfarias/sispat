@@ -746,7 +746,9 @@ export const createPatrimonio = async (
     }
   }
 
-  const patrimonio = await prisma.$transaction(async (tx) => {
+  let patrimonio: Awaited<ReturnType<typeof prisma.patrimonio.create>>;
+  try {
+    patrimonio = await prisma.$transaction(async (tx) => {
     const novo = await tx.patrimonio.create({
       data: {
         numero_patrimonio: input.numero_patrimonio,
@@ -836,6 +838,17 @@ export const createPatrimonio = async (
 
     return novo;
   });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2002'
+    ) {
+      throw new PatrimonioConflictError(
+        'Número de patrimônio já existe — tente novamente',
+      );
+    }
+    throw err;
+  }
 
   await CacheUtils.invalidatePatrimonios();
   await redisCache.delete(`patrimonio:${patrimonio.id}`);

@@ -1,8 +1,8 @@
 // Setup para testes
-import { PrismaClient } from '@prisma/client'
-
-// Mock do Prisma Client para testes
-jest.mock('../lib/prisma', () => ({
+// Nota: cada suíte de serviço/controller faz jest.mock('../../config/database', ...)
+// individualmente. O mock global abaixo cobre apenas módulos que possam importar
+// config/database sem ter um mock local (ex.: health.test.ts).
+jest.mock('../config/database', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),
@@ -47,6 +47,7 @@ jest.mock('../lib/prisma', () => ({
     $connect: jest.fn(),
     $disconnect: jest.fn(),
   },
+  testDatabaseConnection: jest.fn(() => Promise.resolve(true)),
 }))
 
 // Global test timeout

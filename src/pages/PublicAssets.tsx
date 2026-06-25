@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/collapsible'
 import { Patrimonio, Imovel } from '@/types'
 import { useDebounce } from '@/hooks/use-debounce'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { useImovel } from '@/hooks/useImovel'
 import { usePublicSearch } from '@/contexts/PublicSearchContext'
 import { useCustomization } from '@/contexts/CustomizationContext'
@@ -91,7 +91,8 @@ export default function PublicAssets() {
   const navigate = useNavigate()
   const { settings: publicSettings } = usePublicSearch()
   const { settings: customizationSettings } = useCustomization()
-  const { patrimonios } = usePatrimonio()
+  // Conjunto completo sob demanda (o PatrimonioContext não carrega mais no login).
+  const { data: patrimonios = [] } = useAllPatrimonios()
   const { imoveis } = useImovel()
   const { isSyncing, startSync, lastSync } = useSync()
   
