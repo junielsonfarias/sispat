@@ -241,6 +241,7 @@ const ImportarRelatorio = () => {
       formData.append('arquivo', arquivo)
 
       const token = getAuthToken()
+      const csrf = readCsrfCookie()
       const response = await axios.post<RelatorioParseado>(
         `${BACKEND_URL}/api/importacao/material-permanente/preview`,
         formData,
@@ -248,6 +249,8 @@ const ImportarRelatorio = () => {
           headers: {
             'Content-Type': 'multipart/form-data',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            // Sessão por cookie exige o double-submit do CSRF (igual ao confirmar).
+            ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
           },
           timeout: 60000,
           withCredentials: true,
