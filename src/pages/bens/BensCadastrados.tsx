@@ -192,7 +192,11 @@ const renderTable = (
                     {patrimonio.numero_patrimonio}
                   </Link>
                 </TableCell>
-                <TableCell className="text-sm text-gray-700">{patrimonio.descricao_bem}</TableCell>
+                <TableCell className="text-sm text-gray-700">
+                  <div className="max-w-[280px] line-clamp-2" title={patrimonio.descricao_bem}>
+                    {patrimonio.descricao_bem}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Badge
                     className={`${getStatusColor(patrimonio.situacao_bem)} border text-xs`}
@@ -206,7 +210,11 @@ const renderTable = (
                     maximumFractionDigits: 2,
                   })}
                 </TableCell>
-                <TableCell className="text-sm text-gray-700">{patrimonio.setor_responsavel}</TableCell>
+                <TableCell className="text-sm text-gray-700">
+                  <div className="max-w-[180px] line-clamp-2" title={patrimonio.setor_responsavel}>
+                    {patrimonio.setor_responsavel}
+                  </div>
+                </TableCell>
                 <TableCell className="text-sm text-gray-700 whitespace-nowrap">{patrimonio.local_objeto}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
