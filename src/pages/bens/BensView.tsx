@@ -418,17 +418,13 @@ function BensView() {
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate('/bens-cadastrados')}
+                aria-label="Voltar para bens cadastrados"
                 className="touch-target"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-gray-900">
-                  Patrimônio #{patrimonio.numero_patrimonio}
-                </h1>
-              </div>
             </div>
-          
+
             <div className="flex gap-2 flex-wrap">
               {canUpdate && (
                 <Button
