@@ -13,9 +13,9 @@ import { api } from '@/services/api-adapter'
 import { isConnectionDownError } from '@/lib/api-error'
 import { logger } from '@/lib/logger'
 import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
+import { PATRIMONIO_STATS_KEY } from '@/hooks/queries/use-patrimonio-stats'
 
-// Chaves adicionais invalidadas após mutações
-const PATRIMONIO_STATS_KEY = ['patrimonio-stats']
+// Chave adicional invalidada após mutações
 const PATRIMONIOS_ANALYTICS_KEY = ['patrimonios-analytics']
 
 interface PatrimonioContextType {

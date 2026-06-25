@@ -35,6 +35,7 @@ import { Patrimonio } from '@/types'
 import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { LabelPrintDialog } from '@/components/bens/LabelPrintDialog'
 import { DistribuirDialog } from '@/components/bens/DistribuirDialog'
+import { isAlmoxarifado } from '@/constants/almoxarifado'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useConfirm, ConfirmOptions } from '@/hooks/useConfirm'
@@ -247,7 +248,7 @@ const renderTable = (
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    {canUpdate && patrimonio.local_objeto?.trim().toLowerCase() === 'almoxarifado' && (
+                    {canUpdate && isAlmoxarifado(patrimonio.local_objeto) && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -829,10 +830,12 @@ const BensCadastrados = () => {
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                      <SelectItem value="manutencao">Em Manutenção</SelectItem>
                       <SelectItem value="baixado">Baixado</SelectItem>
-                      <SelectItem value="em_manutencao">Em Manutenção</SelectItem>
-                      <SelectItem value="cedido">Cedido</SelectItem>
-                      <SelectItem value="em_uso">Em Uso</SelectItem>
+                      <SelectItem value="emprestado">Emprestado</SelectItem>
+                      <SelectItem value="extraviado">Extraviado</SelectItem>
+                      <SelectItem value="em_transferencia">Em Transferência</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1181,7 +1184,7 @@ const BensCadastrados = () => {
                               Ver
                             </Link>
                           </Button>
-                          {canUpdate && patrimonio.local_objeto?.trim().toLowerCase() === 'almoxarifado' && (
+                          {canUpdate && isAlmoxarifado(patrimonio.local_objeto) && (
                           <Button
                             variant="ghost"
                             size="sm"

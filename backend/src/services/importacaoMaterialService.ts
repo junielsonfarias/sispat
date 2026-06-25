@@ -20,6 +20,7 @@ import { prisma } from '../config/database';
 import { redisCache } from '../config/redis';
 import { logInfo } from '../config/logger';
 import { proximoNumeroPatrimonialTx } from './patrimonioService';
+import { ALMOXARIFADO_LOCAL_NOME } from '../constants/almoxarifado';
 
 export interface Actor {
   userId: string;
@@ -508,10 +509,7 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
 const VALID_ORIGEM = new Set(['proprio', 'convenio', 'emenda', 'transferencia_ente', 'outro']);
 const MAX_UNIDADES = 2000; // trava de segurança para um import único
 
-// Local padrão de entrada dos bens importados. Os bens são tombados no
-// almoxarifado da secretaria; o usuário da secretaria depois distribui para os
-// locais reais (escola, prédio, etc.). Um Almoxarifado por setor.
-export const ALMOXARIFADO_LOCAL_NOME = 'Almoxarifado';
+// ALMOXARIFADO_LOCAL_NOME importado de ../constants/almoxarifado (no topo).
 
 export interface ItemConfirmado {
   descricao: string;

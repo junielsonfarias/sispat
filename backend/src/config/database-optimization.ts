@@ -280,10 +280,20 @@ export const optimizationIndexes = [
 /**
  * Aplicar índices de otimização
  */
+// Blindagem: só permite o DDL esperado (CREATE INDEX ... sem `;` nem subconsultas).
+// Os comandos são constantes hardcoded; este guard protege contra qualquer edição
+// futura que tente colar dado externo nesta função ($executeRawUnsafe).
+const SAFE_INDEX_DDL = /^CREATE INDEX CONCURRENTLY IF NOT EXISTS [a-zA-Z0-9_]+ ON [a-zA-Z0-9_]+ /;
+const isSafeIndexDDL = (q: string): boolean => SAFE_INDEX_DDL.test(q) && !q.includes(';')
+
 export async function applyOptimizationIndexes() {
   logInfo('🚀 Aplicando índices de otimização...')
 
   for (const indexQuery of optimizationIndexes) {
+    if (!isSafeIndexDDL(indexQuery)) {
+      logError(`DDL de índice rejeitado por segurança: ${indexQuery.slice(0, 60)}`, null)
+      continue
+    }
     try {
       await prisma.$executeRawUnsafe(indexQuery)
       logInfo(`✅ Índice aplicado: ${indexQuery.split(' ')[5]}`)

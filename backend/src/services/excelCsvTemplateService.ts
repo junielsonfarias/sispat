@@ -41,7 +41,7 @@ const ownershipWhere = (actor: Actor, id: string): Prisma.ExcelCsvTemplateWhereI
 
 export const listExcelCsvTemplates = (actor: Actor) =>
   prisma.excelCsvTemplate.findMany({
-    where: { municipalityId: actor.municipalityId },
+    where: actor.role === 'superuser' ? {} : { municipalityId: actor.municipalityId },
     orderBy: { createdAt: 'desc' },
   });
 

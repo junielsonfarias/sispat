@@ -54,7 +54,9 @@ export default function InventarioSummary() {
           <CardTitle>{inventory.name}</CardTitle>
           <CardDescription>
             Setor: {inventory.sectorName} | Finalizado em:{' '}
-            {new Date(inventory.finalizedAt!).toLocaleString()}
+            {inventory.finalizedAt && !isNaN(new Date(inventory.finalizedAt).getTime())
+              ? new Date(inventory.finalizedAt).toLocaleString('pt-BR')
+              : '—'}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-3 gap-4">

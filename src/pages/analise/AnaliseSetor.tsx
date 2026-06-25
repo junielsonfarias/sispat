@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -40,6 +40,19 @@ const AnaliseSetor = () => {
     }
     return []
   })
+
+  // Controla se o usuário já interagiu manualmente com o multi-select.
+  const userInteractedRef = useRef(false)
+
+  // Sincroniza selectedSectors quando userSectors carrega de forma assíncrona
+  // (contexto ainda vazio na inicialização do useState).
+  // Só auto-seleciona se: o usuário não interagiu E selectedSectors ainda está vazio.
+  useEffect(() => {
+    if (userInteractedRef.current) return
+    if (!accessInfo.canViewAllData && userSectors.length > 0 && selectedSectors.length === 0) {
+      setSelectedSectors(userSectors)
+    }
+  }, [userSectors, accessInfo.canViewAllData, selectedSectors.length])
 
   // ✅ CORREÇÃO: Filtrar patrimônios por setor do usuário
   const filteredPatrimonios = useMemo(() => filterPatrimonios(patrimonios), [patrimonios, filterPatrimonios])
@@ -152,7 +165,10 @@ const AnaliseSetor = () => {
           <MultiSelect
             options={sectorOptions}
             selected={selectedSectors}
-            onChange={setSelectedSectors}
+            onChange={(value) => {
+              userInteractedRef.current = true
+              setSelectedSectors(value)
+            }}
             placeholder="Selecione os setores para comparar"
           />
         </div>

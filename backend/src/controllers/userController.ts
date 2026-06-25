@@ -151,8 +151,8 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Apenas superuser e supervisor podem criar usuários
-    if (!['superuser', 'supervisor'].includes(req.user.role)) {
+    // superuser, admin e supervisor podem criar usuários (anti-escalada via canAssignRole)
+    if (!['superuser', 'admin', 'supervisor'].includes(req.user.role)) {
       res.status(403).json({ error: 'Acesso negado' });
       return;
     }
@@ -267,8 +267,8 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Apenas superuser e supervisor podem atualizar usuários
-    if (!['superuser', 'supervisor'].includes(req.user.role)) {
+    // superuser, admin e supervisor podem atualizar usuários (anti-escalada via canAssignRole)
+    if (!['superuser', 'admin', 'supervisor'].includes(req.user.role)) {
       res.status(403).json({ error: 'Acesso negado' });
       return;
     }
@@ -379,9 +379,16 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Apenas superuser e supervisor podem deletar usuários
-    if (req.user.role !== 'superuser' && req.user.role !== 'supervisor') {
+    // superuser, admin e supervisor podem deletar usuários (anti-escalada via canAssignRole)
+    if (!['superuser', 'admin', 'supervisor'].includes(req.user.role)) {
       res.status(403).json({ error: 'Acesso negado' });
+      return;
+    }
+
+    // Anti-escalada: não pode deletar usuário de nível igual/superior ao seu
+    // (ex.: admin não deleta superuser). superuser (rank máximo) deleta qualquer um.
+    if (!canAssignRole(req.user.role, existingUser.role)) {
+      res.status(403).json({ error: 'Acesso negado: usuário de nível superior' });
       return;
     }
 

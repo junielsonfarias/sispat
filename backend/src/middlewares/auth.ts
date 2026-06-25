@@ -90,7 +90,8 @@ export const authenticateToken = async (
     // nada (evita interferir com schemas Zod strict) — apenas rejeita divergência.
     // Vale para TODA rota autenticada, protegendo controllers futuros que
     // esquecerem de filtrar por req.user.municipalityId.
-    const providedMunicipality = req.params?.municipalityId || req.body?.municipalityId;
+    const providedMunicipality =
+      req.params?.municipalityId || req.body?.municipalityId || req.query?.municipalityId;
     if (
       providedMunicipality &&
       providedMunicipality !== user.municipalityId &&

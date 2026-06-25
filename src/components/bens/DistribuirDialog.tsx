@@ -24,11 +24,8 @@ import { api } from '@/services/api-adapter'
 import { useLocais } from '@/contexts/LocalContext'
 import { Patrimonio, Local } from '@/types'
 import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
-
-const PATRIMONIO_STATS_KEY = ['patrimonio-stats']
-
-// Constante que espelha ALMOXARIFADO_LOCAL_NOME do backend.
-const ALMOXARIFADO_NOME = 'Almoxarifado'
+import { PATRIMONIO_STATS_KEY } from '@/hooks/queries/use-patrimonio-stats'
+import { ALMOXARIFADO_NOME } from '@/constants/almoxarifado'
 
 interface PatrimonioComSetor extends Patrimonio {
   /** Retornado pelo STATIC_INCLUDE da listagem (select: { id, name }). */

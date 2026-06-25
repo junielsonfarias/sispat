@@ -15,8 +15,7 @@ import { api } from '@/services/api-adapter'
 import { Patrimonio } from '@/types'
 import { logger } from '@/lib/logger'
 import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
-
-const PATRIMONIO_STATS_KEY = ['patrimonio-stats']
+import { PATRIMONIO_STATS_KEY } from '@/hooks/queries/use-patrimonio-stats'
 
 interface SyncContextType {
   isSyncing: boolean

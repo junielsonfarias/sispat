@@ -14,11 +14,13 @@ import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
 import { logger } from '@/lib/logger'
 import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
-
-const PATRIMONIO_STATS_KEY = ['patrimonio-stats']
+import { PATRIMONIO_STATS_KEY } from '@/hooks/queries/use-patrimonio-stats'
 
 interface InventoryContextType {
   inventories: Inventory[]
+  isLoading: boolean
+  error: string | null
+  refetch: () => Promise<void>
   getInventoryById: (id: string) => Inventory | undefined
   createInventory: (data: {
     name: string
@@ -47,6 +49,8 @@ const InventoryContext = createContext<InventoryContextType | null>(null)
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const [allInventories, setAllInventories] = useState<Inventory[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
@@ -54,8 +58,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     if (!user) {
       return
     }
+    setIsLoading(true)
+    setError(null)
     try {
-      const response = await api.get<{ inventarios: Inventory[]; pagination: any }>('/inventarios')
+      const response = await api.get<{ inventarios: Inventory[]; pagination: unknown }>('/inventarios')
       
       // A API retorna objeto com inventarios e pagination
       let inventariosData: Inventory[] = []
@@ -99,13 +105,17 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       }))
       
       setAllInventories(mappedInventories)
+      setError(null)
     } catch (error) {
       logger.error('fetchInventories: Erro ao carregar inventários:', error)
+      setError('Falha ao carregar inventários.')
       toast({
         variant: 'destructive',
         title: 'Erro',
         description: 'Falha ao carregar inventários.',
       })
+    } finally {
+      setIsLoading(false)
     }
   }, [user])
 
@@ -330,6 +340,9 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     <InventoryContext.Provider
       value={{
         inventories,
+        isLoading,
+        error,
+        refetch: fetchInventories,
         getInventoryById,
         createInventory,
         updateInventory,

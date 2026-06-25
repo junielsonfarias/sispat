@@ -21,6 +21,10 @@ import {
   normalizeOnRead as sharedNormalizeOnRead,
 } from '../utils/photo-urls';
 import { generateSubPatrimonioNumber } from './subPatrimonioService';
+import { ALMOXARIFADO_LOCAL_NOME } from '../constants/almoxarifado';
+
+// Reexporta para consumidores que importavam a constante deste módulo.
+export { ALMOXARIFADO_LOCAL_NOME };
 
 // Re-exports para back-compat com os testes em __tests__/services/patrimonioService.normalize.test.ts
 export const normalizeUrlArray = sharedNormalizeUrlArray;
@@ -60,10 +64,9 @@ export interface ListQuery {
   orderDirection?: 'asc' | 'desc';
 }
 
-// Nome do Local de entrada dos bens importados (espelha
-// ALMOXARIFADO_LOCAL_NOME de importacaoMaterialService). Um bem está
-// "aguardando distribuição" enquanto seu local for o Almoxarifado.
-export const ALMOXARIFADO_LOCAL_NOME = 'Almoxarifado';
+// Nome do Local de entrada dos bens importados — importado no topo de
+// ../constants/almoxarifado e reexportado para consumidores deste módulo.
+// Um bem está "aguardando distribuição" enquanto seu local for o Almoxarifado.
 
 // Status que aparecem na vista pública (sem autenticação). Os valores anteriores
 // (em_manutencao/cedido/em_uso) eram legados e não existiam em DB — após a
@@ -303,85 +306,87 @@ export interface PatrimonioStats {
 
 export const getPatrimonioStats = async (actor: Actor): Promise<PatrimonioStats> => {
   // Mesmo escopo de tenant + permissão da listagem.
-  const where: Record<string, unknown> = { municipalityId: actor.municipalityId };
+  const where: Prisma.PatrimonioWhereInput = { municipalityId: actor.municipalityId };
   const permissionFilters = await QueryOptimizer.applyPermissionFilters(actor, 'patrimonio');
   Object.assign(where, permissionFilters);
-
-  // Colunas mínimas, sem paginação — agrega em memória no servidor.
-  const rows = await prisma.patrimonio.findMany({
-    where,
-    select: {
-      status: true,
-      tipo: true,
-      setor_responsavel: true,
-      valor_aquisicao: true,
-      data_aquisicao: true,
-      data_baixa: true,
-    },
-  });
 
   const umMesAtras = new Date();
   umMesAtras.setMonth(umMesAtras.getMonth() - 1);
   const dezAnosAtras = new Date();
   dezAnosAtras.setFullYear(dezAnosAtras.getFullYear() - 10);
 
-  const porStatusMap = new Map<string, number>();
-  const porTipoMap = new Map<string, { quantidade: number; valor: number }>();
-  const porSetorMap = new Map<string, number>();
+  // Contagens/somas agregadas NO BANCO (groupBy/aggregate/count) — não transfere
+  // os registros para o Node. Só o gráfico mensal lê uma projeção de 2 colunas.
+  const [
+    totalCount,
+    porStatusRaw,
+    porTipoRaw,
+    porSetorRaw,
+    valorAtivosAgg,
+    baixadosLastMonth,
+    antigosCount,
+    rowsMes,
+  ] = await Promise.all([
+    prisma.patrimonio.count({ where }),
+    prisma.patrimonio.groupBy({ by: ['status'], where, _count: { _all: true } }),
+    prisma.patrimonio.groupBy({
+      by: ['tipo'],
+      where,
+      _count: { _all: true },
+      _sum: { valor_aquisicao: true },
+    }),
+    prisma.patrimonio.groupBy({ by: ['setor_responsavel'], where, _count: { _all: true } }),
+    prisma.patrimonio.aggregate({
+      where: { ...where, status: { not: 'baixado' } },
+      _sum: { valor_aquisicao: true },
+    }),
+    prisma.patrimonio.count({ where: { ...where, data_baixa: { gte: umMesAtras } } }),
+    prisma.patrimonio.count({
+      where: { ...where, status: 'ativo', data_aquisicao: { lte: dezAnosAtras } },
+    }),
+    prisma.patrimonio.findMany({
+      where,
+      select: { data_aquisicao: true, valor_aquisicao: true },
+    }),
+  ]);
+
+  const countByStatus = (s: string) =>
+    porStatusRaw.find((r) => r.status === s)?._count._all ?? 0;
+  const ativosCount = countByStatus('ativo');
+  const maintenanceCount = countByStatus('manutencao');
+  const baixadosCount = countByStatus('baixado');
+
+  // Valor por mês ('YYYY-MM') — única agregação não suportada por groupBy do
+  // Prisma (truncamento de data); calculada de uma projeção mínima.
   const porMesMap = new Map<string, number>();
-  const setores = new Set<string>();
-
-  let totalValue = 0;
-  let ativosCount = 0;
-  let maintenanceCount = 0;
-  let baixadosCount = 0;
-  let baixadosLastMonth = 0;
-  let antigosCount = 0;
-
-  for (const r of rows) {
-    const status = r.status ?? 'ativo';
-    const tipo = r.tipo || 'Não especificado';
-    const setor = r.setor_responsavel || 'Sem Setor';
-    const valor = typeof r.valor_aquisicao === 'number' ? r.valor_aquisicao : 0;
-
-    porStatusMap.set(status, (porStatusMap.get(status) ?? 0) + 1);
-    const t = porTipoMap.get(tipo) ?? { quantidade: 0, valor: 0 };
-    t.quantidade += 1;
-    t.valor += valor;
-    porTipoMap.set(tipo, t);
-    porSetorMap.set(setor, (porSetorMap.get(setor) ?? 0) + 1);
-    setores.add(setor);
-
-    if (status === 'ativo') ativosCount += 1;
-    if (status === 'manutencao') maintenanceCount += 1;
-    if (status === 'baixado') baixadosCount += 1;
-    if (status !== 'baixado') totalValue += valor;
-    if (r.data_baixa && new Date(r.data_baixa) >= umMesAtras) baixadosLastMonth += 1;
-    if (status === 'ativo' && r.data_aquisicao && new Date(r.data_aquisicao) <= dezAnosAtras)
-      antigosCount += 1;
-
-    if (r.data_aquisicao) {
-      const d = new Date(r.data_aquisicao);
-      const mes = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-      porMesMap.set(mes, (porMesMap.get(mes) ?? 0) + valor);
-    }
+  for (const r of rowsMes) {
+    if (!r.data_aquisicao) continue;
+    const d = new Date(r.data_aquisicao);
+    if (Number.isNaN(d.getTime())) continue;
+    const mes = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    porMesMap.set(mes, (porMesMap.get(mes) ?? 0) + (r.valor_aquisicao ?? 0));
   }
 
-  const totalCount = rows.length;
   return {
     totalCount,
-    totalValue,
+    totalValue: valorAtivosAgg._sum.valor_aquisicao ?? 0,
     activePercentage: totalCount > 0 ? Math.round((ativosCount / totalCount) * 100) : 0,
     ativosCount,
     antigosCount,
     maintenanceCount,
     baixadosCount,
     baixadosLastMonth,
-    setoresCount: setores.size,
-    porStatus: Array.from(porStatusMap, ([status, quantidade]) => ({ status, quantidade })),
-    porTipo: Array.from(porTipoMap, ([tipo, v]) => ({ tipo, quantidade: v.quantidade, valor: v.valor }))
+    setoresCount: porSetorRaw.length,
+    porStatus: porStatusRaw.map((r) => ({ status: r.status, quantidade: r._count._all })),
+    porTipo: porTipoRaw
+      .map((r) => ({
+        tipo: r.tipo || 'Não especificado',
+        quantidade: r._count._all,
+        valor: r._sum.valor_aquisicao ?? 0,
+      }))
       .sort((a, b) => b.quantidade - a.quantidade),
-    porSetor: Array.from(porSetorMap, ([setor, quantidade]) => ({ setor, quantidade }))
+    porSetor: porSetorRaw
+      .map((r) => ({ setor: r.setor_responsavel || 'Sem Setor', quantidade: r._count._all }))
       .sort((a, b) => b.quantidade - a.quantidade),
     porMes: Array.from(porMesMap, ([mes, valor]) => ({ mes, valor })).sort((a, b) =>
       a.mes.localeCompare(b.mes),
@@ -1119,6 +1124,13 @@ export const distribuirPatrimonios = async (
     if (bem.status === 'baixado' || bem.status === 'em_transferencia' || bem.status === 'emprestado') {
       throw new PatrimonioConflictError(
         `Bem ${bem.numero_patrimonio} está em um estado que impede a distribuição (${bem.status}).`,
+      );
+    }
+    // Distribuição é só do Almoxarifado para o local final. Movimentar entre
+    // locais já distribuídos deve usar o fluxo de transferência (auditado).
+    if ((bem.local?.name ?? '').trim().toLowerCase() !== ALMOXARIFADO_LOCAL_NOME.toLowerCase()) {
+      throw new PatrimonioConflictError(
+        `O bem ${bem.numero_patrimonio} não está no Almoxarifado. Use a transferência para movimentar bens já distribuídos.`,
       );
     }
     if (bem.sectorId !== destino.sectorId) {

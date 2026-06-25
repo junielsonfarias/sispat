@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/services/api-adapter'
 
+/** Query key canônica das estatísticas — reusada nas invalidações pós-mutação. */
+export const PATRIMONIO_STATS_KEY = ['patrimonio-stats'] as const
+
 export interface PatrimonioStats {
   totalCount: number
   totalValue: number
@@ -23,7 +26,7 @@ export interface PatrimonioStats {
  */
 export const usePatrimonioStats = () => {
   return useQuery({
-    queryKey: ['patrimonio-stats'],
+    queryKey: PATRIMONIO_STATS_KEY,
     queryFn: () => api.get<PatrimonioStats>('/patrimonios/stats'),
     staleTime: 2 * 60 * 1000,  // dados frescos por 2 minutos
     gcTime: 5 * 60 * 1000,

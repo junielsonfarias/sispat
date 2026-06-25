@@ -40,7 +40,7 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
     if (userRole !== 'admin' && userRole !== 'supervisor' && userRole !== 'superuser') {
       // Buscar setores do usuário
       const user = await prisma.user.findUnique({
-        where: { email: userEmail },
+        where: { id: req.user?.userId },
         select: { responsibleSectors: true },
       });
 

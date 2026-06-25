@@ -16,6 +16,7 @@ import {
   registrarBaixaPatrimonio,
 } from '../controllers/patrimonioController';
 import { authenticateToken, authorize } from '../middlewares/auth';
+import { reportRateLimiter } from '../middlewares/advanced-rate-limit';
 import { zodValidate } from '../middlewares/zodValidate';
 import {
   createPatrimonioBodySchema,
@@ -58,7 +59,9 @@ router.get('/stats', getPatrimonioStats);
  * @route GET /api/patrimonios/analytics
  * @desc Conjunto completo (projeção mínima) p/ telas de análise (DEVE VIR ANTES DE /:id)
  */
-router.get('/analytics', listPatrimoniosAnalytics);
+// /analytics varre TODO o acervo (sem teto de página) — rate-limit dedicado, já
+// que o limiter global ignora GET autenticado (proteção contra DoS).
+router.get('/analytics', reportRateLimiter, listPatrimoniosAnalytics);
 
 /**
  * @route GET /api/patrimonios/historico-recente

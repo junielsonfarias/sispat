@@ -33,9 +33,9 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
     // Admin e Supervisor veem TODOS os locais do município
     // Usuário e Visualizador veem apenas locais dos seus setores
     if (userRole !== 'admin' && userRole !== 'supervisor' && userRole !== 'superuser') {
-      // Buscar setores do usuário
+      // Buscar setores do usuário (por id — PK imutável, não por email mutável)
       const user = await prisma.user.findUnique({
-        where: { email: userEmail },
+        where: { id: req.user?.userId },
         select: { responsibleSectors: true },
       });
 

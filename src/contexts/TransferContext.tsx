@@ -20,6 +20,7 @@ import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { unwrapList } from '@/services/api-helpers'
 import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
+import { PATRIMONIO_STATS_KEY } from '@/hooks/queries/use-patrimonio-stats'
 
 interface TransferContextType {
   transferencias: Transferencia[]
@@ -50,7 +51,7 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
   // Após mover/alterar bens via transferência, atualiza as telas sob demanda.
   const invalidatePatrimonios = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ALL_KEY })
-    void queryClient.invalidateQueries({ queryKey: ['patrimonio-stats'] })
+    void queryClient.invalidateQueries({ queryKey: PATRIMONIO_STATS_KEY })
   }, [queryClient])
 
   // Buscar transferências da API

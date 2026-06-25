@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Card,
@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useInventory } from '@/contexts/InventoryContext'
 import { Inventory } from '@/types'
+import { toast } from '@/hooks/use-toast'
 import { Check, X, Loader2 } from 'lucide-react'
 import {
   AlertDialog,
@@ -39,6 +40,8 @@ export default function InventarioDetail() {
     useInventory()
   const [inventory, setInventory] = useState<Inventory | null>(null)
   const [isFinalizing, setIsFinalizing] = useState(false)
+  // Ref para manter snapshot antes de cada atualização otimista.
+  const snapshotRef = useRef<Inventory | null>(null)
 
   useEffect(() => {
     if (id) {
@@ -67,6 +70,8 @@ export default function InventarioDetail() {
     status: 'found' | 'not_found',
   ) => {
     if (!id) return
+    // Captura snapshot ANTES da atualização otimista para reversão garantida.
+    snapshotRef.current = inventory
     // Atualização otimista local para resposta imediata.
     setInventory((prev) =>
       prev
@@ -81,9 +86,16 @@ export default function InventarioDetail() {
     try {
       await updateInventoryItemStatus(id, patrimonioId, status)
     } catch {
-      // O contexto já reverteu e recarregou; ressincroniza o estado local.
+      // Reverte para o snapshot capturado antes do update otimista.
+      // O contexto já re-buscou do servidor; reflete isso também na tela.
+      setInventory(snapshotRef.current)
       const fresh = getInventoryById(id)
       if (fresh) setInventory(fresh)
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar',
+        description: 'Não foi possível atualizar o status. A tela foi revertida.',
+      })
     }
   }
 
