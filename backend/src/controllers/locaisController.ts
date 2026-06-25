@@ -86,8 +86,9 @@ export const getLocais = async (req: Request, res: Response): Promise<void> => {
 
     logDebug('✅ Locais encontrados', { count: locais.length });
 
-    // ✅ PERFORMANCE: Cache HTTP para dados estáticos
-    res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
+    // ✅ PERFORMANCE: Cache HTTP. 'private': filtrado por tenant/permissão —
+    // nunca em cache compartilhado (CDN/proxy), para não vazar entre municípios.
+    res.setHeader('Cache-Control', 'private, max-age=600'); // 10 minutos
     res.json(locais);
   } catch (error) {
     logError('❌ Erro ao buscar locais', error, { userId: req.user?.userId, sectorId: req.query.sectorId });

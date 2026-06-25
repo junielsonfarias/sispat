@@ -12,7 +12,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../config/database';
 import { emailService } from '../config/email';
 import { logDebug, logError, logInfo, logWarn } from '../config/logger';
 import { maskEmail } from '../utils/mask';

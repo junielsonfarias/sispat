@@ -1092,7 +1092,11 @@ export const distribuirPatrimonios = async (
   }
 
   const bens = await prisma.patrimonio.findMany({
-    where: { id: { in: ids } },
+    where: {
+      id: { in: ids },
+      // Tenant no WHERE (não só no loop): não traz bens de outro município do banco.
+      ...(actor.role === 'superuser' ? {} : { municipalityId: actor.municipalityId }),
+    },
     select: {
       id: true,
       numero_patrimonio: true,

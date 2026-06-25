@@ -405,7 +405,10 @@ const BensCadastrados = () => {
   const [isBulkPrintDialogOpen, setIsBulkPrintDialogOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const labelPrintRef = useRef<HTMLDivElement>(null)
-  
+  // Sequência de requisição: garante que só a resposta MAIS RECENTE atualize a
+  // lista (busca/filtro/página em rápida sucessão podem retornar fora de ordem).
+  const fetchSeqRef = useRef(0)
+
   // ✅ OTIMIZAÇÃO: Paginação server-side
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(50)
@@ -421,7 +424,8 @@ const BensCadastrados = () => {
   // ✅ OTIMIZAÇÃO: Buscar patrimônios com paginação server-side
   const fetchPatrimonios = useCallback(async () => {
     if (!user) return
-    
+
+    const seq = ++fetchSeqRef.current
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -466,6 +470,9 @@ const BensCadastrados = () => {
         }
       }>(`/patrimonios?${params.toString()}`)
 
+      // Resposta obsoleta (uma busca mais recente já foi disparada): descarta.
+      if (seq !== fetchSeqRef.current) return
+
       const data = response.patrimonios || []
       const pagination = response.pagination || {
         page: currentPage,
@@ -478,21 +485,22 @@ const BensCadastrados = () => {
       setTotalItems(pagination.total)
       setTotalPages(pagination.pages)
     } catch (error) {
+      if (seq !== fetchSeqRef.current) return
       if (import.meta.env.DEV) {
         console.error('❌ [DEV] Erro ao buscar patrimônios:', error)
       }
-      
+
       toast({
         variant: 'destructive',
         title: 'Erro ao carregar dados',
         description: 'Não foi possível carregar os patrimônios. Por favor, tente novamente.',
       })
-      
+
       setPatrimonios([])
       setTotalItems(0)
       setTotalPages(1)
     } finally {
-      setIsLoading(false)
+      if (seq === fetchSeqRef.current) setIsLoading(false)
     }
   }, [user, currentPage, pageSize, debouncedSearchTerm, filters])
 

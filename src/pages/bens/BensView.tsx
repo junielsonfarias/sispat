@@ -283,11 +283,16 @@ function BensView() {
     setIsDeleting(true)
     try {
       await deletePatrimonio(patrimonio.id)
+      toast({ title: 'Sucesso', description: 'Patrimônio excluído com sucesso.' })
       navigate('/bens-cadastrados')
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Erro ao excluir patrimônio:', error)
       }
+      const msg =
+        (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Não foi possível excluir o patrimônio. Tente novamente.'
+      toast({ variant: 'destructive', title: 'Erro ao excluir', description: msg })
     } finally {
       setIsDeleting(false)
     }

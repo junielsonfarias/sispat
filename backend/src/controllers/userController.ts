@@ -446,31 +446,26 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       // Hard Delete: Deletar permanentemente (sem registros vinculados)
       logDebug('Usuário sem registros vinculados. Fazendo hard delete');
 
-      // Deletar logs de atividade primeiro (cascade manual)
-      if (existingUser._count.activityLogs > 0) {
-        await prisma.activityLog.deleteMany({
-          where: { userId: id },
-        });
-        logDebug(`${existingUser._count.activityLogs} logs deletados`, { userId: id });
-      }
-
-      // Deletar usuário
-      await prisma.user.delete({
-        where: { id },
-      });
-
-      // Log de atividade
-      await prisma.activityLog.create({
-        data: {
-          userId: req.user.userId,
-          action: 'DELETE_USER',
-          entityType: 'USER',
-          entityId: id,
-          details: `Usuário deletado permanentemente: ${existingUser.name}`,
-          ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
-          userAgent: req.get('user-agent') || 'unknown',
-        },
-      });
+      // Atômico: apaga os logs do usuário, apaga o usuário e grava a trilha de
+      // auditoria do DELETE numa única transação — assim a exclusão e seu
+      // registro de auditoria nunca ficam dessincronizados.
+      await prisma.$transaction([
+        ...(existingUser._count.activityLogs > 0
+          ? [prisma.activityLog.deleteMany({ where: { userId: id } })]
+          : []),
+        prisma.user.delete({ where: { id } }),
+        prisma.activityLog.create({
+          data: {
+            userId: req.user.userId,
+            action: 'DELETE_USER',
+            entityType: 'USER',
+            entityId: id,
+            details: `Usuário deletado permanentemente: ${existingUser.name}`,
+            ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
+            userAgent: req.get('user-agent') || 'unknown',
+          },
+        }),
+      ]);
 
       logInfo('✅ Hard delete concluído', { userId: id, userName: existingUser.name });
 

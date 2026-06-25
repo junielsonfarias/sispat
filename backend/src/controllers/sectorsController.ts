@@ -77,8 +77,9 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
 
     logDebug('✅ Setores encontrados', { count: sectors.length });
 
-    // ✅ PERFORMANCE: Cache HTTP para dados estáticos
-    res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
+    // ✅ PERFORMANCE: Cache HTTP. 'private': filtrado por tenant/permissão —
+    // nunca em cache compartilhado (CDN/proxy), para não vazar entre municípios.
+    res.setHeader('Cache-Control', 'private, max-age=600'); // 10 minutos
     res.json(sectors);
   } catch (error) {
     logError('❌ Erro ao buscar setores', error, { userId: req.user?.userId });

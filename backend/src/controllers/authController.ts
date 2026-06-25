@@ -12,7 +12,7 @@
  */
 
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../config/database';
 import { logActivity } from '../utils/activityLogger';
 import { logError, logWarn } from '../config/logger';
 import {

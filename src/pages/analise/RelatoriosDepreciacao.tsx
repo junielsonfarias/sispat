@@ -66,10 +66,16 @@ const RelatoriosDepreciacao = () => {
   const filteredData = useMemo(() => {
     return patrimonios
       .filter((p) => {
-        const dateMatch =
-          !dateRange?.from ||
-          (new Date(p.data_aquisicao) >= dateRange.from &&
-            (!dateRange.to || new Date(p.data_aquisicao) <= dateRange.to))
+        let dateMatch = true
+        if (dateRange?.from) {
+          const d = p.data_aquisicao ? new Date(p.data_aquisicao) : null
+          // Bens sem data de aquisição válida não casam um filtro de data.
+          dateMatch =
+            !!d &&
+            !Number.isNaN(d.getTime()) &&
+            d >= dateRange.from &&
+            (!dateRange.to || d <= dateRange.to)
+        }
         const sectorMatch =
           !selectedSector || p.setor_responsavel === selectedSector
         return dateMatch && sectorMatch

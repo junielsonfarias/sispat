@@ -1,6 +1,6 @@
 import nodemailer, { createTransport } from 'nodemailer';
 import Handlebars from 'handlebars';
-import { prisma } from '../lib/prisma';
+import { prisma } from './database';
 import { logInfo, logWarn, logError } from './logger';
 
 export interface EmailConfig {

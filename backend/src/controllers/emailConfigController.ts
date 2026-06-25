@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../config/database';
 import { emailService } from '../config/email';
 import { logActivity } from '../utils/activityLogger';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
@@ -50,8 +50,8 @@ export const updateEmailConfig = async (req: Request, res: Response): Promise<vo
       host,
       port,
       secure,
-      user,
-      fromAddress,
+      user: maskEmail(user),
+      fromAddress: maskEmail(fromAddress),
       enabled,
       hasPassword: !!password,
     });
