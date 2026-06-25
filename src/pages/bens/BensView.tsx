@@ -423,12 +423,9 @@ function BensView() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
-                  {patrimonio.descricao_bem}
-                </h1>
-                <p className="text-base lg:text-lg text-gray-600">
+                <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-gray-900">
                   Patrimônio #{patrimonio.numero_patrimonio}
-                </p>
+                </h1>
               </div>
             </div>
           
