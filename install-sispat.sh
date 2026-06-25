@@ -227,6 +227,20 @@ GRANT ALL PRIVILEGES ON DATABASE sispat_prod TO sispat_user;
 EOF
 success "Banco de dados configurado"
 
+# Build do pacote compartilhado (@sispat/shared) - PRÉ-REQUISITO
+# Frontend e backend dependem de shared/dist (gitignored). Sem este passo
+# os builds quebram em clone limpo ao resolver @sispat/shared.
+log "Compilando pacote compartilhado (@sispat/shared)..."
+if [ -d "shared" ]; then
+    cd shared
+    (corepack pnpm install || npm install) >/tmp/shared-install.log 2>&1
+    npm run build >/tmp/shared-build.log 2>&1 || error "Falha ao compilar @sispat/shared. Verifique: /tmp/shared-build.log"
+    cd ..
+    success "Pacote compartilhado compilado"
+else
+    warning "Diretório shared não encontrado — pulando build do pacote compartilhado"
+fi
+
 # Configurar Backend
 log "Configurando backend..."
 cd backend

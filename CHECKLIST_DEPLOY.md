@@ -66,18 +66,29 @@ cd /var/www
 sudo git clone https://github.com/seu-usuario/sispat.git
 sudo chown -R sispat:sispat sispat
 
+# Pacote compartilhado (@sispat/shared) — PRÉ-REQUISITO
+# shared/dist é gitignored e é dependência (file:) do backend e do frontend.
+# Compilar ANTES de buildar backend/frontend, senão os builds quebram.
+cd sispat/shared
+npm install
+npm run build
+
 # Backend
-cd sispat/backend
-npm ci --production
+cd ../backend
+npm ci
 npx prisma generate
 npx prisma migrate deploy
 npm run build
 
-# Frontend
-cd ../frontend
+# Frontend (a raiz do repositório é o frontend)
+cd ..
 pnpm install --frozen-lockfile
 pnpm run build
 ```
+
+> ⚠️ Em **atualizações** (deploy subsequente), rode novamente nesta ordem:
+> `cd shared && npm run build` → `cd ../backend && npx prisma migrate deploy && npm run build` → `cd .. && pnpm run build`.
+> Os scripts `scripts/atualizar-producao.sh` e `scripts/atualizar-backend-producao.sh` já fazem isso automaticamente.
 
 ### 4. PM2
 ```bash

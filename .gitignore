@@ -31,8 +31,10 @@ yarn.lock
 screenshot.png
 .eslintcache
 
-# Environment variables
+# Environment variables (segredos), mas versiona os templates .env.example
 .env*
+!.env.example
+!**/.env.example
 
 # Claude Code
 .claude/

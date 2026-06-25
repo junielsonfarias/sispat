@@ -39,6 +39,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
+      # @sispat/shared (dep file:../shared) precisa de shared/dist, que é
+      # gitignored. Compilar antes de instalar/buildar o backend.
+      - name: Build shared package
+        working-directory: ./shared
+        run: npm install && npm run build
+
       - name: Install dependencies
         working-directory: ./backend
         run: npm ci
@@ -97,6 +103,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # @sispat/shared (dep file:./shared) precisa de shared/dist, que é
+      # gitignored. Compilar antes de type-check/build do frontend.
+      - name: Build shared package
+        run: pnpm --filter @sispat/shared run build || (cd shared && npm install && npm run build)
 
       - name: Lint
         run: pnpm run lint

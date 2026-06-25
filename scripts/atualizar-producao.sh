@@ -26,6 +26,9 @@ GIT_REMOTE="origin"
 
 # Detectar estrutura do frontend
 detect_frontend_structure() {
+    # IMPORTANTE: sempre que houver código-fonte (src/), o frontend DEVE ser
+    # rebuildado — nunca pular o rebuild só porque já existe dist/. Isso garante
+    # que mudanças do git pull realmente cheguem ao bundle servido.
     if [ -d "$FRONTEND_DIR" ]; then
         FRONTEND_WORK_DIR="$FRONTEND_DIR"
         FRONTEND_BUILD_DIR="$FRONTEND_DIR/dist"
@@ -34,11 +37,6 @@ detect_frontend_structure() {
         FRONTEND_WORK_DIR="$PROJECT_DIR"
         FRONTEND_BUILD_DIR="$PROJECT_DIR/dist"
         return 0
-    elif [ -d "$FRONTEND_DIST_DIR" ]; then
-        FRONTEND_WORK_DIR="$PROJECT_DIR"
-        FRONTEND_BUILD_DIR="$FRONTEND_DIST_DIR"
-        print_warning "Frontend já está buildado em dist/. Pulando rebuild."
-        return 1
     else
         return 1
     fi
@@ -206,27 +204,71 @@ update_from_git() {
     git log -1 --oneline
 }
 
+# Rebuild do pacote compartilhado (@sispat/shared)
+# Frontend e backend dependem de shared/dist (gitignored). Deve ser compilado
+# ANTES de buildar frontend/backend para refletir mudanças do git pull.
+rebuild_shared() {
+    print_header "Rebuild do Pacote Compartilhado (@sispat/shared)"
+
+    if [ ! -d "$PROJECT_DIR/shared" ]; then
+        print_warning "Diretório shared não encontrado, pulando build do pacote compartilhado"
+        return 0
+    fi
+
+    cd "$PROJECT_DIR/shared" || return 1
+
+    if [ ! -d "node_modules" ] || [ "package.json" -nt "node_modules" ]; then
+        print_info "Instalando dependências do shared..."
+        npm install
+    fi
+
+    print_info "Compilando @sispat/shared..."
+    npm run build
+
+    if [ ! -f "dist/index.js" ]; then
+        print_error "Build do shared falhou - dist/index.js não encontrado"
+        return 1
+    fi
+
+    print_success "Pacote compartilhado compilado"
+    cd "$PROJECT_DIR" || return 1
+}
+
+# Aplicar migrations do banco (Prisma)
+run_migrations() {
+    print_header "Aplicando Migrations do Banco (Prisma)"
+
+    if [ ! -d "$BACKEND_DIR" ]; then
+        print_warning "Diretório backend não encontrado, pulando migrations"
+        return 0
+    fi
+
+    cd "$BACKEND_DIR" || return 1
+
+    print_info "Gerando Prisma Client..."
+    npx prisma generate
+
+    print_info "Aplicando migrations (prisma migrate deploy)..."
+    npx prisma migrate deploy
+
+    print_success "Migrations aplicadas"
+    cd "$PROJECT_DIR" || return 1
+}
+
 # Rebuild do frontend
 rebuild_frontend() {
     print_header "Rebuild do Frontend"
     
     # Detectar estrutura do frontend
     if ! detect_frontend_structure; then
-        if [ -d "$FRONTEND_DIST_DIR" ]; then
-            print_warning "Frontend já está buildado em dist/. Não é necessário rebuild."
-            print_info "Se precisar rebuildar, execute manualmente: cd $PROJECT_DIR && npm run build"
-            return 0
-        else
-            print_error "Estrutura do frontend não encontrada!"
-            print_info "Locais verificados:"
-            print_info "  - $FRONTEND_DIR"
-            print_info "  - $FRONTEND_SRC_DIR (com package.json na raiz)"
-            print_info "  - $FRONTEND_DIST_DIR"
-            print_warning "Pulando rebuild do frontend. Continuando com outras atualizações..."
-            return 1
-        fi
+        print_error "Estrutura do frontend não encontrada!"
+        print_info "Locais verificados:"
+        print_info "  - $FRONTEND_DIR"
+        print_info "  - $FRONTEND_SRC_DIR (com package.json na raiz)"
+        print_warning "Pulando rebuild do frontend. Continuando com outras atualizações..."
+        return 1
     fi
-    
+
     cd "$FRONTEND_WORK_DIR" || exit 1
     
     # Verificar se node_modules existe
@@ -407,8 +449,10 @@ main() {
     backup_current_code
     check_git_status
     update_from_git
+    rebuild_shared
     rebuild_frontend
     rebuild_backend
+    run_migrations
     restart_services
     final_checks
     show_summary

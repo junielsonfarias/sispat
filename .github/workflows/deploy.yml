@@ -22,6 +22,13 @@ jobs:
     - name: Install pnpm
       run: npm install -g pnpm
 
+    # ---------- Pacote compartilhado (@sispat/shared) ----------
+    # Frontend e backend dependem de shared/dist (gitignored). Compilar ANTES
+    # de buildar backend e frontend.
+    - name: Build shared package
+      working-directory: shared
+      run: npm install && npm run build
+
     # ---------- Backend (gate completo) ----------
     - name: Install backend dependencies
       working-directory: backend
@@ -80,6 +87,11 @@ jobs:
           # raiz, multi-stage), não por imagem de registry — por isso buildamos no
           # servidor com --build em vez de `pull`.
           docker-compose -f docker-compose.prod.yml up -d --build
+          # Aplicar migrations do banco no container da app (DATABASE_URL já está
+          # no env do serviço). O CLI prisma é devDep e foi podado da imagem, então
+          # usamos `npx --yes prisma` apontando para o schema copiado.
+          docker-compose -f docker-compose.prod.yml exec -T sispat \
+            npx --yes prisma migrate deploy --schema backend/prisma/schema.prisma
           docker image prune -f
 
     - name: Health check

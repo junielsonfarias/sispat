@@ -36,6 +36,26 @@ else
     git pull origin main || echo -e "${YELLOW}⚠️  Git pull falhou ou não há atualizações${NC}"
 fi
 
+# Build do pacote compartilhado (@sispat/shared) - PRÉ-REQUISITO
+# O backend depende de shared/dist (gitignored). Deve ser compilado ANTES do
+# build do backend para refletir mudanças do git pull.
+if [ -d "$PROJECT_DIR/shared" ]; then
+    echo -e "${BLUE}📦 Compilando pacote compartilhado (@sispat/shared)...${NC}"
+    cd "$PROJECT_DIR/shared" || exit 1
+    if [ ! -d "node_modules" ] || [ "package.json" -nt "node_modules" ]; then
+        npm install
+    fi
+    npm run build
+    if [ ! -f "dist/index.js" ]; then
+        echo -e "${RED}❌ Build do shared falhou - dist/index.js não encontrado${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✅ Pacote compartilhado compilado${NC}"
+    cd "$BACKEND_DIR" || exit 1
+else
+    echo -e "${YELLOW}⚠️  Diretório shared não encontrado, pulando build do pacote compartilhado${NC}"
+fi
+
 # Verificar se node_modules existe
 if [ ! -d "node_modules" ]; then
     echo -e "${YELLOW}📦 Instalando dependências...${NC}"
@@ -53,6 +73,12 @@ if [ ! -d "dist" ]; then
 fi
 
 echo -e "${GREEN}✅ Build concluído${NC}"
+
+# Aplicar migrations do banco (Prisma) ANTES de reiniciar o backend
+echo -e "${BLUE}🗃️  Gerando Prisma Client e aplicando migrations...${NC}"
+npx prisma generate
+npx prisma migrate deploy
+echo -e "${GREEN}✅ Migrations aplicadas${NC}"
 
 # Reiniciar PM2
 if command -v pm2 &> /dev/null; then

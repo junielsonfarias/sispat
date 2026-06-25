@@ -27,6 +27,11 @@ FROM base AS frontend-builder
 COPY . .
 RUN pnpm install --frozen-lockfile
 
+# Compilar o pacote compartilhado (@sispat/shared) ANTES do build do frontend.
+# shared/dist é gitignored; sem compilar aqui o vite build falha ao resolver
+# @sispat/shared (dep file:./shared).
+RUN cd shared && npm install && npm run build
+
 # Build do frontend para produção
 RUN pnpm run build:prod
 
@@ -34,6 +39,14 @@ RUN pnpm run build:prod
 # STAGE 2: Build do Backend
 # ===========================================
 FROM base AS backend-builder
+
+# Compilar o pacote compartilhado (@sispat/shared) ANTES de instalar/buildar o
+# backend. O backend depende de shared via `file:../shared`; shared/dist é
+# gitignored, então precisa ser compilado no contexto da imagem para que tanto
+# o `npm ci` quanto o `build:prod` enxerguem shared/dist.
+WORKDIR /app/shared
+COPY shared/ ./
+RUN npm install && npm run build
 
 # Instalar TODAS as dependências (build precisa de devDeps: typescript + prisma CLI)
 WORKDIR /app/backend

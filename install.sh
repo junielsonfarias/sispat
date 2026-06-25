@@ -631,13 +631,13 @@ install_nodejs() {
     echo ""
     
     if ! command -v node &> /dev/null; then
-        echo -e "${BLUE}  ⚙️  Baixando e instalando Node.js 18...${NC}"
-        curl -fsSL https://deb.nodesource.com/setup_18.x | bash - > /tmp/nodejs-setup.log 2>&1 &
+        echo -e "${BLUE}  ⚙️  Baixando e instalando Node.js 20...${NC}"
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /tmp/nodejs-setup.log 2>&1 &
         show_spinner $! "Configurando repositório do Node.js (1 minuto)..."
         wait $!
-        
+
         apt install -y -qq nodejs > /tmp/nodejs-install.log 2>&1 &
-        show_spinner $! "Instalando Node.js 18 (1-2 minutos)..."
+        show_spinner $! "Instalando Node.js 20 (1-2 minutos)..."
         wait $!
     fi
     
@@ -929,8 +929,34 @@ build_application() {
     echo ""
     
     cd "$INSTALL_DIR"
-    
+
+    # Build do pacote compartilhado (@sispat/shared) - PRÉ-REQUISITO
+    # Frontend e backend dependem de shared/dist (que é gitignored). Sem este
+    # passo, os builds quebram em clone limpo ao resolver @sispat/shared.
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║  ETAPA 0/4: Compilando pacote compartilhado      ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
+    echo ""
+    if [ -d "$INSTALL_DIR/shared" ]; then
+        echo -e "${BLUE}  → Instalando dependências e compilando @sispat/shared...${NC}"
+        cd "$INSTALL_DIR/shared"
+        npm install > /tmp/build-shared-deps.log 2>&1
+        npm run build > /tmp/build-shared.log 2>&1
+        if [ -f "dist/index.js" ]; then
+            success "✅ Pacote compartilhado compilado (shared/dist)"
+        else
+            echo ""
+            echo -e "${YELLOW}Últimas linhas do log:${NC}"
+            tail -30 /tmp/build-shared.log
+            error "❌ Falha ao compilar @sispat/shared! Ver: /tmp/build-shared.log"
+        fi
+        cd "$INSTALL_DIR"
+    else
+        warning "Diretório shared não encontrado — pulando build do pacote compartilhado"
+    fi
+
     # Build frontend - com indicador de progresso
+    echo ""
     echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║  ETAPA 1/4: Instalando dependências do frontend  ║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
