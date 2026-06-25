@@ -93,6 +93,23 @@ describe('parseRelatorioLiquidacao', () => {
     expect(v!.tipoSugerido).toBe('Veículo');
     expect(v!.formaAquisicaoSugerida).toBe('Licitação');
     expect(v!.ug).toBe('Prefeitura Municipal de São Sebastião da Boa Vista');
+    // extração máxima: processo/ano da licitação + trilha contábil completa
+    expect(v!.unidadeOrcamentaria).toBe('02 08');
+    expect(v!.dotacaoCodigo).toBe('15 122 0010');
+    expect(v!.numeroLicitacao).toBe('LC 9.2026-003');
+    expect(v!.anoLicitacao).toBe(2026);
+    expect(v!.observacoes).toContain('UG: Prefeitura Municipal');
+    expect(v!.observacoes).toContain('Empenho: LC 9.2026-003 (nº 09040002)');
+    expect(v!.observacoes).toContain('Liquidação: 10040013');
+    expect(v!.observacoes).toContain('Classificação: 4.4.90.52.48');
+    expect(v!.observacoes).toContain('Fornecedor: VR MULTIMARCAS LTDA');
+  });
+
+  it('extrai o ano da licitação de processo de exercício anterior (CD .../2025-...)', () => {
+    // o item AR-CONDICIONADO usa "CD A/2025-002" → ano 2025
+    const ac = r.itens.find((x) => x.descricao.includes('AR-CONDICIONADO'))!;
+    expect(ac.numeroLicitacao).toBe('CD A/2025-002');
+    expect(ac.anoLicitacao).toBe(2025);
   });
 
   it('junta a descrição de item quebrada em duas linhas', () => {

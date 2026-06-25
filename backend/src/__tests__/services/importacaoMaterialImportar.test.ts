@@ -49,6 +49,9 @@ const baseItem = (over: Partial<ItemConfirmado> = {}): ItemConfirmado => ({
   tipo: 'Outros Materiais Permanentes',
   formaAquisicao: 'Dispensa/Compra Direta',
   origemRecurso: 'transferencia_ente',
+  numeroLicitacao: 'CD A.2026-001',
+  anoLicitacao: 2026,
+  observacoes: 'Importado do relatório SIAFIC · UG: Fundo Municipal de Saúde · Empenho: CD A.2026-001 (nº 02030013)',
   sectorId: 's1',
   setorNome: 'Saúde',
   ...over,
@@ -90,6 +93,41 @@ describe('importarPatrimonios', () => {
     expect(data.destinacaoRevisada).toBe(true);
     expect(data.numero_nota_fiscal).toBe('697/1');
     expect(data.setor_responsavel).toBe('Saúde'); // nome resolvido do setor
+  });
+
+  it('mapeamento COMPLETO: cada campo no seu lugar (extração máxima)', async () => {
+    await importarPatrimonios([baseItem({ quantidade: 1 })], actor);
+    const d = mockTx.patrimonio.create.mock.calls[0][0].data;
+    // identificação / valores
+    expect(d.descricao_bem).toBe('NOBREAK 600 VA-120V');
+    expect(d.tipo).toBe('Outros Materiais Permanentes');
+    expect(d.valor_aquisicao).toBe(752);
+    expect(d.quantidade).toBe(1);
+    expect(d.data_aquisicao).toBeInstanceOf(Date);
+    // processo de aquisição
+    expect(d.forma_aquisicao).toBe('Dispensa/Compra Direta');
+    expect(d.numero_licitacao).toBe('CD A.2026-001'); // processo do empenho
+    expect(d.ano_licitacao).toBe(2026);
+    expect(d.numero_nota_fiscal).toBe('697/1');
+    // rastreabilidade contábil (campos dedicados)
+    expect(d.fornecedor).toBe('ARIOSNALDO DA SILVA VITAL LTDA');
+    expect(d.numero_empenho).toBe('02030013');
+    expect(d.numero_liquidacao).toBe('11030018');
+    expect(d.origem_recurso).toBe('transferencia_ente');
+    // trilha completa em observações
+    expect(d.observacoes).toContain('UG: Fundo Municipal de Saúde');
+    expect(d.observacoes).toContain('Empenho: CD A.2026-001');
+    // defaults de bem novo
+    expect(d.situacao_bem).toBe('OTIMO');
+    expect(d.status).toBe('ativo');
+    expect(d.destinacao).toBe('uso_especial');
+    expect(d.destinacaoRevisada).toBe(true);
+    expect(d.tipo_posse).toBe('proprio');
+    expect(d.metodo_depreciacao).toBe('Linear');
+    // tenant
+    expect(d.municipalityId).toBe('mun-1');
+    expect(d.sectorId).toBe('s1');
+    expect(d.createdBy).toBe('u1');
   });
 
   it('soma quantidades de vários itens', async () => {

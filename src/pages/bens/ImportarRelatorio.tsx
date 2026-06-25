@@ -63,6 +63,8 @@ interface UgImportada {
 
 interface ItemImportado {
   ug: string
+  unidadeOrcamentaria: string
+  dotacaoCodigo: string
   dotacao: string
   projetoAtividade: string
   subelementoCodigo: string
@@ -79,6 +81,9 @@ interface ItemImportado {
   numeroLiquidacao: string
   tipoSugerido: string
   formaAquisicaoSugerida: string
+  numeroLicitacao: string
+  anoLicitacao: number | null
+  observacoes: string
 }
 
 interface RelatorioParseado {
@@ -102,6 +107,9 @@ interface ItemConfirmado {
   tipo: string
   formaAquisicao: string
   origemRecurso?: string | null
+  numeroLicitacao?: string | null
+  anoLicitacao?: number | null
+  observacoes?: string | null
   sectorId: string
   setorNome: string
   localObjeto?: string | null
@@ -310,6 +318,9 @@ const ImportarRelatorio = () => {
         tipo: ed.tipo,
         formaAquisicao: ed.formaAquisicao,
         origemRecurso: ed.origemRecurso || null,
+        numeroLicitacao: item.numeroLicitacao || null,
+        anoLicitacao: item.anoLicitacao ?? null,
+        observacoes: item.observacoes || null,
         sectorId,
         setorNome: setor?.name ?? item.ug,
         localObjeto: null,

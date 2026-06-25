@@ -50,6 +50,8 @@ export const extrairTextoPdf = async (buffer: Buffer): Promise<string> => {
 export interface ItemImportado {
   // hierarquia de origem (rastreabilidade)
   ug: string;
+  unidadeOrcamentaria: string; // ex: '02 08'
+  dotacaoCodigo: string; // função-subfunção-programa, ex: '15 122 0010'
   dotacao: string; // ação orçamentária (nome)
   projetoAtividade: string; // ex: '1.028'
   subelementoCodigo: string; // ex: '42'
@@ -69,6 +71,9 @@ export interface ItemImportado {
   // sugestões derivadas (o usuário confirma na revisão)
   tipoSugerido: string;
   formaAquisicaoSugerida: string;
+  numeroLicitacao: string; // = processo do empenho (LC/CD ...), p/ numero_licitacao
+  anoLicitacao: number | null; // ano extraído do processo ou da NF
+  observacoes: string; // trilha contábil completa, p/ observacoes do bem
 }
 
 export interface FonteRecurso {
@@ -237,6 +242,8 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
 
   // Estado corrente da hierarquia.
   let ugAtual = '';
+  let unidadeOrcAtual = '';
+  let dotacaoCodigoAtual = '';
   let dotacaoAtual = '';
   let projAtivAtual = '';
   let subCodigoAtual = '';
@@ -263,12 +270,21 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
       ugAtual = raw.slice(MARK_UG.length).trim();
       ensureUg(ugAtual);
       if (!municipio && ugAtual.toLowerCase().startsWith('prefeitura')) municipio = ugAtual;
+      unidadeOrcAtual = '';
+      dotacaoCodigoAtual = '';
       dotacaoAtual = '';
       projAtivAtual = '';
       subCodigoAtual = '';
       subNomeAtual = '';
       coletandoFontes = false;
       nf = null;
+      continue;
+    }
+
+    // Órgão/unidade orçamentária: "02 08." (precede a dotação).
+    const uo = raw.match(/^\s*(\d{2}\s+\d{2})\.\s*$/);
+    if (uo) {
+      unidadeOrcAtual = uo[1].replace(/\s+/g, ' ').trim();
       continue;
     }
 
@@ -294,10 +310,11 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
     if (ehLinhaRuido(raw)) continue;
 
     // Dotação / ação orçamentária: " 15 122 0010 2.030 Nome da ação".
-    const dot = raw.match(/^\s*\d{1,2}\s+\d{3}\s+\d{4}\s+(\d+\.\d+)\s+(.+?)\s*$/);
+    const dot = raw.match(/^\s*(\d{1,2}\s+\d{3}\s+\d{4})\s+(\d+\.\d+)\s+(.+?)\s*$/);
     if (dot) {
-      projAtivAtual = dot[1];
-      dotacaoAtual = dot[2].trim();
+      dotacaoCodigoAtual = dot[1].replace(/\s+/g, ' ').trim();
+      projAtivAtual = dot[2];
+      dotacaoAtual = dot[3].trim();
       nf = null;
       continue;
     }
@@ -384,8 +401,33 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
       const valorTotal = parseValor(m[2]);
       const descricao = resto.slice(0, m.index).trim().replace(/\s+/g, ' ');
 
+      // Ano da licitação: do processo do empenho (ex.: "LC 9.2026-003" → 2026),
+      // senão do ano da NF.
+      const anoProc = nf.processo.match(/(20\d{2})/);
+      const anoNf = nf.data.match(/\/(\d{4})$/);
+      const anoLicitacao = anoProc ? Number(anoProc[1]) : anoNf ? Number(anoNf[1]) : null;
+
+      // Trilha contábil completa → observacoes do bem (rastreabilidade total).
+      const observacoes = [
+        `Importado do relatório de liquidação SIAFIC${exercicio ? ` (exercício ${exercicio})` : ''}`,
+        ugAtual ? `UG: ${ugAtual}` : '',
+        unidadeOrcAtual ? `Unidade orçamentária: ${unidadeOrcAtual}` : '',
+        dotacaoCodigoAtual || projAtivAtual
+          ? `Dotação: ${[dotacaoCodigoAtual, projAtivAtual].filter(Boolean).join(' ')}${dotacaoAtual ? ` — ${dotacaoAtual}` : ''}`
+          : '',
+        `Classificação: 4.4.90.52.${subCodigoAtual} ${subNomeAtual}`.trim(),
+        nf.processo ? `Empenho: ${nf.processo} (nº ${nf.numeroEmpenho})` : `Empenho nº ${nf.numeroEmpenho}`,
+        `Liquidação: ${nf.numeroLiquidacao}`,
+        `NF: ${nf.numeroNotaFiscal}`,
+        nf.fornecedor ? `Fornecedor: ${nf.fornecedor}` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
+
       itens.push({
         ug: ugAtual,
+        unidadeOrcamentaria: unidadeOrcAtual,
+        dotacaoCodigo: dotacaoCodigoAtual,
         dotacao: dotacaoAtual,
         projetoAtividade: projAtivAtual,
         subelementoCodigo: subCodigoAtual,
@@ -402,6 +444,9 @@ export const parseRelatorioLiquidacao = (texto: string): RelatorioParseado => {
         numeroLiquidacao: nf.numeroLiquidacao,
         tipoSugerido: tipoDoSubelemento(subCodigoAtual, subNomeAtual),
         formaAquisicaoSugerida: formaDoEmpenho(nf.processo),
+        numeroLicitacao: nf.processo,
+        anoLicitacao,
+        observacoes,
       });
     }
   }
@@ -442,6 +487,9 @@ export interface ItemConfirmado {
   tipo: string;
   formaAquisicao: string;
   origemRecurso?: string | null;
+  numeroLicitacao?: string | null;
+  anoLicitacao?: number | null;
+  observacoes?: string | null;
   sectorId: string;
   setorNome: string;
   localObjeto?: string | null;
@@ -515,12 +563,16 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
     const registros: { id: string; numero_patrimonio: string }[] = [];
     for (const it of itens) {
       const setorNome = setoresCache.get(it.sectorId) ?? it.setorNome;
-      const obs = [
-        it.numeroLiquidacao ? `Liquidação ${it.numeroLiquidacao}` : '',
-        'Importado do relatório de liquidação SIAFIC',
-      ]
-        .filter(Boolean)
-        .join(' — ');
+      // Usa a trilha contábil completa montada no parse; cai num texto mínimo se
+      // o item vier sem ela (ex.: cadastro manual reaproveitando a função).
+      const obs =
+        it.observacoes?.trim() ||
+        [
+          it.numeroLiquidacao ? `Liquidação ${it.numeroLiquidacao}` : '',
+          'Importado do relatório de liquidação SIAFIC',
+        ]
+          .filter(Boolean)
+          .join(' — ');
 
       for (let u = 0; u < it.quantidade; u++) {
         const p = await tx.patrimonio.create({
@@ -533,6 +585,10 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
             quantidade: 1,
             numero_nota_fiscal: it.numeroNotaFiscal ?? null,
             forma_aquisicao: it.formaAquisicao || 'Compra',
+            // Processo de empenho (licitação/dispensa) e ano — referência do
+            // processo de aquisição do bem.
+            numero_licitacao: it.numeroLicitacao ?? null,
+            ano_licitacao: it.anoLicitacao ?? null,
             setor_responsavel: setorNome,
             local_objeto: it.localObjeto?.trim() || 'A definir',
             status: 'ativo',
