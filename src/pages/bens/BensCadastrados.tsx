@@ -165,9 +165,9 @@ const renderTable = (
               <TableHead className="text-sm font-semibold text-gray-700">Número</TableHead>
               <TableHead className="text-sm font-semibold text-gray-700">Descrição</TableHead>
               <TableHead className="text-sm font-semibold text-gray-700">Situação</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-700">Valor</TableHead>
+              <TableHead className="text-sm font-semibold text-gray-700 text-right whitespace-nowrap">Valor</TableHead>
               <TableHead className="text-sm font-semibold text-gray-700">Setor</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-700">Local</TableHead>
+              <TableHead className="text-sm font-semibold text-gray-700 whitespace-nowrap">Local</TableHead>
               <TableHead className="text-right text-sm font-semibold text-gray-700">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -200,14 +200,14 @@ const renderTable = (
                     {patrimonio.situacao_bem}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm text-gray-700">
+                <TableCell className="text-sm text-gray-700 text-right whitespace-nowrap tabular-nums">
                   R$ {patrimonio.valor_aquisicao?.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
                 </TableCell>
                 <TableCell className="text-sm text-gray-700">{patrimonio.setor_responsavel}</TableCell>
-                <TableCell className="text-sm text-gray-700">{patrimonio.local_objeto}</TableCell>
+                <TableCell className="text-sm text-gray-700 whitespace-nowrap">{patrimonio.local_objeto}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
                     <TooltipProvider>
@@ -631,7 +631,7 @@ const BensCadastrados = () => {
 
   return (
     <div className="flex-1 p-3 sm:p-4 lg:p-6">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+      <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
