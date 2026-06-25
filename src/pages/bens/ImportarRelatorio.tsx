@@ -152,6 +152,14 @@ const readCsrfCookie = (): string => {
   return match ? decodeURIComponent(match[1]) : ''
 }
 
+// Formata a data ISO da NF para dd/mm/aaaa (sem deslocar pelo fuso).
+const formatarData = (iso: string): string => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+}
+
 const ORIGENS_RECURSO: { value: string; label: string }[] = [
   { value: 'proprio', label: 'Recursos Próprios' },
   { value: 'convenio', label: 'Convênio' },
@@ -684,17 +692,17 @@ const ImportarRelatorio = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[200px]">
+                        <TableHead className="min-w-[240px]">
                           Descrição
                         </TableHead>
-                        <TableHead className="w-20 text-right">Qtd</TableHead>
-                        <TableHead className="w-32 text-right">
+                        <TableHead className="min-w-[84px] text-center">Qtd</TableHead>
+                        <TableHead className="min-w-[120px] text-right">
                           Vl. Unitário
                         </TableHead>
-                        <TableHead className="w-32">Tipo</TableHead>
-                        <TableHead className="w-36">Forma Aquisição</TableHead>
-                        <TableHead className="w-36">Origem Recurso</TableHead>
-                        <TableHead className="w-24 text-center">UG</TableHead>
+                        <TableHead className="min-w-[200px]">Tipo</TableHead>
+                        <TableHead className="min-w-[185px]">Forma Aquisição</TableHead>
+                        <TableHead className="min-w-[180px]">Origem Recurso</TableHead>
+                        <TableHead className="min-w-[150px] text-center">UG / Setor</TableHead>
                         <TableHead className="w-16 text-center">Info</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -732,7 +740,7 @@ const ImportarRelatorio = () => {
                                     parseInt(e.target.value, 10) || 1,
                                   )
                                 }
-                                className="h-8 text-xs text-right"
+                                className="h-8 text-xs text-center px-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 aria-label={`Quantidade do item ${idx + 1}`}
                               />
                             </TableCell>
@@ -750,7 +758,7 @@ const ImportarRelatorio = () => {
                                     parseFloat(e.target.value) || 0,
                                   )
                                 }
-                                className="h-8 text-xs text-right"
+                                className="h-8 text-xs text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 aria-label={`Valor unitário do item ${idx + 1}`}
                               />
                             </TableCell>
@@ -842,25 +850,53 @@ const ImportarRelatorio = () => {
                                       <Info className="h-3.5 w-3.5" />
                                     </button>
                                   </TooltipTrigger>
-                                  <TooltipContent className="max-w-xs text-left">
+                                  <TooltipContent className="max-w-sm text-left">
                                     <div className="space-y-1 text-xs">
                                       {item.numeroNotaFiscal && (
                                         <p>NF: {item.numeroNotaFiscal}</p>
                                       )}
+                                      {item.dataAquisicao && (
+                                        <p>Data: {formatarData(item.dataAquisicao)}</p>
+                                      )}
                                       {item.fornecedor && (
                                         <p>Fornecedor: {item.fornecedor}</p>
                                       )}
-                                      {item.numeroEmpenho && (
-                                        <p>Empenho: {item.numeroEmpenho}</p>
+                                      {(item.empenhoProcesso || item.numeroEmpenho) && (
+                                        <p>
+                                          Empenho:{' '}
+                                          {[item.empenhoProcesso, item.numeroEmpenho]
+                                            .filter(Boolean)
+                                            .join(' / ')}
+                                        </p>
                                       )}
                                       {item.numeroLiquidacao && (
                                         <p>Liquidação: {item.numeroLiquidacao}</p>
                                       )}
-                                      {item.dataAquisicao && (
-                                        <p>Data: {item.dataAquisicao}</p>
+                                      {item.numeroLicitacao && (
+                                        <p>
+                                          Licitação/Processo: {item.numeroLicitacao}
+                                          {item.anoLicitacao
+                                            ? ` (${item.anoLicitacao})`
+                                            : ''}
+                                        </p>
                                       )}
-                                      {item.dotacao && (
-                                        <p>Dotação: {item.dotacao}</p>
+                                      {item.unidadeOrcamentaria && (
+                                        <p>Unidade orç.: {item.unidadeOrcamentaria}</p>
+                                      )}
+                                      {(item.dotacaoCodigo || item.projetoAtividade) && (
+                                        <p>
+                                          Dotação:{' '}
+                                          {[item.dotacaoCodigo, item.projetoAtividade]
+                                            .filter(Boolean)
+                                            .join(' ')}
+                                          {item.dotacao ? ` — ${item.dotacao}` : ''}
+                                        </p>
+                                      )}
+                                      {item.subelementoCodigo && (
+                                        <p>
+                                          Classificação: 4.4.90.52.
+                                          {item.subelementoCodigo} {item.subelementoNome}
+                                        </p>
                                       )}
                                     </div>
                                   </TooltipContent>
