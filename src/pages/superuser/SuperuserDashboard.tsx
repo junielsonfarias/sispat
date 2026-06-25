@@ -1,15 +1,16 @@
 import { Building, Users, Database } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { useAuth } from '@/hooks/useAuth'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
+import { usePatrimonioStats } from '@/hooks/queries/use-patrimonio-stats'
 import { Badge } from '@/components/ui/badge'
 
 export default function SuperuserDashboard() {
   const { users } = useAuth()
-  const { patrimonios } = usePatrimonio()
+  const { data: stats, isLoading: loadingStats } = usePatrimonioStats()
 
-  // Sistema simplificado para município único
+  const totalBens = stats?.totalCount ?? 0
 
   const statsCards = [
     {
@@ -17,18 +18,21 @@ export default function SuperuserDashboard() {
       value: MUNICIPALITY_NAME,
       icon: Building,
       color: 'text-blue-500',
+      loading: false,
     },
     {
       title: 'Total de Usuários',
       value: users.length,
       icon: Users,
       color: 'text-green-500',
+      loading: false,
     },
     {
       title: 'Total de Bens',
-      value: patrimonios.length,
+      value: totalBens,
       icon: Database,
       color: 'text-yellow-500',
+      loading: loadingStats,
     },
   ]
 
@@ -45,10 +49,19 @@ export default function SuperuserDashboard() {
               <CardTitle className="text-base md:text-lg lg:text-sm font-medium">
                 {card.title}
               </CardTitle>
-              <card.icon className={`h-5 w-5 md:h-4 md:w-4 ${card.color}`} />
+              <card.icon
+                className={`h-5 w-5 md:h-4 md:w-4 ${card.color}`}
+                aria-hidden="true"
+              />
             </CardHeader>
             <CardContent className="pt-2">
-              <div className="text-3xl md:text-4xl lg:text-2xl font-bold">{card.value}</div>
+              {card.loading ? (
+                <Skeleton className="h-10 w-16" />
+              ) : (
+                <div className="text-3xl md:text-4xl lg:text-2xl font-bold">
+                  {card.value}
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -56,7 +69,7 @@ export default function SuperuserDashboard() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Building className="h-5 w-5 text-blue-500" />
+            <Building className="h-5 w-5 text-blue-500" aria-hidden="true" />
             Status do Sistema
           </CardTitle>
         </CardHeader>
@@ -80,7 +93,11 @@ export default function SuperuserDashboard() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Total de Bens:</span>
-              <span className="font-bold">{patrimonios.length}</span>
+              {loadingStats ? (
+                <Skeleton className="h-5 w-10" />
+              ) : (
+                <span className="font-bold">{totalBens}</span>
+              )}
             </div>
           </div>
         </CardContent>
