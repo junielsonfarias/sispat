@@ -120,7 +120,9 @@ const BensEdit = () => {
           clausulas_reversao: data.clausulas_reversao || undefined,
         } as unknown as PatrimonioFormValues)
       } catch (error) {
-        console.error('Erro ao carregar patrimônio:', error)
+        if (import.meta.env.DEV) {
+          console.error('Erro ao carregar patrimônio:', error)
+        }
         toast({
           variant: 'destructive',
           title: 'Erro',

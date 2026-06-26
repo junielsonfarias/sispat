@@ -22,6 +22,7 @@ import {
   Archive
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useConfirm } from '@/hooks/useConfirm'
 import { api } from '@/services/http-api'
 import { logger } from '@/lib/logger'
 
@@ -39,6 +40,7 @@ interface FichaTemplate {
 
 export default function GerenciadorFichas() {
   const { user: _user } = useAuth()
+  const confirm = useConfirm()
   const location = useLocation()
   const [templates, setTemplates] = useState<FichaTemplate[]>([])
   const [loading, setLoading] = useState(true)
@@ -83,13 +85,20 @@ export default function GerenciadorFichas() {
   }, [location.state, loadTemplates])
 
   const handleDeleteTemplate = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este template?')) return
-    
+    const alvo = templates.find((x) => x.id === id)
+    const ok = await confirm({
+      title: alvo ? `Excluir o modelo "${alvo.name}"?` : 'Excluir este modelo?',
+      description: 'Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      variant: 'destructive',
+    })
+    if (!ok) return
+
     try {
       await api.delete(`/ficha-templates/${id}`)
       setTemplates((templates || []).filter(t => t.id !== id))
     } catch (error) {
-      console.error('Erro ao excluir template:', error)
+      logger.error('Erro ao excluir template', { error })
 
       // ✅ CORREÇÃO: Se for erro de conexão, remover apenas localmente
       if (isApiError(error) && (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.response?.status === 404)) {

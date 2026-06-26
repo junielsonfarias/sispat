@@ -19,22 +19,52 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useInventory } from '@/contexts/InventoryContext'
 import { Inventory, Patrimonio } from '@/types'
-import { CheckCircle, XCircle, AlertTriangle, ArrowLeft } from 'lucide-react'
+import {
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Loader2,
+} from 'lucide-react'
 
 export default function InventarioSummary() {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
-  const { getInventoryById } = useInventory()
+  const { getInventoryById, isLoading } = useInventory()
   const [inventory, setInventory] = useState<Inventory | null>(null)
   const newlyMissing = location.state?.newlyMissing as Patrimonio[] | undefined
 
   useEffect(() => {
     if (id) {
-      setInventory(getInventoryById(id)!)
+      setInventory(getInventoryById(id) ?? null)
     }
   }, [id, getInventoryById])
 
-  if (!inventory) return null
+  if (!inventory) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px]">
+        <div className="text-center">
+          {isLoading ? (
+            <>
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p>Carregando inventário...</p>
+            </>
+          ) : (
+            <>
+              <p className="mb-4 text-muted-foreground">
+                Inventário não encontrado.
+              </p>
+              <Button variant="outline" asChild>
+                <Link to="/inventarios">
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para a Lista
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const foundCount = inventory.items.filter((i) => i.status === 'found').length
   const notFoundCount = inventory.items.length - foundCount

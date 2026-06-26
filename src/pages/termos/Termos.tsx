@@ -21,6 +21,7 @@ import { ScrollText, Printer, RefreshCw, Info, Search } from 'lucide-react'
 import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
+import { useConfirm } from '@/hooks/useConfirm'
 import { formatDate } from '@/lib/utils'
 import { logger } from '@/lib/logger'
 
@@ -232,6 +233,7 @@ function TermoDocumento({ termo }: TermoDocumentoProps) {
 export default function Termos() {
   const [searchParams] = useSearchParams()
   const { data: patrimonios = [], isLoading: loadingPatrimonios } = useAllPatrimonios()
+  const confirm = useConfirm()
 
   // Pré-selecionar via query string (usado pelo DesfazimentoList)
   const [selectedPatrimonioId, setSelectedPatrimonioId] = useState<string>(
@@ -294,6 +296,13 @@ export default function Termos() {
   // no histórico do bem). A responsabilidade do agente consolida-se com a emissão.
   const handleEmitirCarga = useCallback(async () => {
     if (!selectedPatrimonioId || fetchingRef.current) return
+    const ok = await confirm({
+      title: 'Emitir termo de carga?',
+      description:
+        'Será gerado um número de termo e registrada a emissão no histórico do bem (Art. 14/34). A responsabilidade do agente consolida-se com a emissão.',
+      confirmText: 'Emitir',
+    })
+    if (!ok) return
     fetchingRef.current = true
     setLoading(true)
     try {
@@ -317,7 +326,7 @@ export default function Termos() {
       setLoading(false)
       fetchingRef.current = false
     }
-  }, [selectedPatrimonioId])
+  }, [selectedPatrimonioId, confirm])
 
   const handleImprimir = useCallback(() => {
     window.print()

@@ -18,6 +18,7 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react'
 import { useLocais } from '@/contexts/LocalContext'
 import { useSectors } from '@/contexts/SectorContext'
 import { useAuth } from '@/hooks/useAuth'
+import { useConfirm } from '@/hooks/useConfirm'
 import { Local } from '@/types'
 import { SectorLocalForm } from '@/components/admin/SectorLocalForm'
 import {
@@ -31,6 +32,7 @@ export default function Locais() {
   const { locais, addLocal, updateLocal, deleteLocal } = useLocais()
   const { sectors } = useSectors()
   const { user } = useAuth()
+  const confirm = useConfirm()
   // Gerir locais (estrutura): admin/supervisor. Demais papéis só visualizam.
   const canManage = user?.role === 'admin' || user?.role === 'supervisor'
   const [isDialogOpen, setDialogOpen] = useState(false)
@@ -105,8 +107,18 @@ export default function Locais() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Excluir local ${local.name}`}
                               className="text-destructive hover:text-destructive"
-                              onClick={() => deleteLocal(local.id)}
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: `Excluir o local "${local.name}"?`,
+                                  description:
+                                    'Esta ação não pode ser desfeita. Bens vinculados a este local podem ser afetados.',
+                                  confirmText: 'Excluir',
+                                  variant: 'destructive',
+                                })
+                                if (ok) deleteLocal(local.id)
+                              }}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

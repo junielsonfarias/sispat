@@ -24,10 +24,12 @@ import {
 } from '@/components/ui/table'
 import { PlusCircle, Edit, Trash2 } from 'lucide-react'
 import { useExcelCsvTemplates } from '@/contexts/ExcelCsvTemplateContext'
+import { useConfirm } from '@/hooks/useConfirm'
 import { ExcelCsvTemplate } from '@/types'
 import { ExcelCsvTemplateForm } from '@/components/superuser/ExcelCsvTemplateForm'
 export default function ExcelCsvTemplateManagement() {
   const { templates, saveTemplate, deleteTemplate } = useExcelCsvTemplates()
+  const confirm = useConfirm()
   const [isFormOpen, setFormOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<
     ExcelCsvTemplate | undefined
@@ -94,8 +96,17 @@ export default function ExcelCsvTemplateManagement() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label={`Excluir modelo ${t.name}`}
                       className="text-destructive hover:text-destructive"
-                      onClick={() => deleteTemplate(t.id)}
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: `Excluir o modelo "${t.name}"?`,
+                          description: 'Esta ação não pode ser desfeita.',
+                          confirmText: 'Excluir',
+                          variant: 'destructive',
+                        })
+                        if (ok) deleteTemplate(t.id)
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

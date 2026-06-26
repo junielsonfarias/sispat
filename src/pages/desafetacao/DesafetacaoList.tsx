@@ -1067,8 +1067,8 @@ export default function DesafetacaoList() {
                           </AlertDialog>
                         )}
 
-                        {/* Excluir — canDelete */}
-                        {canDelete && (
+                        {/* Excluir — canDelete e nunca em concluída (ato jurídico definitivo) */}
+                        {canDelete && d.status !== 'concluida' && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button

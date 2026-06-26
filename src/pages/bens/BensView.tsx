@@ -106,6 +106,7 @@ function BensView() {
   
   const [patrimonio, setPatrimonio] = useState<Patrimonio | null>(null)
   const [_isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [newNote, setNewNote] = useState('')
   const [isSavingNote, setIsSavingNote] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -174,8 +175,9 @@ function BensView() {
 
   const loadPatrimonio = useCallback(async () => {
     if (!id) return
-    
+
     setIsLoading(true)
+    setLoadError(false)
     try {
       logger.debug('BensView - Carregando patrimônio do backend', { id })
       // Buscar sempre do backend para garantir dados atualizados
@@ -197,6 +199,7 @@ function BensView() {
       if (import.meta.env.DEV) {
         console.error('Erro ao carregar patrimônio:', error)
       }
+      setLoadError(true)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -399,8 +402,21 @@ function BensView() {
       <div className="flex-1 p-4 lg:p-6">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Carregando patrimônio...</p>
+            {loadError ? (
+              <>
+                <p className="mb-4 text-muted-foreground">
+                  Não foi possível carregar os dados do bem.
+                </p>
+                <Button variant="outline" onClick={() => loadPatrimonio()}>
+                  Tentar novamente
+                </Button>
+              </>
+            ) : (
+              <>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p>Carregando patrimônio...</p>
+              </>
+            )}
           </div>
         </div>
       </div>
