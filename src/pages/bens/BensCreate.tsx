@@ -226,8 +226,9 @@ const BensCreate = () => {
         numero_patrimonio: generatedNumber,
         data_aquisicao: new Date(data.data_aquisicao),
         status: 'ativo',
-        // Converter situacao_bem para maiúsculas (backend espera: OTIMO, BOM, REGULAR, RUIM, PESSIMO)
-        situacao_bem: data.situacao_bem && data.situacao_bem.trim() !== '' ? data.situacao_bem.toUpperCase() : undefined,
+        // O backend valida situacao_bem em MINÚSCULO (otimo/bom/regular/ruim/pessimo).
+        // (Antes havia .toUpperCase() equivocado → 400 "received 'OTIMO'" ao escolher situação.)
+        situacao_bem: data.situacao_bem && data.situacao_bem.trim() !== '' ? data.situacao_bem.toLowerCase() : undefined,
         fotos: fotosProcessadas,
         documentos: data.documentos || [],
         municipalityId: user.municipalityId!,
