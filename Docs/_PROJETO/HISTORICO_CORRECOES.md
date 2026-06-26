@@ -21,6 +21,12 @@
 
 ## 2026
 
+### 2026-06-26 — Polimento: acessibilidade (scope de tabela + aria-label)
+- **`scope="col"` app-wide:** em vez de editar cada `<TableHead>`, adicionado `scope="col"` (sobrescrevível via prop) ao **componente base** `TableHead` em `src/components/ui/table.tsx` → todas as tabelas do app ganham cabeçalho de coluna acessível de uma vez.
+- **`aria-label` em ícone-botões:** 2 agentes adicionaram 16 labels em PT-BR a botões só-ícone (Edit/Trash/Check/X) em `SectorManagement`, `TipoBemManagement`, `NumberingSettings`, `LogoManagement`, `FormFieldManagement`, `ImoveisList`, `ImovelCustomFields`, `Transferencias`. Vários arquivos já estavam OK (ComissoesList, RegularizacaoList, DesfazimentoList, MunicipalityManagement) — não tocados.
+- **Verificação:** `tsc` → 0 erros. Sem mudança de lógica/estrutura.
+- **Lição:** a11y de tabela é melhor resolvida no primitivo (`TableHead`) que em cada uso — 1 linha conserta o app todo.
+
 ### 2026-06-26 — Polimento: dark mode (1ª onda) + setTimeout artificial
 - **Dark mode (cores hardcoded → tokens):** 4 agentes `frontend-expert` em paralelo trocaram, em **26 arquivos de UI**, `text-gray-900/800/700`→`text-foreground`, `text-gray-{600,500,400,300}`→`text-muted-foreground`, `bg-white`→`bg-card`, `bg-gray-{50,100}`→`bg-muted`/`bg-muted/50`, `border-gray-{200,300}`→`border-border`. Diff 1:1 (~297 linhas), `tsc` → 0 erros.
   - **Guardrails (preservado de propósito):** componentes de IMPRESSÃO/PDF (`BensPrintForm`, `ImovelPrintForm`, `*PDFGenerator`, `FichaPreview*`, `InventarioPrint`, `TermoDocumento`, previews de etiqueta/ficha — papel é branco), **badges de status** (`bg-{green,red,yellow,blue,amber,emerald,orange,slate}-NNN`), cores de gráfico (`hsl(var(--chart-*))`) e variantes com **opacity** (`bg-white/95`, `dark:bg-gray-800/90`). Cada agente reportou skips.
