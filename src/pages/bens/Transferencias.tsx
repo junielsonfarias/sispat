@@ -87,6 +87,7 @@ const Transferencias = () => {
                   <Button
                     size="sm"
                     onClick={() => handleUpdateStatus(t.id, 'aprovada')}
+                    aria-label="Aprovar transferência"
                   >
                     <Check className="h-4 w-4" />
                   </Button>
@@ -94,6 +95,7 @@ const Transferencias = () => {
                     size="sm"
                     variant="destructive"
                     onClick={() => handleUpdateStatus(t.id, 'rejeitada')}
+                    aria-label="Rejeitar transferência"
                   >
                     <X className="h-4 w-4" />
                   </Button>

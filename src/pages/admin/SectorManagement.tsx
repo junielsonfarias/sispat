@@ -114,6 +114,7 @@ export default function SectorManagement() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleEdit(sector)}
+                      aria-label={`Editar setor ${sector.name}`}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -124,6 +125,7 @@ export default function SectorManagement() {
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive"
+                          aria-label={`Excluir setor ${sector.name}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

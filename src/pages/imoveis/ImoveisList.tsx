@@ -246,7 +246,7 @@ export default function ImoveisList() {
                               </Link>
                             </Button>
                             {canEdit && (
-                              <Button variant="ghost" size="icon" asChild>
+                              <Button variant="ghost" size="icon" asChild aria-label="Editar imóvel">
                                 <Link to={`/imoveis/editar/${item.id}`}>
                                   <Edit className="h-4 w-4" />
                                 </Link>
@@ -259,6 +259,7 @@ export default function ImoveisList() {
                                   variant="ghost"
                                   size="icon"
                                   className="text-destructive hover:text-destructive"
+                                  aria-label="Excluir imóvel"
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>
@@ -357,6 +358,7 @@ export default function ImoveisList() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            aria-label="Excluir imóvel"
                           >
                             <Trash className="h-3 w-3" />
                           </Button>

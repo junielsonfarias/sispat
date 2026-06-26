@@ -97,6 +97,7 @@ export default function ImovelCustomFields() {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleEdit(field)}
+                  aria-label="Editar campo"
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -107,6 +108,7 @@ export default function ImovelCustomFields() {
                         variant="ghost"
                         size="icon"
                         className="text-destructive hover:text-destructive"
+                        aria-label="Excluir campo"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

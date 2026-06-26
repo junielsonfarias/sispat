@@ -100,6 +100,7 @@ const LogoManagement = () => {
                 size="sm"
                 className="absolute top-2 right-2"
                 onClick={() => handleRemoveLogo('activeLogoUrl')}
+                aria-label="Remover logo principal"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -152,6 +153,7 @@ const LogoManagement = () => {
                   size="sm"
                   className="absolute top-2 right-2"
                   onClick={() => handleRemoveLogo('secondaryLogoUrl')}
+                  aria-label="Remover logo secundário"
                 >
                   <X className="h-4 w-4" />
                 </Button>

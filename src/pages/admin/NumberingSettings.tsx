@@ -290,6 +290,7 @@ export default function NumberingSettings() {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleRemoveComponent(comp.id)}
+                    aria-label={`Remover componente ${{ year: 'Ano', sector: 'Código Setor', sequence: 'Sequência', text: 'Texto/Separador' }[comp.type]}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

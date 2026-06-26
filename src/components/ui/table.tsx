@@ -73,6 +73,8 @@ const TableHead = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <th
     ref={ref}
+    // a11y: cabeçalho de coluna por padrão (pode ser sobrescrito via prop scope)
+    scope="col"
     className={cn(
       'h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
       className,

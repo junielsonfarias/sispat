@@ -339,6 +339,7 @@ const TipoBemManagement = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleOpenDialog(tipo)}
+                          aria-label={`Editar tipo de bem ${tipo.nome}`}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -351,7 +352,11 @@ const TipoBemManagement = () => {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              aria-label={`Excluir tipo de bem ${tipo.nome}`}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
