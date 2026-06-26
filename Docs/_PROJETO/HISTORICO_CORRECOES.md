@@ -21,6 +21,21 @@
 
 ## 2026
 
+### 2026-06-26 — Estados de erro (#4) + confirmações destrutivas (#7)
+- **#4 Spinner eterno / tela em branco:**
+  - `BensView` — após falha de rede, `patrimonio` ficava null → spinner eterno. Adicionado `loadError` (set no catch, reset no início) + botão "Tentar novamente".
+  - `InventarioSummary` — `getInventoryById(id)!` → tela em branco com id inválido. Agora `?? null` + distingue "Carregando" (via `isLoading` do `InventoryContext`) de "não encontrado" (mensagem + Voltar).
+  - `ImoveisReportEditor` — `templateId === 'novo'` sem `municipalityId` travava em "Carregando..." eterno → toast + `navigate` de volta; fallback vira spinner.
+  - `BensEdit` — **falso positivo** (já fazia `setPatrimonio` no sucesso e `navigate` no erro); só o `console.error` solto virou guard DEV.
+- **#7 Ações destrutivas sem confirmação** (via hook `useConfirm`):
+  - `Locais` e `ExcelCsvTemplateManagement` — delete direto → confirmação com nome do item.
+  - `GerenciadorFichas` — `window.confirm` nativo → `useConfirm`; `console.error` → `logger.error`.
+  - `Termos` — emissão do termo de carga (Art. 14/34) agora confirma antes de registrar no histórico.
+  - `DesafetacaoList` — o delete já tinha AlertDialog; faltava bloquear `status === 'concluida'` (ato jurídico) → `canDelete && d.status !== 'concluida'`.
+  - De passagem: `aria-label` nos ícone-botões de exclusão tocados.
+- **Arquivos:** `src/pages/bens/{BensView,BensEdit}.tsx`, `src/pages/inventarios/InventarioSummary.tsx`, `src/pages/imoveis/ImoveisReportEditor.tsx`, `src/pages/locais/Locais.tsx`, `src/pages/superuser/ExcelCsvTemplateManagement.tsx`, `src/pages/GerenciadorFichas.tsx`, `src/pages/termos/Termos.tsx`, `src/pages/desafetacao/DesafetacaoList.tsx`. **Verificação:** `tsc` → 0 erros.
+- **Lição:** "spinner eterno" só existe quando a página NÃO redireciona nem registra erro — várias telas já redirecionavam (falso positivo). Para distinguir carregando×não-encontrado, prefira o `isLoading` do context a um redirect prematuro (os contexts carregam async).
+
 ### 2026-06-26 — Bugs de lógica (#8): tooltips de gráfico, divisão por zero, escopo de inventário, permissões
 - **Tooltip de gráfico vazio:** `<ChartTooltipContent payload={[]} />` sobrescrevia o payload que o recharts injeta → o tooltip nunca mostrava valores ao passar o mouse. Removido o `payload={[]}` em **6 ocorrências** (`ChartsSection.tsx` ×3, `DepreciationDashboard`, `AnaliseTipo`, `AnaliseSetor`).
 - **`InventarioPrint.tsx`:** `(foundCount / items.length) * 100` dava `NaN%` com 0 itens → guarda `items.length > 0 ? … : '0.0'`.

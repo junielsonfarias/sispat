@@ -36,8 +36,11 @@ Confirmado que **não há backend** para 2FA, backup/restore nem system-info. Ap
 - `LogoManagement.tsx` — "remover logo" agora **persiste** via `saveSettings` (correção real).
 - `SyncClient.tsx` — status "Conectado" hardcoded removido; auto-sync desabilitado com Alert; sync manual mantido (real).
 
-### 4. Spinner eterno / sem estado de erro
-- `BensView.tsx:397`, `BensEdit.tsx:286`, `ImoveisReportEditor.tsx:20`, `InventarioSummary.tsx:33` → adicionar `loadError` + "Tentar novamente".
+### 4. Spinner eterno / sem estado de erro — ✅ CORRIGIDO
+- ✅ `BensView` — após falha de rede, `patrimonio` ficava null → spinner eterno. Adicionado `loadError` + botão "Tentar novamente".
+- ✅ `InventarioSummary` — `getInventoryById(id)!` (non-null) → tela em branco com id inválido. Agora `?? null` + "Carregando" (via `isLoading` do context) vs "não encontrado" + Voltar.
+- ✅ `ImoveisReportEditor` — `novo` sem `municipalityId` travava em "Carregando..." → toast + navega de volta; spinner decente no fallback.
+- ℹ️ `BensEdit` — **não era spinner eterno**: já chama `setPatrimonio` no sucesso e `navigate` no erro. Só ajustado o `console.error` solto (→ guard DEV).
 
 ### 5. Touch/mobile bloqueante
 - `PublicBemDetalhes.tsx:258`, `ImageUpload.tsx:169` — botões só com `:hover` (invisíveis em celular).
@@ -52,11 +55,14 @@ Ao verificar o roteamento (`App.tsx`/`ProtectedRoute`), parte dos achados dos ag
 - ✅ **`BackupSettings` (supervisor):** restauração já foi desabilitada no item #3.
 - 🗑️ **Código morto** (não é bug de RBAC — nunca roteado): `BensCadastradosSimplificado.tsx` (sem rota), além de `GerenciarTipos.tsx` e `ImovelMap.tsx` já listados. Candidatos a remoção.
 
-### 7. Ações destrutivas sem confirmação
-- `Locais.tsx:109`, `ExcelCsvTemplateManagement.tsx:98` (delete direto).
-- `GerenciadorFichas.tsx:87` (`window.confirm` nativo).
-- `Termos.tsx:295` (emite termo de carga — Art. 34 — sem confirmar).
-- `DesafetacaoList.tsx:1071` (exclui desafetação concluída).
+### 7. Ações destrutivas sem confirmação — ✅ CORRIGIDO
+Usando o hook `useConfirm` (AlertDialog acessível, padrão do projeto):
+- ✅ `Locais` — delete de local agora confirma (com nome + aviso de bens vinculados).
+- ✅ `ExcelCsvTemplateManagement` — delete de modelo agora confirma (com nome).
+- ✅ `GerenciadorFichas` — `window.confirm` nativo → `useConfirm`; também `console.error` → `logger.error`.
+- ✅ `Termos` — emissão do termo de carga (Art. 14/34) agora confirma antes de registrar.
+- ✅ `DesafetacaoList` — o delete já tinha AlertDialog; faltava **bloquear `status === 'concluida'`** (ato jurídico definitivo) → agora `canDelete && d.status !== 'concluida'`.
+- De passagem: `aria-label` nos ícone-botões de exclusão tocados.
 
 ### 8. Bugs de lógica — ✅ PARCIAL (com revisão de falso positivo)
 - ✅ **Tooltip de gráfico vazio:** `<ChartTooltipContent payload={[]} />` sobrescrevia o payload injetado pelo recharts → tooltip nunca mostrava valores. Corrigido em **6 ocorrências** (os agentes acharam 3; +3 em `ChartsSection.tsx`): removido o `payload={[]}`.
