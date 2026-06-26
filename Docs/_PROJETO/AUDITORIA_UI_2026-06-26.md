@@ -44,11 +44,13 @@ Confirmado que **não há backend** para 2FA, backup/restore nem system-info. Ap
 - `DesafetacaoList.tsx:622` — exige digitar UUID manual do bem (sem dropdown).
 - `ImportarRelatorio.tsx` etapa 2 — tabela de 8 colunas sem fallback mobile.
 
-### 6. RBAC furado no cliente
-- `BensCadastradosSimplificado.tsx:203,214` — Editar/Excluir para `visualizador`.
-- `GerenciadorFichas/EditorTemplateFicha/NovoTemplateFicha` — sem guard de papel.
-- `ImovelCustomFields.tsx:34`, `ImoveisManutencao.tsx:51` — sem RBAC.
-- `supervisor` com ações destrutivas em `UserManagement`/`BackupSettings`.
+### 6. RBAC no cliente — ✅ CORRIGIDO (com revisão dos falsos positivos)
+Ao verificar o roteamento (`App.tsx`/`ProtectedRoute`), parte dos achados dos agentes era **falso positivo** — eles leram só o componente, não o roteamento:
+- ✅ **Já protegidos na rota** (não eram bug): `GerenciadorFichas`/`NovoTemplateFicha`/`EditorTemplateFicha` e `ImovelCustomFields` já têm `allowedRoles={['admin','supervisor']}`. (Superuser é redirecionado a `/superuser/*` por design — por isso não está nos `allowedRoles`.)
+- ✅ **Gap real corrigido:** `/imoveis/manutencao` não tinha `ProtectedRoute` → agora `allowedRoles={['admin','supervisor','usuario']}` (igual à rota irmã `/imoveis/novo`).
+- ✅ **`UserManagement` (supervisor):** o modelo de papéis dá ao `supervisor` ZERO permissões `users:*`, mas o componente mostrava criar/editar/excluir/senha. `UserManagementUnified` agora gateia essas ações por `usePermissions` (`users:create/update/delete`) — supervisor vê a lista como "Somente leitura"; admin/superuser inalterados. (Aberto: avaliar se a *rota* `/configuracoes/usuarios` deve excluir `supervisor` de vez — decisão de produto.)
+- ✅ **`BackupSettings` (supervisor):** restauração já foi desabilitada no item #3.
+- 🗑️ **Código morto** (não é bug de RBAC — nunca roteado): `BensCadastradosSimplificado.tsx` (sem rota), além de `GerenciarTipos.tsx` e `ImovelMap.tsx` já listados. Candidatos a remoção.
 
 ### 7. Ações destrutivas sem confirmação
 - `Locais.tsx:109`, `ExcelCsvTemplateManagement.tsx:98` (delete direto).
