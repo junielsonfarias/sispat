@@ -21,6 +21,13 @@
 
 ## 2026
 
+### 2026-06-26 — Consulta pública (bens) + UI honesta nas telas de falsa persistência
+- **Consulta pública (🔴 #2):** `PublicAssets` (rota pública `/consulta-publica`) lia de `useAllPatrimonios` (`GET /patrimonios?all=true`, autenticado) → visitante anônimo via lista vazia (regressão da migração para `useAllPatrimonios`). O `startSync` buscava `/public/patrimonios` mas gravava no `PatrimonioContext`, que a página não lê. **Correção:** novo hook `usePublicPatrimonios` (`src/hooks/queries/use-public-patrimonios.ts`) → `GET /public/patrimonios` (sem auth), mapeando o shape público camelCase (sem valor) para os campos snake_case da página; `listPatrimonios()` adicionado ao `public-api.ts` (e `console.error` → `logger.error`). Timestamp/spinner via React Query (`dataUpdatedAt`/`isFetching`), removida a dependência órfã do `SyncContext`. **Imóveis públicos** seguem pendentes (sem endpoint `/public/imoveis` — decisão de produto, F8).
+- **Falsa persistência (🔴 #3) — UI honesta:** confirmado que NÃO há backend para 2FA, backup/restore nem system-info. Em vez de simular sucesso: `SecuritySettings` (2FA desabilitado + Alert), `BackupSettings` (restauração desabilitada com Alert citando risco cross-tenant; criação de backup real mantida), `SystemInformation` (Alert "armazenamento local" + toast honesto), `SyncClient` (status "Conectado" hardcoded removido, auto-sync desabilitado, sync manual mantido). `LogoManagement` "remover logo" passou a **persistir** via `saveSettings` (correção real).
+- **Arquivos:** `src/pages/{PublicAssets,admin/SecuritySettings,admin/BackupSettings,admin/LogoManagement,superuser/SystemInformation,ferramentas/SyncClient}.tsx`, `src/hooks/queries/use-public-patrimonios.ts`, `src/services/public-api.ts`.
+- **Verificação:** frontend `tsc --noEmit -p tsconfig.app.json` → 0 erros.
+- **Lição:** ao migrar consumidores para um hook autenticado em massa, conferir páginas PÚBLICAS — elas precisam de endpoint sem auth. E "feature stub que dá toast de sucesso" é pior que feature ausente: ou liga no backend, ou para de afirmar sucesso (UI honesta).
+
 ### 2026-06-26 — Varredura de UI/UX (88 páginas) + correção do lote multi-tenant `municipalityId: '1'`
 - **Contexto:** varredura das ~88 páginas (`src/pages/**`) por 6 agentes `frontend-expert` em paralelo (eixos: elementos/estado, botões, responsividade, a11y). Relatório completo em `Docs/_PROJETO/AUDITORIA_UI_2026-06-26.md`.
 - **Sintoma (🔴 #1):** `municipalityId: '1'` hardcoded em telas que persistem/alimentam dados — risco de vazamento multi-tenant (o risco nº 1 declarado do projeto).

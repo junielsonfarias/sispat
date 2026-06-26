@@ -23,17 +23,18 @@ Mocks de **preview** (não persistem; risco baixo — apenas alinhados ou anotad
 
 **Correção:** ler `user.municipalityId` do `useAuth()` e **bloquear** a ação com toast quando ausente — nunca usar `'1'` como fallback.
 
-### 2. Consulta pública pode estar quebrada para visitante anônimo
-- `PublicAssets.tsx:95-96` usa hooks **autenticados** (`useAllPatrimonios` → `/patrimonios?all=true`, `useImovel()`).
-- `PublicImovelDetalhe.tsx:45` idem (`useImovel()`).
-- Para visitante deslogado retornam `[]` → lista/detalhe vazios. **Verificar em runtime** (há `SyncContext` via `/public/patrimonios`) e migrar para `publicApi`/endpoint `/public/*`.
+### 2. Consulta pública quebrada para visitante anônimo — ✅ BENS CORRIGIDO (imóveis pendente)
+- **Confirmado:** `PublicAssets` (rota pública) lia de `useAllPatrimonios` (`/patrimonios?all=true`, **autenticado**) → vazio para visitante. Regressão da migração para `useAllPatrimonios`.
+- **Corrigido (bens):** novo hook `usePublicPatrimonios` → `GET /public/patrimonios` (sem auth), mapeando o shape público; timestamp/spinner via React Query (removida a dependência órfã do `SyncContext`).
+- **Pendente (imóveis):** `PublicImovelDetalhe.tsx:45` usa `useImovel()` (autenticado) e **não existe endpoint `/public/imoveis`**. Não é regressão (imóveis nunca foram servidos publicamente). Mostrar exige backend novo + decisão de produto (F8: expor valor/localização de imóvel). Página degrada para "não encontrado" (não quebra).
 
-### 3. Falsa persistência (toast de sucesso sem gravar)
-- `SecuritySettings.tsx:26` (toggle 2FA não chama API)
-- `BackupSettings.tsx:121` (restauração só seta Context; não valida tenant do backup → risco cross-tenant)
-- `SystemInformation.tsx:24` (só `localStorage`)
-- `LogoManagement.tsx:73` ("remover logo" não persiste)
-- `SyncClient.tsx:41` (config de sync só em estado local)
+### 3. Falsa persistência (toast de sucesso sem gravar) — ✅ UI HONESTA APLICADA
+Confirmado que **não há backend** para 2FA, backup/restore nem system-info. Aplicada UI honesta (parar de fingir sucesso):
+- `SecuritySettings.tsx` (2FA) — switch desabilitado + Alert "em desenvolvimento"; sem toast falso.
+- `BackupSettings.tsx` — restauração desabilitada com Alert (citando o risco cross-tenant); criação de backup (download JSON) é real e mantida. Histórico segue efêmero (sessão).
+- `SystemInformation.tsx` — Alert "armazenamento local" + toast honesto ("salvo apenas neste navegador").
+- `LogoManagement.tsx` — "remover logo" agora **persiste** via `saveSettings` (correção real).
+- `SyncClient.tsx` — status "Conectado" hardcoded removido; auto-sync desabilitado com Alert; sync manual mantido (real).
 
 ### 4. Spinner eterno / sem estado de erro
 - `BensView.tsx:397`, `BensEdit.tsx:286`, `ImoveisReportEditor.tsx:20`, `InventarioSummary.tsx:33` → adicionar `loadError` + "Tentar novamente".
