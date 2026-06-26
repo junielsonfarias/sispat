@@ -58,6 +58,7 @@ import { UserCreateForm } from '@/components/admin/UserCreateForm'
 import { UserEditForm } from '@/components/admin/UserEditForm'
 import { UserPasswordChangeForm } from '@/components/admin/UserPasswordChangeForm'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface UserManagementUnifiedProps {
   /** Tipo de usuário: 'admin' para gestão municipal, 'superuser' para gestão global */
@@ -74,6 +75,12 @@ export default function UserManagementUnified({
   description 
 }: UserManagementUnifiedProps) {
   const { user: currentUser, users, deleteUser, unlockUser } = useAuth()
+  // RBAC: esconder ações que o papel não pode executar (o backend também reforça).
+  // Ex.: supervisor não tem nenhuma permissão users:* — só vê a lista.
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('users:create')
+  const canUpdate = hasPermission('users:update')
+  const canDelete = hasPermission('users:delete')
   const [isCreateUserDialogOpen, setCreateUserDialogOpen] = useState(false)
   const [isEditUserDialogOpen, setEditUserDialogOpen] = useState(false)
   const [isChangePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false)
@@ -161,26 +168,28 @@ export default function UserManagementUnified({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{title || defaultTitle}</h1>
-        <Dialog
-          open={isCreateUserDialogOpen}
-          onOpenChange={setCreateUserDialogOpen}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Usuário
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Adicionar Novo Usuário</DialogTitle>
-              <DialogDescription>
-                Preencha os dados para criar um novo usuário.
-              </DialogDescription>
-            </DialogHeader>
-            <UserCreateForm onSuccess={handleUserCreated} />
-          </DialogContent>
-        </Dialog>
+        {canCreate && (
+          <Dialog
+            open={isCreateUserDialogOpen}
+            onOpenChange={setCreateUserDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Adicionar Usuário
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Novo Usuário</DialogTitle>
+                <DialogDescription>
+                  Preencha os dados para criar um novo usuário.
+                </DialogDescription>
+              </DialogHeader>
+              <UserCreateForm onSuccess={handleUserCreated} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
       
       <Card>
@@ -219,58 +228,83 @@ export default function UserManagementUnified({
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEditClick(user)}>
-                          <Edit className="mr-2 h-4 w-4" /> Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleChangePasswordClick(user)}
-                        >
-                          <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
-                        </DropdownMenuItem>
-                        {isUserLocked(user) && (
-                          <DropdownMenuItem
-                            onClick={() => handleUnlockUser(user)}
+                    {canUpdate || canDelete ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Ações do usuário"
                           >
-                            <Unlock className="mr-2 h-4 w-4" /> Desbloquear
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              onSelect={(e) => e.preventDefault()}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteUser(user.id)}
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                          {canUpdate && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => handleEditClick(user)}
                               >
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                                <Edit className="mr-2 h-4 w-4" /> Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleChangePasswordClick(user)}
+                              >
+                                <KeyRound className="mr-2 h-4 w-4" /> Alterar
+                                Senha
+                              </DropdownMenuItem>
+                              {isUserLocked(user) && (
+                                <DropdownMenuItem
+                                  onClick={() => handleUnlockUser(user)}
+                                >
+                                  <Unlock className="mr-2 h-4 w-4" /> Desbloquear
+                                </DropdownMenuItem>
+                              )}
+                            </>
+                          )}
+                          {canDelete && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Excluir {user.name}?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta ação não pode ser desfeita.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Cancelar
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteUser(user.id)}
+                                    >
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Somente leitura
+                      </span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

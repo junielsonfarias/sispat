@@ -400,7 +400,13 @@ function App() {
               <Route path="/imoveis/ver/:id" element={<ImoveisView />} />
               <Route
                 path="/imoveis/manutencao"
-                element={<ImoveisManutencao />}
+                element={
+                  <ProtectedRoute
+                    allowedRoles={['admin', 'supervisor', 'usuario']}
+                  >
+                    <ImoveisManutencao />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/imoveis/campos"
