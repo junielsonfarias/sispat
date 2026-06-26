@@ -35,20 +35,9 @@ export class EmailService {
    */
   private async loadConfig(): Promise<void> {
     try {
-      // ✅ Carregar configuração de email do banco de dados
-      // Nota: EmailConfig pode não estar disponível no Prisma ainda
-      // Verificar se o modelo existe antes de usar
-      let emailConfig: any = null;
-      try {
-        // @ts-expect-error Modelo pode não estar disponível ainda
-        emailConfig = await prisma.emailConfig?.findFirst();
-      } catch (error) {
-        // Modelo não existe, usar configuração de variáveis de ambiente
-        if (process.env.NODE_ENV === 'development') {
-          logWarn('⚠️ Modelo EmailConfig não encontrado, usando variáveis de ambiente');
-        }
-      }
-      
+      // ✅ Carregar configuração de email do banco de dados (model EmailConfig).
+      const emailConfig = await prisma.emailConfig.findFirst();
+
       if (emailConfig && emailConfig.enabled) {
         this.config = {
           host: emailConfig.host,

@@ -10,9 +10,7 @@ import { maskEmail } from '../utils/mask';
  * GET /api/email-config
  */
 export const getEmailConfig = async (req: Request, res: Response): Promise<void> => {
-  try {
-    // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
-    const emailConfig = await prisma.emailConfig?.findFirst();
+  try {    const emailConfig = await prisma.emailConfig.findFirst();
 
     if (!emailConfig) {
       res.json({
@@ -75,15 +73,13 @@ export const updateEmailConfig = async (req: Request, res: Response): Promise<vo
     }
 
     // Verificar se já existe configuração
-    // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
-    const existingConfig = await prisma.emailConfig?.findFirst();
+    const existingConfig = await prisma.emailConfig.findFirst();
 
     let emailConfig;
 
     if (existingConfig) {
       // Atualizar configuração existente
-      // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
-      emailConfig = await prisma.emailConfig?.update({
+      emailConfig = await prisma.emailConfig.update({
         where: { id: existingConfig.id },
         data: {
           host,
@@ -102,9 +98,7 @@ export const updateEmailConfig = async (req: Request, res: Response): Promise<vo
         res.status(400).json({ error: 'Senha é obrigatória para nova configuração' });
         return;
       }
-
-      // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
-      emailConfig = await prisma.emailConfig?.create({
+      emailConfig = await prisma.emailConfig.create({
         data: {
           host,
           port: parseInt(port.toString()),
@@ -235,9 +229,7 @@ export const deleteEmailConfig = async (req: Request, res: Response): Promise<vo
     const userId = req.user?.userId;
 
     logDebug('🗑️ Desabilitando configuração de email', { userId: req.user?.userId });
-
-    // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
-    const existingConfig = await prisma.emailConfig?.findFirst();
+    const existingConfig = await prisma.emailConfig.findFirst();
 
     if (!existingConfig) {
       res.status(404).json({ error: 'Configuração de email não encontrada' });
@@ -245,8 +237,7 @@ export const deleteEmailConfig = async (req: Request, res: Response): Promise<vo
     }
 
     // Desabilitar em vez de deletar (manter histórico)
-    // @ts-expect-error Modelo EmailConfig pode não estar disponível ainda
-    await prisma.emailConfig?.update({
+    await prisma.emailConfig.update({
       where: { id: existingConfig.id },
       data: {
         enabled: false,

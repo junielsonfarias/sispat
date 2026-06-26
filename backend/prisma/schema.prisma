@@ -685,6 +685,23 @@ model SystemConfiguration {
   @@map("system_configuration")
 }
 
+// Configuração SMTP global (linha única, editável só por superuser).
+// Schema de validação: `updateEmailConfigSchema` em @sispat/shared.
+model EmailConfig {
+  id          String   @id @default(uuid())
+  host        String
+  port        Int
+  secure      Boolean  @default(false)
+  user        String
+  password    String
+  fromAddress String
+  enabled     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("email_config")
+}
+
 model Customization {
   id                      String   @id @default(uuid())
   municipalityId          String   @unique
