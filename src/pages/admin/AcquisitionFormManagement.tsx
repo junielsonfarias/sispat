@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useConfirm } from '@/hooks/useConfirm'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -58,6 +59,7 @@ const AcquisitionFormManagement = () => {
     deleteAcquisitionForm,
     toggleAcquisitionFormStatus,
   } = useAcquisitionForms()
+  const confirm = useConfirm()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingForm, setEditingForm] = useState<AcquisitionForm | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -104,24 +106,29 @@ const AcquisitionFormManagement = () => {
 
   const onSubmit = async (data: AcquisitionFormValues) => {
     setIsSubmitting(true)
-    if (editingForm) {
-      const success = await updateAcquisitionForm(editingForm.id, data)
-      if (success) {
-        handleCloseDialog()
+    try {
+      if (editingForm) {
+        const success = await updateAcquisitionForm(editingForm.id, data)
+        if (success) handleCloseDialog()
+      } else {
+        const success = await addAcquisitionForm(data)
+        if (success) handleCloseDialog()
       }
-    } else {
-      const success = await addAcquisitionForm(data)
-      if (success) {
-        handleCloseDialog()
-      }
+    } finally {
+      // Sem finally, uma exceção deixava o botão de submit travado.
+      setIsSubmitting(false)
     }
-    setIsSubmitting(false)
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta forma de aquisição?')) {
-      return
-    }
+    const alvo = acquisitionForms.find((f) => f.id === id)
+    const ok = await confirm({
+      title: alvo ? `Excluir a forma "${alvo.nome}"?` : 'Excluir esta forma de aquisição?',
+      description: 'Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      variant: 'destructive',
+    })
+    if (!ok) return
     await deleteAcquisitionForm(id)
   }
 

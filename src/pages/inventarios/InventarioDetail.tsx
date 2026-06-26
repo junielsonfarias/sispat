@@ -102,8 +102,18 @@ export default function InventarioDetail() {
   const handleFinalize = async () => {
     if (!id) return
     setIsFinalizing(true)
-    const newlyMissing = await finalizeInventory(id)
-    navigate(`/inventarios/resumo/${id}`, { state: { newlyMissing } })
+    try {
+      const newlyMissing = await finalizeInventory(id)
+      navigate(`/inventarios/resumo/${id}`, { state: { newlyMissing } })
+    } catch (error) {
+      // Sem isto o botão "Finalizar" ficava travado (isFinalizing nunca resetava).
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao finalizar',
+        description: 'Não foi possível finalizar o inventário. Tente novamente.',
+      })
+      setIsFinalizing(false)
+    }
   }
 
   if (!inventory) return <Loader2 className="h-8 w-8 animate-spin mx-auto" />

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -60,6 +61,21 @@ export function SubPatrimonioForm({
       status: 'ativo',
     },
   })
+
+  // Repopula o form ao abrir/trocar o item editado — sem isto, editar um 2º
+  // sub-patrimônio mostrava os dados do anterior.
+  useEffect(() => {
+    if (!isOpen) return
+    if (editingSubPatrimonio) {
+      form.reset({
+        localizacao_especifica: editingSubPatrimonio.localizacao_especifica ?? '',
+        observacoes: editingSubPatrimonio.observacoes ?? '',
+        status: editingSubPatrimonio.status ?? 'ativo',
+      })
+    } else {
+      form.reset({ localizacao_especifica: '', observacoes: '', status: 'ativo' })
+    }
+  }, [editingSubPatrimonio, isOpen, form])
 
   const handleSubmit = async (data: SubPatrimonioFormValues) => {
     await onSubmit(data)

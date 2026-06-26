@@ -130,7 +130,21 @@ const Exportacao = () => {
     setIsLoading(true)
     try {
       // Usar dados reais do contexto em vez de mocks
-      const allData = patrimonios || []
+      let allData = patrimonios || []
+      // Aplica o filtro de período do formulário (antes era ignorado → exportava tudo).
+      if (data.dateFrom) {
+        const from = new Date(data.dateFrom)
+        allData = allData.filter(
+          (p) => p.data_aquisicao && new Date(p.data_aquisicao) >= from,
+        )
+      }
+      if (data.dateTo) {
+        const to = new Date(data.dateTo)
+        to.setHours(23, 59, 59, 999) // inclui o dia final inteiro
+        allData = allData.filter(
+          (p) => p.data_aquisicao && new Date(p.data_aquisicao) <= to,
+        )
+      }
       const columns = getColumnsWithLabels(data.fields as (keyof Patrimonio)[])
       const filename = `exportacao-sispat-${new Date().toISOString().split('T')[0]}`
 

@@ -154,7 +154,7 @@ export default function TransferenciaReports() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setExportDialogOpen(true)}
+              onClick={() => openExportDialog('xlsx')}
             >
               <Settings className="mr-2 h-4 w-4" /> Personalizar Colunas
             </Button>
