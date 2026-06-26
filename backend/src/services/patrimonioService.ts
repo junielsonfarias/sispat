@@ -1315,6 +1315,14 @@ export const registrarBaixa = async (
   if (patrimonio.status === 'baixado') {
     throw new PatrimonioConflictError('Patrimônio já está baixado');
   }
+  // §7: bem emprestado ou em transferência não pode ser baixado — senão a
+  // devolução/cancelamento depois restaura o status e desfaz a baixa silenciosamente.
+  if (patrimonio.status === 'emprestado') {
+    throw new PatrimonioConflictError('Registre a devolução do empréstimo antes de baixar o bem.');
+  }
+  if (patrimonio.status === 'em_transferencia') {
+    throw new PatrimonioConflictError('Cancele a transferência pendente antes de baixar o bem.');
+  }
 
   // Art. 25/26: extravio/furto/roubo exige Boletim de Ocorrência ou comunicação
   // formal anexada (apuração de responsabilidade). Não é uma baixa comum.

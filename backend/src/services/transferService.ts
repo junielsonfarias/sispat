@@ -216,6 +216,12 @@ export const createTransfer = async (input: CreateTransferInput, actor: Actor) =
       'Patrimônio está emprestado — devolva antes de transferir',
     );
   }
+  // Extravio precede apuração/BO (Art. 25/26); transferir apagaria a rastreabilidade.
+  if (patrimonio.status === PatrimonioStatus.extraviado) {
+    throw new TransferValidationError(
+      'Patrimônio extraviado não pode ser transferido — resolva o extravio antes.',
+    );
+  }
 
   const [transfer] = await prisma.$transaction([
     prisma.transferencia.create({

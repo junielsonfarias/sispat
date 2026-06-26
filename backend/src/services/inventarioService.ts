@@ -538,7 +538,12 @@ export const finalizeInventario = async (id: string, actor: Actor) => {
         !item.encontrado &&
         item.patrimonio &&
         item.patrimonio.status !== 'extraviado' &&
-        item.patrimonio.status !== 'baixado'
+        item.patrimonio.status !== 'baixado' &&
+        // Bem emprestado/em transferência está legitimamente fora do setor — não é
+        // extravio. Marcar como extraviado deixaria o bem preso nesse status mesmo
+        // após a devolução/aprovação (o guard de devolução exige status 'emprestado').
+        item.patrimonio.status !== 'emprestado' &&
+        item.patrimonio.status !== 'em_transferencia'
       ) {
         await tx.patrimonio.update({
           where: { id: item.patrimonio.id },
@@ -615,12 +620,19 @@ export const finalizeInventario = async (id: string, actor: Actor) => {
 export const deleteInventario = async (id: string, actor: Actor) => {
   const existing = await prisma.inventory.findUnique({
     where: { id },
-    select: { id: true, title: true, municipalityId: true, responsavel: true },
+    select: { id: true, title: true, municipalityId: true, responsavel: true, status: true },
   });
 
   if (!existing) throw new InventarioNotFoundError();
   if (actor.role !== 'superuser' && existing.municipalityId !== actor.municipalityId) {
     throw new InventarioNotFoundError();
+  }
+  // Art. 16: inventário concluído é documento de conferência física — não deve ser
+  // excluído (destruiria a base da conciliação). superuser pode (manutenção).
+  if (existing.status === 'concluido' && actor.role !== 'superuser') {
+    throw new InventarioValidationError(
+      'Inventário concluído não pode ser excluído.',
+    );
   }
 
   await prisma.inventory.delete({ where: { id } });

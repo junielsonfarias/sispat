@@ -173,8 +173,12 @@ export interface CreateDesfazimentoInput {
 
 export const createDesfazimento = async (input: CreateDesfazimentoInput, actor: Actor) => {
   const patrimonio = await loadPatrimonio(input.patrimonioId, actor);
-  if (patrimonio.status === 'baixado') {
-    throw new DesfazimentoValidationError('Patrimônio já está baixado');
+  // Mesmo bloqueio do concluir: não abrir desfazimento para bem baixado/emprestado/
+  // em transferência (evita processo aberto que nunca pode ser concluído).
+  if (STATUS_BLOQUEADO.includes(patrimonio.status)) {
+    throw new DesfazimentoValidationError(
+      `Não é possível abrir desfazimento de um bem com status "${patrimonio.status}"`,
+    );
   }
   // Art. 22/23: alienar exige bem dominical (desafetação prévia).
   assertDesafetadoParaAlienacao(input.modalidade, patrimonio.destinacao);
