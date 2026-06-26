@@ -221,7 +221,18 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const updateInventory = useCallback(
     async (inventoryId: string, updatedInventory: Inventory) => {
       try {
-        await api.put<Inventory>(`/inventarios/${inventoryId}`, updatedInventory)
+        // updateInventarioSchema do backend é .strict() e usa title/setor/local
+        // (não name/sectorName/scope/items do modelo do frontend). Mapear, senão
+        // o PUT do objeto inteiro tomava 400 e a edição nunca salvava.
+        const payload = {
+          title: updatedInventory.name,
+          setor: updatedInventory.sectorName,
+          local:
+            updatedInventory.specificLocationId ||
+            updatedInventory.locationType ||
+            '',
+        }
+        await api.put<Inventory>(`/inventarios/${inventoryId}`, payload)
         await fetchInventories() // Recarregar a lista
         toast({
           title: 'Sucesso',

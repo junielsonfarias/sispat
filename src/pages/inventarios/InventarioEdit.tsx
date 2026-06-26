@@ -118,13 +118,13 @@ export default function InventarioEdit() {
             : undefined,
       }
       
-      updateInventory(id, updatedInventory)
-      
+      await updateInventory(id, updatedInventory)
+
       toast({
         title: 'Sucesso!',
         description: 'Inventário atualizado com sucesso.',
       })
-      
+
       navigate('/inventarios')
     } catch (error) {
       toast({

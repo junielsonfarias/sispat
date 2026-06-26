@@ -110,8 +110,15 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
   const onSubmit = async (data: UserEditFormValues) => {
     setIsLoading(true)
     try {
-      // Manter o municipalityId original do usuário
-      const userData = { ...data, municipalityId: user.municipalityId }
+      // updateUserSchema do backend é .strict(): só aceita estes campos.
+      // (Antes ia {...data, municipalityId} com sector/avatarUrl/municipalityId →
+      // 400 "Unrecognized key", quebrando todo save de edição de usuário.)
+      const userData = {
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        responsibleSectors: data.responsibleSectors,
+      }
       const updatedUser = await updateUser(user.id, userData)
       toast({
         title: 'Sucesso!',

@@ -70,6 +70,14 @@ export const AssetTransferForm = ({
       patrimonioDescricao: asset.descricao_bem,
       type,
       setorOrigem: asset.setor_responsavel,
+      // dataTransferencia é OBRIGATÓRIA no schema do backend e nunca era enviada
+      // (→ 400). A transferência é solicitada agora.
+      dataTransferencia: new Date(),
+      // Colunas NOT NULL no Prisma (opcionais no schema) — evita erro de gravação.
+      localOrigem: asset.local_objeto || '',
+      localDestino: '',
+      responsavelOrigem: asset.setor_responsavel || '',
+      responsavelDestino: '',
       solicitanteId: user.id,
       solicitanteNome: user.name,
       municipalityId: user.municipalityId,
