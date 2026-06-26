@@ -42,10 +42,10 @@ Confirmado que **não há backend** para 2FA, backup/restore nem system-info. Ap
 - ✅ `ImoveisReportEditor` — `novo` sem `municipalityId` travava em "Carregando..." → toast + navega de volta; spinner decente no fallback.
 - ℹ️ `BensEdit` — **não era spinner eterno**: já chama `setPatrimonio` no sucesso e `navigate` no erro. Só ajustado o `console.error` solto (→ guard DEV).
 
-### 5. Touch/mobile bloqueante
-- `PublicBemDetalhes.tsx:258`, `ImageUpload.tsx:169` — botões só com `:hover` (invisíveis em celular).
-- `DesafetacaoList.tsx:622` — exige digitar UUID manual do bem (sem dropdown).
-- `ImportarRelatorio.tsx` etapa 2 — tabela de 8 colunas sem fallback mobile.
+### 5. Touch/mobile bloqueante — ✅ CORRIGIDO
+- ✅ `PublicBemDetalhes` (setas do carrossel) e `ImageUpload` (botão remover) — eram `opacity-0 group-hover:opacity-100` (invisíveis no toque). Agora `opacity-100 sm:opacity-0 sm:group-hover:opacity-100` (visível no mobile, hover-reveal no desktop). Botão de remover ganhou `aria-label` e touch target 32px.
+- ✅ `DesafetacaoList` (form de criação) — exigia digitar o **UUID** do bem. Trocado por `SearchableSelect` (busca por número/descrição; value = id) para patrimônio e imóvel.
+- ✅ `ImportarRelatorio` etapa 2 — tabela larga `table-fixed`: adicionado banner `lg:hidden` recomendando concluir em desktop (campos apertados no celular).
 
 ### 6. RBAC no cliente — ✅ CORRIGIDO (com revisão dos falsos positivos)
 Ao verificar o roteamento (`App.tsx`/`ProtectedRoute`), parte dos achados dos agentes era **falso positivo** — eles leram só o componente, não o roteamento:

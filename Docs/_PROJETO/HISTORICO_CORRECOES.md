@@ -21,6 +21,13 @@
 
 ## 2026
 
+### 2026-06-26 — Touch/mobile bloqueante (#5)
+- **Botões hover-only** (invisíveis em telas de toque): `PublicBemDetalhes` (setas do carrossel) e `ImageUpload` (botão remover foto) usavam `opacity-0 group-hover:opacity-100` → agora `opacity-100 sm:opacity-0 sm:group-hover:opacity-100` (visível no mobile, hover-reveal no desktop). Remover ganhou `aria-label` + touch target 32px; `console.error` do onError virou guard DEV.
+- **Seleção de bem por UUID:** `CreateDesafetacaoForm` exigia digitar o UUID do patrimônio/imóvel (inutilizável). Trocado por `SearchableSelect` (busca por número/descrição, value = id), alimentado por `useAllPatrimonios`/`useImovel` dentro do form.
+- **Tabela de revisão da importação:** `ImportarRelatorio` etapa 2 é `table-fixed` com muitas colunas → banner `lg:hidden` recomendando concluir em desktop.
+- **Arquivos:** `src/pages/PublicBemDetalhes.tsx`, `src/components/bens/ImageUpload.tsx`, `src/pages/desafetacao/DesafetacaoList.tsx`, `src/pages/bens/ImportarRelatorio.tsx`. **Verificação:** `tsc` → 0 erros.
+- **Lição:** `group-hover` não existe em toque — para ações em hover-reveal, sempre `opacity-100` no mobile e `sm:group-hover` só no desktop. E nunca pedir UUID ao usuário: dropdown buscável com label legível.
+
 ### 2026-06-26 — Estados de erro (#4) + confirmações destrutivas (#7)
 - **#4 Spinner eterno / tela em branco:**
   - `BensView` — após falha de rede, `patrimonio` ficava null → spinner eterno. Adicionado `loadError` (set no catch, reset no início) + botão "Tentar novamente".
