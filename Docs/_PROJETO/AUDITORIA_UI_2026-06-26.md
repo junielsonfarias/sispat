@@ -58,12 +58,12 @@ Ao verificar o roteamento (`App.tsx`/`ProtectedRoute`), parte dos achados dos ag
 - `Termos.tsx:295` (emite termo de carga — Art. 34 — sem confirmar).
 - `DesafetacaoList.tsx:1071` (exclui desafetação concluída).
 
-### 8. Bugs de lógica
-- `PermissionManagement.tsx:58` — `useState` usado como efeito → permissões nunca carregam.
-- `<ChartTooltipContent payload={[]} />` (tooltip vazio): `DepreciationDashboard:269`, `AnaliseTipo:175`, `AnaliseSetor:202`.
-- `InventarioPrint.tsx:282` — divisão por zero → `NaN%`.
-- `InventarioEdit.tsx:244` — escopo `specific_location` some na edição.
-- `ImoveisEdit.tsx` — campos do Create ausentes no Edit → sobrescreve com `undefined`.
+### 8. Bugs de lógica — ✅ PARCIAL (com revisão de falso positivo)
+- ✅ **Tooltip de gráfico vazio:** `<ChartTooltipContent payload={[]} />` sobrescrevia o payload injetado pelo recharts → tooltip nunca mostrava valores. Corrigido em **6 ocorrências** (os agentes acharam 3; +3 em `ChartsSection.tsx`): removido o `payload={[]}`.
+- ✅ **`InventarioPrint.tsx:282`** — divisão por zero → `NaN%`. Agora guarda `items.length > 0 ? ... : '0.0'`.
+- ✅ **`InventarioEdit`** — escopo `specific_location` (e seu `specificLocationId`) sumia na edição (perda de dado real). Trazido à paridade com o Create: campo no schema/form/submit + opção no Select + campo condicional; Selects passaram de `defaultValue` para `value` (refletem o `form.reset`); removido `setTimeout(1000)` artificial.
+- ❌ **`ImoveisEdit` "sobrescreve com undefined" — FALSO POSITIVO.** O backend `updateImovel` usa whitelist com `if (raw[field] !== undefined)` (`imovelService.ts:419-423`) → campos ausentes no body NÃO são tocados (preservados). Não há perda de dado; os campos (tipo_imovel, lat/long, descrição, etc.) apenas **não são editáveis** no form do Edit — **lacuna de feature**, não bug. Adicioná-los é melhoria, não correção.
+- ✅ **`PermissionManagement.tsx:58`** — `useState(() => …)` usado como efeito (inicializador rodava 1x no mount com `roles` ainda vazio) → permissões nunca carregavam. Trocado por `useEffect([selectedRole, roles])`.
 
 ---
 

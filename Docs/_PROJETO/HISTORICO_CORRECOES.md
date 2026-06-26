@@ -21,6 +21,15 @@
 
 ## 2026
 
+### 2026-06-26 — Bugs de lógica (#8): tooltips de gráfico, divisão por zero, escopo de inventário, permissões
+- **Tooltip de gráfico vazio:** `<ChartTooltipContent payload={[]} />` sobrescrevia o payload que o recharts injeta → o tooltip nunca mostrava valores ao passar o mouse. Removido o `payload={[]}` em **6 ocorrências** (`ChartsSection.tsx` ×3, `DepreciationDashboard`, `AnaliseTipo`, `AnaliseSetor`).
+- **`InventarioPrint.tsx`:** `(foundCount / items.length) * 100` dava `NaN%` com 0 itens → guarda `items.length > 0 ? … : '0.0'`.
+- **`InventarioEdit`:** o escopo `specific_location` (e o `specificLocationId`) era perdido ao editar — o schema/form/submit não tinham o campo e o Select não tinha a opção. Trazido à paridade com o `InventarioCreate` (campo + opção + condicional). Selects trocados de `defaultValue` para `value` (refletiam o `form.reset` async). Removido `setTimeout(1000)` artificial.
+- **`PermissionManagement`:** `useState(() => { setCurrentPermissions(...) })` (inicializador rodava 1x no mount, com `roles` ainda vazio) → a tela nunca populava permissões. Trocado por `useEffect([selectedRole, roles])`; `handleRoleChange` simplificado.
+- **Falso positivo descartado — `ImoveisEdit` "sobrescreve com undefined":** o backend `updateImovel` usa whitelist `if (raw[field] !== undefined)` (`imovelService.ts:419-423`) — campos ausentes no body são preservados. Não há perda de dado; os campos só não são editáveis no form (lacuna de feature). Não tocado para não introduzir risco.
+- **Arquivos:** `src/components/dashboard/ChartsSection.tsx`, `src/pages/analise/{AnaliseTipo,AnaliseSetor}.tsx`, `src/pages/dashboards/DepreciationDashboard.tsx`, `src/pages/inventarios/{InventarioPrint,InventarioEdit}.tsx`, `src/pages/superuser/PermissionManagement.tsx`. **Verificação:** `tsc` → 0 erros.
+- **Lição:** `useState(fn)` é inicializador (roda 1x, valor descartado se você não o usa) — para "rodar quando deps mudam" é `useEffect`. E sempre cruzar "perda de dado" alegada com a semântica real de update do backend (whitelist de campos ≠ replace) antes de expandir formulários.
+
 ### 2026-06-26 — RBAC no cliente (#6): guard de rota + gating de ações por permissão
 - **Revisão dos achados:** ao conferir `App.tsx`/`ProtectedRoute`, vários "sem RBAC" apontados pelos agentes eram **falsos positivos** — fichas (`GerenciadorFichas`/`NovoTemplateFicha`/`EditorTemplateFicha`) e `ImovelCustomFields` já tinham `allowedRoles={['admin','supervisor']}` na rota (superuser é redirecionado a `/superuser/*` por design).
 - **Gaps reais corrigidos:**
