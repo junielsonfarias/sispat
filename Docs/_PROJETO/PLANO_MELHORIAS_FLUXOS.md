@@ -10,40 +10,29 @@
 
 ## 🔴 Bloqueadores — funcionalidades quebradas em produção
 
-### B1. Recuperação de senha completamente desabilitada
-- **Onde:** `backend/src/controllers/authController.ts:441-528, 534-556, 562-592`
-- **Sintoma:** `forgotPassword`, `validateResetToken` e `resetPassword` têm comentários "TEMPORARIAMENTE DESABILITADO - Problema com Prisma Client" e forçam `resetToken = null`. Frontend tem rotas `/forgot-password` e `/reset-password` que **levam para tela quebrada**.
-- **Impacto:** Usuário que esqueceu a senha precisa contato administrativo manual.
-- **Solução:** Ativar `prisma.passwordResetToken.create/findUnique/update`. O modelo já existe (`schema.prisma:620-637`). Deve ser 1h de trabalho.
-- **Risco:** Baixo, escopo cirúrgico.
+### B1. ✅ Recuperação de senha (reativada — Sprint 6)
+- **Era:** `forgotPassword`, `validateResetToken` e `resetPassword` tinham comentários "TEMPORARIAMENTE DESABILITADO - Problema com Prisma Client" e forçavam `resetToken = null`.
+- **Feito:** `prisma.passwordResetToken.create/findUnique/update` reativado; o comentário de desativação não existe mais no `authController.ts` (verificado 2026-06-26).
 
 ### B2. ✅ Sub-patrimônios (kits) — implementado (2026-06-23)
 - **Era:** `SubPatrimoniosManagerRefactored.tsx` usava estado mock (`TODO: Integrar com API real`); `eh_kit`/`quantidade_unidades` não persistiam; model `SubPatrimonio` do schema era vestigial (descricao/quantidade/valor) e divergia do frontend.
 - **Feito:** migration `add_sub_patrimonios_kit` — `eh_kit`/`quantidade_unidades` no `Patrimonio` + `SubPatrimonio` reestruturado (`numero`/`status`/`localizacao_especifica`/`observacoes`, unique `[patrimonioId, numero]`). Backend: `subPatrimonioService` + controller + rotas aninhadas `/api/patrimonios/:id/sub-patrimonios` (list/create/update/delete/bulk-status), isolamento multi-tenant via patrimônio pai, RBAC. `patrimonioService.create` gera N sub-patrimônios na transação quando `eh_kit`. Schema compartilhado `@sispat/shared`. Frontend: manager ligado à API real (CRUD + bulk + export CSV), `BensCreate` envia os campos do kit (backend gera), feature flag `subPatrimonios` ligada. Verificado: tsc + 455 testes Jest + build + smoke test end-to-end (criação de kit gera unidades, CRUD, bulk, cascata).
 
-### B3. Devolução de empréstimo sem fluxo
-- **Onde:** `src/pages/bens/Emprestimos.tsx` — sem `handleDevolucao`. Campo `dataDevolucao` no schema nunca populado.
-- **Sintoma:** Empréstimos atrasados ficam pendurados sem forma de fechar.
-- **Solução:** Endpoint `POST /api/emprestimos/:id/devolver` + botão na UI.
+### B3. ✅ Devolução de empréstimo (Sprint 6)
+- **Era:** `src/pages/bens/Emprestimos.tsx` sem `handleDevolucao`; campo `dataDevolucao` nunca populado.
+- **Feito:** endpoint `POST /api/emprestimos/:id/devolver` (`emprestimoController`/`emprestimoRoutes`) + botão na UI (verificado 2026-06-26).
 
-### B4. Campos customizados de Imóveis não persistem
-- **Onde:** `backend/src/controllers/imovelController.ts:228-247` recebe `customFields` mas não salva.
-- **Sintoma:** Admin cria campos custom em `ImovelCustomFields.tsx`, o form em `ImoveisCreate` mostra os campos, usuário preenche, mas o **valor é descartado** ao salvar.
-- **Impacto:** Funcionalidade completamente quebrada.
-- **Solução:** Adicionar coluna `customFields Json?` em `Imovel` OU tabela `ImovelCustomFieldValue` (FK para imóvel + FK para campo + valor texto).
+### B4. ✅ Campos customizados de Imóveis persistem (Sprint 6)
+- **Era:** `imovelController` recebia `customFields` mas não salvava — valor descartado ao salvar.
+- **Feito:** `imovelService` persiste `customFields` (campo Json) no create/update (verificado 2026-06-26, `imovelService.ts:256,329`).
 
-### B5. Upload de documentos de baixa não persiste arquivos
-- **Onde:** `src/components/BaixaBemModal.tsx:84` — só salva `selectedFiles.map(f => f.name)`. Não faz upload real.
-- **Sintoma:** Baixas sem documentação anexada.
-- **Solução:** Usar mesmo fluxo de upload do `ImageUpload` antes de submit.
+### B5. ✅ Upload de documentos de baixa persiste arquivos (Sprint 6)
+- **Era:** `BaixaBemModal.tsx` só salvava `selectedFiles.map(f => f.name)`, sem upload real.
+- **Feito:** o modal faz upload real dos arquivos e popula `documentos_baixa`/`url_documentos` antes do submit (verificado 2026-06-26, `BaixaBemModal.tsx:101-115`).
 
-### B6. Rotas de transferência duplicadas
-- **Onde:** `backend/src/routes/transferRoutes.ts` (v2.0.6) e `transferenciaRoutes.ts` (v2.0.5) — ambos registrados.
-- **Sintoma:** Há dois controllers paralelos com comportamentos divergentes:
-  - `transferenciaController`: atualiza `Patrimonio.sectorId` (FK)
-  - `transferController`: atualiza só `setor_responsavel` (string) — **deixa FK desatualizada**
-- **Risco:** Estado corrompido — bem aparece num setor pela FK e em outro pela string.
-- **Solução:** Escolher um (recomendo `transferRoutes` por estar mais novo) e remover o outro. Migrar consumidores frontend (`Transferencias.tsx` e `TransferenciasPage.v2.tsx`).
+### B6. ✅ Rotas de transferência consolidadas (Sprint 6)
+- **Era:** `transferRoutes.ts` e `transferenciaRoutes.ts` ambos registrados, com controllers divergentes (um atualizava a FK `sectorId`, outro só a string `setor_responsavel`).
+- **Feito:** `index.ts` registra apenas `transferRoutes` (`app.use('/api/transfers', ...)`); a rota duplicada não é mais montada (verificado 2026-06-26, `index.ts:270,322`).
 
 ---
 
@@ -258,10 +247,7 @@
 - CI com lint + type-check + audit + bundle check
 - Sentry backend pronto (esperando DSN)
 
-**O que mais merece atenção:**
-- **Recuperação de senha** (B1) — quebrada há tempo, prioridade absoluta
-- **Imóveis customFields** (B4) — feature anunciada mas inerte
-- **Rotas duplicadas de transferência** (B6) — risco de corrupção de dados
-- **Múltiplos arquivos com variantes** (dashboards, sub-patrimônios, transferências) — sinal de débito de governança; um cleanup grande ajuda a manutenção a longo prazo
-
-Estes 4 pontos resolvem ~70% do impacto percebido pelo usuário final.
+**O que mais merece atenção (atualizado 2026-06-26):**
+- ✅ Todos os 6 bloqueadores (B1–B6) estão resolvidos no código — verificado em 2026-06-26 (backend 566 testes Jest verdes; frontend type-check 0 erros).
+- Resta polimento/UX (M*) e itens 🟢 — ver as seções acima e `PLANO_FRONTEND.md` (F5/F7/F8 ainda abertos).
+- **Múltiplos arquivos com variantes** (dashboards, sub-patrimônios, transferências) — débito de governança; um cleanup grande ainda ajuda a manutenção a longo prazo.

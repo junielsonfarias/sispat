@@ -21,6 +21,27 @@
 
 ## 2026
 
+### 2026-06-26 — Varredura de UI/UX (88 páginas) + correção do lote multi-tenant `municipalityId: '1'`
+- **Contexto:** varredura das ~88 páginas (`src/pages/**`) por 6 agentes `frontend-expert` em paralelo (eixos: elementos/estado, botões, responsividade, a11y). Relatório completo em `Docs/_PROJETO/AUDITORIA_UI_2026-06-26.md`.
+- **Sintoma (🔴 #1):** `municipalityId: '1'` hardcoded em telas que persistem/alimentam dados — risco de vazamento multi-tenant (o risco nº 1 declarado do projeto).
+- **Correção:**
+  - `SectorManagement.tsx` — passa a usar `user.municipalityId` (via `useAuth`) com guard/toast quando ausente, em vez de `'1'`.
+  - `ImoveisCreate.tsx` — removido o fallback `user.municipalityId || '1'`; adicionado guard no início do submit.
+  - `ExcelCsvTemplateManagement.tsx` + `ExcelCsvTemplateContext.tsx` — **não envia mais `municipalityId` do cliente**; o backend (`excelCsvTemplateService.createExcelCsvTemplate`) já deriva `municipalityId: actor.municipalityId` do usuário autenticado (o valor do body era dado morto e enganoso). Tipo do `saveTemplate` ajustado para `Omit<..., 'id' | 'municipalityId'> & { id? }`.
+  - `LabelTemplateEditor.tsx` — ao criar modelo sem `municipalityId`, agora avisa e volta para a lista em vez de criar template com tenant `'1'`; mock de preview alinhado a `user?.municipalityId`.
+  - `BensCadastrados.tsx` — objeto "Etiqueta Padrão" usa `user?.municipalityId`.
+- **Não tocados (por decisão):** `FichaPreviewReal.tsx:47` e `LabelTemplateContext.tsx:60` (`defaultTemplate`) — mocks de preview/escopo de módulo, nunca persistem; documentados no relatório.
+- **Arquivos:** ver acima. **Verificação:** frontend `tsc --noEmit -p tsconfig.app.json` (ver resultado na sessão).
+- **Lição:** quando o backend deriva o tenant do usuário autenticado, o cliente NÃO deve enviar `municipalityId` — enviar um valor fixo é dado morto que mascara a intenção e vira armadilha de cópia/cola. Padrão correto: omitir no payload ou usar `user.municipalityId` com guard, nunca `'1'`.
+
+### 2026-06-26 — Sincronização de docs com o estado real do código (bloqueadores B1–B6)
+- **Sintoma:** `PLANO_MELHORIAS_FLUXOS.md` mantinha os cabeçalhos de B1, B3, B4, B5 **sem** ✅, sugerindo bloqueadores em aberto, enquanto a lista de execução do Sprint 6 (mesma doc) os marcava concluídos — inconsistência interna que dava falsa impressão de pendência crítica.
+- **Causa-raiz:** docs ficaram defasados em relação ao código (já era um padrão conhecido — ver memória `security-hardening-2026-06-23`). As correções foram aplicadas mas só a checklist de execução foi marcada, não as definições.
+- **Correção:** verificado no código que os 6 bloqueadores estão resolvidos e marcados os cabeçalhos: B1 (recuperação de senha reativada, sem o comentário "TEMPORARIAMENTE DESABILITADO"), B3 (`POST /emprestimos/:id/devolver` + UI), B4 (`imovelService` persiste `customFields`), B5 (`BaixaBemModal` faz upload real → `documentos_baixa`/`url_documentos`), B6 (`index.ts` registra só `transferRoutes`). "Observações finais" da doc atualizadas.
+- **Arquivos:** `Docs/_PROJETO/PLANO_MELHORIAS_FLUXOS.md`.
+- **Verificação:** backend `jest --coverage` → **43 suítes / 566 testes** verdes; frontend `tsc --noEmit -p tsconfig.app.json` → **0 erros**.
+- **Lição:** ao concluir um item, marcar a **definição** do item (não só a checklist de sprint) — caso contrário a doc passa a contradizer a si mesma e gera retrabalho de auditoria.
+
 ### 2026-06-24 — Importação de bens móveis do relatório de liquidação SIAFIC (PDF)
 - **Pedido:** importar para o patrimônio o relatório da contabilidade ("Movimentos de Liquidação", classificação 4.4.90.52.00 — material permanente pago) que vem em PDF, mapeando os campos para o cadastro de bens móveis. Decisões de produto (confirmadas): 1 patrimônio por unidade física (explode a quantidade); campos contábeis dedicados (fornecedor/empenho/liquidação); tela de revisão editável; mapear cada UG do relatório para um setor.
 - **Análise do documento:** relatório de texto de largura fixa, hierárquico — UG (fundo/secretaria) › Dotação › Subelemento 4.4.90.52.XX (= tipo do bem) › Nota Fiscal (data, fornecedor, empenho, NF nº/série, liquidação) › Itens (qtd · unidade · especificação · vl. unit · vl. total) + Fonte de Recursos por UG (→ origem_recurso). Mapeamento: especificação→descricao_bem; subelemento→tipo; qtd→nº de unidades; vl. unitário→valor_aquisicao; data NF→data_aquisicao; NF nº/série→numero_nota_fiscal; prefixo do empenho (LC/CD)→forma_aquisicao; fonte→origem_recurso. Não há marca/modelo/série no relatório (ficam vazios).
