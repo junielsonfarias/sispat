@@ -210,20 +210,25 @@ describe('@sispat/shared — document', () => {
 });
 
 describe('@sispat/shared — labelTemplate', () => {
-  it('createLabelTemplateSchema exige nome', () => {
+  // Campos em inglês (name/width/height/elements) — casam com Prisma + controller.
+  const baseTemplate = { name: 'Etq 100x50', width: 100, height: 50, elements: [] };
+
+  it('createLabelTemplateSchema exige name/width/height/elements', () => {
     expect(createLabelTemplateSchema.safeParse({}).success).toBe(false);
-    expect(createLabelTemplateSchema.safeParse({ nome: 'Etq 100x50' }).success).toBe(true);
+    // só o name não basta — width/height/elements são obrigatórios.
+    expect(createLabelTemplateSchema.safeParse({ name: 'Etq 100x50' }).success).toBe(false);
+    expect(createLabelTemplateSchema.safeParse(baseTemplate).success).toBe(true);
   });
 
-  it('largura positiva via coerce', () => {
-    expect(createLabelTemplateSchema.safeParse({ nome: 'X', largura: 0 }).success).toBe(false);
-    expect(createLabelTemplateSchema.safeParse({ nome: 'X', largura: 100 }).success).toBe(true);
+  it('width positivo inteiro via coerce', () => {
+    expect(createLabelTemplateSchema.safeParse({ ...baseTemplate, width: 0 }).success).toBe(false);
+    expect(createLabelTemplateSchema.safeParse({ ...baseTemplate, width: 100 }).success).toBe(true);
     const r = createLabelTemplateSchema.safeParse({
-      nome: 'X',
-      largura: '100' as unknown as number,
+      ...baseTemplate,
+      width: '100' as unknown as number,
     });
     expect(r.success).toBe(true);
-    if (r.success) expect(r.data.largura).toBe(100);
+    if (r.success) expect(r.data.width).toBe(100);
   });
 
   it('labelUnitSchema aceita mm/cm/in', () => {
@@ -234,7 +239,7 @@ describe('@sispat/shared — labelTemplate', () => {
   });
 
   it('updateLabelTemplateSchema strict', () => {
-    expect(updateLabelTemplateSchema.safeParse({ nome: 'X', foo: 1 }).success).toBe(false);
+    expect(updateLabelTemplateSchema.safeParse({ name: 'X', foo: 1 }).success).toBe(false);
   });
 });
 

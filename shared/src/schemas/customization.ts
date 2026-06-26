@@ -12,12 +12,15 @@ import { z } from 'zod';
 // campo extra vier no body, ele será silenciosamente descartado lá. Para
 // não perder esse comportamento, NÃO usamos `.strict()` aqui.
 
-const urlLikeSchema = z.string().max(1000).optional();
-const shortColorSchema = z.string().max(50).optional();
-const textShort = z.string().max(200).optional();
-const textMedium = z.string().max(500).optional();
-const textMicro = z.string().max(100).optional();
-const textTiny = z.string().max(50).optional();
+// Colunas String? no Prisma → o GET devolve `null` para vazios; o contexto faz
+// {...default, ...response} e reenvia no save. Aceitar null (.nullable) evita o
+// 400 "Expected string, received null" que quebrava o save de customização.
+const urlLikeSchema = z.string().max(1000).optional().nullable();
+const shortColorSchema = z.string().max(50).optional().nullable();
+const textShort = z.string().max(200).optional().nullable();
+const textMedium = z.string().max(500).optional().nullable();
+const textMicro = z.string().max(100).optional().nullable();
+const textTiny = z.string().max(50).optional().nullable();
 
 export const saveCustomizationSchema = z.object({
   activeLogoUrl: urlLikeSchema,

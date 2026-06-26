@@ -45,6 +45,9 @@ export const updateTipoBemSchema = z
     descricao: descricaoSchema,
     vidaUtilPadrao: vidaUtilPadraoSchema,
     taxaDepreciacao: taxaDepreciacaoSchema,
+    // O frontend (TipoBemManagement) envia `ativo` no update; sem isto o .strict()
+    // rejeitava com 400. (Coluna `ativo Boolean` existe no Prisma.)
+    ativo: z.boolean().optional(),
   })
   .strict();
 export type UpdateTipoBemInput = z.infer<typeof updateTipoBemSchema>;
