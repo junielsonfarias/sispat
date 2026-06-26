@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Card,
@@ -7,9 +6,9 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,29 +17,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { toast } from '@/hooks/use-toast'
+import { ShieldAlert } from 'lucide-react'
 
 export default function SecuritySettings() {
-  const [is2faEnabled, setIs2faEnabled] = useState(false)
-
-  const handleToggle2FA = (enabled: boolean) => {
-    setIs2faEnabled(enabled)
-    toast({
-      title: 'Configuração de Segurança',
-      description: `Autenticação de dois fatores ${
-        enabled ? 'habilitada' : 'desabilitada'
-      }.`,
-    })
-  }
-
-  const handleConfigure2FA = () => {
-    toast({
-      title: 'Configurar 2FA',
-      description:
-        'Esta funcionalidade será implementada em uma versão futura.',
-    })
-  }
-
+  // A autenticação de dois fatores ainda não possui backend. Em vez de simular
+  // sucesso (toast enganoso), o controle fica desabilitado com aviso honesto.
   return (
     <div className="flex flex-col gap-6">
       <Breadcrumb>
@@ -65,7 +46,15 @@ export default function SecuritySettings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-4">
+          <Alert>
+            <ShieldAlert className="h-4 w-4" />
+            <AlertTitle>Recurso em desenvolvimento</AlertTitle>
+            <AlertDescription>
+              A autenticação de dois fatores ainda não está disponível. Esta
+              opção será habilitada em uma versão futura.
+            </AlertDescription>
+          </Alert>
+          <div className="flex items-center justify-between rounded-lg border p-4 opacity-60">
             <Label htmlFor="2fa-switch" className="flex flex-col gap-1">
               <span>Habilitar 2FA</span>
               <span className="font-normal leading-snug text-muted-foreground">
@@ -73,15 +62,8 @@ export default function SecuritySettings() {
                 fazer login.
               </span>
             </Label>
-            <Switch
-              id="2fa-switch"
-              checked={is2faEnabled}
-              onCheckedChange={handleToggle2FA}
-            />
+            <Switch id="2fa-switch" checked={false} disabled />
           </div>
-          {is2faEnabled && (
-            <Button onClick={handleConfigure2FA}>Configurar 2FA</Button>
-          )}
         </CardContent>
       </Card>
     </div>

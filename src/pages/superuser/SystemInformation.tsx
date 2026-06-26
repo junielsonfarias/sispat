@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
-import { Save } from 'lucide-react'
+import { Save, Info } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { SystemConfiguration } from '@/types'
 
 const SystemInformation = () => {
@@ -29,8 +30,13 @@ const SystemInformation = () => {
   }, [])
 
   const handleSave = () => {
+    // Persistência global ainda não tem backend — guardamos apenas neste navegador.
+    // O toast reflete isso honestamente em vez de prometer salvamento no servidor.
     localStorage.setItem('sispat_system_config', JSON.stringify(config))
-    toast({ description: 'Informações do sistema salvas com sucesso.' })
+    toast({
+      description:
+        'Salvo apenas neste navegador. A persistência global será implementada em versão futura.',
+    })
   }
 
   const handleChange = (
@@ -57,6 +63,15 @@ const SystemInformation = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Armazenamento local</AlertTitle>
+            <AlertDescription>
+              Estas configurações ainda não são persistidas no servidor — ficam
+              salvas apenas neste navegador. A sincronização global será
+              implementada em versão futura.
+            </AlertDescription>
+          </Alert>
           <div className="space-y-2">
             <Label htmlFor="contactInfo">E-mail de Contato do Suporte</Label>
             <Input

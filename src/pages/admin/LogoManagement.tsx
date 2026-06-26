@@ -71,7 +71,10 @@ const LogoManagement = () => {
   }
 
   const handleRemoveLogo = (key: keyof CustomizationSettings) => {
-    setLocalSettings((prev) => ({ ...prev, [key]: '' }))
+    const updated = { ...localSettings, [key]: '' }
+    setLocalSettings(updated)
+    // Persistir de fato — antes só atualizava o estado local e o logo voltava ao recarregar.
+    saveSettings(updated)
     toast({ description: 'Logo removido.' })
   }
 

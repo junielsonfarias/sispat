@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Card,
@@ -16,9 +16,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { Download, Upload, History, Loader2 } from 'lucide-react'
+import { Download, History, Loader2, Info } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from '@/hooks/use-toast'
-import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { api } from '@/services/api-adapter'
 import type { Patrimonio } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
@@ -26,17 +26,6 @@ import { useSectors } from '@/contexts/SectorContext'
 import { useLocais } from '@/contexts/LocalContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { format } from 'date-fns'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 
 interface BackupHistory {
   date: Date
@@ -46,14 +35,11 @@ interface BackupHistory {
 
 export default function BackupSettings() {
   const [isBackingUp, setIsBackingUp] = useState(false)
-  const [isRestoring, setIsRestoring] = useState(false)
   const [backupHistory, setBackupHistory] = useState<BackupHistory[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { setPatrimonios } = usePatrimonio()
   const { user, users } = useAuth()
-  const { sectors, setSectors } = useSectors()
-  const { locais, setLocais } = useLocais()
+  const { sectors } = useSectors()
+  const { locais } = useLocais()
 
   const createBackup = async () => {
     if (!user) return
@@ -100,52 +86,6 @@ export default function BackupSettings() {
     } finally {
       setIsBackingUp(false)
     }
-  }
-
-  const handleRestore = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string)
-        if (
-          !data.patrimonios ||
-          !data.users ||
-          !data.sectors ||
-          !data.locais
-        ) {
-          throw new Error('Arquivo de backup inválido ou corrompido.')
-        }
-        setIsRestoring(true)
-        setPatrimonios(data.patrimonios)
-        // Note: In a real app, you'd need a setUsers in AuthContext
-        // For this mock, we'll assume it exists for demonstration
-        // setUsers(data.users);
-        setSectors(data.sectors)
-        setLocais(data.locais)
-        toast({
-          title: 'Sucesso!',
-          description: 'Dados restaurados com sucesso a partir do backup.',
-        })
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Erro na Restauração',
-          description:
-            error instanceof Error
-              ? error.message
-              : 'Falha ao processar o arquivo de backup.',
-        })
-      } finally {
-        setIsRestoring(false)
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ''
-        }
-      }
-    }
-    reader.readAsText(file)
   }
 
   return (
@@ -195,41 +135,16 @@ export default function BackupSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Atenção: A restauração substituirá todos os dados atuais do sistema.
-            Esta ação não pode ser desfeita.
-          </p>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" disabled={isRestoring}>
-                <Upload className="mr-2 h-4 w-4" /> Restaurar Backup
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmar Restauração</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tem certeza que deseja restaurar os dados? Todos os dados
-                  atuais serão perdidos.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Confirmar e Escolher Arquivo
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            accept=".json"
-            onChange={handleRestore}
-          />
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Restauração indisponível</AlertTitle>
+            <AlertDescription>
+              A restauração a partir de um arquivo ainda não está disponível.
+              Para evitar perda ou troca acidental de dados entre municípios,
+              ela só será habilitada quando a restauração com persistência no
+              servidor (e validação de município) estiver implementada.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
       <Card>

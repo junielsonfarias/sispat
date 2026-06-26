@@ -18,13 +18,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useSync } from '@/contexts/SyncContext'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Cloud,
-  CloudOff,
   RefreshCw,
   Download,
   Loader2,
   CheckCircle,
+  Info,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import {
@@ -38,10 +39,11 @@ import {
 
 const SyncClient = () => {
   const { isSyncing, startSync } = useSync()
-  const [autoSync, setAutoSync] = useState(true)
+  // Sincronização automática ainda não é persistida nem executada em background —
+  // os controles abaixo ficam desabilitados. A sincronização manual é real.
+  const [autoSync] = useState(false)
   const [syncInterval, setSyncInterval] = useState('30')
-  const [lastSync, setLastSync] = useState(new Date())
-  const [isConnected, _setIsConnected] = useState(true)
+  const [lastSync, setLastSync] = useState<Date | null>(null)
 
   const handleManualSync = () => {
     startSync()
@@ -84,18 +86,12 @@ const SyncClient = () => {
               <CardTitle className="text-sm font-medium">
                 Status da Conexão
               </CardTitle>
-              {isConnected ? (
-                <Cloud className="h-4 w-4 text-green-500" />
-              ) : (
-                <CloudOff className="h-4 w-4 text-destructive" />
-              )}
+              <Cloud className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {isConnected ? 'Conectado' : 'Desconectado'}
-              </div>
+              <div className="text-2xl font-bold">Manual</div>
               <p className="text-xs text-muted-foreground">
-                Última verificação: agora
+                Monitoramento em tempo real não disponível
               </p>
             </CardContent>
           </Card>
@@ -108,10 +104,12 @@ const SyncClient = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {lastSync.toLocaleTimeString()}
+                {lastSync ? lastSync.toLocaleTimeString() : '—'}
               </div>
               <p className="text-xs text-muted-foreground">
-                {lastSync.toLocaleDateString()}
+                {lastSync
+                  ? lastSync.toLocaleDateString()
+                  : 'Nunca sincronizado nesta sessão'}
               </p>
             </CardContent>
           </Card>
@@ -132,18 +130,22 @@ const SyncClient = () => {
           <CardTitle>Configurações</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-4">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Sincronização automática indisponível</AlertTitle>
+            <AlertDescription>
+              A sincronização em segundo plano ainda não está implementada. Use
+              "Sincronizar Agora" para sincronizar manualmente.
+            </AlertDescription>
+          </Alert>
+          <div className="flex items-center justify-between rounded-lg border p-4 opacity-60">
             <Label htmlFor="auto-sync" className="flex flex-col gap-1">
               <span>Sincronização Automática</span>
               <span className="font-normal leading-snug text-muted-foreground">
                 Sincroniza os dados automaticamente em segundo plano.
               </span>
             </Label>
-            <Switch
-              id="auto-sync"
-              checked={autoSync}
-              onCheckedChange={setAutoSync}
-            />
+            <Switch id="auto-sync" checked={autoSync} disabled />
           </div>
           <div className="flex items-center justify-between rounded-lg border p-4">
             <Label htmlFor="sync-interval" className="flex flex-col gap-1">
