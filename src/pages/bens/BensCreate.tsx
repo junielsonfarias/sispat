@@ -281,10 +281,10 @@ const BensCreate = () => {
     <div className="flex-1 p-4 lg:p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="mb-6">
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-2">
             Cadastro de Bem
           </h1>
-          <p className="text-base lg:text-lg text-gray-600">
+          <p className="text-base lg:text-lg text-muted-foreground">
             Cadastre um novo bem patrimonial no sistema
           </p>
         </div>
@@ -318,9 +318,9 @@ const BensCreate = () => {
           className="space-y-6"
         >
           {/* Informações Básicas */}
-          <Card className="border-0 shadow-lg bg-white">
+          <Card className="border-0 shadow-lg bg-card">
             <CardHeader className="pb-4 px-6 pt-6">
-              <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Informações Básicas</CardTitle>
+              <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Informações Básicas</CardTitle>
             </CardHeader>
             <CardContent className="px-6 pb-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -471,7 +471,7 @@ const BensCreate = () => {
                             type="checkbox"
                             checked={field.value}
                             onChange={field.onChange}
-                            className="h-4 w-4 rounded border-gray-300"
+                            className="h-4 w-4 rounded border-border"
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
@@ -513,12 +513,12 @@ const BensCreate = () => {
           </Card>
 
           {/* Informações Financeiras */}
-          <Card className="border-0 shadow-lg bg-white">
+          <Card className="border-0 shadow-lg bg-card">
             <CardHeader className="pb-4 px-6 pt-6">
-              <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+              <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                 Informações Financeiras
               </CardTitle>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Configurações para cálculo de depreciação do bem
               </p>
             </CardHeader>
@@ -641,9 +641,9 @@ const BensCreate = () => {
           </Card>
 
           {/* Localização */}
-          <Card className="border-0 shadow-lg bg-white">
+          <Card className="border-0 shadow-lg bg-card">
             <CardHeader className="pb-4 px-6 pt-6">
-              <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Localização</CardTitle>
+              <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Localização</CardTitle>
             </CardHeader>
             <CardContent className="px-6 pb-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -723,9 +723,9 @@ const BensCreate = () => {
           </Card>
 
           {/* Mídia */}
-          <Card className="border-0 shadow-lg bg-white">
+          <Card className="border-0 shadow-lg bg-card">
             <CardHeader className="pb-4 px-6 pt-6">
-              <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Mídia e Documentos</CardTitle>
+              <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Mídia e Documentos</CardTitle>
             </CardHeader>
             <CardContent className="px-6 pb-6 space-y-6">
               <div>

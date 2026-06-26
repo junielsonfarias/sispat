@@ -97,7 +97,7 @@ const AnaliseTemporal = () => {
                             "dd/MM/yyyy 'às' HH:mm",
                           )}
                         </time>
-                        <p className="text-base font-semibold text-gray-900 dark:text-white">
+                        <p className="text-base font-semibold text-foreground">
                           {event.action} - {event.patrimonio}
                         </p>
                         <p className="text-sm text-muted-foreground">
@@ -108,13 +108,13 @@ const AnaliseTemporal = () => {
                   })
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="mb-4 rounded-full bg-gray-100 p-4">
-                      <Calendar className="h-8 w-8 text-gray-400" />
+                    <div className="mb-4 rounded-full bg-muted p-4">
+                      <Calendar className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                    <h3 className="mb-2 text-lg font-semibold text-foreground">
                       Nenhum evento encontrado
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       Não há movimentações registradas no sistema ainda.
                     </p>
                   </div>

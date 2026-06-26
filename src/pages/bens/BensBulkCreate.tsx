@@ -194,10 +194,10 @@ const BensBulkCreate = () => {
     <div className="flex-1 p-4 lg:p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="mb-6">
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-2">
             Cadastro em Lote de Patrimônios
           </h1>
-          <p className="text-base lg:text-lg text-gray-600">
+          <p className="text-base lg:text-lg text-muted-foreground">
             Cadastre múltiplos patrimônios para o mesmo setor e local
           </p>
         </div>
@@ -230,9 +230,9 @@ const BensBulkCreate = () => {
             className="space-y-6"
           >
             {/* Informações Comuns */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                   Informações Comuns
                 </CardTitle>
               </CardHeader>
@@ -326,10 +326,10 @@ const BensBulkCreate = () => {
             </Card>
 
             {/* Itens de Patrimônio */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+                  <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                     Itens de Patrimônio
                   </CardTitle>
                   <Button
@@ -345,7 +345,7 @@ const BensBulkCreate = () => {
               </CardHeader>
               <CardContent className="px-6 pb-6 space-y-6">
                 {fields.map((field, index) => (
-                  <Card key={field.id} className="border border-gray-200">
+                  <Card key={field.id} className="border border-border">
                     <CardHeader className="pb-3 px-4 pt-4">
                       <div className="flex justify-between items-center">
                         <CardTitle className="text-base font-medium">

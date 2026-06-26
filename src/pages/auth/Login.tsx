@@ -237,10 +237,10 @@ export default function Login() {
           <div className="w-full max-w-md mx-auto lg:mx-0 px-4 sm:px-0">
             <Card className="backdrop-blur-xl bg-white/95 border-white/20 shadow-2xl">
               <CardHeader className="space-y-2 text-center pb-4 sm:pb-6 px-4 sm:px-6">
-                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
+                <CardTitle className="text-xl sm:text-2xl font-bold text-foreground">
                   Acesso ao Sistema
                 </CardTitle>
-                <CardDescription className="text-sm sm:text-base text-gray-600">
+                <CardDescription className="text-sm sm:text-base text-muted-foreground">
                   Digite suas credenciais para continuar
                 </CardDescription>
               </CardHeader>
@@ -283,14 +283,14 @@ export default function Login() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-gray-700 font-medium flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-gray-500" />
+                          <FormLabel className="text-foreground font-medium flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
                             E-mail
                           </FormLabel>
                           <FormControl>
                             <Input
                               placeholder="seu@email.com"
-                              className="h-10 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
+                              className="h-10 sm:h-12 border-border focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                               type="email"
                               autoComplete="email"
                               {...field}
@@ -307,15 +307,15 @@ export default function Login() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-gray-700 font-medium flex items-center gap-2">
-                            <Lock className="h-4 w-4 text-gray-500" />
+                          <FormLabel className="text-foreground font-medium flex items-center gap-2">
+                            <Lock className="h-4 w-4 text-muted-foreground" />
                             Senha
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Input
                                 placeholder="Digite sua senha"
-                                className="pr-12 h-10 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
+                                className="pr-12 h-10 sm:h-12 border-border focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                 type={showPassword ? 'text' : 'password'}
                                 autoComplete="current-password"
                                 {...field}
@@ -324,14 +324,14 @@ export default function Login() {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-gray-100"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-muted"
                                 onClick={() => setShowPassword(!showPassword)}
                                 aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                               >
                                 {showPassword ? (
-                                  <EyeOff className="h-4 w-4 text-gray-400" />
+                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
                                 ) : (
-                                  <Eye className="h-4 w-4 text-gray-400" />
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
                                 )}
                               </Button>
                             </div>
@@ -368,7 +368,7 @@ export default function Login() {
                     Esqueceu sua senha?
                   </Link>
                   
-                  <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                     <Shield className="h-3 w-3" />
                     <span>SISPAT v{currentVersion}</span>
                   </div>

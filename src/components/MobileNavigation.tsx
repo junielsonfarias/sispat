@@ -127,7 +127,7 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
     {
       title: 'Configurações',
       icon: Settings,
-      color: 'text-gray-600 bg-gray-50',
+      color: 'text-muted-foreground bg-muted/50',
       items: [
         { to: '/configuracoes/personalizacao', icon: Palette, label: 'Personalização' },
         { to: '/configuracoes/seguranca', icon: ShieldCheck, label: 'Segurança' },
@@ -206,7 +206,7 @@ const mobileNavGroups: Record<UserRole, MobileNavGroup[]> = {
     {
       title: 'Configurações',
       icon: Settings,
-      color: 'text-gray-600 bg-gray-50',
+      color: 'text-muted-foreground bg-muted/50',
       items: [
         { to: '/configuracoes/personalizacao', icon: Palette, label: 'Personalização' },
         { to: '/configuracoes/seguranca', icon: ShieldCheck, label: 'Segurança' },
@@ -441,7 +441,7 @@ export const BottomNavigation = () => {
 
   return (
     <nav 
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-lg no-print z-50 safe-bottom"
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg no-print z-50 safe-bottom"
       aria-label="Navegação inferior"
     >
       <div className="grid grid-cols-5 gap-0 px-1 py-2 max-w-screen-xl mx-auto">
@@ -458,7 +458,7 @@ export const BottomNavigation = () => {
                 'flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all duration-200 touch-target min-h-[56px]',
                 isActive
                   ? 'text-primary bg-primary/10'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 active:scale-95'
+                  : 'text-muted-foreground hover:text-foreground active:scale-95'
               )}
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}

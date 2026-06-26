@@ -552,9 +552,9 @@ function BensView() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Photo Section */}
             <div className="lg:col-span-1">
-              <Card className="border-0 shadow-lg bg-white">
+              <Card className="border-0 shadow-lg bg-card">
                 <CardHeader className="pb-4 px-6 pt-6">
-                  <CardTitle className="flex items-center gap-2 text-lg lg:text-xl font-semibold text-gray-900">
+                  <CardTitle className="flex items-center gap-2 text-lg lg:text-xl font-semibold text-foreground">
                     <ImageIcon className="h-5 w-5" />
                     Imagens
                   </CardTitle>
@@ -580,7 +580,7 @@ function BensView() {
                           }).filter((f: string) => f && f.trim() !== '')
                         })().map((fotoId, index) => (
                           <CarouselItem key={index}>
-                            <div className="relative flex items-center justify-center bg-gray-100 rounded-lg min-h-[400px]">
+                            <div className="relative flex items-center justify-center bg-muted rounded-lg min-h-[400px]">
                               <img
                                 src={getCloudImageUrl(String(fotoId))}
                                 alt={`${patrimonio.descricao_bem} - Foto ${index + 1}`}
@@ -627,20 +627,20 @@ function BensView() {
 
             {/* Basic Information - First Row */}
             <div className="lg:col-span-2">
-              <Card className="border-0 shadow-lg bg-white h-full">
+              <Card className="border-0 shadow-lg bg-card h-full">
                 <CardHeader className="pb-4 px-6 pt-6">
-                  <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Informações Básicas</CardTitle>
+                  <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Informações Básicas</CardTitle>
                 </CardHeader>
                 <CardContent className="px-6 pb-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Descrição</label>
-                        <p className="text-base text-gray-900 mt-1 font-medium">{patrimonio.descricao_bem}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Descrição</label>
+                        <p className="text-base text-foreground mt-1 font-medium">{patrimonio.descricao_bem}</p>
                       </div>
                       
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Número do Patrimônio</label>
+                        <label className="text-sm font-medium text-muted-foreground">Número do Patrimônio</label>
                         <div className="mt-1">
                           <Badge variant="secondary" className="font-mono text-sm px-3 py-1">
                             {patrimonio.numero_patrimonio}
@@ -649,7 +649,7 @@ function BensView() {
                       </div>
                       
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Tipo</label>
+                        <label className="text-sm font-medium text-muted-foreground">Tipo</label>
                         <div className="mt-1">
                           <Badge variant="outline" className="text-sm px-3 py-1">
                             {patrimonio.tipo || 'Não informado'}
@@ -660,7 +660,7 @@ function BensView() {
                     
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Situação</label>
+                        <label className="text-sm font-medium text-muted-foreground">Situação</label>
                         <div className="mt-1">
                           <Badge 
                             className={`text-sm px-3 py-1 ${
@@ -678,13 +678,13 @@ function BensView() {
                       </div>
                       
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Valor de Aquisição</label>
-                        <p className="text-lg text-gray-900 mt-1 font-semibold">{formatCurrency(patrimonio.valor_aquisicao)}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Valor de Aquisição</label>
+                        <p className="text-lg text-foreground mt-1 font-semibold">{formatCurrency(patrimonio.valor_aquisicao)}</p>
                       </div>
                       
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Data de Aquisição</label>
-                        <p className="text-base text-gray-900 mt-1">{formatDate(patrimonio.data_aquisicao)}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Data de Aquisição</label>
+                        <p className="text-base text-foreground mt-1">{formatDate(patrimonio.data_aquisicao)}</p>
                       </div>
                     </div>
                   </div>
@@ -696,9 +696,9 @@ function BensView() {
           {/* Second Row - Detailed Information */}
           <div className="space-y-6">
             {/* Financial Information */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Informações Financeiras</CardTitle>
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Informações Financeiras</CardTitle>
               </CardHeader>
               <CardContent className="px-6 pb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -768,9 +768,9 @@ function BensView() {
             </Card>
 
             {/* Technical Information */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Informações Técnicas</CardTitle>
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Informações Técnicas</CardTitle>
               </CardHeader>
               <CardContent className="px-6 pb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -785,9 +785,9 @@ function BensView() {
             </Card>
 
             {/* Location Information */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Localização</CardTitle>
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Localização</CardTitle>
               </CardHeader>
               <CardContent className="px-6 pb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -798,9 +798,9 @@ function BensView() {
             </Card>
 
             {/* History */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="flex items-center gap-2 text-lg lg:text-xl font-semibold text-gray-900">
+                <CardTitle className="flex items-center gap-2 text-lg lg:text-xl font-semibold text-foreground">
                   <Clock className="h-5 w-5" />
                   Histórico de Movimentação
                 </CardTitle>
@@ -887,9 +887,9 @@ function BensView() {
             </Card>
 
             {/* Notes */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="flex items-center gap-2 text-lg lg:text-xl font-semibold text-gray-900">
+                <CardTitle className="flex items-center gap-2 text-lg lg:text-xl font-semibold text-foreground">
                   <FileText className="h-5 w-5" />
                   Observações
                 </CardTitle>

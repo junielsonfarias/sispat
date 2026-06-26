@@ -118,13 +118,13 @@ export const RecentPatrimonios = ({ patrimonios = [], imoveis = [] }: RecentPatr
     return (
       <Card className="border-0 shadow-sm bg-white dark:bg-gray-800/50">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-foreground">
             <Package className="h-4 w-4 sm:h-5 sm:w-5" />
             Patrimônios Recentes
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-8 text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="text-sm sm:text-base mb-4">Nenhum patrimônio cadastrado ainda.</p>
             <Link to="/patrimonios/novo">
@@ -140,7 +140,7 @@ export const RecentPatrimonios = ({ patrimonios = [], imoveis = [] }: RecentPatr
     <Card className="border-0 shadow-sm bg-white dark:bg-gray-800/50">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-foreground">
             <Package className="h-4 w-4 sm:h-5 sm:w-5" />
             Patrimônios Recentes
           </CardTitle>

@@ -185,7 +185,7 @@ export default function GerenciadorFichas() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando templates...</p>
+            <p className="text-muted-foreground">Carregando templates...</p>
           </div>
         </div>
       </div>
@@ -197,8 +197,8 @@ export default function GerenciadorFichas() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gerenciador de Fichas</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-foreground">Gerenciador de Fichas</h1>
+          <p className="text-muted-foreground mt-2">
             Crie e gerencie templates personalizados para fichas de patrimônio
           </p>
         </div>
@@ -213,7 +213,7 @@ export default function GerenciadorFichas() {
       {/* Filtros */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Buscar templates..."
             value={searchTerm}
@@ -222,11 +222,11 @@ export default function GerenciadorFichas() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-500" />
+          <Filter className="h-4 w-4 text-muted-foreground" />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as 'all' | 'bens' | 'imoveis')}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            className="px-3 py-2 border border-border rounded-md text-sm"
           >
             <option value="all">Todos os tipos</option>
             <option value="bens">Bens Móveis</option>
@@ -239,11 +239,11 @@ export default function GerenciadorFichas() {
       {filteredTemplates.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">
               {searchTerm || filterType !== 'all' ? 'Nenhum template encontrado' : 'Nenhum template criado'}
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-muted-foreground mb-4">
               {searchTerm || filterType !== 'all' 
                 ? 'Tente ajustar os filtros de busca' 
                 : 'Crie seu primeiro template personalizado para começar'
@@ -266,8 +266,8 @@ export default function GerenciadorFichas() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gray-100 rounded-lg">
-                        <TypeIcon className="h-5 w-5 text-gray-600" />
+                      <div className="p-2 bg-muted rounded-lg">
+                        <TypeIcon className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div>
                         <CardTitle className="text-lg">{template.name}</CardTitle>
@@ -291,10 +291,10 @@ export default function GerenciadorFichas() {
                 </CardHeader>
                 <CardContent>
                   {template.description && (
-                    <p className="text-sm text-gray-600 mb-4">{template.description}</p>
+                    <p className="text-sm text-muted-foreground mb-4">{template.description}</p>
                   )}
                   
-                  <div className="text-xs text-gray-500 mb-4">
+                  <div className="text-xs text-muted-foreground mb-4">
                     Criado em {new Date(template.createdAt).toLocaleDateString('pt-BR')}
                   </div>
 

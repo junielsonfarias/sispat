@@ -108,10 +108,10 @@ export default function PublicBemDetalhes() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted/50 flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-          <p className="text-slate-600">Carregando...</p>
+          <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>
     )
@@ -119,15 +119,15 @@ export default function PublicBemDetalhes() {
 
   if (!patrimonio) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted/50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center space-y-6">
             <div className="w-16 h-16 mx-auto rounded-full bg-rose-100 flex items-center justify-center">
               <Package className="h-8 w-8 text-rose-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Bem não encontrado</h2>
-              <p className="text-slate-600">
+              <h2 className="text-2xl font-bold text-foreground mb-2">Bem não encontrado</h2>
+              <p className="text-muted-foreground">
                 O patrimônio solicitado não está disponível.
               </p>
             </div>
@@ -146,10 +146,10 @@ export default function PublicBemDetalhes() {
   const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + fotos.length) % fotos.length)
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-muted/50">
       
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200">
+      <header className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between max-w-6xl mx-auto">
             <Button
@@ -169,10 +169,10 @@ export default function PublicBemDetalhes() {
                 />
               )}
               <div className="hidden md:block text-right">
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-foreground">
                   {settings.prefeituraName || MUNICIPALITY_NAME}
                 </p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-foreground">
                   {settings.secretariaResponsavel}
                 </p>
               </div>
@@ -182,7 +182,7 @@ export default function PublicBemDetalhes() {
       </header>
 
       {/* Title Section */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
@@ -199,10 +199,10 @@ export default function PublicBemDetalhes() {
                 </div>
 
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+                  <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
                     {patrimonio.descricao_bem}
                   </h1>
-                  <div className="flex items-center gap-2 text-slate-600">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Hash className="h-4 w-4" />
                     <span className="font-medium">Patrimônio {patrimonio.numero_patrimonio}</span>
                   </div>
@@ -213,13 +213,13 @@ export default function PublicBemDetalhes() {
                 <CardContent className="p-6">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Valor</span>
+                      <span className="text-sm text-muted-foreground">Valor</span>
                       <DollarSign className="h-4 w-4 text-emerald-600" />
                     </div>
-                    <p className="text-2xl font-bold text-slate-900">
+                    <p className="text-2xl font-bold text-foreground">
                       {formatCurrency(patrimonio.valor_aquisicao)}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Calendar className="h-3 w-3" />
                       {formatDate(patrimonio.data_aquisicao)}
                     </div>
@@ -243,7 +243,7 @@ export default function PublicBemDetalhes() {
                   {fotos.length > 0 ? (
                     <div className="space-y-4">
                       {/* Main Image */}
-                      <div className="relative aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden group">
+                      <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden group">
                         <img
                           src={getCloudImageUrl(fotos[currentImageIndex])}
                           alt={`${patrimonio.descricao_bem} - ${currentImageIndex + 1}`}
@@ -290,7 +290,7 @@ export default function PublicBemDetalhes() {
                                 aspect-square rounded overflow-hidden border-2 transition-all
                                 ${index === currentImageIndex
                                   ? 'border-blue-500 opacity-100'
-                                  : 'border-slate-200 opacity-60 hover:opacity-100'
+                                  : 'border-border opacity-60 hover:opacity-100'
                                 }
                               `}
                             >
@@ -305,8 +305,8 @@ export default function PublicBemDetalhes() {
                       )}
                     </div>
                   ) : (
-                    <div className="aspect-[4/3] flex items-center justify-center bg-slate-100 rounded-lg">
-                      <div className="text-center text-slate-400">
+                    <div className="aspect-[4/3] flex items-center justify-center bg-muted rounded-lg">
+                      <div className="text-center text-muted-foreground">
                         <Package className="h-12 w-12 mx-auto mb-2 opacity-20" />
                         <p className="text-sm">Sem fotos disponíveis</p>
                       </div>
@@ -326,33 +326,33 @@ export default function PublicBemDetalhes() {
                     <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
                       <Tag className="h-5 w-5 text-amber-600" />
                     </div>
-                    <h2 className="text-lg font-bold text-slate-900">Identificação</h2>
+                    <h2 className="text-lg font-bold text-foreground">Identificação</h2>
                   </div>
 
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between py-2 border-b border-slate-100">
-                      <span className="text-slate-600">Tipo</span>
-                      <span className="font-semibold text-slate-900">
+                      <span className="text-muted-foreground">Tipo</span>
+                      <span className="font-semibold text-foreground">
                         {/* ✅ CORREÇÃO: Usar tipoBem?.nome ou tipo */}
                         {(patrimonio as any).tipoBem?.nome || patrimonio.tipo || 'Não informado'}
                       </span>
                     </div>
                     {patrimonio.marca && (
                       <div className="flex justify-between py-2 border-b border-slate-100">
-                        <span className="text-slate-600">Marca</span>
-                        <span className="font-semibold text-slate-900">{patrimonio.marca}</span>
+                        <span className="text-muted-foreground">Marca</span>
+                        <span className="font-semibold text-foreground">{patrimonio.marca}</span>
                       </div>
                     )}
                     {patrimonio.modelo && (
                       <div className="flex justify-between py-2 border-b border-slate-100">
-                        <span className="text-slate-600">Modelo</span>
-                        <span className="font-semibold text-slate-900">{patrimonio.modelo}</span>
+                        <span className="text-muted-foreground">Modelo</span>
+                        <span className="font-semibold text-foreground">{patrimonio.modelo}</span>
                       </div>
                     )}
                     {patrimonio.serie && (
                       <div className="flex justify-between py-2">
-                        <span className="text-slate-600">Nº Série</span>
-                        <span className="font-mono font-semibold text-slate-900">{patrimonio.serie}</span>
+                        <span className="text-muted-foreground">Nº Série</span>
+                        <span className="font-mono font-semibold text-foreground">{patrimonio.serie}</span>
                       </div>
                     )}
                   </div>
@@ -366,23 +366,23 @@ export default function PublicBemDetalhes() {
                     <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
                       <MapPin className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <h2 className="text-lg font-bold text-slate-900">Localização</h2>
+                    <h2 className="text-lg font-bold text-foreground">Localização</h2>
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
-                      <Building2 className="h-4 w-4 text-slate-400 mt-1" />
+                      <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
                       <div className="flex-1 text-sm">
-                        <p className="text-slate-600 mb-1">Setor</p>
-                        <p className="font-semibold text-slate-900">{patrimonio.setor_responsavel}</p>
+                        <p className="text-muted-foreground mb-1">Setor</p>
+                        <p className="font-semibold text-foreground">{patrimonio.setor_responsavel}</p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <MapPin className="h-4 w-4 text-slate-400 mt-1" />
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
                       <div className="flex-1 text-sm">
-                        <p className="text-slate-600 mb-1">Local</p>
-                        <p className="font-semibold text-slate-900">
+                        <p className="text-muted-foreground mb-1">Local</p>
+                        <p className="font-semibold text-foreground">
                           {/* ✅ CORREÇÃO: Usar local_objeto ou local?.name */}
                           {(patrimonio as any).local?.name || patrimonio.local_objeto || 'Não informado'}
                         </p>
@@ -399,22 +399,22 @@ export default function PublicBemDetalhes() {
                     <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
                       <DollarSign className="h-5 w-5 text-blue-600" />
                     </div>
-                    <h2 className="text-lg font-bold text-slate-900">Financeiro</h2>
+                    <h2 className="text-lg font-bold text-foreground">Financeiro</h2>
                   </div>
 
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between py-2 border-b border-slate-100">
-                      <span className="text-slate-600">Valor Aquisição</span>
-                      <span className="font-bold text-slate-900">{formatCurrency(patrimonio.valor_aquisicao)}</span>
+                      <span className="text-muted-foreground">Valor Aquisição</span>
+                      <span className="font-bold text-foreground">{formatCurrency(patrimonio.valor_aquisicao)}</span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-slate-100">
-                      <span className="text-slate-600">Data Aquisição</span>
-                      <span className="font-semibold text-slate-900">{formatDate(patrimonio.data_aquisicao)}</span>
+                      <span className="text-muted-foreground">Data Aquisição</span>
+                      <span className="font-semibold text-foreground">{formatDate(patrimonio.data_aquisicao)}</span>
                     </div>
                     {patrimonio.forma_aquisicao && (
                       <div className="flex justify-between py-2">
-                        <span className="text-slate-600">Forma</span>
-                        <span className="font-semibold text-slate-900">{patrimonio.forma_aquisicao}</span>
+                        <span className="text-muted-foreground">Forma</span>
+                        <span className="font-semibold text-foreground">{patrimonio.forma_aquisicao}</span>
                       </div>
                     )}
                   </div>
@@ -429,10 +429,10 @@ export default function PublicBemDetalhes() {
                       <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
                         <FileText className="h-5 w-5 text-violet-600" />
                       </div>
-                      <h2 className="text-lg font-bold text-slate-900">Observações</h2>
+                      <h2 className="text-lg font-bold text-foreground">Observações</h2>
                     </div>
 
-                    <p className="text-sm text-slate-700 leading-relaxed">
+                    <p className="text-sm text-foreground leading-relaxed">
                       {patrimonio.observacoes}
                     </p>
                   </CardContent>

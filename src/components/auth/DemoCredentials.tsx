@@ -69,14 +69,14 @@ export function DemoCredentials({ onSelect, disabled }: DemoCredentialsProps) {
     <div className="mt-4 rounded-xl border border-white/20 bg-white/95 p-4 shadow-2xl backdrop-blur-xl">
       <div className="mb-3 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-amber-500" />
-        <span className="text-sm font-semibold text-gray-900">
+        <span className="text-sm font-semibold text-foreground">
           Credenciais de demonstração
         </span>
       </div>
-      <p className="mb-3 text-xs text-gray-500">
+      <p className="mb-3 text-xs text-muted-foreground">
         Clique em um perfil para preencher o login automaticamente. Senha de
         todas as contas:{' '}
-        <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-gray-700">
+        <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
           {DEMO_PASSWORD}
         </code>
       </p>

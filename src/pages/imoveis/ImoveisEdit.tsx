@@ -204,10 +204,10 @@ export default function ImoveisEdit() {
     <div className="flex-1 p-4 lg:p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="mb-6">
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-2">
             Editar Imóvel: {imovel.numero_patrimonio}
           </h1>
-          <p className="text-base lg:text-lg text-gray-600">
+          <p className="text-base lg:text-lg text-muted-foreground">
             Edite as informações do imóvel
           </p>
           <Link
@@ -221,9 +221,9 @@ export default function ImoveisEdit() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Informações Básicas */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Informações Básicas</CardTitle>
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Informações Básicas</CardTitle>
               </CardHeader>
               <CardContent className="px-6 pb-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -268,9 +268,9 @@ export default function ImoveisEdit() {
             </Card>
 
             {/* Informações Financeiras */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Informações Financeiras</CardTitle>
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Informações Financeiras</CardTitle>
               </CardHeader>
               <CardContent className="px-6 pb-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -280,9 +280,9 @@ export default function ImoveisEdit() {
             </Card>
 
             {/* Informações Técnicas */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Informações Técnicas</CardTitle>
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Informações Técnicas</CardTitle>
               </CardHeader>
               <CardContent className="px-6 pb-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -318,9 +318,9 @@ export default function ImoveisEdit() {
             </Card>
 
             {/* Mídia */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Mídia</CardTitle>
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Mídia</CardTitle>
               </CardHeader>
               <CardContent className="px-6 pb-6 space-y-6">
                 <div>
@@ -336,9 +336,9 @@ export default function ImoveisEdit() {
 
             {/* Campos Customizados */}
             {customFieldConfigs.length > 0 && (
-              <Card className="border-0 shadow-lg bg-white">
+              <Card className="border-0 shadow-lg bg-card">
                 <CardHeader className="pb-4 px-6 pt-6">
-                  <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">Informações Adicionais</CardTitle>
+                  <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Informações Adicionais</CardTitle>
                 </CardHeader>
                 <CardContent className="px-6 pb-6 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

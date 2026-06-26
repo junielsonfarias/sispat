@@ -161,10 +161,10 @@ export default function ImoveisList() {
         <div className="mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-1 sm:mb-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-1 sm:mb-2">
                 Cadastro de Imóveis
               </h1>
-              <p className="text-sm sm:text-base lg:text-lg text-gray-600">
+              <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
                 Gerencie todos os imóveis cadastrados no sistema
               </p>
             </div>
@@ -191,12 +191,12 @@ export default function ImoveisList() {
           </div>
         </div>
 
-        <Card className="border-0 shadow-lg bg-white">
+        <Card className="border-0 shadow-lg bg-card">
           <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900">Imóveis Cadastrados</h2>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-foreground">Imóveis Cadastrados</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   {paginatedData.length} de {processedData.length} imóveis
                 </p>
               </div>
@@ -205,29 +205,29 @@ export default function ImoveisList() {
           <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-x-auto">
-              <div className="rounded-lg border border-gray-200 overflow-hidden">
+              <div className="rounded-lg border border-border overflow-hidden">
                 <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow className="border-gray-200">
-                      <TableHead className="text-sm font-semibold text-gray-700">
+                  <TableHeader className="bg-muted/50">
+                    <TableRow className="border-border">
+                      <TableHead className="text-sm font-semibold text-foreground">
                         <SortableHeader
                           column="numero_patrimonio"
                           label="Nº Patrimônio"
                         />
                       </TableHead>
-                      <TableHead className="text-sm font-semibold text-gray-700">
+                      <TableHead className="text-sm font-semibold text-foreground">
                         <SortableHeader column="denominacao" label="Denominação" />
                       </TableHead>
-                      <TableHead className="text-sm font-semibold text-gray-700">
+                      <TableHead className="text-sm font-semibold text-foreground">
                         <SortableHeader column="endereco" label="Endereço" />
                       </TableHead>
-                      <TableHead className="text-right text-sm font-semibold text-gray-700">Ações</TableHead>
+                      <TableHead className="text-right text-sm font-semibold text-foreground">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedData.map((item: Imovel) => (
-                      <TableRow key={item.id} className="hover:bg-gray-50 border-gray-200">
-                        <TableCell className="font-medium font-mono text-sm text-gray-900">
+                      <TableRow key={item.id} className="hover:bg-muted/50 border-border">
+                        <TableCell className="font-medium font-mono text-sm text-foreground">
                           <Link
                             to={`/imoveis/ver/${item.id}`}
                             className="text-blue-600 hover:text-blue-800 hover:underline"
@@ -235,8 +235,8 @@ export default function ImoveisList() {
                             {item.numero_patrimonio}
                           </Link>
                         </TableCell>
-                        <TableCell className="text-sm text-gray-700">{item.denominacao}</TableCell>
-                        <TableCell className="text-sm text-gray-700">{item.endereco}</TableCell>
+                        <TableCell className="text-sm text-foreground">{item.denominacao}</TableCell>
+                        <TableCell className="text-sm text-foreground">{item.endereco}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Button variant="outline" size="sm" asChild>
@@ -295,7 +295,7 @@ export default function ImoveisList() {
             {/* Mobile Cards */}
             <div className="lg:hidden space-y-4">
               {paginatedData.map((item: Imovel) => (
-                <Card key={item.id} className="border border-gray-200 hover:shadow-md transition-shadow">
+                <Card key={item.id} className="border border-border hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     {/* Header com número */}
                     <div className="flex items-start justify-between mb-3">
@@ -306,7 +306,7 @@ export default function ImoveisList() {
                         >
                           {item.numero_patrimonio}
                         </Link>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           {item.denominacao}
                         </p>
                       </div>
@@ -315,8 +315,8 @@ export default function ImoveisList() {
                     {/* Informações principais */}
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-start">
-                        <span className="text-xs text-gray-500">Endereço:</span>
-                        <span className="text-sm text-gray-700 text-right flex-1 ml-2">
+                        <span className="text-xs text-muted-foreground">Endereço:</span>
+                        <span className="text-sm text-foreground text-right flex-1 ml-2">
                           {item.endereco}
                         </span>
                       </div>

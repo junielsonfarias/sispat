@@ -53,12 +53,12 @@ export const ReportComponentProperties = ({
     }
 
     return (
-      <div className="border-2 border-dashed border-gray-300 p-4 bg-gray-50 rounded-lg">
-        <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+      <div className="border-2 border-dashed border-border p-4 bg-muted/50 rounded-lg">
+        <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
           <Eye className="h-3 w-3" />
           Visualização do Cabeçalho
         </div>
-        <div className="border-b-2 border-gray-300 pb-4 mb-4">
+        <div className="border-b-2 border-border pb-4 mb-4">
           {/* Cabeçalho Principal */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -127,7 +127,7 @@ export const ReportComponentProperties = ({
             
             <div>
               <Label>Subtítulo do Município</Label>
-              <p className="text-sm text-gray-500 mb-2">
+              <p className="text-sm text-muted-foreground mb-2">
                 Texto que aparece logo abaixo do nome do município.
               </p>
               <Input
@@ -140,7 +140,7 @@ export const ReportComponentProperties = ({
             
             <div>
               <Label>Informações Personalizadas do Cabeçalho</Label>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 Adicione até 5 linhas de informações personalizadas que aparecerão logo abaixo do subtítulo do município.
               </p>
             </div>
@@ -192,8 +192,8 @@ export const ReportComponentProperties = ({
         {component.type === 'FOOTER' && (
           <div className="space-y-4">
             {/* Visualização do Footer */}
-            <div className="border-2 border-dashed border-gray-300 p-4 bg-gray-50 rounded-lg relative" style={{ minHeight: '120px' }}>
-              <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+            <div className="border-2 border-dashed border-border p-4 bg-muted/50 rounded-lg relative" style={{ minHeight: '120px' }}>
+              <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                 <Eye className="h-3 w-3" />
                 Visualização do Footer
                 {component.props?.position === 'page-bottom' && (
@@ -242,7 +242,7 @@ export const ReportComponentProperties = ({
             
             <div>
               <Label>Conteúdo Personalizado</Label>
-              <p className="text-sm text-gray-500 mb-2">
+              <p className="text-sm text-muted-foreground mb-2">
                 Adicione informações personalizadas para o footer (uma linha por vez).
               </p>
               <Textarea
@@ -288,7 +288,7 @@ export const ReportComponentProperties = ({
                     <SelectItem value="fixed">Fixa</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {component.props?.position === 'page-bottom' 
                     ? 'Footer fixo no final da página' 
                     : 'Footer aparece após o conteúdo'

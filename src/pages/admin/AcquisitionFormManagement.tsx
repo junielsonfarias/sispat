@@ -136,23 +136,23 @@ const AcquisitionFormManagement = () => {
     <div className="flex-1 p-4 lg:p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="mb-6">
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-2">
             Gerenciamento de Formas de Aquisição
           </h1>
-          <p className="text-base lg:text-lg text-gray-600">
+          <p className="text-base lg:text-lg text-muted-foreground">
             Gerencie as formas de aquisição disponíveis para cadastro de patrimônios
           </p>
         </div>
 
-        <Card className="border-0 shadow-lg bg-white">
+        <Card className="border-0 shadow-lg bg-card">
           <CardHeader className="pb-4 px-6 pt-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+              <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                 Formas de Aquisição
               </CardTitle>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Buscar formas de aquisição..."
                     value={searchTerm}
@@ -240,7 +240,7 @@ const AcquisitionFormManagement = () => {
                 <TableBody>
                   {filteredForms.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                         Nenhuma forma de aquisição encontrada
                       </TableCell>
                     </TableRow>

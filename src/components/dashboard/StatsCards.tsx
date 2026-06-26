@@ -142,18 +142,18 @@ export const StatsCards = ({ stats, totalImoveis, valorTotalImoveis }: StatsCard
               <CardContent className="p-4 sm:p-5 lg:p-6">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1 text-xs sm:text-sm">
+                    <p className="font-medium text-muted-foreground uppercase tracking-wide mb-1 text-xs sm:text-sm">
                       {card.title}
                     </p>
                     <div className="flex items-baseline gap-1 flex-wrap">
                       <h3 className={`
-                        ${card.fontSize} font-bold text-gray-900 dark:text-white
+                        ${card.fontSize} font-bold text-foreground
                         ${isValorTotal ? 'break-all' : 'truncate'}
                       `}>
                         {card.value}
                       </h3>
                       {card.unit && (
-                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                           {card.unit}
                         </span>
                       )}
@@ -163,7 +163,7 @@ export const StatsCards = ({ stats, totalImoveis, valorTotalImoveis }: StatsCard
                       <Icon className={`${card.iconColor} h-5 w-5 sm:h-6 sm:w-6`} />
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                   {card.subtitle}
                 </p>
               </CardContent>
@@ -200,15 +200,15 @@ export const StatsCards = ({ stats, totalImoveis, valorTotalImoveis }: StatsCard
                 <CardContent className="p-4 sm:p-5 lg:p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1 text-xs sm:text-sm">
+                      <p className="font-medium text-muted-foreground uppercase tracking-wide mb-1 text-xs sm:text-sm">
                         {card.title}
                       </p>
                       <div className="flex items-baseline gap-1 flex-wrap">
-                        <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white truncate">
+                        <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate">
                           {card.value}
                         </h3>
                         {card.unit && (
-                          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                             {card.unit}
                           </span>
                         )}
@@ -218,7 +218,7 @@ export const StatsCards = ({ stats, totalImoveis, valorTotalImoveis }: StatsCard
                       <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${colors.icon}`} />
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                     {card.subtitle}
                   </p>
                 </CardContent>

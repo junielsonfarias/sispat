@@ -298,7 +298,7 @@ export default function EditorTemplateFicha() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando template...</p>
+            <p className="text-muted-foreground">Carregando template...</p>
           </div>
         </div>
       </div>
@@ -309,7 +309,7 @@ export default function EditorTemplateFicha() {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Template não encontrado</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-4">Template não encontrado</h1>
           <Button onClick={() => navigate('/gerenciador-fichas')}>
             Voltar ao Gerenciador
           </Button>
@@ -334,7 +334,7 @@ export default function EditorTemplateFicha() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold text-gray-900">Editar Template</h1>
+            <h1 className="text-3xl font-bold text-foreground">Editar Template</h1>
             {template.isDefault && (
               <Badge variant="default" className="bg-yellow-100 text-yellow-800">
                 Padrão
@@ -345,7 +345,7 @@ export default function EditorTemplateFicha() {
               {getTypeLabel(template.type)}
             </Badge>
           </div>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {template.name}
           </p>
         </div>
@@ -450,7 +450,7 @@ export default function EditorTemplateFicha() {
                       id="logoSize"
                       value={config.header.logoSize}
                       onChange={(e) => handleConfigChange('header.logoSize', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                     >
                       <option value="small">Pequeno</option>
                       <option value="medium">Médio</option>
@@ -525,7 +525,7 @@ export default function EditorTemplateFicha() {
                           id="layout"
                           value={config.sections.patrimonioInfo.layout}
                           onChange={(e) => handleConfigChange('sections.patrimonioInfo.layout', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          className="w-full px-3 py-2 border border-border rounded-md"
                         >
                           <option value="grid">Grade (2 colunas)</option>
                           <option value="list">Lista (1 coluna)</option>
@@ -537,7 +537,7 @@ export default function EditorTemplateFicha() {
                           id="photoSize"
                           value={config.sections.patrimonioInfo.photoSize}
                           onChange={(e) => handleConfigChange('sections.patrimonioInfo.photoSize', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          className="w-full px-3 py-2 border border-border rounded-md"
                         >
                           <option value="small">Pequeno</option>
                           <option value="medium">Médio</option>
@@ -753,7 +753,7 @@ export default function EditorTemplateFicha() {
                           id="signatureLayout"
                           value={config.signatures.layout}
                           onChange={(e) => handleConfigChange('signatures.layout', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          className="w-full px-3 py-2 border border-border rounded-md"
                         >
                           <option value="horizontal">Horizontal (lado a lado)</option>
                           <option value="vertical">Vertical (empilhado)</option>
@@ -861,7 +861,7 @@ export default function EditorTemplateFicha() {
                       id="fontFamily"
                       value={config.styling.fonts.family}
                       onChange={(e) => handleConfigChange('styling.fonts.family', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                     >
                       {fontFamilies.map((font) => (
                         <option key={font} value={font}>{font}</option>

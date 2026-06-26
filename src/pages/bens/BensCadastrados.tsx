@@ -99,7 +99,7 @@ const renderTable = (
   if (!Array.isArray(filteredData)) {
     return (
       <div className="text-center py-8">
-        <div className="text-gray-500">Dados inválidos para exibição</div>
+        <div className="text-muted-foreground">Dados inválidos para exibição</div>
       </div>
     )
   }
@@ -112,14 +112,14 @@ const renderTable = (
     return (
       <div className="text-center py-12">
         <div className="flex flex-col items-center gap-3">
-          <div className="rounded-full bg-gray-100 p-3">
-            <Search className="h-6 w-6 text-gray-400" />
+          <div className="rounded-full bg-muted p-3">
+            <Search className="h-6 w-6 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-gray-900 font-medium">
+            <p className="text-foreground font-medium">
               {searchTerm ? 'Nenhum bem encontrado' : 'Nenhum bem cadastrado'}
             </p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {searchTerm 
                 ? 'Tente ajustar os termos de busca' 
                 : 'Comece cadastrando um novo bem'}
@@ -140,10 +140,10 @@ const renderTable = (
 
   return (
     <div className="hidden lg:block overflow-x-auto">
-      <div className="rounded-lg border border-gray-200 overflow-hidden">
+      <div className="rounded-lg border border-border overflow-hidden">
         <Table>
-          <TableHeader className="bg-gray-50">
-              <TableRow className="border-gray-200">
+          <TableHeader className="bg-muted/50">
+              <TableRow className="border-border">
               <TableHead className="w-12">
                 <TooltipProvider>
                   <Tooltip>
@@ -162,20 +162,20 @@ const renderTable = (
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="text-sm font-semibold text-gray-700">Número</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-700">Descrição</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-700">Situação</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-700 text-right whitespace-nowrap">Valor</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-700">Setor</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-700 whitespace-nowrap">Local</TableHead>
-              <TableHead className="text-right text-sm font-semibold text-gray-700">Ações</TableHead>
+              <TableHead className="text-sm font-semibold text-muted-foreground">Número</TableHead>
+              <TableHead className="text-sm font-semibold text-muted-foreground">Descrição</TableHead>
+              <TableHead className="text-sm font-semibold text-muted-foreground">Situação</TableHead>
+              <TableHead className="text-sm font-semibold text-muted-foreground text-right whitespace-nowrap">Valor</TableHead>
+              <TableHead className="text-sm font-semibold text-muted-foreground">Setor</TableHead>
+              <TableHead className="text-sm font-semibold text-muted-foreground whitespace-nowrap">Local</TableHead>
+              <TableHead className="text-right text-sm font-semibold text-muted-foreground">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredData.map((patrimonio, index) => (
               <TableRow 
                 key={`patrimonio-${patrimonio.id}-${index}`} 
-                className="hover:bg-gray-50 border-gray-200"
+                className="hover:bg-muted/50 border-border"
               >
                 <TableCell>
                   <Checkbox
@@ -184,7 +184,7 @@ const renderTable = (
                     aria-label={`Selecionar patrimônio ${patrimonio.numero_patrimonio}`}
                   />
                 </TableCell>
-                <TableCell className="font-medium font-mono text-sm text-gray-900">
+                <TableCell className="font-medium font-mono text-sm text-foreground">
                   <Link 
                     to={`/bens-cadastrados/ver/${patrimonio.id}`}
                     className="text-blue-600 hover:text-blue-800 hover:underline"
@@ -192,7 +192,7 @@ const renderTable = (
                     {patrimonio.numero_patrimonio}
                   </Link>
                 </TableCell>
-                <TableCell className="text-sm text-gray-700">
+                <TableCell className="text-sm text-muted-foreground">
                   <div className="max-w-[280px] line-clamp-2" title={patrimonio.descricao_bem}>
                     {patrimonio.descricao_bem}
                   </div>
@@ -204,18 +204,18 @@ const renderTable = (
                     {patrimonio.situacao_bem}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm text-gray-700 text-right whitespace-nowrap tabular-nums">
+                <TableCell className="text-sm text-muted-foreground text-right whitespace-nowrap tabular-nums">
                   R$ {patrimonio.valor_aquisicao?.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
                 </TableCell>
-                <TableCell className="text-sm text-gray-700">
+                <TableCell className="text-sm text-muted-foreground">
                   <div className="max-w-[180px] line-clamp-2" title={patrimonio.setor_responsavel}>
                     {patrimonio.setor_responsavel}
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-gray-700 whitespace-nowrap">{patrimonio.local_objeto}</TableCell>
+                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{patrimonio.local_objeto}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
                     <TooltipProvider>
@@ -644,10 +644,10 @@ const BensCadastrados = () => {
         <div className="mb-4 sm:mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-1 sm:mb-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-1 sm:mb-2">
                 Bens Cadastrados
               </h1>
-              <p className="text-sm sm:text-base lg:text-lg text-gray-600">
+              <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
                 Gerencie todos os bens patrimoniais cadastrados no sistema
               </p>
             </div>
@@ -827,7 +827,7 @@ const BensCadastrados = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {/* Filtro de Status */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Status</label>
+                  <label className="text-sm font-medium text-muted-foreground">Status</label>
                   <Select
                     value={filters.status || 'all'}
                     onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value === 'all' ? '' : value }))}
@@ -850,7 +850,7 @@ const BensCadastrados = () => {
 
                 {/* Filtro de Situação do Bem */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Situação</label>
+                  <label className="text-sm font-medium text-muted-foreground">Situação</label>
                   <Select
                     value={filters.situacao_bem || 'all'}
                     onValueChange={(value) => setFilters((prev) => ({ ...prev, situacao_bem: value === 'all' ? '' : value }))}
@@ -871,7 +871,7 @@ const BensCadastrados = () => {
 
                 {/* Filtro de Setor */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Setor</label>
+                  <label className="text-sm font-medium text-muted-foreground">Setor</label>
                   <Select
                     value={filters.sectorId || 'all'}
                     onValueChange={(value) => setFilters((prev) => ({ ...prev, sectorId: value === 'all' ? '' : value }))}
@@ -898,7 +898,7 @@ const BensCadastrados = () => {
 
                 {/* Filtro de Tipo */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Tipo</label>
+                  <label className="text-sm font-medium text-muted-foreground">Tipo</label>
                   <Select
                     value={filters.tipo || 'all'}
                     onValueChange={(value) => setFilters((prev) => ({ ...prev, tipo: value === 'all' ? '' : value }))}
@@ -925,7 +925,7 @@ const BensCadastrados = () => {
 
                 {/* Filtro de Data de Aquisição */}
                 <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-                  <label className="text-sm font-medium text-gray-700">Data de Aquisição</label>
+                  <label className="text-sm font-medium text-muted-foreground">Data de Aquisição</label>
                   <DatePickerWithRange
                     date={dateRange}
                     onDateChange={handleDateRangeChange}
@@ -949,11 +949,11 @@ const BensCadastrados = () => {
                   />
                   <label
                     htmlFor="filtro-aguardando-distribuicao"
-                    className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+                    className="text-sm font-medium text-muted-foreground cursor-pointer select-none"
                   >
                     Aguardando distribuição
                   </label>
-                  <span className="text-xs text-gray-500">(bens no Almoxarifado)</span>
+                  <span className="text-xs text-muted-foreground">(bens no Almoxarifado)</span>
                 </div>
               </div>
 
@@ -961,7 +961,7 @@ const BensCadastrados = () => {
               {activeFiltersCount > 0 && (
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-sm font-medium text-gray-700">Filtros ativos:</span>
+                    <span className="text-sm font-medium text-muted-foreground">Filtros ativos:</span>
                     {filters.status && (
                       <Badge variant="secondary" className="gap-1">
                         Status: {filters.status}
@@ -1024,10 +1024,10 @@ const BensCadastrados = () => {
         )}
 
         {/* Table - Desktop */}
-        <Card className="border-0 shadow-lg bg-white transition-all duration-300 hover:shadow-xl">
+        <Card className="border-0 shadow-lg bg-card transition-all duration-300 hover:shadow-xl">
           <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
-            <CardTitle className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900">Bens Cadastrados</CardTitle>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+            <CardTitle className="text-base sm:text-lg lg:text-xl font-semibold text-foreground">Bens Cadastrados</CardTitle>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Mostrando {filteredData.length} de {totalItems} bens • Página {currentPage} de {totalPages}
             </p>
           </CardHeader>
@@ -1074,14 +1074,14 @@ const BensCadastrados = () => {
               ) : filteredData.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="rounded-full bg-gray-100 p-3">
-                      <Search className="h-6 w-6 text-gray-400" />
+                    <div className="rounded-full bg-muted p-3">
+                      <Search className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="text-gray-900 font-medium">
+                      <p className="text-foreground font-medium">
                         {searchTerm ? 'Nenhum bem encontrado' : 'Nenhum bem cadastrado'}
                       </p>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {searchTerm 
                           ? 'Tente ajustar os termos de busca' 
                           : 'Comece cadastrando um novo bem'}
@@ -1115,7 +1115,7 @@ const BensCadastrados = () => {
                 filteredData.map((patrimonio, index) => (
                   <Card 
                     key={`${patrimonio.id}-${index}`} 
-                    className="border border-gray-200 hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+                    className="border border-border hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
                     role="article"
                     aria-label={`Patrimônio ${patrimonio.numero_patrimonio}`}
                   >
@@ -1141,7 +1141,7 @@ const BensCadastrados = () => {
                           >
                             {patrimonio.numero_patrimonio}
                           </Link>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p className="text-sm text-muted-foreground mt-1">
                             {patrimonio.descricao_bem}
                           </p>
                         </div>
@@ -1156,8 +1156,8 @@ const BensCadastrados = () => {
                       {/* Informações principais */}
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500">Valor:</span>
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-xs text-muted-foreground">Valor:</span>
+                          <span className="text-sm font-medium text-foreground">
                             R$ {patrimonio.valor_aquisicao?.toLocaleString('pt-BR', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
@@ -1165,21 +1165,21 @@ const BensCadastrados = () => {
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500">Setor:</span>
-                          <span className="text-sm text-gray-700 text-right flex-1 ml-2">
+                          <span className="text-xs text-muted-foreground">Setor:</span>
+                          <span className="text-sm text-muted-foreground text-right flex-1 ml-2">
                             {patrimonio.setor_responsavel}
                           </span>
                         </div>
                         <div className="flex justify-between items-start">
-                          <span className="text-xs text-gray-500">Local:</span>
-                          <span className="text-sm text-gray-700 text-right flex-1 ml-2">
+                          <span className="text-xs text-muted-foreground">Local:</span>
+                          <span className="text-sm text-muted-foreground text-right flex-1 ml-2">
                             {patrimonio.local_objeto}
                           </span>
                         </div>
                       </div>
 
                       {/* Ações */}
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
@@ -1312,9 +1312,9 @@ const BensCadastrados = () => {
           
           {/* ✅ OTIMIZAÇÃO: Controles de Paginação */}
           {totalPages > 1 && (
-            <div className="border-t border-gray-200 px-4 sm:px-6 py-4">
+            <div className="border-t border-border px-4 sm:px-6 py-4">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span>Itens por página:</span>
                   <Select
                     value={pageSize.toString()}
@@ -1404,7 +1404,7 @@ const BensCadastrados = () => {
                   </TooltipProvider>
                 </div>
                 
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   Página {currentPage} de {totalPages}
                 </div>
               </div>

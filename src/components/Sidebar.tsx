@@ -12,7 +12,7 @@ interface SidebarProps {
 export const Sidebar = ({ className }: SidebarProps) => {
   return (
     <SidebarPrimitive className={cn(className, 'no-print')}>
-      <SidebarContent className="bg-white border-r border-gray-200">
+      <SidebarContent className="bg-card border-r border-border">
         <div className="flex-1 overflow-auto p-4">
           <NavContent />
         </div>

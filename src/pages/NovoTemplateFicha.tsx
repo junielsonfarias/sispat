@@ -144,8 +144,8 @@ export default function NovoTemplateFicha() {
           Voltar
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Novo Template de Ficha</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-foreground">Novo Template de Ficha</h1>
+          <p className="text-muted-foreground mt-2">
             Configure um novo template personalizado para fichas de patrimônio
           </p>
         </div>
@@ -244,7 +244,7 @@ export default function NovoTemplateFicha() {
                   id="logoSize"
                   value={formData.config.header.logoSize}
                   onChange={(e) => handleConfigChange('header.logoSize', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-border rounded-md"
                 >
                   <option value="small">Pequeno</option>
                   <option value="medium">Médio</option>
@@ -351,7 +351,7 @@ export default function NovoTemplateFicha() {
                     id="signatureLayout"
                     value={formData.config.signatures.layout}
                     onChange={(e) => handleConfigChange('signatures.layout', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-border rounded-md"
                   >
                     <option value="horizontal">Horizontal</option>
                     <option value="vertical">Vertical</option>

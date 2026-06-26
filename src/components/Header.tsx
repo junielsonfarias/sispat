@@ -75,7 +75,7 @@ export const Header = () => {
   return (
     <>
       <header 
-        className="bg-white border-b border-gray-200 shadow-sm no-print"
+        className="bg-card border-b border-border shadow-sm no-print"
         role="banner"
         aria-label="Cabeçalho principal"
       >
@@ -98,29 +98,29 @@ export const Header = () => {
             <div className="flex flex-col items-center text-center flex-1 px-4">
               {settings.prefeituraName ? (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
+                  <h1 className="text-xl font-bold text-foreground uppercase leading-tight tracking-wide">
                     {settings.prefeituraName}
                   </h1>
                   {settings.secretariaResponsavel && (
-                    <p className="text-sm text-gray-700 uppercase font-semibold leading-tight tracking-wide">
+                    <p className="text-sm text-foreground uppercase font-semibold leading-tight tracking-wide">
                       {settings.secretariaResponsavel}
                     </p>
                   )}
                   {settings.departamentoResponsavel && (
-                    <p className="text-xs text-gray-600 uppercase font-medium leading-tight tracking-wide">
+                    <p className="text-xs text-muted-foreground uppercase font-medium leading-tight tracking-wide">
                       {settings.departamentoResponsavel}
                     </p>
                   )}
                 </>
               ) : (
                 <>
-                  <h1 className="text-xl font-bold text-gray-900 uppercase leading-tight tracking-wide">
+                  <h1 className="text-xl font-bold text-foreground uppercase leading-tight tracking-wide">
                     PREFEITURA MUNICIPAL
                   </h1>
-                  <p className="text-sm text-gray-700 uppercase font-semibold leading-tight tracking-wide">
+                  <p className="text-sm text-foreground uppercase font-semibold leading-tight tracking-wide">
                     SECRETARIA DE ADMINISTRAÇÃO
                   </p>
-                  <p className="text-xs text-gray-600 uppercase font-medium leading-tight tracking-wide">
+                  <p className="text-xs text-muted-foreground uppercase font-medium leading-tight tracking-wide">
                     DEPARTAMENTO DE PATRIMÔNIO
                   </p>
                 </>
@@ -156,7 +156,7 @@ export const Header = () => {
                           {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
                             <AvatarImage src={user.avatarUrl} alt={user.name} />
                           )}
-                          <AvatarFallback className="bg-gray-200 text-gray-700">
+                          <AvatarFallback className="bg-muted text-foreground">
                             {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -236,11 +236,11 @@ export const Header = () => {
               />
             </Link>
             {settings.prefeituraName ? (
-              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+              <h2 className="text-xs font-bold text-foreground uppercase text-center leading-tight">
                 {settings.prefeituraName}
               </h2>
             ) : (
-              <h2 className="text-xs font-bold text-gray-900 uppercase text-center leading-tight">
+              <h2 className="text-xs font-bold text-foreground uppercase text-center leading-tight">
                 PREFEITURA MUNICIPAL
               </h2>
             )}
@@ -248,10 +248,10 @@ export const Header = () => {
 
           {/* SISPAT Branding - Center */}
           <div className="flex flex-col items-center">
-            <h1 className="text-lg font-bold text-gray-900 leading-none">
+            <h1 className="text-lg font-bold text-foreground leading-none">
               SISPAT
             </h1>
-            <p className="text-xs text-gray-600 font-medium">
+            <p className="text-xs text-muted-foreground font-medium">
               Sistema de Patrimônio
             </p>
           </div>
@@ -284,7 +284,7 @@ export const Header = () => {
                         {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
                           <AvatarImage src={user.avatarUrl} alt={user.name} />
                         )}
-                        <AvatarFallback className="bg-gray-200 text-gray-700">
+                        <AvatarFallback className="bg-muted text-foreground">
                           {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                         </AvatarFallback>
                       </Avatar>

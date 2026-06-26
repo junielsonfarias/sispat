@@ -285,10 +285,10 @@ export default function ImoveisCreate() {
     <div className="flex-1 p-4 lg:p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="mb-6">
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-2">
             Cadastrar Novo Imóvel
           </h1>
-          <p className="text-base lg:text-lg text-gray-600">
+          <p className="text-base lg:text-lg text-muted-foreground">
             Preencha as informações do novo imóvel
           </p>
           <Button
@@ -304,9 +304,9 @@ export default function ImoveisCreate() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Informações Básicas */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                   Informações Básicas
                 </CardTitle>
               </CardHeader>
@@ -467,9 +467,9 @@ export default function ImoveisCreate() {
             </Card>
 
             {/* Informações Financeiras */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                   Informações Financeiras
                 </CardTitle>
               </CardHeader>
@@ -529,9 +529,9 @@ export default function ImoveisCreate() {
             </Card>
 
             {/* Localização Geográfica */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                   Localização Geográfica
                 </CardTitle>
               </CardHeader>
@@ -587,9 +587,9 @@ export default function ImoveisCreate() {
             </Card>
 
             {/* Observações */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                   Observações
                 </CardTitle>
               </CardHeader>
@@ -618,9 +618,9 @@ export default function ImoveisCreate() {
             </Card>
 
             {/* Mídia e Documentos */}
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                   Mídia e Documentos
                 </CardTitle>
               </CardHeader>
@@ -687,9 +687,9 @@ export default function ImoveisCreate() {
 
             {/* Campos Personalizados */}
             {customFields.length > 0 && (
-              <Card className="border-0 shadow-lg bg-white">
+              <Card className="border-0 shadow-lg bg-card">
                 <CardHeader className="pb-4 px-6 pt-6">
-                  <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+                  <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                     Campos Personalizados
                   </CardTitle>
                 </CardHeader>

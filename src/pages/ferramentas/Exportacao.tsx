@@ -129,7 +129,6 @@ const Exportacao = () => {
   const onSubmit = async (data: ExportFormValues) => {
     setIsLoading(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
       // Usar dados reais do contexto em vez de mocks
       const allData = patrimonios || []
       const columns = getColumnsWithLabels(data.fields as (keyof Patrimonio)[])

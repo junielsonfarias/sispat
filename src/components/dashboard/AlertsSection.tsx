@@ -53,7 +53,7 @@ export const AlertsSection = ({ stats }: AlertsSectionProps) => {
     return (
       <Card className="border-0 shadow-sm bg-white dark:bg-gray-800/50">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-foreground">
             <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
             Alertas e Notificações
           </CardTitle>
@@ -73,7 +73,7 @@ export const AlertsSection = ({ stats }: AlertsSectionProps) => {
   return (
     <Card className="border-0 shadow-sm bg-white dark:bg-gray-800/50">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold text-foreground">
           <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
           Alertas e Notificações
         </CardTitle>
@@ -84,22 +84,22 @@ export const AlertsSection = ({ stats }: AlertsSectionProps) => {
           return (
             <div 
               key={index} 
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-sm transition-shadow"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border border-border rounded-lg hover:shadow-sm transition-shadow"
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 flex-shrink-0">
-                  <Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                <div className="p-2 rounded-full bg-muted flex-shrink-0">
+                  <Icon className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <h4 className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
+                    <h4 className="font-medium text-sm sm:text-base text-foreground">
                       {alert.title}
                     </h4>
                     <Badge variant={alert.variant} className="text-xs">
                       {alert.count}
                     </Badge>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {alert.description}
                   </p>
                 </div>

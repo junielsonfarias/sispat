@@ -151,10 +151,10 @@ export default function InventarioEdit() {
       <div className="flex-1 p-4 lg:p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl font-bold text-foreground mb-4">
               Inventário Finalizado
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               Este inventário já foi finalizado e não pode ser editado.
             </p>
             <Button variant="outline" onClick={() => navigate('/inventarios')}>
@@ -180,10 +180,10 @@ export default function InventarioEdit() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-2">
+              <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-2">
                 Editar Inventário
               </h1>
-              <p className="text-base lg:text-lg text-gray-600">
+              <p className="text-base lg:text-lg text-muted-foreground">
                 Atualize as informações do inventário
               </p>
             </div>
@@ -192,9 +192,9 @@ export default function InventarioEdit() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Card className="border-0 shadow-lg bg-white">
+            <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-gray-900">
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">
                   Informações do Inventário
                 </CardTitle>
                 <CardDescription>

@@ -136,11 +136,11 @@ const UnifiedDashboard = () => {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem>
-                    <BreadcrumbPage className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <BreadcrumbPage className="text-xs sm:text-sm font-medium text-foreground">
                       Dashboard
                     </BreadcrumbPage>
                   </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-gray-400" />
+                  <BreadcrumbSeparator className="text-muted-foreground" />
                   <BreadcrumbItem>
                     <BreadcrumbPage className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400">
                       Visão Geral
@@ -174,7 +174,7 @@ const UnifiedDashboard = () => {
                       </h1>
                     </div>
                   </div>
-                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                     Visão completa do sistema de patrimônio e imóveis com insights em tempo real
                   </p>
                 </div>
