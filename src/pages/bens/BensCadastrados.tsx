@@ -56,16 +56,20 @@ import {
 } from '@/components/ui/tooltip'
 
 const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'ÓTIMO':
+  // situacao_bem é gravado/retornado em MINÚSCULO pelo backend. Normaliza para
+  // não cair sempre no default (badge cinza).
+  switch ((status || '').toLowerCase()) {
+    case 'otimo':
       return 'bg-green-100 text-green-800 border-green-200'
-    case 'BOM':
+    case 'bom':
       return 'bg-blue-100 text-blue-800 border-blue-200'
-    case 'REGULAR':
+    case 'regular':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-    case 'RUIM':
+    case 'ruim':
+    case 'pessimo':
       return 'bg-red-100 text-red-800 border-red-200'
-    case 'EM_MANUTENCAO':
+    case 'em_manutencao':
+    case 'manutencao':
       return 'bg-purple-100 text-purple-800 border-purple-200'
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200'

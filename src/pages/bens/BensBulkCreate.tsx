@@ -50,7 +50,7 @@ const bulkPatrimonioSchema = z.object({
       valor_aquisicao: z.coerce.number().min(0.01, 'Valor deve ser maior que zero'),
       quantidade: z.coerce.number().int().min(1, 'Quantidade deve ser no mínimo 1').default(1),
       numero_nota_fiscal: z.string().optional(),
-      situacao_bem: z.enum(['OTIMO', 'BOM', 'REGULAR', 'RUIM', 'PESSIMO'], {
+      situacao_bem: z.enum(['otimo', 'bom', 'regular', 'ruim', 'pessimo'], {
         required_error: 'Situação é obrigatória.',
       }),
     })
@@ -98,7 +98,7 @@ const BensBulkCreate = () => {
           valor_aquisicao: 0,
           quantidade: 1,
           numero_nota_fiscal: '',
-          situacao_bem: 'BOM',
+          situacao_bem: 'bom',
         },
       ],
     },
@@ -123,7 +123,7 @@ const BensBulkCreate = () => {
       valor_aquisicao: 0,
       quantidade: 1,
       numero_nota_fiscal: '',
-      situacao_bem: 'BOM',
+      situacao_bem: 'bom',
     })
   }
 
@@ -505,6 +505,7 @@ const BensBulkCreate = () => {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
+                                  <SelectItem value="otimo">Ótimo</SelectItem>
                                   <SelectItem value="bom">Bom</SelectItem>
                                   <SelectItem value="regular">Regular</SelectItem>
                                   <SelectItem value="ruim">Ruim</SelectItem>

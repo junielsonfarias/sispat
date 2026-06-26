@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/searchable-select'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { useSectors } from '@/contexts/SectorContext'
-import { MUNICIPALITY_ID } from '@/config/municipality'
 
 const userCreateSchema = z.object({
   name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
@@ -52,7 +51,7 @@ const roleOptions: SearchableSelectOption[] = [
 
 export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
-  const { addUser } = useAuth()
+  const { addUser, user } = useAuth()
   const { sectors } = useSectors()
 
   const form = useForm<UserCreateFormValues>({
@@ -75,10 +74,18 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
   )
 
   const onSubmit = async (data: UserCreateFormValues) => {
+    if (!user?.municipalityId) {
+      toast({
+        variant: 'destructive',
+        title: 'Município não identificado',
+        description: 'Sua conta não está associada a um município. Faça login novamente.',
+      })
+      return
+    }
     setIsLoading(true)
     try {
-      // Adicionar automaticamente o municipalityId para São Sebastião da Boa Vista
-      const userData = { ...data, municipalityId: MUNICIPALITY_ID }
+      // municipalityId do usuário autenticado (multi-tenant) — não usar constante fixa.
+      const userData = { ...data, municipalityId: user.municipalityId }
       const newUser = await addUser(userData)
       toast({
         title: 'Sucesso!',

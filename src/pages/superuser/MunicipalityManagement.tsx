@@ -522,6 +522,7 @@ export default function MunicipalityManagement() {
 
       {/* Dialog criar/editar */}
       <MunicipalityDialog
+        key={editing?.id ?? 'new'}
         open={dialogOpen}
         editing={editing}
         onClose={handleDialogClose}

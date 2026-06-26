@@ -45,7 +45,7 @@ const baseSchema = z.object({
   }),
   valor_aquisicao: z.coerce
     .number()
-    .min(0.01, 'O valor deve ser maior que zero.'),
+    .min(0, 'O valor deve ser maior ou igual a zero.'),
   area_terreno: z.coerce.number().optional(),
   area_construida: z.coerce.number().optional(),
   // Posse (Art. 13 §3): imóveis em cessão/comodato não integram o ativo.

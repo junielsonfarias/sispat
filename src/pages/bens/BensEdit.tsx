@@ -404,7 +404,7 @@ const BensEdit = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Situação do Bem</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione a situação" />
@@ -518,7 +518,7 @@ const BensEdit = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Setor Responsável</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o setor" />
