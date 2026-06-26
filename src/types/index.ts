@@ -489,14 +489,20 @@ export interface NumberingPattern {
   components: NumberingPatternComponent[]
 }
 
-export type ManutencaoTaskStatus = 'A Fazer' | 'Em Progresso' | 'Concluída'
-export type ManutencaoTaskPriority = 'Baixa' | 'Média' | 'Alta'
+export type ManutencaoTaskStatus =
+  | 'A Fazer'
+  | 'Em Progresso'
+  | 'Concluída'
+  | 'Cancelada'
+export type ManutencaoTaskPriority = 'Baixa' | 'Média' | 'Alta' | 'Urgente'
+export type ManutencaoTaskTipo = 'Preventiva' | 'Corretiva' | 'Preditiva'
 
 export interface ManutencaoTask {
   id: string
   imovelId: string
   title: string
   description: string
+  tipo: ManutencaoTaskTipo
   assignedTo?: string
   priority: ManutencaoTaskPriority
   dueDate: Date

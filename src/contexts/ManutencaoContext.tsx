@@ -7,7 +7,12 @@ import {
   useEffect,
   useMemo,
 } from 'react'
-import { ManutencaoTask } from '@/types'
+import {
+  ManutencaoTask,
+  ManutencaoTaskPriority,
+  ManutencaoTaskStatus,
+  ManutencaoTaskTipo,
+} from '@/types'
 import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
@@ -26,6 +31,104 @@ interface ManutencaoContextType {
 
 const ManutencaoContext = createContext<ManutencaoContextType | null>(null)
 
+// O backend (Prisma `model ManutencaoTask` + schemas @sispat/shared) fala PT em
+// minúsculo (titulo/descricao/prioridade/status/responsavel/dataPrevista) e exige
+// `tipo`. O modelo de domínio do front usa inglês + rótulos capitalizados. O
+// `zodValidate` substitui o req.body e o update é `.strict()`, então enviar o
+// objeto cru resultava em 400 (titulo/tipo ausentes, enum minúsculo, chaves
+// extras). Adaptamos aqui, no boundary, mantendo o backend canônico.
+const TIPO_TO: Record<ManutencaoTaskTipo, string> = {
+  Preventiva: 'preventiva',
+  Corretiva: 'corretiva',
+  Preditiva: 'preditiva',
+}
+const TIPO_FROM: Record<string, ManutencaoTaskTipo> = {
+  preventiva: 'Preventiva',
+  corretiva: 'Corretiva',
+  preditiva: 'Preditiva',
+}
+const PRIO_TO: Record<ManutencaoTaskPriority, string> = {
+  Baixa: 'baixa',
+  Média: 'media',
+  Alta: 'alta',
+  Urgente: 'urgente',
+}
+const PRIO_FROM: Record<string, ManutencaoTaskPriority> = {
+  baixa: 'Baixa',
+  media: 'Média',
+  alta: 'Alta',
+  urgente: 'Urgente',
+}
+const STATUS_TO: Record<ManutencaoTaskStatus, string> = {
+  'A Fazer': 'pendente',
+  'Em Progresso': 'em_andamento',
+  Concluída: 'concluida',
+  Cancelada: 'cancelada',
+}
+const STATUS_FROM: Record<string, ManutencaoTaskStatus> = {
+  pendente: 'A Fazer',
+  em_andamento: 'Em Progresso',
+  concluida: 'Concluída',
+  cancelada: 'Cancelada',
+}
+
+// Linha crua devolvida pelo backend.
+interface ApiManutencao {
+  id: string
+  imovelId?: string | null
+  patrimonioId?: string | null
+  tipo?: string
+  titulo?: string
+  descricao?: string
+  prioridade?: string
+  status?: string
+  responsavel?: string | null
+  dataPrevista?: string
+  createdAt?: string
+  municipalityId?: string
+}
+
+const fromApi = (row: ApiManutencao): ManutencaoTask => ({
+  id: row.id,
+  imovelId: row.imovelId || '',
+  title: row.titulo || '',
+  description: row.descricao || '',
+  tipo: TIPO_FROM[row.tipo || ''] || 'Preventiva',
+  priority: PRIO_FROM[row.prioridade || ''] || 'Média',
+  status: STATUS_FROM[row.status || ''] || 'A Fazer',
+  assignedTo: row.responsavel ?? undefined,
+  dueDate: new Date(row.dataPrevista || Date.now()),
+  attachments: [],
+  createdAt: new Date(row.createdAt || Date.now()),
+  municipalityId: row.municipalityId || '',
+})
+
+// Body do POST (createManutencaoSchema não tem `status` — default 'pendente').
+const toCreateBody = (
+  task: Omit<ManutencaoTask, 'id' | 'createdAt' | 'municipalityId'>,
+) => ({
+  imovelId: task.imovelId,
+  tipo: TIPO_TO[task.tipo],
+  titulo: task.title,
+  descricao: task.description,
+  prioridade: PRIO_TO[task.priority],
+  responsavel: task.assignedTo || undefined,
+  dataPrevista: task.dueDate,
+})
+
+// Body do PUT (updateManutencaoSchema é .strict(); só campos PT presentes).
+const toUpdateBody = (updates: Partial<ManutencaoTask>) => {
+  const body: Record<string, unknown> = {}
+  if (updates.tipo !== undefined) body.tipo = TIPO_TO[updates.tipo]
+  if (updates.title !== undefined) body.titulo = updates.title
+  if (updates.description !== undefined) body.descricao = updates.description
+  if (updates.priority !== undefined) body.prioridade = PRIO_TO[updates.priority]
+  if (updates.status !== undefined) body.status = STATUS_TO[updates.status]
+  if (updates.assignedTo !== undefined) body.responsavel = updates.assignedTo || null
+  if (updates.dueDate !== undefined) body.dataPrevista = updates.dueDate
+  return body
+}
+
 export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
   const [allTasks, setAllTasks] = useState<ManutencaoTask[]>([])
   const { user } = useAuth()
@@ -33,14 +136,9 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
   const fetchTasks = useCallback(async () => {
     if (!user) return
     try {
-      // Resposta crua do backend traz `dataPrevista` (o tipo de domínio usa `dueDate`).
-      const response = await api.get<Array<ManutencaoTask & { dataPrevista?: string }>>('/manutencoes')
-      const tasksData = Array.isArray(response) ? response : []
-      setAllTasks(tasksData.map(t => ({
-        ...t,
-        dueDate: new Date(t.dueDate || t.dataPrevista),
-        createdAt: new Date(t.createdAt),
-      })))
+      const response = await api.get<ApiManutencao[]>('/manutencoes')
+      const tasksData = Array.isArray(response) ? response.map(fromApi) : []
+      setAllTasks(tasksData)
     } catch (error) {
       logger.error('Failed to load maintenance tasks:', error)
       
@@ -81,15 +179,8 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
   const addTask = useCallback(
     async (taskData: Omit<ManutencaoTask, 'id' | 'createdAt' | 'municipalityId'>) => {
       try {
-        const newTask = await api.post<ManutencaoTask & { dataPrevista?: string }>('/manutencoes', {
-          ...taskData,
-          dataPrevista: taskData.dueDate,
-        })
-        setAllTasks(prev => [...prev, {
-          ...newTask,
-          dueDate: new Date(newTask.dataPrevista || newTask.dueDate),
-          createdAt: new Date(newTask.createdAt),
-        }])
+        const created = await api.post<ApiManutencao>('/manutencoes', toCreateBody(taskData))
+        setAllTasks(prev => [...prev, fromApi(created)])
         toast({ description: 'Tarefa de manutenção criada com sucesso.' })
       } catch (error) {
         logger.error('Erro ao criar tarefa de manutenção:', error)
@@ -129,17 +220,8 @@ export const ManutencaoProvider = ({ children }: { children: ReactNode }) => {
   const updateTask = useCallback(
     async (taskId: string, updates: Partial<ManutencaoTask>) => {
       try {
-        const updatedTask = await api.put<ManutencaoTask & { dataPrevista?: string }>(`/manutencoes/${taskId}`, {
-          ...updates,
-          dataPrevista: updates.dueDate,
-        })
-        setAllTasks(prev => prev.map(t =>
-          t.id === taskId ? {
-            ...updatedTask,
-            dueDate: new Date(updatedTask.dataPrevista || updatedTask.dueDate),
-            createdAt: new Date(updatedTask.createdAt),
-          } : t
-        ))
+        const updated = await api.put<ApiManutencao>(`/manutencoes/${taskId}`, toUpdateBody(updates))
+        setAllTasks(prev => prev.map(t => (t.id === taskId ? fromApi(updated) : t)))
         toast({ description: 'Tarefa atualizada com sucesso.' })
       } catch (error) {
         logger.error('Erro ao atualizar tarefa de manutenção:', error)
