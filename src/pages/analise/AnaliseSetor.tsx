@@ -198,7 +198,7 @@ const AnaliseSetor = () => {
               <PolarGrid />
               <PolarAngleAxis dataKey="subject" />
               <PolarRadiusAxis />
-              <Tooltip content={<ChartTooltipContent payload={[]} />} />
+              <Tooltip content={<ChartTooltipContent />} />
               <Legend />
               {selectedSectors.map((sectorName, index) => (
                 <Radar

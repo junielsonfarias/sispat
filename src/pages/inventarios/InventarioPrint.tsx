@@ -279,7 +279,10 @@ export default function InventarioPrint() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold print:text-xl">
-                    {((foundCount / inventory.items.length) * 100).toFixed(1)}%
+                    {inventory.items.length > 0
+                      ? ((foundCount / inventory.items.length) * 100).toFixed(1)
+                      : '0.0'}
+                    %
                   </div>
                   <div className="text-sm text-muted-foreground print:text-xs">
                     Taxa de Encontro

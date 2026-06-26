@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Card,
   CardContent,
@@ -55,17 +55,19 @@ export default function PermissionManagement() {
   const [selectedRole, setSelectedRole] = useState<UserRole>('admin')
   const [currentPermissions, setCurrentPermissions] = useState<Permission[]>([])
 
-  useState(() => {
+  // Carrega as permissões do papel selecionado quando os papéis chegam do
+  // context (async) e a cada troca de papel. Antes era um `useState(() => …)`
+  // (inicializador rodado uma vez no mount, com `roles` ainda vazio) → a tela
+  // nunca populava as permissões.
+  useEffect(() => {
     const role = roles.find((r) => r.id === selectedRole)
     if (role) {
       setCurrentPermissions(role.permissions)
     }
-  })
+  }, [selectedRole, roles])
 
   const handleRoleChange = (roleId: UserRole) => {
     setSelectedRole(roleId)
-    const role = roles.find((r) => r.id === roleId)
-    setCurrentPermissions(role ? role.permissions : [])
   }
 
   const handlePermissionChange = (permission: Permission, checked: boolean) => {

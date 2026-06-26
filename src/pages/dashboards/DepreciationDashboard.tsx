@@ -266,7 +266,7 @@ const DepreciationDashboard = () => {
                       angle={0}
                       textAnchor="end"
                     />
-                    <Tooltip content={<ChartTooltipContent payload={[]} />} />
+                    <Tooltip content={<ChartTooltipContent />} />
                     <Legend />
                     <Bar
                       dataKey="accumulated"

@@ -172,7 +172,7 @@ const AnaliseTipo = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip content={<ChartTooltipContent payload={[]} />} />
+                <Tooltip content={<ChartTooltipContent />} />
                 <Legend />
                 {allTypes.map((type, index) => (
                   <Area

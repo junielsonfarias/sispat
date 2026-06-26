@@ -167,7 +167,7 @@ export const ChartsSection = ({ patrimonios = [], aggregated }: ChartsSectionPro
                     className="text-xs sm:text-sm"
                   />
                   <YAxis tick={{ fontSize: 10 }} width={40} />
-                  <Tooltip content={<ChartTooltipContent payload={[]} />} />
+                  <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="quantidade" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -231,7 +231,7 @@ export const ChartsSection = ({ patrimonios = [], aggregated }: ChartsSectionPro
                     className="text-xs sm:text-sm"
                   />
                   <YAxis tick={{ fontSize: 10 }} width={50} />
-                  <Tooltip content={<ChartTooltipContent payload={[]} />} />
+                  <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="valor" fill="#10b981" radius={[8, 8, 0, 0]} />
                   <Line type="monotone" dataKey="valor" stroke="#f59e0b" strokeWidth={2} />
                 </ComposedChart>
@@ -272,7 +272,7 @@ export const ChartsSection = ({ patrimonios = [], aggregated }: ChartsSectionPro
                     textAnchor="end"
                     className="text-xs sm:text-sm"
                   />
-                  <Tooltip content={<ChartTooltipContent payload={[]} />} />
+                  <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="quantidade" fill="#8b5cf6" radius={[0, 8, 8, 0]} />
                 </BarChart>
               </ResponsiveContainer>

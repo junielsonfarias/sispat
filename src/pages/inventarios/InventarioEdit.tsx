@@ -41,6 +41,7 @@ const inventoryEditSchema = z.object({
     required_error: 'Escopo é obrigatório',
   }),
   locationType: z.string().optional(),
+  specificLocationId: z.string().optional(),
 })
 
 type InventoryEditFormValues = z.infer<typeof inventoryEditSchema>
@@ -61,6 +62,7 @@ export default function InventarioEdit() {
       sectorName: '',
       scope: 'sector',
       locationType: '',
+      specificLocationId: '',
     },
   })
 
@@ -74,6 +76,7 @@ export default function InventarioEdit() {
           sectorName: inv.sectorName,
           scope: inv.scope,
           locationType: inv.locationType || '',
+          specificLocationId: inv.specificLocationId || '',
         })
       } else {
         navigate('/inventarios')
@@ -91,21 +94,28 @@ export default function InventarioEdit() {
     return locais.map((local) => ({ value: local.name, label: local.name }))
   }, [selectedSector, selectedScope, getLocaisBySectorId])
 
+  const specificLocationOptions = useMemo(() => {
+    if (!selectedSector || selectedScope !== 'specific_location') return []
+    const locais = getLocaisBySectorId(selectedSector.id)
+    return locais.map((local) => ({ value: local.id, label: local.name }))
+  }, [selectedSector, selectedScope, getLocaisBySectorId])
+
   const onSubmit = async (data: InventoryEditFormValues) => {
     if (!inventory || !id) return
     
     setIsLoading(true)
     try {
-      // Simular delay da API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Atualizar inventário
+      // Atualizar inventário (preserva o campo específico de cada escopo)
       const updatedInventory = {
         ...inventory,
         name: data.name,
         sectorName: data.sectorName,
         scope: data.scope,
         locationType: data.scope === 'location' ? data.locationType : undefined,
+        specificLocationId:
+          data.scope === 'specific_location'
+            ? data.specificLocationId
+            : undefined,
       }
       
       updateInventory(id, updatedInventory)
@@ -213,7 +223,7 @@ export default function InventarioEdit() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Setor *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione o setor" />
@@ -238,7 +248,7 @@ export default function InventarioEdit() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Escopo *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione o escopo" />
@@ -246,7 +256,10 @@ export default function InventarioEdit() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="sector">Todo o Setor</SelectItem>
-                            <SelectItem value="location">Local Específico</SelectItem>
+                            <SelectItem value="location">Por Tipo de Local</SelectItem>
+                            <SelectItem value="specific_location">
+                              Local Específico
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -261,8 +274,8 @@ export default function InventarioEdit() {
                     name="locationType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Local Específico *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormLabel>Local *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione o local" />
@@ -270,6 +283,33 @@ export default function InventarioEdit() {
                           </FormControl>
                           <SelectContent>
                             {locationOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {selectedScope === 'specific_location' && (
+                  <FormField
+                    control={form.control}
+                    name="specificLocationId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Local Específico *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o local cadastrado" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {specificLocationOptions.map((option) => (
                               <SelectItem key={option.value} value={option.value}>
                                 {option.label}
                               </SelectItem>
