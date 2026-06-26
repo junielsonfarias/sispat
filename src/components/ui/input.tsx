@@ -7,7 +7,7 @@ export interface InputProps
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, responsive = true, ...props }, ref) => {
+  ({ className, type, responsive = true, value, ...props }, ref) => {
     return (
       <input
         type={type}
@@ -17,6 +17,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className
         )}
         ref={ref}
+        // Coage null -> '' (campos nullable do backend) para evitar o aviso do
+        // React de "value null"; preserva undefined (input não-controlado).
+        value={value === null ? '' : value}
         {...props}
       />
     )
