@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search,
@@ -51,14 +51,13 @@ import {
 } from '@/components/ui/collapsible'
 import { Patrimonio, Imovel } from '@/types'
 import { useDebounce } from '@/hooks/use-debounce'
-import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
+import { usePublicPatrimonios } from '@/hooks/queries/use-public-patrimonios'
 import { useImovel } from '@/hooks/useImovel'
 import { usePublicSearch } from '@/contexts/PublicSearchContext'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { formatRelativeDate, formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { useSync } from '@/contexts/SyncContext'
 import { toast } from '@/hooks/use-toast'
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
@@ -91,10 +90,19 @@ export default function PublicAssets() {
   const navigate = useNavigate()
   const { settings: publicSettings } = usePublicSearch()
   const { settings: customizationSettings } = useCustomization()
-  // Conjunto completo sob demanda (o PatrimonioContext não carrega mais no login).
-  const { data: patrimonios = [] } = useAllPatrimonios()
+  // Listagem PÚBLICA (sem auth) — visitante anônimo precisa ver os bens.
+  // NÃO usar useAllPatrimonios (autenticado): quebraria a consulta pública.
+  const {
+    data: patrimonios = [],
+    isFetching: isSyncing,
+    refetch,
+    dataUpdatedAt,
+  } = usePublicPatrimonios()
+  const startSync = () => {
+    refetch()
+  }
+  const lastSync = dataUpdatedAt ? new Date(dataUpdatedAt) : null
   const { imoveis } = useImovel()
-  const { isSyncing, startSync, lastSync } = useSync()
   
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -174,12 +182,6 @@ export default function PublicAssets() {
       searchTerm !== ''
     )
   }, [filtroSetor, filtroSituacao, filtroTipo, filtroLocal, assetTypeFilter, searchTerm])
-
-  // No. Sincronizar dados ao carregar a página (apenas uma vez)
-  useEffect(() => {
-    startSync()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   // Combinar bens e imóveis
   const combinedData: CombinedAsset[] = useMemo(() => {

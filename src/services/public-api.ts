@@ -26,11 +26,18 @@ class PublicApi {
       logger.debug('[PublicApi] Resposta recebida', { response })
       return response
     } catch (error) {
-      console.error('❌ [PublicApi] Erro na requisição:', error)
+      logger.error('[PublicApi] Erro na requisição', { endpoint, error })
       throw error
     }
   }
-  
+
+  async listPatrimonios(): Promise<PublicPatrimonio[]> {
+    const response = await this.request<{ patrimonios: PublicPatrimonio[] }>(
+      '/public/patrimonios',
+    )
+    return response.patrimonios ?? []
+  }
+
   async getPatrimonioById(patrimonioId: string): Promise<PublicPatrimonio> {
     // ✅ CORREÇÃO: Usar endpoint real do backend
     // Nota: Esta rota não existe no backend, pode precisar ser implementada ou usar rota autenticada
