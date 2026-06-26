@@ -219,6 +219,14 @@ export default function ImoveisCreate() {
   const onSubmit = async (data: ImovelFormValues) => {
     if (!user) return
 
+    if (!user.municipalityId) {
+      toast({
+        variant: 'destructive',
+        title: 'Município não identificado',
+        description: 'Sua conta não está associada a um município. Faça login novamente.',
+      })
+      return
+    }
     setIsLoading(true)
     try {
       // ✅ CORREÇÃO: Converter fotos de objetos { id, file_url, file_name } para array de URLs/IDs
@@ -251,7 +259,7 @@ export default function ImoveisCreate() {
           documentos: data.documentos || [],
           url_documentos: data.url_documentos && data.url_documentos.trim() !== '' ? data.url_documentos.trim() : undefined,
           documentos_pdf: data.documentos_pdf || [],
-          municipalityId: user.municipalityId || '1',
+          municipalityId: user.municipalityId,
           customFields: data.customFields || {},
         },
         user,

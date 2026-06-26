@@ -1490,7 +1490,7 @@ const BensCadastrados = () => {
                             textAlign: 'center'
                           }
                         ],
-                        municipalityId: '1'
+                        municipalityId: user?.municipalityId ?? ''
                       })}
                     >
                       <div className="font-medium text-sm mb-2">Etiqueta Padrão</div>

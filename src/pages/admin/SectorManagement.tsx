@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/table'
 import { PlusCircle, Edit, Trash2 } from 'lucide-react'
 import { useSectors } from '@/contexts/SectorContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { toast } from '@/hooks/use-toast'
 import { Sector } from '@/types'
 import { SectorForm } from '@/components/admin/SectorForm'
 import {
@@ -39,6 +41,7 @@ import {
 } from '@/components/ui/alert-dialog'
 export default function SectorManagement() {
   const { sectors, addSector, updateSector, deleteSector } = useSectors()
+  const { user } = useAuth()
   const [isDialogOpen, setDialogOpen] = useState(false)
   const [editingSector, setEditingSector] = useState<Sector | undefined>()
 
@@ -56,8 +59,15 @@ export default function SectorManagement() {
     if (editingSector) {
       updateSector(editingSector.id, data)
     } else {
-      // Sistema single-municipality: sempre usar ID '1'
-      addSector({ ...data, municipalityId: '1' })
+      if (!user?.municipalityId) {
+        toast({
+          variant: 'destructive',
+          title: 'Município não identificado',
+          description: 'Sua conta não está associada a um município. Faça login novamente.',
+        })
+        return
+      }
+      addSector({ ...data, municipalityId: user.municipalityId })
     }
     setDialogOpen(false)
   }

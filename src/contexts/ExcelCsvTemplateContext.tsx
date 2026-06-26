@@ -16,7 +16,9 @@ interface ExcelCsvTemplateContextType {
   templates: ExcelCsvTemplate[]
   getTemplateById: (id: string) => ExcelCsvTemplate | undefined
   saveTemplate: (
-    template: Omit<ExcelCsvTemplate, 'id'> | ExcelCsvTemplate,
+    template:
+      | (Omit<ExcelCsvTemplate, 'id' | 'municipalityId'> & { id?: string })
+      | ExcelCsvTemplate,
   ) => void
   deleteTemplate: (templateId: string) => void
 }
@@ -59,7 +61,11 @@ export const ExcelCsvTemplateProvider = ({
   )
 
   const saveTemplate = useCallback(
-    async (template: Omit<ExcelCsvTemplate, 'id'> | ExcelCsvTemplate) => {
+    async (
+      template:
+        | (Omit<ExcelCsvTemplate, 'id' | 'municipalityId'> & { id?: string })
+        | ExcelCsvTemplate,
+    ) => {
       if (!user) return
 
       try {

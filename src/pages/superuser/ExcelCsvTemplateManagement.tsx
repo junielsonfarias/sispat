@@ -46,13 +46,9 @@ export default function ExcelCsvTemplateManagement() {
   const handleSave = (
     data: Omit<ExcelCsvTemplate, 'id' | 'municipalityId'>,
   ) => {
-    // Sistema single-municipality: sempre usar ID '1'
-    const templateToSave = {
-      ...data,
-      id: editingTemplate?.id || '',
-      municipalityId: '1',
-    }
-    saveTemplate(templateToSave)
+    // municipalityId é derivado do usuário autenticado no backend (multi-tenant) —
+    // não enviar do cliente para não fixar o tenant.
+    saveTemplate({ ...data, id: editingTemplate?.id })
     setFormOpen(false)
   }
 

@@ -68,7 +68,7 @@ const LabelTemplateEditor = () => {
     historico_movimentacao: [],
     entityName: 'Prefeitura de São Sebastião da Boa Vista',
     notes: [],
-    municipalityId: '1',
+    municipalityId: user?.municipalityId ?? '',
     metodo_depreciacao: 'Linear' as const,
     vida_util_anos: 5,
     valor_residual: 450,
@@ -83,16 +83,13 @@ const LabelTemplateEditor = () => {
     if (templateId) {
       if (templateId === 'novo') {
         if (!user?.municipalityId) {
-          logger.debug('User municipalityId not found, using default...')
-          // Usar um ID padrão se não houver municipalityId
-          setTemplate({
-            id: generateId(),
-            name: 'Novo Modelo de Etiqueta',
-            width: 60,
-            height: 40,
-            elements: [],
-            municipalityId: '1', // ID padrão
+          toast({
+            variant: 'destructive',
+            title: 'Município não identificado',
+            description:
+              'Sua conta não está associada a um município. Faça login novamente.',
           })
+          navigate('/etiquetas/templates')
           return
         }
         logger.debug('Creating new template with municipalityId', { municipalityId: user.municipalityId })
