@@ -14,6 +14,12 @@ export default defineConfig(({ mode }) => ({
     // pacote instalado, o scanner do dev server quebraria ao tentar pré-bundlar
     // o dynamic import em src/lib/sentry.ts. Excluir evita o erro em dev.
     exclude: ['@sentry/react'],
+    // @sispat/shared é dep `file:` (CommonJS) consumida por muitas rotas lazy.
+    // Sem incluí-la aqui, o Vite a descobre tarde e RE-OTIMIZA sob demanda: as
+    // URLs de chunk em voo viram 504 "Outdated Optimize Dep" e exports como
+    // `patrimonioEditSchema` chegam `undefined` em runtime (quebra o zodResolver
+    // do BensEdit ao salvar). Incluir força um pré-bundle estável no startup.
+    include: ['@sispat/shared'],
   },
   build: {
     minify: mode === 'production' ? 'terser' : false,

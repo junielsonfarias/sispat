@@ -108,6 +108,24 @@ const BensEdit = () => {
             : '',
           fotos: fotosParaForm,
           documentos: data.documentos || (raw.documents as string[]) || [],
+          // Campos string OPCIONAIS (não-nuláveis no schema): o backend devolve
+          // null para vazios, mas z.string().optional() só aceita undefined/string.
+          // Coage null -> '' para o zodResolver não falhar ("Expected string,
+          // received null") ao salvar uma edição.
+          marca: data.marca ?? '',
+          modelo: data.modelo ?? '',
+          cor: data.cor ?? '',
+          numero_serie: data.numero_serie ?? '',
+          numero_nota_fiscal: data.numero_nota_fiscal ?? '',
+          tipoBemId: (raw.tipoBemId as string | undefined) ?? '',
+          // quantidade_unidades só faz sentido para kit (schema exige >= 2). Para
+          // bem comum o backend traz 1/null — manter apenas se for kit válido,
+          // senão undefined (passa no .optional()).
+          quantidade_unidades:
+            typeof raw.quantidade_unidades === 'number' &&
+            raw.quantidade_unidades >= 2
+              ? (raw.quantidade_unidades as number)
+              : undefined,
           // ✅ CORREÇÃO: Mapear relacionamentos para nomes
           setor_responsavel: (raw.sector as { name: string } | undefined)?.name || data.setor_responsavel || '',
           local_objeto: (raw.local as { name: string } | undefined)?.name || data.local_objeto || '',
@@ -115,6 +133,11 @@ const BensEdit = () => {
           forma_aquisicao: (raw.acquisitionForm as { nome: string } | undefined)?.nome || data.forma_aquisicao || '',
           numero_licitacao: data.numero_licitacao || '',
           ano_licitacao: data.ano_licitacao,
+          // Backend grava situacao_bem em MAIÚSCULO ('OTIMO'); o schema/Select do
+          // form usam minúsculo ('otimo'). Normaliza no load.
+          situacao_bem: data.situacao_bem
+            ? (String(data.situacao_bem).toLowerCase() as typeof data.situacao_bem)
+            : data.situacao_bem,
           tipo_posse: data.tipo_posse || 'proprio',
           origem_recurso: data.origem_recurso || undefined,
           clausulas_reversao: data.clausulas_reversao || undefined,
@@ -199,9 +222,10 @@ const BensEdit = () => {
         setor_responsavel: data.setor_responsavel,
         local_objeto: data.local_objeto,
         status: data.status,
-        // Converter situacao_bem para maiúsculas (backend espera: OTIMO, BOM, REGULAR, RUIM, PESSIMO)
-        situacao_bem: data.situacao_bem && typeof data.situacao_bem === 'string' && data.situacao_bem.trim() !== '' 
-          ? data.situacao_bem.toUpperCase() 
+        // O backend valida situacao_bem em MINÚSCULO (otimo/bom/regular/ruim/pessimo).
+        // (Antes havia um .toUpperCase() equivocado que gerava 400 "received 'OTIMO'".)
+        situacao_bem: data.situacao_bem && typeof data.situacao_bem === 'string' && data.situacao_bem.trim() !== ''
+          ? data.situacao_bem.toLowerCase()
           : (data.situacao_bem || null),
         observacoes: data.observacoes,
         // ✅ CORREÇÃO: Fotos já vêm como URLs do ImageUpload
