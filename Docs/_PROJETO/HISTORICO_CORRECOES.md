@@ -21,6 +21,14 @@
 
 ## 2026
 
+### 2026-06-26 — Polimento: dark mode (1ª onda) + setTimeout artificial
+- **Dark mode (cores hardcoded → tokens):** 4 agentes `frontend-expert` em paralelo trocaram, em **26 arquivos de UI**, `text-gray-900/800/700`→`text-foreground`, `text-gray-{600,500,400,300}`→`text-muted-foreground`, `bg-white`→`bg-card`, `bg-gray-{50,100}`→`bg-muted`/`bg-muted/50`, `border-gray-{200,300}`→`border-border`. Diff 1:1 (~297 linhas), `tsc` → 0 erros.
+  - **Guardrails (preservado de propósito):** componentes de IMPRESSÃO/PDF (`BensPrintForm`, `ImovelPrintForm`, `*PDFGenerator`, `FichaPreview*`, `InventarioPrint`, `TermoDocumento`, previews de etiqueta/ficha — papel é branco), **badges de status** (`bg-{green,red,yellow,blue,amber,emerald,orange,slate}-NNN`), cores de gráfico (`hsl(var(--chart-*))`) e variantes com **opacity** (`bg-white/95`, `dark:bg-gray-800/90`). Cada agente reportou skips.
+  - Arquivos: bens (Create/Edit/BulkCreate/Cadastrados/View), imóveis (Create/Edit/List), inventário (Edit), dashboard (StatsCards/AlertsSection/RecentPatrimonios), layout (Header/Sidebar/MobileNavigation/UnifiedDashboard), auth (Login/DemoCredentials), fichas (Editor/Novo/Gerenciador), AcquisitionFormManagement, AnaliseTemporal, PublicBemDetalhes, ReportComponentProperties.
+  - **2ª onda pendente:** telas menos centrais (resto de admin/superuser/ferramentas) e os que os agentes pularam por contexto ambíguo.
+- **setTimeout artificial:** removido o de `Exportacao.tsx` (1,5s antes de um export real). Mantidos os de `*PDFGenerator` (espera de render do html2canvas) e `export-utils` (500ms/lote espaça downloads — evita bloqueio do browser).
+- **Lição:** swap de cores para dark mode é seguro em LIGHT mode (tokens ≈ as cores antigas) e corrige o DARK — MAS exclua impressão/PDF (token resolveria para cor escura no papel), badges de status e opacity variants. Delegar a agentes paralelos por conjunto disjunto de arquivos funciona; rode UM `tsc` no fim (eles não rodam).
+
 ### 2026-06-26 — Touch/mobile bloqueante (#5)
 - **Botões hover-only** (invisíveis em telas de toque): `PublicBemDetalhes` (setas do carrossel) e `ImageUpload` (botão remover foto) usavam `opacity-0 group-hover:opacity-100` → agora `opacity-100 sm:opacity-0 sm:group-hover:opacity-100` (visível no mobile, hover-reveal no desktop). Remover ganhou `aria-label` + touch target 32px; `console.error` do onError virou guard DEV.
 - **Seleção de bem por UUID:** `CreateDesafetacaoForm` exigia digitar o UUID do patrimônio/imóvel (inutilizável). Trocado por `SearchableSelect` (busca por número/descrição, value = id), alimentado por `useAllPatrimonios`/`useImovel` dentro do form.

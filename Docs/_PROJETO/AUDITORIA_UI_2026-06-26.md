@@ -82,10 +82,12 @@ Usando o hook `useConfirm` (AlertDialog acessível, padrão do projeto):
 - **Submit sem `disabled`/spinner** → duplo-clique: AssetTransferForm, NumberingSettings, InventarioPrint, SystemCustomization.
 
 ## 🟡 Melhorias / 🟢 Polimento (volume alto, baixo risco)
-- **Responsividade:** dezenas de tabelas sem `overflow-x-auto`; grids fixos; touch targets <44px.
-- **Dark mode:** cores hardcoded (`text-gray-900`, `bg-white`, `bg-green-50`…) em ~30 arquivos.
-- **A11y:** ícone-botões sem `aria-label`; `<TableHead>` sem `scope="col"`; imagens sem `loading="lazy"`/`alt`; drag-and-drop sem teclado.
-- **Código morto/duplicado:** `GerenciarTipos.tsx` (sem rota, duplica `TipoBemManagement`), `ImovelMap.tsx` (grid 5×5 fake), handlers de delete duplicados em `BensCadastrados`.
+- **Dark mode:** ✅ **1ª onda concluída** — cores hardcoded (`text-gray-900`→`text-foreground`, `bg-white`→`bg-card`, `text-gray-{600,500,400}`→`text-muted-foreground`, `bg-gray-{50,100}`→`bg-muted`, `border-gray-{200,300}`→`border-border`) trocadas por tokens semânticos em **26 arquivos de UI** (bens, imóveis, inventário, dashboard, layout, auth, fichas, públicas). **Preservados de propósito:** componentes de impressão/PDF (`*PrintForm`, `*PDFGenerator`, `FichaPreview*`, `InventarioPrint`, `TermoDocumento`, previews de etiqueta/ficha — papel = branco), badges de status (`bg-{green,red,…}-NNN`), cores de gráfico e variantes com opacity (`bg-white/95`, `dark:bg-gray-800/90`). Restam telas menos centrais (admin/superuser/ferramentas) para uma 2ª onda.
+- **`setTimeout` artificial:** ✅ removido o de `Exportacao` (1,5s antes de export real). Os de PDF (`*PDFGenerator`) são **esperas de render necessárias** (html2canvas) e o de `export-utils` (500ms/lote) **espaça downloads** (evita bloqueio do browser) — mantidos.
+- **Responsividade:** dezenas de tabelas sem `overflow-x-auto`; grids fixos; touch targets <44px. (pendente)
+- **A11y:** ícone-botões sem `aria-label` (vários já corrigidos nos itens #6/#7); `<TableHead>` sem `scope="col"`; imagens sem `loading="lazy"`/`alt`; drag-and-drop sem teclado. (pendente)
+- **`console.error`/`console.warn` sem guard DEV** em páginas (alguns já corrigidos; varredura completa pendente).
+- **Código morto/duplicado:** `BensCadastradosSimplificado.tsx` (sem rota), `GerenciarTipos.tsx` (sem rota, duplica `TipoBemManagement`), `ImovelMap.tsx` (grid 5×5 fake). Candidatos a remoção.
 
 ---
 
