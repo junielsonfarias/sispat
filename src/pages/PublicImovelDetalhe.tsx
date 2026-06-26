@@ -129,6 +129,7 @@ export default function PublicImovelDetalhe() {
                         <img
                           src={getCloudImageUrl(fotoId)}
                           alt={`${imovel.denominacao} - Foto ${index + 1}`}
+                          loading="lazy"
                           className="rounded-lg object-cover w-full aspect-video"
                         />
                       </CarouselItem>

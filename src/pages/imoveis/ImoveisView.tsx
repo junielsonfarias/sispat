@@ -462,7 +462,8 @@ export default function ImoveisView() {
                           <div className="p-1">
                             <img
                               src={getCloudImageUrl(foto)}
-                              alt={`Foto ${index + 1}`}
+                              alt={`Foto ${index + 1} de ${imovel.denominacao}`}
+                              loading="lazy"
                               className="w-full h-64 object-cover rounded-lg"
                             />
                           </div>

@@ -584,6 +584,7 @@ function BensView() {
                               <img
                                 src={getCloudImageUrl(String(fotoId))}
                                 alt={`${patrimonio.descricao_bem} - Foto ${index + 1}`}
+                                loading="lazy"
                                 className="rounded-lg object-contain w-full h-full max-h-[600px]"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement

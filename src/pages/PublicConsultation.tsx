@@ -167,6 +167,7 @@ export default function PublicConsultation() {
                           alt={`${patrimonio.descricaoBem} - Foto ${
                             index + 1
                           }`}
+                          loading="lazy"
                           className="rounded-lg object-cover w-full aspect-video"
                         />
                       </CarouselItem>

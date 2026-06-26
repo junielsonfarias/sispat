@@ -297,6 +297,7 @@ export default function PublicBemDetalhes() {
                               <img
                                 src={getCloudImageUrl(foto)}
                                 alt={`Miniatura ${index + 1}`}
+                                loading="lazy"
                                 className="w-full h-full object-cover"
                               />
                             </button>
