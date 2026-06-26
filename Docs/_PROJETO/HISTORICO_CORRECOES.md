@@ -21,6 +21,12 @@
 
 ## 2026
 
+### 2026-06-26 — Polimento de cauda: remoção de código morto + lazy images
+- **Código morto removido** (verificado: só auto-referência, zero imports): `src/pages/bens/BensCadastradosSimplificado.tsx` (não roteado), `src/pages/admin/GerenciarTipos.tsx` (não roteado, duplicava `TipoBemManagement`), `src/components/imoveis/ImovelMap.tsx` (mapa fake grid 5×5, ignorava lat/long). `tsc` → 0 erros após remoção.
+- **`loading="lazy"`** adicionado às galerias de fotos: `BensView`, `ImoveisView`, `PublicConsultation`, `PublicBemDetalhes` (miniaturas), `PublicImovelDetalhe`. Mantidos SEM lazy: logos (above-the-fold, lazy atrasaria LCP), impressão/PDF e a imagem principal do carrossel.
+- **`overflow-x-auto`:** confirmado que NÃO era problema — o `Table` base (`ui/table.tsx`) já envolve em `<div className="overflow-auto">`, então toda tabela Shadcn já rola horizontalmente.
+- **Lição:** antes de "adicionar overflow em N tabelas", confira o primitivo — o wrapper já existia. E verifique imports (zero) antes de deletar suposto código morto.
+
 ### 2026-06-26 — Polimento: acessibilidade (scope de tabela + aria-label)
 - **`scope="col"` app-wide:** em vez de editar cada `<TableHead>`, adicionado `scope="col"` (sobrescrevível via prop) ao **componente base** `TableHead` em `src/components/ui/table.tsx` → todas as tabelas do app ganham cabeçalho de coluna acessível de uma vez.
 - **`aria-label` em ícone-botões:** 2 agentes adicionaram 16 labels em PT-BR a botões só-ícone (Edit/Trash/Check/X) em `SectorManagement`, `TipoBemManagement`, `NumberingSettings`, `LogoManagement`, `FormFieldManagement`, `ImoveisList`, `ImovelCustomFields`, `Transferencias`. Vários arquivos já estavam OK (ComissoesList, RegularizacaoList, DesfazimentoList, MunicipalityManagement) — não tocados.
