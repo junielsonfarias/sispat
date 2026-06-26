@@ -175,9 +175,9 @@ export default function NumberingSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-semibold text-blue-900 mb-2">Exemplo:</p>
-              <p className="font-mono text-2xl text-blue-700 text-center">2025XX000001</p>
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">Exemplo:</p>
+              <p className="font-mono text-2xl text-blue-700 dark:text-blue-300 text-center">2025XX000001</p>
             </div>
             <div className="text-sm space-y-2 text-muted-foreground">
               <p>• <strong>2025</strong> = Ano de aquisição</p>
@@ -195,9 +195,9 @@ export default function NumberingSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg">
-              <p className="text-xs text-green-700 mb-2 font-semibold uppercase">Número Gerado:</p>
-              <p className="font-mono text-3xl font-bold text-green-700 text-center break-all">
+            <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-2 border-green-200 dark:border-green-900 rounded-lg">
+              <p className="text-xs text-green-700 dark:text-green-300 mb-2 font-semibold uppercase">Número Gerado:</p>
+              <p className="font-mono text-3xl font-bold text-green-700 dark:text-green-300 text-center break-all">
                 {preview || 'Configure os componentes'}
               </p>
             </div>

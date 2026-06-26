@@ -154,7 +154,9 @@ export default function ImoveisView() {
   }
 
   const canEdit = user?.role === 'supervisor' || user?.role === 'admin' || user?.role === 'usuario'
-  const canDelete = user?.role === 'admin' || user?.role === 'superuser'
+  // Unificado com ImoveisList: admin/supervisor. (superuser é redirecionado a
+  // /superuser pelo ProtectedRoute, então nunca chega aqui.)
+  const canDelete = user?.role === 'admin' || user?.role === 'supervisor'
 
   if (!imovel) {
     return (
@@ -299,9 +301,9 @@ export default function ImoveisView() {
                 <DetailItem 
                   label="Situação" 
                   value={<Badge className={
-                    imovel.situacao === 'ativo' ? 'bg-green-100 text-green-800' :
-                    imovel.situacao === 'alugado' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
+                    imovel.situacao === 'ativo' ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300' :
+                    imovel.situacao === 'alugado' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300' :
+                    'bg-gray-100 dark:bg-muted text-gray-800 dark:text-muted-foreground'
                   }>{imovel.situacao || 'Não especificado'}</Badge>}
                 />
               </CardContent>

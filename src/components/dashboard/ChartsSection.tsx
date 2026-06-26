@@ -156,7 +156,7 @@ export const ChartsSection = ({ patrimonios = [], aggregated }: ChartsSectionPro
             <div className="w-full min-w-[300px] h-[280px] sm:h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData.tipoChart} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="tipo"
                     tick={{ fontSize: 10 }}
@@ -224,7 +224,7 @@ export const ChartsSection = ({ patrimonios = [], aggregated }: ChartsSectionPro
             <div className="w-full min-w-[300px] h-[280px] sm:h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData.valorChartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="mes"
                     tick={{ fontSize: 10 }}
@@ -257,7 +257,7 @@ export const ChartsSection = ({ patrimonios = [], aggregated }: ChartsSectionPro
                   layout="vertical"
                   margin={{ top: 5, right: 10, left: 80, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     type="number"
                     tick={{ fontSize: 10 }}
