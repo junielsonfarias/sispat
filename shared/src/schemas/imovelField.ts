@@ -21,6 +21,9 @@ const labelSchema = z
   .max(200, 'Rótulo deve ter no máximo 200 caracteres.');
 
 // Tipos de campo suportados pelo formulário de imóveis.
+// `currency` casa com o tipo "Moeda" do editor do frontend (CURRENCY); a coluna
+// Prisma `type` é String, então não há migration. O frontend envia em MAIÚSCULO
+// e o adaptador do ImovelFieldContext converte para estes valores minúsculos.
 export const imovelFieldTypeSchema = z.enum([
   'text',
   'textarea',
@@ -29,6 +32,7 @@ export const imovelFieldTypeSchema = z.enum([
   'boolean',
   'select',
   'multiselect',
+  'currency',
 ]);
 export type ImovelFieldType = z.infer<typeof imovelFieldTypeSchema>;
 
