@@ -64,6 +64,7 @@ import { formatDate } from '@/lib/utils'
 import { logger } from '@/lib/logger'
 import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { useImovel } from '@/contexts/ImovelContext'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import {
   createDesafetacaoSchema,
   type CreateDesafetacaoInput,
@@ -563,6 +564,26 @@ function CreateDesafetacaoForm({ comissoes, onSuccess, onClose }: CreateFormProp
   const [submitting, setSubmitting] = useState(false)
   const [bemTipo, setBemTipo] = useState<'patrimonio' | 'imovel'>('patrimonio')
 
+  // Listas para seleção buscável do bem (substitui a digitação de UUID).
+  const { data: patrimonios = [] } = useAllPatrimonios()
+  const { imoveis } = useImovel()
+  const patrimonioOptions = useMemo(
+    () =>
+      patrimonios.map((p) => ({
+        value: p.id,
+        label: `${p.numero_patrimonio} — ${p.descricao_bem}`,
+      })),
+    [patrimonios],
+  )
+  const imovelOptions = useMemo(
+    () =>
+      imoveis.map((i) => ({
+        value: i.id,
+        label: `${i.numero_patrimonio} — ${i.denominacao}`,
+      })),
+    [imoveis],
+  )
+
   const onSubmit = useCallback(async (values: CreateDesafetacaoInput) => {
     setSubmitting(true)
     try {
@@ -625,12 +646,17 @@ function CreateDesafetacaoForm({ comissoes, onSuccess, onClose }: CreateFormProp
             name="patrimonioId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>ID do Patrimônio (UUID)</FormLabel>
+                <FormLabel>Patrimônio</FormLabel>
                 <FormControl>
-                  <Input {...field} value={field.value ?? ''} placeholder="UUID do patrimônio" />
+                  <SearchableSelect
+                    options={patrimonioOptions}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    placeholder="Buscar por número ou descrição..."
+                  />
                 </FormControl>
                 <FormDescription className="text-xs">
-                  Informe o ID (UUID) do bem patrimonial a ser desafetado.
+                  Selecione o bem patrimonial a ser desafetado.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -642,12 +668,17 @@ function CreateDesafetacaoForm({ comissoes, onSuccess, onClose }: CreateFormProp
             name="imovelId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>ID do Imóvel (UUID)</FormLabel>
+                <FormLabel>Imóvel</FormLabel>
                 <FormControl>
-                  <Input {...field} value={field.value ?? ''} placeholder="UUID do imóvel" />
+                  <SearchableSelect
+                    options={imovelOptions}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    placeholder="Buscar por número ou denominação..."
+                  />
                 </FormControl>
                 <FormDescription className="text-xs">
-                  Informe o ID (UUID) do imóvel a ser desafetado.
+                  Selecione o imóvel a ser desafetado.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

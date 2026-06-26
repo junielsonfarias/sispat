@@ -564,6 +564,12 @@ const ImportarRelatorio = () => {
         {/* ── ETAPA 2: Mapeamento e revisão ──────────────────────────────── */}
         {etapa === 'mapeamento' && relatorio && (
           <>
+            {/* Aviso: a tabela de revisão é larga e foi pensada para desktop */}
+            <div className="lg:hidden rounded-md border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
+              Esta etapa de revisão tem muitas colunas editáveis e foi pensada
+              para telas maiores. Em celular os campos ficam apertados —
+              recomendamos concluir a importação em um computador.
+            </div>
             {/* Metadados do relatório */}
             <div className="flex flex-wrap gap-3">
               {relatorio.exercicio && (

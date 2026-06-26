@@ -158,7 +158,9 @@ export const ImageUpload = ({
                   alt={fileName}
                   className="w-full h-full object-cover rounded-md"
                   onError={(e) => {
-                    console.error('❌ Erro ao carregar imagem:', fileUrl)
+                    if (import.meta.env.DEV) {
+                      console.error('❌ Erro ao carregar imagem:', fileUrl)
+                    }
                     e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3ESem Imagem%3C/text%3E%3C/svg%3E'
                   }}
                 />
@@ -166,7 +168,8 @@ export const ImageUpload = ({
                   type="button"
                   variant="destructive"
                   size="icon"
-                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Remover imagem"
+                  className="absolute top-1 right-1 h-8 w-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                   onClick={() => handleRemoveImage(typeof file === 'string' ? { id: fileId, file_url: fileUrl, file_name: fileName } : file)}
                 >
                   <X className="h-4 w-4" />
