@@ -324,7 +324,7 @@ export default function ImoveisList() {
                     </div>
 
                     {/* Ações */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between pt-3 border-t border-border">
                       <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"

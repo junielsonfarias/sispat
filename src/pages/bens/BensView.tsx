@@ -658,7 +658,7 @@ function BensView() {
                               (patrimonio.situacao_bem || '').toUpperCase() === 'REGULAR' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                               (patrimonio.situacao_bem || '').toUpperCase() === 'RUIM' ? 'bg-red-100 text-red-800 border-red-200' :
                               (patrimonio.situacao_bem || '').toUpperCase() === 'PESSIMO' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                              'bg-gray-100 text-gray-800 border-gray-200'
+                              'bg-muted text-muted-foreground border-border'
                             } border font-medium`}
                           >
                             {patrimonio.situacao_bem}
@@ -972,7 +972,7 @@ function BensView() {
                 <div>
                   <h3 className="text-lg font-medium mb-3">Selecione o Modelo de Etiqueta</h3>
                   {labelTemplates.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <p className="mb-2">Nenhum modelo de etiqueta encontrado.</p>
                       <p className="text-sm">
                         Crie um novo modelo em{' '}
@@ -988,8 +988,8 @@ function BensView() {
                           key={template.id}
                           className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                             selectedLabelTemplate?.id === template.id
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
+                              ? 'border-primary bg-primary/10'
+                              : 'border-border hover:border-muted-foreground/50'
                           }`}
                           onClick={() => setSelectedLabelTemplate(template)}
                         >
@@ -1001,7 +1001,7 @@ function BensView() {
                               </Badge>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-muted-foreground">
                             {template.width}x{template.height}mm
                           </div>
                         </div>
@@ -1014,7 +1014,7 @@ function BensView() {
                 {selectedLabelTemplate && (
                   <div>
                     <h3 className="text-lg font-medium mb-3">Visualização da Etiqueta</h3>
-                    <div className="flex justify-center bg-gray-50 p-4 rounded-lg">
+                    <div className="flex justify-center bg-muted p-4 rounded-lg">
                       <LabelPreview 
                         asset={{ ...patrimonio, assetType: 'bem' }} 
                         template={selectedLabelTemplate}
@@ -1025,7 +1025,7 @@ function BensView() {
                       <h4 className="text-sm font-medium">Opções de Impressão</h4>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-xs text-gray-600">Número de Cópias</label>
+                          <label className="text-xs text-muted-foreground">Número de Cópias</label>
                           <Input
                             type="number"
                             min="1"
@@ -1041,7 +1041,7 @@ function BensView() {
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-gray-600">Orientação</label>
+                          <label className="text-xs text-muted-foreground">Orientação</label>
                           <Select
                             value={labelPrintOptions.orientation}
                             onValueChange={(value: 'portrait' | 'landscape') =>
@@ -1067,7 +1067,7 @@ function BensView() {
                             onChange={(e) =>
                               setLabelPrintOptions((prev) => ({ ...prev, showCutGuides: e.target.checked }))
                             }
-                            className="rounded border-gray-300"
+                            className="rounded border-input"
                           />
                           <label htmlFor="cut-guides" className="text-sm cursor-pointer">
                             Mostrar Guias de Corte
@@ -1081,7 +1081,7 @@ function BensView() {
                             onChange={(e) =>
                               setLabelPrintOptions((prev) => ({ ...prev, showBorders: e.target.checked }))
                             }
-                            className="rounded border-gray-300"
+                            className="rounded border-input"
                           />
                           <label htmlFor="borders" className="text-sm cursor-pointer">
                             Mostrar Bordas

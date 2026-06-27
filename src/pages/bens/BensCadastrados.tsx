@@ -73,7 +73,7 @@ const getStatusColor = (status: string) => {
     case 'manutencao':
       return 'bg-purple-100 text-purple-800 border-purple-200'
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
+      return 'bg-muted text-muted-foreground border-border'
   }
 }
 
@@ -1435,13 +1435,13 @@ const BensCadastrados = () => {
                         key={template.id}
                         className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                           selectedTemplate?.id === template.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-muted-foreground/50'
                         }`}
                         onClick={() => handleSelectTemplate(template)}
                       >
                         <div className="font-medium text-sm mb-2">{template.name}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                           {template.width}x{template.height}mm
                         </div>
                       </div>
@@ -1450,8 +1450,8 @@ const BensCadastrados = () => {
                     <div
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                         selectedTemplate?.id === 'default'
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-muted-foreground/50'
                       }`}
                       onClick={() => handleSelectTemplate({
                         id: 'default',
@@ -1497,7 +1497,7 @@ const BensCadastrados = () => {
                       })}
                     >
                       <div className="font-medium text-sm mb-2">Etiqueta Padrão</div>
-                      <div className="text-xs text-gray-500">100x60mm</div>
+                      <div className="text-xs text-muted-foreground">100x60mm</div>
                     </div>
                   </div>
                 </div>
@@ -1506,7 +1506,7 @@ const BensCadastrados = () => {
                 {selectedTemplate && (
                   <div>
                     <h3 className="text-lg font-medium mb-3">Visualização da Etiqueta</h3>
-                    <div className="flex justify-center bg-gray-50 p-4 rounded-lg">
+                    <div className="flex justify-center bg-muted p-4 rounded-lg">
                       <div ref={labelPrintRef}>
                         <LabelPreview 
                           asset={{ ...qrCodeAsset, assetType: 'bem' }} 

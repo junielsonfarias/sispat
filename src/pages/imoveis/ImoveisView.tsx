@@ -496,10 +496,10 @@ export default function ImoveisView() {
                 <DetailItem 
                   label="Situação" 
                   value={<Badge className={
-                    imovel.situacao === 'ativo' ? 'bg-green-100 text-green-800' :
-                    imovel.situacao === 'alugado' ? 'bg-blue-100 text-blue-800' :
-                    imovel.situacao === 'desativado' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
+                    imovel.situacao === 'ativo' ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300' :
+                    imovel.situacao === 'alugado' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300' :
+                    imovel.situacao === 'desativado' ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300' :
+                    'bg-gray-100 dark:bg-muted text-gray-800 dark:text-muted-foreground'
                   }>{imovel.situacao || 'Não especificado'}</Badge>}
                 />
                 <DetailItem 
@@ -595,9 +595,10 @@ export default function ImoveisView() {
             <div className="space-y-4">
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground mb-2">Pré-visualização da Etiqueta</p>
-                <div className="bg-white border-2 border-dashed p-4 rounded">
+                {/* Preview da etiqueta = papel branco: texto fixo escuro p/ não sumir no dark */}
+                <div className="bg-white text-gray-900 border-2 border-dashed p-4 rounded">
                   <p className="font-bold text-lg">{imovel.denominacao}</p>
-                  <p className="text-sm text-muted-foreground">#{imovel.numero_patrimonio}</p>
+                  <p className="text-sm text-gray-500">#{imovel.numero_patrimonio}</p>
                   <div className="mt-4 flex justify-center">
                     <QrCode className="h-24 w-24 text-gray-400" />
                   </div>

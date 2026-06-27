@@ -417,8 +417,8 @@ const ImportarRelatorio = () => {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
-            <p className="font-medium text-gray-900">Acesso negado</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="font-medium text-foreground">Acesso negado</p>
+            <p className="text-sm text-muted-foreground mt-1">
               Apenas administradores podem importar relatórios.
             </p>
           </CardContent>
@@ -438,17 +438,17 @@ const ImportarRelatorio = () => {
       >
         {/* Cabeçalho */}
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             Importar Relatório SIAFIC
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Importe bens móveis (material permanente) a partir do relatório de
             liquidação em PDF exportado pelo SIAFIC.
           </p>
         </div>
 
         {/* Indicador de etapas */}
-        <ol className="flex items-center gap-2 text-sm font-medium text-gray-500">
+        <ol className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           {(['upload', 'mapeamento', 'sucesso'] as Etapa[]).map((e, idx) => {
             const labels: Record<Etapa, string> = {
               upload: '1. Upload',
@@ -462,7 +462,7 @@ const ImportarRelatorio = () => {
             return (
               <li key={e} className="flex items-center gap-2">
                 {idx > 0 && (
-                  <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 )}
                 <span
                   className={
@@ -470,7 +470,7 @@ const ImportarRelatorio = () => {
                       ? 'text-blue-600 font-semibold'
                       : concluida
                         ? 'text-green-600'
-                        : 'text-gray-400'
+                        : 'text-muted-foreground'
                   }
                 >
                   {labels[e]}
@@ -495,7 +495,7 @@ const ImportarRelatorio = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                className="border-2 border-dashed border-input rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click()
@@ -507,8 +507,8 @@ const ImportarRelatorio = () => {
                 {arquivo ? (
                   <div className="flex flex-col items-center gap-2">
                     <FileText className="h-10 w-10 text-blue-500" />
-                    <p className="font-medium text-gray-900">{arquivo.name}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-foreground">{arquivo.name}</p>
+                    <p className="text-sm text-muted-foreground">
                       {(arquivo.size / 1024).toFixed(1)} KB
                     </p>
                     <p className="text-xs text-blue-500 hover:underline mt-1">
@@ -517,11 +517,11 @@ const ImportarRelatorio = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2">
-                    <Upload className="h-10 w-10 text-gray-400" />
-                    <p className="text-gray-600 font-medium">
+                    <Upload className="h-10 w-10 text-muted-foreground" />
+                    <p className="text-muted-foreground font-medium">
                       Arraste ou clique para selecionar
                     </p>
-                    <p className="text-sm text-gray-400">Apenas arquivos .pdf</p>
+                    <p className="text-sm text-muted-foreground">Apenas arquivos .pdf</p>
                   </div>
                 )}
               </div>
@@ -664,17 +664,17 @@ const ImportarRelatorio = () => {
                   {relatorio.ugs.map((ug) => (
                     <div
                       key={ug.nome}
-                      className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-md border bg-gray-50"
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-md border bg-muted"
                     >
                       <div>
-                        <Label className="text-xs text-gray-500 mb-1 block">
+                        <Label className="text-xs text-muted-foreground mb-1 block">
                           Unidade Gestora
                         </Label>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-foreground">
                           {ug.nome}
                         </p>
                         {ug.fontes.length > 0 && (
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             Fontes:{' '}
                             {ug.fontes.map((f) => f.descricao).join(', ')}
                           </p>
@@ -683,7 +683,7 @@ const ImportarRelatorio = () => {
                       <div>
                         <Label
                           htmlFor={`setor-${ug.nome}`}
-                          className="text-xs text-gray-500 mb-1 block"
+                          className="text-xs text-muted-foreground mb-1 block"
                         >
                           Setor de destino{' '}
                           <span className="text-red-500">*</span>
@@ -728,7 +728,7 @@ const ImportarRelatorio = () => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
                         <p>
@@ -747,7 +747,7 @@ const ImportarRelatorio = () => {
                     className="w-full table-fixed"
                     containerClassName="max-h-[65vh]"
                   >
-                    <TableHeader className="sticky top-0 z-20 [&_th]:bg-gray-100 [&_th]:shadow-[inset_0_-1px_0_rgb(229,231,235)]">
+                    <TableHeader className="sticky top-0 z-20 [&_th]:bg-muted [&_th]:shadow-[inset_0_-1px_0_rgb(229,231,235)]">
                       <TableRow>
                         <TableHead className="w-[26%]">Descrição</TableHead>
                         <TableHead className="w-[7%] text-center">Qtd</TableHead>
@@ -948,7 +948,7 @@ const ImportarRelatorio = () => {
                                     <button
                                       type="button"
                                       aria-label={`Informações adicionais do item ${idx + 1}`}
-                                      className="inline-flex items-center justify-center rounded-full h-6 w-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                                      className="inline-flex items-center justify-center rounded-full h-6 w-6 text-muted-foreground hover:text-muted-foreground hover:bg-muted"
                                     >
                                       <Info className="h-3.5 w-3.5" />
                                     </button>
@@ -1014,8 +1014,8 @@ const ImportarRelatorio = () => {
                 </div>
 
                 {/* Rodapé com totais */}
-                <div className="border-t bg-gray-50 px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                <div className="border-t bg-muted px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
+                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     <span>
                       <strong>{relatorio.itens.length}</strong> linhas
                     </span>
@@ -1024,7 +1024,7 @@ const ImportarRelatorio = () => {
                     </span>
                     <span>
                       Valor total:{' '}
-                      <strong className="text-gray-900">
+                      <strong className="text-foreground">
                         {formatCurrency(totalValor)}
                       </strong>
                     </span>
