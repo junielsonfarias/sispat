@@ -21,6 +21,22 @@
 
 ## 2026
 
+### 2026-06-27 — Cobertura de testes do frontend (vitest 62 → 130)
+Ampliação da suíte vitest focada nos pontos de maior risco (sem novas deps; commits
+sempre escopados aos arquivos de teste). +68 testes:
+- `extractApiError` + `usePermissions` (17): parsing de erro (rede/timeout/4xx/5xx) e
+  RBAC (bypass superuser, gating por papel).
+- 6 contexts migrados p/ React Query (21): Sector/Imóvel/Inventário/Local/Tipos/Formas
+  — carga, mutations invalidando, update otimista (Inventário), conexão fora → vazio.
+- Adaptadores de payload (16): imovelField + manutenção (`fromApi`/`toCreateBody`/
+  `toUpdateBody`) — boundary onde nasciam os "contract bugs" (name↔key, enums PT↔label,
+  type case/whitelist, options JSON, campos `.strict()`). Funções exportadas p/ teste.
+- Hooks de query (5): `useAllPatrimonios` (normalização de histórico, enabled),
+  `usePatrimonioStats`.
+- RBAC ponta a ponta (9): `ProtectedRoute` (todos os redirects) + `PermissionContext`
+  (fallback p/ defaultRoles, sobreposição do backend, resiliência a erro).
+- **Estado:** frontend vitest 130 verdes (20 arquivos) + backend 577 Jest; tsc 0.
+
 ### 2026-06-27 — Aplicação do checklist "antes-de-codar" (reuso > código novo)
 - **Contexto:** nova skill `antes-de-codar` (.claude/skills/) usada como lente de
   auditoria. 3 auditores read-only varreram o projeto procurando reinvenção de
