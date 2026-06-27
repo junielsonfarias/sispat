@@ -157,17 +157,20 @@ class WebSocketManager {
       // Event handlers
       this.setupSocketEventHandlers(authenticatedSocket)
 
+      // Limpeza na desconexão. IMPORTANTE: 'disconnect' é evento do SOCKET, não do
+      // servidor (io). Registrar em this.io.on('disconnect') nunca dispara → o Map
+      // connectedClients crescia sem limites (vazamento). Por isso fica aqui.
+      socket.on('disconnect', () => {
+        logDebug(`🔌 Cliente desconectado: ${socket.id}`)
+        this.connectedClients.delete(socket.id)
+      })
+
       // Notificar conexão
       this.broadcastToAdmins('user:connected', {
         userId: user.id,
         email: user.email,
         timestamp: new Date().toISOString()
       })
-    })
-
-    this.io.on('disconnect', (socket) => {
-      logDebug(`🔌 Cliente desconectado: ${socket.id}`)
-      this.connectedClients.delete(socket.id)
     })
   }
 
