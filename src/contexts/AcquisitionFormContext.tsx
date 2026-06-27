@@ -1,17 +1,18 @@
 import {
   createContext,
-  useState,
-  useEffect,
   useContext,
   ReactNode,
   useCallback,
 } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
 import { api } from '@/services/api-adapter'
 import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { useAuth } from './AuthContext'
 import { useActivityLog } from './ActivityLogContext'
-import { MUNICIPALITY_ID } from '@/config/constants'
+
+// Fonte única em React Query (cache compartilhado, sem fetch manual paralelo).
+const FORMAS_KEY = ['formas-aquisicao'] as const
 
 interface AcquisitionForm {
   id: string
@@ -42,175 +43,117 @@ const AcquisitionFormContext = createContext<
   AcquisitionFormContextType | undefined
 >(undefined)
 
+// Normaliza datas (string ISO → Date) do payload do backend.
+const withDates = (form: AcquisitionForm): AcquisitionForm => ({
+  ...form,
+  createdAt: new Date(form.createdAt),
+  updatedAt: new Date(form.updatedAt),
+})
+
 export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) => {
-  const [acquisitionForms, setAcquisitionForms] = useState<AcquisitionForm[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const { user } = useAuth()
   const { logActivity } = useActivityLog()
+  const queryClient = useQueryClient()
 
-  const municipalityId = MUNICIPALITY_ID // ✅ CORREÇÃO: Sistema single-municipality
+  const { data, isLoading } = useQuery({
+    queryKey: FORMAS_KEY,
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      try {
+        const response = await api.get<
+          AcquisitionForm[] | { formasAquisicao: AcquisitionForm[] }
+        >('/formas-aquisicao')
+        const formsData = Array.isArray(response) ? response : response.formasAquisicao || []
+        return formsData.map(withDates)
+      } catch (error) {
+        if (isConnectionDownError(error)) return []
+        throw error
+      }
+    },
+  })
 
+  const acquisitionForms = data ?? []
   const activeAcquisitionForms = acquisitionForms.filter((form) => form.ativo)
 
-  const fetchAcquisitionForms = useCallback(async () => {
-    if (!municipalityId) {
-      toast({
-        title: 'Erro',
-        description: 'ID do município não disponível para buscar formas de aquisição.',
-        variant: 'destructive',
-      })
-      return
-    }
-    setIsLoading(true)
-    try {
-      const response = await api.get<{ formasAquisicao: AcquisitionForm[]; pagination: unknown }>('/formas-aquisicao')
-      // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade formasAquisicao
-      const formsData = Array.isArray(response) ? response : (response.formasAquisicao || [])
-      const forms = formsData.map((form) => ({
-        ...form,
-        createdAt: new Date(form.createdAt),
-        updatedAt: new Date(form.updatedAt),
-      }))
-      setAcquisitionForms(forms)
-    } catch (error) {
-      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
-      if (isConnectionDownError(error)) {
-        setAcquisitionForms([])
-      } else {
-        toast({
-          title: 'Erro ao carregar formas de aquisição',
-          description: 'Não foi possível carregar as formas de aquisição.',
-          variant: 'destructive',
-        })
-      }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [municipalityId])
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: FORMAS_KEY }),
+    [queryClient],
+  )
 
-  useEffect(() => {
-    // ✅ CORREÇÃO: Só buscar formas de aquisição se o usuário estiver autenticado
-    if (user && municipalityId) {
-      fetchAcquisitionForms()
-    }
-  }, [user, municipalityId, fetchAcquisitionForms])
+  const fetchAcquisitionForms = useCallback(async () => {
+    await invalidate()
+  }, [invalidate])
 
   const addAcquisitionForm = useCallback(
     async (formData: Omit<AcquisitionForm, 'id' | 'createdAt' | 'updatedAt'>) => {
-      if (!municipalityId) {
+      try {
+        const response = await api.post<AcquisitionForm>('/formas-aquisicao', formData)
+        await invalidate()
+        logActivity('ACQUISITION_FORM_CREATE', { details: `Adicionou a forma: ${formData.nome}` })
+        toast({ title: 'Sucesso', description: 'Forma de aquisição adicionada com sucesso.' })
+        return withDates(response)
+      } catch (error) {
         toast({
           title: 'Erro',
-          description: 'ID do município não disponível para adicionar forma de aquisição.',
+          description: extractApiError(error).message || 'Não foi possível adicionar a forma de aquisição.',
           variant: 'destructive',
         })
         return undefined
       }
-      try {
-        const response = await api.post<AcquisitionForm>('/formas-aquisicao', formData)
-        const newForm = {
-          ...response,
-          createdAt: new Date(response.createdAt),
-          updatedAt: new Date(response.updatedAt),
-        }
-        // Não adicionar novamente pois o mock API já adiciona à lista
-        // setAcquisitionForms((prev) => [...prev, newForm])
-        logActivity('ACQUISITION_FORM_CREATE', { details: `Adicionou a forma: ${formData.nome}` })
-        toast({ title: 'Sucesso', description: 'Forma de aquisição adicionada com sucesso.' })
-        return newForm
-      } catch (error) {
-        const errorMessage =
-          extractApiError(error).message || 'Não foi possível adicionar a forma de aquisição.'
-        toast({ title: 'Erro', description: errorMessage, variant: 'destructive' })
-        return undefined
-      }
     },
-    [municipalityId, logActivity]
+    [invalidate, logActivity],
   )
 
   const updateAcquisitionForm = useCallback(
     async (
       id: string,
-      formData: Partial<Omit<AcquisitionForm, 'id' | 'createdAt' | 'updatedAt'>>
+      formData: Partial<Omit<AcquisitionForm, 'id' | 'createdAt' | 'updatedAt'>>,
     ) => {
-      if (!municipalityId) {
+      try {
+        const response = await api.put<AcquisitionForm>(`/formas-aquisicao/${id}`, formData)
+        await invalidate()
+        logActivity('ACQUISITION_FORM_UPDATE', { details: `Atualizou a forma: ${formData.nome || id}` })
+        toast({ title: 'Sucesso', description: 'Forma de aquisição atualizada com sucesso.' })
+        return withDates(response)
+      } catch (error) {
         toast({
           title: 'Erro',
-          description: 'ID do município não disponível para atualizar forma de aquisição.',
+          description: extractApiError(error).message || 'Não foi possível atualizar a forma de aquisição.',
           variant: 'destructive',
         })
         return undefined
       }
-      try {
-        const response = await api.put<AcquisitionForm>(`/formas-aquisicao/${id}`, formData)
-        const updatedForm = {
-          ...response,
-          createdAt: new Date(response.createdAt),
-          updatedAt: new Date(response.updatedAt),
-        }
-        setAcquisitionForms((prev) =>
-          prev.map((form) => (form.id === id ? updatedForm : form))
-        )
-        logActivity('ACQUISITION_FORM_UPDATE', { details: `Atualizou a forma: ${formData.nome || id}` })
-        toast({ title: 'Sucesso', description: 'Forma de aquisição atualizada com sucesso.' })
-        return updatedForm
-      } catch (error) {
-        const errorMessage =
-          extractApiError(error).message || 'Não foi possível atualizar a forma de aquisição.'
-        toast({ title: 'Erro', description: errorMessage, variant: 'destructive' })
-        return undefined
-      }
     },
-    [municipalityId, logActivity]
+    [invalidate, logActivity],
   )
 
   const deleteAcquisitionForm = useCallback(
     async (id: string) => {
-      if (!municipalityId) {
-        toast({
-          title: 'Erro',
-          description: 'ID do município não disponível para excluir forma de aquisição.',
-          variant: 'destructive',
-        })
-        return false
-      }
       try {
         await api.delete(`/formas-aquisicao/${id}`)
-        setAcquisitionForms((prev) => prev.filter((form) => form.id !== id))
+        await invalidate()
         logActivity('ACQUISITION_FORM_DELETE', { details: `Excluiu a forma com ID: ${id}` })
         toast({ title: 'Sucesso', description: 'Forma de aquisição excluída com sucesso.' })
         return true
       } catch (error) {
-        const errorMessage =
-          extractApiError(error).message || 'Não foi possível excluir a forma de aquisição.'
-        toast({ title: 'Erro', description: errorMessage, variant: 'destructive' })
-        return false
-      }
-    },
-    [municipalityId, logActivity]
-  )
-
-  const toggleAcquisitionFormStatus = useCallback(
-    async (id: string, currentStatus: boolean) => {
-      if (!municipalityId) {
         toast({
           title: 'Erro',
-          description: 'ID do município não disponível para alterar status da forma de aquisição.',
+          description: extractApiError(error).message || 'Não foi possível excluir a forma de aquisição.',
           variant: 'destructive',
         })
         return false
       }
+    },
+    [invalidate, logActivity],
+  )
+
+  const toggleAcquisitionFormStatus = useCallback(
+    async (id: string, currentStatus: boolean) => {
       try {
-        const response = await api.patch<AcquisitionForm>(
-          `/formas-aquisicao/${id}/toggle-status`
-        )
-        const updatedForm = {
-          ...response,
-          createdAt: new Date(response.createdAt),
-          updatedAt: new Date(response.updatedAt),
-        }
-        setAcquisitionForms((prev) =>
-          prev.map((form) => (form.id === id ? updatedForm : form))
-        )
+        await api.patch<AcquisitionForm>(`/formas-aquisicao/${id}/toggle-status`)
+        await invalidate()
         logActivity('ACQUISITION_FORM_UPDATE', {
           details: `${currentStatus ? 'Desativou' : 'Ativou'} a forma com ID: ${id}`,
         })
@@ -220,14 +163,16 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
         })
         return true
       } catch (error) {
-        const errorMessage =
-          extractApiError(error).message ||
-          'Não foi possível alterar o status da forma de aquisição.'
-        toast({ title: 'Erro', description: errorMessage, variant: 'destructive' })
+        toast({
+          title: 'Erro',
+          description:
+            extractApiError(error).message || 'Não foi possível alterar o status da forma de aquisição.',
+          variant: 'destructive',
+        })
         return false
       }
     },
-    [municipalityId, logActivity]
+    [invalidate, logActivity],
   )
 
   return (
@@ -257,4 +202,3 @@ export const useAcquisitionForms = () => {
   }
   return context
 }
-

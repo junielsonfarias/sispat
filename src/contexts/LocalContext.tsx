@@ -1,17 +1,19 @@
 import {
   createContext,
-  useState,
   ReactNode,
   useContext,
   useCallback,
-  useEffect,
 } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Local } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
 import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { logger } from '@/lib/logger'
+
+// Fonte única em React Query (cache compartilhado, sem fetch manual paralelo).
+const LOCAIS_KEY = ['locais'] as const
 
 interface LocalContextType {
   locais: Local[]
@@ -27,125 +29,100 @@ interface LocalContextType {
 const LocalContext = createContext<LocalContextType | null>(null)
 
 export const LocalProvider = ({ children }: { children: ReactNode }) => {
-  const [locais, setLocais] = useState<Local[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  const fetchLocais = useCallback(async () => {
-    if (!user) return
-    setIsLoading(true)
-    try {
-      const response = await api.get<{ locais: Local[]; pagination: unknown }>('/locais')
-      // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade locais
-      const locaisData = Array.isArray(response) ? response : (response.locais || [])
-      setLocais(locaisData)
-    } catch (error) {
-      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
-      if (isConnectionDownError(error)) {
-        logger.debug('Backend não disponível - usando lista vazia de locais')
-        setLocais([])
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Falha ao carregar locais.',
-        })
+  const { data, isLoading } = useQuery({
+    queryKey: LOCAIS_KEY,
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      try {
+        const response = await api.get<Local[] | { locais: Local[] }>('/locais')
+        return Array.isArray(response) ? response : response.locais || []
+      } catch (error) {
+        if (isConnectionDownError(error)) {
+          logger.debug('Backend não disponível - usando lista vazia de locais')
+          return []
+        }
+        throw error
       }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [user])
+    },
+  })
 
-  useEffect(() => {
-    // Sem polling: locais mudam raramente e a lista é refeita após cada mutação
-    // via os métodos do contexto. Evita 1 request/min por sessão em toda a app.
-    if (user) {
-      fetchLocais()
-    }
-  }, [user, fetchLocais])
+  const locais = data ?? []
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: LOCAIS_KEY }),
+    [queryClient],
+  )
+
+  const setLocais = useCallback(
+    (next: Local[]) => queryClient.setQueryData(LOCAIS_KEY, next),
+    [queryClient],
+  )
 
   const getLocaisBySectorId = useCallback(
-    (sectorId: string) => {
-      return locais.filter((l) => l.sectorId === sectorId)
-    },
+    (sectorId: string) => locais.filter((l) => l.sectorId === sectorId),
     [locais],
   )
 
   const addLocal = useCallback(
     async (name: string, sectorId: string) => {
-      if (!user) return
-      const newLocal = await api.post<Local>('/locais', {
-        name,
-        sectorId,
-        municipalityId: 'municipality-1', // Hardcoded para um único município
-      })
-      // ✅ Adicionar ao estado local para refletir imediatamente
-      setLocais((prev) => [...prev, newLocal])
+      // municipalityId vem do token no backend — não enviar do cliente.
+      await api.post<Local>('/locais', { name, sectorId })
+      await invalidate()
       toast({ description: 'Local criado com sucesso.' })
     },
-    [user],
+    [invalidate],
   )
 
   const updateLocal = useCallback(
     async (id: string, name: string, sectorId: string) => {
       try {
-        const updatedLocal = await api.put<Local>(`/locais/${id}`, {
-          name,
-          sectorId,
-        })
-        setLocais((prev) => prev.map((l) => (l.id === id ? updatedLocal : l)))
+        await api.put<Local>(`/locais/${id}`, { name, sectorId })
+        await invalidate()
         toast({ description: 'Local atualizado com sucesso.' })
       } catch (error) {
-        // Se o local não existe mais (404), remover do estado local
         if (extractApiError(error).status === 404) {
-          setLocais((prev) => prev.filter((l) => l.id !== id))
+          await invalidate()
           toast({
             variant: 'destructive',
             title: 'Local não encontrado',
             description: 'Este local foi excluído. A lista será atualizada.',
           })
-          // Atualizar a lista completa
-          await fetchLocais()
         } else {
-          toast({
-            variant: 'destructive',
-            title: 'Erro',
-            description: 'Falha ao atualizar local.',
-          })
+          toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao atualizar local.' })
           throw error
         }
       }
     },
-    [fetchLocais],
+    [invalidate],
   )
 
-  const deleteLocal = useCallback(async (id: string) => {
-    try {
-      await api.delete(`/locais/${id}`)
-      setLocais((prev) => prev.filter((l) => l.id !== id))
-      toast({ description: 'Local excluído com sucesso.' })
-    } catch (error) {
-      // Se o local já foi deletado (404), apenas remover do estado local
-      if (extractApiError(error).status === 404) {
-        setLocais((prev) => prev.filter((l) => l.id !== id))
-        toast({ 
-          description: 'Local já foi excluído anteriormente.',
-          variant: 'default'
-        })
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Falha ao excluir local.',
-        })
-        throw error
+  const deleteLocal = useCallback(
+    async (id: string) => {
+      try {
+        await api.delete(`/locais/${id}`)
+        await invalidate()
+        toast({ description: 'Local excluído com sucesso.' })
+      } catch (error) {
+        if (extractApiError(error).status === 404) {
+          await invalidate()
+          toast({ description: 'Local já foi excluído anteriormente.' })
+        } else {
+          toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao excluir local.' })
+          throw error
+        }
       }
-    }
-  }, [])
+    },
+    [invalidate],
+  )
 
   const refreshLocais = useCallback(async () => {
-    await fetchLocais()
-  }, [fetchLocais])
+    await invalidate()
+  }, [invalidate])
 
   return (
     <LocalContext.Provider

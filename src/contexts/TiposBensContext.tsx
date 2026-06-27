@@ -1,8 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useCallback, ReactNode } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/services/api-adapter'
 import { isConnectionDownError } from '@/lib/api-error'
 import { useAuth } from '@/hooks/useAuth'
 import { TipoBem } from '@/types'
+
+// Fonte única em React Query (cache compartilhado, sem fetch manual paralelo).
+const TIPOS_BENS_KEY = ['tipos-bens'] as const
 
 interface TiposBensContextType {
   tiposBens: TipoBem[]
@@ -20,76 +24,71 @@ interface TiposBensContextType {
 const TiposBensContext = createContext<TiposBensContextType | undefined>(undefined)
 
 export const TiposBensProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [tiposBens, setTiposBens] = useState<TipoBem[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  const fetchTiposBens = async () => {
-    if (!user) return
-
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await api.get<{ tiposBens: TipoBem[]; pagination: unknown }>('/tipos-bens')
-      // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade tiposBens
-      const tiposData = Array.isArray(response) ? response : (response.tiposBens || [])
-      setTiposBens(tiposData)
-    } catch (err) {
-      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de erro
-      if (isConnectionDownError(err)) {
-        setTiposBens([])
-        setError(null)
-      } else {
-        setError('Erro ao carregar tipos de bens')
+  const { data, isLoading, error: queryError } = useQuery({
+    queryKey: TIPOS_BENS_KEY,
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      try {
+        const response = await api.get<TipoBem[] | { tiposBens: TipoBem[] }>('/tipos-bens')
+        return Array.isArray(response) ? response : response.tiposBens || []
+      } catch (err) {
+        if (isConnectionDownError(err)) return []
+        throw err
       }
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    },
+  })
 
-  const createTipoBem = async (data: Omit<TipoBem, 'id' | 'codigo' | 'municipalityId' | 'createdAt' | 'updatedAt'>) => {
-    if (!user) throw new Error('Usuário não encontrado')
+  const tiposBens = data ?? []
+  const error = queryError ? 'Erro ao carregar tipos de bens' : null
 
-    const newTipoBem = await api.post<TipoBem>('/tipos-bens', data)
-    
-    // Adicionar o novo tipo à lista local
-    setTiposBens(prev => [...prev, newTipoBem])
-    
-    // Recarregar a lista completa do servidor para garantir sincronização
-    await fetchTiposBens()
-    
-    return newTipoBem
-  }
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: TIPOS_BENS_KEY }),
+    [queryClient],
+  )
 
-  const updateTipoBem = async (id: string, data: Partial<TipoBem>) => {
-    if (!user) throw new Error('Usuário não encontrado')
+  const fetchTiposBens = useCallback(async () => {
+    await invalidate()
+  }, [invalidate])
 
-    const updatedTipoBem = await api.put<TipoBem>(`/tipos-bens/${id}`, data)
-    setTiposBens(prev => prev.map(tipo => tipo.id === id ? updatedTipoBem : tipo))
-    return updatedTipoBem
-  }
+  const createTipoBem = useCallback(
+    async (data: Omit<TipoBem, 'id' | 'codigo' | 'municipalityId' | 'createdAt' | 'updatedAt'>) => {
+      const newTipoBem = await api.post<TipoBem>('/tipos-bens', data)
+      await invalidate()
+      return newTipoBem
+    },
+    [invalidate],
+  )
 
-  const deleteTipoBem = async (id: string) => {
-    if (!user) throw new Error('Usuário não encontrado')
+  const updateTipoBem = useCallback(
+    async (id: string, data: Partial<TipoBem>) => {
+      const updated = await api.put<TipoBem>(`/tipos-bens/${id}`, data)
+      await invalidate()
+      return updated
+    },
+    [invalidate],
+  )
 
-    await api.delete(`/tipos-bens/${id}`)
-    setTiposBens(prev => prev.filter(tipo => tipo.id !== id))
-  }
+  const deleteTipoBem = useCallback(
+    async (id: string) => {
+      await api.delete(`/tipos-bens/${id}`)
+      await invalidate()
+    },
+    [invalidate],
+  )
 
-  const toggleTipoBemStatus = async (id: string) => {
-    if (!user) throw new Error('Usuário não encontrado')
-
-    const updatedTipoBem = await api.patch<TipoBem>(`/tipos-bens/${id}/toggle`)
-    setTiposBens(prev => prev.map(tipo => tipo.id === id ? updatedTipoBem : tipo))
-    return updatedTipoBem
-  }
-
-  useEffect(() => {
-    if (user) {
-      fetchTiposBens()
-    }
-  }, [user])
+  const toggleTipoBemStatus = useCallback(
+    async (id: string) => {
+      const updated = await api.patch<TipoBem>(`/tipos-bens/${id}/toggle`)
+      await invalidate()
+      return updated
+    },
+    [invalidate],
+  )
 
   return (
     <TiposBensContext.Provider
