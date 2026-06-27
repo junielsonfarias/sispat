@@ -57,15 +57,10 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
   }, [user])
 
   useEffect(() => {
+    // Sem polling: locais mudam raramente e a lista é refeita após cada mutação
+    // via os métodos do contexto. Evita 1 request/min por sessão em toda a app.
     if (user) {
       fetchLocais()
-      
-      // ✅ OTIMIZAÇÃO: Polling reduzido para 60 segundos (dados raramente mudam)
-      const intervalId = setInterval(() => {
-        fetchLocais()
-      }, 60000) // 60 segundos
-      
-      return () => clearInterval(intervalId)
     }
   }, [user, fetchLocais])
 

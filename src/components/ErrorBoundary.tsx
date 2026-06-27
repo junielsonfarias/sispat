@@ -2,6 +2,7 @@ import { Component, ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { logger } from '@/lib/logger'
 
 interface Props {
   children: ReactNode
@@ -29,12 +30,9 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.errorId = `err_${Date.now().toString(36)}`
-    // Em dev: log completo. Em prod: apenas mensagem (terser também strip console.log).
-    if (import.meta.env.MODE !== 'production') {
-      console.error('ErrorBoundary caught:', error, errorInfo)
-    } else {
-      console.error(`ErrorBoundary [${this.errorId}]:`, error.message)
-    }
+    logger.error(`ErrorBoundary [${this.errorId}] caught:`, error, {
+      componentStack: errorInfo.componentStack,
+    })
     this.setState({
       error,
       errorInfo,

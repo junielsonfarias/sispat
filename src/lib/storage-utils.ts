@@ -1,6 +1,7 @@
 /**
  * Utilitários seguros para localStorage e sessionStorage
  */
+import { logger } from '@/lib/logger'
 
 export interface StorageOptions {
   encrypt?: boolean
@@ -33,7 +34,7 @@ export class SecureStorage {
 
   static setItem(key: string, value: unknown, options: StorageOptions = {}): void {
     if (!this.isAvailable()) {
-      console.warn('localStorage is not available')
+      logger.warn('localStorage is not available')
       return
     }
 
@@ -48,7 +49,7 @@ export class SecureStorage {
       const serializedValue = JSON.stringify(value)
       localStorage.setItem(key, serializedValue)
     } catch (error) {
-      console.error(`Failed to store item with key: ${key}`, error)
+      logger.error(`Failed to store item with key: ${key}`, error)
       throw new Error(`Storage failed for key: ${key}`)
     }
   }
@@ -67,7 +68,7 @@ export class SecureStorage {
       }
       return JSON.parse(item) as T
     } catch (error) {
-      console.error(`Failed to retrieve item with key: ${key}`, error)
+      logger.error(`Failed to retrieve item with key: ${key}`, error)
       return null
     }
   }
@@ -82,7 +83,7 @@ export class SecureStorage {
     try {
       localStorage.removeItem(key)
     } catch (error) {
-      console.error(`Failed to remove item with key: ${key}`, error)
+      logger.error(`Failed to remove item with key: ${key}`, error)
     }
   }
 
@@ -94,7 +95,7 @@ export class SecureStorage {
     try {
       localStorage.clear()
     } catch (error) {
-      console.error('Failed to clear localStorage', error)
+      logger.error('Failed to clear localStorage', error)
     }
   }
 }
@@ -119,7 +120,7 @@ export class SecureSessionStorage {
 
   static setItem(key: string, value: unknown): void {
     if (!this.isAvailable()) {
-      console.warn('sessionStorage is not available')
+      logger.warn('sessionStorage is not available')
       return
     }
 
@@ -129,7 +130,7 @@ export class SecureSessionStorage {
       const serializedValue = JSON.stringify(value)
       sessionStorage.setItem(key, serializedValue)
     } catch (error) {
-      console.error(`Failed to store session item with key: ${key}`, error)
+      logger.error(`Failed to store session item with key: ${key}`, error)
     }
   }
 
@@ -147,7 +148,7 @@ export class SecureSessionStorage {
       }
       return JSON.parse(item) as T
     } catch (error) {
-      console.error(`Failed to retrieve session item with key: ${key}`, error)
+      logger.error(`Failed to retrieve session item with key: ${key}`, error)
       return null
     }
   }
@@ -162,7 +163,7 @@ export class SecureSessionStorage {
     try {
       sessionStorage.removeItem(key)
     } catch (error) {
-      console.error(`Failed to remove session item with key: ${key}`, error)
+      logger.error(`Failed to remove session item with key: ${key}`, error)
     }
   }
 }
@@ -179,7 +180,7 @@ export class SafeWindow {
     try {
       return window.location
     } catch (error) {
-      console.error('Failed to access window.location', error)
+      logger.error('Failed to access window.location', error)
       return null
     }
   }
@@ -192,7 +193,7 @@ export class SafeWindow {
     try {
       window.location.reload()
     } catch (error) {
-      console.error('Failed to reload window', error)
+      logger.error('Failed to reload window', error)
     }
   }
 
@@ -204,7 +205,7 @@ export class SafeWindow {
     try {
       window.location.href = url
     } catch (error) {
-      console.error('Failed to navigate', error)
+      logger.error('Failed to navigate', error)
     }
   }
 
@@ -216,7 +217,7 @@ export class SafeWindow {
     try {
       return window.navigator
     } catch (error) {
-      console.error('Failed to access window.navigator', error)
+      logger.error('Failed to access window.navigator', error)
       return null
     }
   }

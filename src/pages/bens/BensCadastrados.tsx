@@ -40,6 +40,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useConfirm, ConfirmOptions } from '@/hooks/useConfirm'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 import {
   Select,
   SelectContent,
@@ -499,9 +500,7 @@ const BensCadastrados = () => {
       setTotalPages(pagination.pages)
     } catch (error) {
       if (seq !== fetchSeqRef.current) return
-      if (import.meta.env.DEV) {
-        console.error('❌ [DEV] Erro ao buscar patrimônios:', error)
-      }
+      logger.error('❌ Erro ao buscar patrimônios:', error)
 
       toast({
         variant: 'destructive',

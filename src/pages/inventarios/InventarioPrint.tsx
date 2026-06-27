@@ -25,6 +25,7 @@ import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { generateInventoryPDF, type InventoryPDFData } from '@/lib/pdf-utils'
 import { generatePatrimonioQRCode } from '@/lib/qr-code-utils'
 import { toast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 export default function InventarioPrint() {
   const { id } = useParams<{ id: string }>()
@@ -121,7 +122,7 @@ export default function InventarioPrint() {
         description: 'PDF gerado e baixado com sucesso.',
       })
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error)
+      logger.error('Erro ao gerar PDF:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',

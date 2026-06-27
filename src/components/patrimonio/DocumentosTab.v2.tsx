@@ -17,6 +17,7 @@ import {
 import { FileText, Download, Trash2, Upload, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { logger } from '@/lib/logger'
 
 interface DocumentosTabProps {
   patrimonioId: string
@@ -68,7 +69,7 @@ export default function DocumentosTab({ patrimonioId }: DocumentosTabProps) {
       })
 
     } catch (err) {
-      console.error('Erro ao fazer upload:', err)
+      logger.error('Erro ao fazer upload:', err)
       alert('Erro ao fazer upload do arquivo')
     } finally {
       setIsUploading(false)

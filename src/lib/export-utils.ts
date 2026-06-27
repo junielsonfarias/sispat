@@ -2,6 +2,7 @@ import { Patrimonio } from '@/types'
 import { format } from 'date-fns'
 import { patrimonioFields } from './report-utils'
 import { toast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 type ExportableColumn = {
   key: keyof Patrimonio
@@ -150,7 +151,7 @@ export const exportToPdf = async (
       description: 'PDF gerado e baixado com sucesso.',
     })
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error)
+    logger.error('Erro ao gerar PDF:', error)
     toast({
       variant: 'destructive',
       title: 'Erro',

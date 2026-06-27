@@ -28,9 +28,7 @@ const compressImage = async (imageUrl: string, maxWidth: number = 800, quality: 
       
       // Se for blob URL sem extensão, retornar placeholder
       if (isBlobUrl && !hasValidExtension) {
-        if (import.meta.env.DEV) {
-          console.warn('⚠️ URL blob inválida detectada no PDF (sem extensão):', imageUrl)
-        }
+        logger.warn('⚠️ URL blob inválida detectada no PDF (sem extensão):', { imageUrl })
         // Retornar um data URL de placeholder transparente
         resolve('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk0YTNhOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbSBpbmRpc3BvbsOtdmVsPC90ZXh0Pjwvc3ZnPg==')
         return
@@ -39,9 +37,7 @@ const compressImage = async (imageUrl: string, maxWidth: number = 800, quality: 
     
     // Verificar se é uma URL válida (não vazia e não placeholder inválido)
     if (!imageUrl || imageUrl.includes('invalid') || imageUrl.includes('error')) {
-      if (import.meta.env.DEV) {
-        console.warn('⚠️ URL de imagem inválida no PDF:', imageUrl)
-      }
+      logger.warn('⚠️ URL de imagem inválida no PDF:', { imageUrl })
       // Retornar placeholder transparente
       resolve('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk0YTNhOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbSBpbmRpc3BvbsOtdmVsPC90ZXh0Pjwvc3ZnPg==')
       return
@@ -104,9 +100,7 @@ const compressImage = async (imageUrl: string, maxWidth: number = 800, quality: 
     
     img.onerror = () => {
       // ✅ CORREÇÃO: Se falhar ao carregar, retornar placeholder em vez da URL original
-      if (import.meta.env.DEV) {
-        console.warn('⚠️ Erro ao carregar imagem no PDF:', imageUrl)
-      }
+      logger.warn('⚠️ Erro ao carregar imagem no PDF:', { imageUrl })
       // Retornar placeholder transparente
       resolve('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk0YTNhOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbSBpbmRpc3BvbsOtdmVsPC90ZXh0Pjwvc3ZnPg==')
     }
@@ -144,12 +138,7 @@ export const generatePatrimonioPDF = async ({
         config: template.config
       })
     } catch (error) {
-      console.error('❌ [PDF Generator] Erro ao carregar template:', error)
-      console.error('❌ [PDF Generator] Detalhes do erro:', {
-        templateId,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        response: error instanceof Error ? 'N/A' : 'N/A'
-      })
+      logger.error('❌ [PDF Generator] Erro ao carregar template:', error, { templateId })
     }
   } else {
     logger.debug('[PDF Generator] Nenhum templateId fornecido, usando configurações padrão')
@@ -190,11 +179,11 @@ export const generatePatrimonioPDF = async ({
         compressedLogo = await compressImage(municipalityLogo, 200, 0.9, true)
       }
     } catch (error) {
-      console.warn('Erro ao processar logo:', error)
+      logger.warn('Erro ao processar logo:', { error })
       compressedLogo = municipalityLogo // Usar original se falhar
     }
   }
-  
+
   // Comprimir primeira foto para seção de identificação
   // ✅ CORREÇÃO: Usar getCloudImageUrl para converter ID/objeto em URL válida
   // ✅ CORREÇÃO: Normalizar fotos antes de processar
@@ -217,7 +206,7 @@ export const generatePatrimonioPDF = async ({
       // Preservar transparência para fotos também (caso tenham fundo transparente)
       compressedPhoto = await compressImage(fotoUrl, 400, 0.75, true)
     } catch (error) {
-      console.warn('Erro ao comprimir foto:', error)
+      logger.warn('Erro ao comprimir foto:', { error })
       // Tentar usar getCloudImageUrl como fallback
       compressedPhoto = getCloudImageUrl(normalizedFotos[0])
     }
@@ -236,7 +225,7 @@ export const generatePatrimonioPDF = async ({
         compressedPhotos.push(compressed)
       }
     } catch (error) {
-      console.warn('Erro ao comprimir fotos:', error)
+      logger.warn('Erro ao comprimir fotos:', { error })
     }
   }
 
@@ -250,9 +239,9 @@ export const generatePatrimonioPDF = async ({
     qrCodeUrl = await generateQRCode(publicUrl, { size: 250, errorCorrectionLevel: 'H' })
     logger.debug('QR Code gerado com sucesso para PDF (250px)')
   } catch (error) {
-    console.warn('⚠️ Erro ao gerar QR Code para PDF:', error)
+    logger.warn('⚠️ Erro ao gerar QR Code para PDF:', { error })
   }
-  
+
   // Criar elemento temporário para renderizar o conteúdo
   const container = document.createElement('div')
   container.style.position = 'absolute'
@@ -572,7 +561,7 @@ export const generatePatrimonioPDF = async ({
 
     return true
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error)
+    logger.error('Erro ao gerar PDF:', error)
     return false
   } finally {
     // Remover elemento temporário

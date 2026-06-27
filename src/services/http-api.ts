@@ -119,9 +119,7 @@ axiosInstance.interceptors.response.use(
 
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        if (import.meta.env.DEV) {
-          console.error('[HTTP] Refresh token falhou - redirecionando para login');
-        }
+        logger.error('[HTTP] Refresh token falhou - redirecionando para login');
         localStorage.removeItem('sispat_token');
         localStorage.removeItem('sispat_refresh_token');
         localStorage.removeItem('sispat_user');
@@ -149,10 +147,8 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    // ✅ Logs de erro apenas em desenvolvimento
-    if (import.meta.env.DEV) {
-      console.error(`[HTTP] ❌ ${error.response?.status || 'ERROR'} ${error.config?.url}`, error.response?.data);
-    }
+    // ✅ Logs de erro
+    logger.error(`[HTTP] ❌ ${error.response?.status || 'ERROR'} ${error.config?.url}`, error, { data: error.response?.data });
     
     // ✅ OTIMIZAÇÃO: Tratamento de erro mais robusto
     const originalError = error as any
@@ -181,15 +177,13 @@ axiosInstance.interceptors.response.use(
       }
     }
     
-    // Log apenas em desenvolvimento
-    if (import.meta.env.DEV) {
-      console.error('❌ [HTTP API Error]:', {
-        code: originalError.code,
-        status: originalError.response?.status,
-        message: originalError.message,
-        url: originalError.config?.url,
-      })
-    }
+    // Log de erro
+    logger.error('❌ [HTTP API Error]:', originalError, {
+      code: originalError.code,
+      status: originalError.response?.status,
+      message: originalError.message,
+      url: originalError.config?.url,
+    })
     
     return Promise.reject(originalError);
   }

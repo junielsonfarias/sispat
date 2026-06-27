@@ -1,4 +1,5 @@
 import { Patrimonio, Sector } from '@/types'
+import { logger } from '@/lib/logger'
 
 export const generatePatrimonialNumber = (
   sectorId: string,
@@ -12,7 +13,7 @@ export const generatePatrimonialNumber = (
 
   // Verificar se allPatrimonios é um array válido
   if (!Array.isArray(allPatrimonios)) {
-    console.warn('allPatrimonios não é um array, usando array vazio')
+    logger.warn('allPatrimonios não é um array, usando array vazio')
     allPatrimonios = []
   }
 

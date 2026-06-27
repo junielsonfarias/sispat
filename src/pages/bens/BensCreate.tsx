@@ -143,7 +143,7 @@ const BensCreate = () => {
         )
         setGeneratedNumber(nextNumber)
       } catch (error) {
-        console.error('Erro ao gerar número de patrimônio:', error)
+        logger.error('Erro ao gerar número de patrimônio:', error)
         logger.debug('Setor selecionado', { selectedSector, codigo: selectedSector.codigo })
         setGeneratedNumber(null)
         toast({
@@ -294,7 +294,7 @@ const BensCreate = () => {
           onSubmit={form.handleSubmit(
             onSubmit,
             (errors) => {
-              console.error('❌ Erros de validação:', errors)
+              logger.error('❌ Erros de validação:', undefined, { errors: JSON.stringify(errors) })
               // Mostrar toast com os erros encontrados
               const errorFields = Object.keys(errors)
               if (errorFields.length > 0) {

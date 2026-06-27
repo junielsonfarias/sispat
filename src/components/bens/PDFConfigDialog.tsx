@@ -78,7 +78,7 @@ export const PDFConfigDialog = ({
         setSelectedTemplateId(bensTemplates[0].id)
       }
     } catch (error) {
-      console.error('Erro ao carregar templates:', error)
+      logger.error('Erro ao carregar templates:', error)
       setTemplates([])
     } finally {
       setLoadingTemplates(false)

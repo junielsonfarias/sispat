@@ -141,7 +141,7 @@ export const BaixaBemModal = ({
         onSuccess()
       }
     } catch (error: any) {
-      console.error('❌ Erro ao registrar baixa:', error)
+      logger.error('❌ Erro ao registrar baixa:', error)
       
       const errorMessage = error.response?.data?.error || 'Erro ao registrar baixa do bem'
       

@@ -13,6 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 interface Patrimonio {
   id: string
@@ -95,7 +96,7 @@ export const RecentPatrimonios = ({ patrimonios = [], imoveis = [] }: RecentPatr
   const getViewLink = (item: Patrimonio) => {
     // ✅ Validação: garantir que o ID existe
     if (!item.id) {
-      console.warn('Item sem ID:', item)
+      logger.warn('Item sem ID:', { item })
       return '#'
     }
     

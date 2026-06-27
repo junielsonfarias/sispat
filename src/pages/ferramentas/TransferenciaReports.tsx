@@ -32,6 +32,7 @@ import { ExportConfigDialog } from '@/components/bens/ExportConfigDialog'
 import { Patrimonio } from '@/types'
 import { exportInBatches, getColumnsWithLabels, exportToPdf, exportToXlsx, exportToCsv } from '@/lib/export-utils'
 import { toast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 const statusConfig: Record<
   TransferenciaStatus,
@@ -100,7 +101,7 @@ export default function TransferenciaReports() {
             toast({ description: 'Formato de exportação não suportado.' })
         }
       } catch (error) {
-        console.error('Erro na exportação:', error)
+        logger.error('Erro na exportação:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',

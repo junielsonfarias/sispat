@@ -28,6 +28,7 @@ import { Label } from '@/components/ui/label'
 import { useSectors } from '@/contexts/SectorContext'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { api } from '@/services/http-api'
+import { logger } from '@/lib/logger'
 import {
   ImoveisBasicoFields,
   ImoveisDataAquisicaoField,
@@ -192,7 +193,7 @@ export default function ImoveisCreate() {
         description: `Número: ${response.numero}`,
       })
     } catch (error) {
-      console.error('Erro ao gerar número:', error)
+      logger.error('Erro ao gerar número:', error)
       toast({
         title: 'Erro',
         description: 'Erro ao gerar número do imóvel',

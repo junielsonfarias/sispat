@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
+import { logger } from '@/lib/logger'
 
 export interface PDFOptions {
   title: string
@@ -128,7 +129,7 @@ export const generatePDFFromElement = async (
     // Salvar o PDF
     pdf.save(filename)
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error)
+    logger.error('Erro ao gerar PDF:', error)
     throw new Error('Falha ao gerar PDF')
   }
 }
@@ -257,7 +258,7 @@ export const generateInventoryPDF = async (
     // Salvar o PDF
     pdf.save(filename)
   } catch (error) {
-    console.error('Erro ao gerar PDF do inventário:', error)
+    logger.error('Erro ao gerar PDF do inventário:', error)
     throw new Error('Falha ao gerar PDF do inventário')
   }
 }
@@ -373,7 +374,7 @@ export const generateReportPDF = async (
     // Salvar o PDF
     pdf.save(filename)
   } catch (error) {
-    console.error('Erro ao gerar PDF do relatório:', error)
+    logger.error('Erro ao gerar PDF do relatório:', error)
     throw new Error('Falha ao gerar PDF do relatório')
   }
 }

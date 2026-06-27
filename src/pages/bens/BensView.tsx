@@ -196,9 +196,7 @@ function BensView() {
       setPatrimonio(data)
       logger.debug('BensView - Estado patrimonio atualizado')
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Erro ao carregar patrimônio:', error)
-      }
+      logger.error('Erro ao carregar patrimônio:', error)
       setLoadError(true)
       toast({
         variant: 'destructive',
@@ -262,14 +260,8 @@ function BensView() {
         description: 'A nota foi salva com sucesso.',
       })
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('❌ [ERROR] Erro ao salvar nota:', error)
-        console.error('❌ [ERROR] Detalhes do erro:', {
-          message: error instanceof Error ? error.message : 'Erro desconhecido',
-          response: error instanceof Error && 'response' in error ? (error as Record<string, unknown>)['response'] : 'N/A'
-        })
-      }
-      
+      logger.error('❌ [ERROR] Erro ao salvar nota:', error)
+
       toast({
         variant: 'destructive',
         title: 'Erro ao salvar nota',
@@ -289,9 +281,7 @@ function BensView() {
       toast({ title: 'Sucesso', description: 'Patrimônio excluído com sucesso.' })
       navigate('/bens-cadastrados')
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Erro ao excluir patrimônio:', error)
-      }
+      logger.error('Erro ao excluir patrimônio:', error)
       const msg =
         (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
         'Não foi possível excluir o patrimônio. Tente novamente.'
@@ -342,9 +332,7 @@ function BensView() {
         throw new Error('Falha ao gerar PDF')
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Erro ao gerar PDF:', error)
-      }
+      logger.error('Erro ao gerar PDF:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -373,9 +361,7 @@ function BensView() {
         municipalityLogo: logoUrl || undefined,
       })
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Erro ao gerar PDF:', error)
-      }
+      logger.error('Erro ao gerar PDF:', error)
       // Fallback para impressão tradicional se PDF falhar
       setTimeout(() => {
         const printElement = document.getElementById('printable-content')
@@ -589,7 +575,7 @@ function BensView() {
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement
                                   const originalSrc = target.src
-                                  console.error('❌ Erro ao carregar foto:', {
+                                  logger.error('❌ Erro ao carregar foto:', undefined, {
                                     fotoId,
                                     url: originalSrc,
                                     patrimonioId: patrimonio.id

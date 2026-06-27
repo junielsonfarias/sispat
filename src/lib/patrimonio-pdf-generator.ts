@@ -3,6 +3,7 @@
 import { Patrimonio } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
+import { logger } from '@/lib/logger'
 
 interface PatrimonioPDFOptions {
   patrimonio: Patrimonio
@@ -126,7 +127,7 @@ export const generatePatrimonioPDF = async ({
       // Logo simples
       doc.addImage(logoDataUrl, 'PNG', margin + 2, yPosition + 2, 16, 16)
     } catch (error) {
-      console.warn('Erro ao carregar logo:', error)
+      logger.warn('Erro ao carregar logo:', { error })
     }
   }
 
@@ -193,7 +194,7 @@ export const generatePatrimonioPDF = async ({
       doc.addImage(photoDataUrl, 'JPEG', photoX + 1, photoY + 1, photoWidth - 2, photoHeight - 2)
       hasPhoto = true
     } catch (error) {
-      console.warn('Erro ao carregar foto:', error)
+      logger.warn('Erro ao carregar foto:', { error })
     }
   }
 

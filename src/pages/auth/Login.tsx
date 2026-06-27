@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/card'
 import { Container } from '@/components/ui/responsive-container'
 import { DemoCredentials } from '@/components/auth/DemoCredentials'
+import { logger } from '@/lib/logger'
 
 type LoginFormValues = LoginInput
 
@@ -99,7 +100,7 @@ export default function Login() {
             navigate(destination, { replace: true })
           } catch (err) {
             // Ignorar erros de navegação se componente foi desmontado
-            console.warn('Navigation error (component unmounted):', err)
+            logger.warn('Navigation error (component unmounted):', { error: String(err) })
           }
         }
       }, 50)
@@ -133,7 +134,7 @@ export default function Login() {
           form.resetField('password')
         } catch (err) {
           // Ignorar erros se formulário foi desmontado
-          console.warn('Form reset error (component unmounted):', err)
+          logger.warn('Form reset error (component unmounted):', { error: String(err) })
         }
       }
     } finally {

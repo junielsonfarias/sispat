@@ -25,6 +25,7 @@ import { useCustomization } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { getCloudImageUrl, formatDate, formatCurrency } from '@/lib/utils'
 import { publicApi } from '@/services/public-api'
+import { logger } from '@/lib/logger'
 
 const formatSituacao = (situacao: string) => {
   const labels: Record<string, string> = {
@@ -96,7 +97,7 @@ export default function PublicBemDetalhes() {
         
         setPatrimonio(patrimonioMapeado)
       } catch (error) {
-        console.error('Erro ao buscar patrimônio:', error)
+        logger.error('Erro ao buscar patrimônio:', error)
         setPatrimonio(null)
       } finally {
         setIsLoading(false)

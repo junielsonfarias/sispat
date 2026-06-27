@@ -40,7 +40,7 @@ export const useResilientApi = <T = any>(options: ResilientApiOptions) => {
       
       return response
     } catch (error) {
-      console.error(`❌ Erro ao buscar ${endpoint}:`, error)
+      logger.error(`❌ Erro ao buscar ${endpoint}:`, error)
       setError(error as Error)
       
       // Se falhou e temos dados locais, usar eles

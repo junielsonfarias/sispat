@@ -4,6 +4,7 @@ import { useCustomization } from '@/contexts/CustomizationContext'
 import { cn } from '@/lib/utils'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { generatePatrimonioQRCode } from '@/lib/qr-code-utils'
+import { logger } from '@/lib/logger'
 
 type Asset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
 
@@ -37,7 +38,7 @@ export const LabelPreview = forwardRef<HTMLDivElement, LabelPreviewProps>(
         .catch((err) => {
           if (!cancelled) {
             setQrCodeUrl('')
-            console.error('Falha ao gerar QR code local', err)
+            logger.error('Falha ao gerar QR code local', err)
           }
         })
       return () => {

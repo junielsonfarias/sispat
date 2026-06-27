@@ -44,9 +44,7 @@ export const uploadFile = async (
     logger.debug('[V3] Resposta', { data: response.data })
 
     if (!response.data || !response.data.file_url) {
-      if (import.meta.env.DEV) {
-        console.error('❌ Backend retornou dados inválidos:', response.data)
-      }
+      logger.error('❌ Backend retornou dados inválidos:', undefined, { data: response.data })
       throw new Error('Backend não retornou file_url')
     }
 
@@ -55,9 +53,7 @@ export const uploadFile = async (
     // Retornar os metadados do arquivo
     return response.data
   } catch (error: any) {
-    if (import.meta.env.DEV) {
-      console.error('❌ [V3] Erro no upload:', error.response?.status, error.message)
-    }
+    logger.error('❌ [V3] Erro no upload:', error, { status: error.response?.status })
     throw new Error('Falha ao fazer upload do arquivo')
   }
 }
@@ -97,9 +93,7 @@ export const uploadMultipleFiles = async (
 
     return filesMetadata
   } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error('❌ [V3] Erro no upload múltiplo:', error)
-    }
+    logger.error('❌ [V3] Erro no upload múltiplo:', error)
     throw new Error('Falha ao fazer upload dos arquivos')
   }
 }
@@ -130,9 +124,7 @@ export const deleteFile = async (fileId: string, fileUrl: string) => {
     filename = filename.split('/').pop() || filename
     
     if (!filename || filename.trim() === '') {
-      if (import.meta.env.DEV) {
-        console.warn('⚠️ [V3] Nome do arquivo inválido:', fileUrl)
-      }
+      logger.warn('⚠️ [V3] Nome do arquivo inválido:', { fileUrl })
       return
     }
 
@@ -157,10 +149,8 @@ export const deleteFile = async (fileId: string, fileUrl: string) => {
       return
     }
     
-    if (import.meta.env.DEV) {
-      console.error('❌ [V3] Erro ao deletar:', error?.response?.status, error?.message)
-      console.warn('⚠️ [V3] Continuando...')
-    }
+    logger.error('❌ [V3] Erro ao deletar:', error, { status: error?.response?.status })
+    logger.warn('⚠️ [V3] Continuando...')
     // Não lançar erro para não quebrar o fluxo
   }
 }

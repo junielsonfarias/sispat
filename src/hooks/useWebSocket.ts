@@ -167,7 +167,7 @@ export const useWebSocket = (): WebSocketHook => {
       })
 
       socket.on('connect_error', (error) => {
-        console.error('❌ Erro de conexão WebSocket:', error)
+        logger.error('❌ Erro de conexão WebSocket:', error)
         setState(prev => ({
           ...prev,
           isConnected: false,
@@ -177,7 +177,7 @@ export const useWebSocket = (): WebSocketHook => {
       })
 
       socket.on('error', (error) => {
-        console.error('❌ Erro WebSocket:', error)
+        logger.error('❌ Erro WebSocket:', error)
         setState(prev => ({
           ...prev,
           error: error.message,
@@ -271,7 +271,7 @@ export const useWebSocket = (): WebSocketHook => {
       })
 
     } catch (error) {
-      console.error('❌ Erro ao conectar WebSocket:', error)
+      logger.error('❌ Erro ao conectar WebSocket:', error)
       setState(prev => ({
         ...prev,
         isConnected: false,

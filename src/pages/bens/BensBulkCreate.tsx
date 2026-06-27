@@ -31,6 +31,7 @@ import { CurrencyInput } from '@/components/ui/currency-input'
 import { generatePatrimonialNumber } from '@/lib/asset-utils'
 import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { Patrimonio } from '@/types'
+import { logger } from '@/lib/logger'
 
 const bulkPatrimonioSchema = z.object({
   setor_responsavel: z.string().min(1, 'Setor é obrigatório'),
@@ -207,7 +208,7 @@ const BensBulkCreate = () => {
             onSubmit={form.handleSubmit(
               onSubmit,
               (errors) => {
-                console.error('❌ Erros de validação:', errors)
+                logger.error('❌ Erros de validação:', undefined, { errors: JSON.stringify(errors) })
                 const errorFields = Object.keys(errors)
                 if (errorFields.length > 0) {
                   const firstError = errors[errorFields[0] as keyof typeof errors]

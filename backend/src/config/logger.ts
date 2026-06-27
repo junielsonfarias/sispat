@@ -51,10 +51,13 @@ const errorFileRotateTransport = new DailyRotateFile({
   format: customFormat,
 })
 
-// Transport para rotação diária de todos os logs
+// Transport para rotação diária de todos os logs.
+// `level: 'info'` explícito: nunca persistir `debug` em arquivo (poderia conter
+// contexto sensível) mesmo se o LOG_LEVEL global for elevado para debug.
 const combinedFileRotateTransport = new DailyRotateFile({
   filename: path.join(logDir, 'combined-%DATE%.log'),
   datePattern: 'YYYY-MM-DD',
+  level: 'info',
   maxSize: '20m',
   maxFiles: '30d',
   format: customFormat,

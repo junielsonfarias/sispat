@@ -22,6 +22,7 @@ import { Patrimonio } from '@/types'
 import { Printer, Download, FileImage } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useCustomization } from '@/contexts/CustomizationContext'
+import { logger } from '@/lib/logger'
 import html2canvas from 'html2canvas'
 // jsPDF (~2MB) carregado dinamicamente no handler (await import) p/ não pesar o bundle inicial.
 
@@ -291,9 +292,7 @@ export function LabelPrintDialog({
                 const qrUrl = await generatePatrimonioQRCode(asset.numero_patrimonio, 'bem')
                 qrElement.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;" />`
               } catch (error) {
-                if (import.meta.env.DEV) {
-                  console.error('Erro ao gerar QR code:', error)
-                }
+                logger.error('Erro ao gerar QR code:', error)
               }
             }
           }
@@ -389,9 +388,7 @@ export function LabelPrintDialog({
         description: 'PDF exportado com sucesso!',
       })
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Erro ao exportar PDF:', error)
-      }
+      logger.error('Erro ao exportar PDF:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -445,9 +442,7 @@ export function LabelPrintDialog({
         }
       }, 'image/png')
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Erro ao exportar imagem:', error)
-      }
+      logger.error('Erro ao exportar imagem:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',

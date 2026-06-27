@@ -50,7 +50,7 @@ export function formatDate(
     
     return formatDateFns(dateObj, formatStr, { locale: ptBR })
   } catch (error) {
-    console.error('Erro ao formatar data:', error)
+    logger.error('Erro ao formatar data:', error)
     return 'Data inválida'
   }
 }
@@ -69,7 +69,7 @@ export function formatRelativeDate(date: Date | string | number) {
       locale: ptBR,
     })
   } catch (error) {
-    console.error('Erro ao formatar data relativa:', error)
+    logger.error('Erro ao formatar data relativa:', error)
     return 'Data inválida'
   }
 }
@@ -144,9 +144,7 @@ export function getCloudImageUrl(fileId: string | object | undefined): string {
     
     // Se for blob URL sem extensão, retornar placeholder
     if (isBlobUrl && !hasValidExtension) {
-      if (import.meta.env.DEV) {
-        console.warn('⚠️ URL blob inválida detectada (sem extensão):', cleanPath)
-      }
+      logger.warn('⚠️ URL blob inválida detectada (sem extensão):', { cleanPath })
       return process.env.NODE_ENV === 'production'
         ? LOCAL_IMAGES.PLACEHOLDER_IMAGE
         : 'https://img.usecurling.com/p/400/300?q=invalid%20blob%20url'
@@ -157,9 +155,7 @@ export function getCloudImageUrl(fileId: string | object | undefined): string {
     // O backend agora salva como "image-{timestamp}-{random}.jpg" em vez de "blob-..."
     // Então URLs blob devem ser tratadas com cuidado
     if (isBlobUrl) {
-      if (import.meta.env.DEV) {
-        console.warn('⚠️ URL blob detectada (pode não existir no servidor):', cleanPath)
-      }
+      logger.warn('⚠️ URL blob detectada (pode não existir no servidor):', { cleanPath })
       // Tentar carregar, mas se falhar, o onError do img tag vai mostrar placeholder
     }
     

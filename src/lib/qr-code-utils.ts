@@ -1,4 +1,5 @@
 import QRCode from 'qrcode'
+import { logger } from '@/lib/logger'
 
 /**
  * Utilitário para geração de códigos QR local
@@ -43,7 +44,7 @@ export const generateQRCode = async (
     
     return qrDataUrl
   } catch (error) {
-    console.error('Erro ao gerar QR code:', error)
+    logger.error('Erro ao gerar QR code:', error)
     throw new Error('Falha ao gerar código QR')
   }
 }
@@ -71,7 +72,7 @@ export const generateQRCodeSVG = async (
     
     return qrSvg
   } catch (error) {
-    console.error('Erro ao gerar QR code SVG:', error)
+    logger.error('Erro ao gerar QR code SVG:', error)
     throw new Error('Falha ao gerar código QR SVG')
   }
 }

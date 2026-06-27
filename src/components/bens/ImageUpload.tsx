@@ -77,7 +77,7 @@ export const ImageUpload = ({
           logger.debug('ImageUpload - Files após adicionar (objetos completos)', { updatedFiles })
           onChange(updatedFiles)
         } catch (error) {
-          console.error('❌ ImageUpload - Erro no upload:', error)
+          logger.error('❌ ImageUpload - Erro no upload:', error)
           toast({
             variant: 'destructive',
             title: 'Falha no Upload',
@@ -158,9 +158,7 @@ export const ImageUpload = ({
                   alt={fileName}
                   className="w-full h-full object-cover rounded-md"
                   onError={(e) => {
-                    if (import.meta.env.DEV) {
-                      console.error('❌ Erro ao carregar imagem:', fileUrl)
-                    }
+                    logger.error('❌ Erro ao carregar imagem:', undefined, { fileUrl })
                     e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3ESem Imagem%3C/text%3E%3C/svg%3E'
                   }}
                 />

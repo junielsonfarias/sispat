@@ -42,6 +42,7 @@ import { Imovel, TransferenciaType } from '@/types'
 import { useImovel } from '@/hooks/useImovel'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 import {
   Carousel,
   CarouselContent,
@@ -144,7 +145,7 @@ export default function ImoveisView() {
         throw new Error('Falha ao gerar PDF')
       }
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error)
+      logger.error('Erro ao gerar PDF:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',

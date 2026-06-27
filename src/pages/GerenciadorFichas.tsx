@@ -55,7 +55,7 @@ export default function GerenciadorFichas() {
       setTemplates(Array.isArray(response) ? response : [])
       logger.debug('[GerenciadorFichas] Templates definidos', { count: Array.isArray(response) ? response.length : 0 })
     } catch (error) {
-      console.error('Erro ao carregar templates:', error)
+      logger.error('Erro ao carregar templates:', error)
 
       // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
       if (isApiError(error) && (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.response?.status === 404)) {
@@ -113,7 +113,7 @@ export default function GerenciadorFichas() {
       await api.patch(`/ficha-templates/${id}/set-default`)
       loadTemplates() // Recarregar para atualizar os estados
     } catch (error) {
-      console.error('Erro ao definir template padrão:', error)
+      logger.error('Erro ao definir template padrão:', error)
 
       // ✅ CORREÇÃO: Se for erro de conexão, atualizar apenas localmente
       if (isApiError(error) && (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.response?.status === 404)) {
@@ -137,7 +137,7 @@ export default function GerenciadorFichas() {
       await api.post('/ficha-templates', duplicateData)
       loadTemplates()
     } catch (error) {
-      console.error('Erro ao duplicar template:', error)
+      logger.error('Erro ao duplicar template:', error)
 
       // ✅ CORREÇÃO: Se for erro de conexão, adicionar apenas localmente
       if (isApiError(error) && (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.response?.status === 404)) {

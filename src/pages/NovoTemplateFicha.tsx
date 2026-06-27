@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Archive, Building, ArrowLeft, Save } from 'lucide-react'
 import { api } from '@/services/http-api'
+import { logger } from '@/lib/logger'
 
 interface TemplateConfig {
   header: {
@@ -101,7 +102,7 @@ export default function NovoTemplateFicha() {
       // Redirecionar e forçar recarregamento
       navigate('/gerenciador-fichas', { state: { reload: true } })
     } catch (error) {
-      console.error('Erro ao criar template:', error)
+      logger.error('Erro ao criar template:', error)
     } finally {
       setLoading(false)
     }

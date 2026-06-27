@@ -75,7 +75,7 @@ export const captureError = (error: Error, context?: Record<string, unknown>): v
   if (sentryClient) {
     sentryClient.captureException(error, context ? { extra: context } : undefined)
   } else {
-    console.error('❌ Error captured:', error, context)
+    logger.error('❌ Error captured:', error, context as Record<string, unknown>)
   }
 }
 

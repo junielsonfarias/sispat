@@ -25,6 +25,7 @@ import {
 import { publicApi } from '@/services/public-api'
 import { getCloudImageUrl, formatDate, formatCurrency } from '@/lib/utils'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
+import { logger } from '@/lib/logger'
 
 const DetailItem = ({
   label,
@@ -75,7 +76,7 @@ export default function PublicConsultation() {
         const data = await publicApi.getPatrimonioById(id)
         setPatrimonio(data)
       } catch (error) {
-        console.error('Erro ao buscar patrimônio:', error)
+        logger.error('Erro ao buscar patrimônio:', error)
         setPatrimonio(null)
       } finally {
         setIsLoading(false)

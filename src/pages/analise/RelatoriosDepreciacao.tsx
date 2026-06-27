@@ -35,6 +35,7 @@ import { ExportConfigDialog } from '@/components/bens/ExportConfigDialog'
 import { Patrimonio } from '@/types'
 import { exportInBatches, getColumnsWithLabels, exportToPdf, exportToXlsx, exportToCsv } from '@/lib/export-utils'
 import { toast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 const RelatoriosDepreciacao = () => {
   const { data: patrimonios = [] } = useAllPatrimonios()
@@ -138,7 +139,7 @@ const RelatoriosDepreciacao = () => {
             toast({ description: 'Formato de exportação não suportado.' })
         }
       } catch (error) {
-        if (import.meta.env.DEV) console.error('Erro na exportação:', error)
+        logger.error('Erro na exportação:', error)
         toast({
           variant: 'destructive',
           title: 'Erro',

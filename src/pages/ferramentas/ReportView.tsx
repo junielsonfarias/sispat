@@ -298,7 +298,7 @@ const ReportView = () => {
     try {
       const printableElement = document.getElementById('printable-area')
       if (!printableElement) {
-        console.error('Elemento para impressão não encontrado')
+        logger.error('Elemento para impressão não encontrado')
         toast({
           variant: 'destructive',
           title: 'Erro',
@@ -385,7 +385,7 @@ const ReportView = () => {
       logger.debug('PDF gerado com sucesso', { filename })
 
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error)
+      logger.error('Erro ao gerar PDF:', error)
       // Fallback: tentar novamente sem as configurações problemáticas
       try {
         const printableElement = document.getElementById('printable-area')
@@ -433,7 +433,7 @@ const ReportView = () => {
         logger.debug('PDF gerado com fallback', { filename })
         
       } catch (fallbackError) {
-        console.error('Erro no fallback:', fallbackError)
+        logger.error('Erro no fallback:', fallbackError)
         toast({
           variant: 'destructive',
           title: 'Erro',

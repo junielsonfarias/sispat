@@ -66,15 +66,11 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
   }, [user])
 
   useEffect(() => {
+    // Sem polling: setores mudam raramente e a lista é refeita após cada mutação
+    // (add/update/delete) via os métodos do contexto. Um setInterval por sessão
+    // gerava 1 request/min em toda a app sem necessidade.
     if (user) {
       fetchSectors()
-      
-      // ✅ OTIMIZAÇÃO: Polling reduzido para 60 segundos (dados raramente mudam)
-      const intervalId = setInterval(() => {
-        fetchSectors()
-      }, 60000) // 60 segundos
-      
-      return () => clearInterval(intervalId)
     }
   }, [user, fetchSectors])
 

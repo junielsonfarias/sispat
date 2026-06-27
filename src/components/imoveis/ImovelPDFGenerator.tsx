@@ -97,7 +97,7 @@ export const generateImovelPDF = async ({
         processedPhotos.push(compressed)
       }
     } catch (error) {
-      console.warn('❌ [PDF Imóvel] Erro ao processar fotos:', error)
+      logger.warn('❌ [PDF Imóvel] Erro ao processar fotos:', { error })
       // Fallback: usar URLs convertidas sem compressão
       imovel.fotos.slice(0, 6).forEach(photo => {
         processedPhotos.push(getCloudImageUrl(photo))
@@ -117,7 +117,7 @@ export const generateImovelPDF = async ({
         processedLogo = await compressImage(municipalityLogo, 200, 0.9, true)
       }
     } catch (error) {
-      console.warn('Erro ao processar logo:', error)
+      logger.warn('Erro ao processar logo:', { error })
       processedLogo = municipalityLogo
     }
   }
@@ -130,7 +130,7 @@ export const generateImovelPDF = async ({
     qrCodeUrl = await generateQRCode(publicUrl, { size: 250, errorCorrectionLevel: 'H' })
     logger.debug('QR Code gerado com sucesso para PDF de imóvel (250px)')
   } catch (error) {
-    console.warn('⚠️ Erro ao gerar QR Code para PDF de imóvel:', error)
+    logger.warn('⚠️ Erro ao gerar QR Code para PDF de imóvel:', { error })
   }
   
   // Criar elemento temporário para renderizar o conteúdo
@@ -409,7 +409,7 @@ export const generateImovelPDF = async ({
 
     return true
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error)
+    logger.error('Erro ao gerar PDF:', error)
     return false
   } finally {
     // Remover elemento temporário

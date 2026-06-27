@@ -75,7 +75,7 @@ export const BensNotesDialog = ({
       setNewNote('')
       toast({ description: 'Nota adicionada com sucesso.' })
     } catch (error) {
-      console.error('❌ [ERROR] BensNotesDialog - Erro ao salvar nota:', error)
+      logger.error('❌ [ERROR] BensNotesDialog - Erro ao salvar nota:', error)
       toast({ 
         variant: 'destructive',
         title: 'Erro',

@@ -59,6 +59,7 @@ import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { formatRelativeDate, formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
 
@@ -325,7 +326,7 @@ export default function PublicAssets() {
         description: 'Arquivo Excel gerado e baixado com sucesso.',
       })
     } catch (error) {
-      console.error('Erro ao exportar Excel:', error)
+      logger.error('Erro ao exportar Excel:', error)
       toast({
         variant: 'destructive',
         title: 'Erro na exportação',
@@ -382,7 +383,7 @@ export default function PublicAssets() {
         description: 'Arquivo CSV gerado e baixado com sucesso.',
       })
     } catch (error) {
-      console.error('Erro ao exportar CSV:', error)
+      logger.error('Erro ao exportar CSV:', error)
       toast({
         variant: 'destructive',
         title: 'Erro na exportação',
@@ -422,7 +423,7 @@ export default function PublicAssets() {
             logoReader.readAsDataURL(logoBlob)
           })
         } catch (error) {
-          console.warn('Erro ao carregar logo:', error)
+          logger.warn('Erro ao carregar logo:', { error })
         }
       }
 
@@ -435,7 +436,7 @@ export default function PublicAssets() {
           doc.addImage(logoBase64, 'PNG', 14, currentY, 40, 15)
           currentY = 20
         } catch (error) {
-          console.warn('Erro ao adicionar logo no PDF:', error)
+          logger.warn('Erro ao adicionar logo no PDF:', { error })
         }
       }
 
@@ -536,7 +537,7 @@ export default function PublicAssets() {
         description: 'PDF gerado e baixado com sucesso.',
       })
     } catch (error) {
-      console.error('Erro ao exportar PDF:', error)
+      logger.error('Erro ao exportar PDF:', error)
       toast({
         variant: 'destructive',
         title: 'Erro na exportação',

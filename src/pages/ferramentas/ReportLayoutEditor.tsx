@@ -160,7 +160,7 @@ const ReportLayoutEditor = () => {
 
   const addComponent = (type: ReportComponent['type']) => {
     if (!template) {
-      console.error('Template não encontrado para adicionar componente')
+      logger.error('Template não encontrado para adicionar componente')
       return
     }
     
@@ -220,7 +220,7 @@ const ReportLayoutEditor = () => {
       toast({ description: 'Layout do relatório salvo com sucesso!' })
       navigate(`/relatorios/ver/${template.id}`)
     } else {
-      console.error('Template não encontrado para salvar')
+      logger.error('Template não encontrado para salvar')
       toast({ 
         description: 'Erro: Template não encontrado', 
         variant: 'destructive' 

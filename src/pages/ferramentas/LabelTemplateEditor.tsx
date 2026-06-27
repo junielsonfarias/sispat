@@ -150,7 +150,7 @@ const LabelTemplateEditor = () => {
         navigate('/etiquetas/templates')
       }, 500)
     } catch (error) {
-      console.error('Erro ao salvar template:', error)
+      logger.error('Erro ao salvar template:', error)
       toast({
         title: 'Erro',
         description: 'Falha ao salvar modelo de etiqueta. Tente novamente.',

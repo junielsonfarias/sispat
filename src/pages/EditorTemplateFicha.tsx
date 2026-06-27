@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Eye, Archive, Building, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/http-api'
 import { FichaPreviewReal } from '@/components/FichaPreviewReal'
+import { logger } from '@/lib/logger'
 
 interface FichaTemplate {
   id: string
@@ -218,7 +219,7 @@ export default function EditorTemplateFicha() {
       const normalizedConfig = normalizeConfig(response.config)
       setConfig(normalizedConfig)
     } catch (error) {
-      console.error('Erro ao carregar template:', error)
+      logger.error('Erro ao carregar template:', error)
       navigate('/gerenciador-fichas')
     } finally {
       setLoading(false)
@@ -236,7 +237,7 @@ export default function EditorTemplateFicha() {
       })
       navigate('/gerenciador-fichas', { state: { reload: true } })
     } catch (error) {
-      console.error('Erro ao salvar template:', error)
+      logger.error('Erro ao salvar template:', error)
     } finally {
       setSaving(false)
     }

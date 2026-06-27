@@ -24,6 +24,7 @@ import {
 import { api } from '@/lib/api'
 import { toast } from '@/hooks/use-toast'
 import { useWebSocket } from '@/hooks/useWebSocket'
+import { logger } from '@/lib/logger'
 
 interface SystemMetrics {
   timestamp: number
@@ -130,7 +131,7 @@ const MetricsDashboard: React.FC = () => {
       setAlerts(alertsRes.data.data.active)
       setLastUpdate(new Date())
     } catch (error) {
-      console.error('Erro ao buscar métricas:', error)
+      logger.error('Erro ao buscar métricas:', error)
       toast({
         title: 'Erro',
         description: 'Falha ao carregar métricas do sistema',

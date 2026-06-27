@@ -47,6 +47,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/services/api-adapter'
+import { logger } from '@/lib/logger'
 
 // `requirePassword` é false quando já existe configuração salva: o backend
 // (emailConfigController) mantém a senha atual quando `password` vem vazio, então
@@ -138,7 +139,7 @@ export default function EmailConfig() {
         })
       }
     } catch (error) {
-      console.error('Erro ao carregar configuração de email:', error)
+      logger.error('Erro ao carregar configuração de email:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -163,7 +164,7 @@ export default function EmailConfig() {
       // Recarregar configuração
       await loadEmailConfig()
     } catch (error) {
-      console.error('Erro ao salvar configuração:', error)
+      logger.error('Erro ao salvar configuração:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -196,7 +197,7 @@ export default function EmailConfig() {
       
       setTestEmail('')
     } catch (error) {
-      console.error('Erro ao enviar email de teste:', error)
+      logger.error('Erro ao enviar email de teste:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -222,7 +223,7 @@ export default function EmailConfig() {
       await loadEmailConfig()
       setShowDeleteDialog(false)
     } catch (error) {
-      console.error('Erro ao desabilitar configuração:', error)
+      logger.error('Erro ao desabilitar configuração:', error)
       toast({
         variant: 'destructive',
         title: 'Erro',

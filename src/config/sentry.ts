@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react'
+import { logger } from '@/lib/logger'
 
 export const initSentry = () => {
   // Só inicializar em produção ou se DSN estiver configurado
@@ -53,11 +54,9 @@ export const initSentry = () => {
         }
       }
       
-      // Log apenas em development
-      if (import.meta.env.MODE === 'development') {
-        console.error('Sentry Event:', event)
-        console.error('Original Error:', hint.originalException)
-      }
+      // Log do evento Sentry
+      logger.error('Sentry Event:', undefined, { event: event as unknown as Record<string, unknown> })
+      logger.error('Sentry Original Error:', hint.originalException)
       
       return event
     },
