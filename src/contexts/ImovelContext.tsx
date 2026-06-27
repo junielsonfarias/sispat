@@ -1,17 +1,22 @@
 import {
   createContext,
-  useState,
   ReactNode,
   useContext,
   useCallback,
-  useEffect,
   useMemo,
 } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Imovel, User } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
+import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { logger } from '@/lib/logger'
+
+// Cache compartilhado de imóveis (React Query). Fonte ÚNICA — o Context é uma
+// fachada fina por cima, sem o fetch manual (useState/useEffect) que duplicava
+// estado fora do React Query.
+const IMOVEIS_KEY = ['imoveis'] as const
 
 interface ImovelContextType {
   imoveis: Imovel[]
@@ -29,83 +34,73 @@ interface ImovelContextType {
 const ImovelContext = createContext<ImovelContextType | null>(null)
 
 export const ImovelProvider = ({ children }: { children: ReactNode }) => {
-  const [allImoveis, setAllImoveis] = useState<Imovel[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  const fetchImoveis = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await api.get<{ imoveis: Imovel[]; pagination: unknown }>('/imoveis')
-      // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade imoveis
-      const imoveisData = Array.isArray(response) ? response : (response.imoveis || [])
-      setAllImoveis(imoveisData)
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Falha ao carregar imóveis.'
-      setError(errorMessage)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  const { data, isLoading, error: queryError } = useQuery({
+    queryKey: IMOVEIS_KEY,
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    queryFn: async () => {
+      try {
+        const response = await api.get<Imovel[] | { imoveis: Imovel[] }>('/imoveis')
+        return Array.isArray(response) ? response : response.imoveis || []
+      } catch (err) {
+        if (isConnectionDownError(err)) {
+          logger.debug('Backend não disponível - usando lista vazia de imóveis')
+          return []
+        }
+        throw err
+      }
+    },
+  })
 
-  useEffect(() => {
-    if (user) {
-      fetchImoveis()
-    }
-  }, [user, fetchImoveis])
+  const imoveis = data ?? []
+  const error = queryError ? extractApiError(queryError).message : null
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: IMOVEIS_KEY }),
+    [queryClient],
+  )
 
   const getImovelById = useCallback(
-    (id: string) => allImoveis.find((i) => i.id === id),
-    [allImoveis],
+    (id: string) => imoveis.find((i) => i.id === id),
+    [imoveis],
   )
 
   const addImovel = useCallback(
     async (data: Omit<Imovel, 'id' | 'historico'>, _user: User) => {
       logger.debug('ImovelContext: Criando imóvel', { data })
-
-      // Enviar dados diretamente, não dentro de objeto { data, user }
-      const newImovel = await api.post<Imovel>('/imoveis', data)
-
-      logger.debug('ImovelContext: Imóvel criado', { newImovel })
-      
-      // ✅ PERFORMANCE: Adicionar à lista local (sem refetch completo)
-      setAllImoveis((prev) => [...prev, newImovel])
-      // await fetchImoveis()  // ❌ Removido: refetch desnecessário (economiza ~500ms)
-      
+      await api.post<Imovel>('/imoveis', data)
+      await invalidate()
       toast({ description: 'Imóvel cadastrado com sucesso.' })
     },
-    [], // ✅ PERFORMANCE: Removida dependência fetchImoveis
+    [invalidate],
   )
 
   const updateImovel = useCallback(
     async (id: string, data: Partial<Imovel>, _user: User) => {
       logger.debug('ImovelContext: Atualizando imóvel', { id, data })
-
-      // Enviar dados diretamente
-      const updatedImovel = await api.put<Imovel>(`/imoveis/${id}`, data)
-
-      logger.debug('ImovelContext: Imóvel atualizado', { updatedImovel })
-      
-      setAllImoveis((prev) =>
-        prev.map((i) => (i.id === id ? updatedImovel : i)),
-      )
+      await api.put<Imovel>(`/imoveis/${id}`, data)
+      await invalidate()
       toast({ description: 'Imóvel atualizado com sucesso.' })
     },
-    [],
+    [invalidate],
   )
 
-  const deleteImovel = useCallback(async (id: string) => {
-    await api.delete(`/imoveis/${id}`)
-    setAllImoveis((prev) => prev.filter((i) => i.id !== id))
-    toast({ description: 'Imóvel excluído com sucesso.' })
-  }, [])
+  const deleteImovel = useCallback(
+    async (id: string) => {
+      await api.delete(`/imoveis/${id}`)
+      await invalidate()
+      toast({ description: 'Imóvel excluído com sucesso.' })
+    },
+    [invalidate],
+  )
 
   const value = useMemo(
     () => ({
-      imoveis: allImoveis,
+      imoveis,
       isLoading,
       error,
       getImovelById,
@@ -113,15 +108,7 @@ export const ImovelProvider = ({ children }: { children: ReactNode }) => {
       updateImovel,
       deleteImovel,
     }),
-    [
-      allImoveis,
-      isLoading,
-      error,
-      getImovelById,
-      addImovel,
-      updateImovel,
-      deleteImovel,
-    ],
+    [imoveis, isLoading, error, getImovelById, addImovel, updateImovel, deleteImovel],
   )
 
   return (
