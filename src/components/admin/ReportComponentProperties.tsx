@@ -71,8 +71,8 @@ export const ReportComponentProperties = ({
                 }}
               />
               <div>
-                <h1 className="text-lg font-bold text-gray-800">{municipalityData.name}</h1>
-                <p className="text-xs text-gray-500">
+                <h1 className="text-lg font-bold text-foreground">{municipalityData.name}</h1>
+                <p className="text-xs text-muted-foreground">
                   {component.props?.subtitle || 'Relatório de Patrimônio'}
                 </p>
                 
@@ -80,21 +80,21 @@ export const ReportComponentProperties = ({
                 {component.props?.customLines && component.props.customLines.length > 0 ? (
                   <div className="mt-1 space-y-0.5">
                     {component.props.customLines.map((line: string, index: number) => (
-                      <p key={index} className={`text-xs ${line ? 'text-gray-600' : 'text-gray-400 italic'}`}>
+                      <p key={index} className={`text-xs ${line ? 'text-muted-foreground' : 'text-muted-foreground italic'}`}>
                         {line || `Linha ${index + 1} (vazia)`}
                       </p>
                     ))}
                   </div>
                 ) : (
                   <div className="mt-1">
-                    <p className="text-xs text-gray-400 italic">
+                    <p className="text-xs text-muted-foreground italic">
                       Nenhuma informação personalizada adicionada
                     </p>
                   </div>
                 )}
               </div>
             </div>
-            <div className="text-right text-xs text-gray-600">
+            <div className="text-right text-xs text-muted-foreground">
               <p>Data: {formatDate(new Date())}</p>
               <p>Horário: {new Date().toLocaleTimeString('pt-BR')}</p>
             </div>
@@ -204,7 +204,7 @@ export const ReportComponentProperties = ({
               </div>
               
               {/* Simulação do conteúdo da página */}
-              <div className="text-xs text-gray-400 mb-4">
+              <div className="text-xs text-muted-foreground mb-4">
                 <p>Conteúdo do relatório...</p>
                 <p>Tabela de dados...</p>
                 <p>Mais informações...</p>
@@ -223,7 +223,7 @@ export const ReportComponentProperties = ({
                 {component.props?.customContent && (
                   <div className="mb-2">
                     {component.props.customContent.split('\n').map((line: string, index: number) => (
-                      <p key={index} className="mb-1 text-gray-700">
+                      <p key={index} className="mb-1 text-muted-foreground">
                         {line}
                       </p>
                     ))}
@@ -231,7 +231,7 @@ export const ReportComponentProperties = ({
                 )}
                 
                 {/* Informações automáticas */}
-                <div className="text-gray-500">
+                <div className="text-muted-foreground">
                   <p>Página 1 de 1 - Nome do Template - Gerado por SISPAT</p>
                   {component.props?.showDate && (
                     <p>Data de geração: {formatDate(new Date())}</p>

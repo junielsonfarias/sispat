@@ -139,20 +139,20 @@ export default function MunicipalityInfoForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-gray-50 p-4 rounded-lg border">
+          <div className="bg-muted p-4 rounded-lg border">
             <div className="text-center space-y-2">
-              <h3 className="text-lg font-bold text-gray-800">
+              <h3 className="text-lg font-bold text-foreground">
                 {formData.prefeituraName || 'Nome da Prefeitura'}
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {formData.secretariaResponsavel || 'Secretaria Responsável'}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {formData.departamentoResponsavel || 'Departamento Responsável'}
               </p>
-              <div className="pt-2 border-t border-gray-200">
-                <p className="text-sm font-medium text-gray-700">SISPAT</p>
-                <p className="text-xs text-gray-500">Sistema de Patrimônio</p>
+              <div className="pt-2 border-t border-border">
+                <p className="text-sm font-medium text-muted-foreground">SISPAT</p>
+                <p className="text-xs text-muted-foreground">Sistema de Patrimônio</p>
               </div>
             </div>
           </div>

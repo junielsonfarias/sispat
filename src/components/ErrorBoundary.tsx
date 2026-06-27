@@ -50,18 +50,18 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-muted p-4">
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
-              <CardTitle className="text-xl text-gray-900">
+              <CardTitle className="text-xl text-foreground">
                 Ops! Algo deu errado
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 text-center">
+              <p className="text-sm text-muted-foreground text-center">
                 Ocorreu um erro inesperado na aplicação. Isso pode ser temporário.
               </p>
               
@@ -69,7 +69,7 @@ class ErrorBoundary extends Component<Props, State> {
                   Stack trace e componentStack ficam só em dev — evita vazar caminhos,
                   nomes de componentes e estrutura interna. */}
               {import.meta.env.MODE === 'production' ? (
-                <p className="text-xs text-center text-gray-500">
+                <p className="text-xs text-center text-muted-foreground">
                   ID do erro: <code className="font-mono">{this.errorId || 'gerando...'}</code>
                   <br />
                   Informe esse código ao suporte se o problema persistir.
@@ -77,7 +77,7 @@ class ErrorBoundary extends Component<Props, State> {
               ) : (
                 this.state.error && (
                   <details className="mt-4">
-                    <summary className="cursor-pointer text-sm font-medium text-gray-700">
+                    <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
                       Detalhes do erro (apenas em dev)
                     </summary>
                     <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-60">

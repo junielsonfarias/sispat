@@ -64,7 +64,7 @@ export default function LabelTemplates() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Modelos de Etiqueta</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Crie e gerencie diferentes tipos de etiquetas e placas
           </p>
         </div>
@@ -83,7 +83,7 @@ export default function LabelTemplates() {
             </div>
             <div className="w-full sm:w-auto sm:min-w-[300px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por nome..."
                   value={searchTerm}
@@ -97,11 +97,11 @@ export default function LabelTemplates() {
         <CardContent>
           {filteredTemplates.length === 0 ? (
             <div className="text-center py-12">
-              <QrCode className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium">
+              <QrCode className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground font-medium">
                 {searchTerm ? 'Nenhum modelo encontrado' : 'Nenhum modelo criado ainda'}
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {searchTerm
                   ? 'Tente ajustar os termos de busca'
                   : 'Comece criando seu primeiro modelo de etiqueta'}

@@ -40,14 +40,22 @@
   `src/pages/desfazimento/DesfazimentoList.tsx`,
   `src/pages/regularizacao/RegularizacaoList.tsx`,
   `src/pages/bens/ImportarRelatorio.tsx`, `src/components/FichaPreview.tsx`.
-- **Verificação:** tsc front = 0, tsc backend = 0, jest upload 18/18.
-- **Deferidos (decisão/risco):** (a) remoção de deps deslocadas/ociosas
-  (`@sentry/react`, `browser-image-compression`, `@sentry/profiling-node`, `axios`
-  no backend; `@tailwindcss/aspect-ratio` na raiz) — exige `pnpm install` p/
-  regenerar lockfile, fazer em janela com o stack parado; (b) unificar cálculo de
-  depreciação front×back em `shared/` — regra contábil sensível (conciliação Lei
-  art. 8/21), refator com testes; (c) validadores CPF/CNPJ e `UserRole` duplicados
-  front×shared — unificar em `@sispat/shared` (exige rebuild do shared).
+- **Higiene de dependências (pergunta 5 — peso morto removido), stack parado:**
+  - **Backend (npm):** removidas 4 deps de produção sem uso real em `backend/src`
+    — `@sentry/react` e `browser-image-compression` (libs de browser, deslocadas no
+    servidor), `@sentry/profiling-node` (nunca cabeada no `config/sentry.ts`) e
+    `axios` (usado só pelo script de debug `test-customization-endpoint.js`, que foi
+    apagado por violar o §4). `npm install` removeu 20 pacotes; `@sentry/node`
+    mantido. tsc backend = 0, **577/577 jest verdes**.
+  - **Raiz (pnpm):** removida `@tailwindcss/aspect-ratio` (plugin nunca registrado
+    em `tailwind.config.ts`; 0 uso). Lockfile atualizado com `pnpm install
+    --lockfile-only` (não realoca o store — ver gotcha do `virtualStoreDir` no
+    `pnpm-workspace.yaml`). tsc front = 0.
+- **Verificação:** tsc front = 0, tsc backend = 0, jest 577/577, jest upload 18/18.
+- **Deferidos (decisão/risco):** (a) unificar cálculo de depreciação front×back em
+  `shared/` — regra contábil sensível (conciliação Lei art. 8/21), refator com
+  testes; (b) validadores CPF/CNPJ e `UserRole` duplicados front×shared — unificar
+  em `@sispat/shared` (exige rebuild do shared).
 - **Lição:** a fruta fácil de "stack" já tinha sido colhida nas auditorias de
   2026-06-27; o ganho novo do checklist foi em **reuso de utilitários** e **stdlib**.
 
