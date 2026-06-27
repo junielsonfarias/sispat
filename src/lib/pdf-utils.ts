@@ -1,4 +1,7 @@
-import jsPDF from 'jspdf'
+// jsPDF (~2MB) é carregado dinamicamente (await import) dentro de cada função
+// geradora p/ não entrar no bundle inicial. O import type (erased em build) só
+// mantém a anotação de tipo nas funções auxiliares.
+import type JsPDFDoc from 'jspdf'
 import html2canvas from 'html2canvas'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -59,6 +62,7 @@ export const generatePDFFromElement = async (
     })
 
     const imgData = canvas.toDataURL('image/png')
+    const { default: jsPDF } = await import('jspdf')
     const pdf = new jsPDF({
       orientation: options.orientation || 'portrait',
       unit: 'mm',
@@ -138,6 +142,7 @@ export const generateInventoryPDF = async (
   options: PDFOptions = { title: 'Relatório de Inventário' }
 ): Promise<void> => {
   try {
+    const { default: jsPDF } = await import('jspdf')
     const pdf = new jsPDF({
       orientation: options.orientation || 'portrait',
       unit: 'mm',
@@ -260,7 +265,7 @@ export const generateInventoryPDF = async (
 /**
  * Adiciona cabeçalho ao PDF
  */
-const addPDFHeader = (pdf: jsPDF, options: PDFOptions): void => {
+const addPDFHeader = (pdf: JsPDFDoc, options: PDFOptions): void => {
   const pdfWidth = pdf.internal.pageSize.getWidth()
   const margin = options.margin || 20
 
@@ -297,7 +302,7 @@ const addPDFHeader = (pdf: jsPDF, options: PDFOptions): void => {
 /**
  * Adiciona rodapé ao PDF
  */
-const addPDFFooter = (pdf: jsPDF, options: PDFOptions): void => {
+const addPDFFooter = (pdf: JsPDFDoc, options: PDFOptions): void => {
   const pdfWidth = pdf.internal.pageSize.getWidth()
   const pdfHeight = pdf.internal.pageSize.getHeight()
   const margin = options.margin || 20
@@ -332,6 +337,7 @@ export const generateReportPDF = async (
   options: PDFOptions = { title }
 ): Promise<void> => {
   try {
+    const { default: jsPDF } = await import('jspdf')
     const pdf = new jsPDF({
       orientation: options.orientation || 'portrait',
       unit: 'mm',

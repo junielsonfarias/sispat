@@ -23,7 +23,7 @@ import { Printer, Download, FileImage } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
+// jsPDF (~2MB) carregado dinamicamente no handler (await import) p/ não pesar o bundle inicial.
 
 interface LabelPrintDialogProps {
   open: boolean
@@ -369,6 +369,7 @@ export function LabelPrintDialog({
         logging: false,
       })
 
+      const { default: jsPDF } = await import('jspdf')
       const pdf = new jsPDF({
         orientation: printOptions.orientation,
         unit: 'mm',

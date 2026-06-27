@@ -1,4 +1,5 @@
-import jsPDF from 'jspdf'
+// jsPDF (~2MB) é carregado dinamicamente dentro da função (await import) para
+// não entrar no bundle inicial das páginas que importam este gerador.
 import { Patrimonio } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
@@ -16,6 +17,7 @@ export const generatePatrimonioPDF = async ({
   includeLogo = false,
   logoUrl
 }: PatrimonioPDFOptions): Promise<void> => {
+  const { default: jsPDF } = await import('jspdf')
   const doc = new jsPDF('p', 'mm', 'a4')
   const pageWidth = doc.internal.pageSize.getWidth() // 210mm
   const pageHeight = doc.internal.pageSize.getHeight() // 297mm

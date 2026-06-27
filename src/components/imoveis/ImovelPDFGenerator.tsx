@@ -1,6 +1,6 @@
 import { Imovel } from '@/types'
 import { formatDate, formatCurrency, getCloudImageUrl } from '@/lib/utils'
-import jsPDF from 'jspdf'
+// jsPDF (~2MB) carregado dinamicamente no handler (await import) p/ não pesar o bundle inicial.
 import html2canvas from 'html2canvas'
 import { generateQRCode } from '@/lib/qr-code-utils'
 import { logger } from '@/lib/logger'
@@ -387,6 +387,7 @@ export const generateImovelPDF = async ({
     })
 
     // Criar PDF com compressão ativada
+    const { default: jsPDF } = await import('jspdf')
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
