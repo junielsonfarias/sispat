@@ -147,7 +147,10 @@ export const listPublicPatrimonios = async (municipalityId?: string | null) => {
   if (municipalityId) where.municipalityId = municipalityId;
   const patrimonios = await prisma.patrimonio.findMany({
     where,
-    include: { sector: true, municipality: true },
+    // Endpoint PÚBLICO (anônimo): NÃO expor PII do setor (cnpj, responsavel,
+    // codigo). A consulta pública só usa o nome do setor. Município é branding
+    // público (name/logo/cor), pode ir inteiro.
+    include: { sector: { select: { name: true } }, municipality: true },
     orderBy: { numero_patrimonio: 'asc' },
   });
   return patrimonios.map(normalizeOnRead);
@@ -167,7 +170,8 @@ export const getPublicPatrimonioByNumero = async (
   const patrimonio = await prisma.patrimonio.findFirst({
     where,
     include: {
-      sector: true,
+      // Endpoint PÚBLICO: só o nome do setor (sem cnpj/responsavel/codigo).
+      sector: { select: { name: true } },
       municipality: true,
       tipoBem: { select: { id: true, nome: true, descricao: true } },
       local: { select: { id: true, name: true, description: true } },

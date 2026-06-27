@@ -252,7 +252,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     }
 
     const { id } = req.params;
-    const { name, role, responsibleSectors, isActive } = req.body;
+    const { name, email, role, responsibleSectors, isActive } = req.body;
 
     // Verificar se usuário existe
     const existingUser = await prisma.user.findFirst({
@@ -265,6 +265,19 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     if (!existingUser) {
       res.status(404).json({ error: 'Usuário não encontrado' });
       return;
+    }
+
+    // Email é @unique global: ao trocar, garantir que não colide com outro usuário.
+    const normalizedEmail =
+      typeof email === 'string' ? email.toLowerCase() : undefined;
+    if (normalizedEmail && normalizedEmail !== existingUser.email) {
+      const emailOwner = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+      });
+      if (emailOwner && emailOwner.id !== id) {
+        res.status(400).json({ error: 'Email já está em uso' });
+        return;
+      }
     }
 
     // superuser, admin e supervisor podem atualizar usuários (anti-escalada via canAssignRole)
@@ -302,6 +315,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       where: { id },
       data: {
         ...(name && { name }),
+        ...(normalizedEmail && { email: normalizedEmail }),
         ...(role && { role }),
         ...(responsibleSectors && { responsibleSectors }),
         ...(isActive !== undefined && { isActive }),

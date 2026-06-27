@@ -380,8 +380,10 @@ export const requestPasswordReset = async (
     data: { used: true },
   });
 
+  // Armazenar apenas o HASH do token (como os refresh tokens). O token raw vai
+  // só no e-mail; um vazamento do banco não permite redefinir senhas.
   await prisma.passwordResetToken.create({
-    data: { token: resetToken, userId: user.id, email: user.email, expiresAt },
+    data: { token: hashToken(resetToken), userId: user.id, email: user.email, expiresAt },
   });
 
   const sent = await emailService.sendPasswordResetEmail(
@@ -410,7 +412,7 @@ export interface ResetTokenInfo {
 
 export const validatePasswordResetToken = async (token: string): Promise<ResetTokenInfo> => {
   const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token },
+    where: { token: hashToken(token) },
     include: { user: { select: { id: true, email: true, name: true, isActive: true } } },
   });
 
@@ -432,7 +434,7 @@ export const resetUserPassword = async (
   if (!STRONG_PASSWORD_REGEX.test(newPassword)) throw new AuthWeakPasswordError();
 
   const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token },
+    where: { token: hashToken(token) },
     include: { user: true },
   });
 

@@ -182,6 +182,34 @@ describe('updateUser — anti-escalada de privilégio', () => {
   });
 });
 
+describe('updateUser — persistência de email', () => {
+  it('admin atualiza email (persiste em lowercase) quando não há colisão', async () => {
+    mockPrisma.user.findFirst.mockResolvedValueOnce({ id: 'u1', role: 'usuario', email: 'velho@a.gov', municipalityId: 'mun-A' });
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null); // email livre
+    const res = makeRes();
+    await updateUser(
+      makeReq({ role: 'admin', municipalityId: 'mun-A' }, { id: 'u1' }, { email: 'Novo@A.gov' }),
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    expect(mockPrisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ email: 'novo@a.gov' }) }),
+    );
+  });
+
+  it('rejeita email já usado por OUTRO usuário (400, sem update)', async () => {
+    mockPrisma.user.findFirst.mockResolvedValueOnce({ id: 'u1', role: 'usuario', email: 'velho@a.gov', municipalityId: 'mun-A' });
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'outro', email: 'dup@a.gov' });
+    const res = makeRes();
+    await updateUser(
+      makeReq({ role: 'admin', municipalityId: 'mun-A' }, { id: 'u1' }, { email: 'dup@a.gov' }),
+      res,
+    );
+    expect(res.statusCode).toBe(400);
+    expect(mockPrisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
 describe('resetUserPassword — gestor redefine senha de terceiro', () => {
   it('alvo de OUTRO município retorna 404 e NÃO atualiza (escopo por municipalityId)', async () => {
     mockPrisma.user.findFirst.mockResolvedValueOnce(null);
