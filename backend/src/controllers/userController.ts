@@ -345,6 +345,96 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 };
 
 /**
+ * Redefinir a senha de OUTRO usuário (gestor redefine senha de terceiro)
+ * POST /api/users/:id/reset-password
+ *
+ * Diferente de /auth/change-password (que exige a senha atual do próprio
+ * usuário). Aqui um superuser/admin/supervisor define uma nova senha para um
+ * usuário do seu município, respeitando a anti-escalada (não redefine senha de
+ * usuário de nível superior ao seu).
+ */
+export const resetUserPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { password } = req.body;
+
+    // Verificar se usuário existe (no mesmo município)
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        id,
+        municipalityId: req.user.municipalityId,
+      },
+    });
+
+    if (!existingUser) {
+      res.status(404).json({ error: 'Usuário não encontrado' });
+      return;
+    }
+
+    // 🔒 Anti-escalada: não pode redefinir senha de usuário de nível superior
+    if (!canAssignRole(req.user.role, existingUser.role)) {
+      logWarn('Tentativa de redefinir senha de usuário de nível superior bloqueada', {
+        userId: req.user.userId,
+        actorRole: req.user.role,
+        targetCurrentRole: existingUser.role,
+      });
+      res.status(403).json({ error: 'Acesso negado: usuário de nível superior' });
+      return;
+    }
+
+    // Hash da nova senha
+    const bcrypt = require('bcryptjs');
+    const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12');
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatar: true,
+        responsibleSectors: true,
+        municipalityId: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Log de atividade (nunca registrar a senha)
+    await prisma.activityLog.create({
+      data: {
+        userId: req.user.userId,
+        action: 'RESET_USER_PASSWORD',
+        entityType: 'USER',
+        entityId: updatedUser.id,
+        details: `Senha redefinida para o usuário: ${updatedUser.name}`,
+        ipAddress: req.ip || req.socket.remoteAddress || 'unknown',
+        userAgent: req.get('user-agent') || 'unknown',
+      },
+    });
+
+    await CacheUtils.invalidateByPrefix('users:');
+
+    res.json(updatedUser);
+  } catch (error) {
+    logError('Erro ao redefinir senha de usuário', error, {
+      userId: req.user?.userId,
+      targetUserId: req.params.id,
+    });
+    res.status(500).json({ error: 'Erro ao redefinir senha de usuário' });
+  }
+};
+
+/**
  * Deletar usuário (Soft Delete)
  * DELETE /api/users/:id
  */

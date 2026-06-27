@@ -34,7 +34,7 @@ const mockPrisma = {
 };
 jest.mock('../../index', () => ({ prisma: mockPrisma }));
 
-import { createUser, updateUser } from '../../controllers/userController';
+import { createUser, updateUser, resetUserPassword } from '../../controllers/userController';
 
 type Role = 'usuario' | 'visualizador' | 'admin' | 'supervisor' | 'superuser';
 
@@ -179,5 +179,49 @@ describe('updateUser — anti-escalada de privilégio', () => {
     );
     expect(res.statusCode).toBe(200);
     expect(mockPrisma.user.update).toHaveBeenCalled();
+  });
+});
+
+describe('resetUserPassword — gestor redefine senha de terceiro', () => {
+  it('alvo de OUTRO município retorna 404 e NÃO atualiza (escopo por municipalityId)', async () => {
+    mockPrisma.user.findFirst.mockResolvedValueOnce(null);
+    const res = makeRes();
+    await resetUserPassword(
+      makeReq({ role: 'admin', municipalityId: 'mun-A' }, { id: 'u1' }, { password: 'NovaSenha@123' }),
+      res,
+    );
+    expect(res.statusCode).toBe(404);
+    expect(mockPrisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('supervisor NÃO pode redefinir senha de admin (nível superior) — 403, sem update', async () => {
+    mockPrisma.user.findFirst.mockResolvedValueOnce({ id: 'u1', role: 'admin', municipalityId: 'mun-A' });
+    const res = makeRes();
+    await resetUserPassword(
+      makeReq({ role: 'supervisor', municipalityId: 'mun-A' }, { id: 'u1' }, { password: 'NovaSenha@123' }),
+      res,
+    );
+    expect(res.statusCode).toBe(403);
+    expect(mockPrisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('admin PODE redefinir senha de usuario (nível inferior) e grava hash', async () => {
+    mockPrisma.user.findFirst.mockResolvedValueOnce({ id: 'u1', role: 'usuario', municipalityId: 'mun-A' });
+    const res = makeRes();
+    await resetUserPassword(
+      makeReq({ role: 'admin', municipalityId: 'mun-A' }, { id: 'u1' }, { password: 'NovaSenha@123' }),
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    expect(mockPrisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { password: 'hashed' } }),
+    );
+  });
+
+  it('não autenticado retorna 401', async () => {
+    const res = makeRes();
+    await resetUserPassword(makeReq(null, { id: 'u1' }, { password: 'NovaSenha@123' }), res);
+    expect(res.statusCode).toBe(401);
+    expect(mockPrisma.user.update).not.toHaveBeenCalled();
   });
 });

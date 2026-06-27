@@ -21,6 +21,19 @@
 
 ## 2026
 
+### 2026-06-27 — Contract bugs da entidade Usuário (re-auditoria final)
+- **Sintoma / Causa-raiz:** `updateUserSchema` (`@sispat/shared`) é `.strict()` e o `updateUser` controller só lê `name/role/responsibleSectors/isActive`. O front enviava para `PUT /users/:id` campos que o schema rejeitava (400 silencioso) ou o controller ignorava (no-op).
+  1. **Reset de senha de outro usuário (admin) quebrado** — `AuthContext.updateUserPassword` mandava `{ password }` → 400 "Unrecognized key"; e mesmo passando, o controller ignorava `password`. Não existia endpoint de "gestor redefine senha de terceiro".
+  2. **Desbloqueio de usuário** — `unlockUser` mandava `lockoutUntil`/`failedLoginAttempts`, campos que **não existem no `schema.prisma`** e sem lógica de lockout no backend. UI 100% morta.
+  3. **`UserCreateForm`/`UserEditForm`** — campo "Setor Principal" (`sector`) e upload de avatar (`avatarUrl`) coletados na UI mas nunca persistidos (não estão no model/controller).
+- **Correção:**
+  - **#1 (implementado):** novo `POST /users/:id/reset-password` (`resetUserPasswordSchema` em `@sispat/shared`, `.strict()`), controller `resetUserPassword` com escopo por `municipalityId` + anti-escalada (`canAssignRole`) + hash bcrypt + `RESET_USER_PASSWORD` no activityLog. `updateUserPassword` do front passa a chamar o endpoint novo. +4 testes em `userRoleEscalation.test.ts`.
+  - **#2 (removido):** `unlockUser` (AuthContext + interface + provider) e toda a UI de desbloqueio em `UserManagementUnified` (botão, `handleUnlockUser`, `isUserLocked`, import `Unlock`). Coluna de status passou a refletir `isActive` (Ativo/Inativo) em vez do lockout fantasma.
+  - **#3/#4 (removidos):** campo "Setor Principal" e upload de avatar dos forms de criar/editar usuário (schema, defaults, reset, JSX e imports órfãos). Adicionado `isActive?: boolean` ao tipo `User` (`src/types/index.ts`).
+- **Arquivos:** `shared/src/schemas/user.ts`, `backend/src/controllers/userController.ts`, `backend/src/routes/userRoutes.ts`, `src/contexts/AuthContext.tsx`, `src/components/admin/UserManagementUnified.tsx`, `src/components/admin/UserCreateForm.tsx`, `src/components/admin/UserEditForm.tsx`, `src/types/index.ts`, `backend/src/__tests__/controllers/userRoleEscalation.test.ts`.
+- **Verificação:** backend tsc 0, frontend tsc 0, 573 testes Jest verdes (569 + 4 novos).
+- **Lição:** schemas `update*` `.strict()` rejeitam campos extras (400 silencioso); features de UI sem coluna/endpoint no backend são "dead UI" — confirmar o backend antes de confiar num form.
+
 ### 2026-06-26 — Polimento de cauda: remoção de código morto + lazy images
 - **Código morto removido** (verificado: só auto-referência, zero imports): `src/pages/bens/BensCadastradosSimplificado.tsx` (não roteado), `src/pages/admin/GerenciarTipos.tsx` (não roteado, duplicava `TipoBemManagement`), `src/components/imoveis/ImovelMap.tsx` (mapa fake grid 5×5, ignorava lat/long). `tsc` → 0 erros após remoção.
 - **`loading="lazy"`** adicionado às galerias de fotos: `BensView`, `ImoveisView`, `PublicConsultation`, `PublicBemDetalhes` (miniaturas), `PublicImovelDetalhe`. Mantidos SEM lazy: logos (above-the-fold, lazy atrasaria LCP), impressão/PDF e a imagem principal do carrossel.

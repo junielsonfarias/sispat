@@ -47,7 +47,6 @@ import {
   PlusCircle,
   Edit,
   Trash2,
-  Unlock,
   MoreHorizontal,
   KeyRound,
 } from 'lucide-react'
@@ -74,7 +73,7 @@ export default function UserManagementUnified({
   title, 
   description 
 }: UserManagementUnifiedProps) {
-  const { user: currentUser, users, deleteUser, unlockUser } = useAuth()
+  const { user: currentUser, users, deleteUser } = useAuth()
   // RBAC: esconder ações que o papel não pode executar (o backend também reforça).
   // Ex.: supervisor não tem nenhuma permissão users:* — só vê a lista.
   const { hasPermission } = usePermissions()
@@ -145,25 +144,6 @@ export default function UserManagementUnified({
     }
   }
 
-  const handleUnlockUser = async (user: User) => {
-    try {
-      await unlockUser(user.id)
-      toast({
-        title: 'Sucesso',
-        description: `Usuário ${user.name} desbloqueado.`,
-      })
-    } catch (error) {
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível desbloquear o usuário.',
-        variant: 'destructive',
-      })
-    }
-  }
-
-  const isUserLocked = (user: User) =>
-    user.lockoutUntil && new Date(user.lockoutUntil) > new Date()
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -221,8 +201,8 @@ export default function UserManagementUnified({
                     <Badge variant="secondary">{user.role}</Badge>
                   </TableCell>
                   <TableCell>
-                    {isUserLocked(user) ? (
-                      <Badge variant="destructive">Bloqueado</Badge>
+                    {user.isActive === false ? (
+                      <Badge variant="secondary">Inativo</Badge>
                     ) : (
                       <Badge variant="default">Ativo</Badge>
                     )}
@@ -254,13 +234,6 @@ export default function UserManagementUnified({
                                 <KeyRound className="mr-2 h-4 w-4" /> Alterar
                                 Senha
                               </DropdownMenuItem>
-                              {isUserLocked(user) && (
-                                <DropdownMenuItem
-                                  onClick={() => handleUnlockUser(user)}
-                                >
-                                  <Unlock className="mr-2 h-4 w-4" /> Desbloquear
-                                </DropdownMenuItem>
-                              )}
                             </>
                           )}
                           {canDelete && (

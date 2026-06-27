@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -17,7 +17,6 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { Loader2 } from 'lucide-react'
 import { User } from '@/types'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   SearchableSelect,
   SearchableSelectOption,
@@ -29,8 +28,6 @@ const userEditSchema = z.object({
   name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
   email: z.string().email({ message: 'Formato de e-mail inválido.' }),
   role: z.enum(['supervisor', 'usuario', 'visualizador']),
-  sector: z.string().optional(),
-  avatarUrl: z.string().optional(),
   responsibleSectors: z.array(z.string()).optional(),
 })
 
@@ -51,7 +48,6 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const { updateUser } = useAuth()
   const { sectors } = useSectors()
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
   const editableRole: UserEditFormValues['role'] =
     user.role === 'supervisor' || user.role === 'usuario' || user.role === 'visualizador'
@@ -64,8 +60,6 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
       name: user.name,
       email: user.email,
       role: editableRole,
-      sector: user.sector,
-      avatarUrl: user.avatarUrl,
       responsibleSectors: user.responsibleSectors || [],
     },
   })
@@ -87,25 +81,9 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
       name: user.name,
       email: user.email,
       role: resetRole,
-      sector: user.sector,
-      avatarUrl: user.avatarUrl,
       responsibleSectors: user.responsibleSectors || [],
     })
-    setAvatarPreview(user.avatarUrl)
   }, [user, form])
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const result = reader.result as string
-        setAvatarPreview(result)
-        form.setValue('avatarUrl', result)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
 
   const onSubmit = async (data: UserEditFormValues) => {
     setIsLoading(true)
@@ -140,19 +118,6 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            {avatarPreview && avatarPreview.trim() !== '' && !avatarPreview.includes('placeholder') && <AvatarImage src={avatarPreview} />}
-            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <FormItem className="flex-grow">
-            <FormLabel>Foto de Perfil</FormLabel>
-            <FormControl>
-              <Input type="file" accept="image/*" onChange={handleFileChange} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        </div>
         <FormField
           control={form.control}
           name="name"
@@ -177,25 +142,6 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
                   type="email"
                   placeholder="email@exemplo.com"
                   {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="sector"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Setor Principal</FormLabel>
-              <FormControl>
-                <SearchableSelect
-                  options={allSectors}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Selecione o setor principal (opcional)"
-                  isClearable
                 />
               </FormControl>
               <FormMessage />

@@ -33,7 +33,6 @@ const userCreateSchema = z.object({
   role: z.enum(['supervisor', 'usuario', 'visualizador'], {
     required_error: 'Perfil é obrigatório.',
   }),
-  sector: z.string().optional(),
   responsibleSectors: z.array(z.string()).optional(),
 })
 
@@ -60,7 +59,6 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
       name: '',
       email: '',
       password: '',
-      sector: '',
       responsibleSectors: [],
     },
   })
@@ -146,25 +144,6 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
               <FormLabel>Senha Provisória</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="********" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="sector"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Setor Principal</FormLabel>
-              <FormControl>
-                <SearchableSelect
-                  options={allSectors}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Selecione o setor principal (opcional)"
-                  isClearable
-                />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -33,7 +33,6 @@ export interface AuthContextType {
   resetPassword: (token: string, password: string) => Promise<void>
   validateResetToken: (token: string) => Promise<any>
   updateUserPassword: (userId: string, newPassword: string) => Promise<void>
-  unlockUser: (userId: string) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
@@ -208,16 +207,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   const updateUserPassword = async (userId: string, newPassword: string) => {
-    const updatedUser = await api.put<User>(`/users/${userId}`, {
+    // Endpoint dedicado: gestor redefine a senha de outro usuário (anti-escalada
+    // no backend). NÃO usar PUT /users/:id — updateUserSchema é strict e ignora password.
+    const updatedUser = await api.post<User>(`/users/${userId}/reset-password`, {
       password: newPassword,
-    })
-    setUsers((prev) => prev.map((u) => (u.id === userId ? updatedUser : u)))
-  }
-
-  const unlockUser = async (userId: string) => {
-    const updatedUser = await api.put<User>(`/users/${userId}`, {
-      lockoutUntil: null,
-      failedLoginAttempts: 0,
     })
     setUsers((prev) => prev.map((u) => (u.id === userId ? updatedUser : u)))
   }
@@ -267,7 +260,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         resetPassword,
         validateResetToken,
         updateUserPassword,
-        unlockUser,
       }}
     >
       {children}

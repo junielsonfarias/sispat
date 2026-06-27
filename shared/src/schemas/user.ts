@@ -63,3 +63,14 @@ export const updateUserSchema = z
   })
   .strict();
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+// Redefinição de senha de OUTRO usuário por um gestor (admin/superuser/supervisor),
+// via `POST /users/:id/reset-password`. Diferente de `/auth/change-password`, que
+// exige a senha atual do próprio usuário. A autorização anti-escalada (não redefinir
+// senha de usuário de nível superior) é feita no controller (canAssignRole).
+export const resetUserPasswordSchema = z
+  .object({
+    password: strongPasswordSchema,
+  })
+  .strict();
+export type ResetUserPasswordInput = z.infer<typeof resetUserPasswordSchema>;

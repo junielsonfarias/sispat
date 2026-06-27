@@ -36,6 +36,7 @@ export interface User {
   sector?: string
   responsibleSectors?: string[]
   password?: string
+  isActive?: boolean
   failedLoginAttempts?: number
   lockoutUntil?: number | null
   municipalityId?: string

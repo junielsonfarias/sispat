@@ -4,6 +4,7 @@ import {
   getUserById,
   createUser,
   updateUser,
+  resetUserPassword,
   deleteUser,
 } from '../controllers/userController';
 import { authenticateToken, authorize } from '../middlewares/auth';
@@ -11,6 +12,7 @@ import { zodValidate } from '../middlewares/zodValidate';
 import {
   createUserSchema,
   updateUserSchema,
+  resetUserPasswordSchema,
   uuidParamSchema,
   paginationQuerySchema,
 } from '@sispat/shared';
@@ -46,6 +48,13 @@ router.put(
   authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ params: uuidParamSchema, body: updateUserSchema }),
   updateUser,
+);
+
+router.post(
+  '/:id/reset-password',
+  authorize('superuser', 'admin', 'supervisor'),
+  zodValidate({ params: uuidParamSchema, body: resetUserPasswordSchema }),
+  resetUserPassword,
 );
 
 router.delete(
