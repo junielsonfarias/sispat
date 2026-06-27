@@ -7,6 +7,7 @@ import {
   upsertExcelCsvTemplateSchema,
   createFormFieldConfigSchema,
   updateFormFieldConfigSchema,
+  reorderFormFieldConfigsSchema,
   roleIdParamSchema,
   updateRolePermissionsSchema,
   updateCloudStorageSchema,
@@ -31,6 +32,7 @@ import {
   createFormFieldConfig,
   updateFormFieldConfig,
   deleteFormFieldConfig,
+  reorderFormFieldConfigs,
   // Role Permissions
   getRolePermissions,
   updateRolePermissions,
@@ -107,6 +109,14 @@ router.post(
   authorize('admin'),
   zodValidate({ body: createFormFieldConfigSchema }),
   createFormFieldConfig,
+);
+// IMPORTANTE: '/reorder' precisa vir ANTES de '/:id', senão o Express casa
+// "reorder" como :id e a validação de UUID rejeita a requisição.
+router.put(
+  '/form-field-configs/reorder',
+  authorize('admin'),
+  zodValidate({ body: reorderFormFieldConfigsSchema }),
+  reorderFormFieldConfigs,
 );
 router.put(
   '/form-field-configs/:id',

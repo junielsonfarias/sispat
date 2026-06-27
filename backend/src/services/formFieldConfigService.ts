@@ -45,11 +45,21 @@ const ownershipWhere = (actor: Actor, id: string): Prisma.FormFieldConfigWhereIn
 export const listFormFieldConfigs = (actor: Actor) =>
   prisma.formFieldConfig.findMany({
     where: { municipalityId: actor.municipalityId },
-    orderBy: { id: 'asc' },
+    orderBy: [{ order: 'asc' }, { id: 'asc' }],
   });
 
-export const createFormFieldConfig = (actor: Actor, input: CreateFormFieldConfigInput) =>
-  prisma.formFieldConfig.create({
+export const createFormFieldConfig = async (
+  actor: Actor,
+  input: CreateFormFieldConfigInput,
+) => {
+  // Novo campo entra no fim da ordem do município.
+  const last = await prisma.formFieldConfig.aggregate({
+    where: { municipalityId: actor.municipalityId },
+    _max: { order: true },
+  });
+  const nextOrder = (last._max.order ?? -1) + 1;
+
+  return prisma.formFieldConfig.create({
     data: {
       key: input.key,
       label: input.label,
@@ -59,9 +69,31 @@ export const createFormFieldConfig = (actor: Actor, input: CreateFormFieldConfig
       options: input.options || [],
       isCustom: input.isCustom || false,
       isSystem: input.isSystem || false,
+      order: nextOrder,
       municipalityId: actor.municipalityId,
     },
   });
+};
+
+/**
+ * Reordena campos em lote. Cada update é escopado por município (não-superuser)
+ * para não permitir reordenar campos de outro tenant (IDOR).
+ */
+export const reorderFormFieldConfigs = (
+  actor: Actor,
+  fieldOrders: Array<{ id: string; order: number }>,
+) =>
+  prisma.$transaction(
+    fieldOrders.map(({ id, order }) =>
+      prisma.formFieldConfig.updateMany({
+        where:
+          actor.role === 'superuser'
+            ? { id }
+            : { id, municipalityId: actor.municipalityId },
+        data: { order },
+      }),
+    ),
+  );
 
 export const updateFormFieldConfig = async (
   actor: Actor,

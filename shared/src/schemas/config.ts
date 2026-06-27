@@ -86,6 +86,22 @@ export const updateFormFieldConfigSchema = z.object({
 });
 export type UpdateFormFieldConfigInput = z.infer<typeof updateFormFieldConfigSchema>;
 
+// Reordenação em lote dos campos: array de { id, order }. Persistido na coluna
+// `order` do model FormFieldConfig.
+export const reorderFormFieldConfigsSchema = z.object({
+  fieldOrders: z
+    .array(
+      z.object({
+        id: z.string().uuid('id deve ser um UUID válido.'),
+        order: z.coerce.number().int('order deve ser inteiro.').min(0),
+      }),
+    )
+    .min(1, 'fieldOrders deve conter ao menos um item.'),
+});
+export type ReorderFormFieldConfigsInput = z.infer<
+  typeof reorderFormFieldConfigsSchema
+>;
+
 // ============================================
 // ROLE PERMISSIONS
 // ============================================

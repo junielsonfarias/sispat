@@ -11,8 +11,14 @@ const mockPrisma = {
     create: jest.fn((a: { data: Record<string, unknown> }) => ({ id: 'f1', ...a.data })),
     findFirst: jest.fn(),
     update: jest.fn((a: { where: { id: string } }) => ({ id: a.where.id })),
+    updateMany: jest.fn((a: { where: Record<string, unknown> }) => ({ where: a.where })),
     delete: jest.fn(),
+    aggregate: jest.fn(
+      (): Promise<{ _max: { order: number | null } }> =>
+        Promise.resolve({ _max: { order: null } }),
+    ),
   },
+  $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
   cloudStorage: {
     findUnique: jest.fn(),
     create: jest.fn((a: { data: Record<string, unknown> }) => ({ id: 'cs1', ...a.data })),
@@ -26,6 +32,7 @@ import {
   createFormFieldConfig,
   updateFormFieldConfig,
   removeFormFieldConfig,
+  reorderFormFieldConfigs,
   FormFieldConfigNotFoundError,
 } from '../../services/formFieldConfigService';
 import { getCloudStorage, upsertCloudStorage } from '../../services/cloudStorageService';
@@ -49,6 +56,35 @@ describe('formFieldConfigService', () => {
     expect(data.municipalityId).toBe('mun-A');
     expect(data.required).toBe(false);
     expect(data.options).toEqual([]);
+    // sem campos anteriores (_max.order = null) -> entra como order 0.
+    expect(data.order).toBe(0);
+  });
+
+  it('create acrescenta no fim da ordem (max + 1)', async () => {
+    mockPrisma.formFieldConfig.aggregate.mockResolvedValueOnce({ _max: { order: 4 } });
+    await createFormFieldConfig(actorA, { key: 'k2', label: 'L2', type: 'text' });
+    const data = (mockPrisma.formFieldConfig.create.mock.calls[0][0] as { data: Record<string, unknown> }).data;
+    expect(data.order).toBe(5);
+  });
+
+  it('reorder escopa cada update por município (IDOR) p/ não-superuser', async () => {
+    await reorderFormFieldConfigs(actorA, [
+      { id: 'a', order: 0 },
+      { id: 'b', order: 1 },
+    ]);
+    expect(mockPrisma.formFieldConfig.updateMany).toHaveBeenCalledTimes(2);
+    const firstWhere = (mockPrisma.formFieldConfig.updateMany.mock.calls[0][0] as {
+      where: { municipalityId?: string };
+    }).where;
+    expect(firstWhere.municipalityId).toBe('mun-A');
+  });
+
+  it('reorder do superuser não filtra por município', async () => {
+    await reorderFormFieldConfigs(superuser, [{ id: 'a', order: 0 }]);
+    const where = (mockPrisma.formFieldConfig.updateMany.mock.calls[0][0] as {
+      where: { municipalityId?: string };
+    }).where;
+    expect(where.municipalityId).toBeUndefined();
   });
 
   it('update: NotFound quando é de outro município (não atualiza)', async () => {

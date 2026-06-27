@@ -100,15 +100,20 @@ export const FormFieldManagerProvider = ({
 
   const reorderFields = useCallback(
     async (newFields: FormFieldConfig[]) => {
-      // Atualizar ordem no banco
+      // Atualização otimista; persiste a nova ordem (índice) no backend.
+      setFields(newFields)
       try {
-        for (let i = 0; i < newFields.length; i++) {
-          // Nota: Este é um placeholder - pode precisar de endpoint específico
-        }
-        setFields(newFields)
+        await api.put('/config/form-field-configs/reorder', {
+          fieldOrders: newFields.map((f, index) => ({ id: f.id, order: index })),
+        })
       } catch (error) {
-        // Rollback
+        // Rollback: recarrega a ordem persistida.
         await fetchFields()
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Falha ao reordenar campos.',
+        })
       }
     },
     [fetchFields],

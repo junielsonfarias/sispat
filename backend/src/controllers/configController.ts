@@ -247,6 +247,25 @@ export const deleteFormFieldConfig = async (req: Request, res: Response): Promis
   }
 };
 
+export const reorderFormFieldConfigs = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const municipalityId = req.user?.municipalityId;
+    if (!municipalityId) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+    const { fieldOrders } = req.body;
+    await formFieldConfigs.reorderFormFieldConfigs(
+      { role: req.user!.role, municipalityId },
+      fieldOrders,
+    );
+    res.json({ message: 'Campos reordenados com sucesso' });
+  } catch (error) {
+    logError('Erro ao reordenar configurações de campo', error);
+    res.status(500).json({ error: 'Erro ao reordenar configurações de campo' });
+  }
+};
+
 // ============================================
 // ROLE PERMISSIONS
 // ============================================

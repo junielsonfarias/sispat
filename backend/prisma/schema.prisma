@@ -882,12 +882,14 @@ model FormFieldConfig {
   options       String[]
   isCustom      Boolean  @default(false)
   isSystem      Boolean  @default(false)
+  order         Int      @default(0)
   municipalityId String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([municipalityId])
   @@index([key])
+  @@index([order])
   @@map("form_field_configs")
 }
 
