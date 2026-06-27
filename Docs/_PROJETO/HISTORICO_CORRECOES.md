@@ -21,6 +21,17 @@
 
 ## 2026
 
+### 2026-06-27 — Auditoria geral (4 frentes) + remediação em 5 lotes
+- **Contexto:** varredura completa por 4 auditores (segurança backend, multi-tenant, frontend, regras de negócio). Veredito: 0 IDOR/SQLi/mass-assignment críticos novos; 5 gaps legais de 2026-06-24 íntegros; isolamento multi-tenant consistente. Achados pontuais remediados em lotes A–E.
+- **Lote A (commit e645025):** (1) endpoint público de patrimônios vazava PII do setor (cnpj/responsavel/codigo) via `include` sem `select` → reduzido a `sector { select: { name } }`; (2) `updateUser` não persistia `email` (no-op no UserEditForm) → persiste com checagem de unicidade; (3) reset tokens de senha em texto plano → hash SHA-256 (`hashToken`).
+- **Lote B (commit 1dd9234):** jsPDF (~2MB) importado estaticamente em 5 módulos → `await import('jspdf')` dinâmico (tira do bundle inicial).
+- **Lote C (commit 357001d):** rate-limiter em `/refresh`, `/change-password`, `/validate-reset-token`; `maskEmail` no log de brute-force; Cache-Control `private` em tiposBens/formasAquisicao; `fileFilter` no multer da importação; `getUserById` restringe leitura de outros perfis a gestores; `deletePatrimonio` faz check de tenant antes dos guards (oracle de estado); `reportTemplateService` 404 (não 403) cross-tenant.
+- **Lote D (commit c3aadfb):** `approveTransfer` exige supervisor responsável pelo setor destino (REGRAS §6); `registrarBaixa` não sobrescreve `situacao_bem` com 'baixado'; badge de condição no BensView normaliza case; BensEdit remove 'baixado'/'extraviado' do dropdown de status.
+- **Lote E (commit fd11685):** 91 `console.error/warn` → `logger` (DEV-gated) em 46 arquivos; remove polling de 60s em Sector/LocalContext; `level:'info'` no combined transport do Winston.
+- **Decisões/Deferidos (precisam de produto ou são refactor amplo):** exibição de `valor_aquisicao` na página pública (§11 vs feature construída); descompasso sistêmico `avatar`↔`avatarUrl` (toda a app); migrar ImoveisList/Emprestimos p/ usePermissions + permissões `settings:*` do supervisor (faltam chaves no modelo; backend já reforça); 159 `any`; ~173 cores hardcoded (dark mode); empréstimo 'atrasado' (cron); race de numeração em import concorrente.
+- **Verificação:** backend tsc 0, frontend tsc 0, 577 testes Jest verdes (+8 nesta auditoria).
+- **Lição:** auditor pode errar (ex.: "arquivos mortos" eram falso-positivo — MobileNavigation/ErrorBoundary usados); sempre verificar antes de deletar/remediar.
+
 ### 2026-06-27 — Contract bugs da entidade Usuário (re-auditoria final)
 - **Sintoma / Causa-raiz:** `updateUserSchema` (`@sispat/shared`) é `.strict()` e o `updateUser` controller só lê `name/role/responsibleSectors/isActive`. O front enviava para `PUT /users/:id` campos que o schema rejeitava (400 silencioso) ou o controller ignorava (no-op).
   1. **Reset de senha de outro usuário (admin) quebrado** — `AuthContext.updateUserPassword` mandava `{ password }` → 400 "Unrecognized key"; e mesmo passando, o controller ignorava `password`. Não existia endpoint de "gestor redefine senha de terceiro".
