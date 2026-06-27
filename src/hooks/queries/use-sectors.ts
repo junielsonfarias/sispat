@@ -21,8 +21,10 @@ export const useSectors = () => {
   return useQuery({
     queryKey: ['sectors'],
     queryFn: async () => {
-      const response = await api.get<Sector[]>('/sectors')
-      return Array.isArray(response) ? response : []
+      // Mesmo cache (queryKey ['sectors']) e mesmo tratamento de shape do
+      // SectorContext — a API pode devolver array direto ou { sectors }.
+      const response = await api.get<Sector[] | { sectors: Sector[] }>('/sectors')
+      return Array.isArray(response) ? response : response.sectors || []
     },
     staleTime: 10 * 60 * 1000, // Setores mudam raramente, cache 10min
     gcTime: 30 * 60 * 1000,    // Keep por 30min

@@ -1,18 +1,22 @@
 import {
   createContext,
-  useState,
   ReactNode,
   useContext,
   useCallback,
-  useEffect,
   useMemo,
 } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sector } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { api } from '@/services/api-adapter'
 import { logger } from '@/lib/logger'
+
+// Chave única do cache de setores — COMPARTILHADA com o hook de query
+// `src/hooks/queries/use-sectors.ts`. Manter igual para que Context e hook usem
+// o MESMO cache do React Query (sem fetch duplicado).
+const SECTORS_KEY = ['sectors'] as const
 
 interface SectorContextType {
   sectors: Sector[]
@@ -31,125 +35,107 @@ interface SectorContextType {
 const SectorContext = createContext<SectorContextType | null>(null)
 
 export const SectorProvider = ({ children }: { children: ReactNode }) => {
-  const [sectors, setSectors] = useState<Sector[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  const fetchSectors = useCallback(async () => {
-    if (!user) return
-    logger.debug('SectorContext: Iniciando busca de setores...')
-    setIsLoading(true)
-    try {
-      const response = await api.get<{ sectors: Sector[]; pagination: unknown }>('/sectors')
-      logger.debug('SectorContext: Resposta da API', { response })
-      // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade sectors
-      const sectorsData = Array.isArray(response) ? response : (response.sectors || [])
-      logger.debug('SectorContext: Setores carregados', { count: sectorsData.length })
-      setSectors(sectorsData)
-    } catch (error) {
-      logger.error('SectorContext: Erro ao buscar setores:', error)
-      
-      // ✅ CORREÇÃO: Se for erro de conexão, usar dados vazios em vez de mostrar erro
-      if (isConnectionDownError(error)) {
-        logger.debug('Backend não disponível - usando lista vazia de setores')
-        setSectors([])
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Falha ao carregar setores.',
-        })
+  // Fonte ÚNICA de setores: React Query. O Context é uma fachada fina por cima —
+  // os consumidores (useSectors) seguem iguais, mas sem o fetch paralelo que o
+  // provider antigo fazia (que duplicava com o hook de query).
+  const { data, isLoading } = useQuery({
+    queryKey: SECTORS_KEY,
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000, // setores mudam raramente
+    gcTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      try {
+        const response = await api.get<Sector[] | { sectors: Sector[] }>('/sectors')
+        // A API pode devolver array direto ou { sectors, pagination }.
+        return Array.isArray(response) ? response : response.sectors || []
+      } catch (error) {
+        // Backend fora do ar → lista vazia silenciosa (mesmo comportamento do antigo).
+        if (isConnectionDownError(error)) {
+          logger.debug('Backend não disponível - usando lista vazia de setores')
+          return []
+        }
+        throw error
       }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [user])
+    },
+  })
 
-  useEffect(() => {
-    // Sem polling: setores mudam raramente e a lista é refeita após cada mutação
-    // (add/update/delete) via os métodos do contexto. Um setInterval por sessão
-    // gerava 1 request/min em toda a app sem necessidade.
-    if (user) {
-      fetchSectors()
-    }
-  }, [user, fetchSectors])
+  const sectors = data ?? []
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: SECTORS_KEY }),
+    [queryClient],
+  )
+
+  const setSectors = useCallback(
+    (next: Sector[]) => queryClient.setQueryData(SECTORS_KEY, next),
+    [queryClient],
+  )
 
   const getSectorById = useCallback(
     (id: string) => sectors.find((s) => s.id === id),
     [sectors],
   )
 
-  const addSector = async (data: Omit<Sector, 'id'>) => {
-    const newSector = await api.post<Sector>('/sectors', data)
-    // ✅ Adicionar ao estado local para refletir imediatamente
-    setSectors((prev) => [...prev, newSector])
-    toast({ description: 'Setor criado com sucesso.' })
-  }
+  const addSector = useCallback(
+    async (data: Omit<Sector, 'id'>) => {
+      await api.post<Sector>('/sectors', data)
+      await invalidate()
+      toast({ description: 'Setor criado com sucesso.' })
+    },
+    [invalidate],
+  )
 
-  const updateSector = async (
-    id: string,
-    data: Omit<Sector, 'id' | 'municipalityId'>,
-  ) => {
-    logger.debug('SectorContext.updateSector chamado', { id, dadosEnviados: data });
-
-    try {
-      const updatedSector = await api.put<Sector>(`/sectors/${id}`, data)
-
-      logger.debug('SectorContext: Resposta do backend', { updatedSector });
-      
-      setSectors((prev) => prev.map((s) => (s.id === id ? updatedSector : s)))
-      toast({ description: 'Setor atualizado com sucesso.' })
-    } catch (error) {
-      // Se o setor não existe mais (404), remover do estado local
-      if (extractApiError(error).status === 404) {
-        setSectors((prev) => prev.filter((s) => s.id !== id))
-        toast({
-          variant: 'destructive',
-          title: 'Setor não encontrado',
-          description: 'Este setor foi excluído. A lista será atualizada.',
-        })
-        // Atualizar a lista completa
-        await fetchSectors()
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Falha ao atualizar setor.',
-        })
-        throw error
+  const updateSector = useCallback(
+    async (id: string, data: Omit<Sector, 'id' | 'municipalityId'>) => {
+      logger.debug('SectorContext.updateSector', { id, data })
+      try {
+        await api.put<Sector>(`/sectors/${id}`, data)
+        await invalidate()
+        toast({ description: 'Setor atualizado com sucesso.' })
+      } catch (error) {
+        if (extractApiError(error).status === 404) {
+          await invalidate()
+          toast({
+            variant: 'destructive',
+            title: 'Setor não encontrado',
+            description: 'Este setor foi excluído. A lista será atualizada.',
+          })
+        } else {
+          toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao atualizar setor.' })
+          throw error
+        }
       }
-    }
-  }
+    },
+    [invalidate],
+  )
 
-  const deleteSector = async (id: string) => {
-    try {
-      await api.delete(`/sectors/${id}`)
-      setSectors((prev) => prev.filter((s) => s.id !== id))
-      toast({ description: 'Setor excluído com sucesso.' })
-    } catch (error) {
-      // Se o setor já foi deletado (404), apenas remover do estado local
-      if (extractApiError(error).status === 404) {
-        setSectors((prev) => prev.filter((s) => s.id !== id))
-        toast({ 
-          description: 'Setor já foi excluído anteriormente.',
-          variant: 'default'
-        })
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Falha ao excluir setor.',
-        })
-        throw error
+  const deleteSector = useCallback(
+    async (id: string) => {
+      try {
+        await api.delete(`/sectors/${id}`)
+        await invalidate()
+        toast({ description: 'Setor excluído com sucesso.' })
+      } catch (error) {
+        // Já deletado (404): apenas sincroniza a lista.
+        if (extractApiError(error).status === 404) {
+          await invalidate()
+          toast({ description: 'Setor já foi excluído anteriormente.' })
+        } else {
+          toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao excluir setor.' })
+          throw error
+        }
       }
-    }
-  }
+    },
+    [invalidate],
+  )
 
   const refreshSectors = useCallback(async () => {
-    await fetchSectors()
-  }, [fetchSectors])
+    await invalidate()
+  }, [invalidate])
 
-  // F11: memoiza para evitar re-render em cascata
   const value = useMemo(
     () => ({
       sectors,
@@ -161,7 +147,7 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
       deleteSector,
       refreshSectors,
     }),
-    [sectors, isLoading, getSectorById, addSector, updateSector, deleteSector, refreshSectors],
+    [sectors, isLoading, setSectors, getSectorById, addSector, updateSector, deleteSector, refreshSectors],
   )
 
   return <SectorContext.Provider value={value}>{children}</SectorContext.Provider>
