@@ -157,7 +157,7 @@ export default function ImoveisEdit() {
     try {
       // Converte itens vindos do ImageUpload ({id, file_url, file_name}) para
       // strings; o backend também sanitiza, mas evitamos o round-trip inválido.
-      const toUrl = (item: any): string => {
+      const toUrl = (item: string | { file_url?: string; url?: string }): string => {
         if (typeof item === 'string') return item
         if (item && typeof item === 'object') return item.file_url || item.url || ''
         return ''

@@ -26,6 +26,28 @@ import { getCloudImageUrl, formatDate } from '@/lib/utils'
 import { publicApi } from '@/services/public-api'
 import { logger } from '@/lib/logger'
 
+/** Patrimônio enriquecido com relacionamentos do backend para exibição pública */
+type PatrimonioPublico = {
+  id: string
+  numero_patrimonio: string
+  descricao_bem?: string
+  fotos?: string[]
+  status?: string
+  data_aquisicao?: string
+  tipo?: string
+  marca?: string
+  modelo?: string
+  serie?: string
+  observacoes?: string
+  forma_aquisicao?: string
+  setor_responsavel?: string
+  local_objeto?: string
+  tipoBem?: { nome?: string } | null
+  local?: { name?: string } | null
+  sector?: { name?: string } | null
+  valor_aquisicao?: number
+}
+
 const formatSituacao = (situacao: string) => {
   const labels: Record<string, string> = {
     ativo: 'Ativo',
@@ -54,7 +76,7 @@ export default function PublicBemDetalhes() {
   const { settings } = useCustomization()
   const [isLoading, setIsLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [patrimonio, setPatrimonio] = useState<any>(null)
+  const [patrimonio, setPatrimonio] = useState<PatrimonioPublico | null>(null)
 
   // ✅ CORREÇÃO: Buscar patrimônio usando API pública (sem autenticação)
   useEffect(() => {
@@ -68,7 +90,7 @@ export default function PublicBemDetalhes() {
         
         // ✅ O backend retorna o objeto completo do Prisma com relacionamentos
         // A API pública já extrai o objeto patrimonio da resposta
-        const data = response as any
+        const data = response as unknown as PatrimonioPublico
         
         // ✅ Mapear dados do backend para o formato esperado pelo frontend
         const patrimonioMapeado = {
@@ -191,9 +213,9 @@ export default function PublicBemDetalhes() {
                     <Package className="h-3 w-3" />
                     Bem Móvel
                   </Badge>
-                  <Badge className={getSituacaoStyle(patrimonio.status)}>
+                  <Badge className={getSituacaoStyle(patrimonio.status ?? 'ativo')}>
                     <CheckCircle2 className="h-3 w-3 mr-1" />
-                    {formatSituacao(patrimonio.status)}
+                    {formatSituacao(patrimonio.status ?? 'ativo')}
                   </Badge>
                 </div>
 
@@ -217,7 +239,7 @@ export default function PublicBemDetalhes() {
                       <Calendar className="h-4 w-4 text-emerald-600" />
                     </div>
                     <p className="text-lg font-semibold text-foreground">
-                      {formatDate(patrimonio.data_aquisicao)}
+                      {patrimonio.data_aquisicao ? formatDate(patrimonio.data_aquisicao) : '—'}
                     </p>
                   </div>
                 </CardContent>
@@ -331,7 +353,7 @@ export default function PublicBemDetalhes() {
                       <span className="text-muted-foreground">Tipo</span>
                       <span className="font-semibold text-foreground">
                         {/* ✅ CORREÇÃO: Usar tipoBem?.nome ou tipo */}
-                        {(patrimonio as any).tipoBem?.nome || patrimonio.tipo || 'Não informado'}
+                        {patrimonio.tipoBem?.nome || patrimonio.tipo || 'Não informado'}
                       </span>
                     </div>
                     {patrimonio.marca && (
@@ -381,7 +403,7 @@ export default function PublicBemDetalhes() {
                         <p className="text-muted-foreground mb-1">Local</p>
                         <p className="font-semibold text-foreground">
                           {/* ✅ CORREÇÃO: Usar local_objeto ou local?.name */}
-                          {(patrimonio as any).local?.name || patrimonio.local_objeto || 'Não informado'}
+                          {patrimonio.local?.name || patrimonio.local_objeto || 'Não informado'}
                         </p>
                       </div>
                     </div>
@@ -403,7 +425,7 @@ export default function PublicBemDetalhes() {
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between py-2 border-b border-slate-100">
                       <span className="text-muted-foreground">Data Aquisição</span>
-                      <span className="font-semibold text-foreground">{formatDate(patrimonio.data_aquisicao)}</span>
+                      <span className="font-semibold text-foreground">{patrimonio.data_aquisicao ? formatDate(patrimonio.data_aquisicao) : '—'}</span>
                     </div>
                     {patrimonio.forma_aquisicao && (
                       <div className="flex justify-between py-2">

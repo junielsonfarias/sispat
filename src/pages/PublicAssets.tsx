@@ -63,6 +63,12 @@ import { logger } from '@/lib/logger'
 
 type CombinedAsset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
 
+/** Patrimônio com relações opcionais devolvidas pelo backend (tipoBem, local) */
+type PatrimonioComRelacoes = Patrimonio & {
+  tipoBem?: { nome?: string }
+  local?: { name?: string }
+}
+
 // Helper para obter badge de situação
 const getSituacaoBadge = (situacao: string) => {
   const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -139,17 +145,17 @@ export default function PublicAssets() {
       if (p.setor_responsavel) setores.add(p.setor_responsavel)
       if (p.status) situacoes.add(p.status)
       // ✅ CORREÇÃO: Considerar tipo direto ou tipoBem?.nome
-      const tipo = (p as any).tipoBem?.nome || p.tipo || ''
+      const tipo = (p as PatrimonioComRelacoes).tipoBem?.nome || p.tipo || ''
       if (tipo) tipos.add(tipo)
       // ✅ CORREÇÃO: Usar local_objeto ou local?.name
-      const local = (p as any).local?.name || p.local_objeto || ''
+      const local = (p as PatrimonioComRelacoes).local?.name || p.local_objeto || ''
       if (local) locais.add(local)
     })
 
     imoveis.forEach((i) => {
       if (i.setor) setores.add(i.setor)
       situacoes.add('ativo') // Imóveis sempre ativos
-      if ((i as any).tipo_imovel) tipos.add((i as any).tipo_imovel)
+      if (i.tipo_imovel) tipos.add(i.tipo_imovel)
       if (i.endereco) locais.add(i.endereco)
     })
 
@@ -224,7 +230,7 @@ export default function PublicAssets() {
       // ✅ NOVO: Filtro de tipo (tipoBem)
       if (filtroTipo !== 'all') {
         const tipo = item.assetType === 'bem'
-          ? (item as Patrimonio).tipo || (item as any).tipoBem?.nome
+          ? (item as PatrimonioComRelacoes).tipo || (item as PatrimonioComRelacoes).tipoBem?.nome
           : (item as Imovel).tipo_imovel || ''
         if (tipo !== filtroTipo) return false
       }
@@ -232,7 +238,7 @@ export default function PublicAssets() {
       // ✅ NOVO: Filtro de local
       if (filtroLocal !== 'all') {
         const local = item.assetType === 'bem'
-          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
+          ? (item as PatrimonioComRelacoes).local?.name || (item as PatrimonioComRelacoes).local_objeto || ''
           : (item as Imovel).endereco || ''
         if (local !== filtroLocal) return false
       }
@@ -247,7 +253,7 @@ export default function PublicAssets() {
           : (item as Imovel).setor || ''
         // ✅ CORREÇÃO: Usar local_objeto ou local?.name
         const local = item.assetType === 'bem'
-          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
+          ? (item as PatrimonioComRelacoes).local?.name || (item as PatrimonioComRelacoes).local_objeto || ''
           : (item as Imovel).endereco || ''
 
         const searchLower = debouncedSearchTerm.toLowerCase()
@@ -294,7 +300,7 @@ export default function PublicAssets() {
       const data = filteredData.map((item) => {
         // ✅ CORREÇÃO: Usar local_objeto ou local?.name
         const local = item.assetType === 'bem'
-          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
+          ? (item as PatrimonioComRelacoes).local?.name || (item as PatrimonioComRelacoes).local_objeto || ''
           : (item as Imovel).endereco || '-'
         
         return {
@@ -350,7 +356,7 @@ export default function PublicAssets() {
       const data = filteredData.map((item) => {
         // ✅ CORREÇÃO: Usar local_objeto ou local?.name
         const local = item.assetType === 'bem'
-          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
+          ? (item as PatrimonioComRelacoes).local?.name || (item as PatrimonioComRelacoes).local_objeto || ''
           : (item as Imovel).endereco || '-'
         
         return {
@@ -488,7 +494,7 @@ export default function PublicAssets() {
       const tableData = filteredData.map((item) => {
         // ✅ CORREÇÃO: Usar local_objeto ou local?.name
         const local = item.assetType === 'bem'
-          ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || ''
+          ? (item as PatrimonioComRelacoes).local?.name || (item as PatrimonioComRelacoes).local_objeto || ''
           : (item as Imovel).endereco || '-'
         
         return [
@@ -627,7 +633,7 @@ export default function PublicAssets() {
                 <Select
                   value={assetTypeFilter}
                   onValueChange={(v) => {
-                    setAssetTypeFilter(v as any)
+                    setAssetTypeFilter(v as 'all' | 'bem' | 'imovel')
                     setCurrentPage(1)
                   }}
                 >
@@ -890,7 +896,7 @@ export default function PublicAssets() {
                         : (item as Imovel).setor || '-'
                       // ✅ CORREÇÃO: Usar local_objeto ou local?.name
                       const local = item.assetType === 'bem'
-                        ? ((item as Patrimonio) as any).local?.name || (item as Patrimonio).local_objeto || '-'
+                        ? (item as PatrimonioComRelacoes).local?.name || (item as PatrimonioComRelacoes).local_objeto || '-'
                         : (item as Imovel).endereco || '-'
                       const situacao = item.assetType === 'bem'
                         ? (item as Patrimonio).status

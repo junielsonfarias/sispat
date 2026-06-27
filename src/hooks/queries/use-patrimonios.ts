@@ -81,7 +81,7 @@ export const useCreatePatrimonio = () => {
         description: 'Patrimônio criado com sucesso!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao criar patrimônio',
@@ -113,7 +113,7 @@ export const useUpdatePatrimonio = () => {
       const previousList = queryClient.getQueryData(['patrimonios'])
 
       // Atualiza otimisticamente
-      queryClient.setQueryData(['patrimonio', id], (old: any) => ({
+      queryClient.setQueryData(['patrimonio', id], (old: Patrimonio | undefined) => ({
         ...old,
         ...data,
       }))
@@ -179,7 +179,7 @@ export const useBaixaPatrimonio = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       const response = await api.post(`/patrimonios/${id}/baixa`, data)
       return response
     },

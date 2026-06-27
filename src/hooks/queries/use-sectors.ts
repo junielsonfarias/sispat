@@ -47,7 +47,7 @@ export const useCreateSector = () => {
         description: 'Setor criado com sucesso!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao criar setor',

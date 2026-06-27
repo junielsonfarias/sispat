@@ -8,7 +8,7 @@ interface InventoryItem {
   patrimonioId: string
   status: 'conforme' | 'nao_conforme' | 'nao_localizado'
   observacoes?: string
-  patrimonio?: any
+  patrimonio?: Record<string, unknown>
 }
 
 interface Inventory {
@@ -80,7 +80,7 @@ export const useCreateInventario = () => {
         description: 'Inventário criado com sucesso!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao criar inventário',
@@ -109,7 +109,7 @@ export const useUpdateInventario = () => {
         description: 'Inventário atualizado!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao atualizar inventário',
@@ -151,7 +151,7 @@ export const useAddInventoryItem = () => {
         description: 'Item adicionado ao inventário!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao adicionar item',
@@ -180,7 +180,7 @@ export const useFinalizarInventario = () => {
         description: 'O inventário foi finalizado com sucesso!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao finalizar inventário',
@@ -208,7 +208,7 @@ export const useDeleteInventario = () => {
         description: 'O inventário foi removido.',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao deletar inventário',

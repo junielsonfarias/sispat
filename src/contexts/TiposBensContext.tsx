@@ -31,7 +31,7 @@ export const TiposBensProvider: React.FC<{ children: ReactNode }> = ({ children 
     setIsLoading(true)
     setError(null)
     try {
-      const response = await api.get<{ tiposBens: TipoBem[]; pagination: any }>('/tipos-bens')
+      const response = await api.get<{ tiposBens: TipoBem[]; pagination: unknown }>('/tipos-bens')
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade tiposBens
       const tiposData = Array.isArray(response) ? response : (response.tiposBens || [])
       setTiposBens(tiposData)

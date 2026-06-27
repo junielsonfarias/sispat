@@ -18,7 +18,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { LabelPreview } from '@/components/LabelPreview'
-import { Patrimonio } from '@/types'
+import { Patrimonio, LabelTemplate, LabelElement } from '@/types'
 import { Printer, Download, FileImage } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useCustomization } from '@/contexts/CustomizationContext'
@@ -30,12 +30,12 @@ interface LabelPrintDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   assets: Patrimonio[]
-  templates: any[]
-  defaultTemplate?: any
+  templates: LabelTemplate[]
+  defaultTemplate?: LabelTemplate
 }
 
 interface PrintOptions {
-  template: any
+  template: LabelTemplate | null
   copies: number
   labelsPerPage: 'auto' | '1' | '2x2' | '2x3' | '3x4'
   showCutGuides: boolean
@@ -52,11 +52,11 @@ export function LabelPrintDialog({
   defaultTemplate,
 }: LabelPrintDialogProps) {
   const { settings } = useCustomization()
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(
-    templates.length > 0 ? (defaultTemplate || templates.find((t: any) => t.isDefault) || templates[0]) : null
+  const [selectedTemplate, setSelectedTemplate] = useState<LabelTemplate | null>(
+    templates.length > 0 ? (defaultTemplate || templates.find((t) => t.isDefault) || templates[0]) : null
   )
   const [printOptions, setPrintOptions] = useState<PrintOptions>({
-    template: templates.length > 0 ? (defaultTemplate || templates.find((t: any) => t.isDefault) || templates[0]) : null,
+    template: templates.length > 0 ? (defaultTemplate || templates.find((t) => t.isDefault) || templates[0]) : null,
     copies: 1,
     labelsPerPage: 'auto',
     showCutGuides: true,
@@ -71,7 +71,7 @@ export function LabelPrintDialog({
   // Selecionar template padrão quando disponível
   useEffect(() => {
     if (open && templates.length > 0 && !selectedTemplate) {
-      const defaultTpl = templates.find((t: any) => t.isDefault) || templates[0]
+      const defaultTpl = templates.find((t) => t.isDefault) || templates[0]
       if (defaultTpl) {
         setSelectedTemplate(defaultTpl)
         setPrintOptions((prev) => ({ ...prev, template: defaultTpl }))
@@ -248,7 +248,7 @@ export function LabelPrintDialog({
           printWindow.document.write(`<div id="label-${asset.id}-${copy}" style="width: ${selectedTemplate.width * 4}px; height: ${selectedTemplate.height * 4}px; position: relative; background: white;">`)
           
           // Renderizar elementos do template
-          selectedTemplate.elements.forEach((el: any) => {
+          selectedTemplate.elements.forEach((el: LabelElement) => {
           let content = ''
           if (el.type === 'LOGO') {
             content = `<img src="${settings?.activeLogoUrl || ''}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`
@@ -532,7 +532,7 @@ export function LabelPrintDialog({
                   <Select
                     value={selectedTemplate?.id || ''}
                     onValueChange={(value) => {
-                      const tpl = templates.find((t: any) => t.id === value)
+                      const tpl = templates.find((t) => t.id === value)
                       if (tpl) {
                         setSelectedTemplate(tpl)
                         setPrintOptions((prev) => ({ ...prev, template: tpl }))
@@ -543,7 +543,7 @@ export function LabelPrintDialog({
                       <SelectValue placeholder="Selecione um template" />
                     </SelectTrigger>
                     <SelectContent>
-                      {templates.map((template: any) => (
+                      {templates.map((template) => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name} ({template.width}x{template.height}mm)
                         </SelectItem>
@@ -573,8 +573,8 @@ export function LabelPrintDialog({
                 <Label>Etiquetas por Página</Label>
                 <Select
                   value={printOptions.labelsPerPage}
-                  onValueChange={(value: any) =>
-                    setPrintOptions((prev) => ({ ...prev, labelsPerPage: value }))
+                  onValueChange={(value) =>
+                    setPrintOptions((prev) => ({ ...prev, labelsPerPage: value as PrintOptions['labelsPerPage'] }))
                   }
                 >
                   <SelectTrigger>

@@ -52,7 +52,7 @@ export const RecentPatrimonios = ({ patrimonios = [], imoveis = [] }: RecentPatr
       tipoItem: 'imovel' as const,
       descricao_bem: i.denominacao || i.descricao_bem || 'Imóvel', // Para imóveis, usar denominacao como descrição
       status: i.status || (i as any).situacao || 'ativo', // Usar situacao como status para imóveis
-      createdAt: (i as any).createdAt || (i as any).created_at || new Date().toISOString()
+      createdAt: i.createdAt || (i as any).created_at || new Date().toISOString()
     }))
     
     return [...bens, ...imoveisFormatados]

@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Patrimonio } from '@/types'
+import { Patrimonio, LabelTemplate } from '@/types'
 import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { LabelPrintDialog } from '@/components/bens/LabelPrintDialog'
 import { DistribuirDialog } from '@/components/bens/DistribuirDialog'
@@ -91,7 +91,7 @@ const renderTable = (
   fetchPatrimonios: () => Promise<void>,
   currentPage: number,
   setCurrentPage: (page: number) => void,
-  toast: any,
+  toast: (opts: { title: string; description?: string; variant?: 'default' | 'destructive' }) => void,
   setPatrimonios: React.Dispatch<React.SetStateAction<Patrimonio[]>>,
   setSelectedAssets: React.Dispatch<React.SetStateAction<string[]>>,
   setTotalItems: React.Dispatch<React.SetStateAction<number>>,
@@ -414,7 +414,7 @@ const BensCadastrados = () => {
   const [showFilters, setShowFilters] = useState(false)
   const [qrCodeAsset, setQrCodeAsset] = useState<Patrimonio | null>(null)
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<LabelTemplate | null>(null)
   const [selectedAssets, setSelectedAssets] = useState<string[]>([])
   const [isBulkPrintDialogOpen, setIsBulkPrintDialogOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -616,7 +616,7 @@ const BensCadastrados = () => {
     setIsQrDialogOpen(true)
   }
 
-  const handleSelectTemplate = (template: any) => {
+  const handleSelectTemplate = (template: LabelTemplate) => {
     setSelectedTemplate(template)
   }
 
@@ -1640,7 +1640,7 @@ const BensCadastrados = () => {
             onOpenChange={setIsBulkPrintDialogOpen}
             assets={filteredData.filter((p) => selectedAssets.includes(p.id))}
             templates={labelTemplates}
-            defaultTemplate={labelTemplates.find((t: any) => t.isDefault) || labelTemplates[0]}
+            defaultTemplate={labelTemplates.find((t) => t.isDefault) || labelTemplates[0]}
           />
         )}
 

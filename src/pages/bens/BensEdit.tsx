@@ -85,7 +85,8 @@ const BensEdit = () => {
         setPatrimonio(data)
         
         // ✅ CORREÇÃO: Converter strings de URLs para objetos que ImageUpload espera
-        const fotosParaForm = (data.fotos || ((data as unknown as Record<string, unknown>).photos as string[]) || []).map((foto: any, index: number) => {
+        type FotoItem = string | { file_url?: string; id?: string; file_name?: string }
+        const fotosParaForm = (data.fotos || ((data as unknown as Record<string, unknown>).photos as string[]) || []).map((foto: FotoItem, index: number) => {
           if (typeof foto === 'string') {
             // Converter string para objeto
             return {
@@ -228,7 +229,8 @@ const BensEdit = () => {
         observacoes: data.observacoes,
         // ✅ CORREÇÃO: Fotos já vêm como URLs do ImageUpload
         fotos: (() => {
-          const fotosProcessadas = (data.fotos || []).map((f: any) => {
+          type FotoItemEdit = string | { file_url?: string; url?: string; [key: string]: unknown }
+          const fotosProcessadas = (data.fotos || []).map((f: FotoItemEdit) => {
             // Se for string, já é URL - apenas limpar se necessário
             if (typeof f === 'string') {
               let url = f
@@ -255,8 +257,8 @@ const BensEdit = () => {
           
           return fotosProcessadas
         })(),
-        documentos: (data.documentos || []).map((d: any) =>
-          typeof d === 'string' ? d : d.file_url || d
+        documentos: (data.documentos || []).map((d: string | { file_url?: string }) =>
+          typeof d === 'string' ? d : d.file_url || ''
         ),
         metodo_depreciacao: data.metodo_depreciacao,
         vida_util_anos: data.vida_util_anos,

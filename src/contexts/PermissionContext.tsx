@@ -10,6 +10,13 @@ import { Role, Permission, UserRole } from '@/types'
 import { api } from '@/services/api-adapter'
 import { useAuth } from './AuthContext'
 
+/** Formato devolvido pelo endpoint GET /config/role-permissions */
+type RolePermissionRaw = {
+  roleId: UserRole
+  name: string
+  permissions: Permission[]
+}
+
 const defaultRoles: Role[] = [
   {
     id: 'superuser',
@@ -95,7 +102,7 @@ export const PermissionProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return
     
     try {
-      const rolePermissions = await api.get<any[]>('/config/role-permissions')
+      const rolePermissions = await api.get<RolePermissionRaw[]>('/config/role-permissions')
       // Converter para o formato esperado
       const rolesData = rolePermissions.map(rp => ({
         id: rp.roleId,

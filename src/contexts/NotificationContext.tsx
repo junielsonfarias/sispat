@@ -11,10 +11,36 @@ import { Notification } from '@/types'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
 
+/** Formato aceito por addNotification (suporta nomes em pt-BR do backend e en-US do frontend) */
+type NotificationInput = {
+  type?: Notification['type']
+  tipo?: string
+  title?: string
+  titulo?: string
+  description?: string
+  mensagem?: string
+  link?: string
+}
+
+/** Formato bruto retornado pelo endpoint GET /notifications */
+type NotificationRaw = {
+  id: string
+  userId: string
+  titulo?: string
+  mensagem?: string
+  tipo?: string
+  createdAt: string
+  lida?: boolean
+  title?: string
+  description?: string
+  type?: string
+  link?: string
+}
+
 interface NotificationContextType {
   notifications: Notification[]
   unreadCount: number
-  addNotification: (notification: any) => void
+  addNotification: (notification: NotificationInput) => void
   markAsRead: (notificationId: string) => void
   markAllAsRead: () => void
 }
@@ -29,15 +55,17 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return
     
     try {
-      const notifications = await api.get<any[]>('/notifications')
+      const notifications = await api.get<NotificationRaw[]>('/notifications')
       setAllNotifications(
-        notifications.map((n: any) => ({
-          ...n,
-          title: n.titulo,
-          description: n.mensagem,
-          type: n.tipo,
+        notifications.map((n): Notification => ({
+          id: n.id,
+          userId: n.userId,
+          title: n.titulo ?? n.title ?? '',
+          description: n.mensagem ?? n.description ?? '',
+          type: (n.tipo ?? n.type ?? 'general') as Notification['type'],
+          link: n.link ?? '',
           timestamp: new Date(n.createdAt),
-          isRead: n.lida,
+          isRead: n.lida ?? false,
         })),
       )
     } catch (error) {
@@ -64,7 +92,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   )
 
   const addNotification = useCallback(
-    async (notification: any) => {
+    async (notification: NotificationInput) => {
       if (!user) return
       
       try {

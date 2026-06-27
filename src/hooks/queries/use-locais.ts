@@ -44,7 +44,7 @@ export const useCreateLocal = () => {
         description: 'Local criado!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao criar local',
@@ -72,7 +72,7 @@ export const useUpdateLocal = () => {
         description: 'Local atualizado!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao atualizar local',
@@ -99,7 +99,7 @@ export const useDeleteLocal = () => {
         description: 'Local deletado!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao deletar local',

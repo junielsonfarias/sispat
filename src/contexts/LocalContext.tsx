@@ -10,7 +10,7 @@ import { Local } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
-import { isConnectionDownError } from '@/lib/api-error'
+import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { logger } from '@/lib/logger'
 
 interface LocalContextType {
@@ -35,7 +35,7 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return
     setIsLoading(true)
     try {
-      const response = await api.get<{ locais: Local[]; pagination: any }>('/locais')
+      const response = await api.get<{ locais: Local[]; pagination: unknown }>('/locais')
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade locais
       const locaisData = Array.isArray(response) ? response : (response.locais || [])
       setLocais(locaisData)
@@ -95,9 +95,9 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
         })
         setLocais((prev) => prev.map((l) => (l.id === id ? updatedLocal : l)))
         toast({ description: 'Local atualizado com sucesso.' })
-      } catch (error: any) {
+      } catch (error) {
         // Se o local não existe mais (404), remover do estado local
-        if (error.response?.status === 404) {
+        if (extractApiError(error).status === 404) {
           setLocais((prev) => prev.filter((l) => l.id !== id))
           toast({
             variant: 'destructive',
@@ -124,9 +124,9 @@ export const LocalProvider = ({ children }: { children: ReactNode }) => {
       await api.delete(`/locais/${id}`)
       setLocais((prev) => prev.filter((l) => l.id !== id))
       toast({ description: 'Local excluído com sucesso.' })
-    } catch (error: any) {
+    } catch (error) {
       // Se o local já foi deletado (404), apenas remover do estado local
-      if (error.response?.status === 404) {
+      if (extractApiError(error).status === 404) {
         setLocais((prev) => prev.filter((l) => l.id !== id))
         toast({ 
           description: 'Local já foi excluído anteriormente.',

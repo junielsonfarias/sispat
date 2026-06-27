@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { toast } from '@/hooks/use-toast'
 import { api } from '@/services/api-adapter'
-import { isConnectionDownError } from '@/lib/api-error'
+import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { useAuth } from './AuthContext'
 import { useActivityLog } from './ActivityLogContext'
 import { MUNICIPALITY_ID } from '@/config/constants'
@@ -63,10 +63,10 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
     }
     setIsLoading(true)
     try {
-      const response = await api.get<{ formasAquisicao: AcquisitionForm[]; pagination: any }>('/formas-aquisicao')
+      const response = await api.get<{ formasAquisicao: AcquisitionForm[]; pagination: unknown }>('/formas-aquisicao')
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade formasAquisicao
       const formsData = Array.isArray(response) ? response : (response.formasAquisicao || [])
-      const forms = formsData.map((form: any) => ({
+      const forms = formsData.map((form) => ({
         ...form,
         createdAt: new Date(form.createdAt),
         updatedAt: new Date(form.updatedAt),
@@ -117,9 +117,9 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
         logActivity('ACQUISITION_FORM_CREATE', { details: `Adicionou a forma: ${formData.nome}` })
         toast({ title: 'Sucesso', description: 'Forma de aquisição adicionada com sucesso.' })
         return newForm
-      } catch (error: any) {
+      } catch (error) {
         const errorMessage =
-          error.message || 'Não foi possível adicionar a forma de aquisição.'
+          extractApiError(error).message || 'Não foi possível adicionar a forma de aquisição.'
         toast({ title: 'Erro', description: errorMessage, variant: 'destructive' })
         return undefined
       }
@@ -153,9 +153,9 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
         logActivity('ACQUISITION_FORM_UPDATE', { details: `Atualizou a forma: ${formData.nome || id}` })
         toast({ title: 'Sucesso', description: 'Forma de aquisição atualizada com sucesso.' })
         return updatedForm
-      } catch (error: any) {
+      } catch (error) {
         const errorMessage =
-          error.message || 'Não foi possível atualizar a forma de aquisição.'
+          extractApiError(error).message || 'Não foi possível atualizar a forma de aquisição.'
         toast({ title: 'Erro', description: errorMessage, variant: 'destructive' })
         return undefined
       }
@@ -179,9 +179,9 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
         logActivity('ACQUISITION_FORM_DELETE', { details: `Excluiu a forma com ID: ${id}` })
         toast({ title: 'Sucesso', description: 'Forma de aquisição excluída com sucesso.' })
         return true
-      } catch (error: any) {
+      } catch (error) {
         const errorMessage =
-          error.message || 'Não foi possível excluir a forma de aquisição.'
+          extractApiError(error).message || 'Não foi possível excluir a forma de aquisição.'
         toast({ title: 'Erro', description: errorMessage, variant: 'destructive' })
         return false
       }
@@ -219,9 +219,9 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
           description: `Forma de aquisição ${currentStatus ? 'desativada' : 'ativada'} com sucesso.`,
         })
         return true
-      } catch (error: any) {
+      } catch (error) {
         const errorMessage =
-          error.message ||
+          extractApiError(error).message ||
           'Não foi possível alterar o status da forma de aquisição.'
         toast({ title: 'Erro', description: errorMessage, variant: 'destructive' })
         return false

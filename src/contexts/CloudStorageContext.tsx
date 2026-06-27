@@ -32,7 +32,7 @@ export const CloudStorageProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return
     
     try {
-      const cloudStorage = await api.get<any>('/config/cloud-storage')
+      const cloudStorage = await api.get<{ isConnected?: boolean }>('/config/cloud-storage')
       if (cloudStorage) {
         setSettings({ isConnected: cloudStorage.isConnected || false })
       }

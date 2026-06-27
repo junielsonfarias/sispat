@@ -43,7 +43,7 @@ export const useCreateFormaAquisicao = () => {
         description: 'Forma de aquisição criada!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao criar forma de aquisição',
@@ -71,7 +71,7 @@ export const useUpdateFormaAquisicao = () => {
         description: 'Forma de aquisição atualizada!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao atualizar forma de aquisição',
@@ -98,7 +98,7 @@ export const useDeleteFormaAquisicao = () => {
         description: 'Forma de aquisição deletada!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao deletar forma de aquisição',

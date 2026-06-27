@@ -67,7 +67,7 @@ export const useCreateDocumento = () => {
         description: 'Documento adicionado!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao adicionar documento',
@@ -106,7 +106,7 @@ export const useUpdateDocumento = () => {
         description: 'Documento atualizado!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao atualizar documento',
@@ -134,7 +134,7 @@ export const useDeleteDocumento = () => {
         description: 'O documento foi removido.',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao deletar documento',

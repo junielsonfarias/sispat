@@ -44,7 +44,7 @@ export const useCreateTipoBem = () => {
         description: 'Tipo de bem criado!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao criar tipo de bem',
@@ -72,7 +72,7 @@ export const useUpdateTipoBem = () => {
         description: 'Tipo de bem atualizado!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao atualizar tipo de bem',
@@ -99,7 +99,7 @@ export const useDeleteTipoBem = () => {
         description: 'Tipo de bem deletado!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao deletar tipo de bem',

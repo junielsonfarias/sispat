@@ -8,7 +8,38 @@ import {
   useMemo,
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Inventory, InventoryItem, Patrimonio } from '@/types'
+import { Inventory, InventoryItem, InventoryStatus, InventoryItemStatus, Patrimonio } from '@/types'
+
+/** Formato bruto de item devolvido pelo backend (antes do mapeamento frontend) */
+type BackendInventoryItem = {
+  patrimonioId?: string
+  imovelId?: string
+  patrimonio?: { numero_patrimonio?: string; descricao_bem?: string }
+  imovel?: { numero_patrimonio?: string; denominacao?: string }
+  encontrado?: boolean
+  status?: string
+  numero_patrimonio?: string
+  descricao_bem?: string
+}
+
+/** Formato bruto de inventário devolvido pelo backend (antes do mapeamento frontend) */
+type BackendInventoryRaw = {
+  id: string
+  title?: string
+  name?: string
+  setor?: string
+  sectorName?: string
+  status?: string
+  dataInicio?: string
+  createdAt?: string
+  dataFim?: string
+  finalizedAt?: string
+  items?: BackendInventoryItem[]
+  scope?: string
+  local?: string
+  locationType?: string
+  specificLocationId?: string
+}
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
@@ -71,34 +102,37 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       } else if (response && typeof response === 'object') {
         if ('inventarios' in response && Array.isArray(response.inventarios)) {
           inventariosData = response.inventarios
-        } else if ('data' in response && Array.isArray((response as any).data?.inventarios)) {
-          inventariosData = (response as any).data.inventarios
+        } else if ('data' in response) {
+          const nested = (response as Record<string, unknown>).data
+          if (nested && typeof nested === 'object' && 'inventarios' in nested && Array.isArray((nested as Record<string, unknown>).inventarios)) {
+            inventariosData = ((nested as Record<string, unknown>).inventarios as BackendInventoryRaw[]) as unknown as Inventory[]
+          }
         } else {
           inventariosData = []
         }
       }
       
       // ✅ CORREÇÃO: Mapear campos do backend para o frontend
-      const mappedInventories: Inventory[] = inventariosData.map((inv: any) => ({
+      const mappedInventories: Inventory[] = (inventariosData as unknown as BackendInventoryRaw[]).map((inv): Inventory => ({
         id: inv.id,
-        name: inv.title || inv.name,
-        sectorName: inv.setor || inv.sectorName, // Backend retorna 'setor', frontend espera 'sectorName'
-        status: inv.status === 'em_andamento' ? 'in_progress' : 
-                inv.status === 'concluido' ? 'completed' : 
-                inv.status,
+        name: inv.title || inv.name || '',
+        sectorName: inv.setor || inv.sectorName || '', // Backend retorna 'setor', frontend espera 'sectorName'
+        status: (inv.status === 'em_andamento' ? 'in_progress' :
+                inv.status === 'concluido' ? 'completed' :
+                inv.status ?? 'in_progress') as InventoryStatus,
         createdAt: inv.dataInicio ? new Date(inv.dataInicio) : inv.createdAt ? new Date(inv.createdAt) : new Date(),
         finalizedAt: inv.dataFim ? new Date(inv.dataFim) : inv.finalizedAt ? new Date(inv.finalizedAt) : undefined,
-        items: (inv.items || []).map((item: any) => ({
+        items: (inv.items || []).map((item: BackendInventoryItem): InventoryItem => ({
           // Móvel (patrimonioId) ou imóvel (imovelId) — Art. 16.
-          patrimonioId: item.patrimonioId || item.imovelId,
+          patrimonioId: item.patrimonioId || item.imovelId || '',
           numero_patrimonio:
             item.patrimonio?.numero_patrimonio || item.imovel?.numero_patrimonio || item.numero_patrimonio || '',
           descricao_bem:
             item.patrimonio?.descricao_bem || item.imovel?.denominacao || item.descricao_bem || '',
-          status: item.encontrado !== undefined ? (item.encontrado ? 'found' : 'not_found') : item.status,
+          status: (item.encontrado !== undefined ? (item.encontrado ? 'found' : 'not_found') : (item.status ?? 'not_found')) as InventoryItemStatus,
           isImovel: !!item.imovelId,
         })),
-        scope: inv.scope || 'sector',
+        scope: (inv.scope || 'sector') as Inventory['scope'],
         locationType: inv.local || inv.locationType,
         specificLocationId: inv.specificLocationId,
         municipalityId: user?.municipalityId || '',
@@ -178,12 +212,12 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         if (agenteAnterior !== undefined && agenteAnterior !== '') inventoryPayload.agenteAnterior = agenteAnterior
         if (agenteNovo !== undefined && agenteNovo !== '') inventoryPayload.agenteNovo = agenteNovo
         
-        const newInventory = await api.post<any>('/inventarios', inventoryPayload)
-        
+        const newInventory = await api.post<BackendInventoryRaw>('/inventarios', inventoryPayload)
+
         // ✅ CORREÇÃO: Mapear items do backend para o formato do frontend
         // O backend retorna items com a estrutura InventoryItem do Prisma
-        const mappedItems: InventoryItem[] = (newInventory.items || []).map((item: any) => ({
-          patrimonioId: item.patrimonioId || item.imovelId,
+        const mappedItems: InventoryItem[] = (newInventory.items || []).map((item: BackendInventoryItem): InventoryItem => ({
+          patrimonioId: item.patrimonioId || item.imovelId || '',
           numero_patrimonio: item.patrimonio?.numero_patrimonio || item.imovel?.numero_patrimonio || '',
           descricao_bem: item.patrimonio?.descricao_bem || item.imovel?.denominacao || '',
           status: item.encontrado ? 'found' : 'not_found',
@@ -196,11 +230,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           sectorName: newInventory.setor || sectorName,
           status: (newInventory.status === 'em_andamento' ? 'in_progress' : 
                   newInventory.status === 'concluido' ? 'completed' : 
-                  newInventory.status) as any,
+                  newInventory.status) as Inventory['status'],
           createdAt: newInventory.dataInicio ? new Date(newInventory.dataInicio) : new Date(),
           finalizedAt: newInventory.dataFim ? new Date(newInventory.dataFim) : undefined,
           items: mappedItems,
-          scope: newInventory.scope || scope,
+          scope: (newInventory.scope || scope) as Inventory['scope'],
           locationType,
           specificLocationId,
           municipalityId: user?.municipalityId || '',

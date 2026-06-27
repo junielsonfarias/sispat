@@ -33,7 +33,7 @@ export const PublicSearchProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return
     
     try {
-      const config = await api.get<any>('/public/system-configuration')
+      const config = await api.get<{ allowPublicSearch?: boolean }>('/public/system-configuration')
       if (config && config.allowPublicSearch !== undefined) {
         setSettings({ isPublicSearchEnabled: config.allowPublicSearch })
       }

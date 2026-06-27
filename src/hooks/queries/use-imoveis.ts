@@ -78,7 +78,7 @@ export const useCreateImovel = () => {
         description: 'Imóvel criado com sucesso!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao criar imóvel',
@@ -105,7 +105,7 @@ export const useUpdateImovel = () => {
 
       const previousImovel = queryClient.getQueryData(['imovel', id])
 
-      queryClient.setQueryData(['imovel', id], (old: any) => ({
+      queryClient.setQueryData(['imovel', id], (old: Imovel | undefined) => ({
         ...old,
         ...data,
       }))

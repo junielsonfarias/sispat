@@ -58,7 +58,7 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
       // ?all=true → conjunto COMPLETO (sem o teto de 50 da paginação). As telas
       // de análise/agregação/relatório que leem este array precisam de todos os
       // bens, não só da 1ª página. O backend aplica tenant + permissão de setor.
-      const response = await api.get<{ patrimonios: Patrimonio[]; pagination: any }>(
+      const response = await api.get<{ patrimonios: Patrimonio[]; pagination: unknown }>(
         '/patrimonios?all=true',
       )
       logger.debug('PatrimonioContext: Resposta da API', {
@@ -146,7 +146,7 @@ export const PatrimonioProvider = ({ children }: { children: ReactNode }) => {
       manutencoes, 
       documentosFiles,
       ...patrimonioData 
-    } = updatedPatrimonio as any
+    } = updatedPatrimonio as unknown as Record<string, unknown>
     
     const response = await api.put(`/patrimonios/${updatedPatrimonio.id}`, patrimonioData)
     

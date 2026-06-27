@@ -20,7 +20,7 @@ export const LabelElementProperties = ({
   element,
   onUpdate,
 }: LabelElementPropertiesProps) => {
-  const handlePropChange = (key: keyof LabelElement, value: any) => {
+  const handlePropChange = (key: keyof LabelElement, value: LabelElement[typeof key]) => {
     onUpdate(element.id, { [key]: value })
   }
 

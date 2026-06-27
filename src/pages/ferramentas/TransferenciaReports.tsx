@@ -123,7 +123,7 @@ export default function TransferenciaReports() {
             <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
             <Select
               value={typeFilter}
-              onValueChange={(v) => setTypeFilter(v as any)}
+              onValueChange={(v) => setTypeFilter(v as 'all' | TransferenciaType)}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue />

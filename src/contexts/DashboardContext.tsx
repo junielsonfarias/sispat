@@ -89,10 +89,10 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return
     
     try {
-      const dashboard = await api.get<any>('/config/user-dashboard')
+      const dashboard = await api.get<{ widgets?: { component: string; id?: string }[] }>('/config/user-dashboard')
       if (dashboard && dashboard.widgets) {
         const validWidgets = dashboard.widgets
-          .map((saved: any) => {
+          .map((saved) => {
             const baseWidget = ALL_WIDGETS.find(
               (w) => w.component === saved.component,
             )

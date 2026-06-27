@@ -30,6 +30,7 @@ import { Patrimonio } from '@/types'
 import { AlertCircle, FileText, Upload } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { logger } from '@/lib/logger'
+import { extractApiError } from '@/lib/api-error'
 
 const baixaBemSchema = z.object({
   data_baixa: z.string().min(1, 'Data da baixa é obrigatória'),
@@ -140,10 +141,10 @@ export const BaixaBemModal = ({
       if (onSuccess) {
         onSuccess()
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error('❌ Erro ao registrar baixa:', error)
-      
-      const errorMessage = error.response?.data?.error || 'Erro ao registrar baixa do bem'
+
+      const errorMessage = extractApiError(error).message || 'Erro ao registrar baixa do bem'
       
       toast({
         variant: 'destructive',

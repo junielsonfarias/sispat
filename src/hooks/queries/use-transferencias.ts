@@ -42,7 +42,7 @@ export const useTransferencias = (status?: string) => {
     queryFn: async () => {
       const response = await api.get<{
         transferencias: Transferencia[]
-        pagination: any
+        pagination: unknown
       }>('/transferencias', {
         params: { status },
       })
@@ -71,7 +71,7 @@ export const useCreateTransferencia = () => {
         description: 'Solicitação de transferência enviada!',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao criar transferência',
@@ -108,7 +108,7 @@ export const useAprovarTransferencia = () => {
         description: 'Transferência aprovada! Patrimônio atualizado.',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao aprovar transferência',
@@ -144,7 +144,7 @@ export const useRejeitarTransferencia = () => {
         description: 'A transferência foi rejeitada.',
       })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao rejeitar transferência',

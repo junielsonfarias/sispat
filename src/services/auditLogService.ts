@@ -29,7 +29,7 @@ export const fetchAuditLogs = async ({
   const queryParams = params.toString()
 
   const response = await api.get<{
-    logs: any[]
+    logs: Record<string, unknown>[]
     pagination: {
       page: number
       limit: number

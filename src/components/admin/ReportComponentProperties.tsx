@@ -37,7 +37,7 @@ export const ReportComponentProperties = ({
     })
   }
 
-  const handlePropChange = (key: string, value: any) => {
+  const handlePropChange = (key: string, value: string | number | boolean | string[]) => {
     onUpdate(component.id, {
       props: { ...component.props, [key]: value },
     })

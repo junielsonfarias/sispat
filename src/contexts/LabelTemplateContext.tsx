@@ -176,9 +176,10 @@ export const LabelTemplateProvider = ({
           description: 'Template criado com sucesso.',
         })
         
-      } catch (error: any) {
+      } catch (error) {
         // ✅ CORREÇÃO: Se for erro 404 ou backend indisponível, salvar apenas localmente
-        if (error?.response?.status === 404 || error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error')) {
+        const parsed = extractApiError(error)
+        if (parsed.status === 404 || parsed.kind === 'network') {
           // Salvar apenas no estado local
           const existingIndex = allTemplates.findIndex(t => t.id === template.id)
           if (existingIndex > -1) {
@@ -202,7 +203,7 @@ export const LabelTemplateProvider = ({
         toast({
           variant: 'destructive',
           title: 'Erro',
-          description: error?.response?.data?.error || 'Falha ao salvar template. Tente novamente.',
+          description: parsed.message || 'Falha ao salvar template. Tente novamente.',
         })
       }
     },

@@ -200,7 +200,7 @@ const ReportView = () => {
     if (!template?.fields) return []
     
     const legendItems: string[] = []
-    const usedFields = template.fields.filter(fieldId => fieldId !== 'descricao' as any)
+    const usedFields = template.fields.filter(fieldId => fieldId !== ('descricao' as string))
     
     // Adicionar apenas legendas para campos que usam abreviações
     if (usedFields.includes('quantidade')) {
@@ -228,7 +228,7 @@ const ReportView = () => {
     // ✅ CORREÇÃO: Tratar campo 'tipo' - usar tipoBem.nome se disponível, senão usar tipo direto
     if (key === 'tipo') {
       // Verificar se existe relacionamento tipoBem
-      const tipoBem = (item as any).tipoBem
+      const tipoBem = (item as unknown as Record<string, unknown>).tipoBem as { nome?: string } | undefined
       if (tipoBem && tipoBem.nome) {
         return tipoBem.nome
       }
@@ -244,8 +244,8 @@ const ReportView = () => {
     // Verificar se o campo existe no item
     if (!(key in item)) {
       // ✅ CORREÇÃO: Verificar também em relacionamentos (para campos aninhados)
-      if ((item as any)[key] !== undefined) {
-        return String((item as any)[key])
+      if ((item as unknown as Record<string, unknown>)[key] !== undefined) {
+        return String((item as unknown as Record<string, unknown>)[key])
       }
       return 'Campo não encontrado'
     }
@@ -536,7 +536,7 @@ const ReportView = () => {
               <TableHeader>
                 <TableRow>
                   {template?.fields
-                    .filter(fieldId => fieldId !== 'descricao' as any) // Filtrar campo 'descricao' duplicado
+                    .filter(fieldId => fieldId !== ('descricao' as string)) // Filtrar campo 'descricao' duplicado
                     .map((fieldId) => (
                     <TableHead 
                       key={fieldId}
@@ -570,7 +570,7 @@ const ReportView = () => {
                 {filteredPatrimonios.map((item) => (
                   <TableRow key={item.id}>
                     {template?.fields
-                      .filter(fieldId => fieldId !== 'descricao' as any) // Filtrar campo 'descricao' duplicado
+                      .filter(fieldId => fieldId !== ('descricao' as string)) // Filtrar campo 'descricao' duplicado
                       .map((fieldId) => (
                       <TableCell 
                         key={`${item.id}-${fieldId}`}

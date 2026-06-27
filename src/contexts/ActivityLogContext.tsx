@@ -47,7 +47,7 @@ export const ActivityLogProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Apenas carregar logs se o usuário estiver autenticado e tiver permissão
     if (!user) return
-    const userRole = (user as any)?.role || (user as any)?.perfil || ''
+    const userRole = user.role || ''
     const isSupervisorOrAdmin = ['supervisor', 'admin'].includes(String(userRole))
     if (!isSupervisorOrAdmin) return
 
@@ -70,8 +70,8 @@ export const ActivityLogProvider = ({ children }: { children: ReactNode }) => {
         details?: string
         table_name?: string
         record_id?: string
-        old_value?: any
-        new_value?: any
+        old_value?: unknown
+        new_value?: unknown
       },
     ) => {
       try {

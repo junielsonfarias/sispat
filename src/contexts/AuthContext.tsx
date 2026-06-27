@@ -31,7 +31,7 @@ export interface AuthContextType {
   deleteUser: (userId: string) => Promise<void>
   forgotPassword: (email: string) => Promise<void>
   resetPassword: (token: string, password: string) => Promise<void>
-  validateResetToken: (token: string) => Promise<any>
+  validateResetToken: (token: string) => Promise<{ name: string; email: string }>
   updateUserPassword: (userId: string, newPassword: string) => Promise<void>
 }
 
@@ -196,9 +196,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const validateResetToken = async (token: string) => {
+  const validateResetToken = async (token: string): Promise<{ name: string; email: string }> => {
     try {
-      const response = await api.get(`/auth/validate-reset-token/${token}`)
+      const response = await api.get<{ name: string; email: string }>(`/auth/validate-reset-token/${token}`)
       return response
     } catch (error) {
       throw new Error('Token inválido ou expirado')

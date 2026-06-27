@@ -64,11 +64,11 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
       const transferencias = unwrapList<Record<string, unknown>>(response, 'transfers')
       
       setAllTransferencias(
-        transferencias.map((t: any) => ({
+        transferencias.map((t) => ({
           ...t,
-          dataSolicitacao: new Date(t.createdAt),
-          dataTransferencia: new Date(t.dataTransferencia),
-        }))
+          dataSolicitacao: new Date(String(t.createdAt ?? '')),
+          dataTransferencia: new Date(String(t.dataTransferencia ?? '')),
+        } as unknown as Transferencia))
       )
     } catch (error) {
       logger.error('Erro ao buscar transferências:', error)

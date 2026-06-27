@@ -31,7 +31,7 @@ import {
   AlertCircle,
   Gift,
 } from 'lucide-react'
-import { Patrimonio, Note, TransferenciaType } from '@/types'
+import { Patrimonio, Note, TransferenciaType, LabelTemplate, LabelElement } from '@/types'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useCustomization } from '@/contexts/CustomizationContext'
@@ -114,7 +114,7 @@ function BensView() {
   const [historyVisibleCount, setHistoryVisibleCount] = useState(10)
   const [selectedPrintFields, setSelectedPrintFields] = useState<string[]>([])
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false)
-  const [selectedLabelTemplate, setSelectedLabelTemplate] = useState<any>(null)
+  const [selectedLabelTemplate, setSelectedLabelTemplate] = useState<LabelTemplate | null>(null)
   const labelPrintRef = useRef<HTMLDivElement>(null)
   const [labelPrintOptions, setLabelPrintOptions] = useState({
     copies: 1,
@@ -187,7 +187,7 @@ function BensView() {
         id: data.id,
         fotos: data.fotos,
         fotosLength: data.fotos?.length,
-        fotosDetalhes: data.fotos?.map((f: any, i: number) => ({
+        fotosDetalhes: data.fotos?.map((f: string | Record<string, unknown>, i: number) => ({
           index: i,
           tipo: typeof f,
           valor: f,
@@ -554,16 +554,16 @@ function BensView() {
                           logger.debug('Renderizando carrossel com fotos', {
                             total: fotos.length,
                             fotos: fotos,
-                            tipos: fotos.map((f: any) => typeof f),
+                            tipos: fotos.map((f: string | Record<string, unknown>) => typeof f),
                           })
                           // ✅ CORREÇÃO: Backend já normaliza as fotos, mas manter compatibilidade
-                          return fotos.map((foto: any) => {
+                          return fotos.map((foto: string | Record<string, unknown>): string => {
                             if (typeof foto === 'string') return foto
                             if (typeof foto === 'object' && foto !== null) {
-                              return foto.file_url || foto.url || foto.id || foto.fileName || String(foto)
+                              return String(foto.file_url ?? foto.url ?? foto.id ?? foto.fileName ?? '')
                             }
                             return String(foto)
-                          }).filter((f: string) => f && f.trim() !== '')
+                          }).filter((f) => f && f.trim() !== '')
                         })().map((fotoId, index) => (
                           <CarouselItem key={index}>
                             <div className="relative flex items-center justify-center bg-muted rounded-lg min-h-[400px]">
@@ -1207,7 +1207,7 @@ function BensView() {
                               // Fallback: criar HTML manualmente se ref não estiver disponível
                               printWindow.document.write(`
                                 <div style="width: ${selectedLabelTemplate.width * 4}px; height: ${selectedLabelTemplate.height * 4}px; position: relative; background: white;">
-                                  ${selectedLabelTemplate.elements.map((el: any) => {
+                                  ${selectedLabelTemplate.elements.map((el: LabelElement) => {
                                     let content = ''
                                     if (el.type === 'LOGO') {
                                       content = `<img src="${settings?.activeLogoUrl || ''}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`

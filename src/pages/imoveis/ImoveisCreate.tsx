@@ -231,7 +231,8 @@ export default function ImoveisCreate() {
     setIsLoading(true)
     try {
       // ✅ CORREÇÃO: Converter fotos de objetos { id, file_url, file_name } para array de URLs/IDs
-      const fotosProcessadas = (data.fotos || []).map((foto: any) => {
+      type FotoItem = string | { file_url?: string; id?: string }
+      const fotosProcessadas = (data.fotos || []).map((foto: FotoItem) => {
         // Se for objeto com file_url, usar file_url
         if (typeof foto === 'object' && foto?.file_url) {
           return foto.file_url

@@ -10,7 +10,7 @@ import {
 import { Sector } from '@/types'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
-import { isConnectionDownError } from '@/lib/api-error'
+import { isConnectionDownError, extractApiError } from '@/lib/api-error'
 import { api } from '@/services/api-adapter'
 import { logger } from '@/lib/logger'
 
@@ -40,7 +40,7 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
     logger.debug('SectorContext: Iniciando busca de setores...')
     setIsLoading(true)
     try {
-      const response = await api.get<{ sectors: Sector[]; pagination: any }>('/sectors')
+      const response = await api.get<{ sectors: Sector[]; pagination: unknown }>('/sectors')
       logger.debug('SectorContext: Resposta da API', { response })
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade sectors
       const sectorsData = Array.isArray(response) ? response : (response.sectors || [])
@@ -99,9 +99,9 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
       
       setSectors((prev) => prev.map((s) => (s.id === id ? updatedSector : s)))
       toast({ description: 'Setor atualizado com sucesso.' })
-    } catch (error: any) {
+    } catch (error) {
       // Se o setor não existe mais (404), remover do estado local
-      if (error.response?.status === 404) {
+      if (extractApiError(error).status === 404) {
         setSectors((prev) => prev.filter((s) => s.id !== id))
         toast({
           variant: 'destructive',
@@ -126,9 +126,9 @@ export const SectorProvider = ({ children }: { children: ReactNode }) => {
       await api.delete(`/sectors/${id}`)
       setSectors((prev) => prev.filter((s) => s.id !== id))
       toast({ description: 'Setor excluído com sucesso.' })
-    } catch (error: any) {
+    } catch (error) {
       // Se o setor já foi deletado (404), apenas remover do estado local
-      if (error.response?.status === 404) {
+      if (extractApiError(error).status === 404) {
         setSectors((prev) => prev.filter((s) => s.id !== id))
         toast({ 
           description: 'Setor já foi excluído anteriormente.',

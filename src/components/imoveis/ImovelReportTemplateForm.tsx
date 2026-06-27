@@ -48,7 +48,7 @@ export const ImovelReportTemplateForm = ({
     onSave({
       ...template,
       ...data,
-      fields: data.fields as any,
+      fields: data.fields as ImovelReportTemplate['fields'],
     })
   }
 

@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from './AuthContext'
 import { api } from '@/services/api-adapter'
 import { logger } from '@/lib/logger'
+import { extractApiError } from '@/lib/api-error'
 
 interface ImovelFieldContextType {
   fields: ImovelFieldConfig[]
@@ -151,10 +152,10 @@ export const ImovelFieldProvider = ({ children }: { children: ReactNode }) => {
       const response = await api.get<ApiImovelField[]>('/imovel-fields')
       const fieldsData = Array.isArray(response) ? response.map(fromApi) : []
       setAllFields(fieldsData)
-    } catch (error: any) {
+    } catch (error) {
       // Silenciar erro 500 - tabela pode não existir ainda
-      if (error?.response?.status === 500) {
-        // console.warn('⚠️ imovel-fields endpoint não disponível, usando dados iniciais')
+      if (extractApiError(error).status === 500) {
+        // imovel-fields endpoint não disponível, usando dados iniciais
       } else {
         logger.error('Failed to load imovel fields:', error)
       }

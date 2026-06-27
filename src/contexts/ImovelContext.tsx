@@ -38,7 +38,7 @@ export const ImovelProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await api.get<{ imoveis: Imovel[]; pagination: any }>('/imoveis')
+      const response = await api.get<{ imoveis: Imovel[]; pagination: unknown }>('/imoveis')
       // ✅ CORREÇÃO: A API retorna array direto, não objeto com propriedade imoveis
       const imoveisData = Array.isArray(response) ? response : (response.imoveis || [])
       setAllImoveis(imoveisData)
