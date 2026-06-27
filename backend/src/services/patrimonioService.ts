@@ -142,15 +142,42 @@ const ensureSectorAccess = async (
 // Operações de leitura
 // ===========================================================================
 
+// SELECT da consulta PÚBLICA (visitante anônimo). Lista explícita só com campos
+// descritivos. NÃO inclui valores monetários/contábeis/contratuais (REGRAS §11):
+// valor_aquisicao, valor_residual, nota_fiscal, empenho, liquidacao, fornecedor,
+// licitacao, origem_recurso/fundo/clausulas, depreciação, dados de baixa nem
+// documentos internos. Setor só pelo nome (sem cnpj/responsavel). Município é
+// branding público.
+const PUBLIC_PATRIMONIO_SELECT = {
+  id: true,
+  numero_patrimonio: true,
+  descricao_bem: true,
+  tipo: true,
+  marca: true,
+  modelo: true,
+  cor: true,
+  numero_serie: true,
+  quantidade: true,
+  data_aquisicao: true,
+  forma_aquisicao: true,
+  status: true,
+  situacao_bem: true,
+  observacoes: true,
+  fotos: true,
+  setor_responsavel: true,
+  local_objeto: true,
+  sector: { select: { name: true } },
+  municipality: { select: { id: true, name: true, state: true, logoUrl: true, primaryColor: true } },
+  tipoBem: { select: { id: true, nome: true, descricao: true } },
+  local: { select: { id: true, name: true, description: true } },
+} satisfies Prisma.PatrimonioSelect;
+
 export const listPublicPatrimonios = async (municipalityId?: string | null) => {
   const where: Prisma.PatrimonioWhereInput = { status: { in: PUBLIC_STATUS } };
   if (municipalityId) where.municipalityId = municipalityId;
   const patrimonios = await prisma.patrimonio.findMany({
     where,
-    // Endpoint PÚBLICO (anônimo): NÃO expor PII do setor (cnpj, responsavel,
-    // codigo). A consulta pública só usa o nome do setor. Município é branding
-    // público (name/logo/cor), pode ir inteiro.
-    include: { sector: { select: { name: true } }, municipality: true },
+    select: PUBLIC_PATRIMONIO_SELECT,
     orderBy: { numero_patrimonio: 'asc' },
   });
   return patrimonios.map(normalizeOnRead);
@@ -169,13 +196,7 @@ export const getPublicPatrimonioByNumero = async (
   if (municipalityId) where.municipalityId = municipalityId;
   const patrimonio = await prisma.patrimonio.findFirst({
     where,
-    include: {
-      // Endpoint PÚBLICO: só o nome do setor (sem cnpj/responsavel/codigo).
-      sector: { select: { name: true } },
-      municipality: true,
-      tipoBem: { select: { id: true, nome: true, descricao: true } },
-      local: { select: { id: true, name: true, description: true } },
-    },
+    select: PUBLIC_PATRIMONIO_SELECT,
   });
   return patrimonio ? normalizeOnRead(patrimonio) : null;
 };

@@ -12,7 +12,6 @@ import {
   MapPin,
   Building2,
   Calendar,
-  DollarSign,
   Package,
   Hash,
   Tag,
@@ -23,7 +22,7 @@ import {
 } from 'lucide-react'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
-import { getCloudImageUrl, formatDate, formatCurrency } from '@/lib/utils'
+import { getCloudImageUrl, formatDate } from '@/lib/utils'
 import { publicApi } from '@/services/public-api'
 import { logger } from '@/lib/logger'
 
@@ -79,7 +78,6 @@ export default function PublicBemDetalhes() {
           descricao_bem: data.descricao_bem,
           fotos: data.fotos || [],
           status: data.status,
-          valor_aquisicao: data.valor_aquisicao,
           data_aquisicao: data.data_aquisicao,
           tipo: data.tipo,
           marca: data.marca,
@@ -210,20 +208,17 @@ export default function PublicBemDetalhes() {
                 </div>
               </div>
 
+              {/* Consulta pública NÃO expõe valor monetário (REGRAS §11). */}
               <Card className="min-w-[220px]">
                 <CardContent className="p-6">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Valor</span>
-                      <DollarSign className="h-4 w-4 text-emerald-600" />
+                      <span className="text-sm text-muted-foreground">Aquisição</span>
+                      <Calendar className="h-4 w-4 text-emerald-600" />
                     </div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {formatCurrency(patrimonio.valor_aquisicao)}
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
+                    <p className="text-lg font-semibold text-foreground">
                       {formatDate(patrimonio.data_aquisicao)}
-                    </div>
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -399,16 +394,13 @@ export default function PublicBemDetalhes() {
                 <CardContent className="p-6 space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <DollarSign className="h-5 w-5 text-blue-600" />
+                      <Calendar className="h-5 w-5 text-blue-600" />
                     </div>
-                    <h2 className="text-lg font-bold text-foreground">Financeiro</h2>
+                    <h2 className="text-lg font-bold text-foreground">Aquisição</h2>
                   </div>
 
+                  {/* Sem valor monetário na consulta pública (REGRAS §11). */}
                   <div className="space-y-3 text-sm">
-                    <div className="flex justify-between py-2 border-b border-slate-100">
-                      <span className="text-muted-foreground">Valor Aquisição</span>
-                      <span className="font-bold text-foreground">{formatCurrency(patrimonio.valor_aquisicao)}</span>
-                    </div>
                     <div className="flex justify-between py-2 border-b border-slate-100">
                       <span className="text-muted-foreground">Data Aquisição</span>
                       <span className="font-semibold text-foreground">{formatDate(patrimonio.data_aquisicao)}</span>

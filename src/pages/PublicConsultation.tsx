@@ -23,7 +23,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel'
 import { publicApi } from '@/services/public-api'
-import { getCloudImageUrl, formatDate, formatCurrency } from '@/lib/utils'
+import { getCloudImageUrl, formatDate } from '@/lib/utils'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { logger } from '@/lib/logger'
 
@@ -206,10 +206,7 @@ export default function PublicConsultation() {
                 label="Data de Aquisição"
                 value={patrimonio.dataAquisicao ? formatDate(new Date(patrimonio.dataAquisicao)) : '—'}
               />
-              <DetailItem
-                label="Valor de Aquisição"
-                value={patrimonio.valorAquisicao != null ? formatCurrency(patrimonio.valorAquisicao) : '—'}
-              />
+              {/* Consulta pública NÃO expõe valor monetário (REGRAS §11). */}
             </div>
           </CardContent>
         </Card>
