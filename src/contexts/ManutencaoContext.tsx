@@ -88,7 +88,7 @@ interface ApiManutencao {
   municipalityId?: string
 }
 
-const fromApi = (row: ApiManutencao): ManutencaoTask => ({
+export const fromApi = (row: ApiManutencao): ManutencaoTask => ({
   id: row.id,
   imovelId: row.imovelId || '',
   title: row.titulo || '',
@@ -104,7 +104,7 @@ const fromApi = (row: ApiManutencao): ManutencaoTask => ({
 })
 
 // Body do POST (createManutencaoSchema não tem `status` — default 'pendente').
-const toCreateBody = (
+export const toCreateBody = (
   task: Omit<ManutencaoTask, 'id' | 'createdAt' | 'municipalityId'>,
 ) => ({
   imovelId: task.imovelId,
@@ -117,7 +117,7 @@ const toCreateBody = (
 })
 
 // Body do PUT (updateManutencaoSchema é .strict(); só campos PT presentes).
-const toUpdateBody = (updates: Partial<ManutencaoTask>) => {
+export const toUpdateBody = (updates: Partial<ManutencaoTask>) => {
   const body: Record<string, unknown> = {}
   if (updates.tipo !== undefined) body.tipo = TIPO_TO[updates.tipo]
   if (updates.title !== undefined) body.titulo = updates.title

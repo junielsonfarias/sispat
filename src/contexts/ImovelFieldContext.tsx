@@ -53,7 +53,7 @@ const FRONT_TYPES: FormFieldType[] = [
   'CURRENCY',
 ]
 
-const fromApi = (row: ApiImovelField): ImovelFieldConfig => {
+export const fromApi = (row: ApiImovelField): ImovelFieldConfig => {
   let options: string[] | undefined
   if (row.options) {
     try {
@@ -78,7 +78,7 @@ const fromApi = (row: ApiImovelField): ImovelFieldConfig => {
 }
 
 // Body para POST /imovel-fields (createImovelFieldSchema aceita isSystem).
-const toCreateBody = (field: Omit<ImovelFieldConfig, 'id'>) => ({
+export const toCreateBody = (field: Omit<ImovelFieldConfig, 'id'>) => ({
   name: field.key,
   label: field.label,
   type: String(field.type).toLowerCase(),
@@ -90,7 +90,7 @@ const toCreateBody = (field: Omit<ImovelFieldConfig, 'id'>) => ({
 
 // Body para PUT /imovel-fields/:id. updateImovelFieldSchema é .strict() e NÃO
 // aceita isSystem/isCustom — só mapeamos os campos editáveis presentes.
-const toUpdateBody = (updates: Partial<ImovelFieldConfig>) => {
+export const toUpdateBody = (updates: Partial<ImovelFieldConfig>) => {
   const body: Record<string, unknown> = {}
   if (updates.key !== undefined) body.name = updates.key
   if (updates.label !== undefined) body.label = updates.label
