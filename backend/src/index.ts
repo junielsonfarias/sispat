@@ -125,6 +125,21 @@ const MAX_REQUEST_SIZE = process.env.MAX_REQUEST_SIZE || '10mb';
 app.use(express.json({ limit: MAX_REQUEST_SIZE }));
 app.use(express.urlencoded({ extended: true, limit: MAX_REQUEST_SIZE }));
 
+// Express 5: `req.query` virou um GETTER que RE-PARSEIA a querystring a cada
+// acesso (retorna um objeto novo). Logo, mutar `req.query[k]` (sanitização) ou
+// `Object.assign(req.query, parsed)` (zodValidate — coerção/defaults) NÃO persiste:
+// vira no-op silencioso. Aqui "congelamos" o objeto parseado num property normal e
+// mutável, restaurando o comportamento do Express 4 para o pipeline downstream.
+app.use((req, _res, next) => {
+  Object.defineProperty(req, 'query', {
+    value: req.query,
+    writable: true,
+    configurable: true,
+    enumerable: true,
+  });
+  next();
+});
+
 // Cookie parser — habilita req.cookies para cookies HttpOnly (Sprint 13)
 import cookieParser from 'cookie-parser';
 app.use(cookieParser());

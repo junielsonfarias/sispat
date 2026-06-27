@@ -21,6 +21,26 @@
 
 ## 2026
 
+### 2026-06-27 — Auditoria de tecnologias × documentação (majors de risco)
+Análise das libs com mudança de major recente contra a doc oficial; criado
+`Docs/_PROJETO/STACK_TECNOLOGIAS.md` catalogando versões/gotchas/estado.
+- 🔴 **Express 5 — `req.query` no-op:** em Express 5 `req.query` é getter
+  re-parseado a cada acesso; `Object.assign(req.query, parsed)` (zodValidate) e
+  `req.query[k]=...` (sanitização) não persistiam (no-op silencioso). **Correção:**
+  middleware em `index.ts` (após body parser) que "congela" `req.query` num property
+  mutável (Object.defineProperty), restaurando o comportamento Express 4 — coerção/
+  defaults de query e sanitização voltam a valer. Comentário do `zodValidate`
+  atualizado. Confirmado no fonte instalado (express 5.1.0, `lib/request.js`).
+- 🟡 **React Router 6→7:** warnings de future flag (`v7_startTransition`,
+  `v7_relativeSplatPath`) na suíte vitest. `App.tsx` já optava; faltava no
+  `src/test/test-utils.tsx` — adicionadas as mesmas flags.
+- ✅ **Sem achados:** Prisma 6 (beforeExit é do Node, não do client), express-rate-limit 8
+  (sem keyGenerator custom → sem bypass IPv6; RedisStore ok), helmet 8 (sem expectCt),
+  multer 2, React 19 (createRoot), rotas Express (sem padrões path-to-regexp 8 quebrados).
+- **Follow-up:** `security.ts > sanitizeInput` é dead code (não registrado) — ligar ou remover.
+- **Verificação:** backend tsc 0 / 577 Jest (supertest exercita o pipeline real);
+  frontend tsc 0 / 62 vitest (warnings do Router sumiram).
+
 ### 2026-06-27 — Melhorias pós-auditoria (lotes F–L)
 Segunda rodada, atacando os itens DEFERIDOS da auditoria geral + follow-ups.
 - **F (fe514d4):** consulta pública não expõe mais valor monetário (REGRAS §11) — `PUBLIC_PATRIMONIO_SELECT` explícito no service + remoção da exibição em PublicBemDetalhes/PublicConsultation.

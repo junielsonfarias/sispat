@@ -6,7 +6,11 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 // Mock providers para testes
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
-    <BrowserRouter>
+    // Mesmas future flags do App.tsx — evita os warnings v7_startTransition /
+    // v7_relativeSplatPath nos testes e alinha o comportamento ao runtime.
+    <BrowserRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <ThemeProvider>
         {children}
       </ThemeProvider>

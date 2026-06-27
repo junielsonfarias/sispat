@@ -64,6 +64,9 @@ export function zodValidate(config: ZodValidateConfig): RequestHandler {
       if (!result.success) {
         details.push(...formatZodError(result.error, 'query'));
       } else {
+        // Persiste a query parseada (coerção/defaults). Funciona porque o index.ts
+        // "congela" req.query num property mutável — no Express 5 cru, req.query é
+        // um getter re-parseado e este Object.assign seria no-op.
         Object.assign(req.query, result.data);
       }
     }
