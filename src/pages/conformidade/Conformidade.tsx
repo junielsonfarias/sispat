@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { formatCurrency } from '@/lib/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -164,10 +165,8 @@ const STATUS_CONFORMIDADE_LABEL: Record<ItemConformidade['status'], string> = {
 
 // ---- Utilitários de formatação ----
 
-const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-
 function formatBRL(value: number): string {
-  return brl.format(value)
+  return formatCurrency(value)
 }
 
 function formatCompetencia(competencia: string): string {

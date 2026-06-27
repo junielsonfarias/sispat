@@ -74,7 +74,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { logger } from '@/lib/logger'
 import {
   createDesfazimentoSchema,
@@ -138,9 +138,8 @@ interface DesfazimentosResponse {
 
 // ---- Labels pt-BR ----
 
-const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 function formatBRL(value: number): string {
-  return brl.format(value)
+  return formatCurrency(value)
 }
 
 const CLASSIFICACAO_LABEL: Record<ClassificacaoInservivel, string> = {

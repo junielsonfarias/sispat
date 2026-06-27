@@ -97,8 +97,9 @@ executado · ⚠️ funciona mas desvia de boa prática · 🔴 erro/risco.
   rotação+hash; bcrypt 12; rate-limit cobre rotas sensíveis; upload com magic bytes.
 - **socket.io 4** 👍 — **corrigido** leak de `connectedClients` (cleanup movido p/
   `socket.on('disconnect')`); **auth via `io.use()`** (sockets sem JWT válido nem
-  conectam). ⚠️ pendente menor: room `admin` por município (metadados de conexão
-  hoje misturam municípios).
+  conectam); **room admin escopada por município** (`admin:${municipalityId}` +
+  room `superuser` global) — `user:connected` não vaza mais entre tenants; alertas
+  de plataforma seguem na room `admin` global.
 - **express-validator / security.ts** ⚠️→👍 — `security.ts` era quase todo dead code
   (rate-limiters/helmet/sanitizeInput/validateInput/commonValidations/secureUpload/
   secureCors duplicavam o que `zodValidate`/`advanced-rate-limit`/`index.ts` já fazem).

@@ -22,7 +22,7 @@ import { useAllPatrimonios } from '@/hooks/queries/use-all-patrimonios'
 import { api } from '@/services/api-adapter'
 import { toast } from '@/hooks/use-toast'
 import { useConfirm } from '@/hooks/useConfirm'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { logger } from '@/lib/logger'
 
 // ---- Tipos ----
@@ -79,10 +79,9 @@ const TIPO_LABEL: Record<TipoTermo, string> = {
   baixa: 'Termo de Baixa',
 }
 
-const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 function formatBRL(value: number | null | undefined): string {
   if (value == null) return '—'
-  return brl.format(value)
+  return formatCurrency(value)
 }
 
 // ---- Documento imprimível ----

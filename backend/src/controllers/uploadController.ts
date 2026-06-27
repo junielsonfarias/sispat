@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 import { prisma } from '../config/database';
 
@@ -37,7 +38,7 @@ export const uploadFile = async (req: AuthRequest, res: Response): Promise<void>
     const fileUrl = `/uploads/${req.file.filename}`;
 
     const fileMetadata = {
-      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `file-${crypto.randomUUID()}`,
       asset_id: assetId || null,
       file_name: req.file.originalname,
       file_url: fileUrl,
@@ -98,7 +99,7 @@ export const uploadMultipleFiles = async (req: AuthRequest, res: Response): Prom
       const fileUrl = `/uploads/${file.filename}`;
 
       return {
-        id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `file-${crypto.randomUUID()}`,
         asset_id: assetId || null,
         file_name: file.originalname,
         file_url: fileUrl,

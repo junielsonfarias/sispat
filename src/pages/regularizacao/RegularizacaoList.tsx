@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { formatCurrency } from '@/lib/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -135,9 +136,8 @@ interface RegularizacoesResponse {
 
 // ---- Utilitários ----
 
-const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 function formatBRL(value: number): string {
-  return brl.format(value)
+  return formatCurrency(value)
 }
 
 const TIPO_ORIGEM_LABEL: Record<TipoOrigemBem, string> = {

@@ -21,6 +21,36 @@
 
 ## 2026
 
+### 2026-06-27 — Aplicação do checklist "antes-de-codar" (reuso > código novo)
+- **Contexto:** nova skill `antes-de-codar` (.claude/skills/) usada como lente de
+  auditoria. 3 auditores read-only varreram o projeto procurando reinvenção de
+  stdlib/nativo, helpers duplicados e dependências ociosas.
+- **Correções aplicadas (baixo risco, verificadas):**
+  - **stdlib (pergunta 3):** `uploadController.ts` gerava id de metadado com
+    `Math.random().toString(36).substr(2,9)` (e `substr` deprecated) → trocado por
+    `crypto.randomUUID()` (Node 20+), 2 ocorrências.
+  - **reuso (pergunta 2):** 6 telas reimplementavam formatação BRL (`new
+    Intl.NumberFormat`/`toLocaleString` inline) em vez de reusar o
+    `formatCurrency` já existente em `src/lib/utils.ts` → todas passam a reusar
+    (Termos, Conformidade, DesfazimentoList, RegularizacaoList, ImportarRelatorio,
+    FichaPreview). O wrapper `formatBRL` de cada página foi mantido como fachada
+    (preserva o tratamento `null → '—'` onde havia).
+- **Arquivos:** `backend/src/controllers/uploadController.ts`;
+  `src/pages/termos/Termos.tsx`, `src/pages/conformidade/Conformidade.tsx`,
+  `src/pages/desfazimento/DesfazimentoList.tsx`,
+  `src/pages/regularizacao/RegularizacaoList.tsx`,
+  `src/pages/bens/ImportarRelatorio.tsx`, `src/components/FichaPreview.tsx`.
+- **Verificação:** tsc front = 0, tsc backend = 0, jest upload 18/18.
+- **Deferidos (decisão/risco):** (a) remoção de deps deslocadas/ociosas
+  (`@sentry/react`, `browser-image-compression`, `@sentry/profiling-node`, `axios`
+  no backend; `@tailwindcss/aspect-ratio` na raiz) — exige `pnpm install` p/
+  regenerar lockfile, fazer em janela com o stack parado; (b) unificar cálculo de
+  depreciação front×back em `shared/` — regra contábil sensível (conciliação Lei
+  art. 8/21), refator com testes; (c) validadores CPF/CNPJ e `UserRole` duplicados
+  front×shared — unificar em `@sispat/shared` (exige rebuild do shared).
+- **Lição:** a fruta fácil de "stack" já tinha sido colhida nas auditorias de
+  2026-06-27; o ganho novo do checklist foi em **reuso de utilitários** e **stdlib**.
+
 ### 2026-06-27 — Unificação Context × React Query (fim do fetch duplicado/dead code)
 - **Diagnóstico:** o "fetch duplicado" real existia só em **Setores** (Context +
   hook `use-sectors` no ImportarRelatorio). Nas demais entidades os hooks de query

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { formatCurrency } from '@/lib/utils'
 import axios from 'axios'
 import {
   Upload,
@@ -188,9 +189,6 @@ const FUNDOS_SUGERIDOS = [
   'PNAE',
   'PNATE',
 ]
-
-const formatCurrency = (value: number) =>
-  value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 // Tenta encontrar um setor pelo nome da UG (match parcial, case-insensitive)
 const tentarPreSelecionar = (

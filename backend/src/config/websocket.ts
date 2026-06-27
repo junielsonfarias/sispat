@@ -160,12 +160,17 @@ class WebSocketManager {
         this.connectedClients.delete(socket.id)
       })
 
-      // Notificar conexão
-      this.broadcastToAdmins('user:connected', {
-        userId: authenticatedSocket.userId,
-        email: authenticatedSocket.email,
-        timestamp: new Date().toISOString(),
-      })
+      // Notificar conexão — escopado ao município do usuário (gestores do mesmo
+      // município + superusers), nunca a admins de outros municípios.
+      this.broadcastToAdmins(
+        'user:connected',
+        {
+          userId: authenticatedSocket.userId,
+          email: authenticatedSocket.email,
+          timestamp: new Date().toISOString(),
+        },
+        authenticatedSocket.municipalityId,
+      )
     })
   }
 
@@ -231,11 +236,20 @@ class WebSocketManager {
     // Room pessoal
     socket.join(`user:${socket.userId}`)
     
-    // Rooms específicas para admin/supervisor
+    // Rooms específicas para gestores
     if (['admin', 'supervisor', 'superuser'].includes(socket.role)) {
-      socket.join('admin')
+      socket.join('admin') // global — alertas de plataforma (sistema)
+      // Admin ESCOPADO por município: eventos de gestão de um município (ex.:
+      // user:connected) só vão para gestores DAQUELE município, sem vazar metadados
+      // entre tenants.
+      socket.join(`admin:${socket.municipalityId}`)
       socket.join('metrics')
       socket.join('alerts')
+    }
+    // Superuser opera na plataforma toda — recebe os eventos municipais de TODOS
+    // os municípios (via broadcastToAdmins com municipalityId).
+    if (socket.role === 'superuser') {
+      socket.join('superuser')
     }
   }
 
@@ -343,8 +357,13 @@ class WebSocketManager {
   /**
    * Broadcast para todos os admins
    */
-  broadcastToAdmins(event: string, data: any) {
-    if (this.io) {
+  broadcastToAdmins(event: string, data: any, municipalityId?: string) {
+    if (!this.io) return
+    if (municipalityId) {
+      // Evento de gestão municipal: só gestores daquele município + superusers.
+      this.io.to(`admin:${municipalityId}`).to('superuser').emit(event, data)
+    } else {
+      // Evento de plataforma (ex.: alertas de sistema): todos os gestores.
       this.io.to('admin').emit(event, data)
     }
   }

@@ -1,4 +1,5 @@
 import { Patrimonio, Imovel } from '@/types'
+import { formatCurrency } from '@/lib/utils'
 
 interface SampleData {
   numero_patrimonio: string
@@ -47,7 +48,7 @@ export const FichaPreview = ({ config, type, sampleData }: PreviewProps) => {
             ? p.data_aquisicao.toLocaleDateString('pt-BR')
             : String(p.data_aquisicao),
           valor_aquisicao: typeof p.valor_aquisicao === 'number'
-            ? p.valor_aquisicao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            ? formatCurrency(p.valor_aquisicao)
             : String(p.valor_aquisicao),
           forma_aquisicao: p.forma_aquisicao,
           setor_responsavel: p.setor_responsavel,
@@ -57,7 +58,7 @@ export const FichaPreview = ({ config, type, sampleData }: PreviewProps) => {
           metodo_depreciacao: p.metodo_depreciacao ?? 'Linear',
           vida_util_anos: p.vida_util_anos != null ? `${p.vida_util_anos} anos` : '—',
           valor_residual: p.valor_residual != null
-            ? p.valor_residual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            ? formatCurrency(p.valor_residual)
             : '—',
         }
       })()
