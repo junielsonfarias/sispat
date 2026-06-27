@@ -21,6 +21,21 @@
 
 ## 2026
 
+### 2026-06-27 — Unificação Context × React Query (fim do fetch duplicado/dead code)
+- **Diagnóstico:** o "fetch duplicado" real existia só em **Setores** (Context +
+  hook `use-sectors` no ImportarRelatorio). Nas demais entidades os hooks de query
+  CRUD eram **órfãos** (migração RQ iniciada e nunca adotada) e o `PatrimonioContext`
+  já havia removido o fetch automático.
+- **Conversões (Context → fachada fina sobre React Query, interface preservada):**
+  SectorContext (`2e5a58e`), ImovelContext (`1105ac8`), TiposBens/Local/Acquisition
+  (`f313adc`), InventoryContext (este). Cada um: `useQuery` (queryKey único) +
+  mutations que invalidam; fim do `useState/useEffect` manual; cache compartilhado.
+- **Dead code removido** (`1105ac8`): hooks de query órfãos (use-locais/imoveis/
+  inventarios/tipos-bens/formas-aquisicao/transferencias) + wrappers `use-*-context`
+  que só eles importavam (0 consumidores).
+- **Verificação:** frontend tsc 0, vitest 62; backend intacto (577 Jest).
+- Avaliação atualizada em STACK_TECNOLOGIAS.md (TanStack Query × Context → unificado).
+
 ### 2026-06-27 — Avaliação de execução do stack + grupo seguro de correções
 Cruzamento tecnologia × uso × doc (avaliação completa em STACK_TECNOLOGIAS.md, seção
 "Avaliação de execução por tecnologia"). Correções do grupo seguro:

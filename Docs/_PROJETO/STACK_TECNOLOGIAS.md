@@ -113,9 +113,11 @@ executado · ⚠️ funciona mas desvia de boa prática · 🔴 erro/risco.
   (cache fica com React Query + headers do backend).
 - **Vite 5** 👍 — `manualChunks`, terser, `import()` dinâmico; `target` subido para
   `es2020` (era es2015 → bundle/transpile a mais).
-- **TanStack Query 5 × Context** ⚠️ — coexistem fetchs para a mesma entidade
-  (Context + hook de query). Maior smell arquitetural; unificação fica como tarefa
-  isolada (mais invasiva).
+- **TanStack Query 5 × Context** 👍 (unificado em 2026-06-27) — os Contexts de
+  Setores, Imóveis, Tipos de Bens, Locais, Formas de Aquisição e Inventário agora
+  são fachadas finas sobre o React Query (fonte única, cache compartilhado,
+  mutations que invalidam). PatrimonioContext já não fazia fetch automático.
+  Removida a cadeia de dead code da migração RQ inacabada (hooks órfãos + wrappers).
 - **Tailwind/Shadcn** ⚠️ — dark mode com pass focado; cores fixas remanescentes
   fora das telas principais.
 - **Vitest** ⚠️ — cobertura unit baixa no frontend (62) vs backend (577 Jest).

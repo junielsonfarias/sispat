@@ -1,14 +1,21 @@
 import {
   createContext,
-  useState,
   ReactNode,
   useContext,
   useCallback,
-  useEffect,
-  useMemo,
 } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Inventory, InventoryItem, InventoryStatus, InventoryItemStatus, Patrimonio } from '@/types'
+import { toast } from '@/hooks/use-toast'
+import { useAuth } from './AuthContext'
+import { api } from '@/services/api-adapter'
+import { extractApiError } from '@/lib/api-error'
+import { logger } from '@/lib/logger'
+import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
+import { PATRIMONIO_STATS_KEY } from '@/hooks/queries/use-patrimonio-stats'
+
+// Cache compartilhado de inventários (React Query). Fonte única.
+const INVENTARIOS_KEY = ['inventarios'] as const
 
 /** Formato bruto de item devolvido pelo backend (antes do mapeamento frontend) */
 type BackendInventoryItem = {
@@ -40,12 +47,38 @@ type BackendInventoryRaw = {
   locationType?: string
   specificLocationId?: string
 }
-import { toast } from '@/hooks/use-toast'
-import { useAuth } from './AuthContext'
-import { api } from '@/services/api-adapter'
-import { logger } from '@/lib/logger'
-import { PATRIMONIOS_ALL_KEY } from '@/hooks/queries/use-all-patrimonios'
-import { PATRIMONIO_STATS_KEY } from '@/hooks/queries/use-patrimonio-stats'
+
+// Mapeia o inventário bruto do backend para o modelo do frontend (campos/enums).
+const mapInventory = (inv: BackendInventoryRaw, municipalityId: string): Inventory => ({
+  id: inv.id,
+  name: inv.title || inv.name || '',
+  sectorName: inv.setor || inv.sectorName || '', // Backend retorna 'setor'
+  status: (inv.status === 'em_andamento'
+    ? 'in_progress'
+    : inv.status === 'concluido'
+    ? 'completed'
+    : inv.status ?? 'in_progress') as InventoryStatus,
+  createdAt: inv.dataInicio ? new Date(inv.dataInicio) : inv.createdAt ? new Date(inv.createdAt) : new Date(),
+  finalizedAt: inv.dataFim ? new Date(inv.dataFim) : inv.finalizedAt ? new Date(inv.finalizedAt) : undefined,
+  items: (inv.items || []).map((item): InventoryItem => ({
+    // Móvel (patrimonioId) ou imóvel (imovelId) — Art. 16.
+    patrimonioId: item.patrimonioId || item.imovelId || '',
+    numero_patrimonio:
+      item.patrimonio?.numero_patrimonio || item.imovel?.numero_patrimonio || item.numero_patrimonio || '',
+    descricao_bem:
+      item.patrimonio?.descricao_bem || item.imovel?.denominacao || item.descricao_bem || '',
+    status: (item.encontrado !== undefined
+      ? item.encontrado
+        ? 'found'
+        : 'not_found'
+      : item.status ?? 'not_found') as InventoryItemStatus,
+    isImovel: !!item.imovelId,
+  })),
+  scope: (inv.scope || 'sector') as Inventory['scope'],
+  locationType: inv.local || inv.locationType,
+  specificLocationId: inv.specificLocationId,
+  municipalityId,
+})
 
 interface InventoryContextType {
   inventories: Inventory[]
@@ -79,89 +112,42 @@ interface InventoryContextType {
 const InventoryContext = createContext<InventoryContextType | null>(null)
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
-  const [allInventories, setAllInventories] = useState<Inventory[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
-  const fetchInventories = useCallback(async () => {
-    if (!user) {
-      return
-    }
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await api.get<{ inventarios: Inventory[]; pagination: unknown }>('/inventarios')
-      
-      // A API retorna objeto com inventarios e pagination
-      let inventariosData: Inventory[] = []
-      
+  const { data, isLoading, error: queryError } = useQuery({
+    queryKey: INVENTARIOS_KEY,
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const response = await api.get<unknown>('/inventarios')
+      // A API pode devolver array direto, { inventarios } ou { data: { inventarios } }.
+      let raw: BackendInventoryRaw[] = []
       if (Array.isArray(response)) {
-        inventariosData = response
+        raw = response as BackendInventoryRaw[]
       } else if (response && typeof response === 'object') {
-        if ('inventarios' in response && Array.isArray(response.inventarios)) {
-          inventariosData = response.inventarios
-        } else if ('data' in response) {
-          const nested = (response as Record<string, unknown>).data
-          if (nested && typeof nested === 'object' && 'inventarios' in nested && Array.isArray((nested as Record<string, unknown>).inventarios)) {
-            inventariosData = ((nested as Record<string, unknown>).inventarios as BackendInventoryRaw[]) as unknown as Inventory[]
+        const obj = response as Record<string, unknown>
+        if (Array.isArray(obj.inventarios)) {
+          raw = obj.inventarios as BackendInventoryRaw[]
+        } else if (obj.data && typeof obj.data === 'object') {
+          const nested = obj.data as Record<string, unknown>
+          if (Array.isArray(nested.inventarios)) {
+            raw = nested.inventarios as BackendInventoryRaw[]
           }
-        } else {
-          inventariosData = []
         }
       }
-      
-      // ✅ CORREÇÃO: Mapear campos do backend para o frontend
-      const mappedInventories: Inventory[] = (inventariosData as unknown as BackendInventoryRaw[]).map((inv): Inventory => ({
-        id: inv.id,
-        name: inv.title || inv.name || '',
-        sectorName: inv.setor || inv.sectorName || '', // Backend retorna 'setor', frontend espera 'sectorName'
-        status: (inv.status === 'em_andamento' ? 'in_progress' :
-                inv.status === 'concluido' ? 'completed' :
-                inv.status ?? 'in_progress') as InventoryStatus,
-        createdAt: inv.dataInicio ? new Date(inv.dataInicio) : inv.createdAt ? new Date(inv.createdAt) : new Date(),
-        finalizedAt: inv.dataFim ? new Date(inv.dataFim) : inv.finalizedAt ? new Date(inv.finalizedAt) : undefined,
-        items: (inv.items || []).map((item: BackendInventoryItem): InventoryItem => ({
-          // Móvel (patrimonioId) ou imóvel (imovelId) — Art. 16.
-          patrimonioId: item.patrimonioId || item.imovelId || '',
-          numero_patrimonio:
-            item.patrimonio?.numero_patrimonio || item.imovel?.numero_patrimonio || item.numero_patrimonio || '',
-          descricao_bem:
-            item.patrimonio?.descricao_bem || item.imovel?.denominacao || item.descricao_bem || '',
-          status: (item.encontrado !== undefined ? (item.encontrado ? 'found' : 'not_found') : (item.status ?? 'not_found')) as InventoryItemStatus,
-          isImovel: !!item.imovelId,
-        })),
-        scope: (inv.scope || 'sector') as Inventory['scope'],
-        locationType: inv.local || inv.locationType,
-        specificLocationId: inv.specificLocationId,
-        municipalityId: user?.municipalityId || '',
-      }))
-      
-      setAllInventories(mappedInventories)
-      setError(null)
-    } catch (error) {
-      logger.error('fetchInventories: Erro ao carregar inventários:', error)
-      setError('Falha ao carregar inventários.')
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Falha ao carregar inventários.',
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }, [user])
+      return raw.map((inv) => mapInventory(inv, user?.municipalityId || ''))
+    },
+  })
 
-  useEffect(() => {
-    fetchInventories()
-  }, [fetchInventories])
+  const inventories = data ?? []
+  const error = queryError ? extractApiError(queryError).message : null
 
-  const inventories = useMemo(() => {
-    // Agora todos os inventários são visíveis para todos os usuários
-    // pois temos apenas um município
-    return allInventories
-  }, [allInventories])
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: INVENTARIOS_KEY }),
+    [queryClient],
+  )
 
   const getInventoryById = useCallback(
     (id: string) => inventories.find((inv) => inv.id === id),
@@ -175,7 +161,6 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       scope: 'sector' | 'location' | 'specific_location'
       locationType?: string
       specificLocationId?: string
-      // Campos opcionais novos (Sprint 18 — tipos de inventário)
       tipo?: 'anual' | 'transferencia' | 'extraordinario' | 'inicial'
       dataBase?: string
       exercicio?: number
@@ -183,18 +168,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       agenteNovo?: string
     }) => {
       try {
-        const {
-          name,
-          sectorName,
-          scope,
-          locationType,
-          specificLocationId,
-          tipo,
-          dataBase,
-          exercicio,
-          agenteAnterior,
-          agenteNovo,
-        } = data
+        const { name, sectorName, scope, locationType, specificLocationId, tipo, dataBase, exercicio, agenteAnterior, agenteNovo } = data
 
         const inventoryPayload: Record<string, unknown> = {
           title: name,
@@ -204,94 +178,53 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           dataInicio: new Date().toISOString(),
           scope,
         }
-
-        // Incluir campos opcionais apenas quando definidos
         if (tipo !== undefined) inventoryPayload.tipo = tipo
         if (dataBase !== undefined && dataBase !== '') inventoryPayload.dataBase = dataBase
         if (exercicio !== undefined) inventoryPayload.exercicio = exercicio
         if (agenteAnterior !== undefined && agenteAnterior !== '') inventoryPayload.agenteAnterior = agenteAnterior
         if (agenteNovo !== undefined && agenteNovo !== '') inventoryPayload.agenteNovo = agenteNovo
-        
-        const newInventory = await api.post<BackendInventoryRaw>('/inventarios', inventoryPayload)
 
-        // ✅ CORREÇÃO: Mapear items do backend para o formato do frontend
-        // O backend retorna items com a estrutura InventoryItem do Prisma
-        const mappedItems: InventoryItem[] = (newInventory.items || []).map((item: BackendInventoryItem): InventoryItem => ({
-          patrimonioId: item.patrimonioId || item.imovelId || '',
-          numero_patrimonio: item.patrimonio?.numero_patrimonio || item.imovel?.numero_patrimonio || '',
-          descricao_bem: item.patrimonio?.descricao_bem || item.imovel?.denominacao || '',
-          status: item.encontrado ? 'found' : 'not_found',
-          isImovel: !!item.imovelId,
-        }))
-        
-        const inventoryData: Inventory = {
-          id: newInventory.id,
-          name: newInventory.title || name,
-          sectorName: newInventory.setor || sectorName,
-          status: (newInventory.status === 'em_andamento' ? 'in_progress' : 
-                  newInventory.status === 'concluido' ? 'completed' : 
-                  newInventory.status) as Inventory['status'],
-          createdAt: newInventory.dataInicio ? new Date(newInventory.dataInicio) : new Date(),
-          finalizedAt: newInventory.dataFim ? new Date(newInventory.dataFim) : undefined,
-          items: mappedItems,
-          scope: (newInventory.scope || scope) as Inventory['scope'],
-          locationType,
+        const newInventory = await api.post<BackendInventoryRaw>('/inventarios', inventoryPayload)
+        await invalidate()
+        // Mapeia para o modelo do frontend (mantém locationType informado).
+        return {
+          ...mapInventory(newInventory, user?.municipalityId || ''),
+          locationType: locationType ?? (newInventory.local || newInventory.locationType),
           specificLocationId,
-          municipalityId: user?.municipalityId || '',
         }
-        
-        await fetchInventories()
-        
-        return inventoryData
       } catch (error) {
         logger.error('Erro ao criar inventário:', error)
-        logger.debug('Stack trace do erro de inventário', { stack: error instanceof Error ? error.stack : 'N/A' })
-        throw error // Re-throw para que o componente possa capturar
+        throw error // Re-throw para o componente capturar
       }
     },
-    [fetchInventories, user],
+    [invalidate, user],
   )
 
   const updateInventory = useCallback(
     async (inventoryId: string, updatedInventory: Inventory) => {
       try {
         // updateInventarioSchema do backend é .strict() e usa title/setor/local
-        // (não name/sectorName/scope/items do modelo do frontend). Mapear, senão
-        // o PUT do objeto inteiro tomava 400 e a edição nunca salvava.
+        // (não name/sectorName/scope/items do modelo do frontend). Mapear.
         const payload = {
           title: updatedInventory.name,
           setor: updatedInventory.sectorName,
-          local:
-            updatedInventory.specificLocationId ||
-            updatedInventory.locationType ||
-            '',
+          local: updatedInventory.specificLocationId || updatedInventory.locationType || '',
         }
         await api.put<Inventory>(`/inventarios/${inventoryId}`, payload)
-        await fetchInventories() // Recarregar a lista
-        toast({
-          title: 'Sucesso',
-          description: 'Inventário atualizado com sucesso.',
-        })
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Falha ao atualizar inventário.',
-        })
+        await invalidate()
+        toast({ title: 'Sucesso', description: 'Inventário atualizado com sucesso.' })
+      } catch {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao atualizar inventário.' })
       }
     },
-    [fetchInventories],
+    [invalidate],
   )
 
   const updateInventoryItemStatus = useCallback(
-    async (
-      inventoryId: string,
-      patrimonioId: string,
-      status: 'found' | 'not_found',
-    ) => {
-      // Atualização otimista para UX imediata...
-      setAllInventories((prev) =>
-        prev.map((inv) =>
+    async (inventoryId: string, patrimonioId: string, status: 'found' | 'not_found') => {
+      // Atualização otimista direto no cache do React Query (UX imediata)...
+      queryClient.setQueryData<Inventory[]>(INVENTARIOS_KEY, (prev) =>
+        prev?.map((inv) =>
           inv.id === inventoryId
             ? {
                 ...inv,
@@ -302,7 +235,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
             : inv,
         ),
       )
-      // ...e persistência no backend (InventoryItem.encontrado + verificadoEm/Por).
+      // ...e persistência (InventoryItem.encontrado + verificadoEm/Por).
       try {
         await api.patch(`/inventarios/${inventoryId}/items/${patrimonioId}`, {
           encontrado: status === 'found',
@@ -313,18 +246,16 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           title: 'Erro',
           description: 'Falha ao salvar a conferência. Recarregando dados.',
         })
-        // Reverte para o estado real do servidor.
-        await fetchInventories()
+        await invalidate() // Reverte para o estado real do servidor.
         throw error
       }
     },
-    [fetchInventories],
+    [queryClient, invalidate],
   )
 
   const finalizeInventory = useCallback(
     async (inventoryId: string): Promise<Patrimonio[]> => {
-      // O backend conclui o inventário e marca os não-encontrados como extraviados
-      // de forma atômica (transação) — é a fonte da verdade.
+      // O backend conclui e marca os não-encontrados como extraviados atomicamente.
       const result = await api.post<{
         inventario: unknown
         extraviados: {
@@ -336,9 +267,6 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       }>(`/inventarios/${inventoryId}/finalizar`)
 
       const extraviados = result.extraviados || []
-
-      // Monta a lista de extraviados a partir da RESPOSTA do backend (fonte da
-      // verdade) — o contexto não mantém mais todos os bens em memória.
       const newlyMissing = extraviados.map(
         (e) =>
           ({
@@ -350,35 +278,28 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       )
 
       if (extraviados.length > 0) {
-        // Invalidar caches React Query para telas sob demanda refletirem os bens extraviados
+        // Telas sob demanda refletem os bens extraviados.
         void queryClient.invalidateQueries({ queryKey: PATRIMONIOS_ALL_KEY })
         void queryClient.invalidateQueries({ queryKey: PATRIMONIO_STATS_KEY })
       }
 
-      await fetchInventories()
+      await invalidate()
       return newlyMissing
     },
-    [queryClient, fetchInventories],
+    [queryClient, invalidate],
   )
 
   const deleteInventory = useCallback(
     async (inventoryId: string) => {
       try {
         await api.delete(`/inventarios/${inventoryId}`)
-        await fetchInventories() // Recarregar a lista
-        toast({ 
-          title: 'Sucesso',
-          description: 'Inventário excluído com sucesso.' 
-        })
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Falha ao excluir inventário.',
-        })
+        await invalidate()
+        toast({ title: 'Sucesso', description: 'Inventário excluído com sucesso.' })
+      } catch {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao excluir inventário.' })
       }
     },
-    [fetchInventories],
+    [invalidate],
   )
 
   return (
@@ -387,7 +308,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         inventories,
         isLoading,
         error,
-        refetch: fetchInventories,
+        refetch: invalidate,
         getInventoryById,
         createInventory,
         updateInventory,
