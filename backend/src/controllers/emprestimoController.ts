@@ -18,10 +18,20 @@ export const listEmprestimos = async (req: Request, res: Response): Promise<void
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 50));
 
+    const agora = new Date();
     const where: Record<string, unknown> = {
       patrimonio: { municipalityId: req.user.municipalityId },
     };
-    if (status) where.status = status;
+    // 'atrasado' não é um valor persistido: é derivado (empréstimo ativo cuja
+    // devolução prevista já passou). Traduz o filtro para a condição de data —
+    // assim relatórios/consultas por 'atrasado' funcionam sem cron nem dado stale.
+    if (status === 'atrasado') {
+      where.status = 'ativo';
+      where.dataDevolucao = null;
+      where.dataPrevDevolucao = { lt: agora };
+    } else if (status) {
+      where.status = status;
+    }
 
     const [emprestimos, total] = await Promise.all([
       prisma.emprestimo.findMany({
@@ -43,8 +53,15 @@ export const listEmprestimos = async (req: Request, res: Response): Promise<void
       prisma.emprestimo.count({ where }),
     ]);
 
+    // Anexa o status derivado 'atrasado' (sem persistir): ativo + vencido.
+    const emprestimosComStatus = emprestimos.map((e) => ({
+      ...e,
+      isAtrasado:
+        e.status === 'ativo' && !e.dataDevolucao && e.dataPrevDevolucao < agora,
+    }));
+
     res.json({
-      emprestimos,
+      emprestimos: emprestimosComStatus,
       pagination: {
         page: pageNum,
         limit: limitNum,

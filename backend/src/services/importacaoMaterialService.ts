@@ -19,7 +19,7 @@ import pdfParse from 'pdf-parse';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { redisCache } from '../config/redis';
-import { logInfo } from '../config/logger';
+import { logInfo, logWarn } from '../config/logger';
 import { proximoNumeroConfiguradoTx, formatNumero } from './numberingService';
 import { ALMOXARIFADO_LOCAL_NOME } from '../constants/almoxarifado';
 
@@ -586,7 +586,13 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
     }
   }
 
-  let criados: { id: string; numero_patrimonio: string }[];
+  let criados: { id: string; numero_patrimonio: string }[] = [];
+  // Importações concorrentes podem ler o mesmo "último número" e colidir no unique
+  // [municipalityId, numero_patrimonio] (P2002). Em vez de falhar e pedir retry
+  // manual, refazemos a transação algumas vezes — cada tentativa re-lê o maior
+  // número (proximoNumeroConfiguradoTx) e recomeça do sequencial atualizado.
+  const MAX_TENTATIVAS_NUMERACAO = 3;
+  for (let tentativa = 1; ; tentativa++) {
   try {
   criados = await prisma.$transaction(async (tx) => {
     // Numeração POR SETOR, no formato CONFIGURADO no sistema (NumberingPattern);
@@ -728,16 +734,24 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
     maxWait: 15000,
     timeout: 120000,
   });
+    break; // sucesso
   } catch (err) {
-    if (
-      err instanceof Prisma.PrismaClientKnownRequestError &&
-      err.code === 'P2002'
-    ) {
+    const conflitoNumeracao =
+      err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
+    if (conflitoNumeracao && tentativa < MAX_TENTATIVAS_NUMERACAO) {
+      logWarn('Conflito de numeração na importação — refazendo', {
+        tentativa,
+        municipalityId: actor.municipalityId,
+      });
+      continue; // re-lê o maior número e tenta novamente
+    }
+    if (conflitoNumeracao) {
       throw new ImportacaoValidationError(
-        'Conflito de numeração — tente novamente',
+        'Conflito de numeração após várias tentativas — tente novamente em instantes',
       );
     }
     throw err;
+  }
   }
 
   await redisCache.deletePattern('patrimonios:*');
