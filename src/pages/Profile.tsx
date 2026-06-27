@@ -75,7 +75,7 @@ const Profile = () => {
 
   const handleSave = async (editedImage: string) => {
     try {
-      await updateUser(user.id, { avatarUrl: editedImage })
+      await updateUser(user.id, { avatar: editedImage })
       toast({
         title: 'Sucesso!',
         description: 'Sua foto de perfil foi atualizada.',
@@ -105,7 +105,7 @@ const Profile = () => {
           <div className="flex items-center gap-6">
             <div className="relative group">
               <Avatar className="h-24 w-24">
-                {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && <AvatarImage src={user.avatarUrl} alt={user.name} />}
+                {user.avatar && user.avatar.trim() !== '' && !user.avatar.includes('placeholder') && <AvatarImage src={user.avatar} alt={user.name} />}
                 <AvatarFallback className="text-3xl">
                   {getInitials(user.name)}
                 </AvatarFallback>

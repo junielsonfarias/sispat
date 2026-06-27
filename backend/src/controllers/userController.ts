@@ -261,7 +261,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     }
 
     const { id } = req.params;
-    const { name, email, role, responsibleSectors, isActive } = req.body;
+    const { name, email, role, responsibleSectors, isActive, avatar } = req.body;
 
     // Verificar se usuário existe
     const existingUser = await prisma.user.findFirst({
@@ -328,6 +328,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
         ...(role && { role }),
         ...(responsibleSectors && { responsibleSectors }),
         ...(isActive !== undefined && { isActive }),
+        ...(avatar !== undefined && { avatar }),
       },
       select: {
         id: true,

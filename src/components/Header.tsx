@@ -139,8 +139,8 @@ export const Header = () => {
                     aria-label="Menu do usuário"
                   >
                     <Avatar className="h-10 w-10 ring-2 ring-green-200">
-                      {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      {user.avatar && user.avatar.trim() !== '' && !user.avatar.includes('placeholder') && (
+                        <AvatarImage src={user.avatar} alt={user.name} />
                       )}
                       <AvatarFallback className="bg-green-100 text-green-700 text-sm font-bold">
                         {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -153,8 +153,8 @@ export const Header = () => {
                     <div className="flex flex-col space-y-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12">
-                          {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
-                            <AvatarImage src={user.avatarUrl} alt={user.name} />
+                          {user.avatar && user.avatar.trim() !== '' && !user.avatar.includes('placeholder') && (
+                            <AvatarImage src={user.avatar} alt={user.name} />
                           )}
                           <AvatarFallback className="bg-muted text-foreground">
                             {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -267,8 +267,8 @@ export const Header = () => {
                   aria-label="Menu do usuário"
                 >
                   <Avatar className="h-8 w-8 ring-2 ring-green-200">
-                    {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    {user.avatar && user.avatar.trim() !== '' && !user.avatar.includes('placeholder') && (
+                      <AvatarImage src={user.avatar} alt={user.name} />
                     )}
                     <AvatarFallback className="bg-green-100 text-green-700 text-xs font-bold">
                       {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -281,8 +281,8 @@ export const Header = () => {
                   <div className="flex flex-col space-y-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
-                          <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        {user.avatar && user.avatar.trim() !== '' && !user.avatar.includes('placeholder') && (
+                          <AvatarImage src={user.avatar} alt={user.name} />
                         )}
                         <AvatarFallback className="bg-muted text-foreground">
                           {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -375,8 +375,8 @@ export const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-10 w-10 rounded-full p-0 touch-target">
                   <Avatar className="h-9 w-9 ring-2 ring-offset-1 ring-border">
-                    {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    {user.avatar && user.avatar.trim() !== '' && !user.avatar.includes('placeholder') && (
+                      <AvatarImage src={user.avatar} alt={user.name} />
                     )}
                     <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
                       {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -389,8 +389,8 @@ export const Header = () => {
                 <DropdownMenuLabel className="font-normal p-3">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12 ring-2 ring-primary/20">
-                      {user.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && (
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      {user.avatar && user.avatar.trim() !== '' && !user.avatar.includes('placeholder') && (
+                        <AvatarImage src={user.avatar} alt={user.name} />
                       )}
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}

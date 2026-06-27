@@ -44,7 +44,7 @@ export const SuperuserHeader = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar className="h-8 w-8">
-                  {user?.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.includes('placeholder') && <AvatarImage src={user.avatarUrl} alt={user.name} />}
+                  {user?.avatar && user.avatar.trim() !== '' && !user.avatar.includes('placeholder') && <AvatarImage src={user.avatar} alt={user.name} />}
                   <AvatarFallback>
                     {user ? getInitials(user.name) : <UserCircle />}
                   </AvatarFallback>

@@ -25,7 +25,7 @@ export interface AuthContextType {
   addUser: (
     userData: Omit<
       User,
-      'id' | 'avatarUrl' | 'failedLoginAttempts' | 'lockoutUntil'
+      'id' | 'avatar' | 'failedLoginAttempts' | 'lockoutUntil'
     >,
   ) => Promise<User>
   deleteUser: (userId: string) => Promise<void>
@@ -228,7 +228,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const addUser = async (
     userData: Omit<
       User,
-      'id' | 'avatarUrl' | 'failedLoginAttempts' | 'lockoutUntil'
+      'id' | 'avatar' | 'failedLoginAttempts' | 'lockoutUntil'
     >,
   ): Promise<User> => {
     const newUser = await api.post<User>('/users', userData)

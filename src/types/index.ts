@@ -32,7 +32,8 @@ export interface User {
   name: string
   email: string
   role: UserRole
-  avatarUrl: string
+  // Foto de perfil (URL ou data URL). Espelha a coluna `avatar` do Prisma.
+  avatar?: string
   sector?: string
   responsibleSectors?: string[]
   password?: string

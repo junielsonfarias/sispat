@@ -60,6 +60,9 @@ export const updateUserSchema = z
     role: userRoleSchema.optional(),
     responsibleSectors: responsibleSectorsSchema,
     isActive: z.boolean().optional(),
+    // Foto de perfil: URL ou data URL (base64) da imagem. O campo no Prisma é
+    // `avatar`. Limite generoso para acomodar data URLs de imagens pequenas.
+    avatar: z.string().max(5_000_000).optional(),
   })
   .strict();
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
