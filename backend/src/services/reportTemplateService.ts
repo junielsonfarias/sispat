@@ -135,7 +135,8 @@ export const updateReportTemplate = async (
 ) => {
   const existing = await prisma.reportTemplate.findUnique({ where: { id } });
   if (!existing) throw new ReportTemplateNotFoundError();
-  if (existing.municipalityId !== municipalityId) throw new ReportTemplateForbiddenError();
+  // 404 (não 403) para recurso de outro município: não revela existência cross-tenant.
+  if (existing.municipalityId !== municipalityId) throw new ReportTemplateNotFoundError();
 
   const updateData: Prisma.ReportTemplateUpdateInput = {};
 
@@ -168,7 +169,8 @@ export const updateReportTemplate = async (
 export const removeReportTemplate = async (municipalityId: string, id: string): Promise<void> => {
   const existing = await prisma.reportTemplate.findUnique({ where: { id } });
   if (!existing) throw new ReportTemplateNotFoundError();
-  if (existing.municipalityId !== municipalityId) throw new ReportTemplateForbiddenError();
+  // 404 (não 403) para recurso de outro município: não revela existência cross-tenant.
+  if (existing.municipalityId !== municipalityId) throw new ReportTemplateNotFoundError();
 
   await prisma.reportTemplate.delete({ where: { id } });
 };

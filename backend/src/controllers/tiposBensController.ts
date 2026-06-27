@@ -27,8 +27,9 @@ export const getTiposBens = async (req: Request, res: Response): Promise<void> =
       },
     });
 
-    // ✅ PERFORMANCE: Cache HTTP para dados estáticos (mudam pouco)
-    res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
+    // Cache HTTP de dados tenant-escopados: SEMPRE `private` (nunca `public`),
+    // senão um proxy/CDN compartilhado pode servir a lista de um município a outro.
+    res.setHeader('Cache-Control', 'private, max-age=60');
     res.json(tiposBens);
   } catch (error) {
     logError('Erro ao buscar tipos de bens', error);

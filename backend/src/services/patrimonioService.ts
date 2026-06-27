@@ -1223,6 +1223,19 @@ export const deletePatrimonio = async (
     throw new PatrimonioForbiddenError('Apenas superuser ou supervisor podem deletar patrimônios');
   }
 
+  // Isolamento de tenant PRIMEIRO: resolver/validar ownership ANTES dos guards de
+  // negócio, senão as mensagens de conflito (empréstimo/transferência) viram um
+  // oracle de estado de um bem de outro município. Trata como 404 (não vaza
+  // existência cross-tenant). superuser opera na plataforma inteira.
+  const existing = await prisma.patrimonio.findUnique({
+    where: { id },
+    select: { id: true, numero_patrimonio: true, municipalityId: true },
+  });
+  if (!existing) throw new PatrimonioNotFoundError();
+  if (actor.role !== 'superuser' && existing.municipalityId !== actor.municipalityId) {
+    throw new PatrimonioNotFoundError();
+  }
+
   // Guard: não permite deletar bem com empréstimo ativo
   const emprestimoAtivo = await prisma.emprestimo.findFirst({
     where: { patrimonioId: id, status: 'ativo' },
@@ -1243,19 +1256,6 @@ export const deletePatrimonio = async (
     throw new PatrimonioConflictError(
       'Patrimônio possui transferência pendente. Aprove ou rejeite antes de deletar.',
     );
-  }
-
-  const existing = await prisma.patrimonio.findUnique({
-    where: { id },
-    select: { id: true, numero_patrimonio: true, municipalityId: true },
-  });
-  if (!existing) throw new PatrimonioNotFoundError();
-
-  // Isolamento de tenant: nunca permitir delete em patrimônio de outro município.
-  // Trata como não encontrado (404) para não vazar existência cross-tenant.
-  // superuser opera na plataforma inteira e pode deletar de qualquer município.
-  if (actor.role !== 'superuser' && existing.municipalityId !== actor.municipalityId) {
-    throw new PatrimonioNotFoundError();
   }
 
   await prisma.patrimonio.delete({ where: { id } });

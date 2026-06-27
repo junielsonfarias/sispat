@@ -18,9 +18,17 @@ import {
 } from '../services/importacaoMaterialService';
 
 // Upload em memória (não persiste em disco — o PDF é só lido e descartado).
+// fileFilter rejeita não-PDF ANTES de bufferizar os 15 MB na memória.
 export const uploadRelatorio = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas arquivos PDF são aceitos'));
+    }
+  },
 }).single('arquivo');
 
 const buildActor = (req: Request): Actor | null => {

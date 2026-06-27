@@ -99,6 +99,15 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 
     const { id } = req.params;
 
+    // Buscar perfil de OUTRO usuário é função de gestão. Não-gestores só podem
+    // ler o próprio registro (usado no bootstrap do AuthContext) — sem isso um
+    // visualizador/usuario enumeraria perfis de colegas (email/role) por UUID.
+    const isManager = ['superuser', 'admin', 'supervisor'].includes(req.user.role);
+    if (!isManager && id !== req.user.userId) {
+      res.status(403).json({ error: 'Acesso negado' });
+      return;
+    }
+
     const user = await prisma.user.findFirst({
       where: {
         id,

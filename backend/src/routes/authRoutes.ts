@@ -56,6 +56,17 @@ const resetLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limiting moderado para refresh de token (evita rotação em alta frequência).
+// O rate-limit global pula toda a rota /api/auth, então cada endpoint sensível
+// precisa do seu próprio limitador.
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 60, // 60 refresh/15min por IP
+  message: 'Muitas renovações de sessão. Tente novamente em alguns minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /**
  * @swagger
  * /api/auth/login:
@@ -121,7 +132,7 @@ router.get('/csrf', getCsrfToken);
  * @desc Renovar token de acesso
  * @access Public
  */
-router.post('/refresh', zodValidate({ body: refreshSchema }), refreshToken);
+router.post('/refresh', refreshLimiter, zodValidate({ body: refreshSchema }), refreshToken);
 
 /**
  * @swagger
@@ -159,7 +170,7 @@ router.post('/logout', authenticateToken, logout);
  * @desc Alterar senha do usuário
  * @access Private
  */
-router.post('/change-password', authenticateToken, zodValidate({ body: changePasswordSchema }), changePassword);
+router.post('/change-password', authenticateToken, authLimiter, zodValidate({ body: changePasswordSchema }), changePassword);
 
 /**
  * @route POST /api/auth/forgot-password
@@ -173,7 +184,7 @@ router.post('/forgot-password', resetLimiter, zodValidate({ body: forgotPassword
  * @desc Validar token de reset de senha
  * @access Public
  */
-router.get('/validate-reset-token/:token', zodValidate({ params: validateResetTokenParamsSchema }), validateResetToken);
+router.get('/validate-reset-token/:token', resetLimiter, zodValidate({ params: validateResetTokenParamsSchema }), validateResetToken);
 
 /**
  * @route POST /api/auth/reset-password

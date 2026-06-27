@@ -27,8 +27,9 @@ export const getFormasAquisicao = async (req: Request, res: Response): Promise<v
       },
     });
 
-    // ✅ PERFORMANCE: Cache HTTP para dados estáticos
-    res.setHeader('Cache-Control', 'public, max-age=600'); // 10 minutos
+    // Cache HTTP de dados tenant-escopados: SEMPRE `private` (nunca `public`),
+    // senão um proxy/CDN compartilhado pode servir a lista de um município a outro.
+    res.setHeader('Cache-Control', 'private, max-age=60');
     res.json(formasAquisicao);
   } catch (error) {
     logError('Erro ao buscar formas de aquisição', error);

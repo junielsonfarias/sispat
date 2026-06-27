@@ -86,11 +86,12 @@ describe('reportTemplateService', () => {
     expect(mockPrisma.reportTemplate.update).not.toHaveBeenCalled();
   });
 
-  it('update: Forbidden (403) quando é de outro município', async () => {
+  it('update: NotFound (não 403) quando é de outro município — não vaza existência cross-tenant', async () => {
     mockPrisma.reportTemplate.findUnique.mockResolvedValue({ id: 'rt1', municipalityId: 'mun-B' });
     await expect(updateReportTemplate('mun-A', 'rt1', { name: 'Y' })).rejects.toBeInstanceOf(
-      ReportTemplateForbiddenError,
+      ReportTemplateNotFoundError,
     );
+    expect(mockPrisma.reportTemplate.update).not.toHaveBeenCalled();
   });
 
   it('update: isDefault desmarca outros exceto o próprio (id not)', async () => {
@@ -102,12 +103,14 @@ describe('reportTemplateService', () => {
     });
   });
 
-  it('remove: NotFound / Forbidden / sucesso', async () => {
+  it('remove: NotFound / cross-tenant 404 / sucesso', async () => {
     mockPrisma.reportTemplate.findUnique.mockResolvedValue(null);
     await expect(removeReportTemplate('mun-A', 'x')).rejects.toBeInstanceOf(ReportTemplateNotFoundError);
 
+    // Outro município → 404 (não 403): não revela que o registro existe
     mockPrisma.reportTemplate.findUnique.mockResolvedValue({ id: 'rt1', municipalityId: 'mun-B' });
-    await expect(removeReportTemplate('mun-A', 'rt1')).rejects.toBeInstanceOf(ReportTemplateForbiddenError);
+    await expect(removeReportTemplate('mun-A', 'rt1')).rejects.toBeInstanceOf(ReportTemplateNotFoundError);
+    expect(mockPrisma.reportTemplate.delete).not.toHaveBeenCalled();
 
     mockPrisma.reportTemplate.findUnique.mockResolvedValue({ id: 'rt1', municipalityId: 'mun-A' });
     await removeReportTemplate('mun-A', 'rt1');

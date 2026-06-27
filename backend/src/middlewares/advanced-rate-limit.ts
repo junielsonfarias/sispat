@@ -5,6 +5,7 @@ import RedisStore from 'rate-limit-redis'
 // ✅ Usar a mesma instância do Redis configurada no sistema
 import { getRedis } from '../config/redis'
 import { logInfo, logWarn, logError } from '../config/logger'
+import { maskEmail } from '../utils/mask'
 
 const redis = getRedis() // Pode retornar null se Redis não estiver disponível
 
@@ -102,7 +103,8 @@ export const authRateLimiter = rateLimit({
   handler: (req: any, res) => {
     logError('Possível brute force attack', undefined, {
       ip: req.ip,
-      email: req.body?.email || 'unknown',
+      // email é controlado pelo atacante; mascarar p/ não persistir PII de vítima
+      email: maskEmail(req.body?.email) || 'unknown',
     })
 
     res.status(429).json({
