@@ -21,6 +21,22 @@
 
 ## 2026
 
+### 2026-06-27 — install.sh: remoção de credenciais-padrão (default credentials)
+- **Sintoma/risco:** o `install.sh` (público no repo) gravava em TODA instalação um
+  supervisor com credenciais FIXAS (`supervisor@ssbv.com` / `Master6273@`) e oferecia
+  senha-padrão pública do superuser (`Tiko6273@` no ENTER) — qualquer um logaria em
+  qualquer instância. Além disso o `show_success_message` imprimia o supervisor
+  hardcoded (não via variável).
+- **Correção:** supervisor agora usa `supervisor@${DOMAIN}` + senha ALEATÓRIA por
+  instalação (`openssl rand`); o default do superuser (ENTER) virou senha aleatória
+  única; ambas exibidas no fim e gravadas em `/tmp/sispat-credentials.txt`; success
+  message passou a usar as variáveis. `bash -n` OK; zero credenciais fixas restantes.
+- **Não alterado (decisão):** o frontend do instalador segue em `npm --legacy-peer-deps`
+  (fluxo deliberadamente robusto com retry) em vez de pnpm — forçar pnpm reduziria a
+  robustez em VPS novo; a divergência com o update (pnpm) é de baixa severidade.
+- **Lição:** instalador público NUNCA deve embutir senha fixa — sempre aleatória por
+  instância e exibida uma vez.
+
 ### 2026-06-27 — Cobertura de testes do frontend (vitest 62 → 130)
 Ampliação da suíte vitest focada nos pontos de maior risco (sem novas deps; commits
 sempre escopados aos arquivos de teste). +68 testes:

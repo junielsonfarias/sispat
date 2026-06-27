@@ -498,9 +498,11 @@ collect_configuration() {
     echo -e "${GREEN}Credenciais pré-configuradas do supervisor:${NC}"
     echo ""
     
-    # Definir credenciais fixas do supervisor
-    SUPERVISOR_EMAIL="supervisor@ssbv.com"
-    SUPERVISOR_PASSWORD="Master6273@"
+    # Credenciais do supervisor — SENHA ALEATÓRIA por instalação. NUNCA fixar: o
+    # install.sh é público no repositório; uma senha fixa seria credencial-padrão
+    # exposta (qualquer um logaria como supervisor em qualquer instância).
+    SUPERVISOR_EMAIL="supervisor@${DOMAIN}"
+    SUPERVISOR_PASSWORD="Sv$(openssl rand -hex 8)@9"
     SUPERVISOR_NAME="Supervisor"
     
     echo -e "  ${CYAN}📧 Email:${NC} ${WHITE}${SUPERVISOR_EMAIL}${NC}"
@@ -520,10 +522,12 @@ collect_configuration() {
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${CYAN}Esta será a senha que você usará para fazer login${NC}"
-    echo -e "${YELLOW}Recomendação: Pressione ENTER para usar: Tiko6273@${NC}"
+    echo -e "${YELLOW}Pressione ENTER para gerar uma senha forte ALEATÓRIA (exibida ao final).${NC}"
     echo ""
-    
-    ask_password "Sua senha de login" SUPERUSER_PASSWORD "Tiko6273@"
+
+    # Default ALEATÓRIO por instalação (sem senha pública embutida no instalador).
+    SUPERUSER_PASSWORD_DEFAULT="Adm$(openssl rand -hex 8)@7"
+    ask_password "Sua senha de login" SUPERUSER_PASSWORD "$SUPERUSER_PASSWORD_DEFAULT"
     success "Sua senha configurada"
     sleep 1
     
@@ -1375,6 +1379,9 @@ USEREOF
 SUPERUSER_EMAIL=$SUPERUSER_EMAIL
 SUPERUSER_PASSWORD=$SUPERUSER_PASSWORD
 SUPERUSER_NAME=$SUPERUSER_NAME
+SUPERVISOR_EMAIL=$SUPERVISOR_EMAIL
+SUPERVISOR_PASSWORD=$SUPERVISOR_PASSWORD
+SUPERVISOR_NAME=$SUPERVISOR_NAME
 DOMAIN=$DOMAIN
 EOF
     else
@@ -2248,11 +2255,11 @@ show_success_message() {
     
     echo -e "${CYAN}👨‍💼 SUPERVISOR (Gestão Operacional - Pré-configurado):${NC}"
     echo ""
-    echo -e "     ${WHITE}📧 Email:${NC} ${GREEN}supervisor@ssbv.com${NC}"
-    echo -e "     ${WHITE}🔑 Senha:${NC} ${GREEN}Master6273@${NC}"
-    echo -e "     ${WHITE}👤 Nome:${NC}  ${GREEN}Supervisor${NC}"
+    echo -e "     ${WHITE}📧 Email:${NC} ${GREEN}${SUPERVISOR_EMAIL}${NC}"
+    echo -e "     ${WHITE}🔑 Senha:${NC} ${GREEN}${SUPERVISOR_PASSWORD}${NC}"
+    echo -e "     ${WHITE}👤 Nome:${NC}  ${GREEN}${SUPERVISOR_NAME}${NC}"
     echo ""
-    echo -e "     ${YELLOW}💡 Esta conta já vem criada e pronta para uso!${NC}"
+    echo -e "     ${YELLOW}💡 Senha gerada aleatoriamente nesta instalação — anote e troque após o 1º acesso.${NC}"
     echo ""
     
     echo -e "${WHITE}═══════════════════════════════════════════════════════════════════${NC}"
