@@ -972,51 +972,66 @@ build_application() {
         rm -rf node_modules package-lock.json
     fi
     
-    # Usar npm com --legacy-peer-deps (mais compatível que pnpm)
-    echo -e "${BLUE}  → Instalando pacotes do frontend...${NC}"
-    
-    # Instalar SEM background para ver erros em tempo real
-    npm install --legacy-peer-deps > /tmp/build-frontend-deps.log 2>&1
-    local deps_status=$?
-    
-    echo ""
-    if [ $deps_status -eq 0 ]; then
-        # Verificar se vite foi instalado corretamente
-        if [ -f "node_modules/.bin/vite" ]; then
-            success "✅ Dependências do frontend instaladas"
+    # Preferir pnpm (mesmo gerenciador do CI/atualização → honra pnpm-lock.yaml e
+    # versões reproduzíveis). Fallback AUTOMÁTICO para npm se pnpm faltar/falhar,
+    # preservando a robustez do instalador.
+    local FRONTEND_DEPS_OK=false
+    command -v corepack >/dev/null 2>&1 && corepack enable >/dev/null 2>&1 || true
+    if command -v pnpm >/dev/null 2>&1 && [ -f pnpm-lock.yaml ]; then
+        echo -e "${BLUE}  → Instalando pacotes do frontend com pnpm (--frozen-lockfile)...${NC}"
+        if pnpm install --frozen-lockfile > /tmp/build-frontend-deps.log 2>&1 && [ -f "node_modules/.bin/vite" ]; then
+            success "✅ Dependências do frontend instaladas (pnpm)"
+            FRONTEND_DEPS_OK=true
         else
-            warning "⚠️  Vite não encontrado após npm install, tentando solução..."
-            
-            echo -e "${BLUE}  → Limpando e reinstalando com --force...${NC}"
-            rm -rf node_modules package-lock.json ~/.npm
-            
-            npm install --legacy-peer-deps --force 2>&1 | tee /tmp/build-frontend-deps-retry.log
-            
-            if [ -f "node_modules/.bin/vite" ]; then
-                success "✅ Vite instalado após retry"
-            else
-                echo ""
-                echo -e "${RED}❌ ERRO CRÍTICO: Vite não pode ser instalado!${NC}"
-                echo ""
-                echo -e "${YELLOW}Últimas linhas do log:${NC}"
-                tail -30 /tmp/build-frontend-deps-retry.log
-                echo ""
-                echo -e "${CYAN}Possíveis causas:${NC}"
-                echo "  • Problema de rede ao baixar pacotes"
-                echo "  • Memória insuficiente durante instalação"
-                echo "  • Conflito de dependências"
-                echo ""
-                error "Não foi possível instalar dependências do frontend"
-            fi
+            warning "⚠️  pnpm indisponível/falhou — usando npm (--legacy-peer-deps) como fallback"
         fi
-    else
+    fi
+
+    if [ "$FRONTEND_DEPS_OK" != true ]; then
+        # Fallback npm (--legacy-peer-deps) com retry — fluxo robusto original.
+        echo -e "${BLUE}  → Instalando pacotes do frontend (npm)...${NC}"
+        npm install --legacy-peer-deps > /tmp/build-frontend-deps.log 2>&1
+        local deps_status=$?
+
         echo ""
-        echo -e "${RED}❌ npm install falhou!${NC}"
-        echo ""
-        echo -e "${YELLOW}Últimas 50 linhas do log:${NC}"
-        tail -50 /tmp/build-frontend-deps.log
-        echo ""
-        error "❌ Falha ao instalar dependências do frontend! Ver: /tmp/build-frontend-deps.log"
+        if [ $deps_status -eq 0 ]; then
+            # Verificar se vite foi instalado corretamente
+            if [ -f "node_modules/.bin/vite" ]; then
+                success "✅ Dependências do frontend instaladas"
+            else
+                warning "⚠️  Vite não encontrado após npm install, tentando solução..."
+
+                echo -e "${BLUE}  → Limpando e reinstalando com --force...${NC}"
+                rm -rf node_modules package-lock.json ~/.npm
+
+                npm install --legacy-peer-deps --force 2>&1 | tee /tmp/build-frontend-deps-retry.log
+
+                if [ -f "node_modules/.bin/vite" ]; then
+                    success "✅ Vite instalado após retry"
+                else
+                    echo ""
+                    echo -e "${RED}❌ ERRO CRÍTICO: Vite não pode ser instalado!${NC}"
+                    echo ""
+                    echo -e "${YELLOW}Últimas linhas do log:${NC}"
+                    tail -30 /tmp/build-frontend-deps-retry.log
+                    echo ""
+                    echo -e "${CYAN}Possíveis causas:${NC}"
+                    echo "  • Problema de rede ao baixar pacotes"
+                    echo "  • Memória insuficiente durante instalação"
+                    echo "  • Conflito de dependências"
+                    echo ""
+                    error "Não foi possível instalar dependências do frontend"
+                fi
+            fi
+        else
+            echo ""
+            echo -e "${RED}❌ npm install falhou!${NC}"
+            echo ""
+            echo -e "${YELLOW}Últimas 50 linhas do log:${NC}"
+            tail -50 /tmp/build-frontend-deps.log
+            echo ""
+            error "❌ Falha ao instalar dependências do frontend! Ver: /tmp/build-frontend-deps.log"
+        fi
     fi
     
     echo ""
