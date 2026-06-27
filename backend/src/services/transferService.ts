@@ -289,6 +289,23 @@ export const approveTransfer = async (
   }
   assertSameTenant(actor, transfer.patrimonio.municipalityId);
 
+  // Segregação de responsabilidade (REGRAS §6): o aprovador deve ser admin/superuser
+  // OU supervisor responsável pelo SETOR DESTINO. Sem isso, qualquer supervisor do
+  // município aprovaria transferências para setores alheios. Convenção do projeto:
+  // responsibleSectors vazio = acesso a todos os setores do município.
+  if (actor.role !== 'admin' && actor.role !== 'superuser') {
+    const approver = await prisma.user.findUnique({
+      where: { id: actor.userId },
+      select: { responsibleSectors: true },
+    });
+    const setores = approver?.responsibleSectors ?? [];
+    if (setores.length > 0 && !setores.includes(transfer.setorDestino)) {
+      throw new TransferForbiddenError(
+        'Apenas um supervisor do setor destino (ou admin) pode aprovar esta transferência',
+      );
+    }
+  }
+
   const setorDestino = await prisma.sector.findFirst({
     where: {
       name: transfer.setorDestino,

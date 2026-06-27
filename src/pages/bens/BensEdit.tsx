@@ -435,12 +435,14 @@ const BensEdit = () => {
                             <SelectValue placeholder="Selecione o status" />
                           </SelectTrigger>
                         </FormControl>
+                        {/* Baixa e extravio NÃO são feitos por este form (o backend
+                            descarta `status` no update): usam fluxos dedicados com
+                            trava legal (baixa exige motivo; extravio exige B.O. —
+                            Art. 25/26). Por isso não são opções aqui. */}
                         <SelectContent>
                           <SelectItem value="ativo">Ativo</SelectItem>
                           <SelectItem value="inativo">Inativo</SelectItem>
                           <SelectItem value="manutencao">Em Manutenção</SelectItem>
-                          <SelectItem value="baixado">Baixado</SelectItem>
-                          <SelectItem value="extraviado">Extraviado</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

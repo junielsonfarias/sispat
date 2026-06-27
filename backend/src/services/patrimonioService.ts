@@ -1348,8 +1348,10 @@ export const registrarBaixa = async (
     const u = await tx.patrimonio.update({
       where: { id },
       data: {
+        // `status` é o estado operacional (baixado). NÃO sobrescrever `situacao_bem`,
+        // que é a condição física (otimo/bom/regular/ruim/pessimo) — gravar 'baixado'
+        // ali é valor inválido e contamina relatórios de conservação (REGRAS §3.1).
         status: 'baixado',
-        situacao_bem: 'baixado',
         data_baixa: new Date(input.data_baixa),
         motivo_baixa: input.motivo_baixa,
         documentos_baixa: input.documentos_baixa ?? [],

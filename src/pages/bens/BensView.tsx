@@ -663,13 +663,15 @@ function BensView() {
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Situação</label>
                         <div className="mt-1">
-                          <Badge 
+                          <Badge
                             className={`text-sm px-3 py-1 ${
-                              patrimonio.situacao_bem === 'OTIMO' ? 'bg-green-100 text-green-800 border-green-200' :
-                              patrimonio.situacao_bem === 'BOM' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                              patrimonio.situacao_bem === 'REGULAR' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                              patrimonio.situacao_bem === 'RUIM' ? 'bg-red-100 text-red-800 border-red-200' :
-                              patrimonio.situacao_bem === 'PESSIMO' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                              // situacao_bem é gravado em lowercase pelo backend; normalizar
+                              // antes de comparar, senão o badge fica sempre cinza (default).
+                              (patrimonio.situacao_bem || '').toUpperCase() === 'OTIMO' ? 'bg-green-100 text-green-800 border-green-200' :
+                              (patrimonio.situacao_bem || '').toUpperCase() === 'BOM' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                              (patrimonio.situacao_bem || '').toUpperCase() === 'REGULAR' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                              (patrimonio.situacao_bem || '').toUpperCase() === 'RUIM' ? 'bg-red-100 text-red-800 border-red-200' :
+                              (patrimonio.situacao_bem || '').toUpperCase() === 'PESSIMO' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                               'bg-gray-100 text-gray-800 border-gray-200'
                             } border font-medium`}
                           >

@@ -42,6 +42,7 @@ const mockPrisma = {
     findUnique: jest.fn(),
     update: jest.fn(),
   },
+  user: { findUnique: jest.fn() },
   sector: { findFirst: jest.fn() },
   local: { findFirst: jest.fn() },
   historicoEntry: { create: jest.fn() },
@@ -284,6 +285,49 @@ describe('transferService — approveTransfer', () => {
     mockPrisma.sector.findFirst.mockResolvedValueOnce(null);
     await expect(approveTransfer('t1', undefined, baseActor)).rejects.toBeInstanceOf(
       TransferNotFoundError,
+    );
+  });
+
+  it('supervisor NÃO responsável pelo setor destino é bloqueado (403, sem update)', async () => {
+    mockPrisma.transferencia.findUnique.mockResolvedValueOnce({
+      id: 't1',
+      status: 'pendente',
+      setorDestino: 'RH',
+      localDestino: '',
+      previousStatus: 'ativo',
+      patrimonio: { id: 'p1', municipalityId: 'mun-1' },
+    });
+    // supervisor responsável só por 'TI', não por 'RH' (destino)
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ responsibleSectors: ['TI'] });
+    const supervisor: Actor = { userId: 'sup-1', role: 'supervisor', municipalityId: 'mun-1', email: 's@x.gov' };
+    await expect(approveTransfer('t1', undefined, supervisor)).rejects.toBeInstanceOf(
+      TransferForbiddenError,
+    );
+    expect(mockPrisma.transferencia.update).not.toHaveBeenCalled();
+  });
+
+  it('supervisor responsável pelo setor destino aprova', async () => {
+    mockPrisma.transferencia.findUnique.mockResolvedValueOnce({
+      id: 't1',
+      status: 'pendente',
+      patrimonioId: 'p1',
+      setorOrigem: 'TI',
+      setorDestino: 'RH',
+      localDestino: '',
+      previousStatus: 'ativo',
+      observacoes: null,
+      patrimonio: { id: 'p1', municipalityId: 'mun-1' },
+    });
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ responsibleSectors: ['RH'] });
+    mockPrisma.sector.findFirst.mockResolvedValueOnce({ id: 'sec-rh' });
+    mockPrisma.historicoEntry.create.mockResolvedValue({});
+    mockPrisma.activityLog.create.mockResolvedValue({});
+    const supervisor: Actor = { userId: 'sup-1', role: 'supervisor', municipalityId: 'mun-1', email: 's@x.gov' };
+
+    await approveTransfer('t1', undefined, supervisor);
+
+    expect(mockPrisma.transferencia.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: 'aprovada' }) }),
     );
   });
 
