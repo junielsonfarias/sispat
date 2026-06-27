@@ -21,6 +21,18 @@
 
 ## 2026
 
+### 2026-06-27 — Melhorias pós-auditoria (lotes F–L)
+Segunda rodada, atacando os itens DEFERIDOS da auditoria geral + follow-ups.
+- **F (fe514d4):** consulta pública não expõe mais valor monetário (REGRAS §11) — `PUBLIC_PATRIMONIO_SELECT` explícito no service + remoção da exibição em PublicBemDetalhes/PublicConsultation.
+- **G (a171452):** avatar padronizado em `avatar` (front lia `avatarUrl`, back retorna `avatar` → avatares nunca apareciam); updateUser persiste avatar; upload do Profile funciona ponta a ponta.
+- **H (4e0ef3c):** RBAC — novas chaves `imoveis:*`/`emprestimos:*`, defaultRoles espelhando o comportamento atual, catálogo no PermissionManagement, ImoveisList/Emprestimos migrados de `user.role` direto p/ `usePermissions`.
+- **I (c0ffab4):** empréstimo 'atrasado' derivado (filtro `status=atrasado` traduzido p/ condição de data + flag `isAtrasado`) — sem cron, sem dado stale.
+- **J (c0ffab4):** import concorrente — retry (3x) no P2002 de numeração, re-lendo o maior número.
+- **K (897b1b2):** redução de `any` + padronização de erro (type-only, 44 arquivos, catch→extractApiError, tipos Backend* p/ mapeamentos). PatrimonioPDFGenerator/MunicipalityForm revertidos (tipagem incompleta) — follow-up.
+- **L (c5ede6c):** dark mode — tokenização de cores fixas nas telas principais (BensView/BensCadastrados/ImoveisView/ImoveisList/ImportarRelatorio). Pass focado, não cobre 100%.
+- **Verificação:** backend tsc 0 / 577 Jest; frontend tsc 0 / 62 vitest.
+- **Follow-ups abertos:** PatrimonioPDFGenerator/MunicipalityForm (tipagem); dark mode nas demais telas; permissões `settings:*` do supervisor (decisão de produto).
+
 ### 2026-06-27 — Auditoria geral (4 frentes) + remediação em 5 lotes
 - **Contexto:** varredura completa por 4 auditores (segurança backend, multi-tenant, frontend, regras de negócio). Veredito: 0 IDOR/SQLi/mass-assignment críticos novos; 5 gaps legais de 2026-06-24 íntegros; isolamento multi-tenant consistente. Achados pontuais remediados em lotes A–E.
 - **Lote A (commit e645025):** (1) endpoint público de patrimônios vazava PII do setor (cnpj/responsavel/codigo) via `include` sem `select` → reduzido a `sector { select: { name } }`; (2) `updateUser` não persistia `email` (no-op no UserEditForm) → persiste com checagem de unicidade; (3) reset tokens de senha em texto plano → hash SHA-256 (`hashToken`).
