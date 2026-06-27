@@ -132,22 +132,17 @@ class WebSocketManager {
   private setupEventHandlers() {
     if (!this.io) return
 
+    // Autenticação via MIDDLEWARE (io.use): sockets sem JWT válido nem chegam ao
+    // evento 'connection' — o cliente recebe `connect_error`. É o padrão idiomático
+    // do Socket.IO (antes a auth rodava dentro do connection + disconnect manual).
+    this.io.use((socket, next) =>
+      this.authenticateSocket(socket as AuthenticatedSocket, next),
+    )
+
     this.io.on('connection', async (socket: Socket) => {
-      logDebug(`🔌 Cliente conectado: ${socket.id}`)
-
-      // Autenticar cliente
-      const authResult = await this.authenticateClient(socket)
-      if (!authResult) {
-        socket.disconnect(true)
-        return
-      }
-
-      const { user } = authResult
+      // Neste ponto o socket JÁ está autenticado (campos anexados pelo io.use).
       const authenticatedSocket = socket as AuthenticatedSocket
-      authenticatedSocket.userId = user.id
-      authenticatedSocket.email = user.email
-      authenticatedSocket.role = user.role
-      authenticatedSocket.municipalityId = user.municipalityId
+      logDebug(`🔌 Cliente conectado: ${socket.id} (${authenticatedSocket.email})`)
 
       this.connectedClients.set(socket.id, authenticatedSocket)
 
@@ -167,33 +162,34 @@ class WebSocketManager {
 
       // Notificar conexão
       this.broadcastToAdmins('user:connected', {
-        userId: user.id,
-        email: user.email,
-        timestamp: new Date().toISOString()
+        userId: authenticatedSocket.userId,
+        email: authenticatedSocket.email,
+        timestamp: new Date().toISOString(),
       })
     })
   }
 
   /**
-   * Autenticar cliente WebSocket
+   * Middleware de autenticação (io.use). Valida o JWT do handshake, confirma que o
+   * usuário existe e está ativo, e anexa os dados ao socket. Em falha chama
+   * `next(err)` → o Socket.IO rejeita a conexão e o cliente recebe `connect_error`.
    */
-  private async authenticateClient(socket: any): Promise<{ user: any } | null> {
+  private async authenticateSocket(
+    socket: AuthenticatedSocket,
+    next: (err?: Error) => void,
+  ): Promise<void> {
     try {
-      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1]
-      
-      if (!token) {
-        socket.emit('error', { message: 'Token não fornecido' })
-        return null
-      }
+      const token =
+        socket.handshake.auth.token ||
+        socket.handshake.headers.authorization?.split(' ')[1]
+
+      if (!token) return next(new Error('Token não fornecido'))
 
       const JWT_SECRET = process.env.JWT_SECRET
-      if (!JWT_SECRET) {
-        throw new Error('JWT_SECRET não configurado')
-      }
+      if (!JWT_SECRET) return next(new Error('Configuração de autenticação ausente'))
 
-      const decoded = jwt.verify(token, JWT_SECRET) as any
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
 
-      // Verificar se usuário existe e está ativo
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
         select: {
@@ -202,20 +198,20 @@ class WebSocketManager {
           name: true,
           role: true,
           municipalityId: true,
-          isActive: true
-        }
+          isActive: true,
+        },
       })
 
-      if (!user || !user.isActive) {
-        socket.emit('error', { message: 'Usuário não autorizado' })
-        return null
-      }
+      if (!user || !user.isActive) return next(new Error('Usuário não autorizado'))
 
-      return { user }
+      socket.userId = user.id
+      socket.email = user.email
+      socket.role = user.role
+      socket.municipalityId = user.municipalityId
+      next()
     } catch (error) {
       logError('Erro na autenticação WebSocket', error)
-      socket.emit('error', { message: 'Token inválido' })
-      return null
+      next(new Error('Token inválido'))
     }
   }
 
