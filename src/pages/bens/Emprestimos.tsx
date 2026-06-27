@@ -34,7 +34,7 @@ import { formatDate } from '@/lib/utils'
 import { differenceInDays, isBefore } from 'date-fns'
 import { AlertTriangle, CheckCircle, Clock, RotateCcw } from 'lucide-react'
 import { logger } from '@/lib/logger'
-import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface EmprestimoAPI {
   id: string
@@ -83,10 +83,10 @@ const getLoanStatus = (e: EmprestimoAPI) => {
 }
 
 const Emprestimos = () => {
-  const { user } = useAuth()
-  // Registrar devolução: gestão e operação (visualizador é read-only). Backend reforça.
-  const canReturn =
-    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'usuario'
+  // Gating via modelo de permissões (usePermissions) — a autorização real é
+  // sempre reforçada no backend.
+  const { hasPermission } = usePermissions()
+  const canReturn = hasPermission('emprestimos:update')
   const [emprestimos, setEmprestimos] = useState<EmprestimoAPI[]>([])
   const [loading, setLoading] = useState(true)
   const [devolucao, setDevolucao] = useState<DevolucaoState>({

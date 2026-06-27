@@ -44,7 +44,7 @@ import {
 import { Imovel } from '@/types'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useImovel } from '@/hooks/useImovel'
-import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
 
 type SortConfig = {
   column: keyof Imovel
@@ -79,7 +79,7 @@ const getPaginationItems = (currentPage: number, pageCount: number) => {
 
 export default function ImoveisList() {
   const { imoveis, deleteImovel } = useImovel()
-  const { user } = useAuth()
+  const { hasPermission } = usePermissions()
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
   const [pagination, setPagination] = useState({ pageIndex: 1, pageSize: 10 })
@@ -148,11 +148,11 @@ export default function ImoveisList() {
     )
   }
 
-  const canDelete = user?.role === 'supervisor' || user?.role === 'admin'
-  // criar/editar: gestão e operação (visualizador é read-only). Backend reforça.
-  const canCreate =
-    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'usuario'
-  const canEdit = canCreate
+  // Gating via modelo de permissões (usePermissions) — editável pelo superuser em
+  // runtime. A autorização real é sempre reforçada no backend.
+  const canDelete = hasPermission('imoveis:delete')
+  const canCreate = hasPermission('imoveis:create')
+  const canEdit = hasPermission('imoveis:update')
 
   return (
     <div className="flex-1 p-3 sm:p-4 lg:p-6">
