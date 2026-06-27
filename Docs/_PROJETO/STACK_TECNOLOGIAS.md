@@ -95,9 +95,10 @@ executado · ⚠️ funciona mas desvia de boa prática · 🔴 erro/risco.
 - **Zod (@sispat/shared)** 👍 — fonte única front+back; `.strict()` nos updates.
 - **JWT / bcrypt / rate-limit 8 / helmet 8 / multer 2 / winston** 👍 — refresh com
   rotação+hash; bcrypt 12; rate-limit cobre rotas sensíveis; upload com magic bytes.
-- **socket.io 4** 🔴→👍 — **corrigido** leak de `connectedClients` (cleanup estava
-  em `io.on('disconnect')`, que nunca dispara; movido p/ `socket.on`). ⚠️ pendente:
-  auth via `io.use()` e room `admin` por município.
+- **socket.io 4** 👍 — **corrigido** leak de `connectedClients` (cleanup movido p/
+  `socket.on('disconnect')`); **auth via `io.use()`** (sockets sem JWT válido nem
+  conectam). ⚠️ pendente menor: room `admin` por município (metadados de conexão
+  hoje misturam municípios).
 - **express-validator / security.ts** ⚠️→👍 — `security.ts` era quase todo dead code
   (rate-limiters/helmet/sanitizeInput/validateInput/commonValidations/secureUpload/
   secureCors duplicavam o que `zodValidate`/`advanced-rate-limit`/`index.ts` já fazem).
