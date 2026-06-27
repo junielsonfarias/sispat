@@ -14,6 +14,7 @@
 // com schemas locais.
 
 export * from './rules/password';
+export * from './rules/depreciation';
 export * from './schemas/auth';
 export * from './schemas/common';
 export * from './schemas/user';

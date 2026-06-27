@@ -52,10 +52,34 @@
     --lockfile-only` (não realoca o store — ver gotcha do `virtualStoreDir` no
     `pnpm-workspace.yaml`). tsc front = 0.
 - **Verificação:** tsc front = 0, tsc backend = 0, jest 577/577, jest upload 18/18.
-- **Deferidos (decisão/risco):** (a) unificar cálculo de depreciação front×back em
-  `shared/` — regra contábil sensível (conciliação Lei art. 8/21), refator com
-  testes; (b) validadores CPF/CNPJ e `UserRole` duplicados front×shared — unificar
-  em `@sispat/shared` (exige rebuild do shared).
+
+### 2026-06-27 — Unificação de duplicações front×shared (itens 2 e 3 do checklist)
+- **Item 2 — depreciação linear (fonte única):** a fórmula vivia duplicada em
+  `src/lib/depreciation-utils.ts` (front, via `date-fns differenceInMonths`) e
+  `backend/src/utils/depreciation.ts` (back, via `mesesInteiros` manual) — risco de
+  divergência silenciosa na conciliação físico-contábil (Lei art. 8/21). Movido o
+  núcleo (`mesesInteiros`, `depreciacaoAcumulada`, `valorContabilLiquido`,
+  `BemDepreciavel`) para **`@sispat/shared` (`rules/depreciation.ts`)**, byte-idêntico
+  ao do backend. **Backend** = re-export fino (API e comportamento inalterados →
+  caminho legal intocado). **Frontend** = `calculateDepreciation` passa a usar o
+  `mesesInteiros` compartilhado (deixa de depender de `date-fns` aqui); para datas
+  date-only é equivalente, confirmado pelos testes.
+- **Item 3 — CPF/CNPJ + UserRole:**
+  - `src/lib/validations/documentValidators.ts` estava **órfão** (0 consumidores em
+    `src/` — só Docs antigos citavam). Era duplicação morta dos validadores que já
+    existem (privados) em `shared/schemas/imovel.ts`. **Removido** (pergunta 1 do
+    checklist: não precisa existir). A validação real do form de imóvel já passa
+    pelo schema do shared.
+  - `UserRole` deixou de ser redeclarado em `src/types/index.ts`; agora **importa e
+    reexporta** de `@sispat/shared` (`userRoleSchema` é a fonte única runtime+tipo).
+- **Cadeia de build do shared:** rebuild (`tsc`) + sync da cópia do store do front
+  (hardlinked a `shared/dist`; o backend é symlink vivo). `shared/dist` é gitignorado
+  e reconstruído pelo `prepare` no install/deploy.
+- **Arquivos:** `shared/src/rules/depreciation.ts` (novo), `shared/src/index.ts`,
+  `backend/src/utils/depreciation.ts`, `src/lib/depreciation-utils.ts`,
+  `src/types/index.ts`, removido `src/lib/validations/documentValidators.ts`.
+- **Verificação:** shared build OK; tsc front = 0; tsc backend = 0; jest backend
+  15/15 (depreciação+conciliação) e 577/577 na suíte; vitest front 62/62.
 - **Lição:** a fruta fácil de "stack" já tinha sido colhida nas auditorias de
   2026-06-27; o ganho novo do checklist foi em **reuso de utilitários** e **stdlib**.
 

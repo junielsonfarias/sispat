@@ -1,4 +1,4 @@
-import { differenceInMonths } from 'date-fns'
+import { mesesInteiros } from '@sispat/shared'
 
 export interface DepreciationInfo {
   accumulatedDepreciation: number
@@ -58,7 +58,7 @@ export const calculateDepreciation = (
   const monthlyDepreciation = annualDepreciation / 12
 
   const acquisitionDate = new Date(data_aquisicao)
-  const totalMonthsSinceAcquisition = differenceInMonths(now, acquisitionDate)
+  const totalMonthsSinceAcquisition = mesesInteiros(acquisitionDate, now)
   const totalMonthsOfLife = vida_util_anos * 12
 
   const effectiveDepreciatedMonths = Math.max(

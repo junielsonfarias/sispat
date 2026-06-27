@@ -1,9 +1,7 @@
-export type UserRole =
-  | 'superuser'
-  | 'supervisor'
-  | 'admin'
-  | 'usuario'
-  | 'visualizador'
+// UserRole: fonte única em @sispat/shared (userRoleSchema valida + deriva o tipo).
+// Reexportado aqui para os consumidores que importam de `@/types`.
+import type { UserRole } from '@sispat/shared'
+export type { UserRole }
 
 export interface MunicipalityHistoryEntry {
   date: Date
