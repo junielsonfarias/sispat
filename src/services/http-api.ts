@@ -67,6 +67,35 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+// Fila única de refresh: quando várias requisições recebem 401 ao mesmo tempo,
+// todas aguardam UMA chamada de refresh (em vez de cada uma disparar a sua, o que
+// geraria N rotações de refresh token e corrida). A promise é limpa ao concluir.
+let refreshPromise: Promise<string | null> | null = null
+
+async function performTokenRefresh(): Promise<string | null> {
+  const refreshRaw = localStorage.getItem('sispat_refresh_token')
+  let refreshToken: string | undefined
+  if (refreshRaw) {
+    try {
+      refreshToken = JSON.parse(refreshRaw)
+    } catch {
+      refreshToken = refreshRaw
+    }
+  }
+
+  const response = await axios.post(
+    `${API_BASE_URL}/auth/refresh`,
+    refreshToken ? { refreshToken } : {},
+    { withCredentials: true },
+  )
+
+  const { token: newToken, refreshToken: newRefreshToken } = response.data
+  // Em produção não vêm tokens no body (cookie HttpOnly já renovado no Set-Cookie).
+  if (newToken) localStorage.setItem('sispat_token', JSON.stringify(newToken))
+  if (newRefreshToken) localStorage.setItem('sispat_refresh_token', JSON.stringify(newRefreshToken))
+  return newToken ?? null
+}
+
 // Interceptor de resposta para lidar com erros
 axiosInstance.interceptors.response.use(
   (response) => {
@@ -89,32 +118,16 @@ axiosInstance.interceptors.response.use(
       // storage), então a tentativa é sempre feita com withCredentials; em dev
       // (cross-origin), envia o refresh token do storage no body.
       try {
-        // SecureStorage grava como JSON; tenta parse, mas tolera string crua
-        const refreshRaw = localStorage.getItem('sispat_refresh_token');
-        let refreshToken: string | undefined;
-        if (refreshRaw) {
-          try {
-            refreshToken = JSON.parse(refreshRaw);
-          } catch {
-            refreshToken = refreshRaw;
-          }
+        // Compartilha uma única tentativa de refresh entre todos os 401 concorrentes.
+        if (!refreshPromise) {
+          refreshPromise = performTokenRefresh().finally(() => {
+            refreshPromise = null
+          })
         }
-
-        const response = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
-          refreshToken ? { refreshToken } : {},
-          { withCredentials: true },
-        );
-
-        const { token: newToken, refreshToken: newRefreshToken } = response.data;
-        // Em produção não vêm tokens no body (o cookie já foi renovado no Set-Cookie).
+        const newToken = await refreshPromise;
+        // Fallback Bearer (dev): reanexa o token novo na requisição re-tentada.
         if (newToken) {
-          localStorage.setItem('sispat_token', JSON.stringify(newToken));
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        }
-        // Backend gira o refresh token a cada renovação — salvar o novo, se houver.
-        if (newRefreshToken) {
-          localStorage.setItem('sispat_refresh_token', JSON.stringify(newRefreshToken));
         }
 
         return axiosInstance(originalRequest);
@@ -191,19 +204,11 @@ axiosInstance.interceptors.response.use(
 
 // API Client
 export const httpApi = {
-  // GET
+  // GET — sem forçar no-cache: o cache do cliente é gerenciado pelo React Query
+  // (staleTime/gcTime) e pelos headers de resposta do backend (ex.: Cache-Control
+  // private). Forçar no-store em todo GET anulava essas camadas.
   async get<T>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
-    // ✅ Adicionar headers no-cache para evitar cache do navegador
-    const configWithNoCache = {
-      ...config,
-      headers: {
-        ...config?.headers,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      },
-    };
-    const response: AxiosResponse<T> = await axiosInstance.get(endpoint, configWithNoCache);
+    const response: AxiosResponse<T> = await axiosInstance.get(endpoint, config);
     return response.data;
   },
 

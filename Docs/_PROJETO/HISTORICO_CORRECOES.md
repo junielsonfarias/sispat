@@ -21,6 +21,23 @@
 
 ## 2026
 
+### 2026-06-27 — Avaliação de execução do stack + grupo seguro de correções
+Cruzamento tecnologia × uso × doc (avaliação completa em STACK_TECNOLOGIAS.md, seção
+"Avaliação de execução por tecnologia"). Correções do grupo seguro:
+- 🔴 **socket.io — leak de `connectedClients`** (commit a2636fc): cleanup estava em
+  `io.on('disconnect')` (servidor não emite) → Map crescia sem limite. Movido p/
+  `socket.on('disconnect')`.
+- **Axios** (`http-api.ts`): fila única de refresh (compartilha 1 promise entre 401
+  concorrentes, evita N rotações/corrida); removido `no-cache` forçado em todo GET
+  (cache fica com React Query + headers do backend).
+- **Dead code** (`security.ts`): removidos helpers legados não usados (rate-limiters,
+  helmetConfig, sanitizeInput, validateInput, commonValidations, secureUpload,
+  secureCors — duplicavam zodValidate/advanced-rate-limit/index.ts). Mantido `auditLog`.
+- **ioredis**: removida opção inválida `retryDelayOnFailover`.
+- **Vite**: `target` es2015 → es2020.
+- **Verificação:** backend tsc 0 / 577 Jest; frontend tsc 0 / 62 vitest.
+- **Follow-ups:** unificar Context×React Query; socket auth via io.use(); dark mode demais telas; cobertura frontend.
+
 ### 2026-06-27 — Auditoria de tecnologias × documentação (majors de risco)
 Análise das libs com mudança de major recente contra a doc oficial; criado
 `Docs/_PROJETO/STACK_TECNOLOGIAS.md` catalogando versões/gotchas/estado.

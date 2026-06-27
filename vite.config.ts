@@ -24,7 +24,9 @@ export default defineConfig(({ mode }) => ({
   build: {
     minify: mode === 'production' ? 'terser' : false,
     sourcemap: mode === 'development',
-    target: 'es2015',
+    // es2020 cobre os browsers-alvo modernos e evita transpile/polyfill extra que
+    // o es2015 forçava (bundle menor). React 19 e deps já exigem runtime moderno.
+    target: 'es2020',
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,

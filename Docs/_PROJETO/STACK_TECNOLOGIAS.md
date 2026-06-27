@@ -80,8 +80,49 @@
 2. 🟡 **React Router** — warnings de future flag v7 na suíte de testes. Corrigido em
    `test-utils.tsx`.
 
-## Follow-ups
-- `security.ts > sanitizeInput` é **dead code** (exportado mas não registrado).
-  Com o freeze de `req.query`, ele funcionaria se fosse ligado — decidir ligar ou
-  remover.
-- Tailwind 3→4 e Zod 3→4 são migrações de major futuras (não urgentes).
+---
+
+## Avaliação de execução por tecnologia (2026-06-27)
+
+Cruzamento de cada tecnologia × uso real × documentação. Legenda: 👍 bem
+executado · ⚠️ funciona mas desvia de boa prática · 🔴 erro/risco.
+
+### Backend
+- **Express 5** 👍 — ordem de middleware correta; sem padrões de rota quebrados
+  (path-to-regexp 8); `req.query` corrigido (ver acima).
+- **Prisma 6** 👍 — client singleton; ~227 `select` vs ~86 `include` (prefere
+  projeção, evita over-fetch/N+1); ~49 transações; tenant scoping consistente.
+- **Zod (@sispat/shared)** 👍 — fonte única front+back; `.strict()` nos updates.
+- **JWT / bcrypt / rate-limit 8 / helmet 8 / multer 2 / winston** 👍 — refresh com
+  rotação+hash; bcrypt 12; rate-limit cobre rotas sensíveis; upload com magic bytes.
+- **socket.io 4** 🔴→👍 — **corrigido** leak de `connectedClients` (cleanup estava
+  em `io.on('disconnect')`, que nunca dispara; movido p/ `socket.on`). ⚠️ pendente:
+  auth via `io.use()` e room `admin` por município.
+- **express-validator / security.ts** ⚠️→👍 — `security.ts` era quase todo dead code
+  (rate-limiters/helmet/sanitizeInput/validateInput/commonValidations/secureUpload/
+  secureCors duplicavam o que `zodValidate`/`advanced-rate-limit`/`index.ts` já fazem).
+  **Removidos**; mantido só `auditLog`.
+- **ioredis 5** 👍 — opcional com degradação graciosa; removida a opção inválida
+  `retryDelayOnFailover`.
+
+### Frontend
+- **React 19 / Router 6 / RHF 7 + Zod** 👍 — `createRoot`; future flags v7; forms
+  com `zodResolver`.
+- **Axios 1.12** 👍 — interceptors + CSRF + erros amigáveis; **melhorado**: fila
+  única de refresh p/ 401 concorrentes; removido `no-cache` forçado em todo GET
+  (cache fica com React Query + headers do backend).
+- **Vite 5** 👍 — `manualChunks`, terser, `import()` dinâmico; `target` subido para
+  `es2020` (era es2015 → bundle/transpile a mais).
+- **TanStack Query 5 × Context** ⚠️ — coexistem fetchs para a mesma entidade
+  (Context + hook de query). Maior smell arquitetural; unificação fica como tarefa
+  isolada (mais invasiva).
+- **Tailwind/Shadcn** ⚠️ — dark mode com pass focado; cores fixas remanescentes
+  fora das telas principais.
+- **Vitest** ⚠️ — cobertura unit baixa no frontend (62) vs backend (577 Jest).
+
+## Follow-ups (pós grupo seguro)
+- **Unificar Context × React Query** por entidade (escolher uma fonte) — invasivo.
+- **socket.io**: mover auth p/ `io.use()`; escopar room `admin` por município.
+- **Tailwind**: completar dark mode nas demais telas.
+- **Cobertura** de testes do frontend.
+- Migrações de major futuras (não urgentes): Tailwind 3→4, Zod 3→4.
