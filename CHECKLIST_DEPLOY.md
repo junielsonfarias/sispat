@@ -5,6 +5,30 @@
 
 ---
 
+## ⚠️ Migrations pendentes nesta release (aplicar em PRODUÇÃO)
+
+As migrations abaixo já estão aplicadas em `sispat_dev` mas **ainda não foram
+aplicadas em produção**. Rode `npx prisma migrate deploy` no backend (passo 3 do
+deploy já cobre isso, ou os scripts `scripts/atualizar-*.sh`):
+
+- [ ] `20260626232542_add_email_config` — cria a tabela `email_config`
+  (config SMTP). Sem ela, a tela **Configurações → Email** retorna erro 500.
+- [ ] `20260627014513_add_form_field_config_order` — adiciona a coluna `order`
+  em `form_field_configs`. Sem ela, a reordenação (drag) dos campos de formulário
+  não persiste.
+
+```bash
+cd /var/www/sispat/backend
+npx prisma migrate deploy        # aplica as 2 migrations pendentes
+npx prisma migrate status        # confirmar: "Database schema is up to date"
+pm2 restart sispat-backend
+```
+
+> Validar depois: `Configurações → Email` carrega/salva, e o drag de reordenação
+> de campos persiste após reload.
+
+---
+
 ## 📋 Pré-Deploy
 
 ### Configuração do Servidor

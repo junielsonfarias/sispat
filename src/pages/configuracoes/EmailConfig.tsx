@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -48,17 +48,24 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/services/api-adapter'
 
-const emailConfigSchema = z.object({
-  host: z.string().min(1, 'Host é obrigatório'),
-  port: z.number().min(1, 'Porta deve ser maior que 0').max(65535, 'Porta deve ser menor que 65536'),
-  secure: z.boolean().default(false),
-  user: z.string().email('Email do usuário deve ser válido'),
-  password: z.string().min(1, 'Senha é obrigatória'),
-  fromAddress: z.string().email('Endereço de origem deve ser um email válido'),
-  enabled: z.boolean().default(false),
-})
+// `requirePassword` é false quando já existe configuração salva: o backend
+// (emailConfigController) mantém a senha atual quando `password` vem vazio, então
+// o usuário pode editar/togglar `enabled` sem redigitar a senha. Na criação a
+// senha é obrigatória.
+const makeEmailConfigSchema = (requirePassword: boolean) =>
+  z.object({
+    host: z.string().min(1, 'Host é obrigatório'),
+    port: z.number().min(1, 'Porta deve ser maior que 0').max(65535, 'Porta deve ser menor que 65536'),
+    secure: z.boolean().default(false),
+    user: z.string().email('Email do usuário deve ser válido'),
+    password: requirePassword
+      ? z.string().min(1, 'Senha é obrigatória')
+      : z.string().optional(),
+    fromAddress: z.string().email('Endereço de origem deve ser um email válido'),
+    enabled: z.boolean().default(false),
+  })
 
-type EmailConfigFormValues = z.infer<typeof emailConfigSchema>
+type EmailConfigFormValues = z.infer<ReturnType<typeof makeEmailConfigSchema>>
 
 interface EmailConfig {
   id: string
@@ -88,8 +95,15 @@ export default function EmailConfig() {
   const [emailConfig, setEmailConfig] = useState<EmailConfigResponse | null>(null)
   const [testEmail, setTestEmail] = useState('')
 
+  // Senha só é obrigatória ao criar a 1ª configuração; depois fica opcional
+  // (o backend mantém a senha atual quando não enviada).
+  const resolver = useMemo(
+    () => zodResolver(makeEmailConfigSchema(!emailConfig?.configured)),
+    [emailConfig?.configured]
+  )
+
   const form = useForm<EmailConfigFormValues>({
-    resolver: zodResolver(emailConfigSchema),
+    resolver,
     defaultValues: {
       host: 'smtp.gmail.com',
       port: 587,
