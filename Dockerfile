@@ -32,6 +32,13 @@ RUN pnpm install --frozen-lockfile
 # @sispat/shared (dep file:./shared).
 RUN cd shared && npm install && npm run build
 
+# URL da API embutida no bundle do frontend. Passada como build ARG (via compose)
+# e exposta como env para o vite no build. Vazio = usa o default do app
+# (http://localhost:3000/api), suficiente para teste local; em domínio real,
+# passe VITE_API_URL=https://seu-dominio/api.
+ARG VITE_API_URL=
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Build do frontend para produção
 RUN pnpm run build:prod
 

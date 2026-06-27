@@ -64,6 +64,11 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
+      args:
+        # URL da API embutida no bundle do frontend. Vazio = default do app
+        # (http://localhost:3000/api), ok p/ teste local. Domínio real: defina
+        # VITE_API_URL=https://seu-dominio/api no .env.
+        VITE_API_URL: ${VITE_API_URL:-}
     container_name: sispat-app
     restart: unless-stopped
     environment:
