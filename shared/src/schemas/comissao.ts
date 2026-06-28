@@ -22,7 +22,9 @@ const isoDate = z
   .refine((v) => !isNaN(Date.parse(v)), { message: 'Data inválida (use ISO 8601).' });
 
 export const comissaoMembroSchema = z.object({
-  userId: z.string().uuid().optional().nullable(),
+  // id não-vazio (não só UUID): pode referenciar usuários do seed (user-superuser,
+  // user-supervisor). A FK é garantida pelo Prisma; o formato não agrega segurança.
+  userId: z.string().trim().min(1).optional().nullable(),
   nome: z.string().trim().min(1, 'Nome do membro é obrigatório.').max(150),
   matricula: z.string().max(50).optional().nullable(),
   cargo: z.string().max(100).optional().nullable(),

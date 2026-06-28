@@ -7,7 +7,8 @@ import { z } from 'zod';
 //   - admin/superuser: pode notificar terceiros.
 
 export const createNotificationSchema = z.object({
-  userId: z.string().uuid('userId deve ser um UUID válido.').optional(),
+  // id não-vazio (não só UUID): pode referenciar usuários do seed (user-superuser).
+  userId: z.string().trim().min(1, 'userId é obrigatório.').optional(),
   tipo: z
     .string()
     .trim()

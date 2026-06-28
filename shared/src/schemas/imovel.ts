@@ -211,7 +211,9 @@ export const imovelFrontendSchema = z.object({
 /** Shape estendido com campos do controller para criação (frontend → backend) */
 export const imovelCreateFrontendSchema = imovelFrontendSchema.extend({
   sectorId: z.string().uuid('Setor inválido'),
-  municipalityId: z.string().uuid('Município inválido').optional(),
+  // id não-vazio (não só UUID): pode ser o município do seed (municipality-1).
+  // A FK é garantida pelo Prisma; o município real é setado pelo backend (tenant).
+  municipalityId: z.string().trim().min(1, 'Município inválido').optional(),
 });
 
 export type ImovelFormData = z.infer<typeof imovelFrontendSchema>;

@@ -31,8 +31,9 @@ describe('@sispat/shared — common', () => {
       expect(r.success).toBe(true);
     });
 
-    it('rejeita string não-UUID', () => {
-      expect(uuidParamSchema.safeParse({ id: 'abc' }).success).toBe(false);
+    it('aceita id não-vazio (UUID ou amigável do seed) e rejeita vazio', () => {
+      // Param :id aceita qualquer string não-vazia (seed usa IDs como municipality-1).
+      expect(uuidParamSchema.safeParse({ id: 'abc' }).success).toBe(true);
       expect(uuidParamSchema.safeParse({ id: '' }).success).toBe(false);
     });
   });

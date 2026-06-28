@@ -40,6 +40,15 @@
 - **Verificação:** shared build OK, jest dos 2 arquivos 45/45, tsc front 0.
 - **Deploy (VPS):** `git pull` → rebuild shared → rebuild backend → `pm2 restart` (o
   zodValidate roda no backend com o schema do @sispat/shared compilado).
+- **Varredura "tem em outro lugar?":** o seed cria IDs amigáveis só p/ município
+  (`municipality-1`), usuários (`user-superuser`/`user-supervisor`) e ficha-templates
+  (`template-*-padrao`). Além do param `:id` (já coberto), 3 campos de BODY validavam
+  referências a esses registros como `.uuid()` → mesmo 400: `comissao.userId`,
+  `imovel.municipalityId`, `notification.userId`. Relaxados p/ `z.string().trim().min(1)`
+  (FK garantida pelo Prisma). As demais refs (`sectorId`, `patrimonioId`, `localId`,
+  `comissaoId`, etc.) apontam só p/ registros da app (UUID) → mantidas como `.uuid()`.
+  3 testes que afirmavam o comportamento antigo (imovelField/sharedSchemas) atualizados.
+  Verificação: shared build OK, jest 93/93 nos 7 suites afetados, tsc front 0.
 
 ### 2026-06-28 — Revisão do instalador VPS (install.sh) p/ instalação nova
 Auditoria do `install.sh` (2351 linhas) antes de um teste de instalação do zero.

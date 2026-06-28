@@ -83,8 +83,9 @@ describe('ImovelCustomField — validação de rotas mutantes', () => {
     expect(result.success).toBe(true);
   });
 
-  it('uuidParamSchema rejeita id que não é UUID', () => {
-    expect(uuidParamSchema.safeParse({ id: 'reorder' }).success).toBe(false);
+  it('uuidParamSchema aceita id não-UUID (amigável do seed) e rejeita vazio', () => {
+    expect(uuidParamSchema.safeParse({ id: 'reorder' }).success).toBe(true);
+    expect(uuidParamSchema.safeParse({ id: '' }).success).toBe(false);
   });
 
   it('uuidParamSchema aceita UUID válido', () => {
