@@ -976,13 +976,16 @@ build_application() {
     # versões reproduzíveis). Fallback AUTOMÁTICO para npm se pnpm faltar/falhar,
     # preservando a robustez do instalador.
     local FRONTEND_DEPS_OK=false
+    # CRÍTICO: sem isto, o corepack pergunta "Do you want to download pnpm@X? [Y/n]"
+    # e PENDURA a instalação (sem TTY p/ responder). Com =0 ele baixa em silêncio.
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
     command -v corepack >/dev/null 2>&1 && corepack enable >/dev/null 2>&1 || true
     if command -v pnpm >/dev/null 2>&1 && [ -f pnpm-lock.yaml ]; then
         echo -e "${BLUE}  → Instalando pacotes do frontend com pnpm (--frozen-lockfile)...${NC}"
         # timeout (-k força SIGKILL) p/ não pendurar a instalação se o pnpm empacar
         # (build de dep nativa / rede lenta) — ao estourar 12min, cai automaticamente
-        # no fallback npm em vez de travar para sempre.
-        if timeout -k 30 720 pnpm install --frozen-lockfile > /tmp/build-frontend-deps.log 2>&1 && [ -f "node_modules/.bin/vite" ]; then
+        # no fallback npm. </dev/null garante EOF em qualquer prompt inesperado.
+        if timeout -k 30 720 pnpm install --frozen-lockfile </dev/null > /tmp/build-frontend-deps.log 2>&1 && [ -f "node_modules/.bin/vite" ]; then
             success "✅ Dependências do frontend instaladas (pnpm)"
             FRONTEND_DEPS_OK=true
         else

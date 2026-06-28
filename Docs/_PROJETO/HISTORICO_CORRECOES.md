@@ -44,6 +44,13 @@ PM2 rodando `dist/index.js`, verificação pós-instalação. Corrigidos:
   `pnpm install --frozen-lockfile` do frontend (install.sh) ficou **pendurado >20min**
   (sem timeout). Adicionado `timeout -k 30 720` no pnpm (cai no fallback npm ao estourar)
   e no fallback npm (`|| deps_status=$?`, set -e-safe). O backend já tinha `timeout 600`.
+- **CAUSA-RAIZ do travamento (log revelou):** `corepack enable` + `pnpm install` fazia o
+  **corepack perguntar** `"Corepack is about to download pnpm@11.9.0 ... [Y/n]"` e
+  pendurava (sem TTY p/ responder; o `package.json` não tem `packageManager`, então usa o
+  default do corepack). Corrigido com `export COREPACK_ENABLE_DOWNLOAD_PROMPT=0` (baixa em
+  silêncio) + `</dev/null` no pnpm (EOF em prompt inesperado). O timeout vira só rede de
+  segurança. Desbloqueio manual em instalação já rodando: `pkill -f "pnpm install"` → cai
+  no fallback npm.
 - **Nota:** existe um 2º instalador `install-sispat.sh` (708 linhas, "simplificado") que JÁ
   usa `127.0.0.1`, não cria systemd e builda o shared — também válido. Usa o mesmo
   `ecosystem.config.js` (agora corrigido). Não-bloqueadores deixados: cluster só volta com
