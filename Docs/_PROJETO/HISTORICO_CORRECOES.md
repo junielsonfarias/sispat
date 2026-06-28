@@ -21,6 +21,16 @@
 
 ## 2026
 
+### 2026-06-27 — Ficha de bem passa a honrar os campos por seção (config.sections)
+Follow-up do #5: o `PatrimonioPDFGenerator` montava as seções com campos FIXOS,
+ignorando `config.sections.*.fields` do template. Agora um `FIELD_META`
+(campo→rótulo+valor) + `renderFieldGrid` geram dinamicamente só os campos
+selecionados em patrimonioInfo/acquisition/location/depreciation (fallback p/ os
+padrão), e respeita `config.sections.<seção>.enabled`. Extras não-configuráveis
+(nota fiscal, licitação, situação, foto/QR) mantidos. Aviso do editor atualizado
+(campos valem no PDF; a prévia FichaPreviewReal ainda usa layout fixo — follow-up,
+junto com a geração de imóvel). Verificação: frontend tsc 0, vitest 130. (commit 0d105d7)
+
 ### 2026-06-27 — Auditoria + correção da geração (fichas/etiquetas/relatórios)
 3 auditores read-only varreram fichas, etiquetas e relatórios. jsPDF dinâmico
 confirmado OK (sem regressão). 🔴 corrigidos:
