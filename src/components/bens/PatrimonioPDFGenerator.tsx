@@ -162,7 +162,53 @@ export const generatePatrimonioPDF = async ({
 
   // Função auxiliar para verificar se uma seção deve ser incluída
   const shouldInclude = (sectionId: string) => selectedSections.includes(sectionId)
-  
+
+  // --- Campos por seção (config.sections.*.fields) -------------------------
+  // A ficha agora honra os campos selecionados no template (antes eram fixos).
+  const sectionsCfg =
+    (config as { sections?: Record<string, { enabled?: boolean; fields?: string[]; showPhoto?: boolean }> }).sections || {}
+  const sectionFields = (key: string, fallback: string[]): string[] => {
+    const f = sectionsCfg[key]?.fields
+    return Array.isArray(f) && f.length > 0 ? f : fallback
+  }
+  const sectionEnabled = (key: string): boolean => sectionsCfg[key]?.enabled ?? true
+
+  // Mapa campo → rótulo + valor formatado (espelha availableFields do editor).
+  const FIELD_META: Record<string, { label: string; value: () => string }> = {
+    descricao_bem: { label: 'DESCRIÇÃO', value: () => patrimonio.descricao_bem || '-' },
+    tipo: { label: 'TIPO', value: () => patrimonio.tipo || '-' },
+    marca: { label: 'MARCA', value: () => patrimonio.marca || '-' },
+    modelo: { label: 'MODELO', value: () => patrimonio.modelo || '-' },
+    cor: { label: 'COR', value: () => patrimonio.cor || '-' },
+    numero_serie: { label: 'NÚMERO DE SÉRIE', value: () => patrimonio.numero_serie || '-' },
+    data_aquisicao: { label: 'DATA DE AQUISIÇÃO', value: () => (patrimonio.data_aquisicao ? formatDate(patrimonio.data_aquisicao) : '-') },
+    valor_aquisicao: { label: 'VALOR DE AQUISIÇÃO', value: () => (patrimonio.valor_aquisicao ? formatCurrency(patrimonio.valor_aquisicao) : '-') },
+    forma_aquisicao: { label: 'FORMA DE AQUISIÇÃO', value: () => patrimonio.forma_aquisicao || '-' },
+    setor_responsavel: { label: 'SETOR RESPONSÁVEL', value: () => patrimonio.setor_responsavel || '-' },
+    local_objeto: { label: 'LOCAL', value: () => patrimonio.local_objeto || '-' },
+    status: { label: 'STATUS', value: () => (patrimonio.status ? String(patrimonio.status).toUpperCase() : '-') },
+    metodo_depreciacao: { label: 'MÉTODO DE DEPRECIAÇÃO', value: () => patrimonio.metodo_depreciacao || '-' },
+    vida_util_anos: { label: 'VIDA ÚTIL (ANOS)', value: () => (patrimonio.vida_util_anos != null ? String(patrimonio.vida_util_anos) : '-') },
+    valor_residual: { label: 'VALOR RESIDUAL', value: () => (patrimonio.valor_residual ? formatCurrency(patrimonio.valor_residual) : '-') },
+  }
+  // Gera os blocos rótulo/valor apenas dos campos selecionados (e conhecidos).
+  const renderFieldGrid = (keys: string[]): string =>
+    keys
+      .filter((k) => FIELD_META[k])
+      .map(
+        (k) => `
+            <div>
+              <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">${FIELD_META[k].label}</p>
+              <p style="margin: 0; font-size: 14px; color: #000; line-height: 1.4;">${FIELD_META[k].value()}</p>
+            </div>`,
+      )
+      .join('')
+
+  const piFields = sectionFields('patrimonioInfo', ['descricao_bem', 'tipo', 'marca', 'modelo', 'cor', 'numero_serie'])
+  const acqFields = sectionFields('acquisition', ['data_aquisicao', 'valor_aquisicao', 'forma_aquisicao'])
+  const locFields = sectionFields('location', ['setor_responsavel', 'local_objeto', 'status'])
+  const depFields = sectionFields('depreciation', ['metodo_depreciacao', 'vida_util_anos', 'valor_residual'])
+
   // ✅ OTIMIZAÇÃO: Processar e comprimir imagens ANTES de construir o HTML
   let compressedLogo = municipalityLogo
   let compressedPhoto = ''
@@ -323,35 +369,19 @@ export const generatePatrimonioPDF = async ({
       </div>
       ` : ''}
 
-      ${shouldInclude('identificacao') ? `
+      ${shouldInclude('identificacao') && sectionEnabled('patrimonioInfo') ? `
       <!-- Seção 1: Identificação -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px;">
           IDENTIFICAÇÃO DO BEM
         </h2>
         
-        <!-- Layout com foto integrada e melhorada -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start;">
-          <!-- Descrição, Tipo e Número de Série -->
-          <div>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">DESCRIÇÃO</p>
-            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000; line-height: 1.4;">${patrimonio.descricao_bem || '-'}</p>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">TIPO</p>
-            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.tipo || '-'}</p>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">NÚMERO DE SÉRIE</p>
-            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.numero_serie || '-'}</p>
+        <!-- Campos selecionados (config.sections.patrimonioInfo.fields) + foto -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px;">
+            ${renderFieldGrid(piFields)}
           </div>
-          
-          <!-- Marca, Modelo e Cor -->
-          <div>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">MARCA</p>
-            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000; line-height: 1.4;">${patrimonio.marca || '-'}</p>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">MODELO</p>
-            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.modelo || '-'}</p>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">COR</p>
-            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.cor || '-'}</p>
-          </div>
-          
+
           <!-- Foto - Otimizada -->
           <div style="text-align: center;">
             <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 8px;">FOTO</p>
@@ -375,53 +405,43 @@ export const generatePatrimonioPDF = async ({
       </div>
       ` : ''}
 
-      ${shouldInclude('aquisicao') ? `
+      ${shouldInclude('aquisicao') && sectionEnabled('acquisition') ? `
       <!-- Seção 2: Aquisição -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 15px 0; font-size: 16px; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px; text-align: left;">
           INFORMAÇÕES DE AQUISIÇÃO
         </h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          <div>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">DATA DE AQUISIÇÃO</p>
-            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.data_aquisicao ? formatDate(patrimonio.data_aquisicao) : '-'}</p>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">VALOR DE AQUISIÇÃO</p>
-            <p style="margin: 0; font-size: 14px; color: #000; font-weight: bold;">${patrimonio.valor_aquisicao ? formatCurrency(patrimonio.valor_aquisicao) : '-'}</p>
-            ${(patrimonio.numero_licitacao || patrimonio.ano_licitacao) ? `
-            <div style="margin-top: 12px; padding: 10px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
-              <p style="margin: 0; font-size: 10px; color: #1e40af; font-weight: 700; margin-bottom: 6px;">REFERÊNCIA DA AQUISIÇÃO</p>
-              ${patrimonio.numero_licitacao ? `<p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 2px;">Número: <span style="color: #000; font-weight: 700;">${patrimonio.numero_licitacao}</span></p>` : ''}
-              ${patrimonio.ano_licitacao ? `<p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600;">Ano: <span style="color: #000; font-weight: 700;">${patrimonio.ano_licitacao}</span></p>` : ''}
-            </div>
-            ` : ''}
-          </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px;">
+          ${renderFieldGrid(acqFields)}
+          ${patrimonio.numero_nota_fiscal ? `
           <div>
             <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">NOTA FISCAL</p>
-            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.numero_nota_fiscal || '-'}</p>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">FORMA DE AQUISIÇÃO</p>
-            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.forma_aquisicao || '-'}</p>
-          </div>
+            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.numero_nota_fiscal}</p>
+          </div>` : ''}
         </div>
+        ${(patrimonio.numero_licitacao || patrimonio.ano_licitacao) ? `
+        <div style="margin-top: 12px; padding: 10px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
+          <p style="margin: 0; font-size: 10px; color: #1e40af; font-weight: 700; margin-bottom: 6px;">REFERÊNCIA DA AQUISIÇÃO</p>
+          ${patrimonio.numero_licitacao ? `<p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 2px;">Número: <span style="color: #000; font-weight: 700;">${patrimonio.numero_licitacao}</span></p>` : ''}
+          ${patrimonio.ano_licitacao ? `<p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600;">Ano: <span style="color: #000; font-weight: 700;">${patrimonio.ano_licitacao}</span></p>` : ''}
+        </div>
+        ` : ''}
       </div>
       ` : ''}
 
-      ${shouldInclude('localizacao') ? `
+      ${shouldInclude('localizacao') && sectionEnabled('location') ? `
       <!-- Seção 3: Localização -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 15px 0; font-size: 16px; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px; text-align: left;">
           LOCALIZAÇÃO E ESTADO
         </h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          <div>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">LOCALIZAÇÃO</p>
-            <p style="margin: 0 0 12px 0; font-size: 14px; color: #000;">${patrimonio.local_objeto || '-'}</p>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">STATUS</p>
-            <p style="margin: 0; font-size: 14px; color: #000; font-weight: bold;">${patrimonio.status?.toUpperCase() || '-'}</p>
-          </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px;">
+          ${renderFieldGrid(locFields)}
+          ${patrimonio.situacao_bem ? `
           <div>
             <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">SITUAÇÃO DO BEM</p>
-            <p style="margin: 0; font-size: 14px; color: #000; font-weight: bold;">${patrimonio.situacao_bem || '-'}</p>
-          </div>
+            <p style="margin: 0; font-size: 14px; color: #000; font-weight: bold;">${patrimonio.situacao_bem}</p>
+          </div>` : ''}
         </div>
       </div>
       ` : ''}
@@ -446,25 +466,14 @@ export const generatePatrimonioPDF = async ({
       </div>
       ` : ''}
 
-      ${shouldInclude('depreciacao') && patrimonio.metodo_depreciacao ? `
+      ${shouldInclude('depreciacao') && sectionEnabled('depreciation') && patrimonio.metodo_depreciacao ? `
       <!-- Seção 6: Depreciação -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px; text-align: left;">
           INFORMAÇÕES DE DEPRECIAÇÃO
         </h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-          <div>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">MÉTODO</p>
-            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.metodo_depreciacao}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">VIDA ÚTIL (ANOS)</p>
-            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.vida_util_anos || '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 4px;">VALOR RESIDUAL</p>
-            <p style="margin: 0; font-size: 14px; color: #000;">${patrimonio.valor_residual ? formatCurrency(patrimonio.valor_residual) : '-'}</p>
-          </div>
+          ${renderFieldGrid(depFields)}
         </div>
       </div>
       ` : ''}
