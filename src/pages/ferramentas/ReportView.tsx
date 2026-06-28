@@ -262,12 +262,17 @@ const ReportView = () => {
     }
 
     if (typeof value === 'string') {
-      const parsedDate = new Date(value)
-      if (!Number.isNaN(parsedDate.getTime())) {
-        return formatDate(parsedDate)
+      // Só trata como data se PARECER ISO (YYYY-MM-DD...); evita "2024"/"2025-001"
+      // (numero_patrimonio) virarem datas erradas no relatório.
+      if (/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(value)) {
+        const parsedDate = new Date(value)
+        if (!Number.isNaN(parsedDate.getTime())) {
+          return formatDate(parsedDate)
+        }
       }
+      return value
     }
-    
+
     if (typeof value === 'number' && key === 'valor_aquisicao')
       return formatCurrency(value)
     if (Array.isArray(value)) return String(value.length)

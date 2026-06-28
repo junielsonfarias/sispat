@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { LabelPreview } from '@/components/LabelPreview'
+import { LabelPreview, formatLabelFieldValue } from '@/components/LabelPreview'
 import { Patrimonio, LabelTemplate, LabelElement } from '@/types'
 import { Printer, Download, FileImage } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
@@ -253,8 +253,9 @@ export function LabelPrintDialog({
           if (el.type === 'LOGO') {
             content = `<img src="${settings?.activeLogoUrl || ''}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`
           } else if (el.type === 'PATRIMONIO_FIELD') {
-            const value = asset[el.content as keyof Patrimonio]
-            content = String(value ?? 'N/A')
+            // Mesma formatação da prévia (moeda/data/contagem) — sem isso a etiqueta
+            // impressa divergia (ex.: "4500" em vez de "R$ 4.500,00").
+            content = formatLabelFieldValue(asset[el.content as keyof Patrimonio], el.content as string)
           } else if (el.type === 'TEXT') {
             content = el.content || ''
           } else if (el.type === 'QR_CODE') {

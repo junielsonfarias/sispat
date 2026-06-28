@@ -8,6 +8,16 @@ import { logger } from '@/lib/logger'
 
 type Asset = (Patrimonio | Imovel) & { assetType: 'bem' | 'imovel' }
 
+// Formatação de um campo de etiqueta. Fonte ÚNICA reusada pela prévia E pelos
+// caminhos de impressão crua (LabelPrintDialog/BensView), p/ a etiqueta impressa
+// bater com o preview (moeda, data, contagem de arrays).
+export const formatLabelFieldValue = (value: unknown, field: string): string => {
+  if (value instanceof Date) return formatDate(value)
+  if (typeof value === 'number' && field === 'valor_aquisicao') return formatCurrency(value)
+  if (Array.isArray(value)) return String(value.length)
+  return String(value ?? 'N/A')
+}
+
 interface LabelPreviewProps {
   asset?: Asset | null
   template: LabelTemplate
@@ -48,14 +58,8 @@ export const LabelPreview = forwardRef<HTMLDivElement, LabelPreviewProps>(
       }
     }, [asset?.numero_patrimonio, asset?.assetType])
 
-    const getFieldValue = (field: keyof Patrimonio | keyof Imovel | string) => {
-      const value = asset?.[field as keyof Asset]
-      if (value instanceof Date) return formatDate(value)
-      if (typeof value === 'number' && field === 'valor_aquisicao')
-        return formatCurrency(value)
-      if (Array.isArray(value)) return String(value.length)
-      return String(value ?? 'N/A')
-    }
+    const getFieldValue = (field: keyof Patrimonio | keyof Imovel | string) =>
+      formatLabelFieldValue(asset?.[field as keyof Asset], field)
 
     const renderElement = (element: LabelElement) => {
       let content: React.ReactNode

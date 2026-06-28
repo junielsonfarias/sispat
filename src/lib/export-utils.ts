@@ -21,10 +21,15 @@ const getColumnValue = (item: Patrimonio, key: keyof Patrimonio): string => {
   }
 
   if (typeof value === 'string') {
-    const parsedDate = new Date(value)
-    if (!Number.isNaN(parsedDate.getTime())) {
-      return format(parsedDate, 'dd/MM/yyyy')
+    // Só trata como data se PARECER ISO (YYYY-MM-DD...). Sem isso, strings como
+    // "2024" ou "2025-001" (numero_patrimonio) virariam datas erradas.
+    if (/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(value)) {
+      const parsedDate = new Date(value)
+      if (!Number.isNaN(parsedDate.getTime())) {
+        return format(parsedDate, 'dd/MM/yyyy')
+      }
     }
+    return value
   }
 
   if (Array.isArray(value)) {

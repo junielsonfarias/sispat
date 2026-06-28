@@ -9,6 +9,9 @@ export const createFichaTemplateSchema = z.object({
   description: z.string().optional(),
   type: z.enum(['bens', 'imoveis']),
   isDefault: z.boolean().optional(),
+  // Ativar/desativar o template (o PDFConfigDialog filtra os selecionáveis por
+  // isActive). Sem isto, o zodValidate removia o campo e o toggle não persistia.
+  isActive: z.boolean().optional(),
   config: z.object({
     header: z.object({
       showLogo: z.boolean(),

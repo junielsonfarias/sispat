@@ -37,7 +37,7 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { useLabelTemplates } from '@/hooks/useLabelTemplates'
 import { toast } from '@/hooks/use-toast'
-import { LabelPreview } from '@/components/LabelPreview'
+import { LabelPreview, formatLabelFieldValue } from '@/components/LabelPreview'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import {
@@ -1212,7 +1212,7 @@ function BensView() {
                                     if (el.type === 'LOGO') {
                                       content = `<img src="${settings?.activeLogoUrl || ''}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`
                                     } else if (el.type === 'PATRIMONIO_FIELD') {
-                                      content = String(patrimonio[el.content as keyof typeof patrimonio] || '')
+                                      content = formatLabelFieldValue(patrimonio[el.content as keyof typeof patrimonio], el.content as string)
                                     } else if (el.type === 'TEXT') {
                                       content = el.content || ''
                                     }
