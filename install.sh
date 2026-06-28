@@ -1428,14 +1428,17 @@ USEREOF
         success "✨ Banco de dados configurado e populado"
         
         # Salvar credenciais em arquivo temporário para exibir no final
+        # Valores ENTRE ASPAS: os nomes têm espaço (ex.: "Junielson Farias") e o
+        # arquivo é lido com `source` na exibição final — sem aspas, o espaço
+        # quebrava (`SUPERUSER_NAME=Junielson Farias` → tentava rodar "Farias").
         cat > /tmp/sispat-credentials.txt << EOF
-SUPERUSER_EMAIL=$SUPERUSER_EMAIL
-SUPERUSER_PASSWORD=$SUPERUSER_PASSWORD
-SUPERUSER_NAME=$SUPERUSER_NAME
-SUPERVISOR_EMAIL=$SUPERVISOR_EMAIL
-SUPERVISOR_PASSWORD=$SUPERVISOR_PASSWORD
-SUPERVISOR_NAME=$SUPERVISOR_NAME
-DOMAIN=$DOMAIN
+SUPERUSER_EMAIL="$SUPERUSER_EMAIL"
+SUPERUSER_PASSWORD="$SUPERUSER_PASSWORD"
+SUPERUSER_NAME="$SUPERUSER_NAME"
+SUPERVISOR_EMAIL="$SUPERVISOR_EMAIL"
+SUPERVISOR_PASSWORD="$SUPERVISOR_PASSWORD"
+SUPERVISOR_NAME="$SUPERVISOR_NAME"
+DOMAIN="$DOMAIN"
 EOF
     else
         error "Falha ao popular banco de dados"
@@ -2257,9 +2260,10 @@ verify_installation() {
 show_success_message() {
     clear
     
-    # Carregar credenciais do arquivo temporário
+    # Carregar credenciais do arquivo temporário (|| true: nunca abortar o resumo
+    # final por causa do conteúdo do arquivo, mesmo que algum valor seja atípico)
     if [ -f "/tmp/sispat-credentials.txt" ]; then
-        source /tmp/sispat-credentials.txt
+        source /tmp/sispat-credentials.txt || true
     fi
     
     # Determinar URL de acesso
