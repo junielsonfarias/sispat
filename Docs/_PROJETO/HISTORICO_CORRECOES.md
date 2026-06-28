@@ -93,6 +93,15 @@ PM2 rodando `dist/index.js`, verificação pós-instalação. Corrigidos:
   `virtualStoreDir`**. Verificado local: `corepack pnpm install --frozen-lockfile` → EXIT 0
   (roda esbuild/core-js). Nota: dev local que dependia do virtualStoreDir deve configurá-lo
   fora do repo (config local) — não commitar caminho de ambiente.
+- **🔴 CAUSA-RAIZ REAL das paradas em "Tabela users existe" (NÃO era SSH/seed):** clássico
+  `set -e` + `((var++))`. No loop de verificação de tabelas, `((tables_ok++))` com
+  `tables_ok=0` na 1ª iteração (tabela `users`) retorna o valor ANTIGO (0) → o bash trata
+  como exit status **1** → com `set -e`, **o script ABORTA** exatamente após imprimir
+  "✓ Tabela users existe" (users é a 1ª do loop). Confirmado em **tmux** (descartando
+  queda de SSH): o `bash install.sh` realmente saía ali. **Fix:** trocar TODOS os
+  `((var++))` por assignment `var=$((var + 1))` (set -e-safe) — em `install.sh` eram
+  ~24 ocorrências: tables_ok/tables_missing (verificação), attempt (retry), errors/warnings
+  (verificação final/FASE 5, que também abortariam no 1º incremento). `bash -n` OK.
 - **Nota:** existe um 2º instalador `install-sispat.sh` (708 linhas, "simplificado") que JÁ
   usa `127.0.0.1`, não cria systemd e builda o shared — também válido. Usa o mesmo
   `ecosystem.config.js` (agora corrigido). Não-bloqueadores deixados: cluster só volta com

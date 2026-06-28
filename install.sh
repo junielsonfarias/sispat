@@ -1332,10 +1332,13 @@ PERMEOF
     for table in users municipalities sectors customizations ficha_templates documents imovel_custom_fields; do
         if sudo -u postgres psql -d "$DB_NAME" -t -c "\d $table" > /dev/null 2>&1; then
             echo -e "  ${GREEN}✓${NC} Tabela $table existe"
-            ((tables_ok++))
+            # NÃO usar ((tables_ok++)): com set -e, o pós-incremento retorna o
+            # valor ANTIGO (0 na 1ª vez) → exit 1 → o script ABORTA aqui (era a
+            # causa das paradas em "Tabela users existe"). Assignment é set -e-safe.
+            tables_ok=$((tables_ok + 1))
         else
             echo -e "  ${YELLOW}⚠${NC} Tabela $table NÃO encontrada"
-            ((tables_missing++))
+            tables_missing=$((tables_missing + 1))
         fi
     done
     
@@ -1788,7 +1791,7 @@ start_application() {
             break
         fi
         sleep 2
-        ((attempt++))
+        attempt=$((attempt + 1))
     done
     echo ""
     
@@ -1999,7 +2002,7 @@ verify_installation() {
         success "Diretórios criados corretamente"
     else
         warning "Estrutura de diretórios incompleta"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # 2. Verificar compilação do frontend
@@ -2010,11 +2013,11 @@ verify_installation() {
             success "Frontend compilado ($js_files arquivos JS)"
         else
             warning "Frontend sem arquivos JavaScript"
-            ((errors++))
+            errors=$((errors + 1))
         fi
     else
         warning "Frontend não compilado"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # 3. Verificar compilação do backend
@@ -2024,7 +2027,7 @@ verify_installation() {
         success "Backend compilado ($backend_files arquivos JS)"
     else
         warning "Backend não compilado"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # 4. Verificar dependências do backend
@@ -2035,11 +2038,11 @@ verify_installation() {
             success "Dependências instaladas (@types: $types_count pacotes)"
         else
             warning "Poucos pacotes @types instalados"
-            ((warnings++))
+            warnings=$((warnings + 1))
         fi
     else
         warning "node_modules não encontrado"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # 5. Verificar Prisma Client
@@ -2048,7 +2051,7 @@ verify_installation() {
         success "Prisma Client gerado"
     else
         warning "Prisma Client não gerado"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # 6. Verificar banco de dados
@@ -2060,11 +2063,11 @@ verify_installation() {
             success "Banco de dados criado ($table_count tabelas)"
         else
             warning "Banco com poucas tabelas ($table_count)"
-            ((warnings++))
+            warnings=$((warnings + 1))
         fi
     else
         warning "Banco de dados não encontrado"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # 7. Verificar usuários no banco
@@ -2074,7 +2077,7 @@ verify_installation() {
         success "Usuário superusuário criado"
     else
         warning "Nenhum usuário cadastrado"
-        ((warnings++))
+        warnings=$((warnings + 1))
     fi
     
     # 8. Verificar PM2
@@ -2083,7 +2086,7 @@ verify_installation() {
         success "PM2 rodando (processo online)"
     else
         warning "PM2 não está rodando"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # 9. Verificar Nginx
@@ -2100,19 +2103,19 @@ verify_installation() {
                     success "Nginx ativo e configurado corretamente (ordem de locations OK)"
                 else
                     warning "Nginx configurado mas ordem de locations pode estar incorreta"
-                    ((warnings++))
+                    warnings=$((warnings + 1))
                 fi
             else
                 warning "Nginx configurado mas sem configuração /uploads correta"
-                ((warnings++))
+                warnings=$((warnings + 1))
             fi
         else
             warning "Nginx ativo mas configuração não encontrada"
-            ((warnings++))
+            warnings=$((warnings + 1))
         fi
     else
         warning "Nginx não está ativo"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # 9.5. Verificar permissões de uploads e logs
@@ -2127,12 +2130,12 @@ verify_installation() {
             success "Permissões de uploads corretas (www-data:www-data, 755)"
         else
             warning "Permissões de uploads incorretas ($uploads_owner, $uploads_perm)"
-            ((warnings++))
+            warnings=$((warnings + 1))
             uploads_ok=false
         fi
     else
         warning "Diretório uploads não existe"
-        ((warnings++))
+        warnings=$((warnings + 1))
         uploads_ok=false
     fi
     
@@ -2143,12 +2146,12 @@ verify_installation() {
             success "Permissões de logs corretas (www-data:www-data, 755)"
         else
             warning "Permissões de logs incorretas ($logs_owner, $logs_perm)"
-            ((warnings++))
+            warnings=$((warnings + 1))
             logs_ok=false
         fi
     else
         warning "Diretório logs não existe"
-        ((warnings++))
+        warnings=$((warnings + 1))
         logs_ok=false
     fi
     
@@ -2159,7 +2162,7 @@ verify_installation() {
         success "PM2 rodando como $pm2_user"
     else
         warning "PM2 rodando como $pm2_user (esperado: www-data ou root)"
-        ((warnings++))
+        warnings=$((warnings + 1))
     fi
     
     # 10. Verificar API (health check)
@@ -2170,7 +2173,7 @@ verify_installation() {
         success "API respondendo (HTTP 200)"
     else
         warning "API não está respondendo (HTTP $api_response)"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # 11. Verificar acesso ao frontend via Nginx
@@ -2180,7 +2183,7 @@ verify_installation() {
         success "Frontend acessível via Nginx (HTTP 200)"
     else
         warning "Frontend pode não estar acessível (HTTP $frontend_response)"
-        ((warnings++))
+        warnings=$((warnings + 1))
     fi
     
     # 12. Verificar acesso a uploads via Nginx
@@ -2199,7 +2202,7 @@ verify_installation() {
         rm -f "$INSTALL_DIR/backend/uploads/.test" 2>/dev/null || true
     else
         warning "Nginx pode não estar servindo /uploads corretamente (HTTP $uploads_response)"
-        ((warnings++))
+        warnings=$((warnings + 1))
     fi
     
     # 13. Verificar SSL (se configurado)
@@ -2211,7 +2214,7 @@ verify_installation() {
             success "SSL configurado (expira: $cert_expiry)"
         else
             warning "SSL não foi configurado"
-            ((warnings++))
+            warnings=$((warnings + 1))
         fi
     else
         info "SSL não solicitado (pode configurar depois)"
