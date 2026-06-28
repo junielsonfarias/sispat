@@ -1,4 +1,13 @@
+# Aprovação de build scripts (pnpm 10 usa onlyBuiltDependencies; pnpm 11 usa
+# allowBuilds). Mantemos AMBOS para funcionar independentemente da versão do pnpm
+# que o corepack resolver. Sem isto, o pnpm 11 sai com erro (ERR_PNPM_IGNORED_BUILDS)
+# e o instalador cai no fallback npm. esbuild PRECISA do build (baixa o binário);
+# core-js só imprime mensagem de funding (inofensivo, mas o pnpm exige aprovar).
+allowBuilds:
+  '@swc/core': true
+  core-js: true
+  esbuild: true
 onlyBuiltDependencies:
   - '@swc/core'
   - esbuild
-virtualStoreDir: ${PODS_MANAGER_ROOT:-/app}/pods/${PROJECT_ID:-project}/node_modules/.pnpm
+  - core-js

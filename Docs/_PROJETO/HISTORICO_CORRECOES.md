@@ -81,6 +81,18 @@ PM2 rodando `dist/index.js`, verificação pós-instalação. Corrigidos:
   COMPILADA `npm run prisma:seed:prod` (`node dist/prisma/seed.js`, backend já buildado na
   FASE 3) **com `timeout -k 15 300`**; fallback manual de criação do admin também ganhou
   `timeout` + reverificação real via psql (não declara sucesso cego). `bash -n` OK.
+- **`pnpm indisponível/falhou → fallback npm` (o warning recorrente):** NÃO era o lockfile
+  (estava OK). Eram 2 coisas no `pnpm-workspace.yaml` commitado: (a) faltava aprovar os
+  build scripts — o **pnpm 11** (que o corepack resolve) usa a chave **`allowBuilds`** com
+  valores `true` (o `onlyBuiltDependencies` sozinho não basta no pnpm 11); sem isso ele sai
+  com `ERR_PNPM_IGNORED_BUILDS` (esbuild/core-js) e o instalador caía no npm; (b) um
+  **`virtualStoreDir: ${PODS_MANAGER_ROOT:-/app}/pods/...`** (poluição de ambiente de dev em
+  container) que na VPS apontaria o store do pnpm para `/app/...`, fora do projeto.
+  **Fix:** `pnpm-workspace.yaml` passou a ter `allowBuilds:{'@swc/core':true,core-js:true,
+  esbuild:true}` + `onlyBuiltDependencies` (cobre pnpm 10 e 11) e **removido o
+  `virtualStoreDir`**. Verificado local: `corepack pnpm install --frozen-lockfile` → EXIT 0
+  (roda esbuild/core-js). Nota: dev local que dependia do virtualStoreDir deve configurá-lo
+  fora do repo (config local) — não commitar caminho de ambiente.
 - **Nota:** existe um 2º instalador `install-sispat.sh` (708 linhas, "simplificado") que JÁ
   usa `127.0.0.1`, não cria systemd e builda o shared — também válido. Usa o mesmo
   `ecosystem.config.js` (agora corrigido). Não-bloqueadores deixados: cluster só volta com
