@@ -60,6 +60,47 @@ export const FichaPreviewReal = ({
   // Função auxiliar para verificar se uma seção deve ser incluída
   const shouldInclude = (sectionId: string) => selectedSections.includes(sectionId)
 
+  // Campos por seção (config.sections.*.fields) — espelha o PatrimonioPDFGenerator
+  // para a prévia mostrar exatamente os campos que sairão no PDF.
+  const sectionsCfg = config.sections || {}
+  const sectionFields = (key: string, fallback: string[]): string[] => {
+    const f = sectionsCfg[key]?.fields
+    return Array.isArray(f) && f.length > 0 ? f : fallback
+  }
+  const sectionEnabled = (key: string): boolean => sectionsCfg[key]?.enabled ?? true
+  const labelStyle = { margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 } as const
+  const valueStyle = { margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' } as const
+  const FIELD_META: Record<string, { label: string; value: () => string }> = {
+    descricao_bem: { label: 'DESCRIÇÃO', value: () => samplePatrimonio.descricao_bem || '—' },
+    tipo: { label: 'TIPO', value: () => samplePatrimonio.tipo || '—' },
+    marca: { label: 'MARCA', value: () => samplePatrimonio.marca || '—' },
+    modelo: { label: 'MODELO', value: () => samplePatrimonio.modelo || '—' },
+    cor: { label: 'COR', value: () => samplePatrimonio.cor || '—' },
+    numero_serie: { label: 'NÚMERO DE SÉRIE', value: () => samplePatrimonio.numero_serie || '—' },
+    data_aquisicao: { label: 'DATA DE AQUISIÇÃO', value: () => (samplePatrimonio.data_aquisicao ? formatDate(samplePatrimonio.data_aquisicao) : '—') },
+    valor_aquisicao: { label: 'VALOR DE AQUISIÇÃO', value: () => (samplePatrimonio.valor_aquisicao ? formatCurrency(samplePatrimonio.valor_aquisicao) : '—') },
+    forma_aquisicao: { label: 'FORMA DE AQUISIÇÃO', value: () => samplePatrimonio.forma_aquisicao || '—' },
+    setor_responsavel: { label: 'SETOR RESPONSÁVEL', value: () => samplePatrimonio.setor_responsavel || '—' },
+    local_objeto: { label: 'LOCAL DO OBJETO', value: () => samplePatrimonio.local_objeto || '—' },
+    status: { label: 'STATUS', value: () => (samplePatrimonio.status ? String(samplePatrimonio.status).toUpperCase() : '—') },
+    metodo_depreciacao: { label: 'MÉTODO DE DEPRECIAÇÃO', value: () => samplePatrimonio.metodo_depreciacao || '—' },
+    vida_util_anos: { label: 'VIDA ÚTIL (ANOS)', value: () => (samplePatrimonio.vida_util_anos != null ? String(samplePatrimonio.vida_util_anos) : '—') },
+    valor_residual: { label: 'VALOR RESIDUAL', value: () => (samplePatrimonio.valor_residual != null ? formatCurrency(samplePatrimonio.valor_residual) : '—') },
+  }
+  const renderFields = (keys: string[]) =>
+    keys
+      .filter((k) => FIELD_META[k])
+      .map((k) => (
+        <div key={k}>
+          <p style={labelStyle}>{FIELD_META[k].label}</p>
+          <p style={valueStyle}>{FIELD_META[k].value()}</p>
+        </div>
+      ))
+  const piFields = sectionFields('patrimonioInfo', ['descricao_bem', 'tipo', 'marca', 'modelo', 'cor', 'numero_serie'])
+  const acqFields = sectionFields('acquisition', ['data_aquisicao', 'valor_aquisicao', 'forma_aquisicao'])
+  const locFields = sectionFields('location', ['setor_responsavel', 'local_objeto', 'status'])
+  const depFields = sectionFields('depreciation', ['metodo_depreciacao', 'vida_util_anos', 'valor_residual'])
+
   return (
     <>
       {/* Estilos CSS para impressão A4 */}
@@ -211,152 +252,55 @@ export const FichaPreviewReal = ({
         )}
 
         {/* Identificação do Bem */}
-        {shouldInclude('identificacao') && (
+        {shouldInclude('identificacao') && sectionEnabled('patrimonioInfo') && (
           <div style={{ marginBottom: '15px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '12px', color: '#000', borderBottom: '1px solid #ccc', paddingBottom: '4px' }}>
               IDENTIFICAÇÃO DO BEM
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>DESCRIÇÃO</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.descricao_bem}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>TIPO</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.tipo}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>MARCA</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.marca}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>MODELO</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.modelo}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>COR</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.cor}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>NÚMERO DE SÉRIE</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.numero_serie}
-                </p>
-              </div>
+              {renderFields(piFields)}
             </div>
           </div>
         )}
 
         {/* Informações de Aquisição */}
-        {shouldInclude('aquisicao') && (
+        {shouldInclude('aquisicao') && sectionEnabled('acquisition') && (
           <div style={{ marginBottom: '15px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '12px', color: '#000', borderBottom: '1px solid #ccc', paddingBottom: '4px' }}>
               INFORMAÇÕES DE AQUISIÇÃO
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>DATA DE AQUISIÇÃO</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {formatDate(samplePatrimonio.data_aquisicao)}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>VALOR DE AQUISIÇÃO</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {formatCurrency(samplePatrimonio.valor_aquisicao)}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>FORMA DE AQUISIÇÃO</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.forma_aquisicao}
-                </p>
-              </div>
+              {renderFields(acqFields)}
             </div>
           </div>
         )}
 
-        {/* Localização */}
-        {shouldInclude('localizacao') && (
+        {/* Localização (status faz parte desta seção, espelhando o PDF) */}
+        {shouldInclude('localizacao') && sectionEnabled('location') && (
           <div style={{ marginBottom: '15px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '12px', color: '#000', borderBottom: '1px solid #ccc', paddingBottom: '4px' }}>
               LOCALIZAÇÃO
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>SETOR RESPONSÁVEL</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.setor_responsavel}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>LOCAL DO OBJETO</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.local_objeto}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Status */}
-        {shouldInclude('status') && (
-          <div style={{ marginBottom: '15px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '12px', color: '#000', borderBottom: '1px solid #ccc', paddingBottom: '4px' }}>
-              STATUS
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>STATUS</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.status?.toUpperCase()}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>SITUAÇÃO DO BEM</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.situacao_bem}
-                </p>
-              </div>
+              {renderFields(locFields)}
+              {samplePatrimonio.situacao_bem && (
+                <div>
+                  <p style={labelStyle}>SITUAÇÃO DO BEM</p>
+                  <p style={valueStyle}>{samplePatrimonio.situacao_bem}</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Depreciação */}
-        {shouldInclude('depreciacao') && (
+        {shouldInclude('depreciacao') && sectionEnabled('depreciation') && (
           <div style={{ marginBottom: '15px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '12px', color: '#000', borderBottom: '1px solid #ccc', paddingBottom: '4px' }}>
               INFORMAÇÕES DE DEPRECIAÇÃO
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>MÉTODO DE DEPRECIAÇÃO</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.metodo_depreciacao}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>VIDA ÚTIL</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.vida_util_anos} anos
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>VALOR RESIDUAL</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', fontWeight: 600, color: '#000' }}>
-                  {samplePatrimonio.valor_residual != null ? formatCurrency(samplePatrimonio.valor_residual) : '—'}
-                </p>
-              </div>
+              {renderFields(depFields)}
             </div>
           </div>
         )}

@@ -497,12 +497,11 @@ export default function EditorTemplateFicha() {
 
             {/* Aba Seções */}
             <TabsContent value="sections" className="space-y-4">
-              {/* A seleção de campos por seção É aplicada na ficha gerada (PDF de
-                  bem móvel). A pré-visualização ao lado ainda usa um layout fixo e
-                  pode não refletir 100% a seleção — o PDF final, sim. */}
+              {/* A seleção de campos por seção É aplicada tanto na ficha gerada
+                  (PDF de bem móvel) quanto na pré-visualização ao lado. */}
               <div className="rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-200">
-                ℹ️ Os campos marcados por seção são aplicados na <strong>ficha gerada (PDF)</strong>.
-                A pré-visualização pode não refletir exatamente a seleção, mas o PDF final, sim.
+                ℹ️ Os campos marcados por seção são aplicados na <strong>ficha gerada (PDF)</strong> e
+                refletidos na pré-visualização ao lado.
               </div>
               {/* Seção Patrimônio */}
               <Card>
