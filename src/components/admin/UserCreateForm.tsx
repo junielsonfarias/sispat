@@ -23,13 +23,14 @@ import {
 } from '@/components/ui/searchable-select'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { useSectors } from '@/contexts/SectorContext'
+import { STRONG_PASSWORD_REGEX, STRONG_PASSWORD_MESSAGE } from '@sispat/shared'
 
 const userCreateSchema = z.object({
   name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
   email: z.string().email({ message: 'Formato de e-mail inválido.' }),
-  password: z
-    .string()
-    .min(8, { message: 'A senha deve ter no mínimo 8 caracteres.' }),
+  // Mesma regra forte do backend (createUserSchema) — antes o form aceitava 8
+  // chars e o backend rejeitava com 400 confuso.
+  password: z.string().regex(STRONG_PASSWORD_REGEX, STRONG_PASSWORD_MESSAGE),
   role: z.enum(['supervisor', 'usuario', 'visualizador'], {
     required_error: 'Perfil é obrigatório.',
   }),

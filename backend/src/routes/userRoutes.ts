@@ -4,6 +4,7 @@ import {
   getUserById,
   createUser,
   updateUser,
+  updateOwnProfile,
   resetUserPassword,
   deleteUser,
 } from '../controllers/userController';
@@ -29,6 +30,11 @@ router.get(
   zodValidate({ query: paginationQuerySchema }),
   getUsers,
 );
+
+// Self-service: qualquer usuário autenticado atualiza o PRÓPRIO perfil (nome/avatar).
+// DEVE vir antes de '/:id' p/ não ser capturado como id. Sem authorize de gestor
+// (o controller grava só no próprio req.user.userId).
+router.put('/me', updateOwnProfile);
 
 router.get(
   '/:id',

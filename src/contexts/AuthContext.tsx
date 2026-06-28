@@ -22,6 +22,7 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   logout: (options?: { sessionExpired?: boolean }) => void
   updateUser: (userId: string, userData: Partial<User>) => Promise<User>
+  updateOwnProfile: (data: { name?: string; avatar?: string }) => Promise<User>
   addUser: (
     userData: Omit<
       User,
@@ -225,6 +226,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return updatedUser
   }
 
+  // Atualizar o PRÓPRIO perfil (nome/avatar) — rota self-service PUT /users/me,
+  // sem o authorize de gestor (usuario/visualizador tomavam 403 no PUT /users/:id).
+  const updateOwnProfile = async (
+    data: { name?: string; avatar?: string },
+  ): Promise<User> => {
+    const updatedUser = await api.put<User>('/users/me', data)
+    setUser(updatedUser)
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)))
+    return updatedUser
+  }
+
   const addUser = async (
     userData: Omit<
       User,
@@ -254,6 +266,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         logout,
         updateUser,
+        updateOwnProfile,
         addUser,
         deleteUser,
         forgotPassword,

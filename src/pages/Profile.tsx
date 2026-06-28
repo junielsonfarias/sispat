@@ -20,7 +20,7 @@ import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { Badge } from '@/components/ui/badge'
 
 const Profile = () => {
-  const { user, updateUser, logout } = useAuth()
+  const { user, updateOwnProfile, logout } = useAuth()
   const [isLoggingOutAll, setIsLoggingOutAll] = useState(false)
   const confirm = useConfirm()
 
@@ -75,7 +75,7 @@ const Profile = () => {
 
   const handleSave = async (editedImage: string) => {
     try {
-      await updateUser(user.id, { avatar: editedImage })
+      await updateOwnProfile({ avatar: editedImage })
       toast({
         title: 'Sucesso!',
         description: 'Sua foto de perfil foi atualizada.',

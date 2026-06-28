@@ -19,9 +19,11 @@ export const createEmprestimoSchema = z.object({
     .min(1, 'Responsável é obrigatório.')
     .max(200, 'Responsável deve ter no máximo 200 caracteres.'),
   setor: z.string().max(100).optional(),
-  motivo: z.string().max(500).optional(),
+  // Obrigatórios: o controller já exigia (gerava 400 genérico). Aqui o zod dá
+  // mensagem por campo e o contrato fica consistente front↔back.
+  motivo: z.string().trim().min(1, 'Motivo é obrigatório.').max(500),
   dataEmprestimo: isoDateSchema,
-  dataPrevDevolucao: isoDateSchema.optional(),
+  dataPrevDevolucao: isoDateSchema,
   observacoes: z.string().max(1000).optional(),
 });
 export type CreateEmprestimoInput = z.infer<typeof createEmprestimoSchema>;

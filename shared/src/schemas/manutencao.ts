@@ -74,6 +74,9 @@ export const createManutencaoSchema = z.object({
   titulo: tituloSchema,
   descricao: descricaoCreateSchema,
   prioridade: manutencaoPrioridadeSchema,
+  // status opcional na criação (default 'pendente' no controller): o form permite
+  // criar já "Em andamento"/"Concluída"; antes era descartado.
+  status: manutencaoStatusSchema.optional(),
   responsavel: responsavelSchema,
   dataPrevista: isoDateSchema,
   custo: custoSchema,

@@ -268,10 +268,16 @@ describe('@sispat/shared — emprestimo', () => {
     patrimonioId: validUuid,
     responsavel: 'Maria',
     dataEmprestimo: '2026-05-12',
+    // motivo e dataPrevDevolucao agora obrigatórios (alinhado ao controller).
+    motivo: 'Uso externo',
+    dataPrevDevolucao: '2026-06-12',
   };
 
-  it('createEmprestimoSchema exige patrimonioId + responsavel + dataEmprestimo', () => {
+  it('createEmprestimoSchema exige patrimonioId + responsavel + datas + motivo', () => {
     expect(createEmprestimoSchema.safeParse(base).success).toBe(true);
+    // sem motivo → inválido
+    const { motivo: _m, ...semMotivo } = base;
+    expect(createEmprestimoSchema.safeParse(semMotivo).success).toBe(false);
   });
 
   it('rejeita patrimonioId não-UUID', () => {

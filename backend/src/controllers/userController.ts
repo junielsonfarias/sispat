@@ -369,6 +369,46 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 };
 
 /**
+ * Atualizar o PRÓPRIO perfil (qualquer papel autenticado) — PUT /api/users/me
+ * Só permite nome e avatar (não role/isActive/sectors), evitando escalada.
+ * Existe porque PUT /users/:id é restrito a gestor (usuario/visualizador tomavam
+ * 403 ao trocar a própria foto).
+ */
+export const updateOwnProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'Não autenticado' });
+      return;
+    }
+    const { name, avatar } = req.body;
+    const updated = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: {
+        ...(typeof name === 'string' && name.trim() ? { name: name.trim() } : {}),
+        ...(avatar !== undefined ? { avatar } : {}),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatar: true,
+        responsibleSectors: true,
+        municipalityId: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    await CacheUtils.invalidateByPrefix('users:');
+    res.json(updated);
+  } catch (error) {
+    logError('Erro ao atualizar perfil próprio', error, { userId: req.user?.userId });
+    res.status(500).json({ error: 'Erro ao atualizar perfil' });
+  }
+};
+
+/**
  * Redefinir a senha de OUTRO usuário (gestor redefine senha de terceiro)
  * POST /api/users/:id/reset-password
  *

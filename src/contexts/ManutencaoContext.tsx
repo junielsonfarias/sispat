@@ -112,6 +112,8 @@ export const toCreateBody = (
   titulo: task.title,
   descricao: task.description,
   prioridade: PRIO_TO[task.priority],
+  // Envia o status escolhido (antes era descartado → o controller sempre 'pendente').
+  status: task.status ? STATUS_TO[task.status] : undefined,
   responsavel: task.assignedTo || undefined,
   dataPrevista: task.dueDate,
 })
