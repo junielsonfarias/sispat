@@ -979,7 +979,10 @@ build_application() {
     command -v corepack >/dev/null 2>&1 && corepack enable >/dev/null 2>&1 || true
     if command -v pnpm >/dev/null 2>&1 && [ -f pnpm-lock.yaml ]; then
         echo -e "${BLUE}  → Instalando pacotes do frontend com pnpm (--frozen-lockfile)...${NC}"
-        if pnpm install --frozen-lockfile > /tmp/build-frontend-deps.log 2>&1 && [ -f "node_modules/.bin/vite" ]; then
+        # timeout (-k força SIGKILL) p/ não pendurar a instalação se o pnpm empacar
+        # (build de dep nativa / rede lenta) — ao estourar 12min, cai automaticamente
+        # no fallback npm em vez de travar para sempre.
+        if timeout -k 30 720 pnpm install --frozen-lockfile > /tmp/build-frontend-deps.log 2>&1 && [ -f "node_modules/.bin/vite" ]; then
             success "✅ Dependências do frontend instaladas (pnpm)"
             FRONTEND_DEPS_OK=true
         else
@@ -990,8 +993,10 @@ build_application() {
     if [ "$FRONTEND_DEPS_OK" != true ]; then
         # Fallback npm (--legacy-peer-deps) com retry — fluxo robusto original.
         echo -e "${BLUE}  → Instalando pacotes do frontend (npm)...${NC}"
-        npm install --legacy-peer-deps > /tmp/build-frontend-deps.log 2>&1
-        local deps_status=$?
+        # captura o status sem disparar o set -e (|| ...) — preserva o tratamento
+        # de erro/retry abaixo e cobre o caso de timeout (124).
+        local deps_status=0
+        timeout -k 30 720 npm install --legacy-peer-deps > /tmp/build-frontend-deps.log 2>&1 || deps_status=$?
 
         echo ""
         if [ $deps_status -eq 0 ]; then

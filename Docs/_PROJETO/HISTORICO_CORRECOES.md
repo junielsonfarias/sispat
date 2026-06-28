@@ -40,6 +40,10 @@ PM2 rodando `dist/index.js`, verificação pós-instalação. Corrigidos:
   `instances:1, exec_mode:'fork'` (para escalar: adicionar adapter Redis + sticky sessions).
 - **Arquivos:** `install.sh`, `backend/ecosystem.config.js`.
 - **Verificação:** `bash -n install.sh` OK; `require(ecosystem.config.js)` OK.
+- **Follow-up (mesmo dia, durante 1º teste real numa VPS KingHost/Debian 12):** o
+  `pnpm install --frozen-lockfile` do frontend (install.sh) ficou **pendurado >20min**
+  (sem timeout). Adicionado `timeout -k 30 720` no pnpm (cai no fallback npm ao estourar)
+  e no fallback npm (`|| deps_status=$?`, set -e-safe). O backend já tinha `timeout 600`.
 - **Nota:** existe um 2º instalador `install-sispat.sh` (708 linhas, "simplificado") que JÁ
   usa `127.0.0.1`, não cria systemd e builda o shared — também válido. Usa o mesmo
   `ecosystem.config.js` (agora corrigido). Não-bloqueadores deixados: cluster só volta com
