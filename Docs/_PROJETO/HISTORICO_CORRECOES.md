@@ -21,6 +21,27 @@
 
 ## 2026
 
+### 2026-06-27 — Auditoria + correção da geração (fichas/etiquetas/relatórios)
+3 auditores read-only varreram fichas, etiquetas e relatórios. jsPDF dinâmico
+confirmado OK (sem regressão). 🔴 corrigidos:
+- **QR de imóvel** apontava p/ `/consulta-publica/imovel/${numero_patrimonio}`, mas a
+  rota é por `:id` → consulta pública não achava. Corrigido ImovelPDFGenerator +
+  LabelPreview p/ usar `imovel.id` (bem segue por numero). (commit 9730bd3)
+- **Template de relatório** nascia com layout vazio (relatório em branco) e a edição
+  de colunas era descartada. ReportTemplateForm envia layout vazio + service regera
+  de `fields` (create/update); editor visual preservado. (9730bd3)
+- **Relatório longo truncado** (printable-area height fixo + overflow:hidden) → minHeight
+  + overflow visível. (772e0f3)
+- **Export de etiqueta** PDF/PNG só pegava a 1ª página → roteia p/ Imprimir (todas
+  as etiquetas+cópias) quando multipágina. (772e0f3)
+🟡 corrigidos: isActive nos schemas do FichaTemplate; formatação de moeda/data na
+impressão de etiqueta (helper `formatLabelFieldValue` reusado); coerção string→data
+restrita a ISO (export-utils/ReportView); espera do QR no export single; remoção de
+dead code (FichaPreview.tsx, lib/patrimonio-pdf-generator.ts). (cbbc570, 3f8952b)
+- **#5** (campos por seção da ficha ignorados): aviso na aba "Seções" do editor (não
+  engana mais); remoção total da aba e geração honrar `config.sections` ficam como
+  follow-up. **Verificação:** backend tsc 0/577 Jest; frontend tsc 0/130 vitest.
+
 ### 2026-06-27 — install.sh: remoção de credenciais-padrão (default credentials)
 - **Sintoma/risco:** o `install.sh` (público no repo) gravava em TODA instalação um
   supervisor com credenciais FIXAS (`supervisor@ssbv.com` / `Master6273@`) e oferecia
