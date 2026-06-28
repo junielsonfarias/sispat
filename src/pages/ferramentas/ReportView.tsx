@@ -971,19 +971,21 @@ const ReportView = () => {
           id="printable-area"
           ref={reportRef}
           className="bg-white shadow-lg printable-area print-clean"
-          style={{ 
-            transform: `scale(${zoom})`, 
+          style={{
+            transform: `scale(${zoom})`,
             transformOrigin: 'top',
             width: paperDimensions.width,
-            height: paperDimensions.height,
+            // minHeight (não height fixo) + overflow visível: o conteúdo flui além
+            // de 1 página, então relatórios longos não são cortados e o html2canvas
+            // captura o scrollHeight inteiro (todas as páginas). aspectRatio removido
+            // pois forçaria a caixa de volta à proporção de 1 página.
             minHeight: paperDimensions.height,
-            aspectRatio: paperDimensions.aspectRatio,
             maxWidth: 'none',
             flexShrink: 0,
-            overflow: 'hidden'
+            overflow: 'visible'
           }}
         >
-          <div className="p-6 report-grid" style={{ width: '100%', height: '100%', boxSizing: 'border-box' }}>
+          <div className="p-6 report-grid" style={{ width: '100%', minHeight: '100%', boxSizing: 'border-box' }}>
             {template.layout.map((comp) => (
               <div
                 key={comp.id}

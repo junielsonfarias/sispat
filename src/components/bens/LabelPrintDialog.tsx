@@ -360,6 +360,19 @@ export function LabelPrintDialog({
       return
     }
 
+    // O export direto captura só a prévia (1 página). Se o job tem mais de uma
+    // página, NÃO gerar um PDF truncado em silêncio: rotear para o fluxo de
+    // Imprimir (que monta todas as etiquetas + cópias com QR) → "Salvar como PDF".
+    const totalLabels = selectedAssets.length * printOptions.copies
+    if (totalLabels > labelsPerPage) {
+      toast({
+        title: 'Muitas etiquetas para 1 página',
+        description: `${totalLabels} etiquetas (${totalPages} páginas). Abrindo a impressão — use "Salvar como PDF" para gerar todas.`,
+      })
+      await handlePrint()
+      return
+    }
+
     setIsExporting(true)
     try {
       const canvas = await html2canvas(previewRef.current, {
@@ -415,6 +428,18 @@ export function LabelPrintDialog({
         title: 'Erro',
         description: 'Selecione pelo menos um patrimônio para exportar.',
       })
+      return
+    }
+
+    // PNG é uma imagem única (1 página). Com mais de uma página, evitar perda
+    // silenciosa: rotear para a impressão (todas as etiquetas).
+    const totalLabels = selectedAssets.length * printOptions.copies
+    if (totalLabels > labelsPerPage) {
+      toast({
+        title: 'Muitas etiquetas para uma imagem',
+        description: `${totalLabels} etiquetas (${totalPages} páginas). Use a impressão para gerar todas.`,
+      })
+      await handlePrint()
       return
     }
 
