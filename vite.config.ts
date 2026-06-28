@@ -22,6 +22,15 @@ export default defineConfig(({ mode }) => ({
     include: ['@sispat/shared'],
   },
   build: {
+    commonjsOptions: {
+      // @sispat/shared é CommonJS. Na VPS o npm resolve o `file:` dep via symlink
+      // para FORA de node_modules (/var/www/sispat/shared/dist). O default do Vite
+      // só transforma /node_modules/, então os exports nomeados do CJS
+      // (`__exportStar(require(...))`) não eram detectados → rollup falhava com
+      // "X is not exported by shared/dist/index.js". Incluir o caminho do shared
+      // faz o plugin commonjs processá-lo em qualquer layout (npm symlink ou pnpm).
+      include: [/node_modules/, /shared[\\/]dist/],
+    },
     minify: mode === 'production' ? 'terser' : false,
     sourcemap: mode === 'development',
     // es2020 cobre os browsers-alvo modernos e evita transpile/polyfill extra que

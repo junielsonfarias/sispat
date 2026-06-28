@@ -64,6 +64,17 @@ PM2 rodando `dist/index.js`, verificação pós-instalação. Corrigidos:
   **Lição p/ o usuário:** durante a instalação, NÃO dar `pkill`/`Ctrl+C` (usar 2ª sessão
   só p/ `tail`). Pendente: atualizar `pnpm-lock.yaml` p/ refletir o zod (não bloqueia — o
   fluxo cai no npm).
+- **CAUSA-RAIZ REAL do `loginSchema is not exported` (3 falhas seguidas, NÃO era dist
+  truncado):** `@sispat/shared` é **CommonJS** e na VPS o **npm** resolve o `file:` dep via
+  **symlink p/ FORA de node_modules** (`/var/www/sispat/shared/dist`). O Vite/rollup só
+  roda o plugin commonjs em `/node_modules/` por padrão → os exports nomeados do CJS
+  (`__exportStar(require(...))`) não eram detectados → "X is not exported by
+  shared/dist/index.js". **Localmente funciona** porque o **pnpm** symlinka p/ dentro de
+  `node_modules/.pnpm/` (casa com `/node_modules/`). **Fix:** `vite.config.ts` →
+  `build.commonjsOptions.include: [/node_modules/, /shared[\\/]dist/]`. **Verificado
+  localmente** reproduzindo o layout da VPS (alias `@sispat/shared`→`shared/dist/index.js`,
+  fora de node_modules): build PASSA com o fix (e o build normal pnpm segue OK, sem
+  regressão). Este era o bloqueador final do build na VPS.
 - **Nota:** existe um 2º instalador `install-sispat.sh` (708 linhas, "simplificado") que JÁ
   usa `127.0.0.1`, não cria systemd e builda o shared — também válido. Usa o mesmo
   `ecosystem.config.js` (agora corrigido). Não-bloqueadores deixados: cluster só volta com
