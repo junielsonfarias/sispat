@@ -21,9 +21,12 @@ import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { toast } from '@/hooks/use-toast'
 import { Save, Undo, UploadCloud, Info } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { uploadFile } from '@/services/fileService'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function SystemCustomization() {
   const { settings, saveSettings, resetSettings } = useCustomization()
+  const { user } = useAuth()
   const [localSettings, setLocalSettings] = useState<CustomizationSettings>(settings)
 
   useEffect(() => {
@@ -70,20 +73,29 @@ export default function SystemCustomization() {
   }
 
 
-  const handleFileChange = (
+  const handleFileChange = async (
     e: ChangeEvent<HTMLInputElement>,
     key: keyof CustomizationSettings,
   ) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setLocalSettings((prev) => ({
-          ...prev,
-          [key]: reader.result as string,
-        }))
-      }
-      reader.readAsDataURL(file)
+    e.target.value = '' // permite reenviar o mesmo arquivo
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast({ description: 'Selecione um arquivo de imagem.', variant: 'destructive' })
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ description: 'O arquivo deve ter no máximo 5MB.', variant: 'destructive' })
+      return
+    }
+    // Upload real (→ /uploads/...) em vez de base64 (não infla o banco/customization).
+    try {
+      toast({ description: 'Enviando imagem...' })
+      const result = await uploadFile(file, 'customization', user?.id || 'superuser')
+      setLocalSettings((prev) => ({ ...prev, [key]: result.file_url }))
+      toast({ description: 'Imagem enviada. Clique em "Salvar" para confirmar.' })
+    } catch {
+      toast({ description: 'Falha ao enviar a imagem. Tente novamente.', variant: 'destructive' })
     }
   }
 

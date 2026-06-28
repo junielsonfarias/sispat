@@ -15,9 +15,12 @@ import {
 } from '@/contexts/CustomizationContext'
 import { toast } from '@/hooks/use-toast'
 import { UploadCloud, X, Trash2 } from 'lucide-react'
+import { uploadFile } from '@/services/fileService'
+import { useAuth } from '@/hooks/useAuth'
 
 const LogoManagement = () => {
   const { settings, saveSettings } = useCustomization()
+  const { user } = useAuth()
   const [localSettings, setLocalSettings] = useState<CustomizationSettings>(
     settings,
   )
@@ -26,42 +29,36 @@ const LogoManagement = () => {
     setLocalSettings(settings)
   }, [settings])
 
-  const handleFileChange = (
+  const handleFileChange = async (
     e: ChangeEvent<HTMLInputElement>,
     key: keyof CustomizationSettings,
   ) => {
     const file = e.target.files?.[0]
-    if (file) {
-      // Validar tipo de arquivo
-      if (!file.type.startsWith('image/')) {
-        toast({ 
-          description: 'Por favor, selecione apenas arquivos de imagem.',
-          variant: 'destructive'
-        })
-        return
-      }
+    // Limpa o input para permitir reenviar o MESMO arquivo depois.
+    e.target.value = ''
+    if (!file) return
 
-      // Validar tamanho do arquivo (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ 
-          description: 'O arquivo deve ter no máximo 5MB.',
-          variant: 'destructive'
-        })
-        return
-      }
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      toast({ description: 'Por favor, selecione apenas arquivos de imagem.', variant: 'destructive' })
+      return
+    }
+    // Validar tamanho (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ description: 'O arquivo deve ter no máximo 5MB.', variant: 'destructive' })
+      return
+    }
 
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setLocalSettings((prev) => ({ ...prev, [key]: reader.result as string }))
-        toast({ description: 'Logo carregado com sucesso.' })
-      }
-      reader.onerror = () => {
-        toast({ 
-          description: 'Erro ao carregar o arquivo.',
-          variant: 'destructive'
-        })
-      }
-      reader.readAsDataURL(file)
+    // Upload de verdade (POST /upload/single → /uploads/...), em vez de base64.
+    // O backend guarda o arquivo e devolve a URL; isso não infla a customização
+    // no banco nem o /customization/public (que volta a cada login).
+    try {
+      toast({ description: 'Enviando logo...' })
+      const result = await uploadFile(file, 'logo', user?.id || 'admin')
+      setLocalSettings((prev) => ({ ...prev, [key]: result.file_url }))
+      toast({ description: 'Logo enviado. Clique em "Salvar Alterações" para confirmar.' })
+    } catch {
+      toast({ description: 'Falha ao enviar o logo. Tente novamente.', variant: 'destructive' })
     }
   }
 
