@@ -9,6 +9,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Archive, Building, ArrowLeft, Save } from 'lucide-react'
 import { api } from '@/services/http-api'
 import { logger } from '@/lib/logger'
+import {
+  FICHA_DEFAULT_FIELDS_BY_TYPE,
+  FICHA_SECTION_META_BY_TYPE,
+  type FichaType,
+} from '@/lib/ficha-fields'
 
 interface TemplateConfig {
   header: {
@@ -132,6 +137,9 @@ export default function NovoTemplateFicha() {
     return result
   }
 
+  // Títulos de seção conforme o tipo escolhido (bens × imóveis).
+  const sectionMeta = FICHA_SECTION_META_BY_TYPE[formData.type]
+
   return (
     <div className="container mx-auto p-6">
       {/* Header */}
@@ -188,7 +196,26 @@ export default function NovoTemplateFicha() {
               <Label>Tipo de Patrimônio *</Label>
               <RadioGroup
                 value={formData.type}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as 'bens' | 'imoveis' }))}
+                onValueChange={(value) => {
+                  const type = value as FichaType
+                  // Ao trocar o tipo, ajusta os campos default de cada seção
+                  // (bens × imóveis) — senão um template de imóvel nasceria com
+                  // campos de bem, que o gerador descartaria.
+                  const def = FICHA_DEFAULT_FIELDS_BY_TYPE[type]
+                  setFormData(prev => ({
+                    ...prev,
+                    type,
+                    config: {
+                      ...prev.config,
+                      sections: {
+                        patrimonioInfo: { ...prev.config.sections.patrimonioInfo, fields: def.patrimonioInfo },
+                        acquisition: { ...prev.config.sections.acquisition, fields: def.acquisition },
+                        location: { ...prev.config.sections.location, fields: def.location },
+                        depreciation: { ...prev.config.sections.depreciation, fields: def.depreciation },
+                      },
+                    },
+                  }))
+                }}
                 className="flex gap-6 mt-2"
               >
                 <div className="flex items-center space-x-2">
@@ -274,7 +301,7 @@ export default function NovoTemplateFicha() {
                   onChange={(e) => handleConfigChange('sections.patrimonioInfo.enabled', e.target.checked)}
                   className="rounded"
                 />
-                <Label htmlFor="patrimonioInfo">Informações do Patrimônio</Label>
+                <Label htmlFor="patrimonioInfo">{sectionMeta.patrimonioInfo.title}</Label>
               </div>
               
               <div className="flex items-center space-x-2">
@@ -285,7 +312,7 @@ export default function NovoTemplateFicha() {
                   onChange={(e) => handleConfigChange('sections.acquisition.enabled', e.target.checked)}
                   className="rounded"
                 />
-                <Label htmlFor="acquisition">Informações de Aquisição</Label>
+                <Label htmlFor="acquisition">{sectionMeta.acquisition.title}</Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -296,7 +323,7 @@ export default function NovoTemplateFicha() {
                   onChange={(e) => handleConfigChange('sections.location.enabled', e.target.checked)}
                   className="rounded"
                 />
-                <Label htmlFor="location">Localização e Estado</Label>
+                <Label htmlFor="location">{sectionMeta.location.title}</Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -307,7 +334,7 @@ export default function NovoTemplateFicha() {
                   onChange={(e) => handleConfigChange('sections.depreciation.enabled', e.target.checked)}
                   className="rounded"
                 />
-                <Label htmlFor="depreciation">Informações de Depreciação</Label>
+                <Label htmlFor="depreciation">{sectionMeta.depreciation.title}</Label>
               </div>
             </div>
           </CardContent>

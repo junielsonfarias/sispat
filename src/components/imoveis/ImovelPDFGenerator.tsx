@@ -88,9 +88,9 @@ export const generateImovelPDF = async ({
 }: ImovelPDFGeneratorProps) => {
   // --- Template de ficha (type='imoveis') ----------------------------------
   // Aplica o template escolhido (ou o padrão do município) à ficha do imóvel:
-  // cabeçalho, seções habilitadas, assinaturas e fonte. A seleção de CAMPOS por
-  // seção do editor é específica de bens móveis (não há campos de imóvel ainda),
-  // então aqui honramos enabled/header/assinaturas/estilo — não o field-level.
+  // cabeçalho, seções habilitadas, assinaturas, fonte E os CAMPOS por seção
+  // (field-level) — os campos de imóvel vêm de src/lib/ficha-fields.ts e são
+  // honrados abaixo via sectionFields/renderFields (mapeamento de 4 seções).
   let template: any = null
   try {
     if (templateId) {
@@ -112,9 +112,61 @@ export const generateImovelPDF = async ({
   const signaturesConfig = config.signatures || { enabled: false }
   const stylingConfig = config.styling || {}
   const fontFamily = stylingConfig.fonts?.family || 'Arial, sans-serif'
-  const sectionsCfg = (config.sections || {}) as Record<string, { enabled?: boolean }>
-  // Mapa seção do imóvel → seção do template (as 3 que têm correspondência).
+  const sectionsCfg = (config.sections || {}) as Record<string, { enabled?: boolean; fields?: string[] }>
+  // Mapa seção do imóvel → seção do template:
+  //   patrimonioInfo→Identificação, acquisition→Financeiras, location→Localização,
+  //   depreciation→Medidas. Honra enabled E os campos por seção (field-level).
   const sectionEnabled = (key: string): boolean => sectionsCfg[key]?.enabled ?? true
+
+  // Campo → rótulo + valor (HTML permitido p/ a "situação" com badge). Espelha
+  // os campos de imóvel de src/lib/ficha-fields.ts.
+  const labelStyle = 'margin: 0; font-size: 10px; color: #64748b; font-weight: 600;'
+  const valueStyle = 'margin: 3px 0 0 0; font-size: 12px; color: #1e293b;'
+  const situacaoBadge = (): string => {
+    const s = imovel.situacao
+    const style =
+      s === 'ativo' ? 'background: #dcfce7; color: #166534;' :
+      s === 'alugado' ? 'background: #dbeafe; color: #1e40af;' :
+      s === 'desativado' ? 'background: #fee2e2; color: #991b1b;' :
+      'background: #f3f4f6; color: #374151;'
+    return `<span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-weight: 600; ${style}">${s?.toUpperCase() || '-'}</span>`
+  }
+  const IMOVEL_FIELD_META: Record<string, { label: string; value: () => string; fullWidth?: boolean }> = {
+    denominacao: { label: 'DENOMINAÇÃO', value: () => imovel.denominacao || '-', fullWidth: true },
+    tipo_imovel: { label: 'TIPO DE IMÓVEL', value: () => imovel.tipo_imovel || '-' },
+    situacao: { label: 'SITUAÇÃO', value: situacaoBadge },
+    endereco: { label: 'ENDEREÇO COMPLETO', value: () => imovel.endereco || '-', fullWidth: true },
+    setor: { label: 'SETOR RESPONSÁVEL', value: () => imovel.setor || '-' },
+    latitude: { label: 'LATITUDE', value: () => (imovel.latitude != null ? String(imovel.latitude) : '-') },
+    longitude: { label: 'LONGITUDE', value: () => (imovel.longitude != null ? String(imovel.longitude) : '-') },
+    data_aquisicao: { label: 'DATA DE AQUISIÇÃO', value: () => (imovel.data_aquisicao ? formatDate(imovel.data_aquisicao) : '-') },
+    valor_aquisicao: { label: 'VALOR DE AQUISIÇÃO', value: () => (imovel.valor_aquisicao != null ? formatCurrency(imovel.valor_aquisicao) : '-') },
+    area_terreno: { label: 'ÁREA DO TERRENO', value: () => (imovel.area_terreno != null ? `${imovel.area_terreno} m²` : '-') },
+    area_construida: { label: 'ÁREA CONSTRUÍDA', value: () => (imovel.area_construida != null ? `${imovel.area_construida} m²` : '-') },
+  }
+  // Campos selecionados de uma seção; cai no fallback (defaults de imóvel) se o
+  // config não traz campos válidos — ex.: template legado salvo com campos de bem.
+  const sectionFields = (key: string, fallback: string[]): string[] => {
+    const f = sectionsCfg[key]?.fields
+    const valid = Array.isArray(f) ? f.filter((k) => IMOVEL_FIELD_META[k]) : []
+    return valid.length > 0 ? valid : fallback
+  }
+  const renderFields = (keys: string[]): string =>
+    keys
+      .filter((k) => IMOVEL_FIELD_META[k])
+      .map((k) => {
+        const meta = IMOVEL_FIELD_META[k]
+        return `<div style="${meta.fullWidth ? 'grid-column: 1 / -1;' : ''}">
+            <p style="${labelStyle}">${meta.label}</p>
+            <p style="${valueStyle}${k === 'denominacao' ? ' font-weight: bold; font-size: 14px;' : ''}">${meta.value()}</p>
+          </div>`
+      })
+      .join('')
+
+  const piFields = sectionFields('patrimonioInfo', ['denominacao', 'tipo_imovel', 'situacao'])
+  const acqFields = sectionFields('acquisition', ['data_aquisicao', 'valor_aquisicao'])
+  const locFields = sectionFields('location', ['endereco', 'setor', 'latitude', 'longitude'])
+  const medidasFields = sectionFields('depreciation', ['area_terreno', 'area_construida'])
 
   // ✅ CORREÇÃO: Processar fotos ANTES de construir o HTML
   const processedPhotos: string[] = []
@@ -221,104 +273,53 @@ export const generateImovelPDF = async ({
         <p style="margin: 5px 0 0 0; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${imovel.numero_patrimonio}</p>
       </div>
 
-      ${sectionEnabled('patrimonioInfo') ? `
-      <!-- Seção 1: Identificação -->
+      ${sectionEnabled('patrimonioInfo') && piFields.length > 0 ? `
+      <!-- Seção 1: Identificação (campos por seção do template) -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #047857; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
           🏢 IDENTIFICAÇÃO DO IMÓVEL
         </h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div style="grid-column: 1 / -1;">
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">DENOMINAÇÃO</p>
-            <p style="margin: 3px 0 0 0; font-size: 14px; color: #1e293b; font-weight: bold;">${imovel.denominacao || '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">TIPO DE IMÓVEL</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${imovel.tipo_imovel || '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">SITUAÇÃO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px;">
-              <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-weight: 600; ${
-                imovel.situacao === 'ativo' ? 'background: #dcfce7; color: #166534;' :
-                imovel.situacao === 'alugado' ? 'background: #dbeafe; color: #1e40af;' :
-                imovel.situacao === 'desativado' ? 'background: #fee2e2; color: #991b1b;' :
-                'background: #f3f4f6; color: #374151;'
-              }">
-                ${imovel.situacao?.toUpperCase() || '-'}
-              </span>
-            </p>
-          </div>
+          ${renderFields(piFields)}
         </div>
       </div>
       ` : ''}
 
-      ${sectionEnabled('location') ? `
-      <!-- Seção 2: Localização -->
+      ${sectionEnabled('location') && locFields.length > 0 ? `
+      <!-- Seção 2: Localização (campos por seção do template) -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #047857; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
           📍 LOCALIZAÇÃO
         </h2>
-        <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">ENDEREÇO COMPLETO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${imovel.endereco || '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">SETOR RESPONSÁVEL</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${imovel.setor || '-'}</p>
-          </div>
-          ${imovel.latitude && imovel.longitude ? `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div>
-              <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">LATITUDE</p>
-              <p style="margin: 3px 0 0 0; font-size: 11px; color: #1e293b; font-family: monospace;">${imovel.latitude}</p>
-            </div>
-            <div>
-              <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">LONGITUDE</p>
-              <p style="margin: 3px 0 0 0; font-size: 11px; color: #1e293b; font-family: monospace;">${imovel.longitude}</p>
-            </div>
-          </div>
-          ` : ''}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          ${renderFields(locFields)}
         </div>
       </div>
       ` : ''}
 
-      ${sectionEnabled('acquisition') ? `
-      <!-- Seção 3: Informações Financeiras -->
+      ${sectionEnabled('acquisition') && acqFields.length > 0 ? `
+      <!-- Seção 3: Informações Financeiras (campos por seção do template) -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #047857; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
           💰 INFORMAÇÕES FINANCEIRAS
         </h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">DATA DE AQUISIÇÃO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${imovel.data_aquisicao ? formatDate(imovel.data_aquisicao) : '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">VALOR DE AQUISIÇÃO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b; font-weight: bold;">${imovel.valor_aquisicao ? formatCurrency(imovel.valor_aquisicao) : '-'}</p>
-          </div>
+          ${renderFields(acqFields)}
         </div>
       </div>
       ` : ''}
 
-      <!-- Seção 4: Medidas -->
+      ${sectionEnabled('depreciation') && medidasFields.length > 0 ? `
+      <!-- Seção 4: Medidas (mapeada de 'depreciation'; campos por seção) -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #047857; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
           📏 MEDIDAS E DIMENSÕES
         </h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">ÁREA DO TERRENO</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${imovel.area_terreno ? `${imovel.area_terreno} m²` : '-'}</p>
-          </div>
-          <div>
-            <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: 600;">ÁREA CONSTRUÍDA</p>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #1e293b;">${imovel.area_construida ? `${imovel.area_construida} m²` : '-'}</p>
-          </div>
+          ${renderFields(medidasFields)}
         </div>
       </div>
+      ` : ''}
 
       ${imovel.descricao ? `
       <!-- Seção 5: Descrição -->

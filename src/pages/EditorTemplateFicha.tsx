@@ -13,6 +13,12 @@ import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/services/http-api'
 import { FichaPreviewReal } from '@/components/FichaPreviewReal'
 import { logger } from '@/lib/logger'
+import {
+  FICHA_FIELDS_BY_TYPE,
+  FICHA_SECTION_META_BY_TYPE,
+  FICHA_DEFAULT_FIELDS_BY_TYPE,
+  type FichaType,
+} from '@/lib/ficha-fields'
 
 interface FichaTemplate {
   id: string
@@ -62,32 +68,6 @@ interface TemplateConfig {
   }
 }
 
-const availableFields = {
-  patrimonioInfo: [
-    { value: 'descricao_bem', label: 'Descrição do Bem' },
-    { value: 'tipo', label: 'Tipo' },
-    { value: 'marca', label: 'Marca' },
-    { value: 'modelo', label: 'Modelo' },
-    { value: 'cor', label: 'Cor' },
-    { value: 'numero_serie', label: 'Número de Série' }
-  ],
-  acquisition: [
-    { value: 'data_aquisicao', label: 'Data de Aquisição' },
-    { value: 'valor_aquisicao', label: 'Valor de Aquisição' },
-    { value: 'forma_aquisicao', label: 'Forma de Aquisição' }
-  ],
-  location: [
-    { value: 'setor_responsavel', label: 'Setor Responsável' },
-    { value: 'local_objeto', label: 'Local' },
-    { value: 'status', label: 'Status' }
-  ],
-  depreciation: [
-    { value: 'metodo_depreciacao', label: 'Método de Depreciação' },
-    { value: 'vida_util_anos', label: 'Vida Útil (anos)' },
-    { value: 'valor_residual', label: 'Valor Residual' }
-  ]
-}
-
 const fontFamilies = [
   'Arial',
   'Times New Roman',
@@ -113,10 +93,25 @@ export default function EditorTemplateFicha() {
     }
   }, [id])
 
-  // Função para normalizar o config do template
-  const normalizeConfig = (rawConfig: any): TemplateConfig => {
+  // Função para normalizar o config do template (type-aware).
+  // Saneia os campos por seção: mantém só os válidos para o TIPO; se um template
+  // legado trouxer campos de outro tipo (ex.: imóvel salvo com campos de bem),
+  // cai nos defaults daquele tipo — auto-heal.
+  const normalizeConfig = (rawConfig: any, type: FichaType): TemplateConfig => {
     if (!rawConfig) {
-      return getDefaultConfig()
+      return getDefaultConfig(type)
+    }
+
+    const defaults = FICHA_DEFAULT_FIELDS_BY_TYPE[type]
+    const pickFields = (
+      section: keyof typeof defaults,
+      raw: unknown,
+    ): string[] => {
+      const valid = new Set(
+        FICHA_FIELDS_BY_TYPE[type][section].map((f) => f.value),
+      )
+      const arr = Array.isArray(raw) ? raw.filter((k) => valid.has(k)) : []
+      return arr.length > 0 ? arr : defaults[section]
     }
 
     return {
@@ -134,21 +129,21 @@ export default function EditorTemplateFicha() {
         patrimonioInfo: {
           enabled: rawConfig.sections?.patrimonioInfo?.enabled ?? rawConfig.sections?.identificacao?.enabled ?? true,
           layout: rawConfig.sections?.patrimonioInfo?.layout ?? 'grid',
-          fields: rawConfig.sections?.patrimonioInfo?.fields ?? ['descricao_bem', 'tipo', 'marca', 'modelo'],
+          fields: pickFields('patrimonioInfo', rawConfig.sections?.patrimonioInfo?.fields),
           showPhoto: rawConfig.sections?.patrimonioInfo?.showPhoto ?? true,
           photoSize: rawConfig.sections?.patrimonioInfo?.photoSize ?? 'medium'
         },
         acquisition: {
           enabled: rawConfig.sections?.acquisition?.enabled ?? rawConfig.sections?.aquisicao?.enabled ?? true,
-          fields: rawConfig.sections?.acquisition?.fields ?? ['data_aquisicao', 'valor_aquisicao', 'forma_aquisicao']
+          fields: pickFields('acquisition', rawConfig.sections?.acquisition?.fields)
         },
         location: {
           enabled: rawConfig.sections?.location?.enabled ?? rawConfig.sections?.localizacao?.enabled ?? true,
-          fields: rawConfig.sections?.location?.fields ?? ['setor_responsavel', 'local_objeto']
+          fields: pickFields('location', rawConfig.sections?.location?.fields)
         },
         depreciation: {
           enabled: rawConfig.sections?.depreciation?.enabled ?? rawConfig.sections?.depreciacao?.enabled ?? true,
-          fields: rawConfig.sections?.depreciation?.fields ?? ['metodo_depreciacao', 'vida_util_anos', 'valor_residual']
+          fields: pickFields('depreciation', rawConfig.sections?.depreciation?.fields)
         }
       },
       signatures: {
@@ -165,8 +160,8 @@ export default function EditorTemplateFicha() {
     }
   }
 
-  // Configuração padrão
-  const getDefaultConfig = (): TemplateConfig => ({
+  // Configuração padrão (type-aware: campos por seção conforme o tipo).
+  const getDefaultConfig = (type: FichaType): TemplateConfig => ({
     header: {
       showLogo: true,
       logoSize: 'medium',
@@ -181,21 +176,21 @@ export default function EditorTemplateFicha() {
       patrimonioInfo: {
         enabled: true,
         layout: 'grid',
-        fields: ['descricao_bem', 'tipo', 'marca', 'modelo'],
+        fields: FICHA_DEFAULT_FIELDS_BY_TYPE[type].patrimonioInfo,
         showPhoto: true,
         photoSize: 'medium'
       },
       acquisition: {
         enabled: true,
-        fields: ['data_aquisicao', 'valor_aquisicao', 'forma_aquisicao']
+        fields: FICHA_DEFAULT_FIELDS_BY_TYPE[type].acquisition
       },
       location: {
         enabled: true,
-        fields: ['setor_responsavel', 'local_objeto']
+        fields: FICHA_DEFAULT_FIELDS_BY_TYPE[type].location
       },
       depreciation: {
         enabled: true,
-        fields: ['metodo_depreciacao', 'vida_util_anos', 'valor_residual']
+        fields: FICHA_DEFAULT_FIELDS_BY_TYPE[type].depreciation
       }
     },
     signatures: {
@@ -216,7 +211,8 @@ export default function EditorTemplateFicha() {
       setLoading(true)
       const response = await api.get<FichaTemplate>(`/ficha-templates/${id}`)
       setTemplate(response)
-      const normalizedConfig = normalizeConfig(response.config)
+      const fichaType: FichaType = response.type === 'imoveis' ? 'imoveis' : 'bens'
+      const normalizedConfig = normalizeConfig(response.config, fichaType)
       setConfig(normalizedConfig)
     } catch (error) {
       logger.error('Erro ao carregar template:', error)
@@ -320,6 +316,25 @@ export default function EditorTemplateFicha() {
   }
 
   const TypeIcon = getTypeIcon(template.type)
+  // Campos e títulos de seção conforme o TIPO do template (bens × imóveis).
+  const fichaType: FichaType = template.type === 'imoveis' ? 'imoveis' : 'bens'
+  const availableFields = FICHA_FIELDS_BY_TYPE[fichaType]
+  const sectionMeta = FICHA_SECTION_META_BY_TYPE[fichaType]
+  const isImovel = fichaType === 'imoveis'
+
+  // A prévia ao vivo (FichaPreviewReal) é específica de bens. Para imóvel, a
+  // ficha respeita os campos por seção na geração do PDF — exibimos um aviso em
+  // vez de dados de bem que não correspondem ao template.
+  const imovelPreviewNotice = (
+    <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <Building className="mx-auto mb-2 h-6 w-6 opacity-60" />
+      <p className="font-medium">Prévia ao vivo disponível para Bens.</p>
+      <p className="mt-1">
+        A ficha de imóvel respeita as seções e os campos selecionados ao gerar o
+        PDF. Use “Gerar Ficha” na tela do imóvel para visualizar.
+      </p>
+    </div>
+  )
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -497,19 +512,22 @@ export default function EditorTemplateFicha() {
 
             {/* Aba Seções */}
             <TabsContent value="sections" className="space-y-4">
-              {/* A seleção de campos por seção É aplicada tanto na ficha gerada
-                  (PDF de bem móvel) quanto na pré-visualização ao lado. */}
+              {/* A seleção de campos por seção é aplicada na ficha gerada (PDF).
+                  No bem, também reflete na pré-visualização ao lado; no imóvel a
+                  prévia ao vivo não está disponível (ver aviso na prévia). */}
               <div className="rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-200">
-                ℹ️ Os campos marcados por seção são aplicados na <strong>ficha gerada (PDF)</strong> e
-                refletidos na pré-visualização ao lado.
+                ℹ️ Os campos marcados por seção são aplicados na <strong>ficha gerada (PDF)</strong>
+                {isImovel
+                  ? ' do imóvel. A prévia ao vivo está disponível apenas para Bens.'
+                  : ' e refletidos na pré-visualização ao lado.'}
               </div>
               {/* Seção Patrimônio */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>Informações do Patrimônio</CardTitle>
-                      <CardDescription>Campos da seção principal</CardDescription>
+                      <CardTitle>{sectionMeta.patrimonioInfo.title}</CardTitle>
+                      <CardDescription>{sectionMeta.patrimonioInfo.description}</CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -525,44 +543,50 @@ export default function EditorTemplateFicha() {
                 </CardHeader>
                 {config.sections.patrimonioInfo.enabled && (
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="layout">Layout</Label>
-                        <select
-                          id="layout"
-                          value={config.sections.patrimonioInfo.layout}
-                          onChange={(e) => handleConfigChange('sections.patrimonioInfo.layout', e.target.value)}
-                          className="w-full px-3 py-2 border border-border rounded-md"
-                        >
-                          <option value="grid">Grade (2 colunas)</option>
-                          <option value="list">Lista (1 coluna)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label htmlFor="photoSize">Tamanho da Foto</Label>
-                        <select
-                          id="photoSize"
-                          value={config.sections.patrimonioInfo.photoSize}
-                          onChange={(e) => handleConfigChange('sections.patrimonioInfo.photoSize', e.target.value)}
-                          className="w-full px-3 py-2 border border-border rounded-md"
-                        >
-                          <option value="small">Pequeno</option>
-                          <option value="medium">Médio</option>
-                          <option value="large">Grande</option>
-                        </select>
-                      </div>
-                    </div>
+                    {/* Layout/foto só fazem sentido na ficha de bem; no imóvel a
+                        foto é uma seção própria (sempre que houver fotos). */}
+                    {!isImovel && (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="layout">Layout</Label>
+                            <select
+                              id="layout"
+                              value={config.sections.patrimonioInfo.layout}
+                              onChange={(e) => handleConfigChange('sections.patrimonioInfo.layout', e.target.value)}
+                              className="w-full px-3 py-2 border border-border rounded-md"
+                            >
+                              <option value="grid">Grade (2 colunas)</option>
+                              <option value="list">Lista (1 coluna)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <Label htmlFor="photoSize">Tamanho da Foto</Label>
+                            <select
+                              id="photoSize"
+                              value={config.sections.patrimonioInfo.photoSize}
+                              onChange={(e) => handleConfigChange('sections.patrimonioInfo.photoSize', e.target.value)}
+                              className="w-full px-3 py-2 border border-border rounded-md"
+                            >
+                              <option value="small">Pequeno</option>
+                              <option value="medium">Médio</option>
+                              <option value="large">Grande</option>
+                            </select>
+                          </div>
+                        </div>
 
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="showPhoto"
-                        checked={config.sections.patrimonioInfo.showPhoto}
-                        onChange={(e) => handleConfigChange('sections.patrimonioInfo.showPhoto', e.target.checked)}
-                        className="rounded"
-                      />
-                      <Label htmlFor="showPhoto">Mostrar Foto</Label>
-                    </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="showPhoto"
+                            checked={config.sections.patrimonioInfo.showPhoto}
+                            onChange={(e) => handleConfigChange('sections.patrimonioInfo.showPhoto', e.target.checked)}
+                            className="rounded"
+                          />
+                          <Label htmlFor="showPhoto">Mostrar Foto</Label>
+                        </div>
+                      </>
+                    )}
 
                     <div>
                       <Label className="mb-2 block">Campos a Exibir</Label>
@@ -592,8 +616,8 @@ export default function EditorTemplateFicha() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>Informações de Aquisição</CardTitle>
-                      <CardDescription>Dados sobre a compra do bem</CardDescription>
+                      <CardTitle>{sectionMeta.acquisition.title}</CardTitle>
+                      <CardDescription>{sectionMeta.acquisition.description}</CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -635,8 +659,8 @@ export default function EditorTemplateFicha() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>Localização e Estado</CardTitle>
-                      <CardDescription>Onde está e como está o bem</CardDescription>
+                      <CardTitle>{sectionMeta.location.title}</CardTitle>
+                      <CardDescription>{sectionMeta.location.description}</CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -673,13 +697,13 @@ export default function EditorTemplateFicha() {
                 )}
               </Card>
 
-              {/* Seção Depreciação */}
+              {/* Seção Depreciação (bens) / Medidas (imóveis) */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>Informações de Depreciação</CardTitle>
-                      <CardDescription>Dados de depreciação do bem</CardDescription>
+                      <CardTitle>{sectionMeta.depreciation.title}</CardTitle>
+                      <CardDescription>{sectionMeta.depreciation.description}</CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -917,9 +941,13 @@ export default function EditorTemplateFicha() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg overflow-hidden bg-white shadow-sm scale-50 origin-top-left" style={{ width: '200%' }}>
-                <FichaPreviewReal config={config} />
-              </div>
+              {isImovel ? (
+                imovelPreviewNotice
+              ) : (
+                <div className="border rounded-lg overflow-hidden bg-white shadow-sm scale-50 origin-top-left" style={{ width: '200%' }}>
+                  <FichaPreviewReal config={config} />
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -941,7 +969,7 @@ export default function EditorTemplateFicha() {
             </DialogTitle>
           </DialogHeader>
           <div className="mt-4">
-            <FichaPreviewReal config={config} />
+            {isImovel ? imovelPreviewNotice : <FichaPreviewReal config={config} />}
           </div>
         </DialogContent>
       </Dialog>

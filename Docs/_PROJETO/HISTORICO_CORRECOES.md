@@ -21,6 +21,32 @@
 
 ## 2026
 
+### 2026-06-28 — Field-level na ficha de IMÓVEL (campos por seção do template)
+- **Sintoma/limitação:** a ficha de imóvel honrava só `enabled` das seções; não havia
+  seleção de CAMPOS por seção (o editor só tinha campos de bem). Templates de imóvel
+  nasciam com campos de bem no config (ignorados pelo gerador).
+- **Correção:**
+  - Novo módulo `src/lib/ficha-fields.ts` com campos/defaults/títulos por TIPO
+    (bens × imóveis) e por seção, reutilizado pelo editor e (indiretamente) pelo gerador.
+  - `EditorTemplateFicha`/`NovoTemplateFicha` ficaram **type-aware**: campos
+    selecionáveis, títulos de seção e defaults conforme o tipo. As 4 seções fixas são
+    reaproveitadas no imóvel como Identificação/Financeiras/Localização/Medidas.
+    `normalizeConfig` saneia campos legados (imóvel salvo com campos de bem → cai nos
+    defaults de imóvel = auto-heal). Opções de foto/layout escondidas no imóvel.
+  - `ImovelPDFGenerator` passou a honrar `config.sections.*.fields` via
+    `IMOVEL_FIELD_META` + `sectionFields`/`renderFields` nas 4 seções mapeadas
+    (`patrimonioInfo→Identificação`, `acquisition→Financeiras`, `location→Localização`,
+    `depreciation→Medidas`); fallback p/ defaults quando o config não traz campos
+    válidos. Situação mantém o badge colorido; denominação/endereço ocupam linha cheia.
+  - Prévia ao vivo (`FichaPreviewReal`) é específica de bens; no imóvel mostra um aviso
+    honesto (em vez de dados de bem que não correspondem) — a fidelidade está no PDF.
+- **Arquivos:** `src/lib/ficha-fields.ts` (novo) + teste
+  `src/lib/__tests__/ficha-fields.test.ts`; `src/pages/EditorTemplateFicha.tsx`;
+  `src/pages/NovoTemplateFicha.tsx`; `src/components/imoveis/ImovelPDFGenerator.tsx`.
+- **Verificação:** frontend tsc 0, vitest 133/133 (3 novos: defaults ⊆ disponíveis etc.).
+- **Limitação restante:** prévia ao vivo de imóvel (live preview honrando campos) não
+  implementada — follow-up.
+
 ### 2026-06-28 — Paginação real na impressão de etiquetas (LabelPrintDialog)
 - **Sintoma:** ao imprimir mais etiquetas do que cabe numa página, todas iam para um
   único grid: o excedente caía em linhas implícitas que dividiam a mesma altura
