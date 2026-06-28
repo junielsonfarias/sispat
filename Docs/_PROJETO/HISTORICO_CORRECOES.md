@@ -21,6 +21,20 @@
 
 ## 2026
 
+### 2026-06-28 — Imóvel: endereço estruturado (feature completa) + fix de testes vitest
+- **Endereço estruturado (cep/bairro/cidade/estado):** antes o form declarava os campos no
+  zod mas sem inputs, coluna ou persistência (passavam por `.passthrough()` e se perdiam).
+  Agora ponta a ponta: migration `20260628130000_add_imovel_endereco_estruturado` (4 colunas
+  TEXT opcionais), validação no shared (cep, UF de 2 letras, max 100), persistência no
+  `imovelService` (create + `UPDATABLE_FIELDS`, `estado` em maiúsculo), inputs no
+  `ImoveisBasicoFields` (compartilhado → Create+Edit), exibição no `ImoveisView`. +3 testes.
+  Commit `77ba3aa`.
+- **Fix de testes vitest (regressão dos lotes 1/2):** os toggles de tipo de bem / forma de
+  aquisição passaram a usar PUT (rotas `/toggle*` não existiam) e `toCreateBody` da manutenção
+  passou a honrar `status` — mas os vitest correspondentes não foram atualizados na época e
+  quebraram (3 falhas). Alinhados ao comportamento novo (145/145). Commit `5dbfb0d`.
+  **Lição:** ao mudar contrato de um Context, rodar `npx vitest run` (não só o Jest do backend).
+
 ### 2026-06-28 — Auditoria CRUD: lote 3 (imóvel completo, documentos PDF, doação)
 Continuação dos lotes 1/2. Itens de frontend + 1 migration.
 - **Imóvel (edição) não editava vários campos:** `tipo_imovel`, `situacao`, `descricao`,
