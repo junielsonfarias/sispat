@@ -60,6 +60,7 @@ import {
 } from '@/components/ui/dialog'
 import { AssetTransferForm } from '@/components/bens/AssetTransferForm'
 import { generateImovelPDF } from '@/components/imoveis/ImovelPDFGenerator'
+import { useCustomization } from '@/contexts/CustomizationContext'
 
 const DetailItem = ({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon?: React.ElementType }) => (
   <div className="space-y-1">
@@ -75,6 +76,7 @@ export default function ImoveisView() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { settings } = useCustomization()
   const { getImovelById, deleteImovel } = useImovel()
   const [imovel, setImovel] = useState<Imovel | undefined>()
   const [isDeleting, setIsDeleting] = useState(false)
@@ -132,8 +134,8 @@ export default function ImoveisView() {
     try {
       const success = await generateImovelPDF({
         imovel,
-        municipalityName: 'Prefeitura Municipal', // Pode vir do contexto de customização
-        municipalityLogo: '/logo-government.svg', // Pode vir do contexto de customização
+        municipalityName: settings.prefeituraName || 'Prefeitura Municipal',
+        municipalityLogo: settings.activeLogoUrl || '/logo-government.svg',
       })
       
       if (success) {

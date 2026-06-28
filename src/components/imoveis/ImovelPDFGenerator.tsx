@@ -3,12 +3,15 @@ import { formatDate, formatCurrency, getCloudImageUrl } from '@/lib/utils'
 // jsPDF (~2MB) carregado dinamicamente no handler (await import) p/ não pesar o bundle inicial.
 import html2canvas from 'html2canvas'
 import { generateQRCode } from '@/lib/qr-code-utils'
+import { api } from '@/services/http-api'
 import { logger } from '@/lib/logger'
 
 interface ImovelPDFGeneratorProps {
   imovel: Imovel
   municipalityName?: string
   municipalityLogo?: string
+  /** Template de ficha (type='imoveis'). Se omitido, usa o template padrão do município. */
+  templateId?: string
 }
 
 /**
@@ -81,7 +84,38 @@ export const generateImovelPDF = async ({
   imovel,
   municipalityName = 'Prefeitura Municipal',
   municipalityLogo = '/logo-government.svg',
+  templateId,
 }: ImovelPDFGeneratorProps) => {
+  // --- Template de ficha (type='imoveis') ----------------------------------
+  // Aplica o template escolhido (ou o padrão do município) à ficha do imóvel:
+  // cabeçalho, seções habilitadas, assinaturas e fonte. A seleção de CAMPOS por
+  // seção do editor é específica de bens móveis (não há campos de imóvel ainda),
+  // então aqui honramos enabled/header/assinaturas/estilo — não o field-level.
+  let template: any = null
+  try {
+    if (templateId) {
+      template = await api.get(`/ficha-templates/${templateId}`)
+    } else {
+      const all = await api.get('/ficha-templates')
+      const list = Array.isArray(all) ? all : []
+      template =
+        list.find((t: any) => t.type === 'imoveis' && t.isDefault && t.isActive !== false) ||
+        list.find((t: any) => t.type === 'imoveis' && t.isActive !== false) ||
+        null
+    }
+  } catch (error) {
+    logger.warn('[PDF Imóvel] Falha ao carregar template; usando layout padrão', { error })
+  }
+
+  const config = template?.config || {}
+  const headerConfig = config.header || {}
+  const signaturesConfig = config.signatures || { enabled: false }
+  const stylingConfig = config.styling || {}
+  const fontFamily = stylingConfig.fonts?.family || 'Arial, sans-serif'
+  const sectionsCfg = (config.sections || {}) as Record<string, { enabled?: boolean }>
+  // Mapa seção do imóvel → seção do template (as 3 que têm correspondência).
+  const sectionEnabled = (key: string): boolean => sectionsCfg[key]?.enabled ?? true
+
   // ✅ CORREÇÃO: Processar fotos ANTES de construir o HTML
   const processedPhotos: string[] = []
   
@@ -142,7 +176,7 @@ export const generateImovelPDF = async ({
   container.style.width = '210mm' // A4 width
   container.style.padding = '20mm'
   container.style.backgroundColor = '#ffffff'
-  container.style.fontFamily = 'Arial, sans-serif'
+  container.style.fontFamily = fontFamily
   
   // HTML do PDF
   container.innerHTML = `
@@ -150,16 +184,22 @@ export const generateImovelPDF = async ({
       <!-- Cabeçalho -->
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #10b981;">
         <div style="display: flex; align-items: center; gap: 15px;">
-          <img src="${processedLogo}" alt="Logo" style="height: 60px; width: auto;" onerror="this.style.display='none'" />
+          ${headerConfig.showLogo !== false ? `<img src="${processedLogo}" alt="Logo" style="height: ${headerConfig.logoSize === 'small' ? '45px' : headerConfig.logoSize === 'large' ? '70px' : '60px'}; width: auto;" onerror="this.style.display='none'" />` : ''}
           <div>
             <h1 style="margin: 0; font-size: 20px; color: #047857; font-weight: bold;">${municipalityName}</h1>
             <p style="margin: 5px 0 0 0; font-size: 12px; color: #64748b;">Ficha de Cadastro de Imóvel</p>
+            ${headerConfig.showSecretariat !== false && (headerConfig.customTexts?.secretariat || headerConfig.customTexts?.department) ? `
+            <p style="margin: 6px 0 0 0; font-size: 10px; color: #475569; font-weight: 500;">${headerConfig.customTexts?.secretariat || ''}</p>
+            <p style="margin: 0; font-size: 10px; color: #475569; font-weight: 500;">${headerConfig.customTexts?.department || ''}</p>
+            ` : ''}
           </div>
         </div>
+        ${headerConfig.showDate !== false ? `
         <div style="text-align: right;">
           <p style="margin: 0; font-size: 11px; color: #64748b;">Data de Emissão</p>
           <p style="margin: 3px 0 0 0; font-size: 12px; font-weight: bold;">${formatDate(new Date())}</p>
         </div>
+        ` : ''}
       </div>
 
       <!-- QR Code para consulta pública - tamanho aumentado para melhor legibilidade -->
@@ -179,6 +219,7 @@ export const generateImovelPDF = async ({
         <p style="margin: 5px 0 0 0; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${imovel.numero_patrimonio}</p>
       </div>
 
+      ${sectionEnabled('patrimonioInfo') ? `
       <!-- Seção 1: Identificação -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #047857; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
@@ -208,7 +249,9 @@ export const generateImovelPDF = async ({
           </div>
         </div>
       </div>
+      ` : ''}
 
+      ${sectionEnabled('location') ? `
       <!-- Seção 2: Localização -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #047857; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
@@ -237,7 +280,9 @@ export const generateImovelPDF = async ({
           ` : ''}
         </div>
       </div>
+      ` : ''}
 
+      ${sectionEnabled('acquisition') ? `
       <!-- Seção 3: Informações Financeiras -->
       <div style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #047857; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">
@@ -254,6 +299,7 @@ export const generateImovelPDF = async ({
           </div>
         </div>
       </div>
+      ` : ''}
 
       <!-- Seção 4: Medidas -->
       <div style="margin-bottom: 20px;">
@@ -357,6 +403,22 @@ export const generateImovelPDF = async ({
           ` : ''}
         </div>
       </div>
+
+      ${signaturesConfig.enabled === true ? `
+      <!-- Linhas para Assinaturas (do template) -->
+      <div style="margin-top: 50px;">
+        <div style="display: grid; grid-template-columns: ${signaturesConfig.layout === 'vertical' ? '1fr' : `repeat(${signaturesConfig.count || 2}, 1fr)`}; gap: ${signaturesConfig.layout === 'vertical' ? '30px' : '40px'};">
+          ${[...Array(signaturesConfig.count || 2)].map((_, i) => `
+            <div style="text-align: center;">
+              <div style="border-top: 1px solid #000; width: 100%; padding-top: 8px;">
+                <p style="margin: 0; font-size: 11px; color: #000; font-weight: 500;">${signaturesConfig.labels?.[i] || `Assinatura ${i + 1}`}</p>
+                ${signaturesConfig.showDates !== false ? `<p style="margin: 5px 0 0 0; font-size: 10px; color: #666;">Data: ___/___/_______</p>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
 
       <!-- Rodapé -->
       <div style="margin-top: 30px; padding-top: 15px; border-top: 2px solid #e5e7eb; text-align: center;">
