@@ -75,6 +75,12 @@ PM2 rodando `dist/index.js`, verificação pós-instalação. Corrigidos:
   localmente** reproduzindo o layout da VPS (alias `@sispat/shared`→`shared/dist/index.js`,
   fora de node_modules): build PASSA com o fix (e o build normal pnpm segue OK, sem
   regressão). Este era o bloqueador final do build na VPS.
+- **FASE 4 (seed) pendurava a instalação:** após o build passar, o `npm run prisma:seed`
+  (ts-node) travou >5min na VPS (ts-node compila tudo em runtime, pesado após o build
+  com 2 vCPU) — **sem timeout** → congelava o terminal/instalação. **Fix:** usar a versão
+  COMPILADA `npm run prisma:seed:prod` (`node dist/prisma/seed.js`, backend já buildado na
+  FASE 3) **com `timeout -k 15 300`**; fallback manual de criação do admin também ganhou
+  `timeout` + reverificação real via psql (não declara sucesso cego). `bash -n` OK.
 - **Nota:** existe um 2º instalador `install-sispat.sh` (708 linhas, "simplificado") que JÁ
   usa `127.0.0.1`, não cria systemd e builda o shared — também válido. Usa o mesmo
   `ecosystem.config.js` (agora corrigido). Não-bloqueadores deixados: cluster só volta com

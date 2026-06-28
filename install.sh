@@ -1362,9 +1362,13 @@ PERMEOF
     export STATE="$STATE"
     export BCRYPT_ROUNDS="12"
     
-    npm run prisma:seed 2>&1 | tee -a "$LOG_FILE"
-    
-    if [ $? -eq 0 ]; then
+    # Seed com a versão COMPILADA (node dist/prisma/seed.js — backend já buildado na
+    # FASE 3) em vez de ts-node: muito mais rápido e estável (o ts-node compila tudo
+    # em runtime e travava na VPS sob carga após o build). timeout evita pendurar a
+    # instalação se algo empacar; o | tee mantém o fluxo de verificação abaixo.
+    timeout -k 15 300 npm run prisma:seed:prod 2>&1 | tee -a "$LOG_FILE"
+
+    if true; then
         echo ""
         
         # Verificar se usuário foi realmente criado
@@ -1407,9 +1411,15 @@ async function createUser() {
 createUser().catch(console.error).finally(() => prisma.\$disconnect());
 USEREOF
             
-            node /tmp/create-user.js
+            timeout -k 15 120 node /tmp/create-user.js || warning "Falha/timeout ao criar admin manualmente (ver $LOG_FILE)"
             rm -f /tmp/create-user.js
-            success "Superusuário criado manualmente"
+            # Reverifica de fato (não declarar sucesso cego)
+            user_count=$(sudo -u postgres psql -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM users WHERE email = '$SUPERUSER_EMAIL';" 2>/dev/null | tr -d ' ')
+            if [ "$user_count" = "1" ]; then
+                success "Superusuário criado manualmente"
+            else
+                warning "⚠️  Admin ainda não criado. Após o fim, rode: cd $INSTALL_DIR/backend && npm run prisma:seed:prod"
+            fi
         fi
         
         success "✨ Banco de dados configurado e populado"
