@@ -21,6 +21,37 @@
 
 ## 2026
 
+### 2026-06-28 — Auditoria CRUD: lote 3 (imóvel completo, documentos PDF, doação)
+Continuação dos lotes 1/2. Itens de frontend + 1 migration.
+- **Imóvel (edição) não editava vários campos:** `tipo_imovel`, `situacao`, `descricao`,
+  `observacoes`, `latitude`, `longitude`, `url_documentos` existiam no banco e no
+  `UPDATABLE_FIELDS`/bloco de conversões do `imovelService`, mas o `baseSchema` da tela de
+  edição não os tinha → eram removidos do payload e não havia inputs. Adicionados ao schema,
+  defaultValues e JSX (espelhando o `ImoveisCreate`). Commit `fcbc517`.
+- **Documentos PDF descartados:** o input "Documentos PDF" guardava `File[]` em
+  `documentos_pdf`, enviado cru no payload (`...data`) ao criar bem/imóvel. `File` não
+  serializa em JSON → anexos perdidos. Agora `onSubmit` faz `uploadMultipleFiles`
+  (`/api/upload/multiple`, com magic bytes p/ `application/pdf`) e mescla as URLs em
+  `documentos`. `BensCreate.tsx` + `ImoveisCreate.tsx`. Commit `5526908`.
+- **Doação de bens quebrada (ponta a ponta):** a UI (`AssetTransferForm` `type=doacao`,
+  botão em `BensView`/`ImoveisView`) dava 400 — backend exigia `setorDestino` e o
+  `TransferContext` não repassava `tipo`/`destinatário`/anexos; não havia colunas.
+  **Migration `20260628120000_add_transfer_doacao`:** `tipo` (default transferencia),
+  `destinatarioExterno`, `documentosAnexos TEXT[]`, e `setorDestino` → NULLABLE.
+  `transferService.createTransfer` valida por tipo; `approveTransfer` ramifica (doação
+  **baixa** o bem, restrito a admin/superuser; transferência mantém fluxo). `createTransferSchema`
+  com `superRefine` condicional. +4 testes (27/27). Commit `36bcbfe`.
+- **Campos customizados do imóvel (edição) não carregavam/salvavam:** a Edit montava os
+  campos top-level por `field.id`, mas Create/backend usam `field.key` aninhado em
+  `customFields`. Alinhado à Create. Commit `3a2cc80`.
+- **Verificação:** front `tsc` = 0; back `tsc` = 0; **581 testes Jest verdes**.
+- **Pegadinha registrada:** `prisma generate` trava o DLL com o server rodando → usar
+  `npx prisma generate --no-engine` regenera só os TIPOS (sem tocar no DLL). Ao reiniciar o
+  backend local depois, rodar `prisma generate` completo (o deploy já faz).
+- **Deferidos (decisão de produto):** endereço estruturado do imóvel (cep/bairro/cidade/estado
+  são schema morto no form — sem inputs, sem dado perdido); `MunicipalityForm` morto;
+  `@@unique([municipalityId, codigo])` em setor (migration arriscada, baixo valor).
+
 ### 2026-06-28 — Auditoria CRUD: correções de persistência/validação (lote 1) + upload de logo
 Auditoria completa (2 agentes, 4 camadas form→zod→controller→Prisma) de todos os CRUDs.
 **Lote 1 corrigido** (perda silenciosa no UPDATE / 400 / 404, sem migration):
