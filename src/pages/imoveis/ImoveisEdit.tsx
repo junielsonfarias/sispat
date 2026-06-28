@@ -48,6 +48,26 @@ const baseSchema = z.object({
     .min(0, 'O valor deve ser maior ou igual a zero.'),
   area_terreno: z.coerce.number().optional(),
   area_construida: z.coerce.number().optional(),
+  // Campos que existem no banco (Imovel) mas não eram editáveis pela tela de
+  // edição — eram removidos do payload por não estarem no schema. Nullable
+  // porque os registros podem ter esses campos vazios.
+  tipo_imovel: z.string().max(50).optional().nullable(),
+  situacao: z.string().max(50).optional().nullable(),
+  descricao: z.string().optional().nullable(),
+  observacoes: z.string().optional().nullable(),
+  url_documentos: z.string().optional().nullable(),
+  latitude: z
+    .preprocess(
+      (v) => (v === '' || v === undefined ? null : v),
+      z.coerce.number().min(-90).max(90).nullable(),
+    )
+    .optional(),
+  longitude: z
+    .preprocess(
+      (v) => (v === '' || v === undefined ? null : v),
+      z.coerce.number().min(-180).max(180).nullable(),
+    )
+    .optional(),
   // Posse (Art. 13 §3): imóveis em cessão/comodato não integram o ativo.
   tipo_posse: z.enum(['proprio', 'cessao', 'comodato']).default('proprio'),
   fotos: z.array(z.any()).optional(),
@@ -105,6 +125,13 @@ export default function ImoveisEdit() {
       valor_aquisicao: 0,
       area_terreno: undefined,
       area_construida: undefined,
+      tipo_imovel: '',
+      situacao: '',
+      descricao: '',
+      observacoes: '',
+      url_documentos: '',
+      latitude: undefined,
+      longitude: undefined,
       tipo_posse: 'proprio',
       fotos: [],
       documentos: [],
@@ -263,6 +290,79 @@ export default function ImoveisEdit() {
                   />
 
                   <ImoveisDataAquisicaoField control={form.control} />
+
+                  <FormField
+                    control={form.control}
+                    name="tipo_imovel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Imóvel</FormLabel>
+                        <FormControl>
+                          <SearchableSelect
+                            options={[
+                              { value: 'residencial', label: 'Residencial' },
+                              { value: 'comercial', label: 'Comercial' },
+                              { value: 'industrial', label: 'Industrial' },
+                              { value: 'rural', label: 'Rural' },
+                              { value: 'publico', label: 'Público' },
+                              { value: 'educacional', label: 'Educacional' },
+                              { value: 'saude', label: 'Saúde' },
+                              { value: 'outros', label: 'Outros' },
+                            ]}
+                            value={(field.value as string) ?? ''}
+                            onChange={field.onChange}
+                            placeholder="Selecione o tipo"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="situacao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Situação</FormLabel>
+                        <FormControl>
+                          <SearchableSelect
+                            options={[
+                              { value: 'ativo', label: 'Ativo' },
+                              { value: 'inativo', label: 'Inativo' },
+                              { value: 'manutencao', label: 'Em Manutenção' },
+                              { value: 'reforma', label: 'Em Reforma' },
+                              { value: 'demolido', label: 'Demolido' },
+                              { value: 'vendido', label: 'Vendido' },
+                              { value: 'alugado', label: 'Alugado' },
+                            ]}
+                            value={(field.value as string) ?? ''}
+                            onChange={field.onChange}
+                            placeholder="Selecione a situação"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="descricao"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            value={(field.value as string) ?? ''}
+                            placeholder="Descrição detalhada do imóvel"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -317,10 +417,95 @@ export default function ImoveisEdit() {
               </CardContent>
             </Card>
 
-            {/* Mídia */}
+            {/* Localização Geográfica */}
             <Card className="border-0 shadow-lg bg-card">
               <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Mídia</CardTitle>
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Localização Geográfica</CardTitle>
+              </CardHeader>
+              <CardContent className="px-6 pb-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="latitude"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Latitude</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.000001"
+                            {...field}
+                            value={(field.value as number | undefined) ?? ''}
+                            placeholder="Ex: -2.5489"
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Coordenada de latitude (opcional)
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="longitude"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Longitude</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.000001"
+                            {...field}
+                            value={(field.value as number | undefined) ?? ''}
+                            placeholder="Ex: -48.5544"
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Coordenada de longitude (opcional)
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Observações */}
+            <Card className="border-0 shadow-lg bg-card">
+              <CardHeader className="pb-4 px-6 pt-6">
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Observações</CardTitle>
+              </CardHeader>
+              <CardContent className="px-6 pb-6 space-y-6">
+                <FormField
+                  control={form.control}
+                  name="observacoes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Observações Gerais</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          value={(field.value as string) ?? ''}
+                          placeholder="Informações adicionais sobre o imóvel, histórico, particularidades, etc."
+                          rows={4}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Mídia e Documentos */}
+            <Card className="border-0 shadow-lg bg-card">
+              <CardHeader className="pb-4 px-6 pt-6">
+                <CardTitle className="text-lg lg:text-xl font-semibold text-foreground">Mídia e Documentos</CardTitle>
               </CardHeader>
               <CardContent className="px-6 pb-6 space-y-6">
                 <div>
@@ -331,6 +516,31 @@ export default function ImoveisEdit() {
                     assetId={imovel.id}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="url_documentos"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        URL de Documentos{' '}
+                        <span className="text-muted-foreground font-normal">(opcional)</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={(field.value as string) ?? ''}
+                          type="text"
+                          placeholder="https://drive.google.com/... (opcional)"
+                        />
+                      </FormControl>
+                      <p className="text-sm text-muted-foreground">
+                        Link para documentos externos (Google Drive, etc.)
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 
