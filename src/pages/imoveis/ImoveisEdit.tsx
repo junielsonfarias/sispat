@@ -85,31 +85,22 @@ export default function ImoveisEdit() {
   const [imovel, setImovel] = useState<Imovel | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Criar schema dinâmico baseado nos campos customizados
+  // Criar schema dinâmico baseado nos campos customizados.
+  // Espelha o ImoveisCreate: valores aninhados em `customFields` e chaveados
+  // por `field.key` (o backend grava/lê customFields por key). Antes a Edit
+  // usava field.id top-level → não carregava nem salvava os valores custom.
   const imovelEditSchema = useMemo(() => {
-    let schema: z.AnyZodObject = baseSchema
+    const customFieldSchema = customFieldConfigs.reduce(
+      (acc, field) => {
+        acc[field.key] = z.any().optional()
+        return acc
+      },
+      {} as Record<string, z.ZodTypeAny>,
+    )
 
-    customFieldConfigs.forEach((field) => {
-      if (field.type === 'TEXT' || field.type === 'TEXTAREA') {
-        schema = schema.extend({
-          [field.id]: z.string().optional(),
-        })
-      } else if (field.type === 'NUMBER') {
-        schema = schema.extend({
-          [field.id]: z.coerce.number().optional(),
-        })
-      } else if (field.type === 'DATE') {
-        schema = schema.extend({
-          [field.id]: z.string().optional(),
-        })
-      } else if (field.type === 'CURRENCY') {
-        schema = schema.extend({
-          [field.id]: z.coerce.number().optional(),
-        })
-      }
+    return baseSchema.extend({
+      customFields: z.object(customFieldSchema).optional(),
     })
-
-    return schema
   }, [customFieldConfigs])
 
   type ImovelFormValues = z.infer<typeof imovelEditSchema>
@@ -135,6 +126,7 @@ export default function ImoveisEdit() {
       tipo_posse: 'proprio',
       fotos: [],
       documentos: [],
+      customFields: {},
     },
   })
 
@@ -157,6 +149,7 @@ export default function ImoveisEdit() {
             tipo_posse: data.tipo_posse || 'proprio',
             fotos: data.fotos || [],
             documentos: data.documentos || [],
+            customFields: (data.customFields as Record<string, unknown>) || {},
           })
         } else {
           toast({
@@ -554,26 +547,27 @@ export default function ImoveisEdit() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {customFieldConfigs.map((field) => (
                       <FormField
-                        key={field.id}
+                        key={field.key}
                         control={form.control}
-                        name={field.id as string & keyof ImovelFormValues}
+                        name={`customFields.${field.key}` as string & keyof ImovelFormValues}
                         render={({ field: formField }) => (
                           <FormItem>
                             <FormLabel>{field.label}</FormLabel>
                             <FormControl>
                               {field.type === 'TEXTAREA' ? (
-                                <Textarea {...formField} placeholder={(field as unknown as { placeholder?: string }).placeholder} />
+                                <Textarea {...formField} value={(formField.value as string) ?? ''} placeholder={(field as unknown as { placeholder?: string }).placeholder} />
                               ) : field.type === 'NUMBER' || field.type === 'CURRENCY' ? (
                                 <Input
                                   type="number"
                                   {...formField}
+                                  value={(formField.value as number | string | undefined) ?? ''}
                                   onChange={(e) => formField.onChange(parseFloat(e.target.value) || undefined)}
                                   placeholder={(field as unknown as { placeholder?: string }).placeholder}
                                 />
                               ) : field.type === 'DATE' ? (
-                                <Input type="date" {...formField} />
+                                <Input type="date" {...formField} value={(formField.value as string) ?? ''} />
                               ) : (
-                                <Input {...formField} placeholder={(field as unknown as { placeholder?: string }).placeholder} />
+                                <Input {...formField} value={(formField.value as string) ?? ''} placeholder={(field as unknown as { placeholder?: string }).placeholder} />
                               )}
                             </FormControl>
                             <FormMessage />
