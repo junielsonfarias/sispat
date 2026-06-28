@@ -146,6 +146,25 @@ export function LabelPrintDialog({
       return
     }
 
+    // Lista achatada (bem × cópias) com cópias adjacentes por bem, e quebra em
+    // páginas de `labelsPerPage` — base da paginação real (1 .label-page por
+    // página A4 com page-break).
+    const allLabels: Array<{ asset: Patrimonio; copy: number }> = []
+    for (const asset of assetsToPrint) {
+      for (let copy = 0; copy < printOptions.copies; copy++) {
+        allLabels.push({ asset, copy })
+      }
+    }
+    const pages: Array<Array<{ asset: Patrimonio; copy: number }>> = []
+    for (let i = 0; i < allLabels.length; i += labelsPerPage) {
+      pages.push(allLabels.slice(i, i + labelsPerPage))
+    }
+
+    const tplWidth = selectedTemplate.width || 60
+    const tplHeight = selectedTemplate.height || 40
+    const pageW = printOptions.orientation === 'landscape' ? 297 : 210
+    const pageH = printOptions.orientation === 'landscape' ? 210 : 297
+
     const printWindow = window.open('', '_blank')
     
     if (!printWindow) {
@@ -173,128 +192,122 @@ export function LabelPrintDialog({
 
     printWindow.document.write(`
       <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Trilhas FIXAS em mm casando com a etiqueta (antes eram 1fr, e a
+           label-item em mm estourava a página). Cada .label-page é uma página
+           A4 com quebra real. */
+        .label-page {
+          width: ${pageW}mm;
+          padding: ${printOptions.margin}mm;
+          box-sizing: border-box;
+          display: grid;
+          grid-template-columns: repeat(${cols}, ${tplWidth}mm);
+          grid-auto-rows: ${tplHeight}mm;
+          gap: ${printOptions.margin}mm;
+          justify-content: center;
+          align-content: start;
+          page-break-after: always;
+          break-after: page;
+        }
+        .label-page:last-child { page-break-after: auto; break-after: auto; }
+        .label-item {
+          width: ${tplWidth}mm;
+          height: ${tplHeight}mm;
+          position: relative;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          ${printOptions.showBorders ? 'border: 1px solid #ccc;' : ''}
+          ${printOptions.showCutGuides ? 'border: 1px dashed #999;' : ''}
+          overflow: hidden;
+        }
         @media print {
-          @page { 
+          @page {
             ${orientationStyle}
             margin: 0;
           }
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
           body {
-            margin: 0;
-            padding: 0;
-            width: ${printOptions.orientation === 'landscape' ? '297mm' : '210mm'};
-            min-height: ${printOptions.orientation === 'landscape' ? '210mm' : '297mm'};
-            position: relative;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          .labels-grid {
-            display: grid;
-            grid-template-columns: repeat(${cols}, 1fr);
-            grid-template-rows: repeat(${rows}, 1fr);
-            gap: ${printOptions.margin}mm;
-            padding: ${printOptions.margin}mm;
-            width: 100%;
-            height: 100%;
-          }
-          .label-item {
-            width: ${selectedTemplate?.width || 60}mm;
-            height: ${selectedTemplate?.height || 40}mm;
-            position: relative;
-            page-break-inside: avoid;
-            ${printOptions.showBorders ? 'border: 1px solid #ccc;' : ''}
-            ${printOptions.showCutGuides ? 'border: 1px dashed #999;' : ''}
-            overflow: hidden;
-          }
-          .cut-guide {
-            position: absolute;
-            border: 1px dashed #999;
-            pointer-events: none;
-          }
+          .label-page { background: white; }
         }
         @media screen {
-          body {
-            width: ${printOptions.orientation === 'landscape' ? '297mm' : '210mm'};
-            min-height: ${printOptions.orientation === 'landscape' ? '210mm' : '297mm'};
-            margin: 20px auto;
-            background: #f0f0f0;
-            padding: 20px;
-          }
-          .labels-grid {
-            display: grid;
-            grid-template-columns: repeat(${cols}, 1fr);
-            grid-template-rows: repeat(${rows}, 1fr);
-            gap: ${printOptions.margin}mm;
+          body { background: #f0f0f0; padding: 20px; }
+          .label-page {
+            min-height: ${pageH}mm;
+            margin: 0 auto 20px auto;
             background: white;
-            padding: ${printOptions.margin}mm;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
           }
         }
       </style>
     `)
 
-    printWindow.document.write('</head><body><div class="labels-grid">')
+    printWindow.document.write('</head><body>')
 
-    // Renderizar etiquetas
+    // Renderizar etiquetas — uma .label-page por página A4 (quebra real)
     if (selectedTemplate && selectedTemplate.elements) {
-      for (let copy = 0; copy < printOptions.copies; copy++) {
-        for (const asset of assetsToPrint) {
-          // Criar container para etiqueta
+      for (const pageLabels of pages) {
+        printWindow.document.write('<div class="label-page">')
+        for (const { asset, copy } of pageLabels) {
           printWindow.document.write(`<div class="label-item">`)
-          printWindow.document.write(`<div id="label-${asset.id}-${copy}" style="width: ${selectedTemplate.width * 4}px; height: ${selectedTemplate.height * 4}px; position: relative; background: white;">`)
-          
+          // Conteúdo preenche 100% da etiqueta (mm) — antes era fixo em px
+          // (width*4) e não casava com a caixa em mm.
+          printWindow.document.write(`<div id="label-${asset.id}-${copy}" style="width: 100%; height: 100%; position: relative; background: white;">`)
+
           // Renderizar elementos do template
           selectedTemplate.elements.forEach((el: LabelElement) => {
-          let content = ''
-          if (el.type === 'LOGO') {
-            content = `<img src="${settings?.activeLogoUrl || ''}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`
-          } else if (el.type === 'PATRIMONIO_FIELD') {
-            // Mesma formatação da prévia (moeda/data/contagem) — sem isso a etiqueta
-            // impressa divergia (ex.: "4500" em vez de "R$ 4.500,00").
-            content = formatLabelFieldValue(asset[el.content as keyof Patrimonio], el.content as string)
-          } else if (el.type === 'TEXT') {
-            content = el.content || ''
-          } else if (el.type === 'QR_CODE') {
-            // QR code será carregado via JavaScript
-            content = `<div id="qr-${asset.id}-${copy}" style="width: 100%; height: 100%;"></div>`
-          }
+            let content = ''
+            if (el.type === 'LOGO') {
+              content = `<img src="${settings?.activeLogoUrl || ''}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`
+            } else if (el.type === 'PATRIMONIO_FIELD') {
+              // Mesma formatação da prévia (moeda/data/contagem) — sem isso a etiqueta
+              // impressa divergia (ex.: "4500" em vez de "R$ 4.500,00").
+              content = formatLabelFieldValue(asset[el.content as keyof Patrimonio], el.content as string)
+            } else if (el.type === 'TEXT') {
+              content = el.content || ''
+            } else if (el.type === 'QR_CODE') {
+              // QR code será carregado via JavaScript
+              content = `<div id="qr-${asset.id}-${copy}" style="width: 100%; height: 100%;"></div>`
+            }
 
-          printWindow.document.write(`
-            <div style="position: absolute; left: ${el.x}%; top: ${el.y}%; width: ${el.width}%; height: ${el.height}%; font-size: ${el.fontSize}px; font-weight: ${el.fontWeight}; text-align: ${el.textAlign};">
-              ${content}
-            </div>
-          `)
+            printWindow.document.write(`
+              <div style="position: absolute; left: ${el.x}%; top: ${el.y}%; width: ${el.width}%; height: ${el.height}%; font-size: ${el.fontSize}px; font-weight: ${el.fontWeight}; text-align: ${el.textAlign};">
+                ${content}
+              </div>
+            `)
           })
-          
+
           printWindow.document.write('</div></div>')
         }
+        printWindow.document.write('</div>')
       }
     } else {
       printWindow.document.write('<div style="padding: 20px; text-align: center; color: red;">Erro: Template não encontrado</div>')
     }
 
-    printWindow.document.write('</div></body></html>')
+    printWindow.document.write('</body></html>')
     printWindow.document.close()
 
     // Aguardar carregamento e gerar QR codes
     setTimeout(async () => {
       if (printWindow.document) {
-        // Gerar QR codes
+        // Gerar QR codes — itera a mesma lista achatada usada na renderização
+        // (cache por número evita regenerar o mesmo QR em cópias do mesmo bem).
         const { generatePatrimonioQRCode } = await import('@/lib/qr-code-utils')
-        for (let copy = 0; copy < printOptions.copies; copy++) {
-          for (const asset of assetsToPrint) {
-            const qrElement = printWindow.document.getElementById(`qr-${asset.id}-${copy}`)
-            if (qrElement) {
-              try {
-                const qrUrl = await generatePatrimonioQRCode(asset.numero_patrimonio, 'bem')
-                qrElement.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;" />`
-              } catch (error) {
-                logger.error('Erro ao gerar QR code:', error)
+        const qrCacheByNumero = new Map<string, string>()
+        for (const { asset, copy } of allLabels) {
+          const qrElement = printWindow.document.getElementById(`qr-${asset.id}-${copy}`)
+          if (qrElement) {
+            try {
+              let qrUrl = qrCacheByNumero.get(asset.numero_patrimonio)
+              if (!qrUrl) {
+                qrUrl = await generatePatrimonioQRCode(asset.numero_patrimonio, 'bem')
+                qrCacheByNumero.set(asset.numero_patrimonio, qrUrl)
               }
+              qrElement.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;" />`
+            } catch (error) {
+              logger.error('Erro ao gerar QR code:', error)
             }
           }
         }
@@ -714,8 +727,11 @@ export function LabelPrintDialog({
                       <div
                         className="grid"
                         style={{
-                          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                          gridTemplateRows: `repeat(${rows}, 1fr)`,
+                          // Trilhas fixas casando com a etiqueta + centralizado,
+                          // espelhando o layout da impressão (página 1).
+                          gridTemplateColumns: `repeat(${cols}, ${selectedTemplate.width * 4}px)`,
+                          gridAutoRows: `${selectedTemplate.height * 4}px`,
+                          justifyContent: 'center',
                           gap: `${printOptions.margin}mm`,
                         }}
                       >

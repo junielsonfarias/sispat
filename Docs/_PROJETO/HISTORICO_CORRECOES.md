@@ -21,6 +21,30 @@
 
 ## 2026
 
+### 2026-06-28 — Paginação real na impressão de etiquetas (LabelPrintDialog)
+- **Sintoma:** ao imprimir mais etiquetas do que cabe numa página, todas iam para um
+  único grid: o excedente caía em linhas implícitas que dividiam a mesma altura
+  (etiquetas espremidas/sobrepostas) e não havia quebra de página. Além disso a
+  `.label-item` tinha largura fixa em mm dentro de trilhas `1fr` → estouro horizontal.
+- **Causa-raiz:** `handlePrint` montava um só `.labels-grid` com
+  `grid-template-rows: repeat(rows, 1fr)` + `height: 100%` e itens em mm.
+- **Correção:** a lista de etiquetas (bem × cópias, cópias adjacentes por bem) é
+  achatada e **quebrada em páginas de `labelsPerPage`**; cada página vira um
+  `.label-page` (uma folha A4) com `page-break-after: always` (último `auto`) e grid de
+  **trilhas fixas em mm** (`grid-template-columns: repeat(cols, ${w}mm)` +
+  `grid-auto-rows: ${h}mm`, `justify-content: center`) — casando com o tamanho físico
+  da etiqueta, sem distorção nem estouro. O conteúdo da etiqueta passou a preencher
+  100% da caixa em mm (antes era fixo em `width*4px`, que não casava com mm). QR codes
+  agora iteram a mesma lista achatada e têm cache por `numero_patrimonio` (não regenera
+  o mesmo QR em cópias). A prévia na tela espelha o layout (trilhas fixas centralizadas,
+  página 1).
+- **Arquivos:** `src/components/bens/LabelPrintDialog.tsx`.
+- **Verificação:** frontend tsc 0, vitest 130/130. Teste manual: selecionar >12
+  etiquetas (ou cópias) e Imprimir → cada página A4 com a grade correta e quebra real.
+- **Lição:** para impressão física de etiquetas, trilhas de grid devem ser **fixas no
+  tamanho real (mm)**, nunca `1fr` (que distorce o tamanho do adesivo); paginação =
+  um container por folha com `page-break-after`.
+
 ### 2026-06-28 — Caça-bugs geral em fichas/etiquetas/relatórios (auditoria + correção)
 3 auditores read-only varreram as 3 áreas; achados concretos corrigidos:
 
