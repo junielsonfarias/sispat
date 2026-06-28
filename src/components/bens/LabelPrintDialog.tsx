@@ -376,6 +376,9 @@ export function LabelPrintDialog({
 
     setIsExporting(true)
     try {
+      // Dá um tempo para o QR (gerado async no LabelPreview) renderizar antes da
+      // captura — senão a etiqueta pode sair com o placeholder "Carregando QR...".
+      await new Promise((resolve) => setTimeout(resolve, 350))
       const canvas = await html2canvas(previewRef.current, {
         scale: 2,
         useCORS: true,
@@ -446,6 +449,9 @@ export function LabelPrintDialog({
 
     setIsExporting(true)
     try {
+      // Dá um tempo para o QR (gerado async no LabelPreview) renderizar antes da
+      // captura — senão a etiqueta pode sair com o placeholder "Carregando QR...".
+      await new Promise((resolve) => setTimeout(resolve, 350))
       const canvas = await html2canvas(previewRef.current, {
         scale: 2,
         useCORS: true,
