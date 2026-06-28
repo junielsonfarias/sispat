@@ -132,7 +132,9 @@ export const generateImovelPDF = async ({
       }
     } catch (error) {
       logger.warn('❌ [PDF Imóvel] Erro ao processar fotos:', { error })
-      // Fallback: usar URLs convertidas sem compressão
+      // Fallback: usar URLs convertidas sem compressão. Limpa o que já foi
+      // processado antes da falha para não duplicar fotos no PDF.
+      processedPhotos.length = 0
       imovel.fotos.slice(0, 6).forEach(photo => {
         processedPhotos.push(getCloudImageUrl(photo))
       })

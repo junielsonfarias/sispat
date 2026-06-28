@@ -21,6 +21,59 @@
 
 ## 2026
 
+### 2026-06-28 — Caça-bugs geral em fichas/etiquetas/relatórios (auditoria + correção)
+3 auditores read-only varreram as 3 áreas; achados concretos corrigidos:
+
+**Fichas:**
+- 🔴 `EditorTemplateFicha.tsx`: `parseInt(e.target.value)` no "Número de Assinaturas"
+  retornava `NaN` ao limpar o campo → `[...Array(NaN)]` → `RangeError: Invalid array
+  length` → **tela branca** no editor. Sanitizado com `Math.min(4, Math.max(1, …||1))`
+  + guarda no spread. Mesmo NaN em `NovoTemplateFicha.tsx` causava 400 silencioso.
+- 🟡 `EditorTemplateFicha.tsx`: default de `depreciation.fields` usava a chave
+  inexistente `'vida_util'` (canônica é `vida_util_anos`) → campo descartado pelo
+  `renderFieldGrid` (filtra por `FIELD_META`). Alinhado a `['metodo_depreciacao',
+  'vida_util_anos', 'valor_residual']` (igual a `NovoTemplateFicha`).
+- 🟡 `PatrimonioPDFGenerator.tsx`: toggle "Mostrar Foto"
+  (`sections.patrimonioInfo.showPhoto`) era ignorado — bloco de foto sempre
+  renderizado. Agora honra `showPhoto` (mantendo o QR de consulta pública, que é
+  separado) e colapsa para coluna única quando não há foto nem QR.
+- 🟡 `ImovelPDFGenerator.tsx`: no `catch` do loop de compressão, o fallback
+  re-adicionava TODAS as fotos sobre as já processadas → **fotos duplicadas** no PDF.
+  Limpa `processedPhotos` antes do fallback.
+- 🟡 `PDFConfigDialog.tsx`: `selectedSections` só inicializava na montagem; ao reabrir
+  o diálogo para outro bem (props `hasPhotos`/`hasDepreciation`/`isBaixado` mudam) a
+  seleção ficava obsoleta. `useEffect` re-sincroniza ao abrir.
+- 🟡 `ImovelReportTemplateContext.tsx` + `ImoveisReportEditor.tsx`: toast de sucesso
+  **duplicado e prematuro** + `navigate` sem aguardar o save (em erro, mostrava
+  sucesso E erro). `saveTemplate` agora retorna `Promise<boolean>`; o editor aguarda e
+  só navega em sucesso, sem toast próprio.
+- 🟢 valor `0` (doação/residual zero) exibido como "—": trocada checagem truthy por
+  `!= null` em `PatrimonioPDFGenerator`/`FichaPreviewReal`.
+
+**Etiquetas:**
+- 🟡 `GerarEtiquetas.tsx`: `selectedTemplateId` inicializava com o id mock
+  (`default-60x40`) e, quando a API substituía a lista, o id sumia → `selectedTemplate`
+  `undefined` → botão Imprimir travado. `useEffect` re-sincroniza quando o id não está
+  mais na lista.
+- 🟡 `GerarEtiquetas.tsx`: botão "Gerenciar Modelos" só aparecia para `supervisor`, mas
+  o backend (`labelTemplateRoutes`) permite `admin` também — admin perdia acesso na UI.
+  Liberado p/ `admin`+`supervisor`.
+- 🟢 `GerarEtiquetas.tsx`: filtro de busca chamava `.toLowerCase()` em campos
+  possivelmente nulos em runtime → crash da página. Adicionado `?? ''`.
+
+**Relatórios:**
+- 🟡 `ReportView.tsx`: off-by-one no filtro de data final — `dateTo` vinha meia-noite e
+  `dataAquisicao > dateTo` excluía bens adquiridos no próprio dia. `setHours(23,59,59,
+  999)` (igual a `Exportacao.tsx`).
+- 🟡 `ReportView.tsx`: filtro por tipo comparava só `p.tipo`, mas a exibição prioriza
+  `tipoBem.nome` e o filtro envia o nome — relatório zerava quando o tipo vinha da
+  relação. Alinhado a `(tipoBem?.nome ?? p.tipo)`.
+- 🟢 `ReportLayoutEditor.tsx`: soltar um componente fora de alvo válido (`over` null)
+  movia-o para o fim (`newIndex = -1` no `arrayMove`). Guardado com `if (over && …)`.
+
+Verificação: frontend tsc 0, vitest 130/130. Sem furos novos de multi-tenant/IDOR
+(auditores confirmaram filtros por `municipalityId` OK em report/ficha/label).
+
 ### 2026-06-28 — Exportação de relatórios: XLSX binário real + PDF com tabela real
 - **Sintoma:** A exportação "Excel" gerava um `.xlsx` que o Excel/LibreOffice abriam
   com aviso "o formato e a extensão não conferem"; a exportação "PDF" de relatório

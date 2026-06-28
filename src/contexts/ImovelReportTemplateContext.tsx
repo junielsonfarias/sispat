@@ -17,7 +17,7 @@ interface ImovelReportTemplateContextType {
   getTemplateById: (id: string) => ImovelReportTemplate | undefined
   saveTemplate: (
     template: Omit<ImovelReportTemplate, 'id'> | ImovelReportTemplate,
-  ) => void
+  ) => Promise<boolean>
   deleteTemplate: (templateId: string) => void
 }
 
@@ -59,8 +59,8 @@ export const ImovelReportTemplateProvider = ({
   )
 
   const saveTemplate = useCallback(
-    async (template: Omit<ImovelReportTemplate, 'id'> | ImovelReportTemplate) => {
-      if (!user) return
+    async (template: Omit<ImovelReportTemplate, 'id'> | ImovelReportTemplate): Promise<boolean> => {
+      if (!user) return false
 
       try {
         if ('id' in template && template.id) {
@@ -70,12 +70,14 @@ export const ImovelReportTemplateProvider = ({
         }
         await fetchTemplates()
         toast({ description: 'Template de relatório salvo com sucesso.' })
+        return true
       } catch (error) {
         toast({
           variant: 'destructive',
           title: 'Erro',
           description: 'Falha ao salvar template de relatório.',
         })
+        return false
       }
     },
     [user, fetchTemplates],

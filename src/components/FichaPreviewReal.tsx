@@ -78,7 +78,7 @@ export const FichaPreviewReal = ({
     cor: { label: 'COR', value: () => samplePatrimonio.cor || '—' },
     numero_serie: { label: 'NÚMERO DE SÉRIE', value: () => samplePatrimonio.numero_serie || '—' },
     data_aquisicao: { label: 'DATA DE AQUISIÇÃO', value: () => (samplePatrimonio.data_aquisicao ? formatDate(samplePatrimonio.data_aquisicao) : '—') },
-    valor_aquisicao: { label: 'VALOR DE AQUISIÇÃO', value: () => (samplePatrimonio.valor_aquisicao ? formatCurrency(samplePatrimonio.valor_aquisicao) : '—') },
+    valor_aquisicao: { label: 'VALOR DE AQUISIÇÃO', value: () => (samplePatrimonio.valor_aquisicao != null ? formatCurrency(samplePatrimonio.valor_aquisicao) : '—') },
     forma_aquisicao: { label: 'FORMA DE AQUISIÇÃO', value: () => samplePatrimonio.forma_aquisicao || '—' },
     setor_responsavel: { label: 'SETOR RESPONSÁVEL', value: () => samplePatrimonio.setor_responsavel || '—' },
     local_objeto: { label: 'LOCAL DO OBJETO', value: () => samplePatrimonio.local_objeto || '—' },

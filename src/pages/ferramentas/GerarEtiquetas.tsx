@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Search, Printer, X, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -70,6 +70,21 @@ const GerarEtiquetas = () => {
     [templates, selectedTemplateId],
   )
 
+  // A lista de templates começa com os mocks do context e é SUBSTITUÍDA quando a
+  // API responde — o id inicial (ex.: 'default-60x40') deixa de existir e o
+  // select/Imprimir ficaria preso num template inexistente. Re-sincroniza quando
+  // o id selecionado não está mais na lista.
+  useEffect(() => {
+    if (
+      templates.length > 0 &&
+      !templates.some((t) => t.id === selectedTemplateId)
+    ) {
+      setSelectedTemplateId(
+        templates.find((t) => t.isDefault)?.id ?? templates[0].id,
+      )
+    }
+  }, [templates, selectedTemplateId])
+
   const combinedData: Asset[] = useMemo(() => {
     if (assetType === 'bem') {
       return patrimonios.map((p) => ({ ...p, assetType: 'bem' }))
@@ -80,22 +95,22 @@ const GerarEtiquetas = () => {
 
   const filteredData = useMemo(() => {
     if (!debouncedSearchTerm) return combinedData
-    return combinedData.filter(
-      (p) =>
-        (p.assetType === 'bem'
+    const term = debouncedSearchTerm.toLowerCase()
+    return combinedData.filter((p) => {
+      const nome =
+        p.assetType === 'bem'
           ? (p as Patrimonio).descricao_bem
           : (p as Imovel).denominacao
-        )
-          .toLowerCase()
-          .includes(debouncedSearchTerm.toLowerCase()) ||
-        p.numero_patrimonio.includes(debouncedSearchTerm) ||
-        (p.assetType === 'bem'
+      const setor =
+        p.assetType === 'bem'
           ? (p as Patrimonio).setor_responsavel
           : (p as Imovel).setor
-        )
-          .toLowerCase()
-          .includes(debouncedSearchTerm.toLowerCase()),
-    )
+      return (
+        (nome ?? '').toLowerCase().includes(term) ||
+        (p.numero_patrimonio ?? '').includes(debouncedSearchTerm) ||
+        (setor ?? '').toLowerCase().includes(term)
+      )
+    })
   }, [combinedData, debouncedSearchTerm])
 
   const handleSelectItem = (item: Asset, checked: boolean) => {
@@ -237,7 +252,7 @@ const GerarEtiquetas = () => {
                   }
                   placeholder="Selecione um modelo"
                 />
-                {user?.role === 'supervisor' && (
+                {(user?.role === 'supervisor' || user?.role === 'admin') && (
                   <Button
                     variant="outline"
                     className="w-full"

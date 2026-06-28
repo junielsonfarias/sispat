@@ -201,10 +201,12 @@ const ReportLayoutEditor = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
-    if (active.id !== over?.id && template) {
+    // over é null quando solto fora de um alvo válido — sem este guard,
+    // newIndex viraria -1 e arrayMove moveria o componente para o fim.
+    if (over && active.id !== over.id && template) {
       const currentLayout = template.layout || []
       const oldIndex = currentLayout.findIndex((item) => item.id === active.id)
-      const newIndex = currentLayout.findIndex((item) => item.id === over?.id)
+      const newIndex = currentLayout.findIndex((item) => item.id === over.id)
 
       setTemplate({
         ...template,

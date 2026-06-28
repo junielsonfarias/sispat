@@ -172,6 +172,8 @@ export const generatePatrimonioPDF = async ({
     return Array.isArray(f) && f.length > 0 ? f : fallback
   }
   const sectionEnabled = (key: string): boolean => sectionsCfg[key]?.enabled ?? true
+  // Toggle "Mostrar Foto" do editor (default true); antes era ignorado no PDF.
+  const showPhoto = sectionsCfg.patrimonioInfo?.showPhoto !== false
 
   // Mapa campo → rótulo + valor formatado (espelha availableFields do editor).
   const FIELD_META: Record<string, { label: string; value: () => string }> = {
@@ -182,14 +184,14 @@ export const generatePatrimonioPDF = async ({
     cor: { label: 'COR', value: () => patrimonio.cor || '-' },
     numero_serie: { label: 'NÚMERO DE SÉRIE', value: () => patrimonio.numero_serie || '-' },
     data_aquisicao: { label: 'DATA DE AQUISIÇÃO', value: () => (patrimonio.data_aquisicao ? formatDate(patrimonio.data_aquisicao) : '-') },
-    valor_aquisicao: { label: 'VALOR DE AQUISIÇÃO', value: () => (patrimonio.valor_aquisicao ? formatCurrency(patrimonio.valor_aquisicao) : '-') },
+    valor_aquisicao: { label: 'VALOR DE AQUISIÇÃO', value: () => (patrimonio.valor_aquisicao != null ? formatCurrency(patrimonio.valor_aquisicao) : '-') },
     forma_aquisicao: { label: 'FORMA DE AQUISIÇÃO', value: () => patrimonio.forma_aquisicao || '-' },
     setor_responsavel: { label: 'SETOR RESPONSÁVEL', value: () => patrimonio.setor_responsavel || '-' },
     local_objeto: { label: 'LOCAL', value: () => patrimonio.local_objeto || '-' },
     status: { label: 'STATUS', value: () => (patrimonio.status ? String(patrimonio.status).toUpperCase() : '-') },
     metodo_depreciacao: { label: 'MÉTODO DE DEPRECIAÇÃO', value: () => patrimonio.metodo_depreciacao || '-' },
     vida_util_anos: { label: 'VIDA ÚTIL (ANOS)', value: () => (patrimonio.vida_util_anos != null ? String(patrimonio.vida_util_anos) : '-') },
-    valor_residual: { label: 'VALOR RESIDUAL', value: () => (patrimonio.valor_residual ? formatCurrency(patrimonio.valor_residual) : '-') },
+    valor_residual: { label: 'VALOR RESIDUAL', value: () => (patrimonio.valor_residual != null ? formatCurrency(patrimonio.valor_residual) : '-') },
   }
   // Gera os blocos rótulo/valor apenas dos campos selecionados (e conhecidos).
   const renderFieldGrid = (keys: string[]): string =>
@@ -377,13 +379,15 @@ export const generatePatrimonioPDF = async ({
         </h2>
         
         <!-- Campos selecionados (config.sections.patrimonioInfo.fields) + foto -->
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
+        <div style="display: grid; grid-template-columns: ${showPhoto || qrCodeUrl ? '2fr 1fr' : '1fr'}; gap: 20px; align-items: start;">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px;">
             ${renderFieldGrid(piFields)}
           </div>
 
-          <!-- Foto - Otimizada -->
+          ${showPhoto || qrCodeUrl ? `
+          <!-- Coluna da direita: foto (se showPhoto) + QR de consulta pública -->
           <div style="text-align: center;">
+            ${showPhoto ? `
             <p style="margin: 0; font-size: 11px; color: #374151; font-weight: 600; margin-bottom: 8px;">FOTO</p>
             <div style="width: 100%; height: 160px; border: 2px solid #d1d5db; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
               ${compressedPhoto ? `
@@ -391,7 +395,8 @@ export const generatePatrimonioPDF = async ({
                 <span style="display: none; font-size: 12px; color: #6b7280;">Sem foto</span>
               ` : '<span style="font-size: 12px; color: #6b7280;">Sem foto</span>'}
             </div>
-            
+            ` : ''}
+
             <!-- QR Code para consulta pública - tamanho aumentado para melhor legibilidade -->
             ${qrCodeUrl ? `
             <div style="margin-top: 12px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
@@ -401,6 +406,7 @@ export const generatePatrimonioPDF = async ({
             </div>
             ` : ''}
           </div>
+          ` : ''}
         </div>
       </div>
       ` : ''}

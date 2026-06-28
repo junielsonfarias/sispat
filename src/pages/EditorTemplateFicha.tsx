@@ -148,7 +148,7 @@ export default function EditorTemplateFicha() {
         },
         depreciation: {
           enabled: rawConfig.sections?.depreciation?.enabled ?? rawConfig.sections?.depreciacao?.enabled ?? true,
-          fields: rawConfig.sections?.depreciation?.fields ?? ['valor_residual', 'vida_util']
+          fields: rawConfig.sections?.depreciation?.fields ?? ['metodo_depreciacao', 'vida_util_anos', 'valor_residual']
         }
       },
       signatures: {
@@ -195,7 +195,7 @@ export default function EditorTemplateFicha() {
       },
       depreciation: {
         enabled: true,
-        fields: ['valor_residual', 'vida_util']
+        fields: ['metodo_depreciacao', 'vida_util_anos', 'valor_residual']
       }
     },
     signatures: {
@@ -751,7 +751,12 @@ export default function EditorTemplateFicha() {
                           min="1"
                           max="4"
                           value={config.signatures.count}
-                          onChange={(e) => handleConfigChange('signatures.count', parseInt(e.target.value))}
+                          onChange={(e) =>
+                            handleConfigChange(
+                              'signatures.count',
+                              Math.min(4, Math.max(1, parseInt(e.target.value, 10) || 1)),
+                            )
+                          }
                         />
                       </div>
                       <div>
@@ -782,7 +787,7 @@ export default function EditorTemplateFicha() {
                     <div>
                       <Label className="mb-2 block">Labels das Assinaturas</Label>
                       <div className="space-y-2">
-                        {[...Array(config.signatures.count)].map((_, index) => (
+                        {[...Array(Math.max(0, Number(config.signatures.count) || 0))].map((_, index) => (
                           <Input
                             key={index}
                             placeholder={`Label da assinatura ${index + 1}`}

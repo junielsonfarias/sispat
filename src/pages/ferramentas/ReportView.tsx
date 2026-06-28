@@ -76,7 +76,9 @@ const ReportView = () => {
       setor: setor || undefined,
       tipo: tipo || undefined,
       dateFrom: dateFrom ? new Date(dateFrom) : undefined,
-      dateTo: dateTo ? new Date(dateTo) : undefined,
+      // Fim do dia para incluir o dia final inteiro (data_aquisicao pode ter
+      // hora); sem isso, bens adquiridos no próprio dia final eram excluídos.
+      dateTo: dateTo ? new Date(new Date(dateTo).setHours(23, 59, 59, 999)) : undefined,
     }
   }, [searchParams])
 
@@ -99,9 +101,14 @@ const ReportView = () => {
       filtered = filtered.filter(p => p.setor_responsavel === filters.setor)
     }
 
-    // Filtro por tipo
+    // Filtro por tipo — alinhado à exibição (getColumnValue): o nome pode estar
+    // em tipoBem.nome (relação) ou no campo legado p.tipo. Comparar só p.tipo
+    // zerava o relatório quando o tipo vinha da relação.
     if (filters.tipo) {
-      filtered = filtered.filter(p => p.tipo === filters.tipo)
+      filtered = filtered.filter(p => {
+        const tipoBemNome = (p as unknown as Record<string, unknown>).tipoBem as { nome?: string } | undefined
+        return (tipoBemNome?.nome ?? p.tipo) === filters.tipo
+      })
     }
 
     // Filtro por data de aquisição

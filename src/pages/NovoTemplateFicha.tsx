@@ -343,7 +343,12 @@ export default function NovoTemplateFicha() {
                     min="1"
                     max="4"
                     value={formData.config.signatures.count}
-                    onChange={(e) => handleConfigChange('signatures.count', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleConfigChange(
+                        'signatures.count',
+                        Math.min(4, Math.max(1, parseInt(e.target.value, 10) || 1)),
+                      )
+                    }
                   />
                 </div>
                 <div>

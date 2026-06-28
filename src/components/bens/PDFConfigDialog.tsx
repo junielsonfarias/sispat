@@ -165,6 +165,17 @@ export const PDFConfigDialog = ({
     availableSections.map(s => s.id)
   )
 
+  // O useState só roda na montagem; ao reabrir o diálogo para OUTRO bem (props
+  // hasPhotos/hasDepreciation/isBaixado mudam), as seções disponíveis mudam e a
+  // seleção ficava obsoleta. Re-sincroniza ao abrir / quando as condições mudam.
+  useEffect(() => {
+    if (open) {
+      setSelectedSections(availableSections.map(s => s.id))
+    }
+    // availableSections é recriado a cada render; depender das props primitivas.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, hasPhotos, hasObservations, hasDepreciation, isBaixado])
+
   const toggleSection = (sectionId: string) => {
     const section = sections.find(s => s.id === sectionId)
     if (section?.required) return // Não permite desmarcar seções obrigatórias

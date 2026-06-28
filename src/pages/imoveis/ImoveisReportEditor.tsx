@@ -41,10 +41,12 @@ export default function ImoveisReportEditor() {
     }
   }, [templateId, getTemplateById, user, navigate])
 
-  const handleSave = (data: Omit<ImovelReportTemplate, 'id'>) => {
-    saveTemplate({ ...data, id: template?.id || generateId() })
-    toast({ description: 'Modelo salvo com sucesso!' })
-    navigate('/imoveis/relatorios/templates')
+  const handleSave = async (data: Omit<ImovelReportTemplate, 'id'>) => {
+    // saveTemplate já emite o toast de sucesso/erro; só navega se salvou.
+    const ok = await saveTemplate({ ...data, id: template?.id || generateId() })
+    if (ok) {
+      navigate('/imoveis/relatorios/templates')
+    }
   }
 
   if (!template)
