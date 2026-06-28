@@ -27,6 +27,9 @@ export const MUNICIPALITY_CONFIG: Municipality = {
 // Constantes para uso em toda a aplicação
 export const MUNICIPALITY_ID = '1'
 export const MUNICIPALITY_NAME = 'São Sebastião da Boa Vista'
+export const MUNICIPALITY_STATE = 'PA'
+/** Nome do município com UF, para cabeçalhos/assinaturas: "São Sebastião da Boa Vista - PA". */
+export const MUNICIPALITY_NAME_WITH_UF = `${MUNICIPALITY_NAME} - ${MUNICIPALITY_STATE}`
 export const MUNICIPALITY_SHORT_NAME = 'SSB Vista'
 export const MUNICIPALITY_CNPJ = '12.345.678/0001-99'
 export const MUNICIPALITY_EMAIL = 'contato@ssbv.pa.gov.br'

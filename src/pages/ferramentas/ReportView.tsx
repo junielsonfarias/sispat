@@ -37,7 +37,7 @@ import {
   ZoomOut,
   Download,
 } from 'lucide-react'
-import { MUNICIPALITY_NAME } from '@/config/municipality'
+import { MUNICIPALITY_NAME, MUNICIPALITY_NAME_WITH_UF } from '@/config/municipality'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 // jspdf (385KB) e html2canvas (200KB) são lazy-loaded em handleDownloadPDF
@@ -332,11 +332,22 @@ const ReportView = () => {
       setPdfStage('Montando relatório...')
       await yieldToBrowser()
 
-      // --- Cabeçalho com branding (logo + município + subtítulo + data) ---
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const HEADER_H = 34 // espaço reservado p/ o cabeçalho (repetido em toda página)
+      const reportTitle = template?.name || 'Relatório'
+      const now = new Date()
+      const generatedAt = `${formatDate(now)} ${now.toLocaleTimeString('pt-BR')}`
+
+      // Dados do município (todos exibidos no cabeçalho de TODAS as páginas)
+      const prefeitura = municipalityData?.name || 'Prefeitura'
+      const secretaria = municipalityData?.secretaria || ''
+      const departamento = municipalityData?.departamento || ''
       const headerComp = template?.layout?.find((c) => c.type === 'HEADER')
       const subtitle =
         (headerComp?.props as { subtitle?: string } | undefined)?.subtitle ||
         'Relatório de Patrimônio'
+
+      // Logo (carregada uma vez, reaproveitada em cada página)
       let logoDataUrl: string | null = null
       const logoUrl = municipalityData?.logoUrl
       if (logoUrl) {
@@ -349,32 +360,48 @@ const ReportView = () => {
             r.onerror = reject
             r.readAsDataURL(blob)
           })
-        } catch (e) {
+        } catch {
           logger.debug('Logo não carregada para o PDF', { logoUrl })
         }
       }
-      let textX = margin
-      if (logoDataUrl) {
-        try {
-          pdf.addImage(logoDataUrl, 'PNG', margin, 10, 22, 16)
-          textX = margin + 28
-        } catch {
-          /* logo inválida — ignora */
-        }
-      }
-      pdf.setFontSize(15)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text(municipalityData?.name || 'Relatório', textX, 17)
-      pdf.setFontSize(10)
-      pdf.setFont('helvetica', 'normal')
-      pdf.setTextColor(90)
-      pdf.text(subtitle, textX, 23)
-      pdf.setFontSize(9)
-      pdf.text(`Data: ${formatDate(new Date())}`, pageWidth - margin, 13, { align: 'right' })
-      pdf.setTextColor(0)
 
-      let cursorY = 32
-      // Resumo de filtros aplicados (em texto, quebrando linha se preciso)
+      // Cabeçalho com TODAS as informações do município — redesenhado por página.
+      const drawHeader = () => {
+        let tx = margin
+        if (logoDataUrl) {
+          try {
+            pdf.addImage(logoDataUrl, 'PNG', margin, 7, 20, 15)
+            tx = margin + 25
+          } catch {
+            /* logo inválida — ignora */
+          }
+        }
+        pdf.setTextColor(0)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(13)
+        pdf.text(prefeitura, tx, 12)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(70)
+        pdf.setFontSize(8.5)
+        let hy = 17
+        pdf.text(MUNICIPALITY_NAME_WITH_UF, tx, hy)
+        hy += 4
+        if (secretaria) { pdf.text(secretaria, tx, hy); hy += 4 }
+        if (departamento) { pdf.text(departamento, tx, hy); hy += 4 }
+        pdf.setFont('helvetica', 'italic')
+        pdf.text(subtitle, tx, hy)
+        pdf.setFont('helvetica', 'normal')
+        // Data de geração (topo direito)
+        pdf.setFontSize(8.5)
+        pdf.setTextColor(70)
+        pdf.text('Data de geração:', pageWidth - margin, 10, { align: 'right' })
+        pdf.text(generatedAt, pageWidth - margin, 14, { align: 'right' })
+        pdf.setTextColor(0)
+        pdf.setDrawColor(200)
+        pdf.line(margin, HEADER_H - 3, pageWidth - margin, HEADER_H - 3)
+      }
+
+      // Resumo de filtros + total — só na 1ª página, logo abaixo do cabeçalho.
       const filterParts: string[] = []
       if (filters.status) filterParts.push(`Status: ${filters.status}`)
       if (filters.situacao_bem) filterParts.push(`Situação: ${filters.situacao_bem}`)
@@ -385,20 +412,24 @@ const ReportView = () => {
           `Período: ${filters.dateFrom ? formatDate(filters.dateFrom) : '...'} até ${filters.dateTo ? formatDate(filters.dateTo) : '...'}`,
         )
       }
-      pdf.setFontSize(8)
-      if (filterParts.length > 0) {
-        pdf.setTextColor(40, 80, 160)
-        const lines = pdf.splitTextToSize(
-          `Filtros: ${filterParts.join('   •   ')}`,
-          pageWidth - margin * 2,
-        )
-        pdf.text(lines, margin, cursorY)
-        cursorY += lines.length * 4 + 1
+      const filterLines =
+        filterParts.length > 0
+          ? pdf.splitTextToSize(`Filtros: ${filterParts.join('   •   ')}`, pageWidth - margin * 2)
+          : []
+      const filtersH = (filterLines.length > 0 ? filterLines.length * 4 + 1 : 0) + 5
+      const drawFilters = () => {
+        let fy = HEADER_H + 1
+        if (filterLines.length > 0) {
+          pdf.setFontSize(8)
+          pdf.setTextColor(40, 80, 160)
+          pdf.text(filterLines, margin, fy)
+          fy += filterLines.length * 4 + 1
+        }
+        pdf.setFontSize(8)
+        pdf.setTextColor(90)
+        pdf.text(`Total de registros: ${filteredPatrimonios.length}`, margin, fy)
+        pdf.setTextColor(0)
       }
-      pdf.setTextColor(90)
-      pdf.text(`Total de registros: ${filteredPatrimonios.length}`, margin, cursorY)
-      pdf.setTextColor(0)
-      cursorY += 4
 
       // --- Tabela (autotable) ---
       const fields = (template?.fields || []).filter((f) => f !== ('descricao' as string))
@@ -418,28 +449,61 @@ const ReportView = () => {
         if (numericFields.has(f)) columnStyles[i] = { halign: 'right' }
       })
 
-      const reportTitle = template?.name || 'Relatório'
       autoTable(pdf, {
         head,
         body,
-        startY: cursorY,
+        startY: HEADER_H + filtersH,
         styles: { fontSize: isLandscape ? 8 : 9, cellPadding: 2, overflow: 'linebreak', valign: 'top' },
         headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 247, 250] },
         columnStyles,
-        margin: { left: margin, right: margin, top: 14 },
+        // top reserva o cabeçalho em TODAS as páginas; bottom reserva o rodapé.
+        margin: { left: margin, right: margin, top: HEADER_H, bottom: 14 },
         tableWidth: 'auto',
         didDrawPage: (data) => {
-          const ph = pdf.internal.pageSize.getHeight()
-          pdf.setFontSize(8)
-          pdf.setTextColor(120)
-          pdf.text(reportTitle, margin, ph - 6)
-          pdf.text(`Página ${data.pageNumber}`, pageWidth - margin, ph - 6, { align: 'right' })
-          pdf.setTextColor(0)
+          drawHeader()
+          if (data.pageNumber === 1) drawFilters()
         },
       })
 
-      const filename = `${reportTitle.replace(/\s+/g, '_')}_${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`
+      // --- Assinatura ao final (responsável pelo patrimônio) ---
+      const lastAutoTable = (pdf as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable
+      let finalY = lastAutoTable?.finalY ?? HEADER_H + filtersH
+      const SIG_BLOCK_H = 46
+      if (finalY + SIG_BLOCK_H > pageHeight - 14) {
+        pdf.addPage()
+        drawHeader()
+        finalY = HEADER_H
+      }
+      let sy = finalY + 16
+      pdf.setFontSize(10)
+      pdf.setTextColor(0)
+      pdf.setFont('helvetica', 'normal')
+      // Local (município - UF) e data de geração
+      pdf.text(`${MUNICIPALITY_NAME_WITH_UF}, ${formatDate(now)}.`, pageWidth - margin, sy, {
+        align: 'right',
+      })
+      sy += 20
+      const lineW = 80
+      const cx = pageWidth / 2
+      pdf.setDrawColor(0)
+      pdf.line(cx - lineW / 2, sy, cx + lineW / 2, sy)
+      sy += 5
+      pdf.setFontSize(10)
+      pdf.text('Responsável pelo Patrimônio', cx, sy, { align: 'center' })
+
+      // --- Rodapé "i/total" em TODAS as páginas (segunda passada: total já existe) ---
+      const totalPages = pdf.getNumberOfPages()
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i)
+        pdf.setFontSize(8)
+        pdf.setTextColor(120)
+        pdf.text(reportTitle, margin, pageHeight - 6)
+        pdf.text(`${i}/${totalPages}`, pageWidth - margin, pageHeight - 6, { align: 'right' })
+        pdf.setTextColor(0)
+      }
+
+      const filename = `${reportTitle.replace(/\s+/g, '_')}_${formatDate(now, 'yyyy-MM-dd')}.pdf`
       setPdfStage('Salvando arquivo...')
       await yieldToBrowser()
       pdf.save(filename)

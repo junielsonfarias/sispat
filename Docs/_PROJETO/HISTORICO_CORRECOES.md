@@ -21,6 +21,22 @@
 
 ## 2026
 
+### 2026-06-28 — PDF de relatório: cabeçalho/rodapé por página + assinatura
+Ajustes pedidos sobre o PDF autotable do `ReportView`:
+- **Rodapé "i/total" em todas as páginas** (ex.: 1/22, 2/22): contagem feita numa
+  2ª passada após a tabela (`getNumberOfPages()` + `setPage`), pois o total não é
+  conhecido durante o `didDrawPage`.
+- **Cabeçalho do município repetido em TODAS as páginas**: `drawHeader()` chamado no
+  `didDrawPage` (e manualmente na página de assinatura); mostra logo + prefeitura +
+  **município com UF** + secretaria + departamento + subtítulo + data de geração.
+  `margin.top = HEADER_H` reserva o espaço; filtros/total só na 1ª página.
+- **Bloco de assinatura ao final**: "São Sebastião da Boa Vista - PA, <data>." +
+  linha de assinatura "Responsável pelo Patrimônio" (nova página se não couber).
+- **Nome do município com UF** via novas constantes `MUNICIPALITY_STATE='PA'` e
+  `MUNICIPALITY_NAME_WITH_UF` em `config/municipality.ts` (fonte única single-tenant).
+- **Arquivos:** `src/pages/ferramentas/ReportView.tsx`, `src/config/municipality.ts`.
+- **Verificação:** tsc 0, vitest 144/144.
+
 ### 2026-06-28 — PDF de relatório: paginação real + colunas legíveis (autotable)
 - **Sintoma:** o "Baixar PDF" do `ReportView` rasterizava o relatório inteiro com
   html2canvas e fatiava a imagem em alturas de página fixas → **linhas cortadas ao meio**
