@@ -63,7 +63,13 @@ const isSafeUrl = (value: unknown): boolean => {
   if (typeof value !== 'string') return false;
   const trimmed = value.trim();
   if (trimmed === '') return true; // limpar campo
-  if (trimmed.startsWith('/uploads/')) return true; // upload local
+  // Caminho relativo (mesma origem): /uploads/..., /favicon.ico, /logo.svg, etc.
+  // Antes só /uploads/ era aceito, então o default faviconUrl '/favicon.ico'
+  // fazia QUALQUER save retornar 400 (e os defaults de logo/fundo são data:).
+  if (trimmed.startsWith('/')) return true;
+  // data-URL de IMAGEM (logo/favicon enviados em base64 pelos forms). Bloqueia
+  // data:text/html, data:application/*, etc. (vetor de XSS) — só imagem.
+  if (/^data:image\//i.test(trimmed)) return true;
   try {
     const url = new URL(trimmed);
     return url.protocol === 'http:' || url.protocol === 'https:';
@@ -172,7 +178,9 @@ export const saveCustomization = async (req: Request, res: Response): Promise<vo
     const data: Prisma.CustomizationUpdateInput = {};
     const rejectedUrlFields: string[] = [];
     for (const field of ALLOWED_FIELDS) {
-      if (body[field] === undefined) continue;
+      // Pular undefined E null: o GET devolve null para colunas vazias e o
+      // frontend reenvia esse null no save; sem isto o isSafeUrl(null) rejeitava.
+      if (body[field] === undefined || body[field] === null) continue;
       // Validação extra para campos de URL — bloqueia javascript:/data:/etc.
       if (URL_FIELDS.has(field) && !isSafeUrl(body[field])) {
         rejectedUrlFields.push(field);

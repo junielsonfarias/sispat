@@ -21,6 +21,34 @@
 
 ## 2026
 
+### 2026-06-28 — Customização (logo/depto) não persistia em produção (isSafeUrl + fallback silencioso)
+- **Sintoma:** em produção, alterar nome do departamento / adicionar logo "salvava" mas
+  **sumia ao recarregar**.
+- **Causa-raiz (dupla):**
+  1. **Backend:** `customizationController.isSafeUrl` só aceitava `''`, `/uploads/...` ou
+     `http(s)://`. A cada save o frontend reenvia o objeto inteiro de settings, que carrega
+     `faviconUrl: '/favicon.ico'` (default), logos `data:` (base64) e campos `null` (o GET
+     devolve null em colunas vazias). O laço só pulava `undefined`, então `isSafeUrl(null)`
+     e os defaults eram rejeitados → **400 em QUALQUER save** (mesmo só o nome do depto).
+  2. **Frontend:** `CustomizationContext.saveSettings` tinha `catch` **silencioso** → no
+     erro, gravava só no localStorage e atualizava a tela (parecia salvo); no reload o
+     `GET /customization/public` sobrescrevia com o default do banco → sumia.
+- **Correção:** `isSafeUrl` agora aceita caminho relativo (`/...`, incl. `/favicon.ico` e
+  `/uploads/`) e `data:image/...` (bloqueando `data:text/html` etc.); o laço pula `null` e
+  `undefined`. `shared/customization.ts`: campos de imagem (logos/favicon/fundo) usam
+  `imageUrlSchema` (max 5M, cabe base64 no body de 10mb do Express) em vez de `max(1000)`.
+  `CustomizationContext`: o `catch` agora **mostra toast destrutivo** ("não salvou no
+  servidor") em vez de fingir sucesso.
+- **Arquivos:** `backend/src/controllers/customizationController.ts`,
+  `shared/src/schemas/customization.ts`, `src/contexts/CustomizationContext.tsx`.
+- **Verificação:** shared/tsc-front/tsc-back = 0.
+- **Varredura "ocorre em outra área?":** só a customização tinha o anti-padrão de
+  **falha silenciosa que perde dado**. `ManutencaoContext.addTask` tem fallback local, mas
+  só quando o backend está OFFLINE (defensável). `SystemInformation` salva só no navegador
+  **de propósito** (toast avisa). Demais contexts usam localStorage só como cache de GET
+  (escritas mostram erro). Recomendação futura: logos via upload (`fileService` → `/uploads/`)
+  em vez de base64, p/ não inflar a linha e o `/customization/public`.
+
 ### 2026-06-28 — CRUD de município/usuário dava 400 (uuidParamSchema vs IDs do seed)
 - **Sintoma:** superuser em produção recebia **400 Bad Request** ao `PUT
   /api/municipalities/municipality-1` e `PUT /api/users/user-supervisor` (e DELETE etc.).

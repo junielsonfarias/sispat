@@ -9,6 +9,7 @@ import {
 import { generateLogoUrl, generateBackgroundUrl } from '@/lib/image-utils'
 import { api } from '@/services/api-adapter'
 import { logger } from '@/lib/logger'
+import { toast } from '@/hooks/use-toast'
 
 export interface CustomizationSettings {
   activeLogoUrl: string
@@ -160,9 +161,17 @@ export const CustomizationProvider = ({
         })
         logger.debug('Detalhes completos da falha', { error: err, response: err.response?.data })
 
-        // Fallback: salvar apenas no localStorage
+        // Fallback: salvar no localStorage (só neste navegador) E AVISAR o usuário.
+        // Antes o catch era silencioso → parecia salvo, mas sumia ao recarregar
+        // (o GET trazia o default do banco). O toast torna a falha visível.
         localStorage.setItem('sispat_customization_settings', JSON.stringify(newSettings))
         setSettings(newSettings)
+        toast({
+          variant: 'destructive',
+          title: 'Não foi possível salvar no servidor',
+          description:
+            'As alterações ficaram só neste navegador e podem sumir ao recarregar. Verifique a conexão/permissão e tente novamente.',
+        })
       }
     },
     [],

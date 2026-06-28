@@ -16,6 +16,11 @@ import { z } from 'zod';
 // {...default, ...response} e reenvia no save. Aceitar null (.nullable) evita o
 // 400 "Expected string, received null" que quebrava o save de customização.
 const urlLikeSchema = z.string().max(1000).optional().nullable();
+// Campos de IMAGEM aceitam data-URL base64 (os forms de logo/favicon/fundo enviam
+// a imagem assim) — por isso o limite é generoso (cabe no body de 10mb do Express).
+// IDEAL futuro: subir a imagem via fileService (/uploads/...) em vez de base64,
+// evitando inflar a linha e o GET /customization/public. ~5M chars ≈ 3,7MB de imagem.
+const imageUrlSchema = z.string().max(5_000_000).optional().nullable();
 const shortColorSchema = z.string().max(50).optional().nullable();
 const textShort = z.string().max(200).optional().nullable();
 const textMedium = z.string().max(500).optional().nullable();
@@ -23,11 +28,11 @@ const textMicro = z.string().max(100).optional().nullable();
 const textTiny = z.string().max(50).optional().nullable();
 
 export const saveCustomizationSchema = z.object({
-  activeLogoUrl: urlLikeSchema,
-  secondaryLogoUrl: urlLikeSchema,
-  backgroundImageUrl: urlLikeSchema,
+  activeLogoUrl: imageUrlSchema,
+  secondaryLogoUrl: imageUrlSchema,
+  backgroundImageUrl: imageUrlSchema,
   backgroundVideoUrl: urlLikeSchema,
-  faviconUrl: urlLikeSchema,
+  faviconUrl: imageUrlSchema,
   backgroundType: z.enum(['color', 'image', 'video']).optional(),
   backgroundColor: shortColorSchema,
   primaryColor: shortColorSchema,
