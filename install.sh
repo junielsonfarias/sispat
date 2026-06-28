@@ -1047,7 +1047,24 @@ build_application() {
     echo -e "${CYAN}║  ETAPA 2/4: Compilando frontend (React/TypeScript)║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
     echo ""
-    
+
+    # Revalida @sispat/shared LOGO ANTES do build do frontend. A instalação de
+    # deps pode ter rebuildado o shared via 'prepare' e um sinal (Ctrl+C/pkill)
+    # no meio pode truncar dist/schemas/*.js → o vite falha com "X is not exported
+    # by shared/dist/index.js". Rebuild limpo + verifica um export-canário.
+    if [ -d "$INSTALL_DIR/shared" ]; then
+        echo -e "${BLUE}  → Revalidando @sispat/shared (rebuild limpo)...${NC}"
+        ( cd "$INSTALL_DIR/shared" && rm -rf dist && npm run build > /tmp/build-shared.log 2>&1 ) || true
+        cd "$INSTALL_DIR"
+        if [ -f "$INSTALL_DIR/shared/dist/index.js" ] && grep -q "loginSchema" "$INSTALL_DIR/shared/dist/schemas/auth.js" 2>/dev/null; then
+            success "✅ @sispat/shared íntegro (dist completo)"
+        else
+            echo ""
+            tail -20 /tmp/build-shared.log 2>/dev/null
+            error "❌ shared/dist incompleto — falha ao recompilar @sispat/shared. Ver: /tmp/build-shared.log"
+        fi
+    fi
+
     # Verificar novamente se vite existe antes de fazer build
     if [ ! -f "node_modules/.bin/vite" ]; then
         error "❌ Vite não está instalado! Não é possível fazer build do frontend."

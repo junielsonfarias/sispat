@@ -51,6 +51,19 @@ PM2 rodando `dist/index.js`, verificação pós-instalação. Corrigidos:
   silêncio) + `</dev/null` no pnpm (EOF em prompt inesperado). O timeout vira só rede de
   segurança. Desbloqueio manual em instalação já rodando: `pkill -f "pnpm install"` → cai
   no fallback npm.
+- **2º travamento no mesmo teste — build do frontend falhou:** `vite build` quebrou com
+  `"loginSchema" is not exported by "shared/dist/index.js"`. Diagnóstico na VPS mostrou que
+  o `shared/dist` estava **correto** no momento da inspeção → falha **transitória**: o
+  `prepare: "tsc \|\| true"` do shared rebuilda o dist durante o `npm install`, e os
+  `pkill`/`Ctrl+C` que o usuário deu em várias sessões truncaram o `dist/schemas/auth.js`
+  no meio da escrita. Reprodução local provou que o build emite `loginSchema` mesmo sem
+  zod (não era o zod). **Correções:** (a) `install.sh` faz **rebuild limpo + verificação
+  de export-canário (`loginSchema`) do @sispat/shared LOGO ANTES da ETAPA 2** (build do
+  frontend) — imune a dist truncado/stale; (b) `shared/package.json`: `zod` movido de
+  devDeps/peer para **`dependencies`** (build determinístico, tsc exit 0, sem TS2307).
+  **Lição p/ o usuário:** durante a instalação, NÃO dar `pkill`/`Ctrl+C` (usar 2ª sessão
+  só p/ `tail`). Pendente: atualizar `pnpm-lock.yaml` p/ refletir o zod (não bloqueia — o
+  fluxo cai no npm).
 - **Nota:** existe um 2º instalador `install-sispat.sh` (708 linhas, "simplificado") que JÁ
   usa `127.0.0.1`, não cria systemd e builda o shared — também válido. Usa o mesmo
   `ecosystem.config.js` (agora corrigido). Não-bloqueadores deixados: cluster só volta com
