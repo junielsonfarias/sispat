@@ -57,7 +57,7 @@ router.post(
 // quem pode cadastrar em massa (admin/superuser).
 router.post(
   '/material-permanente/confirmar',
-  authorize('superuser', 'admin'),
+  authorize('superuser', 'admin', 'supervisor'),
   zodValidate({ body: confirmarImportacaoSchema }),
   confirmarImportacao,
 );

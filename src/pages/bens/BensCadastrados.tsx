@@ -721,7 +721,7 @@ const BensCadastrados = () => {
                   </Tooltip>
                 </TooltipProvider>
               )}
-              {(user?.role === 'admin' || user?.role === 'superuser') && (
+              {(user?.role === 'admin' || user?.role === 'superuser' || user?.role === 'supervisor') && (
                 <Button
                   asChild
                   variant="outline"

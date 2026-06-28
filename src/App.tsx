@@ -322,7 +322,7 @@ function App() {
               <Route
                 path="/bens/importar"
                 element={
-                  <ProtectedRoute allowedRoles={['admin', 'superuser']}>
+                  <ProtectedRoute allowedRoles={['admin', 'superuser', 'supervisor']}>
                     <ImportarRelatorio />
                   </ProtectedRoute>
                 }
