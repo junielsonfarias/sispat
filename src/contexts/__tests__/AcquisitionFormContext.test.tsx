@@ -66,8 +66,8 @@ describe('AcquisitionFormContext (React Query)', () => {
     await waitFor(() => expect(mockApi.get.mock.calls.length).toBeGreaterThanOrEqual(2))
   })
 
-  it('toggleAcquisitionFormStatus chama /toggle-status e retorna true', async () => {
-    mockApi.patch.mockResolvedValue({ id: 'f2', nome: 'Doação', ativo: true, createdAt: '2025-01-02T00:00:00.000Z', updatedAt: '2025-01-02T00:00:00.000Z' })
+  it('toggleAcquisitionFormStatus usa PUT com ativo invertido e retorna true', async () => {
+    mockApi.put.mockResolvedValue({ id: 'f2', nome: 'Doação', ativo: true, createdAt: '2025-01-02T00:00:00.000Z', updatedAt: '2025-01-02T00:00:00.000Z' })
     const { result } = renderHook(() => useAcquisitionForms(), { wrapper: makeWrapper() })
     await waitFor(() => expect(result.current.acquisitionForms).toHaveLength(2))
 
@@ -76,7 +76,8 @@ describe('AcquisitionFormContext (React Query)', () => {
       ok = await result.current.toggleAcquisitionFormStatus('f2', false)
     })
 
-    expect(mockApi.patch).toHaveBeenCalledWith('/formas-aquisicao/f2/toggle-status')
+    // currentStatus=false → envia ativo:true via PUT (rota /toggle-status não existe)
+    expect(mockApi.put).toHaveBeenCalledWith('/formas-aquisicao/f2', { ativo: true })
     expect(ok).toBe(true)
   })
 

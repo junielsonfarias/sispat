@@ -41,7 +41,7 @@ describe('manutencao fromApi (backend -> front)', () => {
 })
 
 describe('manutencao toCreateBody (front -> POST)', () => {
-  it('mapeia title->titulo, enums label->PT e NÃO inclui status', () => {
+  it('mapeia title->titulo, enums label->PT e status label->PT', () => {
     const body = toCreateBody({
       imovelId: 'i1',
       title: 'X',
@@ -51,8 +51,20 @@ describe('manutencao toCreateBody (front -> POST)', () => {
       status: 'A Fazer',
       dueDate: new Date('2025-03-01'),
     } as never)
-    expect(body).toMatchObject({ imovelId: 'i1', titulo: 'X', descricao: 'd', tipo: 'preventiva', prioridade: 'media' })
-    expect('status' in body).toBe(false)
+    // status agora é honrado na criação (A Fazer -> pendente)
+    expect(body).toMatchObject({ imovelId: 'i1', titulo: 'X', descricao: 'd', tipo: 'preventiva', prioridade: 'media', status: 'pendente' })
+  })
+
+  it('sem status no input -> status undefined (backend usa default pendente)', () => {
+    const body = toCreateBody({
+      imovelId: 'i1',
+      title: 'X',
+      description: 'd',
+      tipo: 'Preventiva',
+      priority: 'Média',
+      dueDate: new Date('2025-03-01'),
+    } as never)
+    expect(body.status).toBeUndefined()
   })
 })
 

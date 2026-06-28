@@ -57,8 +57,8 @@ describe('TiposBensContext (React Query)', () => {
     await waitFor(() => expect(mockApi.get.mock.calls.length).toBeGreaterThanOrEqual(2))
   })
 
-  it('toggleTipoBemStatus chama o endpoint /toggle', async () => {
-    mockApi.patch.mockResolvedValue({ id: 't2', nome: 'Mobiliário', ativo: true })
+  it('toggleTipoBemStatus usa PUT com ativo invertido (rota /toggle não existe)', async () => {
+    mockApi.put.mockResolvedValue({ id: 't2', nome: 'Mobiliário', ativo: true })
     const { result } = renderHook(() => useTiposBens(), { wrapper: makeWrapper() })
     await waitFor(() => expect(result.current.tiposBens).toHaveLength(2))
 
@@ -66,6 +66,7 @@ describe('TiposBensContext (React Query)', () => {
       await result.current.toggleTipoBemStatus('t2')
     })
 
-    expect(mockApi.patch).toHaveBeenCalledWith('/tipos-bens/t2/toggle')
+    // t2 está ativo:false no fixture → toggle envia ativo:true
+    expect(mockApi.put).toHaveBeenCalledWith('/tipos-bens/t2', { ativo: true })
   })
 })
