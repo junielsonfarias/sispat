@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas'
 import { generateQRCode } from '@/lib/qr-code-utils'
 import { api } from '@/services/http-api'
 import { logger } from '@/lib/logger'
+import { resolveSectionFields } from '@/lib/ficha-fields'
 
 interface ImovelPDFGeneratorProps {
   imovel: Imovel
@@ -144,13 +145,6 @@ export const generateImovelPDF = async ({
     area_terreno: { label: 'ÁREA DO TERRENO', value: () => (imovel.area_terreno != null ? `${imovel.area_terreno} m²` : '-') },
     area_construida: { label: 'ÁREA CONSTRUÍDA', value: () => (imovel.area_construida != null ? `${imovel.area_construida} m²` : '-') },
   }
-  // Campos selecionados de uma seção; cai no fallback (defaults de imóvel) se o
-  // config não traz campos válidos — ex.: template legado salvo com campos de bem.
-  const sectionFields = (key: string, fallback: string[]): string[] => {
-    const f = sectionsCfg[key]?.fields
-    const valid = Array.isArray(f) ? f.filter((k) => IMOVEL_FIELD_META[k]) : []
-    return valid.length > 0 ? valid : fallback
-  }
   const renderFields = (keys: string[]): string =>
     keys
       .filter((k) => IMOVEL_FIELD_META[k])
@@ -163,10 +157,12 @@ export const generateImovelPDF = async ({
       })
       .join('')
 
-  const piFields = sectionFields('patrimonioInfo', ['denominacao', 'tipo_imovel', 'situacao'])
-  const acqFields = sectionFields('acquisition', ['data_aquisicao', 'valor_aquisicao'])
-  const locFields = sectionFields('location', ['endereco', 'setor', 'latitude', 'longitude'])
-  const medidasFields = sectionFields('depreciation', ['area_terreno', 'area_construida'])
+  // Campos por seção honrando o template (auto-heal de configs legados via helper
+  // compartilhado com o editor).
+  const piFields = resolveSectionFields(sectionsCfg.patrimonioInfo?.fields, 'imoveis', 'patrimonioInfo')
+  const acqFields = resolveSectionFields(sectionsCfg.acquisition?.fields, 'imoveis', 'acquisition')
+  const locFields = resolveSectionFields(sectionsCfg.location?.fields, 'imoveis', 'location')
+  const medidasFields = resolveSectionFields(sectionsCfg.depreciation?.fields, 'imoveis', 'depreciation')
 
   // ✅ CORREÇÃO: Processar fotos ANTES de construir o HTML
   const processedPhotos: string[] = []

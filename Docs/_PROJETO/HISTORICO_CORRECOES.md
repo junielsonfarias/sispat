@@ -46,6 +46,12 @@
 - **Verificação:** frontend tsc 0, vitest 133/133 (3 novos: defaults ⊆ disponíveis etc.).
 - **Limitação restante:** prévia ao vivo de imóvel (live preview honrando campos) não
   implementada — follow-up.
+- **Follow-up (validação por código, mesmo dia):** a regra de auto-heal foi extraída
+  para `resolveSectionFields(rawFields, type, section)` em `ficha-fields.ts` (pura) e
+  reutilizada pelo editor (`normalizeConfig`) e pelo gerador (`ImovelPDFGenerator`) —
+  fim da duplicação. `getColumnValue` de `export-utils.ts` exportado para teste.
+  Cobertura: +11 testes (resolveSectionFields auto-heal + formatação de export);
+  vitest 133→144. (sem subir o app — Docker/stack offline na sessão.)
 
 ### 2026-06-28 — Paginação real na impressão de etiquetas (LabelPrintDialog)
 - **Sintoma:** ao imprimir mais etiquetas do que cabe numa página, todas iam para um

@@ -102,6 +102,25 @@ export const FICHA_DEFAULT_FIELDS_BY_TYPE: Record<
   },
 }
 
+// Resolve os campos efetivos de uma seção a partir do que está salvo no config:
+// mantém só os campos VÁLIDOS para o tipo/seção; se nada sobrar (config vazio ou
+// template legado salvo com campos de outro tipo), cai nos defaults daquele tipo.
+// Usado pelo editor (normalizeConfig) e pelo gerador de PDF de imóvel — mesma
+// regra de auto-heal nos dois lados.
+export const resolveSectionFields = (
+  rawFields: unknown,
+  type: FichaType,
+  section: FichaSectionKey,
+): string[] => {
+  const valid = new Set(
+    FICHA_FIELDS_BY_TYPE[type][section].map((f) => f.value),
+  )
+  const arr = Array.isArray(rawFields)
+    ? rawFields.filter((k): k is string => typeof k === 'string' && valid.has(k))
+    : []
+  return arr.length > 0 ? arr : FICHA_DEFAULT_FIELDS_BY_TYPE[type][section]
+}
+
 // Título + descrição de cada seção, por tipo (as 4 seções servem para os dois).
 export const FICHA_SECTION_META_BY_TYPE: Record<
   FichaType,

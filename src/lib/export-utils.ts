@@ -9,7 +9,7 @@ type ExportableColumn = {
   label: string
 }
 
-const getColumnValue = (item: Patrimonio, key: keyof Patrimonio): string => {
+export const getColumnValue = (item: Patrimonio, key: keyof Patrimonio): string => {
   const value = item[key]
 
   if (value === null || value === undefined) {

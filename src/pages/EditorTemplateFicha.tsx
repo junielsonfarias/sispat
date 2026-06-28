@@ -17,7 +17,9 @@ import {
   FICHA_FIELDS_BY_TYPE,
   FICHA_SECTION_META_BY_TYPE,
   FICHA_DEFAULT_FIELDS_BY_TYPE,
+  resolveSectionFields,
   type FichaType,
+  type FichaSectionKey,
 } from '@/lib/ficha-fields'
 
 interface FichaTemplate {
@@ -102,17 +104,10 @@ export default function EditorTemplateFicha() {
       return getDefaultConfig(type)
     }
 
-    const defaults = FICHA_DEFAULT_FIELDS_BY_TYPE[type]
     const pickFields = (
-      section: keyof typeof defaults,
+      section: FichaSectionKey,
       raw: unknown,
-    ): string[] => {
-      const valid = new Set(
-        FICHA_FIELDS_BY_TYPE[type][section].map((f) => f.value),
-      )
-      const arr = Array.isArray(raw) ? raw.filter((k) => valid.has(k)) : []
-      return arr.length > 0 ? arr : defaults[section]
-    }
+    ): string[] => resolveSectionFields(raw, type, section)
 
     return {
       header: {
