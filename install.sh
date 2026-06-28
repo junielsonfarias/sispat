@@ -1423,7 +1423,7 @@ server {
     
     # API Backend - DEVE vir ANTES de /uploads
     location /api/ {
-        proxy_pass http://localhost:${APP_PORT}/api/;
+        proxy_pass http://127.0.0.1:${APP_PORT}/api/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -1461,7 +1461,7 @@ server {
     
     # Health check
     location /health {
-        proxy_pass http://localhost:${APP_PORT}/api/health;
+        proxy_pass http://127.0.0.1:${APP_PORT}/api/health;
         access_log off;
     }
     
@@ -1580,9 +1580,13 @@ WantedBy=multi-user.target
 EOF
     
     systemctl daemon-reload
-    systemctl enable sispat-backend > /dev/null 2>&1
-    
-    success "Serviço systemd configurado"
+    # IMPORTANTE: o PM2 é o gerenciador OFICIAL do backend (start_application +
+    # pm2 startup/save). Este unit systemd é só uma ALTERNATIVA documentada — NÃO
+    # habilitar, senão no reboot systemd E PM2 sobem o backend na :3000 ao mesmo
+    # tempo (conflito de porta / crash-loop). Mantemos desabilitado e idempotente.
+    systemctl disable sispat-backend > /dev/null 2>&1 || true
+
+    success "Unit systemd criado (desabilitado; PM2 é o runner ativo)"
 }
 
 configure_firewall() {
@@ -1778,8 +1782,9 @@ configure_backup() {
     # Copiar script de backup
     chmod +x "$INSTALL_DIR/scripts/backup.sh"
     
-    # Criar cron job para backup diário às 2h
-    (crontab -l 2>/dev/null; echo "0 2 * * * $INSTALL_DIR/scripts/backup.sh > /var/log/sispat/backup.log 2>&1") | crontab -
+    # Criar cron job para backup diário às 2h (sem duplicar em reinstalações)
+    (crontab -l 2>/dev/null | grep -vF "$INSTALL_DIR/scripts/backup.sh"; \
+     echo "0 2 * * * $INSTALL_DIR/scripts/backup.sh > /var/log/sispat/backup.log 2>&1") | crontab -
     
     success "Backup automático configurado (diário às 2h)"
 }
@@ -1791,8 +1796,9 @@ configure_monitoring() {
     # Copiar script de monitoramento
     chmod +x "$INSTALL_DIR/scripts/monitor.sh"
     
-    # Criar cron job para monitoramento a cada 5 minutos
-    (crontab -l 2>/dev/null; echo "*/5 * * * * $INSTALL_DIR/scripts/monitor.sh > /var/log/sispat/monitor.log 2>&1") | crontab -
+    # Criar cron job para monitoramento a cada 5 minutos (sem duplicar)
+    (crontab -l 2>/dev/null | grep -vF "$INSTALL_DIR/scripts/monitor.sh"; \
+     echo "*/5 * * * * $INSTALL_DIR/scripts/monitor.sh > /var/log/sispat/monitor.log 2>&1") | crontab -
     
     success "Monitoramento configurado (a cada 5 minutos)"
 }

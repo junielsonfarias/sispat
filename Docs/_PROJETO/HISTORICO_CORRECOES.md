@@ -21,6 +21,30 @@
 
 ## 2026
 
+### 2026-06-28 — Revisão do instalador VPS (install.sh) p/ instalação nova
+Auditoria do `install.sh` (2351 linhas) antes de um teste de instalação do zero.
+Confirmado OK: Node 20 (NodeSource setup_20.x), pnpm com fallback npm, `@sispat/shared`
+buildado ANTES do front/back, ordem DB→build→migrate→seed→PM2→Nginx→Certbot, JWT_SECRET
+forte (openssl rand -hex 64), nginx `/api` antes de `/uploads`, `client_max_body_size 10M`,
+PM2 rodando `dist/index.js`, verificação pós-instalação. Corrigidos:
+- 🟡→🔴(reboot) **systemd × PM2**: `configure_systemd` fazia `systemctl enable sispat-backend`
+  E o `start_application` usa PM2 (`pm2 startup`/`save`) → no reboot os dois subiam o backend
+  na :3000 (conflito). Trocado por `systemctl disable` idempotente; PM2 é o runner oficial.
+- 🟡 **Nginx upstream `localhost`** (proxy_pass /api e /health) → bug IPv6 conhecido (::1 vs
+  backend IPv4) → 502 intermitente. Trocado p/ `127.0.0.1` (regra do INFRAESTRUTURA.md).
+- 🟡 **cron sem dedup** (backup/monitor): reinstalar duplicava linhas. Agora filtra com
+  `grep -vF` antes de readicionar.
+- 🟡 **PM2 cluster × socket.io** (`backend/ecosystem.config.js`): produção subia
+  `instances:2, exec_mode:'cluster'`, mas o socket.io (`src/config/websocket.ts`) não tem
+  `@socket.io/redis-adapter` → handshake WebSocket quebra entre workers. Fixado p/
+  `instances:1, exec_mode:'fork'` (para escalar: adicionar adapter Redis + sticky sessions).
+- **Arquivos:** `install.sh`, `backend/ecosystem.config.js`.
+- **Verificação:** `bash -n install.sh` OK; `require(ecosystem.config.js)` OK.
+- **Nota:** existe um 2º instalador `install-sispat.sh` (708 linhas, "simplificado") que JÁ
+  usa `127.0.0.1`, não cria systemd e builda o shared — também válido. Usa o mesmo
+  `ecosystem.config.js` (agora corrigido). Não-bloqueadores deixados: cluster só volta com
+  adapter Redis; PM2 roda como root (`-u root`); RAM mínima 2GB pode dar OOM no vite build.
+
 ### 2026-06-28 — PDF de relatório: cabeçalho/rodapé por página + assinatura
 Ajustes pedidos sobre o PDF autotable do `ReportView`:
 - **Rodapé "i/total" em todas as páginas** (ex.: 1/22, 2/22): contagem feita numa

@@ -22,9 +22,14 @@ module.exports = {
       name: 'sispat-backend',
       script: './dist/index.js',
       
-      // Modo de execução
-      instances: process.env.NODE_ENV === 'production' ? 2 : 1,
-      exec_mode: process.env.NODE_ENV === 'production' ? 'cluster' : 'fork',
+      // Modo de execução: 1 instância em fork (NÃO cluster).
+      // O backend usa socket.io (src/config/websocket.ts) e NÃO tem adapter Redis
+      // (@socket.io/redis-adapter). Em cluster com >1 worker o handshake WebSocket
+      // quebra (o polling cai em workers diferentes, sem estado compartilhado).
+      // Para escalar horizontalmente: adicionar o adapter Redis + sticky sessions
+      // ANTES de voltar a 'cluster'.
+      instances: 1,
+      exec_mode: 'fork',
       
       // Logs
       error_file: './logs/pm2/error.log',
