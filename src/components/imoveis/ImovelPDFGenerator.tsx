@@ -125,8 +125,10 @@ export const generateImovelPDF = async ({
   // Gerar QR Code para consulta pública de imóvel - tamanho maior para melhor legibilidade
   let qrCodeUrl = ''
   try {
-    // Gerar QR code com tamanho maior (250px) para melhor qualidade no PDF
-    const publicUrl = `${window.location.origin}/consulta-publica/imovel/${imovel.numero_patrimonio}`
+    // Gerar QR code com tamanho maior (250px) para melhor qualidade no PDF.
+    // A rota pública do imóvel é por ID (/consulta-publica/imovel/:id), NÃO por
+    // numero_patrimonio — usar o id, senão a consulta pública não acha o imóvel.
+    const publicUrl = `${window.location.origin}/consulta-publica/imovel/${imovel.id}`
     qrCodeUrl = await generateQRCode(publicUrl, { size: 250, errorCorrectionLevel: 'H' })
     logger.debug('QR Code gerado com sucesso para PDF de imóvel (250px)')
   } catch (error) {

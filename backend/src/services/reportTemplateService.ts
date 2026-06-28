@@ -101,8 +101,11 @@ export const createReportTemplate = async (
     throw new ReportTemplateValidationError('Nome do template é obrigatório');
   }
 
+  // Layout vazio ([]) é tratado como "sem layout" → regenerado a partir dos fields.
+  // (O form baseado em campos manda [] de propósito; o editor visual manda layout
+  // não-vazio, que é preservado.)
   let finalLayout: Prisma.InputJsonValue;
-  if (input.layout !== undefined && input.layout !== null) {
+  if (Array.isArray(input.layout) && input.layout.length > 0) {
     finalLayout = input.layout;
   } else if (Array.isArray(input.fields) && input.fields.length > 0) {
     finalLayout = tabularLayout(input.fields);
@@ -147,7 +150,10 @@ export const updateReportTemplate = async (
     updateData.name = input.name.trim();
   }
 
-  if (input.layout !== undefined) {
+  // Layout não-vazio (editor visual) é mantido; layout vazio/ausente + fields
+  // (form de campos) regenera a tabela a partir dos fields — assim a alteração de
+  // colunas não é mais descartada silenciosamente.
+  if (Array.isArray(input.layout) && input.layout.length > 0) {
     updateData.layout = input.layout;
   } else if (Array.isArray(input.fields) && input.fields.length > 0) {
     updateData.layout = tabularLayout(input.fields);

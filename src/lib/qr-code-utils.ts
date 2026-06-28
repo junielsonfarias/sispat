@@ -79,7 +79,8 @@ export const generateQRCodeSVG = async (
 
 /**
  * Gera um código QR para consulta pública de patrimônio
- * @param patrimonioNumero - Número do patrimônio (ex: 2025-001)
+ * @param patrimonioNumero - Identificador na URL pública: numero_patrimonio p/ bem
+ *   (rota :numero); ID do imóvel p/ imóvel (rota :id). Passe o valor certo por tipo.
  * @param assetType - Tipo do bem ('bem' para móveis, 'imovel' para imóveis)
  * @param baseUrl - URL base opcional (usa window.location.origin se não fornecido)
  * @returns Promise com data URL do QR code gerado

@@ -31,7 +31,9 @@ export const LabelPreview = forwardRef<HTMLDivElement, LabelPreviewProps>(
         return
       }
       let cancelled = false
-      generatePatrimonioQRCode(asset.numero_patrimonio, asset.assetType)
+      // Imóvel: rota pública é por ID (:id); bem é por numero_patrimonio (:numero).
+      const qrIdentifier = asset.assetType === 'imovel' ? asset.id : asset.numero_patrimonio
+      generatePatrimonioQRCode(qrIdentifier, asset.assetType)
         .then((url) => {
           if (!cancelled) setQrCodeUrl(url)
         })

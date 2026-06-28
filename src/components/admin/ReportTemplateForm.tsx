@@ -49,7 +49,10 @@ export const ReportTemplateForm = ({
       name: data.name,
       fields: data.fields as (keyof Patrimonio)[],
       filters: template?.filters || {},
-      layout: template?.layout || [],
+      // Form baseado em CAMPOS: envia layout vazio p/ o backend regerar a tabela a
+      // partir dos fields (senão um layout stale ignoraria a mudança de colunas).
+      // O editor visual de layout é um fluxo separado (envia layout não-vazio).
+      layout: [],
     }
     onSave(newTemplate)
   }
