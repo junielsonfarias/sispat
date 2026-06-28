@@ -168,13 +168,22 @@ describe('@sispat/shared — notification', () => {
     ).toBe(true);
   });
 
-  it('userId opcional mas UUID quando presente', () => {
+  it('userId opcional, aceita id não-vazio (UUID ou amigável do seed) e rejeita vazio', () => {
+    // userId foi relaxado p/ string não-vazia (seed usa user-superuser/supervisor).
     expect(
       createNotificationSchema.safeParse({
         tipo: 'X',
         titulo: 'X',
         mensagem: 'X',
         userId: 'abc',
+      }).success,
+    ).toBe(true);
+    expect(
+      createNotificationSchema.safeParse({
+        tipo: 'X',
+        titulo: 'X',
+        mensagem: 'X',
+        userId: '',
       }).success,
     ).toBe(false);
   });

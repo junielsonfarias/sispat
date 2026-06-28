@@ -9,8 +9,10 @@ const nameSchema = z
   .min(1, 'Nome é obrigatório.')
   .max(100, 'Nome deve ter no máximo 100 caracteres.')
   .regex(
-    /^[a-zA-ZÀ-ÿ0-9\s\-_]+$/,
-    'Nome deve conter apenas letras, números, espaços, hífen e underline.',
+    // Permite pontuação comum em nomes de local: . , / ( ) & º ª ° '
+    // (ex.: "Sala 1º andar", "Depósito (térreo)", "Bloco A/B").
+    /^[a-zA-ZÀ-ÿ0-9\s\-_./()&,ªº°']+$/,
+    'Nome contém caractere inválido.',
   );
 
 const descriptionSchema = z

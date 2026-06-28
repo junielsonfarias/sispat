@@ -146,6 +146,7 @@ export const updateTipoBem = async (req: Request, res: Response): Promise<void> 
       descricao,
       vidaUtilPadrao,
       taxaDepreciacao,
+      ativo,
     } = req.body;
 
     const tipoBem = await prisma.tipoBem.findFirst({
@@ -164,6 +165,7 @@ export const updateTipoBem = async (req: Request, res: Response): Promise<void> 
         descricao,
         vidaUtilPadrao,
         taxaDepreciacao,
+        ativo, // antes era descartado no update (Prisma ignora se undefined)
       },
     });
 

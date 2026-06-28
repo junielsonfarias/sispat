@@ -15,8 +15,10 @@ const nameSchema = z
   .min(1, 'Nome é obrigatório.')
   .max(100, 'Nome deve ter no máximo 100 caracteres.')
   .regex(
-    /^[a-zA-ZÀ-ÿ0-9\s\-_]+$/,
-    'Nome deve conter apenas letras, números, espaços, hífen e underline.',
+    // Permite pontuação comum em nomes de setor: . , / ( ) & º ª ° '
+    // (ex.: "SEMED (Educação)", "Saúde/Assistência", "1º andar", "Dept. de TI").
+    /^[a-zA-ZÀ-ÿ0-9\s\-_./()&,ªº°']+$/,
+    'Nome contém caractere inválido.',
   );
 
 const codigoSchema = z

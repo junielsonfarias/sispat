@@ -83,11 +83,16 @@ export const TiposBensProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const toggleTipoBemStatus = useCallback(
     async (id: string) => {
-      const updated = await api.patch<TipoBem>(`/tipos-bens/${id}/toggle`)
+      // A rota PATCH /toggle não existe (404). Usa o PUT (que agora persiste
+      // `ativo`) invertendo o valor atual da lista.
+      const current = tiposBens.find((t) => t.id === id)
+      const updated = await api.put<TipoBem>(`/tipos-bens/${id}`, {
+        ativo: !(current?.ativo ?? true),
+      })
       await invalidate()
       return updated
     },
-    [invalidate],
+    [invalidate, tiposBens],
   )
 
   return (

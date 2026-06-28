@@ -954,6 +954,10 @@ const UPDATABLE_FIELDS = new Set([
   'fornecedor',
   'numero_empenho',
   'numero_liquidacao',
+  // Faltavam: o CREATE persistia mas o UPDATE descartava (e o parseInt de
+  // ano_licitacao na linha abaixo era código morto). Edição perdia esses campos.
+  'numero_licitacao',
+  'ano_licitacao',
 ]);
 
 const parseUpdateData = (raw: Record<string, unknown>, actorUserId: string): Record<string, unknown> => {

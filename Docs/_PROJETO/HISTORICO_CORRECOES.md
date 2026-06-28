@@ -21,6 +21,44 @@
 
 ## 2026
 
+### 2026-06-28 — Auditoria CRUD: correções de persistência/validação (lote 1) + upload de logo
+Auditoria completa (2 agentes, 4 camadas form→zod→controller→Prisma) de todos os CRUDs.
+**Lote 1 corrigido** (perda silenciosa no UPDATE / 400 / 404, sem migration):
+- **patrimônio (edição):** `numero_licitacao`/`ano_licitacao` faltavam no `UPDATABLE_FIELDS`
+  do `patrimonioService` → CREATE salvava, UPDATE descartava (linha do parseInt era morta).
+- **tipo de bem / forma de aquisição (`ativo`):** o PUT descartava `ativo` (destructure do
+  controller só pegava nome/descrição) → ativar/desativar não persistia. Adicionado `ativo`
+  no update dos dois controllers (coluna existe nos models TipoBem/AcquisitionForm).
+- **toggle ativo (404):** o front chamava `PATCH /tipos-bens/:id/toggle` e
+  `/formas-aquisicao/:id/toggle-status` (rotas inexistentes). Apontado para o **PUT** (que
+  agora persiste `ativo`), invertendo o valor atual — sem rota nova.
+- **bem (criação) `status`:** `BensCreate` fixava `status:'ativo'` após `...data`, ignorando
+  a seleção (Manutenção/Inativo). Agora honra `data.status`.
+- **setor/local `name` (400):** regex rejeitava pontuação comum ("SEMED (Educação)",
+  "1º andar", "Saúde/Assistência"). Relaxado p/ permitir `. , / ( ) & º ª ° '`.
+- **EmailConfig `password` (400 no update):** `.min(1)` rejeitava `''` (senha não redigitada);
+  o controller já mantém a atual. Schema passou a `z.string().max(200).optional()`.
+- Também: upload de **logo** agora via `fileService` (`/uploads/`) em vez de base64 (commit
+  anterior 2b93d51).
+- **Verificação:** shared/tsc-front/tsc-back = 0; jest schemas 67/67. 2 testes do
+  comportamento antigo atualizados (notification.userId).
+
+**Backlog mapeado (PENDENTE — exige migration ou refactor maior):**
+- 🔴 Transferência por DOAÇÃO: form manda `type='doacao'`+`destinatarioExterno`, mas o
+  contexto não envia e o model não tem colunas → 400 + dado perdido (precisa migration).
+- 🟡 `documentos_pdf`/`url_documentos` (patrimônio e imóvel) e `cep/bairro/cidade/estado`
+  (imóvel): coletados no form mas sem coluna/upload → some (migration + upload).
+- 🟡 Imóvel (edição): `baseSchema` da tela de editar remove tipo_imovel/situacao/lat/long/
+  descricao/observacoes → não editáveis; custom fields editam por `id` mas gravam por `key`.
+- 🟡 Avatar (Perfil): `PUT /users/:id` exige papel de gestor → `usuario`/`visualizador`
+  tomam 403 ao trocar foto (precisa rota self-service).
+- 🟡 Manutenção (criação): `status` coletado mas não enviado (controller força 'pendente').
+- 🟡 Inventário (edição): troca de escopo/local é descartada (schema strict não tem `scope`).
+- 🟡 Empréstimo: schema marca motivo/dataPrevDevolucao opcionais mas controller exige (400);
+  além disso não há tela de criação. Usuário criação: form min 8 vs schema min 12.
+- 🟢 setor `codigo` `@unique` global (deveria ser por município); `MunicipalityForm` rico é
+  código morto (campos sem coluna).
+
 ### 2026-06-28 — Customização (logo/depto) não persistia em produção (isSafeUrl + fallback silencioso)
 - **Sintoma:** em produção, alterar nome do departamento / adicionar logo "salvava" mas
   **sumia ao recarregar**.

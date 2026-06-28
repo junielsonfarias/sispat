@@ -152,7 +152,9 @@ export const AcquisitionFormProvider = ({ children }: { children: ReactNode }) =
   const toggleAcquisitionFormStatus = useCallback(
     async (id: string, currentStatus: boolean) => {
       try {
-        await api.patch<AcquisitionForm>(`/formas-aquisicao/${id}/toggle-status`)
+        // A rota PATCH /toggle-status não existe (404). Usa o PUT (que agora
+        // persiste `ativo`) invertendo o status atual recebido.
+        await api.put<AcquisitionForm>(`/formas-aquisicao/${id}`, { ativo: !currentStatus })
         await invalidate()
         logActivity('ACQUISITION_FORM_UPDATE', {
           details: `${currentStatus ? 'Desativou' : 'Ativou'} a forma com ID: ${id}`,

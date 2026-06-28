@@ -14,7 +14,9 @@ export const updateEmailConfigSchema = z.object({
   port: z.number().int().min(1).max(65535),
   secure: z.boolean().optional(),
   user: z.string().trim().min(1, 'Usuário é obrigatório'),
-  password: z.string().min(1).optional(),
+  // Aceita '' (no update, quando a senha NÃO é redigitada) — o controller mantém
+  // a senha atual nesse caso. Antes, .min(1) fazia '' dar 400 ao editar/togglar.
+  password: z.string().max(200).optional(),
   fromAddress: z
     .string()
     .trim()

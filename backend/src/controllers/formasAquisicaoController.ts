@@ -134,7 +134,7 @@ export const updateFormaAquisicao = async (req: Request, res: Response): Promise
     const userId = req.user?.userId;
     const isSuperuser = req.user?.role === 'superuser';
     const municipalityId = req.user?.municipalityId;
-    const { nome, descricao } = req.body;
+    const { nome, descricao, ativo } = req.body;
 
     const formaAquisicao = await prisma.acquisitionForm.findFirst({
       where: { id, ...(isSuperuser ? {} : { municipalityId }) },
@@ -150,6 +150,7 @@ export const updateFormaAquisicao = async (req: Request, res: Response): Promise
       data: {
         nome,
         descricao,
+        ativo, // antes descartado no update (Prisma ignora se undefined)
       },
     });
 

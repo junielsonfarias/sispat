@@ -226,7 +226,9 @@ const BensCreate = () => {
         ...data,
         numero_patrimonio: generatedNumber,
         data_aquisicao: new Date(data.data_aquisicao),
-        status: 'ativo',
+        // Honra o status escolhido no formulário (antes era fixo 'ativo', ignorando
+        // a seleção de Manutenção/Inativo/etc.); default 'ativo' se não vier.
+        status: data.status || 'ativo',
         // O backend valida situacao_bem em MINÚSCULO (otimo/bom/regular/ruim/pessimo).
         // (Antes havia .toUpperCase() equivocado → 400 "received 'OTIMO'" ao escolher situação.)
         situacao_bem: data.situacao_bem && data.situacao_bem.trim() !== '' ? data.situacao_bem.toLowerCase() : undefined,
