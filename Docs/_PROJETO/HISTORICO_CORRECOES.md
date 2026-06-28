@@ -21,6 +21,27 @@
 
 ## 2026
 
+### 2026-06-28 — PDF de relatório: paginação real + colunas legíveis (autotable)
+- **Sintoma:** o "Baixar PDF" do `ReportView` rasterizava o relatório inteiro com
+  html2canvas e fatiava a imagem em alturas de página fixas → **linhas cortadas ao meio**
+  na divisa das páginas. E a tabela era `width:100%` + `table-layout:fixed` com um **mapa
+  de larguras fixo** (afinado p/ 7 campos específicos) → com poucas colunas o conteúdo
+  ficava espalhado com grandes vãos; com outros campos, colunas desproporcionais.
+- **Causa-raiz:** html2canvas renderiza a tela e **ignora `@media print`/`page-break`**
+  (o `table { page-break-inside: avoid }` só valia para o botão Imprimir/`window.print`).
+  O fatiamento por `pdf.addImage(..., -position, ...)` não conhece os limites das linhas.
+- **Correção:** `handleDownloadPDF` reescrito com **`jspdf-autotable`** (já instalado):
+  pagina linha a linha (sem cortar), repete o cabeçalho da tabela em cada página, e
+  `tableWidth:'auto'` ajusta as colunas ao conteúdo (sem o mapa fixo) — colunas próximas
+  e legíveis. Cabeçalho com branding (logo + município + subtítulo + data + resumo de
+  filtros + total) desenhado por cima; rodapé com nome do relatório + nº de página por
+  `didDrawPage`. Colunas numéricas/moeda alinhadas à direita. Removido o fallback
+  html2canvas. (A prévia na tela e o botão Imprimir continuam usando a tabela do template.)
+- **Arquivos:** `src/pages/ferramentas/ReportView.tsx`.
+- **Verificação:** frontend tsc 0, vitest 144/144.
+- **Lição:** para PDF tabular com paginação correta, gerar a tabela com autotable (linha
+  a linha) em vez de "foto + fatiamento" do html2canvas, que ignora page-break e corta linhas.
+
 ### 2026-06-28 — Field-level na ficha de IMÓVEL (campos por seção do template)
 - **Sintoma/limitação:** a ficha de imóvel honrava só `enabled` das seções; não havia
   seleção de CAMPOS por seção (o editor só tinha campos de bem). Templates de imóvel

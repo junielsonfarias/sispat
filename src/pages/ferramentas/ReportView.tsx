@@ -308,88 +308,138 @@ const ReportView = () => {
     setIsExportingPDF(true)
     setPdfStage('Preparando...')
     try {
-      const printableElement = document.getElementById('printable-area')
-      if (!printableElement) {
-        logger.error('Elemento para impressão não encontrado')
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Elemento de impressão não encontrado.',
-        })
-        return
-      }
-
-      logger.debug('Elemento encontrado', { printableElement })
-
-      setPdfStage('Aguardando imagens carregarem...')
-      await yieldToBrowser()
-      await new Promise(resolve => setTimeout(resolve, 500))
-
       setPdfStage('Carregando gerador de PDF...')
-      // Lazy load (~600KB combined) — só ao usuário clicar em exportar
-      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+      // Tabela via jspdf-autotable: pagina linha a linha (sem cortar linhas como
+      // o html2canvas fatiado fazia), repete o cabeçalho em cada página e ajusta
+      // a largura das colunas ao conteúdo (sem o mapa fixo de % que espalhava as
+      // colunas). Cabeçalho com branding (logo + município + filtros) é desenhado
+      // por cima. Lazy-load p/ não pesar o bundle inicial.
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
         import('jspdf'),
-        import('html2canvas'),
+        import('jspdf-autotable'),
       ])
       await yieldToBrowser()
 
-      setPdfStage('Renderizando relatório (pode levar alguns segundos)...')
-      await yieldToBrowser()
-      
-      // Usar html2canvas para capturar o elemento
-      const canvas = await html2canvas(printableElement, {
-        scale: 1.5,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: true,
-        imageTimeout: 15000,
-        removeContainer: false,
-        foreignObjectRendering: false,
-        width: printableElement.scrollWidth,
-        height: printableElement.scrollHeight
-      })
-
-      logger.debug('Canvas gerado', { width: canvas.width, height: canvas.height })
-
-      const imgData = canvas.toDataURL('image/png')
-      logger.debug('Imagem convertida para base64', { size: imgData.length })
-      
+      const isLandscape = orientation === 'landscape'
       const pdf = new jsPDF({
-        orientation: orientation === 'landscape' ? 'landscape' : 'portrait',
+        orientation: isLandscape ? 'landscape' : 'portrait',
         unit: 'mm',
-        format: paperSize === 'a4' ? 'a4' : paperSize === 'letter' ? 'letter' : 'legal'
+        format: paperSize === 'a4' ? 'a4' : paperSize === 'letter' ? 'letter' : 'legal',
       })
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const margin = 12
 
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = pdfWidth
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      const totalPages = Math.ceil(imgHeight / pdfHeight)
+      setPdfStage('Montando relatório...')
+      await yieldToBrowser()
 
-      logger.debug('Dimensões PDF', { pageHeight: pdfHeight, imgHeight, pages: totalPages })
-
-      // Multi-página com yield entre páginas para não congelar a UI em relatórios grandes
-      let remaining = imgHeight
-      let position = 0
-      let pageIndex = 0
-      while (remaining > 0) {
-        if (pageIndex > 0) pdf.addPage()
-        setPdfStage(`Gerando página ${pageIndex + 1} de ${totalPages}...`)
-        await yieldToBrowser()
-        pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight)
-        remaining -= pdfHeight
-        position += pdfHeight
-        pageIndex++
-        if (pageIndex > 50) {
-          logger.warn('PDF abortado: mais de 50 páginas')
-          break
+      // --- Cabeçalho com branding (logo + município + subtítulo + data) ---
+      const headerComp = template?.layout?.find((c) => c.type === 'HEADER')
+      const subtitle =
+        (headerComp?.props as { subtitle?: string } | undefined)?.subtitle ||
+        'Relatório de Patrimônio'
+      let logoDataUrl: string | null = null
+      const logoUrl = municipalityData?.logoUrl
+      if (logoUrl) {
+        try {
+          const resp = await fetch(logoUrl)
+          const blob = await resp.blob()
+          logoDataUrl = await new Promise<string>((resolve, reject) => {
+            const r = new FileReader()
+            r.onloadend = () => resolve(r.result as string)
+            r.onerror = reject
+            r.readAsDataURL(blob)
+          })
+        } catch (e) {
+          logger.debug('Logo não carregada para o PDF', { logoUrl })
         }
       }
+      let textX = margin
+      if (logoDataUrl) {
+        try {
+          pdf.addImage(logoDataUrl, 'PNG', margin, 10, 22, 16)
+          textX = margin + 28
+        } catch {
+          /* logo inválida — ignora */
+        }
+      }
+      pdf.setFontSize(15)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(municipalityData?.name || 'Relatório', textX, 17)
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(90)
+      pdf.text(subtitle, textX, 23)
+      pdf.setFontSize(9)
+      pdf.text(`Data: ${formatDate(new Date())}`, pageWidth - margin, 13, { align: 'right' })
+      pdf.setTextColor(0)
 
-      const title = template?.name || 'Relatório'
-      const filename = `${title.replace(/\s+/g, '_')}_${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`
+      let cursorY = 32
+      // Resumo de filtros aplicados (em texto, quebrando linha se preciso)
+      const filterParts: string[] = []
+      if (filters.status) filterParts.push(`Status: ${filters.status}`)
+      if (filters.situacao_bem) filterParts.push(`Situação: ${filters.situacao_bem}`)
+      if (filters.setor) filterParts.push(`Setor: ${filters.setor}`)
+      if (filters.tipo) filterParts.push(`Tipo: ${filters.tipo}`)
+      if (filters.dateFrom || filters.dateTo) {
+        filterParts.push(
+          `Período: ${filters.dateFrom ? formatDate(filters.dateFrom) : '...'} até ${filters.dateTo ? formatDate(filters.dateTo) : '...'}`,
+        )
+      }
+      pdf.setFontSize(8)
+      if (filterParts.length > 0) {
+        pdf.setTextColor(40, 80, 160)
+        const lines = pdf.splitTextToSize(
+          `Filtros: ${filterParts.join('   •   ')}`,
+          pageWidth - margin * 2,
+        )
+        pdf.text(lines, margin, cursorY)
+        cursorY += lines.length * 4 + 1
+      }
+      pdf.setTextColor(90)
+      pdf.text(`Total de registros: ${filteredPatrimonios.length}`, margin, cursorY)
+      pdf.setTextColor(0)
+      cursorY += 4
 
+      // --- Tabela (autotable) ---
+      const fields = (template?.fields || []).filter((f) => f !== ('descricao' as string))
+      const head = [fields.map((f) => getHeaderLabel(f))]
+      const body = filteredPatrimonios.map((item) =>
+        fields.map((f) => getColumnValue(item, f)),
+      )
+      // Colunas numéricas/moeda alinhadas à direita (mais legível).
+      const numericFields = new Set([
+        'valor_aquisicao',
+        'quantidade',
+        'vida_util_anos',
+        'valor_residual',
+      ])
+      const columnStyles: Record<number, { halign: 'right' }> = {}
+      fields.forEach((f, i) => {
+        if (numericFields.has(f)) columnStyles[i] = { halign: 'right' }
+      })
+
+      const reportTitle = template?.name || 'Relatório'
+      autoTable(pdf, {
+        head,
+        body,
+        startY: cursorY,
+        styles: { fontSize: isLandscape ? 8 : 9, cellPadding: 2, overflow: 'linebreak', valign: 'top' },
+        headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        columnStyles,
+        margin: { left: margin, right: margin, top: 14 },
+        tableWidth: 'auto',
+        didDrawPage: (data) => {
+          const ph = pdf.internal.pageSize.getHeight()
+          pdf.setFontSize(8)
+          pdf.setTextColor(120)
+          pdf.text(reportTitle, margin, ph - 6)
+          pdf.text(`Página ${data.pageNumber}`, pageWidth - margin, ph - 6, { align: 'right' })
+          pdf.setTextColor(0)
+        },
+      })
+
+      const filename = `${reportTitle.replace(/\s+/g, '_')}_${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`
       setPdfStage('Salvando arquivo...')
       await yieldToBrowser()
       pdf.save(filename)
@@ -398,60 +448,11 @@ const ReportView = () => {
 
     } catch (error) {
       logger.error('Erro ao gerar PDF:', error)
-      // Fallback: tentar novamente sem as configurações problemáticas
-      try {
-        const printableElement = document.getElementById('printable-area')
-        if (!printableElement) {
-          throw new Error('Elemento não encontrado no fallback')
-        }
-        
-        logger.debug('Tentando fallback')
-        logger.debug('Elemento dimensions', { width: printableElement.offsetWidth, height: printableElement.offsetHeight })
-
-        // Re-import (catch tem scope próprio; libs já estão em cache)
-        const { default: jsPDF } = await import('jspdf')
-        const { default: html2canvas } = await import('html2canvas')
-
-        const canvas = await html2canvas(printableElement, {
-          scale: 1,
-          backgroundColor: '#ffffff',
-          logging: true,
-          width: printableElement.offsetWidth,
-          height: printableElement.offsetHeight
-        })
-        
-        logger.debug('Canvas fallback gerado', { width: canvas.width, height: canvas.height })
-
-        const imgData = canvas.toDataURL('image/png')
-        logger.debug('Imagem fallback convertida', { size: imgData.length })
-        
-        const pdf = new jsPDF({
-          orientation: orientation === 'landscape' ? 'landscape' : 'portrait',
-          unit: 'mm',
-          format: paperSize === 'a4' ? 'a4' : paperSize === 'letter' ? 'letter' : 'legal'
-        })
-
-        const imgWidth = pdf.internal.pageSize.getWidth()
-        const imgHeight = (canvas.height * imgWidth) / canvas.width
-        
-        logger.debug('Dimensões PDF fallback', { width: imgWidth, height: imgHeight })
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
-        
-        const title = template?.name || 'Relatório'
-        const filename = `${title.replace(/\s+/g, '_')}_${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`
-        
-        pdf.save(filename)
-        logger.debug('PDF gerado com fallback', { filename })
-        
-      } catch (fallbackError) {
-        logger.error('Erro no fallback:', fallbackError)
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Não foi possível gerar o PDF. Tente novamente.',
-        })
-      }
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Não foi possível gerar o PDF. Tente novamente.',
+      })
     } finally {
       setIsExportingPDF(false)
       setPdfStage('')
