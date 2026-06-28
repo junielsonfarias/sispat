@@ -21,6 +21,7 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader2, ArrowLeft, RefreshCw } from 'lucide-react'
 import { ImageUpload } from '@/components/bens/ImageUpload'
+import { uploadMultipleFiles } from '@/services/fileService'
 import { useImovel } from '@/hooks/useImovel'
 import { useImovelField } from '@/contexts/ImovelFieldContext'
 import { ImovelFieldConfig } from '@/types'
@@ -249,18 +250,33 @@ export default function ImoveisCreate() {
         return String(foto)
       })
 
+      // Faz upload dos PDFs selecionados (File[]) e mescla as URLs em `documentos`.
+      // Antes, documentos_pdf (File[]) era enviado cru ao backend e se perdia
+      // (File não serializa em JSON), descartando silenciosamente os anexos.
+      const { documentos_pdf, ...restData } = data
+      let documentosUrls: string[] = data.documentos || []
+      const pdfFiles = (documentos_pdf || []).filter(
+        (f): f is File => typeof File !== 'undefined' && f instanceof File,
+      )
+      if (pdfFiles.length > 0) {
+        const meta = await uploadMultipleFiles(pdfFiles, tempAssetId, user.id)
+        const urls = (meta as Array<{ file_url?: string }>)
+          .map((m) => m.file_url)
+          .filter((u): u is string => !!u)
+        documentosUrls = [...documentosUrls, ...urls]
+      }
+
       await addImovel(
         {
-          ...data,
+          ...restData,
           data_aquisicao: new Date(data.data_aquisicao),
           area_terreno: data.area_terreno || 0,
           area_construida: data.area_construida || 0,
           latitude: data.latitude ? parseFloat(data.latitude.toString()) : undefined,
           longitude: data.longitude ? parseFloat(data.longitude.toString()) : undefined,
           fotos: fotosProcessadas,
-          documentos: data.documentos || [],
+          documentos: documentosUrls,
           url_documentos: data.url_documentos && data.url_documentos.trim() !== '' ? data.url_documentos.trim() : undefined,
-          documentos_pdf: data.documentos_pdf || [],
           municipalityId: user.municipalityId,
           customFields: data.customFields || {},
         },

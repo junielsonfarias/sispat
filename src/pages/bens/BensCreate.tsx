@@ -29,6 +29,7 @@ import { formatCurrency } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader2 } from 'lucide-react'
 import { ImageUpload } from '@/components/bens/ImageUpload'
+import { uploadMultipleFiles } from '@/services/fileService'
 import { usePatrimonio } from '@/hooks/usePatrimonio'
 import { useActivityLog } from '@/contexts/ActivityLogContext'
 import { AcquisitionForm, Patrimonio } from '@/types'
@@ -222,8 +223,34 @@ const BensCreate = () => {
         return String(foto)
       })
 
+      // Faz upload dos PDFs selecionados (File[]) e mescla as URLs em `documentos`.
+      // Antes, documentos_pdf (File[]) ia cru no payload (via ...data) e se perdia
+      // (File não serializa em JSON), descartando silenciosamente os anexos.
+      const { documentos_pdf, ...restData } = data as typeof data & {
+        documentos_pdf?: unknown[]
+      }
+      const toUrl = (d: unknown): string => {
+        if (typeof d === 'string') return d
+        if (d && typeof d === 'object') {
+          const o = d as { file_url?: string; url?: string }
+          return o.file_url || o.url || ''
+        }
+        return ''
+      }
+      let documentosUrls: string[] = (data.documentos || []).map(toUrl).filter(Boolean)
+      const pdfFiles = (documentos_pdf || []).filter(
+        (f): f is File => typeof File !== 'undefined' && f instanceof File,
+      )
+      if (pdfFiles.length > 0) {
+        const meta = await uploadMultipleFiles(pdfFiles, tempAssetId, user.id)
+        const urls = (meta as Array<{ file_url?: string }>)
+          .map((m) => m.file_url)
+          .filter((u): u is string => !!u)
+        documentosUrls = [...documentosUrls, ...urls]
+      }
+
       const newPatrimonioData = {
-        ...data,
+        ...restData,
         numero_patrimonio: generatedNumber,
         data_aquisicao: new Date(data.data_aquisicao),
         // Honra o status escolhido no formulário (antes era fixo 'ativo', ignorando
@@ -233,7 +260,7 @@ const BensCreate = () => {
         // (Antes havia .toUpperCase() equivocado → 400 "received 'OTIMO'" ao escolher situação.)
         situacao_bem: data.situacao_bem && data.situacao_bem.trim() !== '' ? data.situacao_bem.toLowerCase() : undefined,
         fotos: fotosProcessadas,
-        documentos: data.documentos || [],
+        documentos: documentosUrls,
         municipalityId: user.municipalityId!,
         createdAt: new Date(),
         createdBy: user.name || user.email,
