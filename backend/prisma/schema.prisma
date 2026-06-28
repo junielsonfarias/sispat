@@ -468,14 +468,19 @@ model Transferencia {
   patrimonioId       String
   numero_patrimonio  String
   descricao_bem      String
+  // tipo: "transferencia" (entre setores) ou "doacao" (saída do município).
+  // Na doação não há setor destino; o bem é baixado na aprovação.
+  tipo               String     @default("transferencia")
   setorOrigem        String
-  setorDestino       String
+  setorDestino       String?
+  destinatarioExterno String?
   localOrigem        String
   localDestino       String
   motivo             String
   dataTransferencia  DateTime
   responsavelOrigem  String
   responsavelDestino String
+  documentosAnexos   String[]   @default([])
   status             String     @default("pendente")
   observacoes        String?
   previousStatus     String     @default("ativo")

@@ -409,6 +409,118 @@ describe('transferService — rejectTransfer', () => {
   });
 });
 
+describe('transferService — doação', () => {
+  const patrimonioAtivo = {
+    id: 'p1',
+    status: 'ativo',
+    municipalityId: 'mun-1',
+    numero_patrimonio: '001',
+    descricao_bem: 'Mesa',
+  };
+
+  it('cria doação: tipo=doacao, sem setorDestino, com destinatário', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValueOnce(patrimonioAtivo);
+    mockPrisma.activityLog.create.mockResolvedValue({});
+
+    await createTransfer(
+      {
+        patrimonioId: 'p1',
+        tipo: 'doacao',
+        setorOrigem: 'TI',
+        destinatarioExterno: 'ONG Esperança',
+        localOrigem: '',
+        localDestino: '',
+        motivo: 'Doação a entidade sem fins lucrativos',
+        dataTransferencia: '2026-01-15',
+        responsavelOrigem: 'João',
+        responsavelDestino: '',
+      },
+      baseActor,
+    );
+
+    expect(mockPrisma.transferencia.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tipo: 'doacao',
+          setorDestino: null,
+          destinatarioExterno: 'ONG Esperança',
+          status: 'pendente',
+        }),
+      }),
+    );
+  });
+
+  it('doação sem destinatário → ValidationError', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValueOnce(patrimonioAtivo);
+    await expect(
+      createTransfer(
+        {
+          patrimonioId: 'p1',
+          tipo: 'doacao',
+          setorOrigem: 'TI',
+          destinatarioExterno: '   ',
+          localOrigem: '',
+          localDestino: '',
+          motivo: 'X',
+          dataTransferencia: '2026-01-15',
+          responsavelOrigem: 'João',
+          responsavelDestino: '',
+        },
+        baseActor,
+      ),
+    ).rejects.toBeInstanceOf(TransferValidationError);
+  });
+
+  it('aprovar doação baixa o bem (sem mover setor) e não busca setor destino', async () => {
+    mockPrisma.transferencia.findUnique.mockResolvedValueOnce({
+      id: 't1',
+      status: 'pendente',
+      tipo: 'doacao',
+      patrimonioId: 'p1',
+      setorOrigem: 'TI',
+      setorDestino: null,
+      destinatarioExterno: 'ONG Esperança',
+      motivo: 'Doação',
+      previousStatus: 'ativo',
+      observacoes: null,
+      patrimonio: { id: 'p1', municipalityId: 'mun-1' },
+    });
+    mockPrisma.historicoEntry.create.mockResolvedValue({});
+    mockPrisma.activityLog.create.mockResolvedValue({});
+
+    await approveTransfer('t1', undefined, baseActor);
+
+    expect(mockPrisma.sector.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.patrimonio.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'p1' },
+        data: expect.objectContaining({ status: 'baixado' }),
+      }),
+    );
+    // Não move de setor na doação
+    expect(mockPrisma.patrimonio.update.mock.calls[0][0].data.sectorId).toBeUndefined();
+  });
+
+  it('supervisor não pode aprovar doação (restrito a admin/superuser)', async () => {
+    mockPrisma.transferencia.findUnique.mockResolvedValueOnce({
+      id: 't1',
+      status: 'pendente',
+      tipo: 'doacao',
+      patrimonioId: 'p1',
+      setorOrigem: 'TI',
+      setorDestino: null,
+      destinatarioExterno: 'ONG',
+      previousStatus: 'ativo',
+      patrimonio: { id: 'p1', municipalityId: 'mun-1' },
+    });
+    const supervisor: Actor = { userId: 'sup-1', role: 'supervisor', municipalityId: 'mun-1', email: 's@x.gov' };
+    await expect(approveTransfer('t1', undefined, supervisor)).rejects.toBeInstanceOf(
+      TransferForbiddenError,
+    );
+    expect(mockPrisma.patrimonio.update).not.toHaveBeenCalled();
+  });
+});
+
 describe('transferService — deleteTransfer', () => {
   it('400 se já aprovada', async () => {
     mockPrisma.transferencia.findUnique.mockResolvedValueOnce({

@@ -184,14 +184,17 @@ export const getTransfer = async (id: string, actor: Actor) => {
 
 export interface CreateTransferInput {
   patrimonioId: string;
+  tipo?: 'transferencia' | 'doacao';
   setorOrigem: string;
-  setorDestino: string;
+  setorDestino?: string;
+  destinatarioExterno?: string;
   localOrigem: string;
   localDestino: string;
   motivo: string;
   dataTransferencia: string | Date;
   responsavelOrigem: string;
   responsavelDestino: string;
+  documentosAnexos?: string[];
   observacoes?: string;
 }
 
@@ -223,20 +226,34 @@ export const createTransfer = async (input: CreateTransferInput, actor: Actor) =
     );
   }
 
+  const tipo = input.tipo === 'doacao' ? 'doacao' : 'transferencia';
+  // Doação: bem sai do município (não há setor destino, exige destinatário).
+  // Transferência: exige setor destino.
+  if (tipo === 'doacao') {
+    if (!input.destinatarioExterno?.trim()) {
+      throw new TransferValidationError('Doação exige o destinatário externo.');
+    }
+  } else if (!input.setorDestino?.trim()) {
+    throw new TransferValidationError('Transferência exige o setor de destino.');
+  }
+
   const [transfer] = await prisma.$transaction([
     prisma.transferencia.create({
       data: {
         patrimonioId: input.patrimonioId,
         numero_patrimonio: patrimonio.numero_patrimonio,
         descricao_bem: patrimonio.descricao_bem,
+        tipo,
         setorOrigem: input.setorOrigem,
-        setorDestino: input.setorDestino,
+        setorDestino: tipo === 'doacao' ? null : input.setorDestino,
+        destinatarioExterno: tipo === 'doacao' ? input.destinatarioExterno : null,
         localOrigem: input.localOrigem,
         localDestino: input.localDestino,
         motivo: input.motivo,
         dataTransferencia: new Date(input.dataTransferencia),
         responsavelOrigem: input.responsavelOrigem,
         responsavelDestino: input.responsavelDestino,
+        documentosAnexos: input.documentosAnexos ?? [],
         observacoes: input.observacoes,
         status: 'pendente',
         previousStatus: patrimonio.status,
@@ -289,26 +306,75 @@ export const approveTransfer = async (
   }
   assertSameTenant(actor, transfer.patrimonio.municipalityId);
 
-  // Segregação de responsabilidade (REGRAS §6): o aprovador deve ser admin/superuser
-  // OU supervisor responsável pelo SETOR DESTINO. Sem isso, qualquer supervisor do
-  // município aprovaria transferências para setores alheios. Convenção do projeto:
+  const isDoacao = transfer.tipo === 'doacao';
+
+  // Doação retira o bem do patrimônio do município (baixa) — operação de alta
+  // responsabilidade restrita a admin/superuser. Transferência entre setores
+  // pode ser aprovada pelo supervisor do setor destino (REGRAS §6); convenção:
   // responsibleSectors vazio = acesso a todos os setores do município.
   if (actor.role !== 'admin' && actor.role !== 'superuser') {
+    if (isDoacao) {
+      throw new TransferForbiddenError(
+        'Apenas admin/superuser pode aprovar uma doação (baixa do bem)',
+      );
+    }
     const approver = await prisma.user.findUnique({
       where: { id: actor.userId },
       select: { responsibleSectors: true },
     });
     const setores = approver?.responsibleSectors ?? [];
-    if (setores.length > 0 && !setores.includes(transfer.setorDestino)) {
+    if (setores.length > 0 && transfer.setorDestino && !setores.includes(transfer.setorDestino)) {
       throw new TransferForbiddenError(
         'Apenas um supervisor do setor destino (ou admin) pode aprovar esta transferência',
       );
     }
   }
 
+  // ---- Doação: baixa o bem (sai do município), não move de setor. ----
+  if (isDoacao) {
+    const destino = transfer.destinatarioExterno ?? 'destinatário externo';
+    const [updatedTransfer] = await prisma.$transaction([
+      prisma.transferencia.update({
+        where: { id },
+        data: { status: 'aprovada', observacoes: observacoes ?? transfer.observacoes },
+      }),
+      prisma.patrimonio.update({
+        where: { id: transfer.patrimonioId },
+        data: { status: PatrimonioStatus.baixado, updatedBy: actor.userId },
+      }),
+      prisma.historicoEntry.create({
+        data: {
+          patrimonioId: transfer.patrimonioId,
+          action: 'Doação Aprovada',
+          details: `Bem doado para ${destino}. Motivo: ${transfer.motivo}`,
+          user: actor.email,
+          origem: transfer.setorOrigem,
+          destino,
+        },
+      }),
+    ]);
+
+    await prisma.activityLog.create({
+      data: {
+        userId: actor.userId,
+        action: 'APPROVE',
+        entityType: 'TRANSFER',
+        entityId: id,
+        details: 'Doação aprovada (bem baixado)',
+      },
+    });
+
+    await CacheUtils.invalidateTransferencias();
+    await CacheUtils.invalidatePatrimonios();
+    await redisCache.delete(`patrimonio:${transfer.patrimonioId}`);
+
+    return updatedTransfer;
+  }
+
+  // ---- Transferência entre setores: move o bem e restaura o status original. ----
   const setorDestino = await prisma.sector.findFirst({
     where: {
-      name: transfer.setorDestino,
+      name: transfer.setorDestino ?? '',
       municipalityId: transfer.patrimonio.municipalityId,
     },
     select: { id: true },
@@ -341,7 +407,8 @@ export const approveTransfer = async (
       where: { id: transfer.patrimonioId },
       data: {
         sectorId: setorDestino.id,
-        setor_responsavel: transfer.setorDestino,
+        // Não-nulo nesta branch: o setor foi localizado por este nome acima.
+        setor_responsavel: transfer.setorDestino ?? '',
         ...(localDestinoId
           ? { localId: localDestinoId, local_objeto: transfer.localDestino }
           : {}),
@@ -356,7 +423,7 @@ export const approveTransfer = async (
         details: `Transferido de ${transfer.setorOrigem} para ${transfer.setorDestino}. Motivo: ${transfer.motivo}`,
         user: actor.email,
         origem: transfer.setorOrigem,
-        destino: transfer.setorDestino,
+        destino: transfer.setorDestino ?? '',
       },
     }),
   ]);
@@ -416,11 +483,11 @@ export const rejectTransfer = async (
     prisma.historicoEntry.create({
       data: {
         patrimonioId: transfer.patrimonioId,
-        action: 'Transferência Rejeitada',
-        details: `Transferência de ${transfer.setorOrigem} para ${transfer.setorDestino} rejeitada${motivo ? `. Motivo: ${motivo}` : ''}`,
+        action: transfer.tipo === 'doacao' ? 'Doação Rejeitada' : 'Transferência Rejeitada',
+        details: `${transfer.tipo === 'doacao' ? 'Doação' : 'Transferência'} de ${transfer.setorOrigem} para ${transfer.setorDestino ?? transfer.destinatarioExterno ?? '—'} rejeitada${motivo ? `. Motivo: ${motivo}` : ''}`,
         user: actor.email,
         origem: transfer.setorOrigem,
-        destino: transfer.setorDestino,
+        destino: transfer.setorDestino ?? transfer.destinatarioExterno ?? '—',
       },
     }),
   ]);

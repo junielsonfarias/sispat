@@ -26,18 +26,42 @@ const observacoesSchema = z
   .max(1000, 'Observações devem ter no máximo 1000 caracteres.')
   .optional();
 
-export const createTransferSchema = z.object({
-  patrimonioId: z.string().uuid('patrimonioId deve ser um UUID válido.'),
-  setorOrigem: setorSchema,
-  setorDestino: setorSchema,
-  localOrigem: z.string().max(100).optional(),
-  localDestino: z.string().max(100).optional(),
-  motivo: motivoSchema,
-  dataTransferencia: isoDateSchema,
-  responsavelOrigem: z.string().max(200).optional(),
-  responsavelDestino: z.string().max(200).optional(),
-  observacoes: observacoesSchema,
-});
+export const createTransferSchema = z
+  .object({
+    patrimonioId: z.string().uuid('patrimonioId deve ser um UUID válido.'),
+    // "transferencia" (entre setores) ou "doacao" (saída do município).
+    tipo: z.enum(['transferencia', 'doacao']).default('transferencia'),
+    setorOrigem: setorSchema,
+    // Opcional no schema: exigido condicionalmente por tipo no superRefine
+    // (doação não tem setor destino; transferência exige).
+    setorDestino: setorSchema.optional(),
+    destinatarioExterno: z.string().trim().max(200).optional(),
+    localOrigem: z.string().max(100).optional(),
+    localDestino: z.string().max(100).optional(),
+    motivo: motivoSchema,
+    dataTransferencia: isoDateSchema,
+    responsavelOrigem: z.string().max(200).optional(),
+    responsavelDestino: z.string().max(200).optional(),
+    documentosAnexos: z.array(z.string().max(500)).max(20).optional(),
+    observacoes: observacoesSchema,
+  })
+  .superRefine((data, ctx) => {
+    if (data.tipo === 'doacao') {
+      if (!data.destinatarioExterno || data.destinatarioExterno.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['destinatarioExterno'],
+          message: 'Destinatário é obrigatório na doação.',
+        });
+      }
+    } else if (!data.setorDestino || data.setorDestino.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['setorDestino'],
+        message: 'Setor de destino é obrigatório na transferência.',
+      });
+    }
+  });
 export type CreateTransferInput = z.infer<typeof createTransferSchema>;
 
 export const approveTransferSchema = z

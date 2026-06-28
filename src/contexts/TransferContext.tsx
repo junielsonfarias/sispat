@@ -94,18 +94,35 @@ export const TransferProvider = ({ children }: { children: ReactNode }) => {
   const addTransferencia = useCallback(
     async (data: Omit<Transferencia, 'id' | 'dataSolicitacao' | 'status'>) => {
       try {
+        // documentosAnexos vem do ImageUpload (string | { file_url }) — normaliza p/ URLs.
+        const toUrl = (item: unknown): string => {
+          if (typeof item === 'string') return item
+          if (item && typeof item === 'object') {
+            const o = item as { file_url?: string; url?: string }
+            return o.file_url || o.url || ''
+          }
+          return ''
+        }
+        const anexos = Array.isArray(data.documentosAnexos)
+          ? data.documentosAnexos.map(toUrl).filter((u) => u && !u.startsWith('blob:'))
+          : undefined
+
         const response = await api.post<
           Omit<Transferencia, 'dataSolicitacao'> & { createdAt: string; dataTransferencia: string; [k: string]: unknown }
         >('/transfers', {
           patrimonioId: data.patrimonioId,
+          // O form usa `type`; o backend espera `tipo`.
+          tipo: data.type ?? 'transferencia',
           setorOrigem: data.setorOrigem,
           setorDestino: data.setorDestino,
+          destinatarioExterno: data.destinatarioExterno,
           localOrigem: data.localOrigem,
           localDestino: data.localDestino,
           motivo: data.motivo,
           dataTransferencia: data.dataTransferencia?.toISOString(),
           responsavelOrigem: data.responsavelOrigem,
           responsavelDestino: data.responsavelDestino,
+          documentosAnexos: anexos,
           observacoes: data.observacoes,
         })
 
