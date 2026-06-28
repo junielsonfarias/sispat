@@ -21,6 +21,30 @@
 
 ## 2026
 
+### 2026-06-28 — Exportação de relatórios: XLSX binário real + PDF com tabela real
+- **Sintoma:** A exportação "Excel" gerava um `.xlsx` que o Excel/LibreOffice abriam
+  com aviso "o formato e a extensão não conferem"; a exportação "PDF" de relatório
+  saía como texto cru com colunas separadas por `" | "`, desalinhado e ilegível.
+- **Causa-raiz:** `exportToXlsx` montava uma `<table>` HTML com MIME
+  `application/vnd.ms-excel` (não é Office Open XML, só HTML renomeado).
+  `exportToPdf` jogava todas as células num único bloco de texto via
+  `generateReportPDF` + `splitTextToSize`.
+- **Correção:** `exportToXlsx` agora usa o pacote **`xlsx` (SheetJS)** já instalado
+  (`json_to_sheet` → `book_append_sheet` → `writeFile`), lazy-loaded como em
+  `PublicAssets.tsx` — gera `.xlsx` binário real. `exportToPdf` passou a usar
+  **`jspdf-autotable`** (já instalado): tabela com bordas, cabeçalho estilizado,
+  paginação automática e numeração de página por `didDrawPage`. Ambas viraram
+  `async`; call sites (`Exportacao`, `TransferenciaReports`, `RelatoriosDepreciacao`,
+  `exportInBatches`) passaram a `await`.
+- **Arquivos:** `src/lib/export-utils.ts`; `src/pages/ferramentas/Exportacao.tsx`;
+  `src/pages/ferramentas/TransferenciaReports.tsx`;
+  `src/pages/analise/RelatoriosDepreciacao.tsx`.
+- **Verificação:** frontend tsc 0, vitest 130/130.
+- **Lição:** o pacote real (`xlsx`/`jspdf-autotable`) já estava no `package.json` e
+  já era usado em `PublicAssets.tsx`; antes de "emular" formato binário com HTML/MIME,
+  reutilizar a lib já presente. `generateReportPDF`/`generatePDFFromElement` em
+  `pdf-utils.ts` ficaram sem uso (candidatos a remoção futura).
+
 ### 2026-06-27 — Ficha de bem passa a honrar os campos por seção (config.sections)
 Follow-up do #5: o `PatrimonioPDFGenerator` montava as seções com campos FIXOS,
 ignorando `config.sections.*.fields` do template. Agora um `FIELD_META`

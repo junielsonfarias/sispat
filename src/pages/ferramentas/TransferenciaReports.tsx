@@ -92,7 +92,7 @@ export default function TransferenciaReports() {
             await exportToPdf(`${filename}.pdf`, filteredData as any, columnsWithLabels)
             break
           case 'xlsx':
-            exportToXlsx(`${filename}.xlsx`, filteredData as any, columnsWithLabels)
+            await exportToXlsx(`${filename}.xlsx`, filteredData as any, columnsWithLabels)
             break
           case 'csv':
             exportToCsv(`${filename}.csv`, filteredData as any, columnsWithLabels)

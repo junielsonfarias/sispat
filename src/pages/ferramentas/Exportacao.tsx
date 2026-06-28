@@ -153,10 +153,10 @@ const Exportacao = () => {
           exportToCsv(`${filename}.csv`, allData, columns)
           break
         case 'xlsx':
-          exportToXlsx(`${filename}.xlsx`, allData, columns)
+          await exportToXlsx(`${filename}.xlsx`, allData, columns)
           break
         case 'pdf':
-          exportToPdf(`${filename}.pdf`, allData, columns)
+          await exportToPdf(`${filename}.pdf`, allData, columns)
           break
       }
       toast({
