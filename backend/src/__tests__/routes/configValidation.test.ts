@@ -35,9 +35,11 @@ const VALID_UUID = '11111111-1111-4111-8111-111111111111';
 
 describe('Config — validação das rotas mutantes', () => {
   describe('params', () => {
-    it('uuidParamSchema aceita UUID e rejeita id inválido', () => {
+    it('uuidParamSchema aceita qualquer id não-vazio (UUID ou amigável do seed) e rejeita vazio', () => {
       expect(uuidParamSchema.safeParse({ id: VALID_UUID }).success).toBe(true);
-      expect(uuidParamSchema.safeParse({ id: 'nao-uuid' }).success).toBe(false);
+      // IDs amigáveis do seed (ex.: municipality-1) precisam ser aceitos.
+      expect(uuidParamSchema.safeParse({ id: 'municipality-1' }).success).toBe(true);
+      expect(uuidParamSchema.safeParse({ id: '' }).success).toBe(false);
     });
 
     it('roleIdParamSchema aceita string textual (não UUID) e rejeita vazio', () => {

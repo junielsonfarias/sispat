@@ -103,8 +103,10 @@ describe('FichaTemplate — validação de rotas mutantes', () => {
     expect(result.success).toBe(true);
   });
 
-  it('uuidParamSchema rejeita id que não é UUID', () => {
-    expect(uuidParamSchema.safeParse({ id: 'abc' }).success).toBe(false);
+  it('uuidParamSchema aceita id não-UUID (amigável do seed) e rejeita vazio', () => {
+    // O param agora aceita qualquer id não-vazio (seed usa IDs como municipality-1).
+    expect(uuidParamSchema.safeParse({ id: 'abc' }).success).toBe(true);
+    expect(uuidParamSchema.safeParse({ id: '' }).success).toBe(false);
   });
 
   it('uuidParamSchema aceita UUID válido', () => {

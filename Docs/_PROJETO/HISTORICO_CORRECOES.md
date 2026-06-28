@@ -21,6 +21,26 @@
 
 ## 2026
 
+### 2026-06-28 — CRUD de município/usuário dava 400 (uuidParamSchema vs IDs do seed)
+- **Sintoma:** superuser em produção recebia **400 Bad Request** ao `PUT
+  /api/municipalities/municipality-1` e `PUT /api/users/user-supervisor` (e DELETE etc.).
+  (O **401** isolado era só renovação de token — não-bug.)
+- **Causa-raiz:** as rotas validam o `:id` com `uuidParamSchema` (`z.string().uuid()`), mas
+  o **seed cria IDs amigáveis** (`municipality-1`, `user-superuser`, `user-supervisor`) que
+  NÃO são UUID → o `zodValidate` dos params barrava com 400 ("ID deve ser um UUID válido").
+  Registros criados pela app (com `@default(uuid())`) passariam; só os do seed falhavam —
+  por isso o erro só aparecia nesses IDs. O body já estava OK (corrigido em sessões anteriores).
+- **Correção:** `shared/src/schemas/common.ts` → `uuidParamSchema` passou a aceitar
+  **qualquer id não-vazio** (`z.string().trim().min(1).max(128)`) em vez de exigir UUID. O
+  formato não agrega segurança (id é server-side; existência/tenant é checada no Prisma →
+  404). Corrige todas as rotas que usam o schema (município, usuário, etc.) sem mexer no
+  body. 2 testes que afirmavam o comportamento antigo (rejeitar não-UUID) atualizados.
+- **Arquivos:** `shared/src/schemas/common.ts`; testes `configValidation.test.ts`,
+  `fichaTemplatesValidation.test.ts`.
+- **Verificação:** shared build OK, jest dos 2 arquivos 45/45, tsc front 0.
+- **Deploy (VPS):** `git pull` → rebuild shared → rebuild backend → `pm2 restart` (o
+  zodValidate roda no backend com o schema do @sispat/shared compilado).
+
 ### 2026-06-28 — Revisão do instalador VPS (install.sh) p/ instalação nova
 Auditoria do `install.sh` (2351 linhas) antes de um teste de instalação do zero.
 Confirmado OK: Node 20 (NodeSource setup_20.x), pnpm com fallback npm, `@sispat/shared`

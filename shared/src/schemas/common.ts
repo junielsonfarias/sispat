@@ -1,10 +1,16 @@
 import { z } from 'zod';
 
-// Schemas reutilizáveis em qualquer rota: validar `:id` UUID, paginação
-// padrão, etc. Mantidos aqui para evitar redefinir em cada domínio.
+// Schemas reutilizáveis em qualquer rota: validar `:id`, paginação padrão, etc.
+// Mantidos aqui para evitar redefinir em cada domínio.
 
+// Param `:id` — aceita QUALQUER id não-vazio (não só UUID). Registros criados
+// pela app usam `@default(uuid())`, MAS o seed/demo cria IDs amigáveis
+// (`municipality-1`, `user-supervisor`, `user-superuser`). Exigir UUID aqui fazia
+// PUT/DELETE nesses registros do seed falhar com 400. O formato não agrega
+// segurança (id é server-side; a existência/tenant é checada no Prisma → 404 se
+// não existir), então validamos apenas "string não-vazia".
 export const uuidParamSchema = z.object({
-  id: z.string().uuid('ID deve ser um UUID válido.'),
+  id: z.string().trim().min(1, 'ID é obrigatório.').max(128, 'ID inválido.'),
 });
 export type UuidParam = z.infer<typeof uuidParamSchema>;
 
