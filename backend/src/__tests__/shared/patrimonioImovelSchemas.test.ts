@@ -177,6 +177,27 @@ describe('imovel — schemas (Sprint 22)', () => {
     expect(bad.success).toBe(false);
   });
 
+  it('backend create aceita endereço estruturado (cep/bairro/cidade/estado)', () => {
+    const ok = createImovelBodySchema.safeParse({
+      ...validBackendCreate,
+      cep: '68820-000',
+      bairro: 'Centro',
+      cidade: 'São Sebastião da Boa Vista',
+      estado: 'PA',
+    });
+    expect(ok.success).toBe(true);
+  });
+
+  it('backend create rejeita UF inválida (3+ letras)', () => {
+    const bad = createImovelBodySchema.safeParse({ ...validBackendCreate, estado: 'PARA' });
+    expect(bad.success).toBe(false);
+  });
+
+  it('backend update aceita endereço estruturado parcial', () => {
+    const ok = updateImovelBodySchema.safeParse({ bairro: 'Vila Nova', estado: 'pa' });
+    expect(ok.success).toBe(true);
+  });
+
   it('backend create aceita tipo_posse válido e rejeita inválido (Art. 13 §3)', () => {
     const ok = createImovelBodySchema.safeParse({ ...validBackendCreate, tipo_posse: 'cessao' });
     expect(ok.success).toBe(true);

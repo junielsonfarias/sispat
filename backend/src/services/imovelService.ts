@@ -237,6 +237,10 @@ export interface CreateImovelInput {
   numero_patrimonio: string;
   denominacao: string;
   endereco: string;
+  cep?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
   setor?: string;
   sectorId?: string;
   data_aquisicao: string | Date;
@@ -305,6 +309,10 @@ export const createImovel = async (
         numero_patrimonio: input.numero_patrimonio,
         denominacao: input.denominacao,
         endereco: input.endereco,
+        cep: input.cep || null,
+        bairro: input.bairro || null,
+        cidade: input.cidade || null,
+        estado: input.estado ? input.estado.toUpperCase() : null,
         setor: input.setor || 'Não especificado',
         data_aquisicao: new Date(input.data_aquisicao),
         valor_aquisicao: parseFloat(String(input.valor_aquisicao)),
@@ -377,6 +385,10 @@ export const createImovel = async (
 const UPDATABLE_FIELDS = [
   'denominacao',
   'endereco',
+  'cep',
+  'bairro',
+  'cidade',
+  'estado',
   'setor',
   'descricao',
   'observacoes',
@@ -434,6 +446,11 @@ export const updateImovel = async (
   }
   if (dataToUpdate.tipo_posse !== undefined) {
     dataToUpdate.tipo_posse = parsePosse(dataToUpdate.tipo_posse);
+  }
+  if (dataToUpdate.estado !== undefined) {
+    dataToUpdate.estado = dataToUpdate.estado
+      ? String(dataToUpdate.estado).toUpperCase()
+      : null;
   }
 
   // Conversões de tipo

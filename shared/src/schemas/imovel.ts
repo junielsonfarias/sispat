@@ -249,6 +249,16 @@ export const createImovelBodySchema = z
       .min(1, 'Endereço deve ter entre 1 e 300 caracteres.')
       .max(300, 'Endereço deve ter entre 1 e 300 caracteres.'),
 
+    // Endereço estruturado (opcional, complementa o `endereco` livre).
+    cep: cepSchema.optional().or(z.literal('')),
+    bairro: z.string().max(100, 'Bairro deve ter no máximo 100 caracteres.').optional(),
+    cidade: z.string().max(100, 'Cidade deve ter no máximo 100 caracteres.').optional(),
+    estado: z
+      .string()
+      .regex(/^[A-Za-z]{2}$/, 'Estado deve ser uma UF de 2 letras (ex: PA).')
+      .optional()
+      .or(z.literal('')),
+
     setor: z
       .string()
       .min(1, 'Setor deve ter entre 1 e 100 caracteres.')
@@ -331,6 +341,16 @@ export const updateImovelBodySchema = z
       .min(1, 'Endereço deve ter entre 1 e 300 caracteres.')
       .max(300, 'Endereço deve ter entre 1 e 300 caracteres.')
       .optional(),
+
+    // Endereço estruturado (opcional, complementa o `endereco` livre).
+    cep: cepSchema.optional().or(z.literal('')),
+    bairro: z.string().max(100, 'Bairro deve ter no máximo 100 caracteres.').optional(),
+    cidade: z.string().max(100, 'Cidade deve ter no máximo 100 caracteres.').optional(),
+    estado: z
+      .string()
+      .regex(/^[A-Za-z]{2}$/, 'Estado deve ser uma UF de 2 letras (ex: PA).')
+      .optional()
+      .or(z.literal('')),
 
     setor: z
       .string()

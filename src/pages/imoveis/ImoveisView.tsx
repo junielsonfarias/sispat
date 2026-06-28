@@ -322,14 +322,26 @@ export default function ImoveisView() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                  <DetailItem 
-                    label="Endereço Completo" 
+                  <DetailItem
+                    label="Endereço Completo"
                     value={imovel.endereco}
                     icon={MapPin}
                   />
                 </div>
-                <DetailItem 
-                  label="Setor Responsável" 
+                {imovel.bairro && (
+                  <DetailItem label="Bairro" value={imovel.bairro} icon={MapPin} />
+                )}
+                {imovel.cidade && (
+                  <DetailItem label="Cidade" value={imovel.cidade} icon={MapPin} />
+                )}
+                {imovel.estado && (
+                  <DetailItem label="Estado (UF)" value={imovel.estado} icon={MapPin} />
+                )}
+                {imovel.cep && (
+                  <DetailItem label="CEP" value={imovel.cep} icon={MapPin} />
+                )}
+                <DetailItem
+                  label="Setor Responsável"
                   value={imovel.setor || 'Não especificado'}
                   icon={Building}
                 />

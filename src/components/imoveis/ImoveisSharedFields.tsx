@@ -22,7 +22,7 @@ interface ControlProps {
   control: Control<any>
 }
 
-/** Denominação + Endereço — idênticos. Endereço usa Textarea. */
+/** Denominação + Endereço + endereço estruturado (cep/bairro/cidade/estado). */
 export const ImoveisBasicoFields = ({ control }: ControlProps) => (
   <>
     <FormField
@@ -46,7 +46,74 @@ export const ImoveisBasicoFields = ({ control }: ControlProps) => (
         <FormItem className="md:col-span-2">
           <FormLabel>Endereço</FormLabel>
           <FormControl>
-            <Textarea {...field} placeholder="Endereço completo do imóvel" />
+            <Textarea {...field} placeholder="Logradouro, número, complemento" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+
+    <FormField
+      control={control}
+      name="cep"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>CEP</FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              value={field.value ?? ''}
+              placeholder="00000-000"
+              maxLength={9}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+
+    <FormField
+      control={control}
+      name="bairro"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Bairro</FormLabel>
+          <FormControl>
+            <Input {...field} value={field.value ?? ''} placeholder="Ex: Centro" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+
+    <FormField
+      control={control}
+      name="cidade"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Cidade</FormLabel>
+          <FormControl>
+            <Input {...field} value={field.value ?? ''} placeholder="Ex: São Sebastião da Boa Vista" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+
+    <FormField
+      control={control}
+      name="estado"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Estado (UF)</FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              value={field.value ?? ''}
+              placeholder="PA"
+              maxLength={2}
+              onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
