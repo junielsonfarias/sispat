@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../index'
 import { logInfo, logError } from '../config/logger'
+import { resolveSectorScope } from '../services/sectorScope'
 
 /**
  * Listar tarefas de manutenção
@@ -18,13 +19,23 @@ export const listManutencaoTasks = async (req: Request, res: Response): Promise<
     if (imovelId) where.imovelId = String(imovelId)
     if (patrimonioId) where.patrimonioId = String(patrimonioId)
 
-    // ✅ MULTI-TENANT: tarefa pertence ao município via patrimônio OU imóvel
-    if (req.user?.role !== 'superuser') {
-      const municipalityId = req.user?.municipalityId
-      where.OR = [
-        { patrimonio: { municipalityId } },
-        { imovel: { municipalityId } },
-      ]
+    // ✅ MULTI-TENANT: tarefa pertence ao município via patrimônio OU imóvel.
+    // Acesso por setor: usuario/visualizador só veem tarefas de bens/imóveis dos
+    // seus setores; superuser/admin/supervisor veem tudo. Sem setor → nada.
+    if (req.user && req.user.role !== 'superuser') {
+      const municipalityId = req.user.municipalityId
+      const scope = await resolveSectorScope(req.user)
+      if (scope) {
+        where.OR = [
+          { patrimonio: { municipalityId, sectorId: { in: scope.ids } } },
+          { imovel: { municipalityId, sectorId: { in: scope.ids } } },
+        ]
+      } else {
+        where.OR = [
+          { patrimonio: { municipalityId } },
+          { imovel: { municipalityId } },
+        ]
+      }
     }
 
     const tasks = await prisma.manutencaoTask.findMany({
@@ -91,11 +102,13 @@ export const createManutencaoTask = async (req: Request, res: Response): Promise
       return
     }
 
+    // usuario/visualizador só criam tarefas para bens/imóveis dos seus setores.
+    const scope = req.user ? await resolveSectorScope(req.user) : null
     // Valida que o bem referenciado existe e pertence ao município do usuário
     if (patrimonioId) {
       const p = await prisma.patrimonio.findUnique({
         where: { id: patrimonioId },
-        select: { id: true, municipalityId: true },
+        select: { id: true, municipalityId: true, sectorId: true },
       })
       if (!p) {
         res.status(404).json({ error: 'Patrimônio não encontrado' })
@@ -105,11 +118,15 @@ export const createManutencaoTask = async (req: Request, res: Response): Promise
         res.status(403).json({ error: 'Sem permissão para este patrimônio' })
         return
       }
+      if (scope && !scope.ids.includes(p.sectorId)) {
+        res.status(403).json({ error: 'Sem permissão para bens deste setor' })
+        return
+      }
     }
     if (imovelId) {
       const i = await prisma.imovel.findUnique({
         where: { id: imovelId },
-        select: { id: true, municipalityId: true },
+        select: { id: true, municipalityId: true, sectorId: true },
       })
       if (!i) {
         res.status(404).json({ error: 'Imóvel não encontrado' })
@@ -117,6 +134,10 @@ export const createManutencaoTask = async (req: Request, res: Response): Promise
       }
       if (req.user?.role !== 'superuser' && i.municipalityId !== req.user?.municipalityId) {
         res.status(403).json({ error: 'Sem permissão para este imóvel' })
+        return
+      }
+      if (scope && !scope.ids.includes(i.sectorId)) {
+        res.status(403).json({ error: 'Sem permissão para imóveis deste setor' })
         return
       }
     }
@@ -179,15 +200,21 @@ export const updateManutencaoTask = async (req: Request, res: Response): Promise
   try {
     const { id } = req.params
 
-    // ✅ MULTI-TENANT: garantir que a tarefa pertence ao município antes de alterar
+    // ✅ MULTI-TENANT + setor: a tarefa precisa ser do município e (para
+    // usuario/visualizador) de um setor vinculado, senão 404.
     const isSuperuser = req.user?.role === 'superuser'
     const municipalityId = req.user?.municipalityId
+    const scope = req.user ? await resolveSectorScope(req.user) : null
+    const tenantOr = scope
+      ? [
+          { patrimonio: { municipalityId, sectorId: { in: scope.ids } } },
+          { imovel: { municipalityId, sectorId: { in: scope.ids } } },
+        ]
+      : [{ patrimonio: { municipalityId } }, { imovel: { municipalityId } }]
     const existing = await prisma.manutencaoTask.findFirst({
       where: {
         id,
-        ...(isSuperuser
-          ? {}
-          : { OR: [{ patrimonio: { municipalityId } }, { imovel: { municipalityId } }] }),
+        ...(isSuperuser ? {} : { OR: tenantOr }),
       },
       select: { id: true },
     })
@@ -253,15 +280,22 @@ export const deleteManutencaoTask = async (req: Request, res: Response): Promise
   try {
     const { id } = req.params
 
-    // ✅ MULTI-TENANT: garantir que a tarefa pertence ao município antes de excluir
+    // ✅ MULTI-TENANT + setor: a tarefa precisa ser do município e (p/
+    // usuario/visualizador) de um setor vinculado. (Delete é restrito a
+    // admin/supervisor+ na rota, então na prática o escopo costuma ser total.)
     const isSuperuser = req.user?.role === 'superuser'
     const municipalityId = req.user?.municipalityId
+    const scope = req.user ? await resolveSectorScope(req.user) : null
+    const tenantOr = scope
+      ? [
+          { patrimonio: { municipalityId, sectorId: { in: scope.ids } } },
+          { imovel: { municipalityId, sectorId: { in: scope.ids } } },
+        ]
+      : [{ patrimonio: { municipalityId } }, { imovel: { municipalityId } }]
     const existing = await prisma.manutencaoTask.findFirst({
       where: {
         id,
-        ...(isSuperuser
-          ? {}
-          : { OR: [{ patrimonio: { municipalityId } }, { imovel: { municipalityId } }] }),
+        ...(isSuperuser ? {} : { OR: tenantOr }),
       },
       select: { id: true },
     })
@@ -298,13 +332,18 @@ export const getManutencaoTask = async (req: Request, res: Response): Promise<vo
     const { id } = req.params
     const isSuperuser = req.user?.role === 'superuser'
     const municipalityId = req.user?.municipalityId
+    const scope = req.user ? await resolveSectorScope(req.user) : null
+    const tenantOr = scope
+      ? [
+          { patrimonio: { municipalityId, sectorId: { in: scope.ids } } },
+          { imovel: { municipalityId, sectorId: { in: scope.ids } } },
+        ]
+      : [{ patrimonio: { municipalityId } }, { imovel: { municipalityId } }]
 
     const task = await prisma.manutencaoTask.findFirst({
       where: {
         id,
-        ...(isSuperuser
-          ? {}
-          : { OR: [{ patrimonio: { municipalityId } }, { imovel: { municipalityId } }] }),
+        ...(isSuperuser ? {} : { OR: tenantOr }),
       },
       include: {
         patrimonio: true,

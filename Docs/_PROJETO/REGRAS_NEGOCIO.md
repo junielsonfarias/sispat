@@ -36,6 +36,10 @@ Regras (atualizado 2026-06-28):
 - `usuario`/`visualizador` → restritos aos setores em `responsibleSectors`, **tanto na listagem
   quanto na escrita**. **Sem setor vinculado = SEM acesso** (antes "vazio = todos", o que dava
   acesso amplo indevido). O formulário de usuário exige ≥1 setor para esses papéis.
+- A regra vale para **bens, imóveis, empréstimos, manutenções e inventários**. O helper
+  `backend/src/services/sectorScope.ts` (`resolveSectorScope`) é a fonte única do escopo de setor
+  por papel (empréstimos/manutenções/inventários); bens/imóveis usam `hasFullAccess`/
+  `ensureSectorAccess` com a mesma semântica.
 
 ## 3. Patrimônio (Bem Móvel)
 

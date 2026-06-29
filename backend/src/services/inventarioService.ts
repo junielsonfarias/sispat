@@ -13,6 +13,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { redisCache } from '../config/redis';
 import { logDebug, logInfo } from '../config/logger';
+import { resolveSectorScope } from './sectorScope';
 
 export interface Actor {
   userId: string;
@@ -69,10 +70,12 @@ export const listInventarios = async (query: ListInventariosQuery, actor: Actor)
     where.municipalityId = actor.municipalityId;
   }
 
-  // Permissão extra: supervisor/usuario só veem inventários onde são responsáveis
-  // (admin vê todos os do município).
-  if (actor.role === 'supervisor' || actor.role === 'usuario') {
-    where.responsavel = actor.userId;
+  // Acesso por setor: superuser/admin/supervisor veem todos os inventários do
+  // município; usuario/visualizador só os inventários dos setores vinculados
+  // (Inventory.setor é o nome do setor). Sem setor vinculado → nenhum.
+  const scope = await resolveSectorScope(actor);
+  if (scope) {
+    where.setor = { in: scope.names };
   }
 
   if (query.status) where.status = query.status;
@@ -190,6 +193,12 @@ export const getInventarioById = async (id: string, actor: Actor) => {
     throw new InventarioNotFoundError();
   }
 
+  // Acesso por setor: usuario/visualizador só leem inventários dos seus setores.
+  const scope = await resolveSectorScope(actor);
+  if (scope && (!inventario.setor || !scope.names.includes(inventario.setor))) {
+    throw new InventarioNotFoundError();
+  }
+
   return inventario;
 };
 
@@ -214,6 +223,12 @@ export interface CreateInventarioInput {
 export const createInventario = async (input: CreateInventarioInput, actor: Actor) => {
   if (!input.title) throw new InventarioValidationError('O título do inventário é obrigatório');
   if (!input.setor) throw new InventarioValidationError('O setor é obrigatório');
+
+  // Acesso por setor: usuario/visualizador só criam inventário dos seus setores.
+  const sectorScope = await resolveSectorScope(actor);
+  if (sectorScope && !sectorScope.names.includes(input.setor)) {
+    throw new InventarioForbiddenError('Sem permissão para criar inventário deste setor');
+  }
 
   // Patrimônios no escopo — sempre filtra por município do usuário (defesa contra
   // setores de mesmo nome em municípios diferentes).
@@ -368,7 +383,7 @@ export const updateInventario = async (
 ) => {
   const existing = await prisma.inventory.findUnique({
     where: { id },
-    select: { id: true, title: true, municipalityId: true, responsavel: true },
+    select: { id: true, title: true, municipalityId: true, responsavel: true, setor: true },
   });
 
   if (!existing) throw new InventarioNotFoundError();
@@ -376,12 +391,11 @@ export const updateInventario = async (
     throw new InventarioNotFoundError();
   }
 
-  if (
-    actor.role !== 'superuser' &&
-    actor.role !== 'admin' &&
-    existing.responsavel !== actor.userId
-  ) {
-    throw new InventarioForbiddenError('Sem permissão para editar este inventário');
+  // Acesso por setor: superuser/admin/supervisor editam qualquer inventário do
+  // município; usuario só os dos seus setores.
+  const scope = await resolveSectorScope(actor);
+  if (scope && (!existing.setor || !scope.names.includes(existing.setor))) {
+    throw new InventarioForbiddenError('Sem permissão para editar inventário deste setor');
   }
 
   const updated = await prisma.inventory.update({
@@ -431,19 +445,25 @@ export const updateInventario = async (
 const loadEditableInventario = async (id: string, actor: Actor) => {
   const existing = await prisma.inventory.findUnique({
     where: { id },
-    select: { id: true, title: true, municipalityId: true, responsavel: true, status: true },
+    select: {
+      id: true,
+      title: true,
+      municipalityId: true,
+      responsavel: true,
+      status: true,
+      setor: true,
+    },
   });
 
   if (!existing) throw new InventarioNotFoundError();
   if (actor.role !== 'superuser' && existing.municipalityId !== actor.municipalityId) {
     throw new InventarioNotFoundError();
   }
-  if (
-    actor.role !== 'superuser' &&
-    actor.role !== 'admin' &&
-    existing.responsavel !== actor.userId
-  ) {
-    throw new InventarioForbiddenError('Sem permissão para alterar este inventário');
+  // Acesso por setor: superuser/admin/supervisor alteram qualquer inventário do
+  // município; usuario só os dos seus setores.
+  const scope = await resolveSectorScope(actor);
+  if (scope && (!existing.setor || !scope.names.includes(existing.setor))) {
+    throw new InventarioForbiddenError('Sem permissão para alterar inventário deste setor');
   }
   return existing;
 };
@@ -620,12 +640,24 @@ export const finalizeInventario = async (id: string, actor: Actor) => {
 export const deleteInventario = async (id: string, actor: Actor) => {
   const existing = await prisma.inventory.findUnique({
     where: { id },
-    select: { id: true, title: true, municipalityId: true, responsavel: true, status: true },
+    select: {
+      id: true,
+      title: true,
+      municipalityId: true,
+      responsavel: true,
+      status: true,
+      setor: true,
+    },
   });
 
   if (!existing) throw new InventarioNotFoundError();
   if (actor.role !== 'superuser' && existing.municipalityId !== actor.municipalityId) {
     throw new InventarioNotFoundError();
+  }
+  // Acesso por setor: usuario só exclui inventário dos seus setores.
+  const scope = await resolveSectorScope(actor);
+  if (scope && (!existing.setor || !scope.names.includes(existing.setor))) {
+    throw new InventarioForbiddenError('Sem permissão para excluir inventário deste setor');
   }
   // Art. 16: inventário concluído é documento de conferência física — não deve ser
   // excluído (destruiria a base da conciliação). superuser pode (manutenção).

@@ -64,6 +64,12 @@ const mockPrisma = {
   imovel: {
     findMany: jest.fn(),
   },
+  user: {
+    findUnique: jest.fn(),
+  },
+  sector: {
+    findMany: jest.fn(),
+  },
   activityLog: {
     create: jest.fn(),
   },
@@ -100,6 +106,9 @@ beforeEach(() => {
   mockCache.deletePattern.mockResolvedValue(undefined);
   // Por padrão não há imóveis no escopo; testes específicos sobrescrevem.
   mockPrisma.imovel.findMany.mockResolvedValue([]);
+  // Escopo de setor (resolveSectorScope) — usado p/ usuario/visualizador.
+  mockPrisma.user.findUnique.mockResolvedValue({ responsibleSectors: [] });
+  mockPrisma.sector.findMany.mockResolvedValue([]);
 });
 
 describe('inventarioService — listInventarios', () => {
@@ -124,15 +133,40 @@ describe('inventarioService — listInventarios', () => {
     expect(where.responsavel).toBeUndefined();
   });
 
-  it('supervisor/usuario só veem inventários em que são responsáveis', async () => {
+  it('supervisor vê todos os inventários do município (sem filtro de setor)', async () => {
     mockPrisma.inventory.findMany.mockResolvedValue([]);
     mockPrisma.inventory.count.mockResolvedValue(0);
+
+    await listInventarios({}, { ...baseActor, role: 'supervisor' });
+
+    const where = mockPrisma.inventory.findMany.mock.calls[0][0].where;
+    expect(where.municipalityId).toBe('mun-1');
+    expect(where.setor).toBeUndefined();
+    expect(where.responsavel).toBeUndefined();
+  });
+
+  it('usuario só vê inventários dos seus setores (setor in responsibleSectors)', async () => {
+    mockPrisma.inventory.findMany.mockResolvedValue([]);
+    mockPrisma.inventory.count.mockResolvedValue(0);
+    mockPrisma.user.findUnique.mockResolvedValue({ responsibleSectors: ['Educação'] });
+    mockPrisma.sector.findMany.mockResolvedValue([{ id: 's-edu' }]);
 
     await listInventarios({}, { ...baseActor, role: 'usuario' });
 
     const where = mockPrisma.inventory.findMany.mock.calls[0][0].where;
     expect(where.municipalityId).toBe('mun-1');
-    expect(where.responsavel).toBe('user-1');
+    expect(where.setor).toEqual({ in: ['Educação'] });
+  });
+
+  it('usuario SEM setor vinculado não vê nenhum inventário (setor in [])', async () => {
+    mockPrisma.inventory.findMany.mockResolvedValue([]);
+    mockPrisma.inventory.count.mockResolvedValue(0);
+    mockPrisma.user.findUnique.mockResolvedValue({ responsibleSectors: [] });
+
+    await listInventarios({}, { ...baseActor, role: 'usuario' });
+
+    const where = mockPrisma.inventory.findMany.mock.calls[0][0].where;
+    expect(where.setor).toEqual({ in: [] });
   });
 
   it('aplica filtros de status e search (case-insensitive)', async () => {
@@ -367,13 +401,16 @@ describe('inventarioService — updateInventario', () => {
     );
   });
 
-  it('lança Forbidden quando usuario não-admin não é o responsável', async () => {
+  it('lança Forbidden quando usuario edita inventário de setor fora do seu', async () => {
     mockPrisma.inventory.findUnique.mockResolvedValueOnce({
       id: 'inv-1',
       title: 't',
       municipalityId: 'mun-1',
       responsavel: 'OUTRO-user',
+      setor: 'Saúde',
     });
+    mockPrisma.user.findUnique.mockResolvedValue({ responsibleSectors: ['Educação'] });
+    mockPrisma.sector.findMany.mockResolvedValue([{ id: 's-edu' }]);
     await expect(
       updateInventario('inv-1', { title: 'novo' }, { ...baseActor, role: 'usuario' }),
     ).rejects.toBeInstanceOf(InventarioForbiddenError);
@@ -385,6 +422,7 @@ describe('inventarioService — updateInventario', () => {
       title: 't',
       municipalityId: 'mun-1',
       responsavel: 'OUTRO-user',
+      setor: 'Saúde',
     });
     mockPrisma.inventory.update.mockResolvedValue({ id: 'inv-1', title: 'novo' });
     mockPrisma.activityLog.create.mockResolvedValue({});
@@ -451,14 +489,17 @@ describe('inventarioService — updateInventarioItem', () => {
     expect(mockCache.deletePattern).toHaveBeenCalledWith('inventarios:*');
   });
 
-  it('respeita permissão: usuario não-responsável recebe Forbidden', async () => {
+  it('respeita permissão: usuario de setor diferente recebe Forbidden', async () => {
     mockPrisma.inventory.findUnique.mockResolvedValueOnce({
       id: 'inv-1',
       title: 't',
       municipalityId: 'mun-1',
       responsavel: 'OUTRO',
       status: 'em_andamento',
+      setor: 'Saúde',
     });
+    mockPrisma.user.findUnique.mockResolvedValue({ responsibleSectors: ['Educação'] });
+    mockPrisma.sector.findMany.mockResolvedValue([{ id: 's-edu' }]);
     await expect(
       updateInventarioItem('inv-1', 'p1', { encontrado: true }, { ...baseActor, role: 'usuario' }),
     ).rejects.toBeInstanceOf(InventarioForbiddenError);

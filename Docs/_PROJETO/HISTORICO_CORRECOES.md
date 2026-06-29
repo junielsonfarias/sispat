@@ -21,6 +21,23 @@
 
 ## 2026
 
+### 2026-06-28 — RBAC por setor estendido a empréstimos, manutenções e inventários
+- **Contexto:** após alinhar bens/imóveis (entrada anterior), a mesma regra de setor foi
+  aplicada aos demais módulos operacionais.
+- **Helper único** `backend/src/services/sectorScope.ts` (`resolveSectorScope`): `null` =
+  acesso total (superuser/admin/supervisor); senão `{ names, ids }` dos setores vinculados
+  (vazio = sem acesso). Centraliza a lógica antes duplicada.
+- **Empréstimos** (`emprestimoController`): list filtra por `patrimonio.sectorId in ids`;
+  create e devolver checam o setor do bem.
+- **Manutenções** (`manutencaoController`): list/getById/update/delete restringem via relação
+  (`patrimonio`/`imovel` `sectorId in ids`); create valida o setor do bem/imóvel.
+- **Inventários** (`inventarioService`): list filtra por `setor in names` (era por
+  `responsavel = userId` — trocado); getById/create/update/updateItem/finalize/delete checam o
+  setor do inventário. supervisor deixou de ficar restrito aos próprios inventários.
+- **Verificação:** back `tsc` 0; **591 Jest** verdes (+ testes novos de setor em inventário,
+  manutenção e os ajustes em tenantIsolation). Testes que assumiam o modelo antigo
+  (responsavel-based / OR sem setor) atualizados.
+
 ### 2026-06-28 — RBAC por setor: supervisor com acesso total, usuario restrito ao setor
 - **Sintoma:** o vínculo de setor (`responsibleSectors`) não restringia de forma consistente.
   Supervisor via TODOS os setores na listagem mas só editava os seus; `usuario`/`visualizador`

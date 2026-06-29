@@ -71,6 +71,9 @@ const mockPrisma = {
   $transaction: jest.fn((ops: unknown[]) => Promise.all(ops as Promise<unknown>[])),
 };
 jest.mock('../../index', () => ({ prisma: mockPrisma }));
+// resolveSectorScope (services/sectorScope) importa prisma de config/database —
+// precisa do MESMO mock para o filtro por setor da manutenção funcionar no teste.
+jest.mock('../../config/database', () => ({ prisma: mockPrisma }));
 
 import { getTiposBens, getTipoBemById, createTipoBem } from '../../controllers/tiposBensController';
 import { getFormasAquisicao } from '../../controllers/formasAquisicaoController';
@@ -379,12 +382,33 @@ describe('IDOR por id — reorderImovelFields escopa cada update por município'
 });
 
 describe('tenant isolation — manutenção (via relação patrimônio/imóvel)', () => {
-  it('usuário do município A filtra por relação OR com municipalityId', async () => {
-    await listManutencaoTasks(makeReq({ role: 'usuario', municipalityId: 'mun-A' }), makeRes());
+  it('admin filtra por relação OR só com municipalityId (acesso total ao município)', async () => {
+    await listManutencaoTasks(makeReq({ role: 'admin', municipalityId: 'mun-A' }), makeRes());
     const arg = (mockPrisma.manutencaoTask.findMany.mock.calls[0] as any[])[0];
     expect(arg.where.OR).toEqual([
       { patrimonio: { municipalityId: 'mun-A' } },
       { imovel: { municipalityId: 'mun-A' } },
+    ]);
+  });
+
+  it('usuário filtra por relação OR com municipalityId + setores vinculados', async () => {
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ responsibleSectors: ['Educação'] });
+    mockPrisma.sector.findMany.mockResolvedValueOnce([{ id: 's-edu' }] as never);
+    await listManutencaoTasks(makeReq({ role: 'usuario', municipalityId: 'mun-A' }), makeRes());
+    const arg = (mockPrisma.manutencaoTask.findMany.mock.calls[0] as any[])[0];
+    expect(arg.where.OR).toEqual([
+      { patrimonio: { municipalityId: 'mun-A', sectorId: { in: ['s-edu'] } } },
+      { imovel: { municipalityId: 'mun-A', sectorId: { in: ['s-edu'] } } },
+    ]);
+  });
+
+  it('usuário sem setor vinculado fica restrito a sectorId in [] (nada)', async () => {
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ responsibleSectors: [] });
+    await listManutencaoTasks(makeReq({ role: 'usuario', municipalityId: 'mun-A' }), makeRes());
+    const arg = (mockPrisma.manutencaoTask.findMany.mock.calls[0] as any[])[0];
+    expect(arg.where.OR).toEqual([
+      { patrimonio: { municipalityId: 'mun-A', sectorId: { in: [] } } },
+      { imovel: { municipalityId: 'mun-A', sectorId: { in: [] } } },
     ]);
   });
 

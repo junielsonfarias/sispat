@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { logActivity } from '../utils/activityLogger';
 import { logError, logInfo, logWarn } from '../config/logger';
+import { resolveSectorScope } from '../services/sectorScope';
 
 /**
  * GET /api/emprestimos
@@ -19,8 +20,16 @@ export const listEmprestimos = async (req: Request, res: Response): Promise<void
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 50));
 
     const agora = new Date();
+    // Filtro por setor: usuario/visualizador só veem empréstimos de bens dos
+    // seus setores; superuser/admin/supervisor veem tudo (scope null). Sem setor
+    // vinculado → `sectorId in []` → nenhum empréstimo.
+    const scope = await resolveSectorScope(req.user);
+    const patrimonioWhere: Record<string, unknown> = {
+      municipalityId: req.user.municipalityId,
+    };
+    if (scope) patrimonioWhere.sectorId = { in: scope.ids };
     const where: Record<string, unknown> = {
-      patrimonio: { municipalityId: req.user.municipalityId },
+      patrimonio: patrimonioWhere,
     };
     // 'atrasado' não é um valor persistido: é derivado (empréstimo ativo cuja
     // devolução prevista já passou). Traduz o filtro para a condição de data —
@@ -111,6 +120,7 @@ export const createEmprestimo = async (req: Request, res: Response): Promise<voi
         descricao_bem: true,
         status: true,
         municipalityId: true,
+        sectorId: true,
       },
     });
     if (!patrimonio) {
@@ -124,6 +134,13 @@ export const createEmprestimo = async (req: Request, res: Response): Promise<voi
       patrimonio.municipalityId !== req.user.municipalityId
     ) {
       res.status(403).json({ error: 'Sem permissão para este patrimônio' });
+      return;
+    }
+
+    // Acesso por setor: usuario/visualizador só emprestam bens dos seus setores.
+    const scope = await resolveSectorScope(req.user);
+    if (scope && !scope.ids.includes(patrimonio.sectorId)) {
+      res.status(403).json({ error: 'Sem permissão para bens deste setor' });
       return;
     }
 
@@ -200,7 +217,7 @@ export const devolverEmprestimo = async (req: Request, res: Response): Promise<v
     const emprestimo = await prisma.emprestimo.findUnique({
       where: { id },
       include: {
-        patrimonio: { select: { id: true, municipalityId: true, status: true } },
+        patrimonio: { select: { id: true, municipalityId: true, status: true, sectorId: true } },
       },
     });
     if (!emprestimo) {
@@ -213,6 +230,13 @@ export const devolverEmprestimo = async (req: Request, res: Response): Promise<v
       emprestimo.patrimonio.municipalityId !== req.user.municipalityId
     ) {
       res.status(403).json({ error: 'Sem permissão para este empréstimo' });
+      return;
+    }
+
+    // Acesso por setor: usuario/visualizador só devolvem bens dos seus setores.
+    const scope = await resolveSectorScope(req.user);
+    if (scope && !scope.ids.includes(emprestimo.patrimonio.sectorId)) {
+      res.status(403).json({ error: 'Sem permissão para bens deste setor' });
       return;
     }
 
