@@ -32,7 +32,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useInventory } from '@/contexts/InventoryContext'
 import { useSectors } from '@/contexts/SectorContext'
 import { useLocais } from '@/contexts/LocalContext'
-import { useAuth } from '@/hooks/useAuth'
+import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { toast } from '@/hooks/use-toast'
 import {
   SearchableSelect,
@@ -96,25 +96,21 @@ const locationTypeOptions: SearchableSelectOption[] = [
 
 export default function InventarioCreate() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { canViewAllData, userSectors } = useSectorFilter()
   const { createInventory } = useInventory()
   const { sectors } = useSectors()
   const { getLocaisBySectorId } = useLocais()
   const [isLoading, setIsLoading] = useState(false)
 
-  // ✅ Filtrar setores baseado em role e responsibleSectors
+  // ✅ Filtrar setores por papel (superuser/admin/supervisor veem todos;
+  // usuario/visualizador só os vinculados). Reusa o mesmo critério do backend
+  // via useSectorFilter (canViewAllData inclui superuser).
   const allowedSectors = useMemo(() => {
-    if (!user) return []
-    // Admin e Supervisor veem TODOS os setores
-    if (user.role === 'admin' || user.role === 'supervisor') {
-      return sectors.map((s) => ({ value: s.name, label: s.name }))
-    }
-    // Usuário normal vê apenas seus setores responsáveis
-    const userSectors = user.responsibleSectors || []
-    return sectors
-      .filter((s) => userSectors.includes(s.name))
-      .map((s) => ({ value: s.name, label: s.name }))
-  }, [sectors, user])
+    const visible = canViewAllData
+      ? sectors
+      : sectors.filter((s) => userSectors.includes(s.name))
+    return visible.map((s) => ({ value: s.name, label: s.name }))
+  }, [sectors, canViewAllData, userSectors])
 
   const sectorOptions: SearchableSelectOption[] = allowedSectors
 

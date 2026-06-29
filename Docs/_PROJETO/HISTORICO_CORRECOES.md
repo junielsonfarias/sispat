@@ -35,6 +35,15 @@
 - **Verificação:** back/front `tsc` 0; **594 Jest** (+4: superuser exige município, município
   inexistente=400, admin ignora body) + **145 vitest** verdes.
 
+### 2026-06-28 — Dropdown de setor dos inventários honra o papel (inclui superuser)
+- `InventarioCreate`/`InventarioEdit`: o seletor de setor passou a reusar `useSectorFilter`
+  (`canViewAllData`/`userSectors`) — antes o Create só liberava admin/supervisor (**superuser
+  caía no filtro de responsáveis** e ficava sem setores) e o Edit listava **todos** os setores
+  sem filtro. Agora superuser/admin/supervisor veem todos; usuario/visualizador só os vinculados.
+- Empréstimo não tem formulário de criação no frontend (só devolução) e a manutenção usa a lista
+  de imóveis já filtrada pelo backend (`useImovel`) — nada a ajustar nesses dois. front `tsc` 0;
+  145 vitest verdes.
+
 ### 2026-06-28 — RBAC por setor estendido a empréstimos, manutenções e inventários
 - **Contexto:** após alinhar bens/imóveis (entrada anterior), a mesma regra de setor foi
   aplicada aos demais módulos operacionais.

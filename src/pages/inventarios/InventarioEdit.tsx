@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { useInventory } from '@/contexts/InventoryContext'
 import { useSectors } from '@/contexts/SectorContext'
+import { useSectorFilter } from '@/hooks/useSectorFilter'
 import { useLocais } from '@/contexts/LocalContext'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import { Inventory } from '@/types'
@@ -51,7 +52,15 @@ export default function InventarioEdit() {
   const navigate = useNavigate()
   const { getInventoryById, updateInventory } = useInventory()
   const { sectors } = useSectors()
+  const { canViewAllData, userSectors } = useSectorFilter()
   const { getLocaisBySectorId } = useLocais()
+
+  // Setores que o usuário pode escolher (superuser/admin/supervisor: todos;
+  // usuario/visualizador: só os vinculados).
+  const visibleSectors = useMemo(
+    () => (canViewAllData ? sectors : sectors.filter((s) => userSectors.includes(s.name))),
+    [sectors, canViewAllData, userSectors],
+  )
   const [inventory, setInventory] = useState<Inventory | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -230,7 +239,7 @@ export default function InventarioEdit() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {sectors.map((sector) => (
+                            {visibleSectors.map((sector) => (
                               <SelectItem key={sector.id} value={sector.name}>
                                 {sector.name}
                               </SelectItem>
