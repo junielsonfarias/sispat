@@ -42,17 +42,24 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // ✅ CACHE: Gerar chave de cache baseada no município
-    const cacheKey = `users:${req.user.municipalityId}:active`;
-    
+    // superuser é global: enxerga usuários de TODOS os municípios (provisiona
+    // admins/supervisores em qualquer um). Os demais ficam restritos ao próprio
+    // município (tenant isolation).
+    const isSuperuser = req.user.role === 'superuser';
+
+    // ✅ CACHE: chave separada p/ a lista global do superuser e p/ cada município
+    const cacheKey = isSuperuser
+      ? 'users:all:active'
+      : `users:${req.user.municipalityId}:active`;
+
     // Tentar obter do cache Redis primeiro
     let users = await redisCache.get<any[]>(cacheKey);
-    
+
     if (!users) {
-      // Buscar usuários do mesmo município
+      // Buscar usuários (superuser: todos os municípios; demais: o próprio)
       users = await prisma.user.findMany({
         where: {
-          municipalityId: req.user.municipalityId,
+          ...(isSuperuser ? {} : { municipalityId: req.user.municipalityId }),
           isActive: true,
         },
         select: {

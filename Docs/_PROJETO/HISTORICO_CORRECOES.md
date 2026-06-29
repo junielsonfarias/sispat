@@ -21,6 +21,23 @@
 
 ## 2026
 
+### 2026-06-29 — Superuser enxerga usuários de todos os municípios (lista global)
+- **Sintoma:** superuser cria admin/supervisor vinculado a um município (fluxo OK), mas o usuário
+  criado em município diferente do superuser NÃO aparecia na lista de gestão depois.
+- **Causa-raiz:** `getUsers` filtrava sempre por `municipalityId: req.user.municipalityId` sem
+  bypass de superuser, embora a tela (`UserManagementUnified userType="superuser"`) pretenda
+  mostrar "todos os usuários" e o `AuthContext` carregue a lista via `GET /users`.
+- **Correção:** `getUsers` agora, para superuser, busca usuários de TODOS os municípios (sem
+  filtro de `municipalityId`) com chave de cache própria `users:all:active`; demais papéis seguem
+  restritos ao próprio município (tenant isolation). Invalidação por prefixo `users:` já cobre a
+  chave nova em todas as mutações.
+- **Análise (criação de admin):** confirmada correta de ponta a ponta — front: superuser vê o
+  seletor de município e a opção "Administrador" (`assignableRoleOptions('superuser')`), `onSubmit`
+  exige município; backend: valida que o município existe e `canAssignRole(superuser, admin)` = true
+  (ROLE_RANK superuser 4 ≥ admin 3).
+- **Arquivos:** `backend/src/controllers/userController.ts` (getUsers).
+- **Verificação:** `tsc -p backend/tsconfig.json` = 0 erros.
+
 ### 2026-06-29 — Ícone do olho (senha), import por supervisor e papel admin no form de usuário
 - **Sintoma:** (1) na tela de login o ícone de olho não aparecia (só um "quadrado"
   ao clicar); (2) supervisor recebia "Acesso negado — apenas administradores podem importar
