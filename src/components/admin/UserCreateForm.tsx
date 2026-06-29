@@ -26,6 +26,7 @@ import { useSectors } from '@/contexts/SectorContext'
 import { STRONG_PASSWORD_REGEX, STRONG_PASSWORD_MESSAGE } from '@sispat/shared'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/services/api-adapter'
+import { assignableRoleOptions } from '@/lib/roles'
 
 const userCreateSchema = z.object({
   name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
@@ -33,7 +34,7 @@ const userCreateSchema = z.object({
   // Mesma regra forte do backend (createUserSchema) — antes o form aceitava 8
   // chars e o backend rejeitava com 400 confuso.
   password: z.string().regex(STRONG_PASSWORD_REGEX, STRONG_PASSWORD_MESSAGE),
-  role: z.enum(['supervisor', 'usuario', 'visualizador'], {
+  role: z.enum(['admin', 'supervisor', 'usuario', 'visualizador'], {
     required_error: 'Perfil é obrigatório.',
   }),
   responsibleSectors: z.array(z.string()).optional(),
@@ -61,17 +62,14 @@ interface UserCreateFormProps {
   onSuccess: (newUser: User) => void
 }
 
-const roleOptions: SearchableSelectOption[] = [
-  { value: 'supervisor', label: 'Supervisor' },
-  { value: 'usuario', label: 'Usuário' },
-  { value: 'visualizador', label: 'Visualizador' },
-]
-
 export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const { addUser, user } = useAuth()
   const { sectors } = useSectors()
   const isSuperuser = user?.role === 'superuser'
+
+  // Opções de perfil conforme o papel do criador (anti-escalada).
+  const roleOptions = useMemo(() => assignableRoleOptions(user?.role), [user?.role])
 
   const form = useForm<UserCreateFormValues>({
     resolver: zodResolver(userCreateSchema),
@@ -241,10 +239,10 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
             </FormItem>
           )}
         />
-        {role === 'supervisor' && (
+        {(role === 'supervisor' || role === 'admin') && (
           <p className="text-sm text-muted-foreground">
-            O supervisor tem acesso total: visualiza e edita os bens de todos os setores do
-            município.
+            {role === 'admin' ? 'O administrador' : 'O supervisor'} tem acesso total: visualiza e
+            edita os bens de todos os setores do município.
           </p>
         )}
         {(role === 'usuario' || role === 'visualizador') && (

@@ -21,6 +21,26 @@
 
 ## 2026
 
+### 2026-06-29 — Ícone do olho (senha), import por supervisor e papel admin no form de usuário
+- **Sintoma:** (1) na tela de login o ícone de olho não aparecia (só um "quadrado"
+  ao clicar); (2) supervisor recebia "Acesso negado — apenas administradores podem importar
+  relatórios"; (3) ao criar/editar usuário não havia a opção "Administrador", só supervisor/usuário/visualizador.
+- **Causa-raiz:** (1) o ícone usava `text-muted-foreground`, que no tema escuro vira cinza claro
+  quase invisível sobre o card de login forçado a branco (`bg-white/95`); (2) o guard do componente
+  `ImportarRelatorio` restringia a admin/superuser, embora o backend já autorize supervisor; (3)
+  os forms de usuário tinham `roleOptions`/enum fixos sem `admin`, iguais para todos os papéis.
+- **Correção:** PasswordInput passou a usar cor fixa visível (`text-gray-500`/`hover:text-gray-800`)
+  e ícone maior (h-5). Guard de import inclui supervisor (alinhado ao backend). Novo util
+  `src/lib/roles.ts` (`assignableRoleOptions` espelhando o `canAssignRole`/ROLE_LEVELS do backend):
+  os forms de criar/editar usuário agora mostram os papéis que o ATOR pode atribuir — admin/superuser
+  veem "Administrador"; supervisor continua sem (anti-escalada, mantida no backend).
+- **Arquivos:** `src/components/ui/password-input.tsx`, `src/pages/bens/ImportarRelatorio.tsx`,
+  `src/lib/roles.ts` (novo), `src/components/admin/UserCreateForm.tsx`,
+  `src/components/admin/UserEditForm.tsx`.
+- **Verificação:** `tsc --noEmit -p tsconfig.app.json` = 0 erros.
+- **Lição:** cor de ícone em card de fundo fixo não deve depender do token de tema; opções de papel
+  na UI devem espelhar a hierarquia anti-escalada do backend, não uma lista fixa.
+
 ### 2026-06-29 — Botão "mostrar senha" + menu lateral recolhível
 - **Sintoma:** (1) o botão de mostrar/ocultar senha não aparecia/era inconsistente entre telas
   (login, redefinição, troca de senha, config de e-mail); (2) os submenus tinham o lado direito

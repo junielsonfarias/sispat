@@ -17,18 +17,16 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { Loader2 } from 'lucide-react'
 import { User } from '@/types'
-import {
-  SearchableSelect,
-  SearchableSelectOption,
-} from '@/components/ui/searchable-select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { useSectors } from '@/contexts/SectorContext'
+import { assignableRoleOptions } from '@/lib/roles'
 
 const userEditSchema = z
   .object({
     name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
     email: z.string().email({ message: 'Formato de e-mail inválido.' }),
-    role: z.enum(['supervisor', 'usuario', 'visualizador']),
+    role: z.enum(['admin', 'supervisor', 'usuario', 'visualizador']),
     responsibleSectors: z.array(z.string()).optional(),
   })
   // usuario/visualizador são restritos aos setores vinculados (sem setor = sem
@@ -53,19 +51,22 @@ interface UserEditFormProps {
   onSuccess: (updatedUser: User) => void
 }
 
-const roleOptions: SearchableSelectOption[] = [
-  { value: 'supervisor', label: 'Supervisor' },
-  { value: 'usuario', label: 'Usuário' },
-  { value: 'visualizador', label: 'Visualizador' },
-]
-
 export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
-  const { updateUser } = useAuth()
+  const { updateUser, user: currentUser } = useAuth()
   const { sectors } = useSectors()
 
+  // Opções de perfil conforme o papel de quem edita (anti-escalada).
+  const roleOptions = useMemo(
+    () => assignableRoleOptions(currentUser?.role),
+    [currentUser?.role],
+  )
+
   const editableRole: UserEditFormValues['role'] =
-    user.role === 'supervisor' || user.role === 'usuario' || user.role === 'visualizador'
+    user.role === 'admin' ||
+    user.role === 'supervisor' ||
+    user.role === 'usuario' ||
+    user.role === 'visualizador'
       ? user.role
       : 'supervisor'
 

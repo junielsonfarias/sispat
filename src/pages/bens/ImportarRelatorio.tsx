@@ -225,8 +225,12 @@ const ImportarRelatorio = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const isAdminOuSuperuser =
-    user?.role === 'admin' || user?.role === 'superuser'
+  // Quem pode importar relatórios: superuser, admin e supervisor (alinhado ao
+  // backend, que autoriza esses três papéis nas rotas de preview/confirmar).
+  const podeImportar =
+    user?.role === 'admin' ||
+    user?.role === 'superuser' ||
+    user?.role === 'supervisor'
 
   // ── Etapa 2 helpers ───────────────────────────────────────────────────────
 
@@ -409,7 +413,7 @@ const ImportarRelatorio = () => {
   }, [relatorio, edicoes, mapaSetor, sectors, ugsSemSetor.length])
 
   // ── RBAC guard (após todos os hooks) ─────────────────────────────────────
-  if (!isAdminOuSuperuser) {
+  if (!podeImportar) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
         <Card className="max-w-md w-full">
@@ -417,7 +421,7 @@ const ImportarRelatorio = () => {
             <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
             <p className="font-medium text-foreground">Acesso negado</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Apenas administradores podem importar relatórios.
+              Você não tem permissão para importar relatórios.
             </p>
           </CardContent>
         </Card>

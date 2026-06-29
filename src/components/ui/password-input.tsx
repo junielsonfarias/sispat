@@ -35,13 +35,15 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           size="icon"
           tabIndex={-1}
           aria-label={show ? 'Ocultar senha' : 'Mostrar senha'}
-          className="absolute right-1 top-1/2 z-10 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
+          // Cor fixa (não dependente do tema): o ícone precisa ser visível tanto
+          // em cards claros quanto no card branco forçado da tela de login.
+          className="absolute right-1 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
           onClick={() => setShow((prev) => !prev)}
         >
           {show ? (
-            <EyeOff className="h-4 w-4" />
+            <EyeOff className="h-5 w-5" />
           ) : (
-            <Eye className="h-4 w-4" />
+            <Eye className="h-5 w-5" />
           )}
         </Button>
       </div>
