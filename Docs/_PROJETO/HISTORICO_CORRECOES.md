@@ -21,6 +21,20 @@
 
 ## 2026
 
+### 2026-06-28 — Superuser provisiona usuários por município (supervisor por município)
+- **Objetivo:** o superuser cria usuários (em especial **supervisores**) vinculados a um
+  município escolhido; cada supervisor depois cria usuários só do seu município (tenant lock,
+  já existente). Mantém o isolamento multi-tenant (NÃO se permitiu supervisor cross-município).
+- **Backend:** `createUserSchema` ganhou `municipalityId?`; `createUser` honra o município do body
+  **apenas quando o criador é superuser** (valida que o município existe) — admin/supervisor
+  continuam travados em `req.user.municipalityId` (ignoram o body). `getSectors` aceita
+  `?municipalityId=` para superuser (escopar setores ao município escolhido no cadastro).
+- **Frontend (`UserCreateForm`):** quando o criador é superuser, mostra seletor de **Município**
+  (obrigatório, lista `/municipalities`); o seletor de setores (usuario/visualizador) passa a
+  buscar os setores do município selecionado; trocar de município zera os setores.
+- **Verificação:** back/front `tsc` 0; **594 Jest** (+4: superuser exige município, município
+  inexistente=400, admin ignora body) + **145 vitest** verdes.
+
 ### 2026-06-28 — RBAC por setor estendido a empréstimos, manutenções e inventários
 - **Contexto:** após alinhar bens/imóveis (entrada anterior), a mesma regra de setor foi
   aplicada aos demais módulos operacionais.

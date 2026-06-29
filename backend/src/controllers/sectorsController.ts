@@ -32,6 +32,10 @@ export const getSectors = async (req: Request, res: Response): Promise<void> => 
     // ✅ MULTI-TENANT: superuser vê todos; demais ficam restritos ao município
     if (userRole !== 'superuser') {
       where.municipalityId = req.user?.municipalityId;
+    } else if (typeof req.query.municipalityId === 'string' && req.query.municipalityId) {
+      // superuser pode escopar a um município (ex.: cadastro de usuário com setor
+      // para um município específico).
+      where.municipalityId = req.query.municipalityId;
     }
 
     // ✅ FILTRO POR PERMISSÃO DE USUÁRIO

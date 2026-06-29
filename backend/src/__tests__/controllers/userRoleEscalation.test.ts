@@ -30,6 +30,7 @@ const mockPrisma = {
     create: jest.fn(() => ({ id: 'new-1', name: 'n', email: 'e@a.gov' })),
     update: jest.fn(() => ({ id: 'u1', name: 'n' })),
   },
+  municipality: { findUnique: jest.fn() },
   activityLog: { create: jest.fn() },
 };
 jest.mock('../../index', () => ({ prisma: mockPrisma }));
@@ -71,6 +72,8 @@ function makeRes() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Por padrão o município informado existe; testes específicos sobrescrevem.
+  mockPrisma.municipality.findUnique.mockResolvedValue({ id: 'mun-A' });
 });
 
 describe('createUser — anti-escalada de privilégio', () => {
@@ -111,8 +114,24 @@ describe('createUser — anti-escalada de privilégio', () => {
     expect(mockPrisma.user.create).toHaveBeenCalled();
   });
 
-  it('superuser PODE criar admin', async () => {
+  it('superuser PODE criar admin (no município informado no body)', async () => {
     mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+    mockPrisma.municipality.findUnique.mockResolvedValueOnce({ id: 'mun-B' });
+    const res = makeRes();
+    await createUser(
+      makeReq({ role: 'superuser', municipalityId: 'mun-A' }, {}, {
+        email: 'novo@a.gov', name: 'Novo', password: 'x', role: 'admin', municipalityId: 'mun-B',
+      }),
+      res,
+    );
+    expect(res.statusCode).toBe(201);
+    // Usa o município ESCOLHIDO (mun-B), não o do superuser (mun-A).
+    expect(mockPrisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ municipalityId: 'mun-B' }) }),
+    );
+  });
+
+  it('superuser SEM município no body → 400 (sem create)', async () => {
     const res = makeRes();
     await createUser(
       makeReq({ role: 'superuser', municipalityId: 'mun-A' }, {}, {
@@ -120,8 +139,40 @@ describe('createUser — anti-escalada de privilégio', () => {
       }),
       res,
     );
+    expect(res.statusCode).toBe(400);
+    expect(mockPrisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('superuser com município inexistente → 400 (sem create)', async () => {
+    mockPrisma.municipality.findUnique.mockResolvedValueOnce(null);
+    const res = makeRes();
+    await createUser(
+      makeReq({ role: 'superuser', municipalityId: 'mun-A' }, {}, {
+        email: 'novo@a.gov', name: 'Novo', password: 'x', role: 'admin', municipalityId: 'inexistente',
+      }),
+      res,
+    );
+    expect(res.statusCode).toBe(400);
+    expect(mockPrisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('admin IGNORA municipalityId do body e usa o próprio (tenant lock)', async () => {
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+    const res = makeRes();
+    await createUser(
+      makeReq({ role: 'admin', municipalityId: 'mun-A' }, {}, {
+        email: 'novo@a.gov', name: 'Novo', password: 'x', role: 'usuario',
+        responsibleSectors: ['Setor X'],
+        municipalityId: 'mun-B', // tentativa de provisionar em outro município
+      }),
+      res,
+    );
     expect(res.statusCode).toBe(201);
-    expect(mockPrisma.user.create).toHaveBeenCalled();
+    expect(mockPrisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ municipalityId: 'mun-A' }) }),
+    );
+    // admin não consulta municipality (não usa o body)
+    expect(mockPrisma.municipality.findUnique).not.toHaveBeenCalled();
   });
 });
 

@@ -166,7 +166,27 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const { email, name, password, role, responsibleSectors } = req.body;
+    const { email, name, password, role, responsibleSectors, municipalityId: bodyMunicipalityId } = req.body;
+
+    // Município do novo usuário:
+    //  - superuser pode provisionar em QUALQUER município (escolhe no cadastro);
+    //  - admin/supervisor ficam travados no próprio (tenant lock — ignora o body).
+    let targetMunicipalityId = req.user.municipalityId;
+    if (req.user.role === 'superuser') {
+      if (!bodyMunicipalityId) {
+        res.status(400).json({ error: 'Selecione o município do novo usuário.' });
+        return;
+      }
+      const municipality = await prisma.municipality.findUnique({
+        where: { id: bodyMunicipalityId },
+        select: { id: true },
+      });
+      if (!municipality) {
+        res.status(400).json({ error: 'Município inválido.' });
+        return;
+      }
+      targetMunicipalityId = bodyMunicipalityId;
+    }
 
     // Schema Zod compartilhado (@sispat/shared → createUserSchema) já validou
     // presença dos campos, formato do e-mail e força da senha
@@ -208,7 +228,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         password: hashedPassword,
         role,
         responsibleSectors: responsibleSectors || [],
-        municipalityId: req.user.municipalityId,
+        municipalityId: targetMunicipalityId,
         isActive: true,
       },
       select: {

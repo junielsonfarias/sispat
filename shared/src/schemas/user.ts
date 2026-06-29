@@ -46,6 +46,10 @@ export const createUserSchema = z.object({
   password: strongPasswordSchema,
   role: userRoleSchema,
   responsibleSectors: responsibleSectorsSchema,
+  // Município do novo usuário. Só é honrado quando o CRIADOR é superuser
+  // (provisiona usuários em qualquer município); para admin/supervisor o
+  // backend ignora e força o município do próprio criador (tenant lock).
+  municipalityId: z.string().trim().min(1).max(128).optional(),
 });
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 

@@ -24,6 +24,8 @@ import {
 import { MultiSelect } from '@/components/ui/multi-select'
 import { useSectors } from '@/contexts/SectorContext'
 import { STRONG_PASSWORD_REGEX, STRONG_PASSWORD_MESSAGE } from '@sispat/shared'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/services/api-adapter'
 
 const userCreateSchema = z.object({
   name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
@@ -35,6 +37,8 @@ const userCreateSchema = z.object({
     required_error: 'Perfil é obrigatório.',
   }),
   responsibleSectors: z.array(z.string()).optional(),
+  // Só usado quando o criador é superuser (provisiona em qualquer município).
+  municipalityId: z.string().optional(),
 })
   // usuario/visualizador são restritos aos setores vinculados — sem setor =
   // sem acesso. Exige ao menos um para não criar um usuário "cego".
@@ -67,6 +71,7 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const { addUser, user } = useAuth()
   const { sectors } = useSectors()
+  const isSuperuser = user?.role === 'superuser'
 
   const form = useForm<UserCreateFormValues>({
     resolver: zodResolver(userCreateSchema),
@@ -75,30 +80,56 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
       email: '',
       password: '',
       responsibleSectors: [],
+      municipalityId: '',
     },
   })
 
   const role = form.watch('role')
+  const selectedMunicipalityId = form.watch('municipalityId')
 
-  const allSectors = useMemo(
-    () =>
-      sectors.map((s) => ({ value: s.name, label: s.name })),
-    [sectors],
-  )
+  // Superuser provisiona em qualquer município → lista de municípios p/ o seletor.
+  const { data: municipalities = [] } = useQuery({
+    queryKey: ['municipalities', 'for-user-create'],
+    queryFn: () => api.get<{ id: string; name: string }[]>('/municipalities'),
+    enabled: isSuperuser,
+  })
+  const municipalityOptions: SearchableSelectOption[] = municipalities.map((m) => ({
+    value: m.id,
+    label: m.name,
+  }))
+
+  // Setores para o seletor de usuario/visualizador:
+  //  - superuser: do município selecionado (busca dedicada);
+  //  - admin/supervisor: do próprio município (SectorContext).
+  const { data: municipalitySectors = [] } = useQuery({
+    queryKey: ['sectors', 'by-municipality', selectedMunicipalityId],
+    queryFn: () =>
+      api.get<{ name: string }[]>(`/sectors?municipalityId=${selectedMunicipalityId}`),
+    enabled: isSuperuser && !!selectedMunicipalityId,
+  })
+
+  const allSectors = useMemo(() => {
+    const source = isSuperuser ? municipalitySectors : sectors
+    return source.map((s) => ({ value: s.name, label: s.name }))
+  }, [isSuperuser, municipalitySectors, sectors])
 
   const onSubmit = async (data: UserCreateFormValues) => {
-    if (!user?.municipalityId) {
+    // superuser provisiona em qualquer município (escolhe no form); os demais
+    // ficam travados no próprio município.
+    const targetMunicipalityId = isSuperuser ? data.municipalityId : user?.municipalityId
+    if (!targetMunicipalityId) {
       toast({
         variant: 'destructive',
         title: 'Município não identificado',
-        description: 'Sua conta não está associada a um município. Faça login novamente.',
+        description: isSuperuser
+          ? 'Selecione o município do novo usuário.'
+          : 'Sua conta não está associada a um município. Faça login novamente.',
       })
       return
     }
     setIsLoading(true)
     try {
-      // municipalityId do usuário autenticado (multi-tenant) — não usar constante fixa.
-      const userData = { ...data, municipalityId: user.municipalityId }
+      const userData = { ...data, municipalityId: targetMunicipalityId }
       const newUser = await addUser(userData)
       toast({
         title: 'Sucesso!',
@@ -164,6 +195,34 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
             </FormItem>
           )}
         />
+        {isSuperuser && (
+          <FormField
+            control={form.control}
+            name="municipalityId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Município</FormLabel>
+                <FormControl>
+                  <SearchableSelect
+                    options={municipalityOptions}
+                    value={field.value || ''}
+                    onChange={(v) => {
+                      field.onChange(v)
+                      // Troca de município → zera setores (são de outro município).
+                      form.setValue('responsibleSectors', [])
+                    }}
+                    placeholder="Selecione o município"
+                  />
+                </FormControl>
+                <FormDescription>
+                  O usuário será criado neste município. Supervisores gerenciam apenas o
+                  município vinculado a eles.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="role"
