@@ -24,12 +24,27 @@ import {
 import { MultiSelect } from '@/components/ui/multi-select'
 import { useSectors } from '@/contexts/SectorContext'
 
-const userEditSchema = z.object({
-  name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
-  email: z.string().email({ message: 'Formato de e-mail inválido.' }),
-  role: z.enum(['supervisor', 'usuario', 'visualizador']),
-  responsibleSectors: z.array(z.string()).optional(),
-})
+const userEditSchema = z
+  .object({
+    name: z.string().min(1, { message: 'Nome completo é obrigatório.' }),
+    email: z.string().email({ message: 'Formato de e-mail inválido.' }),
+    role: z.enum(['supervisor', 'usuario', 'visualizador']),
+    responsibleSectors: z.array(z.string()).optional(),
+  })
+  // usuario/visualizador são restritos aos setores vinculados (sem setor = sem
+  // acesso) — exige ao menos um.
+  .superRefine((data, ctx) => {
+    if (
+      (data.role === 'usuario' || data.role === 'visualizador') &&
+      (!data.responsibleSectors || data.responsibleSectors.length === 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['responsibleSectors'],
+        message: 'Selecione ao menos um setor para este perfil.',
+      })
+    }
+  })
 
 type UserEditFormValues = z.infer<typeof userEditSchema>
 
@@ -166,7 +181,13 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
             </FormItem>
           )}
         />
-        {(role === 'supervisor' || role === 'usuario' || role === 'visualizador') && (
+        {role === 'supervisor' && (
+          <p className="text-sm text-muted-foreground">
+            O supervisor tem acesso total: visualiza e edita os bens de todos os setores do
+            município.
+          </p>
+        )}
+        {(role === 'usuario' || role === 'visualizador') && (
           <FormField
             control={form.control}
             name="responsibleSectors"
@@ -182,9 +203,9 @@ export const UserEditForm = ({ user, onSuccess }: UserEditFormProps) => {
                   />
                 </FormControl>
                 <FormDescription>
-                  {role === 'supervisor' 
-                    ? 'O supervisor terá acesso para gerenciar os bens destes setores.'
-                    : 'O usuário terá acesso aos bens destes setores e seus subsetores.'}
+                  {role === 'visualizador'
+                    ? 'O visualizador poderá apenas consultar os bens destes setores.'
+                    : 'O usuário só verá e editará os bens destes setores. Sem setor, não terá acesso.'}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

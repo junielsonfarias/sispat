@@ -106,12 +106,14 @@ const DETAIL_INCLUDE = {
 const normalizeOnRead = sharedNormalizeOnRead;
 
 // ===========================================================================
-// Permissões: superuser/admin têm acesso total; supervisor/usuario só veem
-// patrimônios do seu município e dos setores em `responsibleSectors`.
-// (responsibleSectors vazio = acesso a todos os setores do município.)
+// Permissões: superuser/admin/SUPERVISOR têm acesso total (veem e editam todos
+// os setores). usuario/visualizador são restritos aos setores em
+// `responsibleSectors` (na listagem e na escrita). SEM setor vinculado = SEM
+// acesso (antes "vazio = todos", o que dava acesso amplo indevido).
 // ===========================================================================
 
-const hasFullAccess = (role: string): boolean => role === 'superuser' || role === 'admin';
+const hasFullAccess = (role: string): boolean =>
+  role === 'superuser' || role === 'admin' || role === 'supervisor';
 
 const ensureSectorAccess = async (
   actor: Actor,
@@ -131,7 +133,10 @@ const ensureSectorAccess = async (
   ]);
 
   if (!user || !sector) return { allowed: false };
-  if (user.responsibleSectors.length === 0) return { allowed: true };
+  // usuario/visualizador sem setor vinculado não acessam nada.
+  if (user.responsibleSectors.length === 0) {
+    return { allowed: false, sectorName: sector.name };
+  }
   return {
     allowed: user.responsibleSectors.includes(sector.name),
     sectorName: sector.name,

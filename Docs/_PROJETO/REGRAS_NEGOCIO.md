@@ -25,11 +25,17 @@ Sistema usado por prefeituras para controlar bens móveis e imóveis, com invent
 |------|--------|-------------------|
 | `superuser` | Toda a plataforma | Gerencia municípios, customizações globais, todos os usuários |
 | `admin` | Município | Gerencia usuários do município, configurações, todos os setores |
-| `supervisor` | Setores responsáveis | Aprovar transferências, gerenciar bens dos seus setores |
-| `usuario` | Setores responsáveis | Cadastrar/editar bens, fazer inventário, registrar manutenção |
-| `visualizador` | Setores responsáveis | Somente leitura |
+| `supervisor` | **Todos os setores do município** | Visualiza e edita bens/imóveis de **todos** os setores (acesso total no município); aprova transferências |
+| `usuario` | Setores responsáveis | Visualiza e edita bens **apenas dos setores vinculados** |
+| `visualizador` | Setores responsáveis | Somente leitura, **apenas dos setores vinculados** |
 
-`responsibleSectors[]` no `User` define o escopo dentro do município para os 3 papéis intermediários.
+`responsibleSectors[]` no `User` define o escopo **apenas para `usuario` e `visualizador`**.
+Regras (atualizado 2026-06-28):
+- `superuser`/`admin`/`supervisor` → `hasFullAccess` = acesso total ao município (o vínculo de
+  setor é ignorado; para supervisor o campo nem aparece no formulário).
+- `usuario`/`visualizador` → restritos aos setores em `responsibleSectors`, **tanto na listagem
+  quanto na escrita**. **Sem setor vinculado = SEM acesso** (antes "vazio = todos", o que dava
+  acesso amplo indevido). O formulário de usuário exige ≥1 setor para esses papéis.
 
 ## 3. Patrimônio (Bem Móvel)
 

@@ -36,6 +36,20 @@ const userCreateSchema = z.object({
   }),
   responsibleSectors: z.array(z.string()).optional(),
 })
+  // usuario/visualizador são restritos aos setores vinculados — sem setor =
+  // sem acesso. Exige ao menos um para não criar um usuário "cego".
+  .superRefine((data, ctx) => {
+    if (
+      (data.role === 'usuario' || data.role === 'visualizador') &&
+      (!data.responsibleSectors || data.responsibleSectors.length === 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['responsibleSectors'],
+        message: 'Selecione ao menos um setor para este perfil.',
+      })
+    }
+  })
 
 type UserCreateFormValues = z.infer<typeof userCreateSchema>
 
@@ -168,7 +182,13 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
             </FormItem>
           )}
         />
-        {(role === 'supervisor' || role === 'usuario' || role === 'visualizador') && (
+        {role === 'supervisor' && (
+          <p className="text-sm text-muted-foreground">
+            O supervisor tem acesso total: visualiza e edita os bens de todos os setores do
+            município.
+          </p>
+        )}
+        {(role === 'usuario' || role === 'visualizador') && (
           <FormField
             control={form.control}
             name="responsibleSectors"
@@ -184,9 +204,9 @@ export const UserCreateForm = ({ onSuccess }: UserCreateFormProps) => {
                   />
                 </FormControl>
                 <FormDescription>
-                  {role === 'supervisor' 
-                    ? 'O supervisor terá acesso para gerenciar os bens destes setores.'
-                    : 'O usuário terá acesso aos bens destes setores e seus subsetores.'}
+                  {role === 'visualizador'
+                    ? 'O visualizador poderá apenas consultar os bens destes setores.'
+                    : 'O usuário só verá e editará os bens destes setores. Sem setor, não terá acesso.'}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

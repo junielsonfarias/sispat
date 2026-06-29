@@ -21,6 +21,26 @@
 
 ## 2026
 
+### 2026-06-28 — RBAC por setor: supervisor com acesso total, usuario restrito ao setor
+- **Sintoma:** o vínculo de setor (`responsibleSectors`) não restringia de forma consistente.
+  Supervisor via TODOS os setores na listagem mas só editava os seus; `usuario`/`visualizador`
+  com `responsibleSectors` VAZIO tinha comportamento contraditório (lista de patrimônio: nada;
+  lista de imóvel: tudo; escrita: tudo). Admin sempre teve acesso total (vínculo ignorado).
+- **Decisão de produto (solicitada):** supervisor = acesso total (vê e edita todos os setores,
+  como admin); `usuario`/`visualizador` = restritos aos setores vinculados na listagem E na
+  escrita; **sem setor = sem acesso**.
+- **Correção:** `hasFullAccess` passou a incluir `supervisor` (em `patrimonioService` e
+  `imovelService`); `ensureSectorAccess` com `responsibleSectors` vazio agora **nega** (antes
+  liberava); `listImoveis` filtra sempre `usuario`/`visualizador` (vazio → `sectorId in []` =
+  nada). `applyPermissionFilters` (lista de patrimônio) já estava coerente. Formulários de
+  usuário: campo de setores só para `usuario`/`visualizador` (some para supervisor, que ganha
+  aviso de acesso total) + `superRefine` exige ≥1 setor.
+- **Arquivos:** `patrimonioService.ts:109-145`, `imovelService.ts:72-101,132-150`,
+  `UserCreateForm.tsx`, `UserEditForm.tsx`; +3 testes em `patrimonioService.update.test`.
+- **Verificação:** back `tsc` 0, front `tsc` 0, **587 Jest** + **145 vitest** verdes.
+- **Atenção (deploy):** `usuario`/`visualizador` EXISTENTES sem setor vinculado perderão acesso
+  — é preciso vincular setores a eles. Regra atualizada em `REGRAS_NEGOCIO.md §2`.
+
 ### 2026-06-28 — Imóvel: endereço estruturado (feature completa) + fix de testes vitest
 - **Endereço estruturado (cep/bairro/cidade/estado):** antes o form declarava os campos no
   zod mas sem inputs, coluna ou persistência (passavam por `.passthrough()` e se perdiam).

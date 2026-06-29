@@ -70,11 +70,13 @@ export class ImovelValidationError extends Error {
 }
 
 // ===========================================================================
-// Permissões: superuser/admin têm acesso total; supervisor/usuario só veem
-// imóveis dos setores em `responsibleSectors` (vazio = todos do município).
+// Permissões: superuser/admin/SUPERVISOR têm acesso total; usuario/visualizador
+// só veem/editam imóveis dos setores em `responsibleSectors`. SEM setor
+// vinculado = SEM acesso (antes "vazio = todos").
 // ===========================================================================
 
-const hasFullAccess = (role: string): boolean => role === 'superuser' || role === 'admin';
+const hasFullAccess = (role: string): boolean =>
+  role === 'superuser' || role === 'admin' || role === 'supervisor';
 
 const ensureSectorAccess = async (
   actor: Actor,
@@ -94,7 +96,10 @@ const ensureSectorAccess = async (
   ]);
 
   if (!user || !sector) return { allowed: false };
-  if (user.responsibleSectors.length === 0) return { allowed: true };
+  // usuario/visualizador sem setor vinculado não acessam nada.
+  if (user.responsibleSectors.length === 0) {
+    return { allowed: false, sectorName: sector.name };
+  }
   return {
     allowed: user.responsibleSectors.includes(sector.name),
     sectorName: sector.name,
@@ -124,20 +129,25 @@ export const listImoveis = async (query: ListImoveisQuery, actor: Actor) => {
 
   if (query.sectorId) where.sectorId = query.sectorId;
 
-  // Permissão por setor: apenas usuario/visualizador são limitados por responsibleSectors
+  // Permissão por setor: apenas usuario/visualizador são limitados por
+  // responsibleSectors (superuser/admin/supervisor veem tudo). SEM setor
+  // vinculado = nenhum imóvel (antes via todos, o que era acesso indevido).
   if (actor.role === 'usuario' || actor.role === 'visualizador') {
     const user = await prisma.user.findUnique({
       where: { id: actor.userId },
       select: { responsibleSectors: true },
     });
-    if (user && user.responsibleSectors.length > 0) {
+    const responsibleSectors = user?.responsibleSectors ?? [];
+    let sectorIds: string[] = [];
+    if (responsibleSectors.length > 0) {
       const sectors = await prisma.sector.findMany({
-        where: { name: { in: user.responsibleSectors }, municipalityId: actor.municipalityId },
+        where: { name: { in: responsibleSectors }, municipalityId: actor.municipalityId },
         select: { id: true },
       });
-      const sectorIds = sectors.map((s) => s.id);
-      if (sectorIds.length > 0) where.sectorId = { in: sectorIds };
+      sectorIds = sectors.map((s) => s.id);
     }
+    // Lista vazia → `in: []` retorna zero registros (sem setor, sem acesso).
+    where.sectorId = { in: sectorIds };
   }
 
   const cacheKey = CacheUtils.getImoveisKey({ where, page: pageNum, limit: limitNum });

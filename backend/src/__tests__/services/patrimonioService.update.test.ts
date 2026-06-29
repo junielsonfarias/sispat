@@ -59,7 +59,12 @@ const mockPrisma = {
 };
 jest.mock('../../config/database', () => ({ prisma: mockPrisma }));
 
-import { Actor, updatePatrimonio, PatrimonioNotFoundError } from '../../services/patrimonioService';
+import {
+  Actor,
+  updatePatrimonio,
+  PatrimonioNotFoundError,
+  PatrimonioForbiddenError,
+} from '../../services/patrimonioService';
 
 const actorMunA = (role: string): Actor => ({
   userId: 'user-1',
@@ -148,6 +153,63 @@ describe('updatePatrimonio — isolamento de tenant (escrita)', () => {
     await expect(
       updatePatrimonio('nope', { descricao: 'x' }, actorMunA('admin')),
     ).rejects.toBeInstanceOf(PatrimonioNotFoundError);
+  });
+});
+
+describe('updatePatrimonio — RBAC por setor (supervisor full, usuario restrito)', () => {
+  it('supervisor edita patrimônio de QUALQUER setor do próprio município (acesso total)', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1',
+      municipalityId: 'mun-A',
+      sectorId: 's-de-A',
+      status: 'ativo',
+    });
+    // supervisor responsável só por 'Educação', mas o bem é de 'Saúde' (Setor X):
+    mockPrisma.user.findUnique.mockResolvedValue({ responsibleSectors: ['Educação'] });
+
+    await updatePatrimonio('p1', { descricao: 'ok' }, actorMunA('supervisor'));
+
+    // supervisor tem acesso total → nem consulta setor, edita normalmente.
+    expect(mockTx.patrimonio.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'p1' } }),
+    );
+  });
+
+  it('usuario SEM setor vinculado NÃO edita (mesmo município) — antes era liberado', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1',
+      municipalityId: 'mun-A',
+      sectorId: 's-de-A',
+      status: 'ativo',
+    });
+    mockPrisma.user.findUnique.mockResolvedValue({ responsibleSectors: [] });
+
+    await expect(
+      updatePatrimonio('p1', { descricao: 'x' }, actorMunA('usuario')),
+    ).rejects.toBeInstanceOf(PatrimonioForbiddenError);
+    expect(mockTx.patrimonio.update).not.toHaveBeenCalled();
+  });
+
+  it('usuario edita patrimônio do setor vinculado, mas não de outro setor', async () => {
+    mockPrisma.patrimonio.findUnique.mockResolvedValue({
+      id: 'p1',
+      municipalityId: 'mun-A',
+      sectorId: 's-de-A',
+      status: 'ativo',
+    });
+    mockPrisma.user.findUnique.mockResolvedValue({ responsibleSectors: ['Setor X'] });
+    mockPrisma.sector.findUnique.mockResolvedValue({ name: 'Setor X' });
+
+    await updatePatrimonio('p1', { descricao: 'ok' }, actorMunA('usuario'));
+    expect(mockTx.patrimonio.update).toHaveBeenCalled();
+
+    // Agora um bem de setor fora da responsabilidade do usuário:
+    mockTx.patrimonio.update.mockClear();
+    mockPrisma.sector.findUnique.mockResolvedValue({ name: 'Outro Setor' });
+    await expect(
+      updatePatrimonio('p1', { descricao: 'no' }, actorMunA('usuario')),
+    ).rejects.toBeInstanceOf(PatrimonioForbiddenError);
+    expect(mockTx.patrimonio.update).not.toHaveBeenCalled();
   });
 });
 
