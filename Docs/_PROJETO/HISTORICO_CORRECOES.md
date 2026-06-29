@@ -21,6 +21,21 @@
 
 ## 2026
 
+### 2026-06-29 — UI não atualizava após ação (refetchOnMount global)
+- **Sintoma:** ao criar/editar um registro (ex.: um Local), a lista não refletia a mudança sem
+  recarregar a página manualmente.
+- **Causa-raiz:** o `QueryClient` global (`src/lib/query-client.ts`) tinha `refetchOnMount: false`.
+  Queries invalidadas por uma mutação, quando inativas no momento, mostravam cache antigo ao montar
+  a tela (não refaziam a busca). O caso "mesma página" já funcionava (invalidação refaz query ativa),
+  mas a navegação entre telas ficava desatualizada.
+- **Correção:** `refetchOnMount: true` (padrão do React Query). Respeita `staleTime`, então não
+  refaz busca de dado fresco; combinado com as invalidações já existentes nos contexts, garante
+  "ação → tela atualizada".
+- **Arquivos:** `src/lib/query-client.ts`.
+- **Verificação:** `tsc -p tsconfig.app.json` = 0 erros.
+- **Nota:** o ícone do olho da senha que não aparecia na produção (v2.1.0) é o build ANTIGO; a
+  correção (cor fixa `text-gray-500`) está no commit `4efc60e`, pendente de deploy.
+
 ### 2026-06-29 — Superuser enxerga usuários de todos os municípios (lista global)
 - **Sintoma:** superuser cria admin/supervisor vinculado a um município (fluxo OK), mas o usuário
   criado em município diferente do superuser NÃO aparecia na lista de gestão depois.

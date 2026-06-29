@@ -16,7 +16,11 @@ export const queryClient = new QueryClient({
       
       // Refetch configuração
       refetchOnWindowFocus: false,      // Não refetch ao focar janela
-      refetchOnMount: false,            // Não refetch ao montar se tem cache
+      // Refetch ao montar SE os dados estiverem stale (ex.: após uma ação que
+      // invalidou a query). Antes era `false`, o que mostrava cache antigo ao
+      // navegar entre telas e obrigava o usuário a recarregar a página para ver
+      // a edição. `true` respeita o staleTime (não refaz busca de dado fresco).
+      refetchOnMount: true,
       refetchOnReconnect: true,         // Refetch ao reconectar internet
       
       // Network mode
