@@ -21,6 +21,32 @@
 
 ## 2026
 
+### 2026-06-29 — Botão "mostrar senha" + menu lateral recolhível
+- **Sintoma:** (1) o botão de mostrar/ocultar senha não aparecia/era inconsistente entre telas
+  (login, redefinição, troca de senha, config de e-mail); (2) os submenus tinham o lado direito
+  cortado e não dava para ver toda a informação; (3) o menu não era recolhível no desktop.
+- **Causa-raiz:** (1) o toggle de senha era duplicado em 5 telas, com estilos divergentes e sem
+  `z-index`, e o "olho" nativo do Edge (`::-ms-reveal`) podia sobrepor; (2) o contêiner da sidebar
+  no `Layout` era `w-64` (256px) enquanto o `<aside>` interno era `w-[280px]` — os 24px finais
+  ficavam **escondidos atrás do conteúdo principal**, cortando os rótulos; (3) `SidebarTrigger`
+  retornava `null` no desktop e `NavContent` ignorava o estado recolhido.
+- **Correção:** criado `src/components/ui/password-input.tsx` (componente único, botão em `z-10`,
+  `pr-10`, `tabIndex=-1`, `aria-label` dinâmico) e aplicado nas 5 telas; CSS global some com o
+  `::-ms-reveal`/`::-ms-clear`. No menu: larguras alinhadas (contêiner acompanha o estado via
+  `DesktopSidebar`), área de navegação rolável (todos os submenus aparecem), botão de
+  recolher/expandir no topo da sidebar (desktop), modo recolhido como rail de ícones com tooltip,
+  e persistência da preferência em `localStorage` (`sispat:sidebar-collapsed`).
+- **Arquivos:** `src/components/ui/password-input.tsx` (novo); `src/pages/auth/Login.tsx`,
+  `src/pages/auth/ResetPassword.tsx`, `src/pages/configuracoes/EmailConfig.tsx`,
+  `src/components/superuser/SuperuserPasswordChangeForm.tsx`,
+  `src/components/admin/UserPasswordChangeForm.tsx`, `src/main.css`;
+  `src/components/Layout.tsx`, `src/components/Sidebar.tsx`, `src/components/NavContent.tsx`,
+  `src/components/ui/sidebar.tsx`.
+- **Verificação:** `tsc --noEmit -p tsconfig.app.json` = 0 erros.
+- **Lição:** contêiner de sidebar e o `<aside>` devem ter a MESMA largura, senão a borda direita
+  some atrás do conteúdo; centralizar padrões repetidos (toggle de senha) num componente evita
+  divergência visual.
+
 ### 2026-06-28 — Superuser provisiona usuários por município (supervisor por município)
 - **Objetivo:** o superuser cria usuários (em especial **supervisores**) vinculados a um
   município escolhido; cada supervisor depois cria usuários só do seu município (tenant lock,

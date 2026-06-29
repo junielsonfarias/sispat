@@ -67,6 +67,12 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  /* Remove o "olho" nativo de revelar senha (Edge/IE) para não duplicar/sobrepor
+     o botão customizado de mostrar senha do componente PasswordInput. */
+  input[type='password']::-ms-reveal,
+  input[type='password']::-ms-clear {
+    display: none;
+  }
 }
 
 @layer components {

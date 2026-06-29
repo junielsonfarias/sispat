@@ -14,8 +14,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import {
-  Eye,
-  EyeOff,
   Loader2,
   Mail,
   Lock,
@@ -26,6 +24,7 @@ import {
   Shield,
   Building2,
 } from 'lucide-react'
+import { PasswordInput } from '@/components/ui/password-input'
 import { useAuth } from '@/contexts/AuthContext'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useCustomization } from '@/contexts/CustomizationContext'
@@ -55,7 +54,6 @@ export default function Login() {
   const location = useLocation()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
   const [successMessage] = useState<string | null>(
     location.state?.successMessage,
   )
@@ -313,29 +311,12 @@ export default function Login() {
                             Senha
                           </FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <Input
-                                placeholder="Digite sua senha"
-                                className="pr-12 h-10 sm:h-12 border-border focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
-                                type={showPassword ? 'text' : 'password'}
-                                autoComplete="current-password"
-                                {...field}
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-muted"
-                                onClick={() => setShowPassword(!showPassword)}
-                                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                              >
-                                {showPassword ? (
-                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                ) : (
-                                  <Eye className="h-4 w-4 text-muted-foreground" />
-                                )}
-                              </Button>
-                            </div>
+                            <PasswordInput
+                              placeholder="Digite sua senha"
+                              className="h-10 sm:h-12 border-border focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
+                              autoComplete="current-password"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

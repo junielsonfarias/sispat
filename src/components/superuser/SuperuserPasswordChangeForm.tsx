@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import {
   Form,
   FormControl,
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/form'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 const passwordChangeSchema = z
   .object({
@@ -48,7 +48,6 @@ export const SuperuserPasswordChangeForm = ({
   onSuccess,
 }: SuperuserPasswordChangeFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const { user, updateUserPassword } = useAuth()
 
   const form = useForm<PasswordChangeFormValues>({
@@ -91,26 +90,7 @@ export const SuperuserPasswordChangeForm = ({
             <FormItem>
               <FormLabel>Nova Senha</FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="********"
-                    {...field}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+                <PasswordInput placeholder="********" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -123,7 +103,7 @@ export const SuperuserPasswordChangeForm = ({
             <FormItem>
               <FormLabel>Confirmar Nova Senha</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} />
+                <PasswordInput placeholder="********" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

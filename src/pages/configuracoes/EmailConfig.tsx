@@ -40,11 +40,10 @@ import {
   XCircle, 
   AlertTriangle,
   Loader2,
-  Eye,
-  EyeOff,
   Trash2,
   Save
 } from 'lucide-react'
+import { PasswordInput } from '@/components/ui/password-input'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/services/api-adapter'
 import { logger } from '@/lib/logger'
@@ -91,7 +90,6 @@ export default function EmailConfig() {
   const [isLoading, setIsLoading] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [emailConfig, setEmailConfig] = useState<EmailConfigResponse | null>(null)
   const [testEmail, setTestEmail] = useState('')
@@ -364,26 +362,10 @@ export default function EmailConfig() {
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <Input 
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Sua senha ou senha de app" 
-                            {...field} 
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
+                        <PasswordInput
+                          placeholder="Sua senha ou senha de app"
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
                         Senha do email ou senha de aplicativo (para Gmail)

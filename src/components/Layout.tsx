@@ -6,13 +6,30 @@ import { cn } from '@/lib/utils'
 import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
 import { Toaster } from '@/components/ui/toaster'
-import { SidebarProvider } from '@/components/ui/sidebar'
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Container } from '@/components/ui/responsive-container'
 import MobileNavigationOptimized from '@/components/MobileNavigationOptimized'
 
 interface LayoutProps {
   children?: ReactNode
+}
+
+// Contêiner da sidebar desktop: a largura acompanha o estado recolhido para
+// não cortar o conteúdo dos submenus (antes era fixo em w-64, mais estreito
+// que a própria sidebar). Apenas desktop (lg+).
+const DesktopSidebar = () => {
+  const { isCollapsed } = useSidebar()
+  return (
+    <div
+      className={cn(
+        'hidden lg:block sticky top-24 h-[calc(100vh-6rem)] transition-all duration-300',
+        isCollapsed ? 'w-16' : 'w-[280px]',
+      )}
+    >
+      <Sidebar />
+    </div>
+  )
 }
 
 export const Layout = ({ children }: LayoutProps) => {
@@ -36,9 +53,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <div className="flex-1 flex">
         {/* Sidebar de navegação - apenas desktop */}
         <SidebarProvider>
-          <div className="hidden lg:block sticky top-24 h-[calc(100vh-6rem)] w-64">
-            <Sidebar />
-          </div>
+          <DesktopSidebar />
           <div className="flex-1 w-full">
             {/* Main com padding-bottom para o bottom navigation em mobile */}
             <main className={cn(

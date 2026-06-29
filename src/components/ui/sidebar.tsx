@@ -22,6 +22,19 @@ const SidebarContext = React.createContext<SidebarContextProps | undefined>(
   undefined,
 )
 
+const COLLAPSED_STORAGE_KEY = 'sispat:sidebar-collapsed'
+
+// Lê a preferência de recolhimento persistida (desktop). Em caso de erro de
+// acesso ao localStorage (SSR, modo privado), volta ao padrão informado.
+const getStoredCollapsed = (fallback: boolean): boolean => {
+  try {
+    const stored = window.localStorage.getItem(COLLAPSED_STORAGE_KEY)
+    return stored === null ? fallback : stored === 'true'
+  } catch {
+    return fallback
+  }
+}
+
 export const useSidebar = () => {
   const context = React.useContext(SidebarContext)
   if (!context) {
@@ -41,7 +54,7 @@ export const SidebarProvider = ({
 }) => {
   const isMobile = useIsMobile()
   const [isCollapsed, setIsCollapsed] = React.useState(
-    isMobile ? true : defaultCollapsed,
+    isMobile ? true : getStoredCollapsed(defaultCollapsed),
   )
   const [isOpen, setIsOpen] = React.useState(false)
 
@@ -50,7 +63,8 @@ export const SidebarProvider = ({
       setIsCollapsed(true)
       setIsOpen(false)
     } else {
-      setIsCollapsed(defaultCollapsed)
+      // No desktop, respeita a preferência persistida do usuário.
+      setIsCollapsed(getStoredCollapsed(defaultCollapsed))
     }
   }, [isMobile, defaultCollapsed])
 
@@ -60,6 +74,14 @@ export const SidebarProvider = ({
     } else {
       setIsCollapsed((prev) => {
         const newState = !prev
+        try {
+          window.localStorage.setItem(
+            COLLAPSED_STORAGE_KEY,
+            String(newState),
+          )
+        } catch {
+          // Ignora ambientes sem localStorage.
+        }
         onCollapseChange?.(newState)
         return newState
       })
@@ -80,7 +102,7 @@ const sidebarVariants = cva(
   {
     variants: {
       isCollapsed: {
-        true: 'w-[52px]',
+        true: 'w-16',
         false: 'w-[280px]',
       },
     },

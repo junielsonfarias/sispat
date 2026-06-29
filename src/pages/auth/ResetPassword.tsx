@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import {
   Form,
   FormControl,
@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Eye, EyeOff, Loader2, Lock } from 'lucide-react'
+import { Loader2, Lock } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
@@ -38,7 +38,6 @@ export default function ResetPassword() {
   const [isValidating, setIsValidating] = useState(true)
   const [isValid, setIsValid] = useState(false)
   const [userInfo, setUserInfo] = useState<{name: string, email: string} | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const token = searchParams.get('token')
 
@@ -155,27 +154,10 @@ export default function ResetPassword() {
                   <FormItem>
                     <FormLabel>Nova Senha</FormLabel>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <FormControl>
-                        <Input
-                          type={showPassword ? 'text' : 'password'}
-                          {...field}
-                          className="pl-10 pr-10"
-                        />
+                        <PasswordInput {...field} className="pl-10" />
                       </FormControl>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -188,7 +170,7 @@ export default function ResetPassword() {
                   <FormItem>
                     <FormLabel>Confirmar Nova Senha</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <PasswordInput {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

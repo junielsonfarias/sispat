@@ -39,6 +39,12 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { UserRole } from '@/types'
 import { NavGroup, NavGroupItem } from '@/components/NavGroup'
+import { useSidebar } from '@/components/ui/sidebar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface NavItem {
   to?: string
@@ -291,13 +297,99 @@ const NavItemComponent = ({ item }: { item: NavItem }) => {
   )
 }
 
+// Item exibido no modo recolhido (rail de ícones). Mostra apenas o ícone com
+// um tooltip lateral. Grupos, ao serem clicados, expandem a sidebar e abrem o
+// respectivo grupo; links diretos navegam normalmente.
+const CollapsedNavItem = ({
+  item,
+  onActivateGroup,
+}: {
+  item: NavItem
+  onActivateGroup: (groupLabel: string) => void
+}) => {
+  const location = useLocation()
+  const Icon = item.icon
+  const baseClass =
+    'flex h-10 w-10 items-center justify-center rounded-lg transition-colors'
+
+  if (item.isGroupLabel) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => onActivateGroup(item.label)}
+            aria-label={item.label}
+            className={cn(
+              baseClass,
+              'text-muted-foreground hover:bg-accent hover:text-foreground',
+            )}
+          >
+            <Icon className="h-5 w-5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right">{item.label}</TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  const isActive = item.to
+    ? item.exact
+      ? location.pathname === item.to
+      : location.pathname.startsWith(item.to)
+    : false
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <NavLink
+          to={item.to!}
+          aria-label={item.label}
+          className={cn(
+            baseClass,
+            isActive
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </NavLink>
+      </TooltipTrigger>
+      <TooltipContent side="right">{item.label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
 export const NavContent = () => {
   const { user } = useAuth()
+  const { isCollapsed, isMobile, toggle } = useSidebar()
   const links = user ? navLinks[user.role] || [] : []
   const [openGroup, setOpenGroup] = useState<string | null>(null) // Nenhum grupo aberto por padrão
 
+  const collapsed = isCollapsed && !isMobile
+
   const handleGroupToggle = (groupLabel: string) => {
     setOpenGroup(openGroup === groupLabel ? null : groupLabel)
+  }
+
+  // Ao clicar num grupo no modo recolhido: expande a sidebar e abre o grupo.
+  const handleActivateGroup = (groupLabel: string) => {
+    setOpenGroup(groupLabel)
+    toggle()
+  }
+
+  if (collapsed) {
+    return (
+      <nav className="flex flex-col items-center gap-1 px-1 py-4">
+        {links.map((item, index) => (
+          <CollapsedNavItem
+            key={`${item.label}-${index}`}
+            item={item}
+            onActivateGroup={handleActivateGroup}
+          />
+        ))}
+      </nav>
+    )
   }
 
   return (
