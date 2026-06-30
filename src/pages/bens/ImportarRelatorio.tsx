@@ -124,6 +124,9 @@ interface ConfirmarResponse {
   total: number
   linhas: number
   patrimonios: unknown[]
+  tiposCriados?: number
+  formasCriadas?: number
+  duplicatas?: number
 }
 
 // Edições sobre cada item da tabela
@@ -392,7 +395,11 @@ const ImportarRelatorio = () => {
       setEtapa('sucesso')
       toast({
         title: 'Importação concluída',
-        description: `${response.data.total} bens importados com sucesso.`,
+        description: `${response.data.total} bens importados com sucesso.${
+          (response.data.duplicatas ?? 0) > 0
+            ? ` ${response.data.duplicatas} já existente(s) ignorado(s).`
+            : ''
+        }`,
       })
     } catch (err: unknown) {
       const axiosErr = err as {
@@ -1085,6 +1092,29 @@ const ImportarRelatorio = () => {
                   <strong>{resultado.total}</strong> bens criados a partir de{' '}
                   <strong>{resultado.linhas}</strong> linha(s) do relatório.
                 </p>
+                {((resultado.tiposCriados ?? 0) > 0 ||
+                  (resultado.formasCriadas ?? 0) > 0) && (
+                  <p className="text-green-700 mt-1 text-sm">
+                    Cadastrados automaticamente:{' '}
+                    {(resultado.tiposCriados ?? 0) > 0 && (
+                      <strong>{resultado.tiposCriados} tipo(s) de bem</strong>
+                    )}
+                    {(resultado.tiposCriados ?? 0) > 0 &&
+                      (resultado.formasCriadas ?? 0) > 0 &&
+                      ' e '}
+                    {(resultado.formasCriadas ?? 0) > 0 && (
+                      <strong>{resultado.formasCriadas} forma(s) de aquisição</strong>
+                    )}
+                    .
+                  </p>
+                )}
+                {(resultado.duplicatas ?? 0) > 0 && (
+                  <p className="text-amber-700 mt-1 text-sm">
+                    <strong>{resultado.duplicatas}</strong> bem(ns) já existente(s)
+                    (mesma liquidação, nota fiscal, descrição, valor e data) foram{' '}
+                    <strong>ignorados</strong> para não duplicar.
+                  </p>
+                )}
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button

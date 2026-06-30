@@ -21,10 +21,12 @@ jest.mock('../../services/numberingService', () => ({
 }));
 
 const mockTx = {
-  patrimonio: { create: jest.fn() },
+  patrimonio: { create: jest.fn(), findFirst: jest.fn() },
   activityLog: { create: jest.fn() },
   historicoEntry: { create: jest.fn() },
   local: { findFirst: jest.fn(), create: jest.fn() },
+  tipoBem: { findFirst: jest.fn(), create: jest.fn() },
+  acquisitionForm: { findFirst: jest.fn(), create: jest.fn() },
 };
 const mockPrisma = {
   sector: { findUnique: jest.fn() },
@@ -79,6 +81,17 @@ beforeEach(() => {
   mockTx.local.create.mockImplementation((args: any) =>
     Promise.resolve({ id: `loc-${args.data.sectorId}` }),
   );
+  // Por padrão tipo/forma ainda não existem: força o cadastro automático.
+  mockTx.tipoBem.findFirst.mockResolvedValue(null);
+  mockTx.tipoBem.create.mockImplementation((args: any) =>
+    Promise.resolve({ id: `tipo-${args.data.nome}` }),
+  );
+  mockTx.acquisitionForm.findFirst.mockResolvedValue(null);
+  mockTx.acquisitionForm.create.mockImplementation((args: any) =>
+    Promise.resolve({ id: `forma-${args.data.nome}` }),
+  );
+  // Por padrão NÃO há bem com a mesma assinatura: nada é tratado como duplicata.
+  mockTx.patrimonio.findFirst.mockResolvedValue(null);
 });
 
 describe('importarPatrimonios', () => {
@@ -224,5 +237,103 @@ describe('importarPatrimonios', () => {
     // 2 setores distintos → 2 resoluções de almoxarifado
     expect(mockTx.local.findFirst).toHaveBeenCalledTimes(2);
     expect(mockTx.local.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('cadastra tipo e forma de aquisição automaticamente e linka o bem via FK', async () => {
+    const r = await importarPatrimonios([baseItem({ quantidade: 1 })], actor);
+    // Tipo e forma novos → 1 de cada cadastrado
+    expect(mockTx.tipoBem.create).toHaveBeenCalledTimes(1);
+    expect(mockTx.tipoBem.create.mock.calls[0][0].data.nome).toBe('Outros Materiais Permanentes');
+    expect(mockTx.acquisitionForm.create).toHaveBeenCalledTimes(1);
+    expect(mockTx.acquisitionForm.create.mock.calls[0][0].data.nome).toBe('Dispensa/Compra Direta');
+    expect(r.tiposCriados).toBe(1);
+    expect(r.formasCriadas).toBe(1);
+    // O bem fica linkado às tabelas de referência (FK), não só na string.
+    const d = mockTx.patrimonio.create.mock.calls[0][0].data;
+    expect(d.tipoId).toBe('tipo-Outros Materiais Permanentes');
+    expect(d.acquisitionFormId).toBe('forma-Dispensa/Compra Direta');
+  });
+
+  it('não duplica tipo/forma já existentes (find-or-create) e linka ao existente', async () => {
+    mockTx.tipoBem.findFirst.mockResolvedValue({ id: 'tipo-existente' });
+    mockTx.acquisitionForm.findFirst.mockResolvedValue({ id: 'forma-existente' });
+    const r = await importarPatrimonios([baseItem({ quantidade: 1 })], actor);
+    expect(mockTx.tipoBem.create).not.toHaveBeenCalled();
+    expect(mockTx.acquisitionForm.create).not.toHaveBeenCalled();
+    expect(r.tiposCriados).toBe(0);
+    expect(r.formasCriadas).toBe(0);
+    const d = mockTx.patrimonio.create.mock.calls[0][0].data;
+    expect(d.tipoId).toBe('tipo-existente');
+    expect(d.acquisitionFormId).toBe('forma-existente');
+  });
+
+  it('tipo/forma vazios ou só espaços caem no fallback (sem referência de nome vazio)', async () => {
+    await importarPatrimonios([baseItem({ tipo: '   ', formaAquisicao: '', quantidade: 1 })], actor);
+    expect(mockTx.tipoBem.create.mock.calls[0][0].data.nome).toBe('Não especificado');
+    expect(mockTx.acquisitionForm.create.mock.calls[0][0].data.nome).toBe('Compra');
+    const d = mockTx.patrimonio.create.mock.calls[0][0].data;
+    // String do bem casa exatamente com o nome da referência linkada.
+    expect(d.tipo).toBe('Não especificado');
+    expect(d.tipoId).toBe('tipo-Não especificado');
+    expect(d.forma_aquisicao).toBe('Compra');
+    expect(d.acquisitionFormId).toBe('forma-Compra');
+  });
+
+  it('deduplica tipo/forma iguais em itens diferentes (1 cadastro só)', async () => {
+    await importarPatrimonios(
+      [
+        baseItem({ descricao: 'A', quantidade: 1 }),
+        baseItem({ descricao: 'B', quantidade: 1 }),
+      ],
+      actor,
+    );
+    // Mesmo tipo/forma nos 2 itens → cadastra uma vez cada.
+    expect(mockTx.tipoBem.create).toHaveBeenCalledTimes(1);
+    expect(mockTx.acquisitionForm.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignora item cuja assinatura já existe (não duplica na re-importação)', async () => {
+    mockTx.patrimonio.findFirst.mockResolvedValue({ id: 'ja-existe' });
+    const r = await importarPatrimonios([baseItem({ quantidade: 3 })], actor);
+    expect(r.total).toBe(0);
+    expect(r.duplicatas).toBe(1);
+    // Nada criado: nem patrimônios, nem numeração, nem tipo/forma.
+    expect(mockTx.patrimonio.create).not.toHaveBeenCalled();
+    expect(mockTx.tipoBem.create).not.toHaveBeenCalled();
+    expect(mockProximoConfigurado).not.toHaveBeenCalled();
+  });
+
+  it('a assinatura usa liquidação + NF + descrição + valor + data', async () => {
+    await importarPatrimonios([baseItem({ quantidade: 1 })], actor);
+    const where = mockTx.patrimonio.findFirst.mock.calls[0][0].where;
+    expect(where).toMatchObject({
+      municipalityId: 'mun-1',
+      descricao_bem: 'NOBREAK 600 VA-120V',
+      valor_aquisicao: 752,
+      numero_nota_fiscal: '697/1',
+      numero_liquidacao: '11030018',
+    });
+    expect(where.data_aquisicao).toBeInstanceOf(Date);
+  });
+
+  it('importa só os itens novos quando parte do lote já existe', async () => {
+    // 'NOVO' não existe; 'VELHO' já existe → só o novo é criado.
+    mockTx.patrimonio.findFirst.mockImplementation((args: any) =>
+      Promise.resolve(args.where.descricao_bem === 'VELHO' ? { id: 'x' } : null),
+    );
+    const r = await importarPatrimonios(
+      [
+        baseItem({ descricao: 'NOVO', quantidade: 2 }),
+        baseItem({ descricao: 'VELHO', quantidade: 5 }),
+      ],
+      actor,
+    );
+    expect(r.total).toBe(2); // só as 2 unidades do item novo
+    expect(r.duplicatas).toBe(1);
+    expect(mockTx.patrimonio.create).toHaveBeenCalledTimes(2);
+    const descricoes = mockTx.patrimonio.create.mock.calls.map(
+      (c: any) => c[0].data.descricao_bem,
+    );
+    expect(new Set(descricoes)).toEqual(new Set(['NOVO']));
   });
 });

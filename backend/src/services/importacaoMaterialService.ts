@@ -535,6 +535,27 @@ export interface ItemConfirmado {
   valorResidual?: number | null;
 }
 
+// Nome canônico do tipo/forma de um item: aparado e com fallback quando vazio
+// (ou só espaços). Usado TANTO para a string gravada no bem QUANTO para a chave
+// do find-or-create da referência — assim a string do bem casa exatamente com o
+// nome do TipoBem/AcquisitionForm linkado, e nunca se cria referência com nome vazio.
+const nomeTipo = (it: ItemConfirmado): string => (it.tipo || '').trim() || 'Não especificado';
+const nomeForma = (it: ItemConfirmado): string =>
+  (it.formaAquisicao || '').trim() || 'Compra';
+
+// Assinatura natural de um bem importado, para deduplicar re-importações: o mesmo
+// item de liquidação tem sempre liquidação + NF + descrição + valor + data iguais.
+// Dois bens com essa assinatura no mesmo município são o MESMO item já importado
+// (re-upload do relatório ou relatórios sobrepostos não devem duplicar bens).
+const assinaturaImportacao = (it: ItemConfirmado, municipalityId: string) => ({
+  municipalityId,
+  descricao_bem: it.descricao.trim(),
+  valor_aquisicao: it.valorUnitario,
+  data_aquisicao: new Date(it.dataAquisicao),
+  numero_nota_fiscal: it.numeroNotaFiscal ?? null,
+  numero_liquidacao: it.numeroLiquidacao ?? null,
+});
+
 // Cria os patrimônios a partir dos itens revisados. Cada item explode em
 // `quantidade` registros (1 por unidade física), todos com a mesma NF/empenho.
 // Atômico: ou cria tudo, ou nada. A numeração é gerada uma vez e incrementada
@@ -587,6 +608,9 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
   }
 
   let criados: { id: string; numero_patrimonio: string }[] = [];
+  let tiposCriados = 0;
+  let formasCriadas = 0;
+  let duplicatas = 0;
   // Importações concorrentes podem ler o mesmo "último número" e colidir no unique
   // [municipalityId, numero_patrimonio] (P2002). Em vez de falhar e pedir retry
   // manual, refazemos a transação algumas vezes — cada tentativa re-lê o maior
@@ -594,13 +618,32 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
   const MAX_TENTATIVAS_NUMERACAO = 3;
   for (let tentativa = 1; ; tentativa++) {
   try {
-  criados = await prisma.$transaction(async (tx) => {
+  const resultadoTx = await prisma.$transaction(async (tx) => {
+    // DEDUP: ignora itens cuja assinatura já existe no município (re-importação
+    // do mesmo relatório ou relatórios sobrepostos não cria bens duplicados).
+    // A checagem é dentro da transação para também valer contra imports
+    // concorrentes idênticos.
+    const itensNovos: ItemConfirmado[] = [];
+    let duplicatasTx = 0;
+    for (const it of itens) {
+      const jaExiste = await tx.patrimonio.findFirst({
+        where: assinaturaImportacao(it, actor.municipalityId!),
+        select: { id: true },
+      });
+      if (jaExiste) duplicatasTx += 1;
+      else itensNovos.push(it);
+    }
+    // Tudo já existia: nada a criar (mas reporta quantas duplicatas foram ignoradas).
+    if (itensNovos.length === 0) {
+      return { registros: [], tiposCriadosTx: 0, formasCriadasTx: 0, duplicatasTx };
+    }
+
     // Numeração POR SETOR, no formato CONFIGURADO no sistema (NumberingPattern);
     // sem padrão configurado, usa o mesmo formato do cadastro manual
     // ({ano}{codigoSetor}{seq}) — NÃO mais o fixo "PAT...". O sequencial inicial
     // de cada setor vem do maior número existente e é incrementado em memória.
     const numeracaoBySetor = new Map<string, { prefix: string; seqLen: number; seq: number }>();
-    for (const sectorId of new Set(itens.map((it) => it.sectorId))) {
+    for (const sectorId of new Set(itensNovos.map((it) => it.sectorId))) {
       const codigo = setoresCache.get(sectorId)?.codigo ?? '';
       const { prefix, seqLen, sequencial } = await proximoNumeroConfiguradoTx(tx, {
         municipalityId: actor.municipalityId,
@@ -618,7 +661,7 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
     // Resolve (find-or-create) o Almoxarifado de cada setor envolvido. Os bens
     // entram aqui e a secretaria distribui depois para os locais reais.
     const almoxBySetor = new Map<string, string>(); // sectorId -> localId
-    for (const sectorId of new Set(itens.map((it) => it.sectorId))) {
+    for (const sectorId of new Set(itensNovos.map((it) => it.sectorId))) {
       const existente = await tx.local.findFirst({
         where: {
           sectorId,
@@ -643,8 +686,59 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
       }
     }
 
+    // Find-or-create dos TIPOS e FORMAS DE AQUISIÇÃO referenciados pelo lote.
+    // Assim os valores derivados do relatório já entram nas tabelas de referência
+    // (aparecem nos dropdowns do cadastro manual) e cada bem fica LINKADO via FK
+    // (tipoId/acquisitionFormId) — não só na string. Match case-insensitive para
+    // não duplicar um tipo/forma que já exista com grafia diferente.
+    let tiposCriadosTx = 0;
+    let formasCriadasTx = 0;
+    const tipoIdByNome = new Map<string, string>();
+    for (const nome of new Set(itensNovos.map(nomeTipo))) {
+      const existente = await tx.tipoBem.findFirst({
+        where: { municipalityId: actor.municipalityId, nome: { equals: nome, mode: 'insensitive' } },
+        select: { id: true },
+      });
+      if (existente) {
+        tipoIdByNome.set(nome, existente.id);
+      } else {
+        const novo = await tx.tipoBem.create({
+          data: {
+            nome,
+            descricao: 'Cadastrado automaticamente na importação de liquidação SIAFIC',
+            municipalityId: actor.municipalityId!,
+          },
+          select: { id: true },
+        });
+        tipoIdByNome.set(nome, novo.id);
+        tiposCriadosTx += 1;
+      }
+    }
+
+    const formaIdByNome = new Map<string, string>();
+    for (const nome of new Set(itensNovos.map(nomeForma))) {
+      const existente = await tx.acquisitionForm.findFirst({
+        where: { municipalityId: actor.municipalityId, nome: { equals: nome, mode: 'insensitive' } },
+        select: { id: true },
+      });
+      if (existente) {
+        formaIdByNome.set(nome, existente.id);
+      } else {
+        const novo = await tx.acquisitionForm.create({
+          data: {
+            nome,
+            descricao: 'Cadastrado automaticamente na importação de liquidação SIAFIC',
+            municipalityId: actor.municipalityId!,
+          },
+          select: { id: true },
+        });
+        formaIdByNome.set(nome, novo.id);
+        formasCriadasTx += 1;
+      }
+    }
+
     const registros: { id: string; numero_patrimonio: string }[] = [];
-    for (const it of itens) {
+    for (const it of itensNovos) {
       const setorNome = setoresCache.get(it.sectorId)?.name ?? it.setorNome;
       // Usa a trilha contábil completa montada no parse; cai num texto mínimo se
       // o item vier sem ela (ex.: cadastro manual reaproveitando a função).
@@ -662,12 +756,15 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
           data: {
             numero_patrimonio: proximoNumero(it.sectorId),
             descricao_bem: it.descricao.trim(),
-            tipo: it.tipo || 'Não especificado',
+            tipo: nomeTipo(it),
+            // FK p/ a tabela de referência (cadastrada/resolvida acima).
+            tipoId: tipoIdByNome.get(nomeTipo(it)) ?? null,
             data_aquisicao: new Date(it.dataAquisicao),
             valor_aquisicao: it.valorUnitario,
             quantidade: 1,
             numero_nota_fiscal: it.numeroNotaFiscal ?? null,
-            forma_aquisicao: it.formaAquisicao || 'Compra',
+            forma_aquisicao: nomeForma(it),
+            acquisitionFormId: formaIdByNome.get(nomeForma(it)) ?? null,
             // Processo de empenho (licitação/dispensa) e ano — referência do
             // processo de aquisição do bem.
             numero_licitacao: it.numeroLicitacao ?? null,
@@ -723,17 +820,21 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
         action: 'IMPORTAR_PATRIMONIOS_LIQUIDACAO',
         entityType: 'Patrimonio',
         entityId: registros[0].id,
-        details: `Importados ${registros.length} bens do relatório de liquidação (${itens.length} linhas)`,
+        details: `Importados ${registros.length} bens do relatório de liquidação (${itensNovos.length} de ${itens.length} linhas${duplicatasTx > 0 ? `; ${duplicatasTx} já existentes ignoradas` : ''})`,
       },
     });
 
-    return registros;
+    return { registros, tiposCriadosTx, formasCriadasTx, duplicatasTx };
   }, {
     // Lote pode ter até MAX_UNIDADES (2000) bens, cada um com create + histórico.
     // O default de 5s da transação interativa do Prisma estouraria (P2028).
     maxWait: 15000,
     timeout: 120000,
   });
+    criados = resultadoTx.registros;
+    tiposCriados = resultadoTx.tiposCriadosTx;
+    formasCriadas = resultadoTx.formasCriadasTx;
+    duplicatas = resultadoTx.duplicatasTx;
     break; // sucesso
   } catch (err) {
     const conflitoNumeracao =
@@ -755,6 +856,20 @@ export const importarPatrimonios = async (itens: ItemConfirmado[], actor: Actor)
   }
 
   await redisCache.deletePattern('patrimonios:*');
-  logInfo('✅ Importação de patrimônios concluída', { total: criados.length });
-  return { total: criados.length, linhas: itens.length, patrimonios: criados };
+  // Tipos/formas cadastrados aparecem nos dropdowns no próximo carregamento
+  // (as listas usam só Cache-Control HTTP de 60s, sem cache Redis a invalidar).
+  logInfo('✅ Importação de patrimônios concluída', {
+    total: criados.length,
+    tiposCriados,
+    formasCriadas,
+    duplicatas,
+  });
+  return {
+    total: criados.length,
+    linhas: itens.length,
+    patrimonios: criados,
+    tiposCriados,
+    formasCriadas,
+    duplicatas,
+  };
 };
