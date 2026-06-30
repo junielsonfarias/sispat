@@ -67,7 +67,7 @@ const defaultRoles: Role[] = [
   },
   {
     id: 'usuario',
-    name: 'Usuário',
+    name: 'Responsável Patrimonial',
     permissions: [
       'bens:create',
       'bens:read',
@@ -104,14 +104,30 @@ export const PermissionProvider = ({ children }: { children: ReactNode }) => {
     try {
       const rolePermissions = await api.get<RolePermissionRaw[]>('/config/role-permissions')
       // Converter para o formato esperado
-      const rolesData = rolePermissions.map(rp => ({
+      const rolesData: Role[] = rolePermissions.map(rp => ({
         id: rp.roleId,
         name: rp.name,
         permissions: rp.permissions,
       }))
-      if (rolesData.length > 0) {
-        setRoles(rolesData as Role[])
-      }
+
+      // MESCLA sobre os padrões canônicos em vez de SUBSTITUIR. Antes, se o banco
+      // só tivesse a linha de um papel (ex.: `supervisor`, criada ao salvar esse
+      // papel uma vez), `setRoles(rolesData)` apagava todos os outros papéis →
+      // o dropdown de permissões só mostrava supervisor e o `usuario` perdia
+      // `bens:update` (sumia o botão "Distribuir para local final"). Agora todos
+      // os papéis canônicos existem sempre; o banco só sobrescreve quando há
+      // customização persistida para aquele papel.
+      const merged: Role[] = defaultRoles.map((def) => {
+        const fromDb = rolesData.find((r) => r.id === def.id)
+        return fromDb
+          ? { ...def, name: fromDb.name || def.name, permissions: fromDb.permissions }
+          : def
+      })
+      // Inclui papéis vindos do banco que não existam nos padrões (future-proof).
+      rolesData.forEach((r) => {
+        if (!merged.some((m) => m.id === r.id)) merged.push(r)
+      })
+      setRoles(merged)
     } catch (error) {
       // Usar roles padrão se falhar
     }

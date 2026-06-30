@@ -58,6 +58,7 @@ import { UserEditForm } from '@/components/admin/UserEditForm'
 import { UserPasswordChangeForm } from '@/components/admin/UserPasswordChangeForm'
 import { MUNICIPALITY_NAME } from '@/config/municipality'
 import { usePermissions } from '@/hooks/usePermissions'
+import { getRoleLabel } from '@/lib/roles'
 
 interface UserManagementUnifiedProps {
   /** Tipo de usuário: 'admin' para gestão municipal, 'superuser' para gestão global */
@@ -198,7 +199,7 @@ export default function UserManagementUnified({
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{user.role}</Badge>
+                    <Badge variant="secondary">{getRoleLabel(user.role)}</Badge>
                   </TableCell>
                   <TableCell>
                     {user.isActive === false ? (

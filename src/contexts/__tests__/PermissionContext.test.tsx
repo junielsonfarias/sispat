@@ -31,7 +31,7 @@ describe('PermissionContext', () => {
     expect(result.current.roles.find((r) => r.id === 'superuser')).toBeTruthy()
   })
 
-  it('sobrepõe com as permissões do backend quando existem', async () => {
+  it('sobrepõe só o papel que veio do backend e mantém os demais (merge)', async () => {
     mockApi.get.mockResolvedValue([
       { roleId: 'admin', name: 'Administrador', permissions: ['bens:read'] },
     ])
@@ -41,8 +41,15 @@ describe('PermissionContext', () => {
       const admin = result.current.roles.find((r) => r.id === 'admin')
       expect(admin?.permissions).toEqual(['bens:read'])
     })
-    // Só veio 'admin' do backend → a lista passa a ter 1 papel
-    expect(result.current.roles).toHaveLength(1)
+    // MESCLA sobre os defaults: 'admin' é sobrescrito, mas os outros papéis
+    // canônicos continuam existindo (evita que o dropdown de permissões fique
+    // só com o papel salvo no banco e que `usuario` perca `bens:update`).
+    expect(result.current.roles.find((r) => r.id === 'supervisor')).toBeTruthy()
+    expect(
+      result.current.roles.find((r) => r.id === 'usuario')?.permissions,
+    ).toContain('bens:update')
+    expect(result.current.roles.find((r) => r.id === 'visualizador')).toBeTruthy()
+    expect(result.current.roles.length).toBeGreaterThanOrEqual(5)
   })
 
   it('mantém os defaultRoles quando o fetch falha', async () => {

@@ -39,7 +39,7 @@ const documentationContent = [
   },
   {
     id: 'manual-usuario',
-    title: 'Manual do Usuário (Perfil: Usuário)',
+    title: 'Manual do Responsável Patrimonial (Perfil: Responsável Patrimonial)',
     content: `
       <div class="prose dark:prose-invert max-w-none">
         <h5>1. Acesso e Visão Geral</h5>
@@ -70,7 +70,7 @@ const documentationContent = [
         <h5>1. Gerenciamento de Setores</h5>
         <p>Em "Administração" > "Gerenciar Setores", você pode criar e editar os setores do seu município. É crucial que cada setor tenha um <strong>Código de Setor</strong> de 2 dígitos único, pois ele é usado na geração automática do número de patrimônio.</p>
         <h5>2. Gerenciamento de Usuários</h5>
-        <p>Em "Administração" > "Gerenciar Usuários", você pode adicionar novos usuários, editar perfis (Supervisor, Usuário, Visualizador) e definir a quais setores um usuário tem acesso. Isso garante o controle de acesso granular.</p>
+        <p>Em "Administração" > "Gerenciar Usuários", você pode adicionar novos usuários, editar perfis (Supervisor, Responsável Patrimonial, Visualizador) e definir a quais setores um usuário tem acesso. Isso garante o controle de acesso granular.</p>
         <h5>3. Finalizando Inventários</h5>
         <p>Após a conclusão da contagem por um usuário, o supervisor deve revisar e finalizar o inventário. Esta ação formaliza o resultado, gera um relatório de resumo e atualiza o status dos bens não localizados para "Extraviado".</p>
         <h5>4. Personalização</h5>

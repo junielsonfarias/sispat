@@ -44,8 +44,8 @@ const DEMO_ROLES: DemoRole[] = [
   },
   {
     email: 'usuario@sispat.demo',
-    label: 'Usuário',
-    description: 'Operação do dia a dia',
+    label: 'Responsável Patrimonial',
+    description: 'Responsável pelo patrimônio dos seus setores',
     icon: User,
     className: 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
   },

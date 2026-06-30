@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCustomization } from '@/contexts/CustomizationContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/utils'
+import { getRoleLabel } from '@/lib/roles'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -175,7 +176,7 @@ export const Header = () => {
                         )}
                       >
                         <RoleIcon className="h-3 w-3 mr-1" />
-                        {user.role}
+                        {getRoleLabel(user.role)}
                       </Badge>
                     </div>
                   </DropdownMenuLabel>
@@ -303,7 +304,7 @@ export const Header = () => {
                       )}
                     >
                       <RoleIcon className="h-3 w-3 mr-1" />
-                      {user.role}
+                      {getRoleLabel(user.role)}
                     </Badge>
                   </div>
                 </DropdownMenuLabel>
@@ -398,7 +399,7 @@ export const Header = () => {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate text-foreground">{user.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 capitalize">{user.role}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 capitalize">{getRoleLabel(user.role)}</p>
                     </div>
                   </div>
                 </DropdownMenuLabel>

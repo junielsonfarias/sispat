@@ -29,7 +29,7 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
   { id: 'demo-superuser', email: 'superuser@sispat.demo', name: 'Demo · Superusuário', role: 'superuser' },
   { id: 'demo-admin', email: 'admin@sispat.demo', name: 'Demo · Administrador', role: 'admin' },
   { id: 'demo-supervisor', email: 'supervisor@sispat.demo', name: 'Demo · Supervisor', role: 'supervisor' },
-  { id: 'demo-usuario', email: 'usuario@sispat.demo', name: 'Demo · Usuário', role: 'usuario' },
+  { id: 'demo-usuario', email: 'usuario@sispat.demo', name: 'Demo · Responsável Patrimonial', role: 'usuario' },
   { id: 'demo-visualizador', email: 'visualizador@sispat.demo', name: 'Demo · Visualizador', role: 'visualizador' },
 ];
 
