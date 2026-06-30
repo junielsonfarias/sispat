@@ -31,20 +31,24 @@ router.get(
   getLocalById,
 );
 
+// Criar/editar: o 'usuario' (Responsável Patrimonial) gerencia locais dos
+// SEUS setores. A trava por setor (responsibleSectors) é reforçada no
+// controller — authorize só libera o papel; não basta para o acesso ao setor.
 router.post(
   '/',
-  authorize('superuser', 'admin', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
   zodValidate({ body: createLocalSchema }),
   createLocal,
 );
 
 router.put(
   '/:id',
-  authorize('superuser', 'admin', 'supervisor'),
+  authorize('superuser', 'admin', 'supervisor', 'usuario'),
   zodValidate({ params: uuidParamSchema, body: updateLocalSchema }),
   updateLocal,
 );
 
+// Excluir permanece restrito a admin/supervisor (ação destrutiva).
 router.delete(
   '/:id',
   authorize('superuser', 'admin', 'supervisor'),

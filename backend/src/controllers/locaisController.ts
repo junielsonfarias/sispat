@@ -4,6 +4,26 @@ import { prisma } from '../index';
 import { logError, logInfo, logWarn, logDebug } from '../config/logger';
 import { maskEmail } from '../utils/mask';
 
+// superuser/admin/supervisor têm acesso total aos setores; usuario/visualizador
+// só operam nos setores em `responsibleSectors` (armazenados por NOME).
+const hasFullSectorAccess = (role?: string): boolean =>
+  role === 'superuser' || role === 'admin' || role === 'supervisor';
+
+// Garante que o ator pode operar no setor informado (por nome). Espelha a regra
+// de `ensureSectorAccess` do patrimonioService: SEM setor vinculado = SEM acesso.
+const canActOnSector = async (
+  req: Request,
+  sectorName: string,
+): Promise<boolean> => {
+  if (hasFullSectorAccess(req.user?.role)) return true;
+  const user = await prisma.user.findUnique({
+    where: { id: req.user?.userId },
+    select: { responsibleSectors: true },
+  });
+  if (!user || user.responsibleSectors.length === 0) return false;
+  return user.responsibleSectors.includes(sectorName);
+};
+
 /**
  * @desc    Obter todos os locais
  * @route   GET /api/locais
@@ -159,6 +179,12 @@ export const createLocal = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+    // Trava por setor: usuario/visualizador só criam locais nos seus setores.
+    if (!(await canActOnSector(req, sector.name))) {
+      res.status(403).json({ error: 'Você não é responsável por este setor' });
+      return;
+    }
+
     const local = await prisma.local.create({
       data: {
         name,
@@ -204,6 +230,7 @@ export const updateLocal = async (req: Request, res: Response): Promise<void> =>
 
     const local = await prisma.local.findFirst({
       where: { id, ...(isSuperuser ? {} : { municipalityId }) },
+      include: { sector: { select: { name: true } } },
     });
 
     if (!local) {
@@ -211,14 +238,26 @@ export const updateLocal = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+    // Trava por setor: usuario/visualizador só editam locais dos SEUS setores
+    // (verifica o setor atual do local).
+    if (!(await canActOnSector(req, local.sector.name))) {
+      res.status(403).json({ error: 'Você não é responsável por este setor' });
+      return;
+    }
+
     // Se o setor está sendo alterado, garante que pertence ao município do
-    // usuário (evita reatribuir o local a um setor de outro tenant via body).
+    // usuário (evita reatribuir o local a um setor de outro tenant via body)
+    // E que o ator também é responsável pelo setor de destino.
     if (sectorId) {
       const sector = await prisma.sector.findFirst({
         where: { id: sectorId, ...(isSuperuser ? {} : { municipalityId }) },
       });
       if (!sector) {
         res.status(404).json({ error: 'Setor não encontrado' });
+        return;
+      }
+      if (!(await canActOnSector(req, sector.name))) {
+        res.status(403).json({ error: 'Você não é responsável pelo setor de destino' });
         return;
       }
     }

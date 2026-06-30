@@ -33,8 +33,14 @@ export default function Locais() {
   const { sectors } = useSectors()
   const { user } = useAuth()
   const confirm = useConfirm()
-  // Gerir locais (estrutura): admin/supervisor. Demais papéis só visualizam.
-  const canManage = user?.role === 'admin' || user?.role === 'supervisor'
+  // Criar/editar locais: admin/supervisor + usuario (Responsável Patrimonial),
+  // que gerencia os locais dos seus setores (o backend trava por setor).
+  const canManage =
+    user?.role === 'admin' ||
+    user?.role === 'supervisor' ||
+    user?.role === 'usuario'
+  // Excluir é destrutivo: só admin/supervisor.
+  const canDelete = user?.role === 'admin' || user?.role === 'supervisor'
   const [isDialogOpen, setDialogOpen] = useState(false)
   const [editingLocal, setEditingLocal] = useState<Local | undefined>()
   const [parentSectorId, setParentSectorId] = useState<string | null>(null)
@@ -104,6 +110,7 @@ export default function Locais() {
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
+                            {canDelete && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -122,6 +129,7 @@ export default function Locais() {
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
+                            )}
                           </div>
                         )}
                       </div>
